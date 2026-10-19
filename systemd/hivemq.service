@@ -1,0 +1,30 @@
+# HiveMQ CE broker for the MP mod (installed by install.sh)
+[Unit]
+Description=HiveMQ CE broker (MP Multiplayer)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=mp
+Group=mp
+Environment=JAVA_HOME=@@JAVA_HOME@@
+Environment=PATH=@@JAVA_HOME@@/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+Environment=HIVEMQ_HOME=@@BASE@@/hivemq
+# the 2 GB / 4 GB heap; G1 with short pauses so relayed game packets are never held up for long
+Environment="JAVA_OPTS=-Xms@@XMS@@ -Xmx@@XMX@@ -XX:+UseG1GC -XX:MaxGCPauseMillis=20 -XX:+AlwaysPreTouch -XX:+ExitOnOutOfMemoryError"
+# HiveMQ's run.sh opens JMX on port 9010 WITHOUT a password by default: keep it off
+Environment=HIVEMQ_JMX_ENABLED=false
+ExecStart=@@BASE@@/hivemq/bin/run.sh
+Restart=always
+RestartSec=3
+LimitNOFILE=1048576
+TimeoutStopSec=30
+# hardening
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=full
+ProtectHome=yes
+
+[Install]
+WantedBy=multi-user.target

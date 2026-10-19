@@ -1,0 +1,24 @@
+# The region's 24/7 default server "MP LAN Server" (installed by install.sh)
+[Unit]
+Description=MP Multiplayer default server (@@REGION@@)
+After=hivemq.service network-online.target
+Wants=hivemq.service network-online.target
+
+[Service]
+Type=simple
+User=mp
+Group=mp
+WorkingDirectory=@@BASE@@/server
+ExecStart=@@BASE@@/server/mp_server @@PORT@@ "@@NAME@@" @@MAX@@ @@REGION@@ --persistent --broker-file @@BASE@@/server/broker.txt
+Restart=always
+# a phone may already host the default server for a moment: try again a bit later
+RestartSec=15
+LimitNOFILE=65536
+Nice=-5
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=full
+ProtectHome=yes
+
+[Install]
+WantedBy=multi-user.target
