@@ -19,6 +19,17 @@ The mod (2.20+) downloads [regions.txt](https://thirtyfoxmcx00e1.github.io/Sa-mp
 
 Game traffic stays inside one region (no bridging), so ping is only phone -> nearest broker.
 
+## Our regions
+
+| Region | Domain | Notes |
+|---|---|---|
+| Asia | `mpsamp.duckdns.org` | runs MpBridge (`--bridge`) |
+| Europe | `eusamp.duckdns.org` | |
+| NA | `nasamp.duckdns.org` | |
+| Oceania | `ocsamp.duckdns.org` | |
+
+All four use the same `mp.env` (same `mp` / `web` / bridge / admin passwords); only `REGION` and `DOMAIN` differ. The public part is in the website's [regions.txt](https://thirtyfoxmcx00e1.github.io/Sa-mp/regions.txt). Keep `mp.env` private.
+
 ## Server requirements
 
 | | Minimum | Recommended |
