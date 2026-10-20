@@ -92,9 +92,30 @@ Put the output in `docs/regions.txt` of the Sa-mp repo and push. Within about 30
 | 80/tcp | Let's Encrypt renewals (with `--domain`) |
 | 1922/udp | the region's default game server |
 
+## No computer: phone-only setup (2.21)
+
+Everything below works from a phone browser, no SSH app and no computer:
+
+1. Create a free domain at [duckdns.org](https://www.duckdns.org) (e.g. `asia-yourname`) and copy the token.
+2. Create an Ubuntu 22.04/24.04 VM (e.g. Oracle Cloud Always Free, Ampere A1). In "Advanced options -> cloud-init / user data", paste [`cloud-init/user-data.yaml`](cloud-init/user-data.yaml) with your region, DuckDNS name, token and email filled in. In the cloud firewall (Oracle: VCN security list) open TCP 80, 1883, 8000, 8883, 8884, 7681 and UDP 1922.
+3. Wait about 10 minutes. The VM installs Java 21, HiveMQ CE, the 24/7 server, the status beacon and the web console by itself.
+4. Open the website's [Termius page](https://thirtyfoxmcx00e1.github.io/Sa-mp/termius.html): the region turns green ("online 24/7") as soon as the status beacon reports. Tap "console" (https://DOMAIN:7681) and log in as `admin`; the password is `CONSOLE_PASS` in `/etc/mp-hivemq/mp.env` (read it once through the cloud provider's serial console or `sudo cat` in the web shell of the provider).
+5. In the console menu choose 8 (regions.txt) and copy the block into `docs/regions.txt` of the Sa-mp repo. Every copy of the mod then uses your broker automatically.
+
+The web console is [ttyd](https://github.com/tsl0922/ttyd) behind TLS and a password: live logs, restart, update, status and a bash shell. Without a domain it only listens on localhost (set `CONSOLE_INSECURE=1` in `mp.env` to allow plain http, not recommended).
+
+### Shared logins for 100 phones
+
+Every phone uses the same `mp` login on purpose (it is inside `regions.txt`). That is safe and does not limit players: each phone connects with its own random client ID, the topic rules are bound to that ID, so 100+ phones on one login never read each other's messages or kick each other off. `max-connections` is 20000 per broker; the 24/7 server has 100 slots (`MAX_PLAYERS`).
+
+### Why not HiveMQ Cloud free
+
+HiveMQ retires the free HiveMQ Cloud Serverless plan on 2026-12-31 and no new Serverless clusters can be created ([HiveMQ docs](https://docs.hivemq.com/hivemq-cloud/serverless-end-of-life.html)); the free self-managed Enterprise "Lab" license allows only 25 connections. So this kit keeps HiveMQ Community Edition on your own VM (no connection limit). Until a region is in `regions.txt`, the mod and website fall back to the free public lobby brokers.
+
 ## Daily use
 
 ```bash
+sudo /opt/mp/console/mp-console.sh     # menu (same as the web console)
 sudo ./tools/status.sh                 # services, ports, connections, memory, recent logs
 sudo systemctl restart hivemq          # restart the broker
 journalctl -u mp-server -f             # default server log
@@ -109,7 +130,8 @@ All services start on boot and restart after a crash.
 
 - No anonymous logins; wrong passwords are refused. Passwords are stored as salted hashes.
 - `mp` (the mod) may only use `thirtyfox/mp4/...` topics, may only read its own player channel and cannot send in another player's name (topics are tied to its client ID). Anything else disconnects the client.
-- `web` (the website) can only read the server list.
+- `web` (the website) can only read the server list and the region status.
+- Web console: TLS + password, max 3 sessions; only on localhost without a domain.
 - `bridge` and `admin` passwords are secret. They are never written to `regions.txt`; keep `mp.env` private (`chmod 600`).
 - Limits: 64 KB per packet, bandwidth per client, max connections, idle sockets without CONNECT dropped after 5 s, in-memory queues drop oldest when full.
 - HiveMQ's JMX port 9010 is off and blocked; services run as an unprivileged `hivemq` user.
@@ -131,13 +153,17 @@ config/config.xml.template   HiveMQ listeners, limits, in-memory persistence
 config/credentials.xml.template  roles mp / web / bridge / superuser and their topic rules
 config/rbac-config.xml       File RBAC extension settings (hashed passwords)
 config/99-mp-network.conf    sysctl: BBR, fq, bigger socket buffers, low-latency TCP
-systemd/*.service            hivemq, mp-server, mp-bridge
+systemd/*.service            hivemq, mp-server, mp-bridge, mp-status, mp-console
+cloud-init/user-data.yaml    paste-in VM setup from a phone (no computer, no SSH)
 bridge/MpBridge.java         server-list bridge between regions (Java 21, no dependencies)
-tools/                       status.sh, make-regions.sh, hash-password.sh
+tools/                       status.sh, make-regions.sh, hash-password.sh, mp-console.sh (menu), mp-status.py (beacon)
 ```
 
 Why Community Edition: the HiveMQ Enterprise download without a license is an evaluation that allows only 25 connections, too few for a public lobby. CE has no such limit and covers everything the mod uses (MQTT 3.1.1, TLS, WebSocket, retained messages, last will).
 
 ## Tagalog
+
+Walang computer? Gumawa ng VM sa browser ng phone, i-paste ang `cloud-init/user-data.yaml` (palitan ang REGION at DuckDNS), hintayin ang 10 minuto, tapos buksan ang Termius page ng website.
+
 
 Isang VPS bawat rehiyon (Asia, Europe, NA, Oceania). Sa una: `sudo ./install.sh --region Asia --bridge`. Kopyahin ang `/etc/mp-hivemq/mp.env` sa ibang VPS at patakbuhin ang `install.sh` gamit ang rehiyon nila (walang `--bridge`). Ilagay ang address ng bawat server sa `HOST_*` sa `mp.env`, patakbuhin ang `tools/make-regions.sh`, at ilagay ang resulta sa `docs/regions.txt` ng Sa-mp repo. Ang mod na mismo ang pipili ng rehiyon na may pinakamababang ping. Inirerekomenda: 4 vCPU, 4 GB para sa JVM (`-Xms2g -Xmx4g`, kaya 6 GB+ RAM sa buong server), SSD na 900+ IOPS.

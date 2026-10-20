@@ -1,0 +1,14 @@
+# MP status beacon: retained health message for the website's Termius page
+[Unit]
+Description=MP Multiplayer status beacon
+After=hivemq.service
+Wants=hivemq.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 @@BASE@@/console/mp-status.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

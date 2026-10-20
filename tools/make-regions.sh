@@ -12,6 +12,6 @@ for r in Asia Europe NA Oceania; do
     echo; echo "[$r]"
     echo "host=$h"; echo "port=1883"; echo "tls=0"; echo "user=$MP_USER"; echo "pass=$MP_PASS"
     # website (secure WebSocket) - only works when that server was installed with --domain (TLS)
-    if [[ "$h" =~ [a-zA-Z] ]]; then echo "web=wss://$h:8884/mqtt"; echo "web_user=$WEB_USER"; echo "web_pass=$WEB_PASS"
+    if [[ "$h" =~ [a-zA-Z] ]]; then echo "web=wss://$h:8884/mqtt"; echo "web_user=$WEB_USER"; echo "web_pass=$WEB_PASS"; echo "console=https://$h:7681/"
     else echo "# web=  (needs a domain name + TLS on this server, see README)"; fi
 done

@@ -14,6 +14,7 @@
 #   - optional: MpBridge (joins the server lists of all regions; run it on ONE server only)
 #   - systemd services (start on boot, restart on crash), firewall, network tuning
 #   - optional TLS (Let's Encrypt) for MQTT 8883 and WebSocket 8884 (the website needs 8884)
+#   - web console (ttyd, https://DOMAIN:7681, password) + status beacon for the website's Termius page
 set -euo pipefail
 
 HIVEMQ_VER="2026.5"
@@ -95,6 +96,16 @@ BANDWIDTH_PER_CLIENT=524288
 EOF
     chmod 600 "$ENV_FILE"
 fi
+# 2.21: settings added after the first install
+grep -q '^CONSOLE=' "$ENV_FILE" || cat >> "$ENV_FILE" <<EOF
+
+# web console (browser terminal, website "Termius" page): https://DOMAIN:7681  (needs DOMAIN for TLS)
+CONSOLE=1
+CONSOLE_USER=admin
+CONSOLE_PASS=$(rand 20)
+# 1 = also serve the console without TLS on http://IP:7681 (not recommended)
+CONSOLE_INSECURE=0
+EOF
 # shellcheck disable=SC1090
 . "$ENV_FILE"
 # mp.env copied from another region: drop that server's own domain / bridge setting
@@ -287,6 +298,35 @@ if [ "${RUN_BRIDGE:-0}" = 1 ]; then
 fi
 chown mp:mp "$ETC" "$ENV_FILE" 2>/dev/null || true
 
+# ---------------------------------------------------------------- 2.21: web console + status beacon
+TTYD_VER="1.7.7"
+CON="$BASE/console"; mkdir -p "$CON"
+cp "$SRC_DIR/tools/mp-console.sh" "$SRC_DIR/tools/status.sh" "$SRC_DIR/tools/mp-status.py" "$CON/"; chmod 755 "$CON"/*.sh "$CON"/*.py
+# keep a copy of this kit for the console's "update" choice
+if [ "$SRC_DIR" != "$BASE/kit" ]; then rm -rf "$BASE/kit"; cp -a "$SRC_DIR" "$BASE/kit"; fi
+if [ "${CONSOLE:-1}" = 1 ]; then
+    case "$ARCH" in
+        x86_64|amd64)  TT=ttyd.x86_64;  TT_SHA=8a217c968aba172e0dbf3f34447218dc015bc4d5e59bf51db2f2cd12b7be4f55;;
+        aarch64|arm64) TT=ttyd.aarch64; TT_SHA=b38acadd89d1d396a0f5649aa52c539edbad07f4bc7348b27b4f4b7219dd4165;;
+    esac
+    if ! echo "$TT_SHA  $CON/ttyd" | sha256sum -c - >/dev/null 2>&1; then
+        say "installing web console (ttyd $TTYD_VER)"
+        curl -fL --retry 3 -o "$CON/ttyd" "https://github.com/tsl0922/ttyd/releases/download/$TTYD_VER/$TT"
+        echo "$TT_SHA  $CON/ttyd" | sha256sum -c - >/dev/null || die "ttyd download checksum mismatch"
+        chmod 755 "$CON/ttyd"
+    fi
+    CON_SSL=""; CON_BIND="-i lo"
+    if [ -n "${DOMAIN:-}" ]; then
+        CON_SSL="-S -C /etc/letsencrypt/live/$DOMAIN/fullchain.pem -K /etc/letsencrypt/live/$DOMAIN/privkey.pem"; CON_BIND=""
+    elif [ "${CONSOLE_INSECURE:-0}" = 1 ]; then CON_BIND=""; warn "web console without TLS (CONSOLE_INSECURE=1): the password travels in clear text"
+    else warn "web console only on localhost: set a DOMAIN for https://DOMAIN:7681 (or CONSOLE_INSECURE=1)"; fi
+    sed -e "s|@@BASE@@|$BASE|g; s|@@BIND@@|$CON_BIND|; s|@@CRED@@|${CONSOLE_USER:-admin}:$CONSOLE_PASS|; s|@@SSL@@|$CON_SSL|" "$SRC_DIR/systemd/mp-console.service" > /etc/systemd/system/mp-console.service
+    chmod 600 /etc/systemd/system/mp-console.service
+    HOOK=/etc/letsencrypt/renewal-hooks/deploy/mp-hivemq.sh
+    if [ -f "$HOOK" ] && ! grep -q mp-console "$HOOK"; then echo "systemctl restart mp-console" >> "$HOOK"; fi
+fi
+sed -e "s|@@BASE@@|$BASE|g" "$SRC_DIR/systemd/mp-status.service" > /etc/systemd/system/mp-status.service
+
 # ---------------------------------------------------------------- systemd
 say "installing services"
 sed -e "s|@@JAVA_HOME@@|$JAVA_HOME|g; s|@@BASE@@|$BASE|g; s|@@XMS@@|$JVM_XMS|; s|@@XMX@@|$JVM_XMX|" "$SRC_DIR/systemd/hivemq.service" > /etc/systemd/system/hivemq.service
@@ -297,6 +337,8 @@ systemctl enable --now hivemq >/dev/null
 systemctl restart hivemq
 if [ "${RUN_SERVER:-1}" = 1 ]; then systemctl enable mp-server >/dev/null; systemctl restart mp-server; else systemctl disable --now mp-server 2>/dev/null || true; fi
 if [ "${RUN_BRIDGE:-0}" = 1 ]; then systemctl enable mp-bridge >/dev/null; systemctl restart mp-bridge; else systemctl disable --now mp-bridge 2>/dev/null || true; fi
+systemctl enable mp-status >/dev/null; systemctl restart mp-status
+if [ "${CONSOLE:-1}" = 1 ]; then systemctl enable mp-console >/dev/null; systemctl restart mp-console; else systemctl disable --now mp-console 2>/dev/null || true; fi
 
 # ---------------------------------------------------------------- network tuning + firewall
 cp "$SRC_DIR/config/99-mp-network.conf" /etc/sysctl.d/99-mp-network.conf
@@ -305,6 +347,7 @@ say "firewall: SSH, MQTT 1883, WebSocket 8000${DOMAIN:+, TLS 8883/8884}, game UD
 ufw allow OpenSSH >/dev/null 2>&1 || ufw allow 22/tcp >/dev/null
 ufw allow 1883/tcp >/dev/null; ufw allow 8000/tcp >/dev/null
 [ -n "${DOMAIN:-}" ] && { ufw allow 8883/tcp >/dev/null; ufw allow 8884/tcp >/dev/null; }
+if [ "${CONSOLE:-1}" = 1 ] && { [ -n "${DOMAIN:-}" ] || [ "${CONSOLE_INSECURE:-0}" = 1 ]; }; then ufw allow 7681/tcp >/dev/null; fi
 ufw allow "${SERVER_PORT:-1922}"/udp >/dev/null
 ufw deny 9010/tcp >/dev/null 2>&1 || true    # JMX (also switched off in the service)
 ufw --force enable >/dev/null
@@ -314,8 +357,9 @@ sleep 6
 systemctl is-active --quiet hivemq && say "HiveMQ is running" || warn "HiveMQ did not start: journalctl -u hivemq -n 50"
 echo
 say "Done. This region: $REGION"
-echo "    status:  sudo $SRC_DIR/tools/status.sh"
+echo "    status:  sudo $SRC_DIR/tools/status.sh     menu: sudo $BASE/console/mp-console.sh"
+if [ "${CONSOLE:-1}" = 1 ] && [ -n "${DOMAIN:-}" ]; then echo "    web console (website Termius page): https://$DOMAIN:7681  login ${CONSOLE_USER:-admin} / CONSOLE_PASS in $ENV_FILE"; fi
 echo "    logs:    journalctl -u hivemq -f    |  journalctl -u mp-server -f   |  journalctl -u mp-bridge -f"
 echo "    logins:  $ENV_FILE  (copy to the other regions; keep BRIDGE_PASS / ADMIN_PASS secret)"
-echo "    open these ports in your cloud provider's firewall too: 1883/tcp 8000/tcp ${DOMAIN:+8883/tcp 8884/tcp 80/tcp }${SERVER_PORT:-1922}/udp"
+echo "    open these ports in your cloud provider's firewall too: 1883/tcp 8000/tcp ${DOMAIN:+8883/tcp 8884/tcp 7681/tcp 80/tcp }${SERVER_PORT:-1922}/udp"
 echo "    then put this server into the website's regions.txt:  sudo $SRC_DIR/tools/make-regions.sh"
