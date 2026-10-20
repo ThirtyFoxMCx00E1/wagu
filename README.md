@@ -112,6 +112,14 @@ Every phone uses the same `mp` login on purpose (it is inside `regions.txt`). Th
 
 HiveMQ retires the free HiveMQ Cloud Serverless plan on 2026-12-31 and no new Serverless clusters can be created ([HiveMQ docs](https://docs.hivemq.com/hivemq-cloud/serverless-end-of-life.html)); the free self-managed Enterprise "Lab" license allows only 25 connections. So this kit keeps HiveMQ Community Edition on your own VM (no connection limit). Until a region is in `regions.txt`, the mod and website fall back to the free public lobby brokers.
 
+## Autopilot + MP Bot (2.22)
+
+Nobody has to type in a terminal any more.
+
+- **On every region server** `mp-status` (the status beacon) is also the autopilot. Every 5 s it checks `hivemq`, `mp-server`, `mp-bridge` and `mp-console`; an enabled service that stopped is restarted (max 3 times in 10 minutes, then it waits and reports). Disk above 90 % = journal vacuum + old HiveMQ logs removed. Every action is published on `thirtyfox/mp4/bot/<Region>`. Turn it off with `MP_AUTOPILOT=0` in `/etc/mp-hivemq/mp.env`.
+- **On the website** the MP Bot runs the [Termius](https://thirtyfoxmcx00e1.github.io/Sa-mp/termius.html) and [Termux](https://thirtyfoxmcx00e1.github.io/Sa-mp/termux.html) terminals by itself: it types each command, presses Enter, and reacts to what it sees (region down -> `diagnose`, autopilot report -> `autopilot`, new servers -> `servers`, ping every 90 s). There is no input box.
+- Run `install.sh` again (or `mp-server update` style re-run of cloud-init) on existing regions to get the new topic rule for `bot/+`.
+
 ## Daily use
 
 ```bash
@@ -156,7 +164,7 @@ config/99-mp-network.conf    sysctl: BBR, fq, bigger socket buffers, low-latency
 systemd/*.service            hivemq, mp-server, mp-bridge, mp-status, mp-console
 cloud-init/user-data.yaml    paste-in VM setup from a phone (no computer, no SSH)
 bridge/MpBridge.java         server-list bridge between regions (Java 21, no dependencies)
-tools/                       status.sh, make-regions.sh, hash-password.sh, mp-console.sh (menu), mp-status.py (beacon)
+tools/                       status.sh, make-regions.sh, hash-password.sh, mp-console.sh (menu), mp-status.py (beacon + autopilot)
 ```
 
 Why Community Edition: the HiveMQ Enterprise download without a license is an evaluation that allows only 25 connections, too few for a public lobby. CE has no such limit and covers everything the mod uses (MQTT 3.1.1, TLS, WebSocket, retained messages, last will).

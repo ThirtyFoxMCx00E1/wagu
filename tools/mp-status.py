@@ -2,7 +2,15 @@
 """MP status beacon: every 10 s publishes this region's health as a retained message on
 thirtyfox/mp4/st/<Region> of the local broker. The website's Termius page shows it, so you can
 see from the phone that the region is online 24/7. If the machine or broker dies, the broker
-publishes the last will {"online": false}. Only Python's standard library, MQTT 3.1.1."""
+publishes the last will {"online": false}. Only Python's standard library, MQTT 3.1.1.
+
+2.22 autopilot: the same loop manages the region by itself - nobody has to type in a terminal.
+  - an enabled service (hivemq, mp-server, mp-bridge, mp-console) that is not running is restarted
+    (at most 3 times per 10 minutes per service, then it waits and reports)
+  - disk above 90 %: journal vacuum + old HiveMQ logs removed
+  - low memory (< 5 % available): reported, the broker is restarted only if it also stopped answering
+Every action is published on thirtyfox/mp4/bot/<Region> as {"t", "cmd", "out", "ok"}; the MP Bot on
+the website (Termius) shows it as a command it ran. MP_AUTOPILOT=0 in mp.env turns it off."""
 import json, os, socket, struct, subprocess, time
 
 def env(path="/etc/mp-hivemq/mp.env"):
@@ -30,9 +38,9 @@ def connect(user, pw, topic, will):
     if len(a) < 4 or a[0] != 0x20 or a[3] != 0: raise OSError("connack %r" % a)
     return k
 
-def publish(k, topic, msg):
+def publish(k, topic, msg, retain=True):
     body = s(topic) + msg.encode()
-    k.sendall(b"\x31" + rl(len(body)) + body)   # QoS 0, retained
+    k.sendall((b"\x31" if retain else b"\x30") + rl(len(body)) + body)   # QoS 0
 
 def active(n): return subprocess.run(["systemctl", "is-active", "--quiet", n]).returncode == 0
 def clients():
@@ -41,25 +49,74 @@ def clients():
         return max(0, len(out.splitlines()) - 1)   # minus this beacon
     except Exception: return -1
 
+def enabled(n): return subprocess.run(["systemctl", "is-enabled", "--quiet", n]).returncode == 0
+
+def sh(cmd):
+    try:
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+        return r.returncode == 0, (r.stdout or r.stderr).strip().splitlines()[-1:] or [""]
+    except Exception as x:
+        return False, [str(x)]
+
+class Autopilot:
+    SERVICES = ("hivemq", "mp-server", "mp-bridge", "mp-console")
+    def __init__(self, base):
+        self.base = base; self.hist = {}; self.last_disk = 0
+    def _allowed(self, n):
+        now = time.time(); h = [t for t in self.hist.get(n, []) if now - t < 600]
+        self.hist[n] = h
+        return len(h) < 3
+    def tick(self):
+        acts = []
+        for n in self.SERVICES:
+            if not enabled(n) or active(n): continue
+            if not self._allowed(n):
+                acts.append(("systemctl restart " + n, "waiting: 3 restarts in 10 min, check journalctl -u " + n, False)); continue
+            self.hist[n].append(time.time())
+            ok, out = sh(["systemctl", "restart", n])
+            time.sleep(3)
+            ok = ok and active(n)
+            acts.append(("systemctl restart " + n, "running again" if ok else (out[0] or "still down"), ok))
+        try:
+            st = os.statvfs("/"); used = 1 - st.f_bavail / float(st.f_blocks)
+            if used > 0.90 and time.time() - self.last_disk > 3600:
+                self.last_disk = time.time()
+                ok, _ = sh(["journalctl", "--vacuum-size=100M"])
+                sh(["find", os.path.join(self.base, "hivemq", "log"), "-name", "*.log.*", "-mtime", "+2", "-delete"])
+                acts.append(("journalctl --vacuum-size=100M", "disk was %d %% full" % int(used * 100), ok))
+        except Exception:
+            pass
+        return acts
+
 def main():
     e = env(); region = e.get("REGION", "Asia"); dom = e.get("DOMAIN", "")
     topic = "thirtyfox/mp4/st/" + region
+    bot_topic = "thirtyfox/mp4/bot/" + region
+    pilot = Autopilot(e.get("BASE", "/opt/mp")) if e.get("MP_AUTOPILOT", "1") != "0" else None
+    pending = []   # actions done while the broker was down are sent after the reconnect
     while True:
         try:
+            if pilot: pending += [(int(time.time()),) + a for a in pilot.tick()]   # broker down? fix it first
             k = connect("bridge", e["BRIDGE_PASS"], topic, json.dumps({"region": region, "online": False}))
             while True:
+                if pilot: pending += [(int(time.time()),) + a for a in pilot.tick()]
+                while pending:
+                    t, cmd, out, ok = pending.pop(0)
+                    publish(k, bot_topic, json.dumps({"t": t, "cmd": cmd, "out": out, "ok": ok}, separators=(",", ":")), retain=False)
+                    print("autopilot:", cmd, "->", out, flush=True)
                 up = float(open("/proc/uptime").read().split()[0])
                 mem = {l.split(":")[0]: int(l.split()[1]) for l in open("/proc/meminfo") if l.split(":")[0] in ("MemTotal", "MemAvailable")}
                 st = {"region": region, "online": True, "t": int(time.time()), "up": int(up),
                       "load": os.getloadavg()[0], "mem": [ (mem["MemTotal"] - mem["MemAvailable"]) // 1024, mem["MemTotal"] // 1024 ],
                       "clients": clients(), "broker": active("hivemq"), "server": active("mp-server"),
                       "bridge": active("mp-bridge"), "console": ("https://%s:7681/" % dom) if dom and active("mp-console") else "",
-                      "slots": int(e.get("MAX_PLAYERS", "100") or 100), "ver": "2.21"}
+                      "slots": int(e.get("MAX_PLAYERS", "100") or 100), "ver": "2.22", "autopilot": bool(pilot)}
                 publish(k, topic, json.dumps(st, separators=(",", ":")))
                 k.sendall(b"\xc0\x00")   # ping
                 time.sleep(10)
         except Exception as x:
             print("status beacon:", x, flush=True)
+            pending = pending[-20:]
             time.sleep(5)
 
 if __name__ == "__main__": main()
