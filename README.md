@@ -1,12 +1,12 @@
 # HiveMQ regional brokers for MP Multiplayer
 
-Self-hosted lobby servers for [MP Multiplayer](https://github.com/ThirtyFoxMCx00E1/Sa-mp) (GTA SA Android), one per region: **Asia, Europe, NA, Oceania**. Each server runs, always on:
+Self-hosted lobby servers for [MP Multiplayer](https://github.com/ThirtyFoxMCx00E1/wagu) (GTA SA Android), one per region: **Asia, Europe, NA, Oceania**. Each server runs, always on:
 
 - **HiveMQ Community Edition** (free, no connection limit) with logins and topic rules (File RBAC extension)
 - the region's **24/7 default server** (`mp_server`, "MP LAN Server", UDP 1922)
 - optionally **MpBridge**, which joins the server lists of all regions (run it on one server only)
 
-The mod (2.20+) downloads [regions.txt](https://thirtyfoxmcx00e1.github.io/Sa-mp/regions.txt) from the website, pings every region in the background and uses the fastest one. Players in Manila land on Asia, players in Berlin on Europe, and both still see every server in the list. Joining a server from another region moves that phone to that region's broker for the game, then back.
+The mod (2.20+) downloads [regions.txt](https://thirtyfoxmcx00e1.github.io/wagu/regions.txt) from the website, pings every region in the background and uses the fastest one. Players in Manila land on Asia, players in Berlin on Europe, and both still see every server in the list. Joining a server from another region moves that phone to that region's broker for the game, then back.
 
 ```
  phones (Asia)      phones (Europe)     phones (NA)       phones (Oceania)
@@ -28,7 +28,7 @@ Game traffic stays inside one region (no bridging), so ping is only phone -> nea
 | NA | `nasamp.duckdns.org` | |
 | Oceania | `ocsamp.duckdns.org` | |
 
-All four use the same `mp.env` (same `mp` / `web` / bridge / admin passwords); only `REGION` and `DOMAIN` differ. The public part is in the website's [regions.txt](https://thirtyfoxmcx00e1.github.io/Sa-mp/regions.txt). Keep `mp.env` private.
+All four use the same `mp.env` (same `mp` / `web` / bridge / admin passwords); only `REGION` and `DOMAIN` differ. The public part is in the website's [regions.txt](https://thirtyfoxmcx00e1.github.io/wagu/regions.txt). Keep `mp.env` private.
 
 ## Server requirements
 
@@ -87,7 +87,7 @@ Then run `sudo ./install.sh --region <its region>` again on the bridge server so
 sudo ./tools/make-regions.sh > regions.txt
 ```
 
-Put the output in `docs/regions.txt` of the Sa-mp repo and push. Within about 30 minutes (or on the next game start) every phone switches to the regional brokers. Until then everyone stays on the free public lobby, so nothing breaks while you set things up.
+Put the output in `docs/regions.txt` of the wagu repo and push. Within about 30 minutes (or on the next game start) every phone switches to the regional brokers. Until then everyone stays on the free public lobby, so nothing breaks while you set things up.
 
 ### 5. Cloud firewall
 
@@ -110,8 +110,8 @@ Everything below works from a phone browser, no SSH app and no computer:
 1. Create a free domain at [duckdns.org](https://www.duckdns.org) (e.g. `asia-yourname`) and copy the token.
 2. Create an Ubuntu 22.04/24.04 VM (e.g. Oracle Cloud Always Free, Ampere A1). In "Advanced options -> cloud-init / user data", paste [`cloud-init/user-data.yaml`](cloud-init/user-data.yaml) with your region, DuckDNS name, token and email filled in. In the cloud firewall (Oracle: VCN security list) open TCP 80, 1883, 8000, 8883, 8884, 7681 and UDP 1922.
 3. Wait about 10 minutes. The VM installs Java 21, HiveMQ CE, the 24/7 server, the status beacon and the web console by itself.
-4. Open the website's [Termius page](https://thirtyfoxmcx00e1.github.io/Sa-mp/termius.html): the region turns green ("online 24/7") as soon as the status beacon reports. Tap "console" (https://DOMAIN:7681) and log in as `admin`; the password is `CONSOLE_PASS` in `/etc/mp-hivemq/mp.env` (read it once through the cloud provider's serial console or `sudo cat` in the web shell of the provider).
-5. In the console menu choose 8 (regions.txt) and copy the block into `docs/regions.txt` of the Sa-mp repo. Every copy of the mod then uses your broker automatically.
+4. Open the website's [Termius page](https://thirtyfoxmcx00e1.github.io/wagu/termius.html): the region turns green ("online 24/7") as soon as the status beacon reports. Tap "console" (https://DOMAIN:7681) and log in as `admin`; the password is `CONSOLE_PASS` in `/etc/mp-hivemq/mp.env` (read it once through the cloud provider's serial console or `sudo cat` in the web shell of the provider).
+5. In the console menu choose 8 (regions.txt) and copy the block into `docs/regions.txt` of the wagu repo. Every copy of the mod then uses your broker automatically.
 
 The web console is [ttyd](https://github.com/tsl0922/ttyd) behind TLS and a password: live logs, restart, update, status and a bash shell. Without a domain it only listens on localhost (set `CONSOLE_INSECURE=1` in `mp.env` to allow plain http, not recommended).
 
@@ -128,7 +128,7 @@ HiveMQ retires the free HiveMQ Cloud Serverless plan on 2026-12-31 and no new Se
 Nobody has to type in a terminal any more.
 
 - **On every region server** `mp-status` (the status beacon) is also the autopilot. Every 5 s it checks `hivemq`, `mp-server`, `mp-bridge` and `mp-console`; an enabled service that stopped is restarted (max 3 times in 10 minutes, then it waits and reports). Disk above 90 % = journal vacuum + old HiveMQ logs removed. Every action is published on `thirtyfox/mp4/bot/<Region>`. Turn it off with `MP_AUTOPILOT=0` in `/etc/mp-hivemq/mp.env`.
-- **On the website** the MP Bot runs the [Termius](https://thirtyfoxmcx00e1.github.io/Sa-mp/termius.html) and [Termux](https://thirtyfoxmcx00e1.github.io/Sa-mp/termux.html) terminals by itself: it types each command, presses Enter, and reacts to what it sees (region down -> `diagnose`, autopilot report -> `autopilot`, new servers -> `servers`, ping every 90 s). There is no input box.
+- **On the website** the MP Bot runs the [Termius](https://thirtyfoxmcx00e1.github.io/wagu/termius.html) and [Termux](https://thirtyfoxmcx00e1.github.io/wagu/termux.html) terminals by itself: it types each command, presses Enter, and reacts to what it sees (region down -> `diagnose`, autopilot report -> `autopilot`, new servers -> `servers`, ping every 90 s). There is no input box.
 - Run `install.sh` again (or `mp-server update` style re-run of cloud-init) on existing regions to get the new topic rule for `bot/+`.
 
 ## Daily use
