@@ -20,6 +20,13 @@ The mod (2.20+) downloads [regions.txt](https://thirtyfoxmcx00e1.github.io/wagu/
 Game traffic stays inside one region (no bridging), so ping is only phone -> nearest broker.
 
 
+## MP 3.02: update the 24/7 servers
+
+Rebuild `mp_server` on every region (console menu **7) update**). New in 3.02:
+
+- **Race queue.** Players type `/race` to wait for a race; when 14 are waiting, the server picks one of the 27 GTA SA races and starts it for those 14 (grid places, same GO). Phones on an older server get "This server can't run races yet".
+- The phone's crash fix (sound) and the race scoreboard are client-side.
+
 ## MP 3.01: update the 24/7 servers
 
 Rebuild `mp_server` on every region (console menu **7) update**). New in 3.01 (SA-MP features):
