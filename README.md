@@ -20,6 +20,14 @@ The mod (2.20+) downloads [regions.txt](https://thirtyfoxmcx00e1.github.io/wagu/
 Game traffic stays inside one region (no bridging), so ping is only phone -> nearest broker.
 
 
+## MP 3.00: update the 24/7 servers
+
+Rebuild `mp_server` on every region (console menu **7) update**). New in 3.00:
+
+- **Cheat Menu permission.** A custom 24/7 server can let players use Cheat Menu (libCheatMenu.so / libCheatMenu64.so): add `--cheat-menu` to its `mp_server` command line. Without it (the default) those players get "This server doesn't allow cheat menus". The default server ignores the flag: Cheat Menu is never allowed there.
+- Servers before 3.00 never send this permission, so players with Cheat Menu can't stay on them.
+- Hit sound and the coloured Pricedown score bar are client-side (the phone's mod), nothing to change on the server.
+
 ## MP 2.37: update the 24/7 default server
 
 2.37 moves some rules into the server, so rebuild `mp_server` on every region (console menu **7) update**, it pulls the wagu source and runs `install.sh` again):
