@@ -20,6 +20,15 @@ The mod (2.20+) downloads [regions.txt](https://thirtyfoxmcx00e1.github.io/wagu/
 Game traffic stays inside one region (no bridging), so ping is only phone -> nearest broker.
 
 
+## MP 3.01: update the 24/7 servers
+
+Rebuild `mp_server` on every region (console menu **7) update**). New in 3.01 (SA-MP features):
+
+- **Turf wars run on the server.** 24 gang zones (20 in Los Santos, 4 in San Fierro). A gang member who stands in an enemy zone for 60 s takes it; everyone gets "TURF: X took Y from Z!". Owners are kept in `turf.txt` next to `mp_server` (`--turf-file path` to move it, `--no-turf` to switch turf wars off).
+- **Welcome dialog + banner.** `--motd "text"` or `--motd-file motd.txt` shows a SA-MP style dialog on join (`{RRGGBB}` colours, `\n` = new line); `--banner "text"` shows a small textdraw bottom right (site / Discord). The default server has a built-in welcome.
+- **Races / derbies with other players.** The server relays race and derby lobbies, positions and finishes, and the class team of every player.
+- Servers before 3.01 still work with 3.01 phones, but without turf wars, live race positions or welcome dialogs.
+
 ## MP 3.00: update the 24/7 servers
 
 Rebuild `mp_server` on every region (console menu **7) update**). New in 3.00:
