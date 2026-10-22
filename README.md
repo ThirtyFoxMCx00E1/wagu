@@ -20,6 +20,13 @@ The mod (2.20+) downloads [regions.txt](https://thirtyfoxmcx00e1.github.io/wagu/
 Game traffic stays inside one region (no bridging), so ping is only phone -> nearest broker.
 
 
+## MP 3.03: update the 24/7 servers
+
+Rebuild `mp_server` on every region (console menu **7) update**). New in 3.03:
+
+- **Gamemodes.** The default server always has every gamemode. A custom server has none until its owner lists them: `--gamemodes all`, or e.g. `--gamemodes class,turf,race,derby,dm,jobs,labels,icons,actors,bubbles`.
+- **Mission sync** relays the mission's peds / cars (PKT_MISSION_NPC) to the mission group only.
+
 ## MP 3.02: update the 24/7 servers
 
 Rebuild `mp_server` on every region (console menu **7) update**). New in 3.02:
