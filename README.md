@@ -235,3 +235,14 @@ Isang VPS bawat rehiyon (Asia, Europe, NA, Oceania). Sa una: `sudo ./install.sh 
 - logs: `journalctl -u mp-bcw -f`  |  restart: `systemctl restart mp-bcw` (console option 5 restarts it too)
 - a match starts at 20 queued players; for testing with fewer: `BCW_MIN=4 ./install.sh` (or edit `--bcw-min` in `/etc/systemd/system/mp-bcw.service`)
 - don't want it: `RUN_BCW=0 ./install.sh`
+
+## Old MP versions are shut out (MP 3.04.6)
+
+MP 3.04.5 and older let players use cheats. From 3.04.6 on:
+
+- The lobby moved from `thirtyfox/mp4/` to `thirtyfox/mp5/`. The public `mp` login has full access on mp5, but on mp4 it can only **read** the server list and send a join. So old phones can't host anything on these brokers, even though their `broker.txt` / `regions.txt` still has the login.
+- **`mp-legacy.service`** runs `mp_server 1931 --legacy-notice` in the old lobby as **UPDATE MP TO 3.04.6** (bridge login, `server/broker-legacy.txt`). It's the only server old phones can see. Joining it gets refused with the download link.
+- Every server (`mp-server`, `mp-bcw`, `mp-legacy`) refuses old versions and logs them to `/opt/mp/server/outdated_clients.log`: time, name, version range, phone id, IP, port. Console: `o`. Disable the notice with `RUN_LEGACY=0 ./install.sh`.
+- MpBridge copies both lobbies between the regions.
+- **Update every region** (console option 7, or `git pull && sudo ./install.sh --region <Region>`). Until then, 3.04.6 phones can't see that region's 24/7 servers.
+

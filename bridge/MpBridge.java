@@ -13,7 +13,7 @@
 // bridge.conf (one broker per line, # comments):
 //     Asia    = mqtt://bridge:PASSWORD@127.0.0.1:1883
 //     Europe  = mqtts://bridge:PASSWORD@eu.example.com:8883
-//     topic   = thirtyfox/mp4/l/+          (optional, default shown)
+//     topic   = thirtyfox/mp5/l/+,thirtyfox/mp4/l/+   (optional, default shown; comma = several)
 //     expire  = 45                          (seconds without update -> listing removed everywhere)
 //
 // Loop protection: the bridge remembers every message it copied to a broker and drops the copy
@@ -33,7 +33,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 public class MpBridge {
-    static String topicFilter = "thirtyfox/mp4/l/+";
+    static String topicFilter = "thirtyfox/mp5/l/+,thirtyfox/mp4/l/+";   // 3.04.6: mp5 = MP 3.04.6+, mp4 = the old lobby ("UPDATE MP" notice)
     static long expireMs = 45_000;
     static final List<Link> links = new ArrayList<>();
     // token topic -> last state (payload + when a LIVE update was last seen anywhere)
@@ -182,7 +182,7 @@ public class MpBridge {
             byte[] body = readPacket(in, type);
             if ((type[0] >> 4) != 2 || body.length < 2 || body[1] != 0)
                 throw new IOException("broker refused the login (CONNACK " + (body.length >= 2 ? body[1] : -1) + ")");
-            send(subscribePacket(1, topicFilter));
+            { int sid = 1; for (String f : topicFilter.split(",")) if (!f.trim().isEmpty()) send(subscribePacket(sid++, f.trim())); }
             connected = true;
             log(name + ": connected to " + host + ":" + port + (tls ? " (TLS)" : ""));
             // keepalive
