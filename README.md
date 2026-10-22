@@ -227,3 +227,11 @@ Walang computer? Gumawa ng VM sa browser ng phone, i-paste ang `cloud-init/user-
 
 
 Isang VPS bawat rehiyon (Asia, Europe, NA, Oceania). Sa una: `sudo ./install.sh --region Asia --bridge`. Kopyahin ang `/etc/mp-hivemq/mp.env` sa ibang VPS at patakbuhin ang `install.sh` gamit ang rehiyon nila (walang `--bridge`). Ilagay ang address ng bawat server sa `HOST_*` sa `mp.env`, patakbuhin ang `tools/make-regions.sh`, at ilagay ang resulta sa `docs/regions.txt` ng Sa-mp repo. Ang mod na mismo ang pipili ng rehiyon na may pinakamababang ping. Inirerekomenda: 4 vCPU, 4 GB para sa JVM (`-Xms2g -Xmx4g`, kaya 6 GB+ RAM sa buong server), SSD na 900+ IOPS.
+
+## Brief Case War 24/7 (MP 3.04)
+
+`install.sh` also installs **`mp-bcw.service`**: the region's 24/7 "Brief Case War" gamemode server on **UDP 1930** (20 players, 10 vs 10, cheats off, CheatMenu refused). It is pinned in the in-game Internet list with a red banner, even at 0/20.
+
+- logs: `journalctl -u mp-bcw -f`  |  restart: `systemctl restart mp-bcw` (console option 5 restarts it too)
+- a match starts at 20 queued players; for testing with fewer: `BCW_MIN=4 ./install.sh` (or edit `--bcw-min` in `/etc/systemd/system/mp-bcw.service`)
+- don't want it: `RUN_BCW=0 ./install.sh`

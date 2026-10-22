@@ -13,6 +13,7 @@ header() {
     line
     printf '  HiveMQ broker   %s   MQTT clients: %s\n' "$(svc hivemq)" "$(conns)"
     printf '  24/7 server     %s   UDP %s, %s slots\n' "$(svc mp-server)" "${SERVER_PORT:-1922}" "${MAX_PLAYERS:-100}"
+    printf '  Brief Case War  %s   UDP 1930, 20 slots\n' "$(svc mp-bcw)"
     printf '  region bridge   %s\n' "$(svc mp-bridge)"
     printf '  status beacon   %s\n' "$(svc mp-status)"
     printf '  uptime          %s   load %s\n' "$(uptime -p 2>/dev/null)" "$(cut -d' ' -f1-3 /proc/loadavg)"
@@ -33,8 +34,8 @@ while true; do
         2) echo "(Ctrl+C to go back)"; journalctl -u mp-server -f -n 40 ;;
         3) /opt/mp/console/status.sh | less -R ;;
         4) systemctl restart hivemq && echo restarted; sleep 2 ;;
-        5) systemctl restart mp-server && echo restarted; sleep 2 ;;
-        6) systemctl restart hivemq mp-server mp-status; systemctl is-enabled -q mp-bridge 2>/dev/null && systemctl restart mp-bridge; echo restarted; sleep 2 ;;
+        5) systemctl restart mp-server mp-bcw && echo restarted; sleep 2 ;;
+        6) systemctl restart hivemq mp-server mp-bcw mp-status; systemctl is-enabled -q mp-bridge 2>/dev/null && systemctl restart mp-bridge; echo restarted; sleep 2 ;;
         7) cd /opt/mp/kit && git pull -q && ./install.sh --region "${REGION:-Asia}"; read -r -p "  enter to continue" _ ;;
         8) /opt/mp/kit/tools/make-regions.sh; read -r -p "  enter to continue" _ ;;
         9) echo "type exit to come back"; bash -l ;;
