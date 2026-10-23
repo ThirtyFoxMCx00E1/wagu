@@ -51,6 +51,7 @@ public:
     virtual void OnTextDraw(const PktTextDraw&) {}
     virtual void OnBcw(const uint8_t* /*data*/, int /*len*/) {}   // 3.04: PKT_BCW_STATE / ROLL / SCORE / EVENT
     virtual void OnClothes(const PktClothes&) {}                  // 3.10: CJ clothing sync
+    virtual void OnVoice(int /*id*/, uint16_t /*seq*/, uint8_t /*flags*/, const uint8_t* /*opus*/, int /*len*/) {}   // 3.11
 };
 
 class MPClient
@@ -68,6 +69,12 @@ public:
     void SetJoinPassword(const char* pw) { MP_CopyStr(m_szPassword, pw ? pw : "", sizeof(m_szPassword)); }   // 2.19: before Connect
     void SetUid(const char* uid) { MP_CopyStr(m_szUid, uid ? uid : "", sizeof(m_szUid)); }   // 2.25: this phone's id
     void SetAdminKey(const char* k) { MP_CopyStr(m_szAdminKey, k ? k : "", sizeof(m_szAdminKey)); }   // 2.37: only for the reserved name SENJI
+    // 3.11: direct UDP to a 24/7 server (its public address, found by Online's probe) instead of
+    // the MQTT relay: one UDP hop, no TCP, no batching. Call right before Connect(); if the server
+    // doesn't answer within 2.5 s the client switches to the relay proxy (fallbackVia) by itself.
+    void SetDirect(uint32_t ipNetOrder, uint16_t fallbackVia) { m_nDirectIp = ipNetOrder; m_nDirectVia = fallbackVia; }
+    bool IsDirect() const { return m_bDirect; }
+    bool DirectFellBack() const { return m_bDirectFellBack; }
     void Disconnect(bool sendLeave = true);
     void Poll(INetEvents* ev);           // call every frame from the game thread
     void Send(const void* data, int len);
@@ -104,4 +111,7 @@ private:
     uint16_t    m_nPort, m_nSkin;
     uint32_t    m_nColor = 0;
     uint64_t    m_nConnectStart, m_nLastJoinSend, m_nLastPing, m_nLastRecv;
+    uint32_t    m_nDirectIp = 0;          // 3.11
+    uint16_t    m_nDirectVia = 0, m_nFallbackVia = 0;
+    bool        m_bDirect = false, m_bDirectFellBack = false, m_bGotReply = false;
 };

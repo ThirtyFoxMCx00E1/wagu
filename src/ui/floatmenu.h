@@ -16,6 +16,8 @@ namespace FloatMenu
     // 2.19 TopbarPlus: the ⋮ pill (dropdown: Help / Server / Player list) and its pages
     enum { PAGE_SERVER = 0, PAGE_PLAYERS, PAGE_HELP, PAGE_COUNT };
     void AddDotsButton();
+    bool BarBottom(float* centreX, float* y);   // 3.11: just under the top bar (false = bar hidden)
+    void AddMicButton(MPMenuSectionFn onTap, int (*state)());   // 3.11: voice chat pill after [Chat]
     void SetPage(int page, MPMenuSectionFn fn, void* data = nullptr);   // fn gets bool* open, draws its own window
     void OpenPage(int page);
     void ClosePage(int page);

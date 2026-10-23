@@ -191,7 +191,7 @@
   setInterval(measure, 60000);
 
   // 3.04.6: version history (versions.json is made from the README changelog).
-  // 3.10: every version in "supported" (3.10 + 3.04.6, they play together) gets a download button;
+  // 3.10 / 3.11: every version in "supported" (3.11 + 3.10 + 3.04.6, they play together) gets a download button;
   // older ones allowed cheats and every server refuses them.
   function md(t) {
     return esc(t).replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>').replace(/`([^`]+)`/g, '<code>$1</code>');

@@ -507,7 +507,7 @@ static void PagePlayers(void* openPtr)
         ImGui::TextUnformatted(pl);
     }
     ImGui::Separator();
-    float bottom = UI::S(160);
+    float bottom = UI::S(236);
     ImGui::BeginChild("##sb", ImVec2(0, -bottom), false);
     const float rowH = UI::S(54);
     float W = ImGui::GetContentRegionAvail().x;
@@ -542,6 +542,11 @@ static void PagePlayers(void* openPtr)
         ImU32 nc = UI::FromRGBA((i == myId ? myColor : p.color) | 0xFF);
         if(sel) nc = IM_COL32_WHITE;
         UI::NameText(dl, ImGui::GetFontSize(), ImVec2(a.x + cName, ty), nc, nm.c_str(), 1.0f, false);   // 2.37: [ADMIN] SENJI animated
+        {   // 3.11: voice icon left of the score: speaker = talking now, speaker + red X = muted by you
+            ImVec2 vc(a.x + cScore - UI::S(34), a.y + rowH * 0.5f);
+            if(i != myId && MP::VoiceMuted(i)) UI::DrawSpeaker(dl, vc, UI::S(13), IM_COL32(230, 230, 230, 255), 0, true);
+            else if(i == myId ? MP::MeTalking() : MP::VoiceSpeaking(i)) UI::DrawSpeaker(dl, vc, UI::S(13), IM_COL32_WHITE, 2, false);
+        }
         snprintf(buf, sizeof(buf), "%d", i == myId ? s_nMyScore : p.score);
         dl->AddText(ImVec2(a.x + cScore, ty), IM_COL32_WHITE, buf);
         int ping = i == myId ? MP::DisplayPing() : p.ping;
@@ -576,6 +581,17 @@ static void PagePlayers(void* openPtr)
         if(!armed) ImGui::BeginDisabled();
         if(ImGui::Button(bl, ImVec2(w3, UI::S(68))) && armed) { if(s_nBehindId == i) BehindCancel(nullptr); else BehindStart(i); }
         if(!armed) ImGui::EndDisabled();
+        {   // 3.11: mute / unmute this player's voice (only for you), red X icon while muted
+            bool muted = MP::VoiceMuted(i);
+            ImGui::PushStyleColor(ImGuiCol_Button, muted ? ImVec4(0.70f, 0.12f, 0.12f, 0.95f) : ImVec4(0.18f, 0.18f, 0.18f, 0.95f));
+            ImVec2 bp = ImGui::GetCursorScreenPos();
+            float bw = ImGui::GetContentRegionAvail().x, bh = UI::S(64);
+            if(ImGui::Button(muted ? "      Unmute voice##vm" : "      Mute voice##vm", ImVec2(bw, bh))) VoiceToggleMute(i);
+            ImGui::PopStyleColor();
+            ImVec2 tsz = ImGui::CalcTextSize(muted ? "      Unmute voice" : "      Mute voice");
+            ImVec2 ic(bp.x + (bw - tsz.x) * 0.5f + UI::S(20), bp.y + bh * 0.5f);
+            UI::DrawSpeaker(ImGui::GetWindowDrawList(), ic, UI::S(15), IM_COL32_WHITE, muted ? 0 : 2, muted);
+        }
     }
     else if(IsConnected())
     {

@@ -49,6 +49,9 @@ namespace Online
     void SetHostStart(uint32_t unixStart);   // 2.27: listing "proto:icon@start:language"   // 2.25: language shown in everyone's server list        // 2.24: 0 = default icon, 1..250 = icon_N.png (sent with the listing)
 
     bool IsRelayIp(const char* ip);    // 127.77.x.y
+    // 3.11: the 24/7 server behind this relay address answers over direct UDP (ipNet, measured rtt)
+    bool DirectAddr(const char* relayIp, uint16_t port, uint32_t* ipNet, int* rttMs);
+    void DirectFailed(const char* relayIp);   // a direct join / session failed: relay for 10 min
     // Must be called before MPClient::Connect(relayIp, port, ..., localPort): the client then
     // sends to 127.0.0.1:localPort (the proxy) while the game logic still sees relayIp:port.
     bool OpenProxy(const char* relayIp, uint16_t port, uint16_t* localPort);
