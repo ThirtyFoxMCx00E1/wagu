@@ -13,9 +13,9 @@
 // phones refuse servers older than that too (they would let old phones in).
 // 3.10: build 31000. MP_MIN_BUILD stays 30406 and the lobby stays thirtyfox/mp5/: 3.04.6 (no cheats)
 // and 3.10 phones play together on the same servers; only 3.04.5 and older (mp4) stay shut out.
-#define MP_BUILD           31100   // 3.11
+#define MP_BUILD           31101   // 3.11.1
 #define MP_MIN_BUILD       30406
-#define MP_VERSION_STR     "3.11"
+#define MP_VERSION_STR     "3.11.1"
 #define MP_VOICE_BUILD     31100   // 3.11: phones from this build on get voice packets
 #define MP_DOWNLOAD_URL    "thirtyfoxmcx00e1.github.io/wagu"
 #define MP_DEFAULT_HOST    "127.0.0.1"
@@ -568,6 +568,7 @@ struct PktClothes
 #define MP_AD_INTERVAL_MS  ((45ull * 60ull + 20ull) * 1000ull)
 #define MP_AD_TEXT         "Join our discord server for more updates & info! https://discord.gg/ZqgXKYhNmv"
 #define MP_VOICE_MAX_BYTES 400
+#define MP_VOICE_HELPER_PORT 19228   // 3.11.1: MP Voice app on 127.0.0.1
 enum eVoiceFlags : uint8_t { VOICE_END = 1 };   // last frame of a talk spurt (mic off)
 struct PktVoiceHdr { uint8_t type; uint8_t id; uint16_t seq; uint8_t flags; uint8_t pad; uint16_t len; };   // + len bytes of Opus (packed: sizeof 8)
 

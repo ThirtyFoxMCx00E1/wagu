@@ -961,6 +961,9 @@ static void VoiceToggleMute(int id)
     else { s_VoiceMuted.insert(n); Voice::ResetSpeaker(id); SysMsg(COL_SYSTEM, "*** Voice of %s muted (only for you).", n.c_str()); }
 }
 static bool s_bVoiceMuteAll = false, s_bVoicePanel = false;
+static bool s_bMicAsked = false, s_bHelperOpened = false, s_bHelperWarned = false;   // 3.11.1
+static uint64_t s_nHelperWaitAt = 0;
+static int s_nHelperPrevState = 0;
 static float VoiceDistanceGain(float d) { return Voice::DistanceGain(d, MP_VOICE_RANGE); }
 static void VoiceSend(const void* pkt, int len) { if(client.GetState() == NET_CONNECTED) client.Send(pkt, len); }   // audio thread
 static bool s_bVoiceInit = false;
@@ -979,14 +982,16 @@ static void VoiceMicTap(void*)
     if(!Voice::Available()) { SysMsg(COL_RED, "Voice chat is not available on this phone (%s).", Voice::LastError()); return; }
     if(!settings.voiceChat) { settings.voiceChat = true; SaveConfig(); }
     int perm = Voice::MicPermission();
-    if(perm == Voice::PERM_NOT_IN_APK)
+    if(perm == Voice::PERM_ASK && !s_bMicAsked) { s_bMicAsked = true; Voice::RequestMicPermission(); SysMsg(COL_YELLOW, "Allow the microphone, then tap the mic again."); return; }
+    // 3.11.1: no microphone for the game (the APK doesn't ask for it, it can't be allowed in Settings)
+    // -> the MP Voice app records for us. It is opened automatically if it isn't running yet.
+    if(!Voice::StartMic(myId)) { SysMsg(COL_RED, "Could not turn on the microphone: %s.", Voice::LastError()); return; }
+    if(Voice::UsingHelper())
     {
-        SysMsg(COL_RED, "Your GTA SA APK has no microphone permission. Add android.permission.RECORD_AUDIO to its AndroidManifest.xml, reinstall, then tap the mic again.");
-        SysMsg(COL_SYSTEM, "You can still hear the others.");
+        s_nHelperWaitAt = MP_NowMs(); s_bHelperOpened = false; s_bHelperWarned = false;
+        SysMsg(COL_SYSTEM, "*** Your GTA SA app can't use the microphone, so the MP Voice app does it for you...");
         return;
     }
-    if(perm != Voice::PERM_GRANTED) { Voice::RequestMicPermission(); SysMsg(COL_YELLOW, "Allow the microphone, then tap the mic again."); return; }
-    if(!Voice::StartMic(myId)) { SysMsg(COL_RED, "Could not turn on the microphone: %s.", Voice::LastError()); return; }
     SysMsg(COL_GREEN, "*** Microphone on: players near you hear you (louder up close, nothing past %d m).", (int)MP_VOICE_RANGE);
 }
 static void ProcessVoice()
@@ -1000,6 +1005,23 @@ static void ProcessVoice()
     Voice::SetVolume(settings.voiceVolume);
     Voice::SetMicGain(settings.micGain);
     Voice::SetPitch(settings.voicePitch);
+    if(Voice::UsingHelper())   // 3.11.1: MP Voice helper app
+    {
+        int hs = Voice::HelperState();
+        uint64_t now = MP_NowMs();
+        if(hs == 2 && s_nHelperPrevState != 2) SysMsg(COL_GREEN, "*** Microphone on (MP Voice): players near you hear you (louder up close, nothing past %d m).", (int)MP_VOICE_RANGE);
+        if(hs == 1 && s_nHelperPrevState == 2) SysMsg(COL_YELLOW, "MP Voice stopped sending your voice. Open MP Voice and tap Start microphone.");
+        if(hs == 1 && !s_bHelperOpened && now - s_nHelperWaitAt > 1500) { s_bHelperOpened = true; Voice::OpenHelperApp(); }   // not running: open it
+        if(hs == 1 && s_bHelperOpened && !s_bHelperWarned && Voice::OpenHelperResult() == 2)
+        {
+            s_bHelperWarned = true;
+            SysMsg(COL_RED, "Install the MP Voice app (MP-Voice.apk in the MP package / on the MP website), open it once, tap Start microphone, then tap the mic here again.");
+            SysMsg(COL_SYSTEM, "You can still hear the others without it.");
+            Voice::StopMic();
+        }
+        s_nHelperPrevState = hs;
+    }
+    else s_nHelperPrevState = 0;
     if(!Voice::MicOn() && Voice::Monitor()) Voice::SetMonitor(false);
     // distance volume: full up to 8 m, silent at MP_VOICE_RANGE
     int lp = Game::LocalPed(); Vec3 me; bool haveMe = lp > 0 && Game::GetCharPos(lp, me);
@@ -5134,6 +5156,16 @@ static void RenderVoicePanel(void*)
             ImGui::GetWindowDrawList()->AddRectFilled(a, ImVec2(a.x + bw * lv, a.y + UI::S(10)), Voice::MicTalking() ? IM_COL32(60, 220, 90, 255) : IM_COL32(200, 200, 200, 200), UI::S(4));
             ImGui::Dummy(ImVec2(bw, UI::S(12)));
             ImGui::TextDisabled(Voice::MicTalking() ? "Sending your voice..." : "Listening - talk and the bar turns green.");
+            if(Voice::UsingHelper())
+            {
+                int hs = Voice::HelperState();
+                if(hs == 2) ImGui::TextColored(ImVec4(0.4f, 0.9f, 0.5f, 1), "Microphone: MP Voice app (working)");
+                else
+                {
+                    ImGui::TextColored(ImVec4(1, 0.85f, 0.3f, 1), "Waiting for the MP Voice app...");
+                    if(FloatMenu::BigButton("Open MP Voice")) { s_bHelperOpened = true; s_bHelperWarned = false; Voice::OpenHelperApp(); }
+                }
+            }
         }
     }
     ImGui::Separator();

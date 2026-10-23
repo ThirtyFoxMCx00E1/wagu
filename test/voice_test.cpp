@@ -14,6 +14,11 @@
 #include <chrono>
 #include <thread>
 #include <stdint.h>
+#include <atomic>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
 VoiceTestAml* aml = new VoiceTestAml(); VoiceTestLog* logger = new VoiceTestLog();
 // OpenSL interface ids (only referenced, never used on the PC)
 static SLInterfaceID_ dummy;
@@ -21,7 +26,7 @@ const SLInterfaceID SL_IID_ANDROIDSIMPLEBUFFERQUEUE = &dummy, SL_IID_ANDROIDCONF
 namespace Sound { void* EngineItf() { return nullptr; } void* OutputMix() { return nullptr; } }
 #include <sys/time.h>
 uint64_t MP_NowMs() { timeval tv; gettimeofday(&tv, nullptr); return (uint64_t)tv.tv_sec * 1000 + tv.tv_usec / 1000; }
-namespace Voice { void TestInit(); void TestMix(int16_t*); int TestQueued(int); bool TestPlaying(int); void TestPitch(int16_t*, int, float, int); }
+namespace Voice { void TestInit(Voice::SendFn); void TestMix(int16_t*); int TestQueued(int); bool TestPlaying(int); void TestPitch(int16_t*, int, float, int); }
 
 static int fails = 0;
 #define CHECK(c, m) do { if(c) printf("PASS  %s\n", m); else { printf("FAIL  %s\n", m); ++fails; } } while(0)
@@ -30,7 +35,8 @@ static double Rms(const int16_t* p, int n) { double s = 0; for(int i = 0; i < n;
 
 int main()
 {
-    Voice::TestInit();
+    static std::atomic<int> sent{0}; static std::atomic<int> talkSent{0};
+    Voice::TestInit([](const void* p, int n) { const PktVoiceHdr* h = (const PktVoiceHdr*)p; if(n >= (int)sizeof(PktVoiceHdr) && h->type == PKT_VOICE) { ++sent; if(h->len > 2) ++talkSent; } });
     int err = 0;
     OpusEncoder* enc = opus_encoder_create(48000, 1, OPUS_APPLICATION_VOIP, &err);
     CHECK(enc && !err, "Opus 1.6.1 encoder (48 kHz mono VOIP)");
@@ -131,6 +137,38 @@ int main()
         double bestF = sumPF / sumP;
         char m[96]; snprintf(m, sizeof(m), "pitch x%.2f: 300 Hz -> %.0f Hz (want %.0f)", ratio, bestF, 300 * ratio);
         CHECK(fabs(bestF - 300 * ratio) <= 300 * ratio * 0.03, m);
+    }
+    // 10) 3.11.1 MP Voice helper app: no mic permission -> frames from 127.0.0.1:19228 are encoded + sent
+    {
+        int fd = socket(AF_INET, SOCK_DGRAM, 0);
+        int one = 1; setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
+        sockaddr_in a{}; a.sin_family = AF_INET; a.sin_addr.s_addr = htonl(0x7f000001); a.sin_port = htons(MP_VOICE_HELPER_PORT);
+        CHECK(bind(fd, (sockaddr*)&a, sizeof(a)) == 0, "fake MP Voice app listening on 127.0.0.1:19228");
+        timeval tv{2, 0}; setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+        sent = 0; talkSent = 0;
+        bool on = Voice::StartMic(5);
+        CHECK(on && Voice::UsingHelper() && Voice::HelperState() == 1, "mic on without permission -> waits for MP Voice");
+        uint8_t hb[16]; sockaddr_in game{}; socklen_t gl = sizeof(game);
+        int r = recvfrom(fd, hb, sizeof(hb), 0, (sockaddr*)&game, &gl);
+        CHECK(r == 5 && !memcmp(hb, "MPVH", 4) && hb[4] == 1, "game says hello (MPVH + 1) to MP Voice");
+        uint8_t fr[8 + 1920]; memcpy(fr, "MPVF", 4); fr[6] = (uint8_t)(4800 & 0xFF); fr[7] = (uint8_t)(4800 >> 8);
+        double ph = 0;
+        for(int f = 0; f < 40; ++f)
+        {
+            fr[4] = (uint8_t)f; fr[5] = 0;
+            for(int i = 0; i < 960; ++i, ph += 2 * M_PI * 250 / 48000) { int16_t v = (int16_t)(9000 * sin(ph)); fr[8 + i * 2] = (uint8_t)v; fr[9 + i * 2] = (uint8_t)(v >> 8); }
+            sendto(fd, fr, sizeof(fr), 0, (sockaddr*)&game, gl);
+            Sleep(20);
+        }
+        Sleep(100);
+        printf("      MP Voice frames in: 40, voice packets out: %d (speech %d)\n", sent.load(), talkSent.load());
+        CHECK(Voice::HelperState() == 2, "voice arriving from MP Voice");
+        CHECK(talkSent >= 35, "every 20 ms helper frame is encoded and sent at once");
+        Voice::StopMic();
+        bool gotOff = false;
+        for(int k = 0; k < 5 && !gotOff; ++k) { r = recvfrom(fd, hb, sizeof(hb), 0, nullptr, nullptr); if(r == 5 && !memcmp(hb, "MPVH", 4) && hb[4] == 0) gotOff = true; }
+        CHECK(gotOff && !Voice::MicOn(), "mic off -> tells MP Voice to release the microphone");
+        close(fd);
     }
     opus_encoder_destroy(enc);
     printf(fails ? "\n%d FAILED\n" : "\nALL PASSED\n", fails);

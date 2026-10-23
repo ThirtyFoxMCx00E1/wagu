@@ -1,11 +1,22 @@
 {
-"latest": "3.11",
+"latest": "3.11.1",
 "supported": [
+"3.11.1",
 "3.11",
 "3.10",
 "3.04.6"
 ],
 "versions": [
+{
+"v": "3.11.1",
+"summary": "voice chat works on GTA SA apps without microphone permission. 3.11, 3.10 and 3.04.6 still play together.",
+"items": [
+"Many GTA SA APKs don't list `android.permission.RECORD_AUDIO`. Android then blocks the microphone for the game, and it can't be allowed in Settings (the \"Music and audio\" permission is for audio files, not the mic). 3.11.1 notices this and uses the small **MP Voice** app (`release/MP-Voice.apk`, 17 KB, package `com.thirtyfox.mpvoice`), which has the microphone permission.",
+"Install MP-Voice.apk once. In the game, tap the mic button, then turn the microphone on. The mod opens MP Voice by itself; MP Voice asks for the microphone the first time, turns it on and goes straight back to GTA SA. The notification \"MP Voice microphone is on\" shows while it runs, and it has a Stop button.",
+"How it works: while your mic is on in the game, the mod tells MP Voice (`127.0.0.1:19228`, this phone only) every second. MP Voice records 48 kHz mono with echo cancellation and noise suppression, and sends every 20 ms frame straight back to the game. The game then compresses it with Opus and sends it like normal voice. When you turn the mic off in the game (or after 3 s without the game), MP Voice releases the microphone.",
+"If the APK does have the permission, the game still uses the microphone directly, as in 3.11."
+]
+},
 {
 "v": "3.11",
 "summary": "voice chat, chat timestamps, lower ping on the 24/7 servers, Discord message. **3.10 and 3.04.6 still work**: all three play together on the same servers and lobby (`thirtyfox/mp5/`).",
@@ -15,7 +26,7 @@
 "**Who is talking.** A white speaker icon appears over a player's name tag while they talk and disappears as soon as they stop. The left side of the screen lists who is talking, like SA-MP mobile (`speaker Name (id)`).",
 "**Mute a player.** Player list > tap a player > **Mute voice** (red X icon). Only you stop hearing them; it lasts until you restart the game. Players muted by the admin can't use voice either.",
 "**How it works.** The microphone records 48 kHz mono with the phone's voice-call echo cancellation and noise suppression, and each 20 ms piece is compressed with Opus 1.6.1 (24 kbit/s, with packet-loss protection). It is sent the moment it is recorded, with no batching and no waiting for the game frame. Only speech is sent, so an open mic in a quiet room costs nothing. Each speaker has a small buffer that starts after 40 ms and never holds more than 100 ms, so the delay can't build up. On top of the network ping, voice adds about 100 ms. Lost pieces are rebuilt from the next one (Opus FEC) or covered over.",
-"**Microphone permission.** Android asks for the microphone the first time you turn the mic on. If your GTA SA APK has no `android.permission.RECORD_AUDIO` in its `AndroidManifest.xml`, the mod says so: add it (APK Editor), reinstall, and try again. You can always hear the others, even without the permission.",
+"**Microphone permission.** Android asks for the microphone the first time you turn the mic on. If your GTA SA APK can't use the microphone, see 3.11.1 (MP Voice app). You can always hear the others.",
 "**Chat timestamps.** Settings > Chat > **Chat timestamps [HH:MM:SS]** puts the time each line arrived in front of it, like SA-MP (`[18:02:48] Name: hi`). It is off until you turn it on and also works on lines that are already in the chat.",
 "**Lower ping on the 24/7 servers (real, not a smoothed number).** Over mobile data every packet used to travel phone -> MQTT broker (TCP) -> server and back, batched every 25 ms. That path, plus TCP stalling on any lost packet, is where the 200-500 ms came from. A 24/7 server installed with the HiveMQ kit runs on the same machine as its region's broker, so the mod now asks that machine directly over UDP every 15 s. If the same server answers (same name and start time), the mod connects straight to it: one UDP hop each way, no TCP, no batching. The server list then shows that real, measured ping. If UDP is blocked on your network (no answer within 2.5 s), the mod falls back to the relay by itself. The server must have its UDP game ports (1922, and 1930 for Brief Case War) open to the internet; see the HiveMQ kit.",
 "**Relay (phone-hosted servers).** Our own regional brokers now batch for 10 ms instead of 25 ms, and voice skips the batch entirely. HiveMQ runs on Generational ZGC (GC pauses under 1 ms instead of up to 20 ms), and the kernel no longer drops back to TCP slow start after a short pause (`tcp_slow_start_after_idle=0`), which caused spikes after a quiet moment.",
