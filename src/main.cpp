@@ -10,6 +10,10 @@
 #include <mutex>
 #include <atomic>
 #include <vector>
+#include <exception>
+#include <stdlib.h>
+#include <stdio.h>
+#include <unistd.h>
 #include "mp.h"
 #include "game/game.h"
 #include "game/scriptguard.h"
@@ -281,8 +285,27 @@ extern "C" void OnModPreLoad()
     RegisterInterface("MPMenu", FloatMenu::GetInterface());
 }
 
+// 3.11.4: crash on closing the game. exit() destroys every library's global objects (mutexes, maps...)
+// while background threads of the 60+ loaded mods (and ours: network, voice) are still running; a
+// thread then locks a destroyed mutex and bionic aborts (SIGABRT on a background thread, "game
+// closed by something?"). The process is ending anyway: end it right here, before any destructor.
+static void MP_QuickExit()
+{
+    if(logger) logger->Info("MP: game closing - quick exit (no exit-time crash)");
+    fflush(nullptr);
+    _exit(0);
+}
+static void MP_Terminate()   // an uncaught C++ exception in MP: say so in the log before aborting
+{
+    if(logger) logger->Error("MP: std::terminate (uncaught exception) - please send this log");
+    fflush(nullptr);
+    abort();
+}
+
 extern "C" void OnModLoad()
 {
+    atexit(MP_QuickExit);          // registered last = runs first, before the static destructors
+    std::set_terminate(MP_Terminate);
     pGameLib = aml->GetLib("libGTASA.so");
     pGameHandle = aml->GetLibHandle("libGTASA.so");
     if(!pGameLib || !pGameHandle) { logger->Error("libGTASA.so not found - MP disabled"); return; }

@@ -1,6 +1,7 @@
 {
-"latest": "3.11.3",
+"latest": "3.11.4",
 "supported": [
+"3.11.4",
 "3.11.3",
 "3.11.2",
 "3.11.1",
@@ -9,6 +10,14 @@
 "3.04.6"
 ],
 "versions": [
+{
+"v": "3.11.4",
+"summary": "no crash when the game closes.",
+"items": [
+"A crash report (Samsung A02, Android 11, 32-bit, 66 mods, MP 3.04.6) showed SIGABRT on a background thread while the game was closing. The aborting code was not MP's: none of the crash addresses match the MP library at any load address. But this crash type is typical of `exit()`: every library's global objects are destroyed while other mods' background threads (and MP's network and voice threads) are still running, and a thread that touches a destroyed mutex makes Android abort.",
+"When the game closes, MP now ends the process at once, before any of those objects are destroyed, so this exit-time crash can't happen for any mod. If MP itself ever hits an uncaught C++ error, the AML log now says so before the crash report."
+]
+},
 {
 "v": "3.11.3",
 "summary": "clearer message when a server refuses SENJI, plus old and new admin keys in one admin.txt.",

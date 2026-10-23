@@ -46,6 +46,9 @@ It builds `mp_server` on the phone and runs it 24/7 in the internet lobby (free 
 
 ## Changelog
 
+- **3.11.4**: no crash when the game closes.
+  - A crash report (Samsung A02, Android 11, 32-bit, 66 mods, MP 3.04.6) showed SIGABRT on a background thread while the game was closing. The aborting code was not MP's: none of the crash addresses match the MP library at any load address. But this crash type is typical of `exit()`: every library's global objects are destroyed while other mods' background threads (and MP's network and voice threads) are still running, and a thread that touches a destroyed mutex makes Android abort.
+  - When the game closes, MP now ends the process at once, before any of those objects are destroyed, so this exit-time crash can't happen for any mod. If MP itself ever hits an uncaught C++ error, the AML log now says so before the crash report.
 - **3.11.3**: clearer message when a server refuses SENJI, plus old and new admin keys in one admin.txt.
   - If your admin.txt is valid but a server still refuses SENJI, the problem is not your phone. That **server program** runs an MP older than 3.10 and only knows the old admin key; servers on 3.10 or newer always accept both keys. The message now says this plainly and how to fix it (your 24/7 servers: Termius > console > **7) update**).
   - admin.txt can hold several keys, one per line (for example your old key and the new one). The mod tries the first key, and if a server refuses it, it retries the same server with the next key by itself.
