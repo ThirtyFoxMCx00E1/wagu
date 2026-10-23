@@ -236,6 +236,12 @@ Isang VPS bawat rehiyon (Asia, Europe, NA, Oceania). Sa una: `sudo ./install.sh 
 - a match starts at 20 queued players; for testing with fewer: `BCW_MIN=4 ./install.sh` (or edit `--bcw-min` in `/etc/systemd/system/mp-bcw.service`)
 - don't want it: `RUN_BCW=0 ./install.sh`
 
+## MP 3.10
+
+- 3.10 keeps the `thirtyfox/mp5/` lobby and lets **3.04.6 and 3.10 phones play together**. Nothing changes in the topic rules; only 3.04.5 and older stay shut out.
+- Update the 24/7 servers (console option 7, or `git pull && sudo ./install.sh --region <Region>`): the rebuilt `mp_server` relays the new clothing sync, keeps the default server at 100 slots and accepts the new admin key.
+- Java 21 for x86_64 now comes from the wagu release **Assets-1-2** (`OpenJDK21U-jdk_x64_linux_hotspot_21.0.13_9.tar.gz`). If that download fails, Eclipse Temurin 21 is used instead.
+
 ## Old MP versions are shut out (MP 3.04.6)
 
 MP 3.04.5 and older let players use cheats. From 3.04.6 on:

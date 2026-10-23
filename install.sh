@@ -22,7 +22,8 @@ HIVEMQ_URL="https://github.com/hivemq/hivemq-community-edition/releases/download
 RBAC_VER="4.6.18"
 RBAC_URL="https://github.com/hivemq/hivemq-file-rbac-extension/releases/download/${RBAC_VER}/hivemq-file-rbac-extension-${RBAC_VER}.zip"
 RBAC_SHA256="4089d09e5d2b6621a07aa86032230dce5aefbcc37130ef5c714fb6fa7185e3e6"
-JDK_X64_URL="https://github.com/ThirtyFoxMCx00E1/wagu/releases/download/Assets-2/OpenJDK21U-jdk_x64_linux_hotspot_21.0.12.1_1.tar.gz"
+JDK_X64_URL="https://github.com/ThirtyFoxMCx00E1/wagu/releases/download/Assets-1-2/OpenJDK21U-jdk_x64_linux_hotspot_21.0.13_9.tar.gz"   # 3.10: wagu release "HiveMQ + OpenJDK Java 21"
+JDK_X64_FALLBACK="https://api.adoptium.net/v3/binary/latest/21/ga/linux/x64/jdk/hotspot/normal/eclipse"
 JDK_ARM_URL="https://api.adoptium.net/v3/binary/latest/21/ga/linux/aarch64/jdk/hotspot/normal/eclipse"
 MOD_REPO="https://github.com/ThirtyFoxMCx00E1/wagu.git"
 
@@ -146,7 +147,7 @@ if [ ! -x "$JAVA_HOME/bin/java" ]; then
     say "installing Java 21 ($ARCH)"
     tmp="$(mktemp -d)"
     case "$ARCH" in
-        x86_64|amd64)  curl -fL --retry 3 -o "$tmp/jdk.tar.gz" "$JDK_X64_URL";;
+        x86_64|amd64)  curl -fL --retry 3 -o "$tmp/jdk.tar.gz" "$JDK_X64_URL" || { warn "wagu JDK download failed - using Eclipse Temurin 21"; curl -fL --retry 3 -o "$tmp/jdk.tar.gz" "$JDK_X64_FALLBACK"; };;
         aarch64|arm64) curl -fL --retry 3 -o "$tmp/jdk.tar.gz" "$JDK_ARM_URL";;
         *) die "unsupported CPU $ARCH (need x86_64 or arm64)";;
     esac
