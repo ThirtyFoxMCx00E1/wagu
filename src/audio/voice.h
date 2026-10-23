@@ -23,7 +23,12 @@ namespace Voice
     enum ePerm { PERM_GRANTED = 0, PERM_ASK = 1, PERM_NOT_IN_APK = 2, PERM_UNKNOWN = 3 };
     int   MicPermission();                  // ePerm
     void  RequestMicPermission();           // shows Android's "Allow microphone?" dialog
-    bool  StartMic(uint8_t myId);           // false = no permission / recorder failed
+    bool  StartMic(uint8_t myId);           // false = recorder failed. No permission -> MP Voice helper app
+    // 3.11.1: MP Voice helper app (com.thirtyfox.mpvoice) for GTA SA APKs without RECORD_AUDIO
+    bool  UsingHelper();
+    int   HelperState();                    // 0 not used, 1 waiting for MP Voice, 2 getting your voice
+    void  OpenHelperApp();                  // opens MP Voice (it turns its mic on and comes back)
+    int   OpenHelperResult();               // 0 pending, 1 opened, 2 not installed
     void  StopMic();
     bool  MicOn();
     bool  MicTalking();                     // mic on and you are talking right now
