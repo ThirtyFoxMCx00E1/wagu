@@ -1,6 +1,7 @@
 {
-"latest": "3.11.2",
+"latest": "3.11.3",
 "supported": [
+"3.11.3",
 "3.11.2",
 "3.11.1",
 "3.11",
@@ -8,6 +9,14 @@
 "3.04.6"
 ],
 "versions": [
+{
+"v": "3.11.3",
+"summary": "clearer message when a server refuses SENJI, plus old and new admin keys in one admin.txt.",
+"items": [
+"If your admin.txt is valid but a server still refuses SENJI, the problem is not your phone. That **server program** runs an MP older than 3.10 and only knows the old admin key; servers on 3.10 or newer always accept both keys. The message now says this plainly and how to fix it (your 24/7 servers: Termius > console > **7) update**).",
+"admin.txt can hold several keys, one per line (for example your old key and the new one). The mod tries the first key, and if a server refuses it, it retries the same server with the next key by itself."
+]
+},
 {
 "v": "3.11.2",
 "summary": "SENJI can join again with admin.txt. 3.11.1, 3.11, 3.10 and 3.04.6 still play together.",
