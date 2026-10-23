@@ -55,6 +55,7 @@ bool Game::Init(void* h)
     InitNetState217(h);   // 2.17: shots, car state, aim, interiors, map + mission markers
     InitNpcGame(h);       // 2.18: NPC sync
     InitGame219(h);       // 2.19: camera, cheats, jetpack, joystick
+    InitFileGuard(h);     // 3.11.5
     InitSkins(h);         // 2.19.6: player model sync + story characters
     SET_TO(CalcScreenCoors, aml->GetSym(h, "_ZN7CSprite15CalcScreenCoorsERK5RwV3dPS0_PfS4_bb"));
     SET_TO(m_UserPause, aml->GetSym(h, "_ZN6CTimer11m_UserPauseE"));
