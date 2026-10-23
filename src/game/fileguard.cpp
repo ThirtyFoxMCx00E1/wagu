@@ -30,7 +30,7 @@ namespace
     int (*GetPos_orig)(void*) = nullptr;
 
     int HookClose(void* h)          { if(Bad(h)) { Report("OS_FileClose", h); return 0; } return Close_orig(h); }
-    int HookSetPos(void* h, int p)  { if(Bad(h)) { Report("OS_FileSetPosition", h); return 3; } return SetPos_orig(h, p); }   // 2 = OSFileError read error
+    int HookSetPos(void* h, int p)  { if(Bad(h)) { Report("OS_FileSetPosition", h); return 3; } return SetPos_orig(h, p); }   // 3 = the game's own seek error code
     int HookRead(void* h, void* b, int n) { if(Bad(h) || (!b && n > 0)) { Report("OS_FileRead", h); return 3; } return Read_orig(h, b, n); }
     int HookSize(void* h)           { if(Bad(h)) { Report("OS_FileSize", h); return 0; } return Size_orig(h); }
     int HookGetPos(void* h)         { if(Bad(h)) { Report("OS_FileGetPosition", h); return 0; } return GetPos_orig(h); }
