@@ -246,6 +246,7 @@ Rebuild `mp_server` on every region (console menu **7) update**), then re-run `i
   - check from outside: `printf '\x0e\x00\x00\x00\x00' | nc -u -w2 <host> 1922 | head -c 40` should print the server name
   If the ports are closed nothing breaks: phones keep using the relay (and its ping).
 - **Voice chat relay.** The server forwards voice (`PKT_VOICE`, Opus frames) only to 3.11 phones within 40 m of the talker, max 60 frames/s per player, nothing for admin-muted players.
+- **Admin key (SENJI).** The admin key given out since 3.10 is only known by `mp_server` 3.10 or newer. A server built earlier refuses SENJI ("reserved name") even with a valid admin.txt, so update every region (menu **7) update**) after a new admin key.
 - **Discord message** every 45 min 20 s on every server (not on join, not while empty).
 - **Broker latency.** HiveMQ now runs on **Generational ZGC** (JDK 21: GC pauses < 1 ms instead of up to 20 ms with G1). `99-mp-network.conf` adds `tcp_slow_start_after_idle=0` (no window reset after a quiet moment, which caused 200-500 ms spikes), `tcp_autocorking=0`, `tcp_notsent_lowat=4096`, fast loss recovery and bigger UDP buffers.
 
