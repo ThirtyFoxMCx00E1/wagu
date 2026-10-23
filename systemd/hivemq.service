@@ -12,7 +12,8 @@ Environment=JAVA_HOME=@@JAVA_HOME@@
 Environment=PATH=@@JAVA_HOME@@/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 Environment=HIVEMQ_HOME=@@BASE@@/hivemq
 # the 2 GB / 4 GB heap; G1 with short pauses so relayed game packets are never held up for long
-Environment="JAVA_OPTS=-Xms@@XMS@@ -Xmx@@XMX@@ -XX:+UseG1GC -XX:MaxGCPauseMillis=20 -XX:+AlwaysPreTouch -XX:+ExitOnOutOfMemoryError"
+# 3.11: Generational ZGC (JDK 21): GC pauses under 1 ms instead of up to 20 ms with G1 - no more relay hiccups
+Environment="JAVA_OPTS=-Xms@@XMS@@ -Xmx@@XMX@@ -XX:+UseZGC -XX:+ZGenerational -XX:+AlwaysPreTouch -XX:+UseTransparentHugePages -XX:-OmitStackTraceInFastThrow -XX:+ExitOnOutOfMemoryError"
 # HiveMQ's run.sh opens JMX on port 9010 WITHOUT a password by default: keep it off
 Environment=HIVEMQ_JMX_ENABLED=false
 ExecStart=@@BASE@@/hivemq/bin/run.sh
