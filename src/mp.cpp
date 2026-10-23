@@ -443,6 +443,7 @@ static bool GatesCommand(const char* cmd, const char* arg);
 static bool IsBusy();
 static void LoadAdminFile();
 static bool HaveAdminKey();
+static void SenjiBlockedMsg();   // 3.11.2
 static void JoinOverlayCancel();
 static void JoinMarkConnected();
 static void JoinFlowProcess(int ped, uint64_t now);
@@ -1945,7 +1946,9 @@ public:
         if(r == REJECT_PASSWORD) { SysMsg(COL_RED, "Wrong server password. Edit the server and type the right one (max 16 characters)."); ClearAllPlayers(); return; }
         if(r == REJECT_NAME_RESERVED)   // 2.37
         {
-            SysMsg(COL_RED, "The name SENJI is reserved for the administrator. Change your name to join.");
+            if(HaveAdminKey())   // 3.11.2: our key is fine - that server runs an MP older than 3.10 (only knows the first admin key)
+                SysMsg(COL_RED, "This server runs an old MP version that doesn't know your admin key yet. Update that server to MP %s, then join as SENJI.", MP_VERSION_STR);
+            else SenjiBlockedMsg();
             ClearAllPlayers(); return;
         }
         if(r == REJECT_BANNED || r == REJECT_KICKED)   // 2.25
@@ -3717,7 +3720,7 @@ static void DoConnect(const char* host, int port)
     if(MP_IsReservedName(settings.name))   // 2.37: SENJI without admin.txt is blocked before it even asks the server
     {
         if(!HaveAdminKey()) LoadAdminFile();
-        if(!HaveAdminKey()) { JoinOverlayCancel(); SysMsg(COL_RED, "The name SENJI is reserved for the administrator. Change your name to join."); return; }
+        if(!HaveAdminKey()) { JoinOverlayCancel(); SenjiBlockedMsg(); return; }
     }
     // internet server: packets go through the online relay (local proxy on 127.77.x.y:port)
     uint16_t via = 0;
@@ -4423,12 +4426,61 @@ static void LoadConfig()
 //   /sdcard/Android/data/com.rockstargames.gtasa/files/MP/admin.txt   (one line: the admin key)
 // No admin.txt (or a wrong key in it) = SENJI turns red in the keyboard, can't be entered, and the
 // server refuses the join. The server checks the key too, so editing the config doesn't help.
+// 3.11.2: admin.txt is looked for in every usual place, not only the MP folder AML gives us
+// (AML on Android 11+ uses /storage/emulated/0/Android_unprotected/data/<game>/files, while people
+// copy files to /sdcard/Android/data/<game>/files). Found somewhere else = copied into the MP folder.
+static char s_szAdminFound[512] = "";
+static bool ReadAdminKeyFile(const char* path, char* out, size_t outSz);
+static void AdminCandidates(std::vector<std::string>& v)
+{
+    std::string dd = s_szDataDir;
+    v.push_back(dd + "/admin.txt");
+    auto swap = [&](const char* a, const char* b) { size_t k = dd.find(a); if(k != std::string::npos) { std::string o = dd; o.replace(k, strlen(a), b); v.push_back(o + "/admin.txt"); } };
+    swap("/Android_unprotected/", "/Android/");
+    swap("/Android/", "/Android_unprotected/");
+    swap("/storage/emulated/0/", "/sdcard/");
+    swap("/sdcard/", "/storage/emulated/0/");
+    const char* pk[] = { "com.rockstargames.gtasa" };
+    for(const char* k : pk)
+    {
+        char b[256];
+        const char* fmt[] = { "/storage/emulated/0/Android/data/%s/files/MP/admin.txt", "/storage/emulated/0/Android_unprotected/data/%s/files/MP/admin.txt",
+                              "/storage/emulated/0/Android/media/%s/MP/admin.txt", "/storage/emulated/0/Android_unprotected/data/%s/mods/admin.txt",
+                              "/storage/emulated/0/Android/data/%s/mods/admin.txt", "/storage/emulated/0/Android_unprotected/data/%s/files/admin.txt",
+                              "/storage/emulated/0/Android/data/%s/files/admin.txt" };
+        for(const char* f : fmt) { snprintf(b, sizeof(b), f, k); v.push_back(b); }
+    }
+    v.push_back("/storage/emulated/0/Download/admin.txt");
+    v.push_back("/storage/emulated/0/Download/MP/admin.txt");
+    v.push_back("/storage/emulated/0/admin.txt");
+    v.push_back("/storage/emulated/0/MP/admin.txt");
+}
 static void LoadAdminFile()
 {
-    settings.adminKey[0] = 0;
-    char path[512]; snprintf(path, sizeof(path), "%s/admin.txt", s_szDataDir);
+    settings.adminKey[0] = 0; s_szAdminFound[0] = 0;
+    std::vector<std::string> cand; AdminCandidates(cand);
+    char key[256] = "";
+    for(size_t i = 0; i < cand.size(); ++i)
+    {
+        if(!ReadAdminKeyFile(cand[i].c_str(), key, sizeof(key))) continue;
+        MP_CopyStr(s_szAdminFound, cand[i].c_str(), sizeof(s_szAdminFound));
+        MP_CopyStr(settings.adminKey, key, sizeof(settings.adminKey));
+        if(i > 0)   // found somewhere else: keep a copy in the MP folder too
+        {
+            char dst[512]; snprintf(dst, sizeof(dst), "%s/admin.txt", s_szDataDir);
+            if(FILE* o = fopen(dst, "w")) { fprintf(o, "%s\n", key); fclose(o); }
+        }
+        break;
+    }
+    client.SetAdminKey(settings.adminKey);
+    if(settings.adminKey[0]) logger->Info("MP: admin.txt OK (%s) - you are the administrator (SENJI)", s_szAdminFound);
+    else logger->Info("MP: no valid admin.txt (looked in %s and %d other places)", cand[0].c_str(), (int)cand.size() - 1);
+}
+static bool ReadAdminKeyFile(const char* path, char* out, size_t outSz)
+{
     FILE* f = fopen(path, "r");
-    if(!f) { client.SetAdminKey(""); return; }
+    if(!f) return false;
+    bool ok = false;
     char line[512];
     while(fgets(line, sizeof(line), f))
     {
@@ -4438,12 +4490,20 @@ static void LoadAdminFile()
         while(*p == ' ') ++p;
         size_t n = strlen(p); while(n && (p[n-1] == '\n' || p[n-1] == '\r' || p[n-1] == ' ' || p[n-1] == '\t')) p[--n] = 0;
         if(!*p || *p == '#') continue;
-        if(MP_AdminKeyOk(p)) { MP_CopyStr(settings.adminKey, p, sizeof(settings.adminKey)); break; }
+        // a key pasted with stray quotes / spaces in the middle of the line still counts
+        char clean[256]; size_t k = 0;
+        for(const char* q = p; *q && k + 1 < sizeof(clean); ++q) if(*q != '"' && *q != '\'' && *q != ' ' && *q != '\t') clean[k++] = *q;
+        clean[k] = 0;
+        if(MP_AdminKeyOk(p)) { MP_CopyStr(out, p, outSz); ok = true; break; }
+        if(MP_AdminKeyOk(clean)) { MP_CopyStr(out, clean, outSz); ok = true; break; }
     }
     fclose(f);
-    client.SetAdminKey(settings.adminKey);
-    if(settings.adminKey[0]) logger->Info("MP: admin.txt OK - you are the administrator (SENJI)");
-    else logger->Info("MP: admin.txt found but the key in it is wrong");
+    return ok;
+}
+static void SenjiBlockedMsg()   // 3.11.2: say exactly where admin.txt has to go
+{
+    SysMsg(COL_RED, "The name SENJI is reserved for the administrator. No valid admin.txt found.");
+    SysMsg(COL_YELLOW, "Put admin.txt here: %s/admin.txt", s_szDataDir);
 }
 static bool HaveAdminKey() { return settings.adminKey[0] && MP_AdminKeyOk(settings.adminKey); }
 static const char* NameBlocked(const char* t)
@@ -4459,8 +4519,7 @@ static void OnName(const char* t, void*)
     if(MP_IsReservedName(t) && !HaveAdminKey()) LoadAdminFile();   // admin.txt just copied in? read it again
     if(NameBlocked(t))
     {
-        SysMsg(COL_RED, MP_IsReservedName(t) ? "The name SENJI is reserved for the administrator. Pick another name."
-                                            : "Names can't start with [ADMIN].");
+        if(MP_IsReservedName(t)) SenjiBlockedMsg(); else SysMsg(COL_RED, "Names can't start with [ADMIN].");
         return;
     }
     if(MP_IsReservedName(t)) { MP_CopyStr(settings.name, MP_ADMIN_NAME, sizeof(settings.name)); SaveConfig(); SysMsg(COL_GREEN, "admin.txt found: you are the administrator. On the default server you show as [ADMIN] SENJI."); return; }

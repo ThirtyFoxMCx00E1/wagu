@@ -46,6 +46,10 @@ It builds `mp_server` on the phone and runs it 24/7 in the internet lobby (free 
 
 ## Changelog
 
+- **3.11.2**: SENJI can join again with admin.txt. 3.11.1, 3.11, 3.10 and 3.04.6 still play together.
+  - On many phones AML keeps the game files in `/storage/emulated/0/Android_unprotected/data/com.rockstargames.gtasa/files/`, not in `/sdcard/Android/data/...`. If admin.txt was copied to the other folder, the mod never found it and refused the name SENJI on every server ("reserved for the administrator"). The mod now looks in both folders, in the `mods` folder, in `Download` and in the root of the storage, then copies the file into its own MP folder. If it still finds no valid admin.txt, it shows the exact folder to put it in.
+  - Stray quotes or spaces around the key in admin.txt no longer matter.
+  - If a server refuses SENJI even though your admin.txt is fine, that server runs an MP older than 3.10, which only knows the first admin key. The message now says so: update that server (24/7 servers: console menu **7) update**).
 - **3.11.1**: voice chat works on GTA SA apps without microphone permission. 3.11, 3.10 and 3.04.6 still play together.
   - Many GTA SA APKs don't list `android.permission.RECORD_AUDIO`. Android then blocks the microphone for the game, and it can't be allowed in Settings (the "Music and audio" permission is for audio files, not the mic). 3.11.1 notices this and uses the small **MP Voice** app (`release/MP-Voice.apk`, 17 KB, package `com.thirtyfox.mpvoice`), which has the microphone permission.
   - Install MP-Voice.apk once. In the game, tap the mic button, then turn the microphone on. The mod opens MP Voice by itself; MP Voice asks for the microphone the first time, turns it on and goes straight back to GTA SA. The notification "MP Voice microphone is on" shows while it runs, and it has a Stop button.
