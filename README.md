@@ -46,6 +46,10 @@ It builds `mp_server` on the phone and runs it 24/7 in the internet lobby (free 
 
 ## Changelog
 
+- **3.11.6**: new admin key in **administrator.txt**.
+  - SENJI now has one new admin key, in a file called `administrator.txt` (same folder as before: `.../com.rockstargames.gtasa/files/MP/`). 3.11.6 servers accept only this key. The 2.37 key and the 3.10 key (`admin.txt`) no longer work on them.
+  - Servers older than 3.11.6 don't know the new key, so they refuse SENJI. Update every server: HiveMQ servers `Termius > console > 7) update`, Termux phone servers `mp-server update`, phone hosts update MP.
+  - The mod looks for `administrator.txt` (and `admin.txt`) in all the usual folders, as in 3.11.2.
 - **3.11.5**: guard against the game's streaming crash (`OS_FileSetPosition` / `OS_FileRead`).
   - Two crash reports (realme, Android 16, and Samsung A02, Android 11; both with 60+ mods and MP 3.04.6) crashed in the game's own model streaming thread (`libGTASA.so`, `OS_FileSetPosition`), reading through a null file handle. This is a known GTA SA mobile crash with IMG, streaming and limit mods. MP 3.11.5 checks the game's file functions (set position, read, size, get position, close): a null handle now makes that one read fail (the game skips or retries the model) instead of crashing the game, and the AML log says `FileGuard: ... blocked`. Valid files are not touched.
 - **3.11.4**: no crash when the game closes.
