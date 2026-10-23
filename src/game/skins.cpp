@@ -21,6 +21,13 @@
 #include <mod/logger.h>
 #include <string.h>
 #include <strings.h>
+#include <setjmp.h>
+#include <signal.h>
+#include <pthread.h>
+#include <unistd.h>
+#include <sys/uio.h>
+#include <sys/syscall.h>
+#include "net/protocol.h"
 
 DEFOPCODE(023C, LOAD_SPECIAL_CHARACTER, is);
 DEFOPCODE(023D, HAS_SPECIAL_CHARACTER_LOADED, i);
@@ -49,6 +56,7 @@ static bool s_SlotOurs[11];                      // we loaded it
 static int  s_SlotPeds[11][MAX_SLOT_PEDS];       // our avatars using the slot
 static bool s_BadSpecial[SPECIAL_COUNT];
 static uint64_t s_SlotUse[11];
+static uint32_t s_SlotOutfit[11];                // 3.10: "csplay" slot rebuilt with this outfit (MP_ClothesHash)
 static uint64_t s_nUseTick = 0;
 
 // ---- watch every special character load (missions too) --------------------------------
@@ -59,7 +67,7 @@ static void HookRequestSpecialModel(int model, const char* name, int flags)
     {
         int slot = model - 289;
         bool same = !strcasecmp(s_SlotName[slot], name);
-        if(!same) { strncpy(s_SlotName[slot], name, sizeof(s_SlotName[slot]) - 1); s_SlotName[slot][sizeof(s_SlotName[slot]) - 1] = 0; s_SlotOurs[slot] = false; }
+        if(!same) { strncpy(s_SlotName[slot], name, sizeof(s_SlotName[slot]) - 1); s_SlotName[slot][sizeof(s_SlotName[slot]) - 1] = 0; s_SlotOurs[slot] = false; s_SlotOutfit[slot] = 0; }
     }
     RequestSpecialModel_orig(model, name, flags);
 }
@@ -70,6 +78,7 @@ void Game::InitSkins(void* h)
     void* f = (void*)aml->GetSym(h, "_ZN10CStreaming19RequestSpecialModelEiPKci");
     if(f) aml->Hook(f, (void*)&HookRequestSpecialModel, (void**)&RequestSpecialModel_orig);
     logger->Info("Skins: special character tracking %s", (f && RequestSpecialModel_orig) ? "on" : "off");
+    InitClothes(h);
 }
 
 static const SpecialChar* SpecialBySkin(int skin)
@@ -146,6 +155,7 @@ static int LoadSpecial(const SpecialChar* sc, int& slotOut)
     CALLSCM(LOAD_ALL_MODELS_NOW_SK);
     strncpy(s_SlotName[best], sc->name, sizeof(s_SlotName[best]) - 1);
     s_SlotOurs[best] = true;
+    s_SlotOutfit[best] = 0;
     s_SlotUse[best] = ++s_nUseTick;
     if(!CALLSCM(HAS_SPECIAL_CHARACTER_LOADED, best))
     {
@@ -186,4 +196,154 @@ int Game::LocalSkinForNet(int fallback)
         return sc ? sc->skin : fallback;
     }
     return IsSafePedModel(m) ? m : fallback;
+}
+
+
+// ---- 3.10: clothing sync ------------------------------------------------------------------
+// CJ (model 0) only exists once (he needs CPlayerData), so another player's CJ is rebuilt the
+// way the game builds CJ for cutscenes: the cutscene CJ model "csplay" is loaded into one of
+// MP's special slots and CClothes::ConstructPedModel(slot model, outfit, null, true) puts the
+// outfit on it (CClothes::RebuildCutscenePlayer does exactly this). Every outfit needs its own
+// slot (all peds of a model share one 3D model), so up to 3 differently dressed CJs are shown
+// at once (the same 3 slots the story characters use); anyone else is shown with their avatar
+// skin, like before. The rebuild runs inside a fault guard: if this game's files can't build an
+// outfit, that outfit is never tried again (and after 3 faults clothing sync turns itself off).
+struct ClothesDescRaw { uint32_t model[MP_CLOTHES_MODELS]; uint32_t tex[MP_CLOTHES_TEXTURES]; float fat, muscle; };   // CPedClothesDesc
+static void (*ConstructPedModel_fn)(uint32_t, ClothesDescRaw&, const ClothesDescRaw*, bool) = nullptr;
+static uint8_t* s_pPlayers = nullptr;            // CWorld::Players (CPlayerInfo[])
+static int  s_nClothesFaults = 0;
+static uint32_t s_BadOutfit[32]; static int s_nBadOutfit = 0;
+
+static sigjmp_buf s_ClJmp;
+static volatile sig_atomic_t s_bInClothes = 0;
+static pthread_t s_ClThread;
+static struct sigaction s_ClOldSegv, s_ClOldBus;
+static void ClothesFault(int sig, siginfo_t* si, void* uc)
+{
+    if(s_bInClothes && pthread_equal(pthread_self(), s_ClThread)) { s_bInClothes = 0; siglongjmp(s_ClJmp, 1); }
+    struct sigaction* old = sig == SIGBUS ? &s_ClOldBus : &s_ClOldSegv;
+    if(old->sa_flags & SA_SIGINFO) { if(old->sa_sigaction) { old->sa_sigaction(sig, si, uc); return; } }
+    else if(old->sa_handler != SIG_DFL && old->sa_handler != SIG_IGN) { old->sa_handler(sig); return; }
+    signal(sig, SIG_DFL); raise(sig);
+}
+static bool GuardedConstruct(int modelId, ClothesDescRaw& d)
+{
+    if(!ConstructPedModel_fn) return false;
+    struct sigaction sa; memset(&sa, 0, sizeof(sa));
+    sa.sa_sigaction = ClothesFault; sa.sa_flags = SA_SIGINFO | SA_ONSTACK; sigemptyset(&sa.sa_mask);
+    sigaction(SIGSEGV, &sa, &s_ClOldSegv); sigaction(SIGBUS, &sa, &s_ClOldBus);
+    bool ok = true;
+    s_ClThread = pthread_self();
+    if(sigsetjmp(s_ClJmp, 1) == 0)
+    {
+        s_bInClothes = 1;
+        ConstructPedModel_fn((uint32_t)modelId, d, nullptr, true);
+        s_bInClothes = 0;
+    }
+    else ok = false;
+    sigaction(SIGSEGV, &s_ClOldSegv, nullptr); sigaction(SIGBUS, &s_ClOldBus, nullptr);
+    return ok;
+}
+static bool ReadMem(const void* src, void* dst, size_t n)
+{
+    if((uintptr_t)src < 0x10000) return false;
+    struct iovec l = { dst, n }, r = { (void*)src, n };
+    return syscall(__NR_process_vm_readv, (long)getpid(), &l, 1L, &r, 1L, 0L) == (long)n;   // API 21 safe
+}
+
+void Game::InitClothes(void* h)
+{
+    ConstructPedModel_fn = (decltype(ConstructPedModel_fn))aml->GetSym(h, "_ZN8CClothes17ConstructPedModelEjR15CPedClothesDescPKS0_b");
+    s_pPlayers = (uint8_t*)aml->GetSym(h, "_ZN6CWorld7PlayersE");
+    logger->Info("Skins: clothing sync %s", (ConstructPedModel_fn && s_pPlayers) ? "on" : "off (game functions not found)");
+}
+
+bool Game::ClothesSyncAvailable() { return ConstructPedModel_fn && s_pPlayers && s_nClothesFaults < 3; }
+
+// your outfit (only while you are CJ); false = not CJ / can't read it
+bool Game::GetLocalClothes(PktClothes& c)
+{
+    memset(&c, 0, sizeof(c));
+    c.type = PKT_CLOTHES;
+    if(!s_pPlayers) return false;
+    int ped = LocalPed();
+    if(ped <= 0) return false;
+    uint32_t model = 1;
+    CALLSCM(GET_CHAR_MODEL, ped, &model);
+    if(model != 0) return false;
+    // CPlayerInfo { CPlayerPed* m_pPed; CPlayerData m_PlayerData { CWanted* m_pWanted; CPedClothesDesc* m_pPedClothesDesc; ... } }
+    void* desc = nullptr;
+    if(!ReadMem(s_pPlayers + 2 * sizeof(void*), &desc, sizeof(desc)) || !desc) return false;
+    ClothesDescRaw d;
+    if(!ReadMem(desc, &d, sizeof(d))) return false;
+    memcpy(c.model, d.model, sizeof(c.model));
+    memcpy(c.tex, d.tex, sizeof(c.tex));
+    c.fat = d.fat; c.muscle = d.muscle;
+    c.on = 1;
+    return MP_ClothesSane(c);
+}
+
+bool Game::ClothesCanBuild(const PktClothes& c)
+{
+    if(!ClothesSyncAvailable() || !c.on) return false;
+    uint32_t h = MP_ClothesHash(c);
+    for(int i = 0; i < s_nBadOutfit; ++i) if(s_BadOutfit[i] == h) return false;
+    for(int k = 0; k < MP_SLOT_COUNT; ++k)
+    {
+        int s = kMpSlots[k];
+        if(s_SlotOurs[s] && s_SlotOutfit[s] == h) return true;
+        bool foreign = s_SlotName[s][0] && !s_SlotOurs[s];
+        if(foreign && CALLSCM(HAS_SPECIAL_CHARACTER_LOADED, s)) continue;
+        if(SlotLivePeds(s) == 0) return true;
+    }
+    return false;
+}
+
+// model to create for a remote CJ wearing this outfit, 0 = not possible now (use the avatar skin)
+int Game::ModelForClothes(const PktClothes& c0, int& slotOut)
+{
+    slotOut = 0;
+    if(!ClothesSyncAvailable() || !c0.on) return 0;
+    PktClothes c = c0;
+    if(!MP_ClothesSane(c)) return 0;
+    uint32_t h = MP_ClothesHash(c);
+    for(int i = 0; i < s_nBadOutfit; ++i) if(s_BadOutfit[i] == h) return 0;
+    // this outfit is already built in one of our slots
+    for(int k = 0; k < MP_SLOT_COUNT; ++k)
+    {
+        int s = kMpSlots[k];
+        if(s_SlotOurs[s] && s_SlotOutfit[s] == h && !strcasecmp(s_SlotName[s], "csplay") && CALLSCM(HAS_SPECIAL_CHARACTER_LOADED, s))
+        { slotOut = s; s_SlotUse[s] = ++s_nUseTick; return 289 + s; }
+    }
+    int best = -1;
+    for(int k = 0; k < MP_SLOT_COUNT; ++k)
+    {
+        int s = kMpSlots[k];
+        bool foreign = s_SlotName[s][0] && !s_SlotOurs[s];
+        if(foreign && CALLSCM(HAS_SPECIAL_CHARACTER_LOADED, s)) continue;
+        if(SlotLivePeds(s) > 0) continue;   // never rebuild a model under a live ped
+        if(best < 0 || s_SlotUse[s] < s_SlotUse[best]) best = s;
+    }
+    if(best < 0) return 0;
+    CALLSCM(LOAD_SPECIAL_CHARACTER, best, "csplay");
+    CALLSCM(LOAD_ALL_MODELS_NOW_SK);
+    strncpy(s_SlotName[best], "csplay", sizeof(s_SlotName[best]) - 1);
+    s_SlotOurs[best] = true;
+    s_SlotOutfit[best] = 0;
+    s_SlotUse[best] = ++s_nUseTick;
+    if(!CALLSCM(HAS_SPECIAL_CHARACTER_LOADED, best)) { logger->Info("Skins: couldn't load the cutscene CJ model (csplay)"); s_nClothesFaults = 3; return 0; }
+    ClothesDescRaw d;
+    memcpy(d.model, c.model, sizeof(d.model)); memcpy(d.tex, c.tex, sizeof(d.tex));
+    d.fat = c.fat; d.muscle = c.muscle;
+    if(!GuardedConstruct(289 + best, d))
+    {
+        ++s_nClothesFaults;
+        if(s_nBadOutfit < 32) s_BadOutfit[s_nBadOutfit++] = h;
+        s_SlotName[best][0] = 0; s_SlotOurs[best] = false;   // the slot's model is unusable: let the game reload it
+        logger->Info("Skins: an outfit couldn't be built on this game - shown with the avatar skin (%d)", s_nClothesFaults);
+        return 0;
+    }
+    s_SlotOutfit[best] = h;
+    slotOut = best;
+    return 289 + best;
 }

@@ -1170,3 +1170,7 @@ void MP::JoinBcw()
     if(!JoinFlowActive() && client.GetState() == NET_DISCONNECTED && !IsBusy()) s_bBcwJoin = false;   // refused (cheat menu, offline...)
 }
 bool MP::IsOnBcw() { return BcwOnServer(); }
+// 3.10: on the connection screen (picking Gustav moves the camera to Verdant Meadows, near where
+// your hidden ped is parked) your own name tag was still drawn over the view. Your ped is hidden
+// there, so is your tag - also while you wait to respawn and while joining.
+bool MP::BcwOwnTagHidden() { return (BcwOnServer() || s_bBcwJoin) && !(s_Bcw.engaged && s_Bcw.view == 2); }

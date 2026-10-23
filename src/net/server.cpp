@@ -56,7 +56,6 @@ bool MPServer::Start(uint16_t port, const char* serverName, MPServerLogFn log, i
 {
     if(m_bRunning) return true;
     m_fnLog = log;
-    SetMaxPlayers(maxPlayers);
     SetRegion(region);
 #ifdef _WIN32
     WSADATA wsa; WSAStartup(MAKEWORD(2, 2), &wsa);
@@ -91,6 +90,10 @@ bool MPServer::Start(uint16_t port, const char* serverName, MPServerLogFn log, i
 
     m_nPort = port;
     MP_CopyStr(m_szName, serverName ? serverName : "MP Server", sizeof(m_szName));
+    // 3.10: the slot count is set AFTER the new name. It used to be set first, while m_szName still
+    // held the previous server's name: a phone that hosted Brief Case War (20) and then hosted the
+    // default server kept 20 slots ("0/20") on the default server. The default server is always 100.
+    SetMaxPlayers(maxPlayers);
     memset(m_Slots, 0, sizeof(m_Slots));
     memset(m_Pickups, 0, sizeof(m_Pickups));
     m_nStartUnix = (uint32_t)time(nullptr);   // 2.27
@@ -565,6 +568,8 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
                     memcpy(st.mission, m_Slots[i].mission, sizeof(st.mission));
                     SendTo(slot, &st, sizeof(st));
                 }
+                if(m_Slots[i].hasClothes && i != slot)   // 3.10: what everybody's CJ is wearing
+                    SendTo(slot, &m_Slots[i].clothes, sizeof(PktClothes));
             }
             { PktWorld wd; FillWorld(wd); SendTo(slot, &wd, sizeof(wd)); }   // serverworld_host
             { PktPerms pm; MakePerms(pm, m_nPerms); SendTo(slot, &pm, sizeof(pm)); }   // 2.16
@@ -717,6 +722,23 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
                 Log("%s %s", m_Slots[slot].name, p.paused ? "paused" : "resumed");
             }
             Broadcast(&p, sizeof(p), slot);
+            break;
+        }
+
+        case PKT_CLOTHES:   // 3.10: CJ clothing sync -> everybody else (and kept for players who join later)
+        {
+            if(slot < 0 || len < (int)sizeof(PktClothes)) return;
+            PktClothes c; memcpy(&c, data, sizeof(c));
+            c.type = PKT_CLOTHES; c.id = (uint8_t)slot; c.on = c.on ? 1 : 0; c.pad = 0;
+            if(!MP_ClothesSane(c)) return;
+            Slot& s = m_Slots[slot];
+            uint64_t now = MP_NowMs();
+            bool same = s.hasClothes == (bool)c.on && (!c.on || !memcmp(&s.clothes, &c, sizeof(c)));
+            if(same && now - s.lastClothes < 4000) return;      // resends: at most one every 4 s
+            if(!same && now - s.lastClothes < 250) return;      // changes: at most 4 per second
+            s.lastClothes = now;
+            s.hasClothes = c.on != 0; s.clothes = c;
+            Broadcast(&c, sizeof(c), slot);
             break;
         }
 

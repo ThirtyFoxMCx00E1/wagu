@@ -5,6 +5,7 @@
 #include <string.h>
 #include "game.h"
 #include "scripting.h"
+#include "net/protocol.h"
 #include "../../imgui/RW/RenderWare.h"
 
 extern RsGlobalType* RsGlobal;
@@ -396,6 +397,27 @@ int Game::CreateRemotePed(int model, const Vec3& p0)
         MakePuppet((int)ped);   // 2.21: never attacks the local player by itself
     }
     CALLSCM(MARK_MODEL_AS_NO_LONGER_NEEDED, model);
+    return (int)ped;
+}
+
+// 3.10: another player's CJ with their clothes (see skins.cpp)
+int Game::CreateRemoteClothedCJ(const PktClothes& c, const Vec3& p0)
+{
+    Vec3 p = p0; if(!MP_WorldPos(p)) return 0;
+    int slot = 0;
+    int m = ModelForClothes(c, slot);
+    if(!m) return 0;
+    uint32_t ped = 0;
+    CALLSCM(CREATE_CHAR, 24 /* PEDTYPE_MISSION1 */, m, p.x, p.y, p.z - 1.0f, &ped);
+    if(!ped) return 0;
+    NoteSpecialPed(slot, (int)ped);
+    CALLSCM(SET_CHAR_DROPS_WEAPONS_WHEN_DEAD, ped, 0);
+    CALLSCM(SET_CHAR_CANT_BE_DRAGGED_OUT, ped, 1);
+    CALLSCM(SET_CHAR_SUFFERS_CRITICAL_HITS, ped, 0);
+    CALLSCM(SET_CHAR_ACCURACY, ped, 0);
+    CALLSCM(SET_CHAR_KEEP_TASK, ped, 1);
+    CALLSCM(SET_CHAR_HEALTH, ped, 1000);
+    MakePuppet((int)ped);
     return (int)ped;
 }
 

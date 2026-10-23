@@ -293,8 +293,18 @@ static void LBuildRows(int tab, const std::vector<LanServer>& nearby, std::vecto
     }
 }
 
+// 3.10: tapping the server you are already on (its row, Join / Connect) used to leave it and go
+// through the whole connection again. Now it only says so; leaving is the Leave button.
+static bool LAlreadyOn(const LRow& r)
+{
+    if(!r.on || client.GetState() == NET_DISCONNECTED) return false;
+    SysMsg(COL_SYSTEM, client.GetState() == NET_CONNECTED ? "You are already connected to %s." : "Already connecting to %s...", r.name[0] ? r.name : "this server");
+    return true;
+}
+static void LLeave(const LRow& r) { if(r.kind == 0) { if(IsOnDefault()) LeaveServer("Disconnected from the server."); } else LeaveServer("Left the server."); }
 static void LJoin(const LRow& r)
 {
+    if(LAlreadyOn(r)) return;
     if(r.kind == 0) { if(IsOnDefault()) MP::ToggleConnect(); else { LeaveServer(nullptr); MP::ToggleConnect(); } return; }
     if(r.kind == 3) { if(!MP::IsOnBcw()) LeaveServer(nullptr); MP::JoinBcw(); return; }   // 3.04
     if(r.on) { LeaveServer("Left the server."); return; }
@@ -832,7 +842,7 @@ static void RenderLauncher(void* openPtr)
         const char* cl = onSel ? (client.GetState() == NET_CONNECTING ? "Cancel" : "Leave") : (IsBusy() ? "Searching..." : "Connect");
         if(LToolButton("connect", onSel ? IC_STOP : IC_PLAY, cl, btnH, s_bHasNetwork || onSel))
         {
-            if(sel) LJoin(*sel);
+            if(sel) { if(sel->on) LLeave(*sel); else LJoin(*sel); }   // 3.10: Leave really leaves, Connect never reconnects
             else { if(IsOnDefault()) MP::ToggleConnect(); else { LeaveServer(nullptr); MP::ToggleConnect(); } }
         }
         ImGui::SameLine(0, UI::S(6));
@@ -995,11 +1005,11 @@ static void RenderCheatGateDialog(void*)
         dl->AddText(UI::Font(), fs, p, IM_COL32(255, 150, 40, 255), "This server doesn't allow cheat menus");
         ImGui::Dummy(ImVec2(w - UI::S(56), fs + UI::S(10)));
         ImGui::Separator();
-        ImGui::TextWrapped("Hey, looks like you have %s installed. To keep it fair for everyone, "
+        ImGui::TextWrapped("%s is loaded in your game right now. To keep it fair for everyone, "
                            "cheat menus aren't allowed on %s.", ModScan::What(), s_CheatGate.server);
         ImGui::Spacing();
         ImGui::TextWrapped("Cheat Menu works only on custom servers whose host turned on \"Cheat Menu\" (Add server > permissions). "
-                           "For the default server, remove libCheatMenu.so / libCheatMenu64.so from your AML mods folder and restart the game.");
+                           "For the default server, remove it from your AML mods folder and restart the game - once it is not loaded any more you can join right away.");
         ImGui::Spacing();
         ImGui::TextDisabled("We check this every time you join, so it can't be switched off while playing.");
         ImGui::Spacing();

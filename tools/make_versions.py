@@ -7,6 +7,7 @@ cl = text.split('## Changelog', 1)[1]
 m = re.search(r'\n## ', cl)
 if m: cl = cl[:m.start()]
 out, cur = [], None
+SUPPORTED = ['3.10', '3.04.6']   # 3.10: versions that can still play (and be downloaded); the rest are blocked
 for line in cl.splitlines():
     h = re.match(r'^- \*\*([0-9][0-9.]*)\*\*:?\s*(.*)$', line)
     if h:
@@ -21,5 +22,5 @@ for line in cl.splitlines():
         cur['items'][-1] += ' ' + s
     else:
         cur['summary'] = (cur['summary'] + ' ' + s).strip()
-json.dump({'latest': out[0]['v'] if out else '', 'versions': out}, open(os.path.join(root, 'docs', 'versions.json'), 'w', encoding='utf-8'), ensure_ascii=False, indent=0)
+json.dump({'latest': out[0]['v'] if out else '', 'supported': SUPPORTED, 'versions': out}, open(os.path.join(root, 'docs', 'versions.json'), 'w', encoding='utf-8'), ensure_ascii=False, indent=0)
 print(len(out), 'versions, latest', out[0]['v'] if out else '-')

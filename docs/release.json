@@ -1,16 +1,27 @@
 {
- "tag_name": "v3.04.6",
- "name": "MP Multiplayer 3.04.6",
- "published_at": "2026-10-22",
+ "tag_name": "v3.10",
+ "name": "MP Multiplayer 3.10",
+ "published_at": "2026-10-23",
+ "also_supported": "v3.04.6",
  "assets": [
   {
    "name": "bin/libMP32.so",
-   "size": 2902756,
+   "size": 2912356,
    "download_count": 0
   },
   {
    "name": "bin/libMP64.so",
-   "size": 3589160,
+   "size": 3599448,
+   "download_count": 0
+  },
+  {
+   "name": "release/MP-3.10-full.zip",
+   "size": 14422982,
+   "download_count": 0
+  },
+  {
+   "name": "release/HiveMQ-kit-3.10.zip",
+   "size": 41345,
    "download_count": 0
   },
   {
@@ -26,21 +37,16 @@
  ],
  "packages": [
   {
-   "tag": "assets-1",
+   "tag": "Assets-1-2",
    "assets": [
     {
      "name": "hivemq-4.56.0.zip",
      "size": 761147467,
      "download_count": 0
-    }
-   ]
-  },
-  {
-   "tag": "Assets-2",
-   "assets": [
+    },
     {
-     "name": "OpenJDK21U-jdk_x64_linux_hotspot_21.0.12.1_1.tar.gz",
-     "size": 207473347,
+     "name": "OpenJDK21U-jdk_x64_linux_hotspot_21.0.13_9.tar.gz",
+     "size": 207858352,
      "download_count": 0
     }
    ]

@@ -1,6 +1,26 @@
 {
-"latest": "3.04.6",
+"latest": "3.10",
+"supported": [
+"3.10",
+"3.04.6"
+],
 "versions": [
+{
+"v": "3.10",
+"summary": "crash fix, clothing sync, 100-player default server, cheat-menu and reconnect fixes. **3.04.6 still works**: 3.04.6 and 3.10 play together on the same servers and the same lobby (`thirtyfox/mp5/`). Only 3.04.5 and older (the `mp4` versions with cheats) stay blocked.",
+"items": [
+"**Crash fix (`CColTrianglePlane::Set`, fault address `0x5CAC`).** A bike (or any vehicle) touching a model whose collision still listed triangles but had no vertex array crashed the game (seen with `VehDeform32.so`). The new collision guard checks the data first in `CCollision::ProcessColModels` and both `CalculateTrianglePlanes`: a triangle list without vertices / triangles is switched off (the model keeps its spheres and boxes), logged as `ColGuard: broken collision data ... fixed`.",
+"**Default server: 100 players.** After a phone hosted Brief Case War (20 slots) and then hosted the default server, the slot count was set while the old name was still in place, so the default server showed `0/20`. Now the name is set first and the default server is always 100.",
+"**Brief Case War: no name tag on the connection screen.** Picking Gustav Team moves the camera to Verdant Meadows, near your hidden ped, and your own name tag was drawn over the view. Your tag is now hidden on the connection screen, while joining and while waiting to respawn.",
+"**Clothing sync.** CJ's clothes, haircut, tattoos and fat / muscle are sent to everyone (on change + every 8 s, and to players who join later). Other phones rebuild your CJ the way the game builds the cutscene CJ (`csplay` in a special slot + `CClothes::ConstructPedModel`). Up to 3 differently dressed CJs are shown at once (the 3 MP special slots); anyone else is shown with their avatar skin, like before. Follows **Show my real model**. 3.04.6 phones and servers simply ignore it.",
+"**Cheat Menu: no more false \"you have a cheat menu\".** Players who deleted `libCheatMenu.so` / `libCheatMenu64.so` were still refused: copies in other folders AML never loads from counted as installed, and a result was kept forever. Now only what is really loaded in the game counts and every check starts from scratch. The message says what is loaded and to restart the game after removing it.",
+"**Cheat Menu permission is kept per server.** The **Cheat Menu** switch (Add server > permissions) used to be read from whichever phone was hosting: when another phone took over your server, its switch (off) was used and Cheat Menu players were refused. The permission is now saved with the server (learnt from its permissions while you are on it) and used by any 3.10 phone that hosts it.",
+"**No reconnect to the server you are on.** Tapping the server you are already connected to (its row, Join, Connect) left it and went through the whole connection again. Now it says `You are already connected to ...`; the Leave button still leaves.",
+"**Admin key.** A second admin key (new `admin.txt`) works on 3.10 phones / servers next to the old one (`[ADMIN] SENJI` name tag, chat and kill feed).",
+"**HiveMQ kit.** The JDK download points to the new `Assets-1-2` release (OpenJDK 21.0.13+9).",
+"**Website.** 3.10 and 3.04.6 can both be downloaded; older versions stay blocked."
+]
+},
 {
 "v": "3.04.6",
 "summary": "**old versions are shut out** (they let players use cheats). Everyone must update to 3.04.6.",

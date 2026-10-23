@@ -169,9 +169,61 @@ static void InitAddGuard(void* h)
     logger->Info("ScriptGuard: world-add guard on (pools: %s / %s)", s_PtrNodeDoublePool ? "ok" : "-", s_EntryInfoPool ? "ok" : "-");
 }
 
+// ---- 3.10: collision guard (see colguard_core.h for the crash it stops) -----------------------
+#include "colguard_core.h"
+static int (*ProcessColModels)(void*, void*, void*, void*, void*, void*, void*, bool) = nullptr;
+static void (*ColCalcPlanes)(void*) = nullptr;       // CCollision::CalculateTrianglePlanes(CCollisionData*)
+static void (*DataCalcPlanes)(void*) = nullptr;      // CCollisionData::CalculateTrianglePlanes()
+static int  s_nColFixes = 0;
+static void NoteColFix(const void* cd, int fix, const char* where)
+{
+    if(!fix) return;
+    if(++s_nColFixes <= 20)
+        logger->Info("ColGuard: broken collision data %p fixed (%s%s%s%s) in %s - this would have crashed the game (fix #%d)", cd,
+                     fix & ColGuard::FIX_TRIS ? "triangles without vertices " : "", fix & ColGuard::FIX_SPH ? "spheres " : "",
+                     fix & ColGuard::FIX_BOX ? "boxes " : "", fix & ColGuard::FIX_LINES ? "lines " : "", where, s_nColFixes);
+}
+static inline void FixColModel(void* cm, const char* where)
+{
+    if(!cm || ColGuard::BadPtr((uintptr_t)cm)) return;
+    uint8_t* cd = *(uint8_t**)((uint8_t*)cm + ColGuard::ColDataOffset());
+    if(!cd || ColGuard::BadPtr((uintptr_t)cd)) return;
+    NoteColFix(cd, ColGuard::Sanitize(cd), where);
+}
+static int HookOf_ProcessColModels(void* m1, void* cm1, void* m2, void* cm2, void* p1, void* p2, void* d, bool b)
+{
+    FixColModel(cm1, "ProcessColModels");
+    FixColModel(cm2, "ProcessColModels");
+    return ProcessColModels(m1, cm1, m2, cm2, p1, p2, d, b);
+}
+static void HookOf_ColCalcPlanes(void* cd)
+{
+    if(!cd || ColGuard::BadPtr((uintptr_t)cd)) return;
+    NoteColFix(cd, ColGuard::Sanitize((uint8_t*)cd), "CalculateTrianglePlanes");
+    ColCalcPlanes(cd);
+}
+static void HookOf_DataCalcPlanes(void* cd)
+{
+    if(!cd || ColGuard::BadPtr((uintptr_t)cd)) return;
+    NoteColFix(cd, ColGuard::Sanitize((uint8_t*)cd), "CCollisionData::CalculateTrianglePlanes");
+    DataCalcPlanes(cd);
+}
+static void InitColGuard(void* h)
+{
+    int n = 0;
+    void* f1 = (void*)aml->GetSym(h, "_ZN10CCollision16ProcessColModelsERK7CMatrixR9CColModelS2_S4_P9CColPointS6_Pfb");
+    void* f2 = (void*)aml->GetSym(h, "_ZN10CCollision23CalculateTrianglePlanesEP14CCollisionData");
+    void* f3 = (void*)aml->GetSym(h, "_ZN14CCollisionData23CalculateTrianglePlanesEv");
+    if(f1 && aml->Hook(f1, (void*)&HookOf_ProcessColModels, (void**)&ProcessColModels) && ProcessColModels) ++n;
+    if(f2 && aml->Hook(f2, (void*)&HookOf_ColCalcPlanes, (void**)&ColCalcPlanes) && ColCalcPlanes) ++n;
+    if(f3 && aml->Hook(f3, (void*)&HookOf_DataCalcPlanes, (void**)&DataCalcPlanes) && DataCalcPlanes) ++n;
+    logger->Info("ColGuard: %s (%d/3 hooks) - collision data without vertices no longer crashes the game", n ? "on" : "off", n);
+}
+
 bool ScriptGuard::Init(void* h)
 {
     InitAddGuard(h);   // 2.37: independent of the opcode guard below
+    InitColGuard(h);   // 3.10: CColTrianglePlane::Set crash (aml_crashlog: bike vs. a model with no vertices)
     void* fn = (void*)aml->GetSym(h, "_ZN14CRunningScript25ProcessCommands1000To1099Ei");
     SET_TO(s_Env.peekParam, aml->GetSym(h, "_ZN14CRunningScript39CollectNextParameterWithoutIncreasingPCEv"));
     SET_TO(s_Env.skipParams, aml->GetSym(h, "_ZN14CRunningScript17CollectParametersEs"));

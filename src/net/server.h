@@ -41,7 +41,7 @@ public:
     bool IsPersistent() const { return m_bPersistent; }
 
     // Player limit 1..100. Lowering it never kicks anyone; it only blocks new joins.
-    void SetMaxPlayers(int n) { m_nMaxPlayers = n < 1 ? 1 : (n > MP_MAX_PLAYERS ? MP_MAX_PLAYERS : n); if(IsBcwServer()) m_nMaxPlayers = MP_BCW_MAX_PLAYERS; }   // 3.04: Brief Case War = 20
+    void SetMaxPlayers(int n) { m_nMaxPlayers = n < 1 ? 1 : (n > MP_MAX_PLAYERS ? MP_MAX_PLAYERS : n); if(IsBcwServer()) m_nMaxPlayers = MP_BCW_MAX_PLAYERS; else if(IsDefaultServer()) m_nMaxPlayers = MP_MAX_PLAYERS; }   // 3.04: Brief Case War = 20; 3.10: the default server is always 100
     int  GetMaxPlayers() const { return m_nMaxPlayers; }
     void SetRegion(int r) { m_nRegion = (r >= 0 && r < REGION_COUNT) ? r : REGION_ASIA; }
     int  GetRegion() const { return m_nRegion; }
@@ -117,6 +117,9 @@ private:
         int16_t      classSkin;   // 3.01
         uint64_t     lastEvent;   // 3.01: PKT_EVENT rate limit
         uint64_t     raceQueuedAt;   // 3.01: in the race queue since (0 = not queued)
+        bool         hasClothes;     // 3.10: CJ clothing sync (last PKT_CLOTHES, sent to new joiners)
+        PktClothes   clothes;
+        uint64_t     lastClothes;
     };
     void SetPermsLocked(uint8_t perms);                                         // 2.37, m_Mutex held
     bool KickLocked(int id, const char* admin, const char* reason, bool ban);   // 2.37, m_Mutex held

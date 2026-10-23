@@ -50,6 +50,7 @@ public:
     virtual void OnDialog(const PktDialog&) {}
     virtual void OnTextDraw(const PktTextDraw&) {}
     virtual void OnBcw(const uint8_t* /*data*/, int /*len*/) {}   // 3.04: PKT_BCW_STATE / ROLL / SCORE / EVENT
+    virtual void OnClothes(const PktClothes&) {}                  // 3.10: CJ clothing sync
 };
 
 class MPClient

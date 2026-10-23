@@ -46,7 +46,6 @@ namespace
         snprintf(s_szWhat, sizeof(s_szWhat), "%s", what);
     }
 
-    bool FileExists(const char* path) { struct stat st; return stat(path, &st) == 0 && S_ISREG(st.st_mode); }
 
     // case-insensitive "contains libcheatmenu" for a path / map line
     const char* FindCheatLib(const char* line)
@@ -69,19 +68,6 @@ namespace
             if(const char* lib = FindCheatLib(line)) { Found(lib, "loaded"); break; }
         }
         fclose(f);
-    }
-
-    void ScanFolder(const char* base)
-    {
-        if(!base || !*base) return;
-        static const char* const kSub[] = { "mods", "files/mods", "../mods" };
-        char path[600];
-        for(const char* sub : kSub)
-            for(const char* lib : kLibs)
-            {
-                snprintf(path, sizeof(path), "%s/%s/%s", base, sub, lib);
-                if(FileExists(path)) { Found(lib, "installed"); return; }
-            }
     }
 
     // ---------------------------------------------------------------- 2.37: renamed libs
@@ -137,29 +123,6 @@ namespace
         }
         fclose(f);
         return found;
-    }
-
-    bool ScanFolderContent(const char* base, std::string& out)
-    {
-        if(!base || !*base) return false;
-        static const char* const kSub[] = { "mods", "files/mods", "../mods" };
-        char dirp[600], path[900];
-        for(const char* sub : kSub)
-        {
-            snprintf(dirp, sizeof(dirp), "%s/%s", base, sub);
-            DIR* d = opendir(dirp);
-            if(!d) continue;
-            while(dirent* e = readdir(d))
-            {
-                size_t l = strlen(e->d_name);
-                if(l < 4 || strcasecmp(e->d_name + l - 3, ".so") != 0) continue;
-                snprintf(path, sizeof(path), "%s/%s", dirp, e->d_name);
-                if(IsSelf(path) || !strcmp(e->d_name, BaseName(s_SelfPath.c_str()))) continue;
-                if(ContentHit(path)) { out = path; closedir(d); return true; }
-            }
-            closedir(d);
-        }
-        return false;
     }
 
     // ---------------------------------------------------------------- 2.37: hide the button
@@ -256,7 +219,7 @@ namespace
         ScanMaps();
         if(s_bFound) { PathFromMaps(s_szWhat); return; }
 
-        // 2) 2.37: renamed lib - check what is inside every mod lib (loaded first, then the folders)
+        // 2) 2.37: renamed lib - check what is inside every mod lib that is loaded
         std::string path; uintptr_t base = 0;
         if(ScanMapsContent(path, base))
         {
@@ -264,13 +227,11 @@ namespace
             snprintf(s_szPath, sizeof(s_szPath), "%s", path.c_str()); s_uBase = base;
             return;
         }
-        const char* roots[] = { aml->GetAndroidDataRootPath(), aml->GetAndroidDataPath(), aml->GetDataPath() };
-        for(const char* r : roots)
-        {
-            ScanFolder(r);
-            if(s_bFound) return;
-            if(ScanFolderContent(r, path)) { Found(BaseName(path.c_str()), "renamed, installed"); return; }
-        }
+        // 3.10: the mods folders are NOT judged any more. Players who deleted libCheatMenu.so were
+        // still refused: a copy left in another folder AML never loads from (files/mods, ../mods,
+        // a backup) or a file that was already gone counted as "installed". Only what is really
+        // loaded in the game can be used, so only that counts (a menu added later is loaded - and
+        // caught - the next time the game starts).
     }
 }
 
@@ -287,7 +248,15 @@ bool ModScan::CheatMenu() { return s_bFound; }
 
 bool ModScan::Recheck()
 {
-    if(!s_bFound && Now() - s_fLastScan > 3.0) Scan();
+    // 3.10: a result is not kept forever. Every re-check (once per 3 s at most) starts from scratch,
+    // so a menu that is gone (removed + game restarted) is never reported again.
+    if(Now() - s_fLastScan > 3.0)
+    {
+        bool was = s_bFound;
+        s_bFound = false; s_szWhat[0] = 0;
+        Scan();
+        if(was && !s_bFound) logger->Info("ModScan: no cheat menu loaded any more - joining servers is allowed again");
+    }
     return s_bFound;
 }
 

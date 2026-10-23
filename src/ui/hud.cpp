@@ -431,7 +431,7 @@ static void DrawNameTags(ImDrawList* dl)
         char bn[64]; uint32_t bc = MP::BcwDecorate(i, p.name, p.color, bn, sizeof(bn));   // 3.04: [GTV] / [SLZ] team tag + colour
         DrawNameTag(dl, p.drawPos, bn, bc, p.sync.health, p.sync.armour, ref, p.paused);
     }
-    if(MP::settings.showOwnTag && MP::myDrawValid)
+    if(MP::settings.showOwnTag && MP::myDrawValid && !MP::BcwOwnTagHidden())   // 3.10: never on the Brief Case War connection / respawn screen
     {
         const char* nm = (MP::myId < MP_MAX_PLAYERS && MP::players[MP::myId].active) ? MP::players[MP::myId].name : MP::settings.name;
         if(MP::IsLocalAdmin()) nm = "[ADMIN] SENJI";   // 2.37: admin.txt + name SENJI: my own tag always has the RGB rank
