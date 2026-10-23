@@ -1,0 +1,19 @@
+# MP Multiplayer 2.22 - broker.txt
+# Put this file in:  Android/data/com.rockstargames.gtasa/files/MP/broker.txt
+# (same folder as servers.txt). Optional - without it the mod does the same by itself.
+#
+# Region list (Asia mpsamp / Europe eusamp / NA nasamp / Oceania ocsamp .duckdns.org),
+# downloaded at every start - the mod picks the lowest ping:
+regions_url=https://thirtyfoxmcx00e1.github.io/wagu/regions.txt
+
+# 1 = if every region broker is down, use the free public lobby (broker.hivemq.com, ...). Keep on.
+public=1
+
+# ---- Optional: force one region broker directly (no download). Lines before the first
+# [Region] = a private broker; copy a block from regions.txt below to pin a region:
+#[Asia]
+#host=mpsamp.duckdns.org
+#port=1883
+#tls=0
+#user=mp
+#pass=(see regions.txt)

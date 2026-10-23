@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MP Multiplayer for GTA SA Mobile</title>
+<meta name="description" content="Free multiplayer mod for GTA San Andreas on Android. Live server list, regional servers in Asia, Europe, North America and Oceania, online 24/7.">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://api.fontshare.com; font-src https://cdn.fontshare.com; connect-src 'self' wss: https://api.github.com; img-src 'self' data:; worker-src blob:; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<link rel="preconnect" href="https://api.fontshare.com">
+<link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=clash-display@600,700&f[]=satoshi@400,500,700&display=swap">
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23171310'/%3E%3Ctext x='16' y='22' font-family='sans-serif' font-size='15' font-weight='700' text-anchor='middle' fill='%23f0a43c'%3EMP%3C/text%3E%3C/svg%3E">
+</head>
+<body>
+<a class="skip" href="#servers">Skip to the server list</a>
+
+<header class="top">
+  <div class="wrap top-in">
+    <a class="brand" href="#">MP <span>Multiplayer</span></a>
+    <nav aria-label="Sections">
+      <a href="#servers">Servers</a>
+      <a href="#regions">Regions</a>
+      <a href="#install">Install</a>
+      <a href="#versions">Versions</a>
+      <a href="#host">Host</a>
+      <a href="#security">Security</a>
+      <a href="termius.html">Termius</a>
+      <a href="termux.html">Termux</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <svg class="skyline" viewBox="0 0 1440 320" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+      <defs>
+        <linearGradient id="sun" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#f6b955"/><stop offset="1" stop-color="#d0542a"/>
+        </linearGradient>
+      </defs>
+      <circle cx="1080" cy="210" r="120" fill="url(#sun)" opacity=".85"/>
+      <path fill="#1d1712" d="M0 320V236h40v-30h26v30h22v-58h34v58h18v-90h44v90h20v-40h30v40h26v-120h18v-22h22v22h18v120h24v-66h40v66h18v-34h30v34h28v-150h12v-18h30v18h12v150h22v-80h46v80h20v-46h26v46h30v-106h40v106h18v-62h28v62h24v-130h20v-26h34v26h20v130h16v-70h36v70h22v-40h30v40h26v-96h44v96h20v-56h30v56h22v-140h14v-20h28v20h14v140h20v-74h40v74h24v-38h26v38h28v-88h42v88h20v-50h30v50h24v-112h18v-16h26v16h18v112h22v-60h36v60H1440v84z"/>
+      <path fill="#120e0b" d="M0 320v-40h70v-26h50v26h60v-36h80v36h70v-20h90v20h80v-44h60v44h90v-28h70v28h100v-36h80v36h70v-22h90v22h80v-40h70v40h90v-26h60v26h80v-32h70v32h70v40z"/>
+    </svg>
+    <div class="wrap hero-in">
+      <p class="kicker">GTA San Andreas · Android · free</p>
+      <h1>Play San Andreas together.<br>Online, every hour of the day.</h1>
+      <p class="lead">MP Multiplayer turns the mobile game into a shared world: other players, cars, passengers, chat and synced story characters. Servers in four regions keep the ping low.</p>
+      <div class="cta">
+        <a class="btn btn-main" id="dl-btn" href="https://github.com/ThirtyFoxMCx00E1/wagu/releases/tag/v3.04.6">Download the mod</a>
+        <a class="btn btn-ghost" href="termius.html">Server console (Termius)</a>
+        <a class="btn btn-ghost" href="termux.html">24/7 phone server (Termux)</a>
+        <a class="btn btn-ghost" href="https://github.com/ThirtyFoxMCx00E1/wagu">Source on GitHub</a>
+      </div>
+      <dl class="stats" aria-live="polite">
+        <div><dt>Servers online</dt><dd id="st-servers">–</dd></div>
+        <div><dt>Players</dt><dd id="st-players">–</dd></div>
+        <div><dt>Latest version</dt><dd id="st-version">3.04.6</dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <section id="servers" class="block">
+    <div class="wrap">
+      <div class="head">
+        <h2>Live servers</h2>
+        <p id="lobby-status" class="status"><span class="dot"></span>Connecting to the lobby…</p>
+      </div>
+      <div class="filters" role="group" aria-label="Filter by region">
+        <button class="chip on" data-r="-1">All</button>
+        <button class="chip" data-r="0">Asia</button>
+        <button class="chip" data-r="1">Europe</button>
+        <button class="chip" data-r="2">NA</button>
+        <button class="chip" data-r="3">Oceania</button>
+      </div>
+      <div class="table-wrap">
+        <table class="servers">
+          <thead><tr><th scope="col">Server</th><th scope="col">Region</th><th scope="col" class="num">Players</th><th scope="col">Type</th></tr></thead>
+          <tbody id="server-rows">
+            <tr class="skel"><td colspan="4"><span></span></td></tr>
+            <tr class="skel"><td colspan="4"><span></span></td></tr>
+            <tr class="skel"><td colspan="4"><span></span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note">The list updates by itself. Join from inside the game: open the MP menu, pick your region and tap Connect (default server) or Join on any server.</p>
+    </div>
+  </section>
+
+  <section id="regions" class="block alt">
+    <div class="wrap">
+      <div class="head">
+        <h2>Regions</h2>
+        <p class="status muted">Ping measured from this browser to each region's server.</p>
+      </div>
+      <div class="regions" id="region-cards"></div>
+      <p class="note">The mod measures the same thing in the game and picks the fastest region by itself. Servers from other regions are still listed; joining one moves you to that region's server.</p>
+    </div>
+  </section>
+
+  <section id="install" class="block">
+    <div class="wrap">
+      <h2>Install</h2>
+      <ol class="steps">
+        <li><h3>Get the game ready</h3><p>GTA San Andreas for Android (2.00 or newer) with the AML mod loader installed.</p></li>
+        <li><h3>Copy the mod</h3><p>Download the latest release. Put <code>libMP32.so</code> and <code>libMP64.so</code> into the AML <code>mods</code> folder. Optional: <a class="link" href="broker.txt">broker.txt</a> goes into <code>Android/data/com.rockstargames.gtasa/files/MP</code>.</p></li>
+        <li><h3>Start and pick a name</h3><p>Open the game, tap the MP button, set your player name. The region with the lowest ping is chosen for you.</p></li>
+        <li><h3>Play</h3><p>Tap Connect for your region's default server, or host your own with a name and an optional password.</p></li>
+      </ol>
+    </div>
+  </section>
+
+  <section id="versions" class="block alt">
+    <div class="wrap">
+      <h2>Version history</h2>
+      <div class="vwarn" role="note">
+        <strong>Only the latest version can be downloaded.</strong> MP 3.04.5 and older let players use cheats, so every server refuses them, on Wi-Fi and on mobile data. Update to <span id="v-latest">3.04.6</span> to play.
+      </div>
+      <div id="v-list" class="vlist"><p class="status">Loading the version history…</p></div>
+    </div>
+  </section>
+
+  <section id="host" class="block">
+    <div class="wrap two">
+      <div>
+        <h2>Run a region</h2>
+        <p>Each region is one Linux server with a HiveMQ broker and the region's 24/7 default server. One command sets it all up: Java 21, HiveMQ Community Edition, logins, firewall, TLS and restart on crash.</p>
+        <p><a class="link" href="https://github.com/ThirtyFoxMCx00E1/HiveMQ">HiveMQ server repo and guide</a></p>
+      </div>
+      <pre class="code" aria-label="Install commands"><code>git clone https://github.com/ThirtyFoxMCx00E1/HiveMQ
+cd HiveMQ
+sudo ./install.sh --region Asia \
+  --domain asia-you.duckdns.org --email you@mail.com
+
+# on ONE server only: join the server lists
+sudo ./install.sh --region Asia --bridge</code></pre>
+    </div>
+  </section>
+
+  <section id="security" class="block alt">
+    <div class="wrap">
+      <h2>Security</h2>
+      <div class="grid3">
+        <article><h3>Logins on every broker</h3><p>No anonymous connections. Passwords are stored hashed. The game login can only use the mod's own topics.</p></article>
+        <article><h3>Private player channels</h3><p>Only you can read the messages a server sends to you, and nobody can send in your name.</p></article>
+        <article><h3>Hidden IPs</h3><p>Players connect through the broker, so phones never see each other's IP address.</p></article>
+        <article><h3>Read-only website</h3><p>This page holds no secrets. Its login can only read the server list, over encrypted WebSocket.</p></article>
+        <article><h3>Flood limits</h3><p>Connection, packet size and bandwidth limits per client. Idle sockets without a login are dropped.</p></article>
+        <article><h3>Hardened servers</h3><p>Firewall with only the needed ports, admin port off, services run as a locked-down user.</p></article>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap foot-in">
+    <p>MP Multiplayer by ThirtyFoxMCx00E1. Fan-made mod, not affiliated with Rockstar Games.</p>
+    <p><a href="regions.txt">regions.txt</a> · <a href="broker.txt">broker.txt</a> · <a href="https://github.com/ThirtyFoxMCx00E1/wagu/issues">Report a problem</a></p>
+  </div>
+</footer>
+
+<script src="vendor/mqtt-5.10.1.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

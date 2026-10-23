@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MP Termux - web terminal for the 24/7 phone server</title>
+<meta name="description" content="Termux in the browser for MP Multiplayer: the MP Bot runs the 24/7 phone server checks by itself - install steps, server.conf, broker.txt, regions.txt, live lobby status, ping and releases.">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self' wss: https://api.github.com https://raw.githubusercontent.com; img-src 'self' data:; worker-src blob:; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#000000">
+<link rel="stylesheet" href="termux.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23000'/%3E%3Ctext x='16' y='22' font-family='monospace' font-size='15' font-weight='700' text-anchor='middle' fill='%23fff'%3E%3E_%3C/text%3E%3C/svg%3E">
+</head>
+<body>
+<header class="bar">
+  <a class="brand" href="./">MP <span>Termux</span></a>
+  <span id="live" class="live"><span class="dot"></span><span id="live-t">starting…</span></span>
+  <a class="other" href="termius.html">Termius</a>
+</header>
+
+<main class="screen" aria-label="Terminal">
+  <div id="out" class="out" role="log" aria-live="polite"></div>
+  <div class="prompt" aria-hidden="true"><span class="ps">~ $</span><span id="typed" class="typed"></span><span class="cur"></span></div>
+</main>
+
+<p id="botst" class="botst" role="status">bot: starting…</p>
+<div class="xkeys" aria-hidden="true">
+  <span>ESC</span><span>/</span><span>-</span><span>HOME</span><span>&uarr;</span><span>END</span><span>PGUP</span>
+  <span>TAB</span><span>CTRL</span><span>ALT</span><span>&larr;</span><span>&darr;</span><span>&rarr;</span><span id="kenter">&#x23CE;</span>
+</div>
+
+<footer class="foot">Runs in your browser and reads the live lobby. The real server runs on a phone:
+  <code>curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/termux/install.sh | bash</code>
+  · <a href="./">Website</a> · <a href="termius.html">Termius</a> · <a href="broker.txt">broker.txt</a> · <a href="regions.txt">regions.txt</a></footer>
+<script src="vendor/mqtt-5.10.1.min.js"></script>
+<script src="autobot.js"></script>
+<script src="termux.js"></script>
+</body>
+</html>

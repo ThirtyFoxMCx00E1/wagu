@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MP Lobby – GTA SA Mobile servers online</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#101010;--panel:#181818;--line:#2a2a2a;--txt:#e9e4d8;--mut:#8d877a;--ok:#5fd16f;--warn:#e8b931;--bad:#e2554b;--acc:#f0a830}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--txt);font:15px/1.5 "IBM Plex Mono",ui-monospace,monospace;min-height:100vh;padding:clamp(16px,4vw,48px)}
+main{max-width:860px;margin:0 auto}
+h1{font-family:"Archivo Black",sans-serif;font-size:clamp(28px,6vw,46px);letter-spacing:.5px;line-height:1.05;text-transform:uppercase}
+h1 span{color:var(--acc)}
+.sub{color:var(--mut);margin:8px 0 24px;max-width:60ch}
+.status{display:flex;gap:10px;align-items:center;padding:12px 14px;border:1px solid var(--line);background:var(--panel);margin-bottom:18px;flex-wrap:wrap}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--warn);flex:none}
+.dot.ok{background:var(--ok);box-shadow:0 0 10px var(--ok)}.dot.bad{background:var(--bad)}
+.status b{font-weight:600}#st{flex:1 1 auto;min-width:0}.status .r{margin-left:auto;color:var(--mut)}
+@media(max-width:560px){.status{flex-wrap:nowrap;align-items:flex-start}.dot{margin-top:6px}.status .r{display:none}.cnt-s{display:block!important}}
+table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line)}
+th,td{text-align:left;padding:11px 12px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+th{color:var(--mut);font-weight:400;font-size:12px;text-transform:uppercase;letter-spacing:1px}
+tr:last-child td{border-bottom:0}
+.name{font-weight:600}.def{color:var(--acc);font-size:12px;margin-left:6px}
+.live{color:var(--ok)}.stale{color:var(--mut)}
+.empty{padding:28px 14px;color:var(--mut);text-align:center}
+.help{margin-top:26px;color:var(--mut);font-size:13px;border-top:1px solid var(--line);padding-top:16px}
+.help li{margin:4px 0 4px 18px}
+@media(max-width:560px){.hide-s{display:none}th,td{padding:10px 8px}}
+</style>
+</head>
+<body>
+<main>
+  <h1>MP <span>Lobby</span></h1>
+  <p class="sub">Live list of GTA SA Mobile multiplayer servers announced by phones running libMP 2.5+. If your hosting phone shows up here, every other phone can see and join it.</p>
+  <div class="status" role="status" aria-live="polite"><span class="dot" id="dot"></span><span id="st">Connecting to the lobby…</span><span class="r" id="cnt"></span></div>
+  <p class="cnt-s" id="cnt2" style="display:none;color:var(--mut);margin:-8px 0 12px"></p>
+  <table aria-label="Servers online">
+    <thead><tr><th>Server</th><th>Players</th><th class="hide-s">Port</th><th class="hide-s">Region</th><th>State</th></tr></thead>
+    <tbody id="rows"><tr><td colspan="5" class="empty">Waiting for servers…</td></tr></tbody>
+  </table>
+  <div class="help">
+    <p>How to read it</p>
+    <ul>
+      <li><span class="live">live</span>: the host phone announced it in the last 10 s. Phones can join it.</li>
+      <li><span class="stale">old</span>: a saved announcement with no fresh update. It drops off after 10 s without updates.</li>
+      <li>Nothing here while your phone hosts? Open MP MENU → Servers → Lobby details on that phone and check which broker failed.</li>
+    </ul>
+  </div>
+</main>
+<script src="https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js"></script>
+<script>
+const REG=["Asia","Europe","NA","Oceania"], servers=new Map();
+const $=id=>document.getElementById(id);
+function setStatus(cls,txt){$("dot").className="dot "+cls;$("st").innerHTML=txt}
+function render(){
+  const now=Date.now(), list=[...servers.entries()].filter(([,s])=>now-s.seen<60000)
+    .sort((a,b)=>(b[1].live-a[1].live)||(b[1].players-a[1].players));
+  const live=list.filter(([,s])=>s.live&&now-s.seen<=10000).length;
+  $("cnt").textContent=$("cnt2").textContent=live+" live server"+(live==1?"":"s");
+  if(!list.length){$("rows").innerHTML='<tr><td colspan="5" class="empty">No servers online right now.</td></tr>';return}
+  $("rows").innerHTML=list.map(([t,s])=>{
+    const ok=s.live&&now-s.seen<=10000;
+    const esc=x=>String(x).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+    return `<tr><td class="name">${esc(s.name)}${s.port==1922&&s.name.toLowerCase()=="mp lan server"?'<span class="def">DEFAULT</span>':''}</td>
+      <td>${s.players}/${s.max}</td><td class="hide-s">${s.port}</td><td class="hide-s">${REG[s.region]||"?"}</td>
+      <td class="${ok?"live":"stale"}">${ok?"● live":"○ old"}</td></tr>`}).join("");
+}
+const brokers=["wss://broker.hivemq.com:8884/mqtt","wss://test.mosquitto.org:8081/","wss://broker.emqx.io:8084/mqtt"];
+let bi=0, client;
+function connect(){
+  const url=brokers[bi];
+  setStatus("","Connecting to "+new URL(url).hostname+"…");
+  client=mqtt.connect(url,{clientId:"tfweb"+Math.random().toString(16).slice(2,10),clean:true,connectTimeout:8000,reconnectPeriod:0});
+  client.on("connect",()=>{setStatus("ok","Lobby online via <b>"+new URL(url).hostname+"</b>");client.subscribe("thirtyfox/mp4/l/+")});
+  client.on("message",(topic,payload,packet)=>{
+    const tok=topic.split("/").pop(), p=payload.toString();
+    if(!p){servers.delete(tok);render();return}
+    const f=p.split("|"); if(f[0]!=="v1"||f.length<7)return;
+    const old=servers.get(tok)||{};
+    servers.set(tok,{port:+f[1],players:+f[2],max:+f[3],region:+f[4],proto:+f[5],name:f.slice(6).join("|"),seen:Date.now(),live:old.live||!packet.retain});
+    render();
+  });
+  let failed=false;
+  const fail=()=>{if(failed||client.connected)return;failed=true;client.end(true);bi=(bi+1)%brokers.length;setStatus("bad","Broker unreachable, trying the next one…");setTimeout(connect,1500)};
+  client.on("error",fail);
+  client.on("offline",()=>{failed=false;fail()});
+}
+connect(); setInterval(render,2000);
+</script>
+</body>
+</html>

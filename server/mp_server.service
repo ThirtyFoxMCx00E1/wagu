@@ -1,0 +1,16 @@
+# systemd unit: always-on MP server (starts on boot, restarts on crash).
+#   sudo cp mp_server /usr/local/bin/ && sudo cp mp_server.service /etc/systemd/system/
+#   sudo systemctl enable --now mp_server
+[Unit]
+Description=MP multiplayer server (GTA SA Mobile)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=/usr/local/bin/mp_server 1922 "MP LAN Server" 100 Asia --persistent
+Restart=always
+RestartSec=3
+DynamicUser=yes
+
+[Install]
+WantedBy=multi-user.target

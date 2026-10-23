@@ -1,0 +1,22 @@
+obj/
+libs/
+server/mp_server
+server/*.o
+test/relay_test
+server/obj/
+# private broker login: never commit
+broker.txt
+src/net/broker_private.h
+test/load_test
+test/env_test
+test/motion_test
+test/*.o
+test/relay_test2
+test/pair_test
+test/guard_test
+!docs/broker.txt
+!assets/MP/broker.txt
+# 2.37: the administrator proof file - never commit
+admin.txt
+**/admin.txt
+test/admin_test
