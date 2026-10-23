@@ -95,6 +95,7 @@ bool MPServer::Start(uint16_t port, const char* serverName, MPServerLogFn log, i
     // default server kept 20 slots ("0/20") on the default server. The default server is always 100.
     SetMaxPlayers(maxPlayers);
     memset(m_Slots, 0, sizeof(m_Slots));
+    m_nNextAd = MP_NowMs() + m_nAdInterval;   // 3.11: the Discord clock starts with the server
     memset(m_Pickups, 0, sizeof(m_Pickups));
     m_nStartUnix = (uint32_t)time(nullptr);   // 2.27
     LoadTurf();                               // 3.01
@@ -398,10 +399,28 @@ void MPServer::Loop()
             static thread_local uint64_t lastWorld = 0;
             if(now - lastWorld >= 3000) { lastWorld = now; PktWorld w; FillWorld(w); Broadcast(&w, sizeof(w)); }
             ExpirePickups(now);
+            AdTick(now);     // 3.11: Discord message every 45 min 20 s
             TurfTick(now);   // 3.01
             RaceQueueTick(now, false);
         }
     }
+}
+
+// 3.11: "Join our discord server..." to everybody on this server every 45 min 20 s. One clock per
+// server, started when the server starts: players joining never trigger it (no spam on join), and
+// nothing is sent while the server is empty.
+void MPServer::AdTick(uint64_t now)
+{
+    if(!m_nNextAd) { m_nNextAd = now + m_nAdInterval; return; }
+    if(now < m_nNextAd) return;
+    m_nNextAd = now + m_nAdInterval;
+    bool any = false;
+    for(int i = 0; i < MP_MAX_PLAYERS; ++i) if(m_Slots[i].used) { any = true; break; }
+    if(!any) return;
+    PktServerMsg m; memset(&m, 0, sizeof(m)); m.type = PKT_SERVER_MSG; m.color = 0x7289DAFF;   // Discord blurple
+    MP_CopyStr(m.text, MP_AD_TEXT, sizeof(m.text));
+    Broadcast(&m, sizeof(m));
+    Log("Sent the Discord message to everybody");
 }
 
 void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
@@ -518,6 +537,7 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
                 s.used = true; s.addr = from; s.lastSeen = MP_NowMs();
                 s.pair = s.pairReq = MP_INVALID_ID;
                 MP_CopyStr(s.uid, juid, sizeof(s.uid)); s.joinedMs = MP_NowMs();   // 2.25
+                if(len >= (int)sizeof(PktJoin5)) memcpy(&s.build, data + offsetof(PktJoin5, build), sizeof(s.build));   // 3.11: who gets voice
                 MP_CopyStr(s.name, j->name[0] ? j->name : "Player", MP_NAME_LEN);
                 s.name[MP_NAME_LEN - 1] = 0;
                 MP_StripAdminTag(s.name);                 // 2.37: nobody can fake the [ADMIN] tag
@@ -722,6 +742,35 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
                 Log("%s %s", m_Slots[slot].name, p.paused ? "paused" : "resumed");
             }
             Broadcast(&p, sizeof(p), slot);
+            break;
+        }
+
+        case PKT_VOICE:   // 3.11: voice chat -> 3.11+ players within MP_VOICE_RANGE (no batching, no delay)
+        {
+            if(slot < 0 || len < (int)sizeof(PktVoiceHdr) || len > (int)sizeof(PktVoiceHdr) + MP_VOICE_MAX_BYTES) return;
+            Slot& s = m_Slots[slot];
+            if(s.muted) return;                                  // muted by the admin: no voice either
+            uint64_t now = MP_NowMs();
+            if(now - s.voiceWin >= 1000) { s.voiceWin = now; s.voiceCount = 0; }
+            if(++s.voiceCount > 60) return;                      // 50 frames/s + resend slack
+            uint8_t out[sizeof(PktVoiceHdr) + MP_VOICE_MAX_BYTES];
+            memcpy(out, data, len);
+            PktVoiceHdr* h = (PktVoiceHdr*)out;
+            if((int)sizeof(PktVoiceHdr) + h->len > len) return;
+            h->id = (uint8_t)slot; h->type = PKT_VOICE;
+            int n = (int)sizeof(PktVoiceHdr) + h->len;
+            const float r2 = MP_VOICE_RANGE * MP_VOICE_RANGE;
+            for(int i = 0; i < MP_MAX_PLAYERS; ++i)
+            {
+                const Slot& o = m_Slots[i];
+                if(i == slot || !o.used || o.build < MP_VOICE_BUILD) continue;
+                if(s.hasPos && o.hasPos)
+                {
+                    float dx = s.pos[0] - o.pos[0], dy = s.pos[1] - o.pos[1], dz = s.pos[2] - o.pos[2];
+                    if(dx * dx + dy * dy + dz * dz > r2) continue;
+                }
+                SendTo(i, out, n);
+            }
             break;
         }
 

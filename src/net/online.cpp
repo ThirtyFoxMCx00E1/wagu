@@ -165,7 +165,7 @@ struct Bridge                 // host side: one local UDP socket per remote play
 // published ONCE there and the broker copies them to everyone, instead of the host uploading
 // one copy per player - its upload grows with the number of players, not players squared.
 #define MP_RELAY_CAP 0xFB
-static inline bool MP_IsUrgentFrame(const uint8_t* d, int n) { return n > 0 && (d[0] == PKT_PING || d[0] == PKT_PONG || d[0] == PKT_DAMAGE); }
+static inline bool MP_IsUrgentFrame(const uint8_t* d, int n) { return n > 0 && (d[0] == PKT_PING || d[0] == PKT_PONG || d[0] == PKT_DAMAGE || d[0] == PKT_VOICE); }   // 3.11: + voice (never waits for the batch)
 
 static std::mutex             s_M;
 static std::atomic<bool>      s_bStarted{false};
@@ -178,6 +178,10 @@ static char                   s_szCid[24] = "";        // our MQTT client id = o
 
 static std::map<uint32_t, Listing> s_List;            // token -> listing (guarded)
 static std::map<uint32_t, uint32_t> s_RelayIdx;       // token -> relay index (guarded)
+static void DirectThread();   // 3.11
+struct DirectInfo { uint32_t ip = 0; int rtt = -1; uint64_t at = 0; bool ok = false; int fails = 0; uint64_t badUntil = 0; uint16_t port = 0; };
+static std::map<uint32_t, DirectInfo> s_Direct;   // 3.11: token -> direct UDP probe result (guarded by s_M)
+
 static uint32_t               s_nNextIdx = 1;
 
 // hosting (game thread writes, net thread reads; guarded)
@@ -945,7 +949,8 @@ static void NetThread()
                     ok = true;
                     BrokerOk(br);
                     lastGood = bi; stickyFails = 0;
-                    s_nCurFlush = br.flushMs > 0 ? br.flushMs : s_nFlushMs;
+                    // 3.11: our own regional HiveMQ brokers have no message limit: batch for 10 ms, not 25
+                    s_nCurFlush = br.flushMs > 0 ? br.flushMs : (br.region >= 0 ? (s_nFlushMs < 10 ? s_nFlushMs : 10) : s_nFlushMs);
                     mq.blockingSend = false;   // 2.14: from now on the relay never waits for the upload
                     std::string down = TopicDown(s_szCid);
                     mq.Subscribe((TOPIC_ROOT + "l/+").c_str(), 1);
@@ -1908,6 +1913,7 @@ void Online::Start(const char* brokerFile)
     snprintf(s_szCid, sizeof(s_szCid), "tfmp%08x%04x", Rand32(), Rand32() & 0xFFFF);
     { std::lock_guard<std::mutex> lk(s_M); s_nNextIdx = 1 + Rand32() % 60000; }   // relay IPs differ per session
     std::thread(NetThread).detach();
+    std::thread(DirectThread).detach();   // 3.11: direct UDP to 24/7 servers
 }
 
 bool Online::IsConnected() { return s_bConnected; }
@@ -1958,6 +1964,10 @@ std::vector<LanServer> Online::Snapshot()
             s.players = l.players; s.maxPlayers = l.maxPlayers; s.region = l.region;
             s.proto = l.proto; s.icon = l.icon; MP_CopyStr(s.lang, l.lang, sizeof(s.lang)); s.startUnix = l.startUnix; s.dedicated = l.dedicated ? 1 : 0; s.ping = rtt >= 0 ? rtt * 2 : 0;
             s.token = it->first;
+            {   // 3.11: a 24/7 server we can reach over direct UDP: show the real (measured) ping
+                auto d = s_Direct.find(it->first);
+                if(d != s_Direct.end() && d->second.ok && d->second.rtt >= 0 && now - d->second.at < 90000) s.ping = d->second.rtt;
+            }
             out.push_back(s);
         }
         ++it;
@@ -1986,6 +1996,147 @@ void Online::SetHostLang(const char* lang)   // 2.25
     MP_CopyStr(s_szHostLang, lang ? lang : "", sizeof(s_szHostLang)); MP_CleanLang(s_szHostLang);
 }
 void Online::SetHostIcon(int icon) { s_nHostIcon = (icon >= 0 && icon <= MP_ICON_MAX) ? icon : 0; }   // 2.24
+
+// ---- 3.11: direct UDP to 24/7 servers ------------------------------------------------------
+// A 24/7 server ("!d" in the listing) installed with the HiveMQ kit runs on the same machine as
+// its region's broker, and its UDP game port is open to the internet. Going through the broker
+// (phone -TCP-> broker -TCP-> server and back, batched) is what made the ping 200-500 ms. This
+// thread asks that machine directly (PKT_QUERY over UDP to <region broker host>:<server port>)
+// every 15 s. If the answer is the same server (name + start time), MP connects straight to it:
+// one UDP hop each way. If UDP is blocked on the phone's network the probe fails and the relay
+// is used like before (and MPClient falls back to the relay by itself if a direct join is not
+// answered within 2.5 s).
+
+static std::string RegionHostName(int region)
+{
+    for(const Broker& b : s_Brokers)
+    {
+        if(b.region != region || b.region < 0 || b.ws) continue;
+        std::string h = b.host;
+        size_t sc = h.find("://"); if(sc != std::string::npos) h = h.substr(sc + 3);
+        size_t c = h.find_first_of(":/"); if(c != std::string::npos) h = h.substr(0, c);
+        if(!h.empty()) return h;
+    }
+    return "";
+}
+static bool ResolveV4(const std::string& host, uint32_t* ipNet)
+{
+    static std::map<std::string, std::pair<uint32_t, uint64_t>> cache;   // probe thread only
+    uint64_t now = MP_NowMs();
+    auto c = cache.find(host);
+    if(c != cache.end() && now - c->second.second < 300000) { *ipNet = c->second.first; return c->second.first != 0; }
+    addrinfo hints, *res = nullptr; memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_INET; hints.ai_socktype = SOCK_DGRAM;
+    uint32_t ip = 0;
+    if(getaddrinfo(host.c_str(), nullptr, &hints, &res) == 0 && res) { ip = ((sockaddr_in*)res->ai_addr)->sin_addr.s_addr; freeaddrinfo(res); }
+    cache[host] = { ip, now };
+    *ipNet = ip;
+    return ip != 0;
+}
+// -1 = no answer / not that server, else the round trip in ms
+static int ProbeDirect(uint32_t ipNet, uint16_t port, const char* name, uint32_t startUnix)
+{
+    int fd = (int)socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    if(fd < 0) return -1;
+    fcntl(fd, F_SETFL, fcntl(fd, F_GETFL, 0) | O_NONBLOCK);
+    sockaddr_in to; memset(&to, 0, sizeof(to)); to.sin_family = AF_INET; to.sin_addr.s_addr = ipNet; to.sin_port = htons(port);
+    int best = -1;
+    uint64_t t0 = MP_NowMs();
+    int sent = 0;
+    while(MP_NowMs() - t0 < 1200 && best < 0)
+    {
+        uint64_t now = MP_NowMs();
+        if(sent < 3 && now - t0 >= (uint64_t)sent * 300)   // 3 tries: one lost UDP packet is no reason to give up
+        {
+            PktQuery q; q.type = PKT_QUERY; q.time = (uint32_t)now;
+            sendto(fd, (const char*)&q, sizeof(q), 0, (sockaddr*)&to, sizeof(to));
+            ++sent;
+        }
+        pollfd pf; pf.fd = fd; pf.events = POLLIN; pf.revents = 0;
+        if(poll(&pf, 1, 50) <= 0) continue;
+        uint8_t buf[512]; sockaddr_in from; socklen_t fl = sizeof(from);
+        int r = (int)recvfrom(fd, (char*)buf, sizeof(buf), 0, (sockaddr*)&from, &fl);
+        if(r < (int)sizeof(PktInfo) || buf[0] != PKT_INFO || from.sin_addr.s_addr != ipNet || from.sin_port != to.sin_port) continue;
+        PktInfo in; memcpy(&in, buf, sizeof(in));
+        char nm[33]; memcpy(nm, in.serverName, 32); nm[32] = 0;
+        if(strncasecmp(nm, name, 31)) continue;                     // another server on that port
+        if(startUnix && r >= (int)sizeof(PktInfo5))
+        {
+            uint32_t su; memcpy(&su, buf + offsetof(PktInfo5, startUnix), sizeof(su));
+            if(su && su != startUnix) continue;                     // not the same copy of the server
+        }
+        best = (int)(MP_NowMs() - (uint64_t)in.time);
+        if(best < 0 || best > 5000) best = (int)(MP_NowMs() - now);
+    }
+    close(fd);
+    return best;
+}
+static void DirectThread()
+{
+    uint64_t lastRound = 0;
+    while(s_bStarted)
+    {
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        if(s_bHostDedicated || getenv("MP_NO_DIRECT")) continue;   // a 24/7 server itself never needs it
+        uint64_t now = MP_NowMs();
+        struct Cand { uint32_t token; Listing l; bool fresh; };
+        std::vector<Cand> cands;
+        {
+            std::lock_guard<std::mutex> lk(s_M);
+            for(auto& it : s_List)
+            {
+                const Listing& l = it.second;
+                if(!l.confirmed || !l.dedicated || l.region < 0 || now - l.lastSeen > LIST_FRESH_MS) continue;
+                auto d = s_Direct.find(it.first);
+                bool unknown = d == s_Direct.end() || !d->second.at;
+                if(d != s_Direct.end() && d->second.badUntil > now) continue;
+                cands.push_back({ it.first, l, unknown });
+            }
+        }
+        bool round = now - lastRound >= 15000;
+        if(round) lastRound = now;
+        for(const Cand& c : cands)
+        {
+            if(!round && !c.fresh) continue;   // new servers right away, the rest every 15 s
+            std::string host = RegionHostName(c.l.region);
+            uint32_t ip = 0;
+            int rtt = (!host.empty() && ResolveV4(host, &ip)) ? ProbeDirect(ip, c.l.port, c.l.name, c.l.startUnix) : -1;
+            std::lock_guard<std::mutex> lk(s_M);
+            DirectInfo& d = s_Direct[c.token];
+            d.at = MP_NowMs(); d.port = c.l.port;
+            if(rtt >= 0) { d.ok = true; d.ip = ip; d.rtt = d.rtt >= 0 ? (d.rtt * 3 + rtt) / 4 : rtt; d.fails = 0; }
+            else if(++d.fails >= 2) { d.ok = false; d.rtt = -1; }
+        }
+    }
+}
+static uint32_t TokenForRelayIp(const char* relayIp)   // s_M held
+{
+    in_addr a;
+    if(!relayIp || inet_pton(AF_INET, relayIp, &a) != 1) return 0;
+    uint32_t idx = ntohl(a.s_addr) & 0xFFFFu;
+    for(auto& r : s_RelayIdx) if(r.second == idx) return r.first;
+    return 0;
+}
+bool Online::DirectAddr(const char* relayIp, uint16_t port, uint32_t* ipNet, int* rttMs)
+{
+    std::lock_guard<std::mutex> lk(s_M);
+    uint32_t tok = TokenForRelayIp(relayIp);
+    if(!tok) return false;
+    auto d = s_Direct.find(tok);
+    if(d == s_Direct.end() || !d->second.ok || d->second.port != port || d->second.badUntil > MP_NowMs()) return false;
+    if(MP_NowMs() - d->second.at > 90000) return false;
+    *ipNet = d->second.ip;
+    if(rttMs) *rttMs = d->second.rtt;
+    return true;
+}
+void Online::DirectFailed(const char* relayIp)
+{
+    std::lock_guard<std::mutex> lk(s_M);
+    uint32_t tok = TokenForRelayIp(relayIp);
+    if(!tok) return;
+    DirectInfo& d = s_Direct[tok];
+    d.ok = false; d.badUntil = MP_NowMs() + 10 * 60 * 1000;   // relay for the next 10 minutes
+}
 
 bool Online::IsRelayIp(const char* ip)
 {

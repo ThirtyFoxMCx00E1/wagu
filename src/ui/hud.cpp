@@ -373,7 +373,7 @@ static void DrawWeaponIcon(ImDrawList* dl, ImVec2 c, float s, uint8_t weapon)
 }
 
 // ---- name tag + health bar --------------------------------------------------------------
-static void DrawNameTag(ImDrawList* dl, const Vec3& head, const char* name, uint32_t rgba, int health, int armour, const Vec3& camRef, bool paused = false)
+static void DrawNameTag(ImDrawList* dl, const Vec3& head, const char* name, uint32_t rgba, int health, int armour, const Vec3& camRef, bool paused = false, bool talking = false)
 {
     float dx = head.x - camRef.x, dy = head.y - camRef.y, dz = head.z - camRef.z;
     float dist = sqrtf(dx * dx + dy * dy + dz * dz);
@@ -397,6 +397,13 @@ static void DrawNameTag(ImDrawList* dl, const Vec3& head, const char* name, uint
         const float pfs = fs * 0.8f;
         ImVec2 pts = UI::Font()->CalcTextSizeA(pfs, FLT_MAX, 0, "PAUSED");
         UI::OutlinedText(dl, pfs, ImVec2(sx - pts.x * 0.5f, y - pfs - UI::S(2) * k), IM_COL32(255, 210, 60, 255), "PAUSED");
+    }
+    if(talking)   // 3.11: white speaker over the head while this player talks (voice chat)
+    {
+        float r = UI::S(15) * k;
+        ImVec2 c(sx, y - (paused ? fs * 0.8f + UI::S(4) * k : 0) - r - UI::S(4) * k);
+        UI::DrawSpeaker(dl, ImVec2(c.x + UI::S(1.5f), c.y + UI::S(1.5f)), r, IM_COL32(0, 0, 0, 200), 2, false);
+        UI::DrawSpeaker(dl, c, r, IM_COL32_WHITE, 2, false);
     }
     UI::NameText(dl, fs, ImVec2(sx - ts.x * 0.5f, y), UI::FromRGBA(rgba | 0xFF), name);   // 2.37
     y += fs + UI::S(3) * k + lift;
@@ -429,15 +436,34 @@ static void DrawNameTags(ImDrawList* dl)
         if(p.invisible) continue;                               // 2.19 /invisible
         if(p.tagBlocked && !MP_WallhackOn()) continue;          // 2.19: wall in between
         char bn[64]; uint32_t bc = MP::BcwDecorate(i, p.name, p.color, bn, sizeof(bn));   // 3.04: [GTV] / [SLZ] team tag + colour
-        DrawNameTag(dl, p.drawPos, bn, bc, p.sync.health, p.sync.armour, ref, p.paused);
+        DrawNameTag(dl, p.drawPos, bn, bc, p.sync.health, p.sync.armour, ref, p.paused, MP::VoiceSpeaking(i));
     }
     if(MP::settings.showOwnTag && MP::myDrawValid && !MP::BcwOwnTagHidden())   // 3.10: never on the Brief Case War connection / respawn screen
     {
         const char* nm = (MP::myId < MP_MAX_PLAYERS && MP::players[MP::myId].active) ? MP::players[MP::myId].name : MP::settings.name;
         if(MP::IsLocalAdmin()) nm = "[ADMIN] SENJI";   // 2.37: admin.txt + name SENJI: my own tag always has the RGB rank
         char bn[64]; uint32_t bc = MP::BcwDecorate(MP::myId, nm, MP::myColor, bn, sizeof(bn));   // 3.04
-        DrawNameTag(dl, MP::myDrawPos, bn, bc, MP::myHealth, MP::myArmour, ref);
+        DrawNameTag(dl, MP::myDrawPos, bn, bc, MP::myHealth, MP::myArmour, ref, false, MP::MeTalking());
     }
+}
+
+// ---- 3.11: who is talking (voice chat), SA-MP mobile style on the left: "<speaker> Name (id)" ----
+static void DrawVoiceList(ImDrawList* dl)
+{
+    const ImVec2 ds = ImGui::GetIO().DisplaySize;
+    const float fs = UI::S(24), rh = UI::S(32);
+    float x = UI::S(12), y = ds.y * 0.40f;
+    int n = 0;
+    auto Row = [&](const char* name, int id)
+    {
+        UI::DrawSpeaker(dl, ImVec2(x + UI::S(13), y + rh * 0.5f), UI::S(10), IM_COL32_WHITE, 2, false);
+        char b[64]; snprintf(b, sizeof(b), "%s (%d)", name, id);
+        UI::OutlinedText(dl, fs, ImVec2(x + UI::S(32), y + (rh - fs) * 0.5f), IM_COL32_WHITE, b);
+        y += rh; ++n;
+    };
+    if(MP::MeTalking() && MP::myId < MP_MAX_PLAYERS) Row(MP::players[MP::myId].active ? MP::players[MP::myId].name : MP::settings.name, MP::myId);
+    for(int i = 0; i < MP_MAX_PLAYERS && n < 6; ++i)
+        if(i != MP::myId && MP::players[i].active && MP::VoiceSpeaking(i)) Row(MP::players[i].name, i);
 }
 
 // ---- chat -------------------------------------------------------------------------------
@@ -474,6 +500,7 @@ static void DrawChat(ImDrawList* dl)
         std::string pre = l.prefix.empty() ? "" : l.prefix + ": ";
         std::string t = UI::EmojiToPUA(l.text.c_str());   // 2.19: emojis
         float preW = pre.empty() ? 0 : f->CalcTextSizeA(fs, FLT_MAX, 0, pre.c_str()).x;
+        if(st.chatTimestamps && l.stamp[0]) { std::string ts = std::string(l.stamp) + " "; preW += f->CalcTextSizeA(fs, FLT_MAX, 0, ts.c_str()).x; }   // 3.11
         std::vector<ChatRow> mine;
         const char* s = t.c_str(); const char* e = s + t.size();
         bool first = true;
@@ -502,6 +529,12 @@ static void DrawChat(ImDrawList* dl)
     for(auto& r : rows)   // newest at the bottom
     {
         float cx = x;
+        if(r.first && st.chatTimestamps && r.l->stamp[0])   // 3.11: "[18:02:48] " like SA-MP timestamps
+        {
+            std::string ts = std::string(r.l->stamp) + " ";
+            UI::OutlinedText(dl, fs, ImVec2(cx, y), IM_COL32(215, 215, 215, 255), ts.c_str(), r.alpha);
+            cx += f->CalcTextSizeA(fs, FLT_MAX, 0, ts.c_str()).x;
+        }
         if(r.first && !r.l->prefix.empty())
         {
             std::string pre = r.l->prefix + ": ";
@@ -625,6 +658,7 @@ void HUD::Render()
         {
             if(MP::IsConnected() && !overlay && !MP::JoinScreenActive()) DrawNameTags(dl);   // 2.19.1: no tags (not even yours) on the join view
             if(MP::settings.showChat) DrawChat(dl);
+            if(MP::IsConnected() && !overlay) DrawVoiceList(dl);   // 3.11
             if(MP::settings.showKillFeed && MP::IsConnected()) DrawKillFeed(dl);   // 2.35: not after leaving
             if(MP::settings.showStatus) DrawStatus(dl);
         }

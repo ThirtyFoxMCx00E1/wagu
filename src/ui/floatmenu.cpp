@@ -18,7 +18,8 @@ namespace
 {
     struct Section  { std::string title; MPMenuSectionFn fn; void* data; };
     struct Window   { MPMenuWindowFn fn; void* data; };
-    struct Bubble   { std::string label; ImVec2 rel; MPMenuSectionFn fn; void* data; bool bar; const bool* active; bool dots; };
+    struct Bubble   { std::string label; ImVec2 rel; MPMenuSectionFn fn; void* data; bool bar; const bool* active; bool dots;
+                      int (*micState)() = nullptr; };   // 3.11: voice chat pill (0 not connected, 1 mic off, 2 mic on, 3 talking)
     struct Page     { const char* title; MPMenuSectionFn fn; void* data; bool open; };
 
     std::vector<Section> s_Sections;
@@ -99,6 +100,12 @@ void FloatMenu::AddSection(const char* t, MPMenuSectionFn fn, void* d) { s_Secti
 void FloatMenu::AddFloatingWindow(MPMenuWindowFn fn, void* d)          { s_Windows.push_back({ fn, d }); }
 void FloatMenu::AddBubble(const char* l, float x, float y, MPMenuSectionFn fn, void* d) { s_Bubbles.push_back({ l ? l : "?", ImVec2(x, y), fn, d, false, nullptr, false }); }
 void FloatMenu::AddBarButton(const char* l, MPMenuSectionFn fn, void* d, const bool* active) { s_Bubbles.push_back({ l ? l : "?", ImVec2(0.5f, 0.06f), fn, d, true, active, false }); }
+void FloatMenu::AddMicButton(MPMenuSectionFn fn, int (*state)())
+{
+    Bubble b = { "mic", ImVec2(0.5f, 0.06f), fn, nullptr, true, nullptr, false };
+    b.micState = state;
+    s_Bubbles.push_back(b);
+}
 void FloatMenu::AddDotsButton() { s_Bubbles.push_back({ "...", ImVec2(0.5f, 0.06f), nullptr, nullptr, true, &s_bDotsActive, true }); }
 void FloatMenu::SetBarPos(float x, float y) { s_BarPos = ImVec2(ImClamp(x, 0.0f, 1.0f), ImClamp(y, 0.0f, 1.0f)); }
 bool FloatMenu::GetBarPos(float* x, float* y) { *x = s_BarPos.x; *y = s_BarPos.y; bool m = s_bBarMoved; s_bBarMoved = false; return m; }
@@ -189,7 +196,7 @@ static float s_fGrabDX = 0, s_fGrabDY = 0;
 static float PillH() { return UI::S(64); }
 static ImVec2 BubbleSize(const Bubble& b)
 {
-    if(b.dots) return ImVec2(PillH(), PillH());   // square icon pill
+    if(b.dots || b.micState) return ImVec2(PillH(), PillH());   // square icon pill
     float fs = UI::S(30);
     ImVec2 ts = UI::Font()->CalcTextSizeA(fs, FLT_MAX, 0, b.label.c_str());
     return ImVec2(ts.x + UI::S(44), PillH());
@@ -208,6 +215,13 @@ static ImVec2 BarCentre(const ImVec2& ds)
     float cx = ImClamp(s_BarPos.x * ds.x, hw + UI::S(8), ds.x - hw - UI::S(8));
     float cy = ImClamp(s_BarPos.y * ds.y, hh + UI::S(6), ds.y - hh);
     return ImVec2(cx, cy);
+}
+bool FloatMenu::BarBottom(float* cx, float* y)   // 3.11: where a panel under the top bar goes
+{
+    if(s_bHidden || BarWidth() <= 0) return false;
+    ImVec2 c = BarCentre(ImGui::GetIO().DisplaySize);
+    *cx = c.x; *y = c.y + PillH() * 0.5f + UI::S(10);
+    return true;
 }
 static ImVec2 BubbleCentre(size_t i, const ImVec2& ds)
 {
@@ -295,10 +309,21 @@ static void DrawBubble(ImDrawList* dl, const Bubble& b, ImVec2 c, bool held)
     ImVec2 sz = BubbleSize(b);
     ImVec2 a(c.x - sz.x * 0.5f, c.y - sz.y * 0.5f), z(c.x + sz.x * 0.5f, c.y + sz.y * 0.5f);
     bool on = b.active && *b.active;
+    int ms = b.micState ? b.micState() : -1;
+    if(ms >= 2) on = true;   // 3.11: mic on = white pill like the other "on" buttons
     ImU32 bg = on ? UI::kPillActive : UI::kPill;
     if(held) bg = on ? IM_COL32(220, 220, 220, 235) : IM_COL32(40, 40, 40, 170);
     dl->AddRectFilled(a, z, bg, sz.y * 0.26f);
     ImU32 fg = on ? IM_COL32(10, 10, 10, 255) : IM_COL32_WHITE;
+    if(b.micState)   // 3.11: small white mic (SA-MP mobile voice button look), slashed while off
+    {
+        float r = sz.y * 0.30f;
+        ImU32 col = ms == 0 ? IM_COL32(255, 255, 255, 110) : fg;
+        UI::DrawMic(dl, c, r, col, ms <= 1);
+        if(ms == 3)   // talking: green ring around the pill
+            dl->AddRect(ImVec2(a.x - UI::S(2), a.y - UI::S(2)), ImVec2(z.x + UI::S(2), z.y + UI::S(2)), IM_COL32(60, 220, 90, 255), sz.y * 0.28f, 0, UI::S(4));
+        return;
+    }
     if(b.dots)   // ⋮
     {
         float r = UI::S(4.2f), gap = UI::S(11);

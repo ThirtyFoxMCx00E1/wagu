@@ -25,6 +25,9 @@
 #include <algorithm>
 #include <string>
 #include "audio/sound.h"
+#include "audio/voice.h"   // 3.11
+#include <set>
+#include <time.h>
 #include "ui/hud.h"
 #include "ui/floatmenu.h"
 #include "ui/vkeyboard.h"
@@ -171,6 +174,10 @@ static void PushChat(const ChatLine& l)
 {
     chat.push_back(l);
     chat.back().t = MP_NowMs();   // 2.19.6: for the chat fade
+    {   // 3.11: chat time stamp (local clock)
+        time_t tt = time(nullptr); struct tm lt; localtime_r(&tt, &lt);
+        snprintf(chat.back().stamp, sizeof(chat.back().stamp), "[%02d:%02d:%02d]", lt.tm_hour, lt.tm_min, lt.tm_sec);
+    }
     while(chat.size() > 100) chat.pop_front();
 }
 
@@ -417,6 +424,7 @@ static void ShowPairPopup(int from);
 static bool JoinFlowActive();
 static void JoinOverlayStart();
 static void LeaveServer(const char* msg);
+static char s_szDirectRelay[32] = "";   // 3.11: relay address of the server we joined over direct UDP
 static bool CheatMenuBlocks(const char* serverName, bool isDefault);
 // 3.04: Brief Case War (mp_bcw.inc)
 static bool s_bBcwJoin = false;   // the join in progress is Brief Case War
@@ -941,6 +949,82 @@ static void OnAfterSaveLoad()
 }
 
 static inline float Dist2D(const Vec3& a, const Vec3& b) { float x = a.x - b.x, y = a.y - b.y; return sqrtf(x * x + y * y); }
+
+// ---- 3.11: voice chat --------------------------------------------------------------------
+static std::set<std::string> s_VoiceMuted;   // names muted in the player list (this session)
+static bool VoiceMutedId(int id) { return id >= 0 && id < MP_MAX_PLAYERS && players[id].active && s_VoiceMuted.count(players[id].name) > 0; }
+static void VoiceToggleMute(int id)
+{
+    if(id < 0 || id >= MP_MAX_PLAYERS || !players[id].active) return;
+    std::string n = players[id].name;
+    if(s_VoiceMuted.count(n)) { s_VoiceMuted.erase(n); SysMsg(COL_SYSTEM, "*** Voice of %s unmuted.", n.c_str()); }
+    else { s_VoiceMuted.insert(n); Voice::ResetSpeaker(id); SysMsg(COL_SYSTEM, "*** Voice of %s muted (only for you).", n.c_str()); }
+}
+static bool s_bVoiceMuteAll = false, s_bVoicePanel = false;
+static float VoiceDistanceGain(float d) { return Voice::DistanceGain(d, MP_VOICE_RANGE); }
+static void VoiceSend(const void* pkt, int len) { if(client.GetState() == NET_CONNECTED) client.Send(pkt, len); }   // audio thread
+static bool s_bVoiceInit = false;
+static void VoiceEnsure() { if(!s_bVoiceInit) { s_bVoiceInit = true; Voice::Init(VoiceSend); } }
+static int VoiceMicState()   // the mic pill: 0 not connected, 1 off, 2 on, 3 talking
+{
+    if(!MP::IsConnected()) return 0;
+    if(!Voice::MicOn()) return 1;
+    return Voice::MicTalking() ? 3 : 2;
+}
+static void VoiceMicTap(void*)
+{
+    VoiceEnsure();
+    if(!MP::IsConnected()) { SysMsg(COL_YELLOW, "Voice chat works on a server: connect first, then tap the mic."); return; }
+    if(Voice::MicOn()) { Voice::StopMic(); SysMsg(COL_SYSTEM, "*** Microphone off."); return; }
+    if(!Voice::Available()) { SysMsg(COL_RED, "Voice chat is not available on this phone (%s).", Voice::LastError()); return; }
+    if(!settings.voiceChat) { settings.voiceChat = true; SaveConfig(); }
+    int perm = Voice::MicPermission();
+    if(perm == Voice::PERM_NOT_IN_APK)
+    {
+        SysMsg(COL_RED, "Your GTA SA APK has no microphone permission. Add android.permission.RECORD_AUDIO to its AndroidManifest.xml, reinstall, then tap the mic again.");
+        SysMsg(COL_SYSTEM, "You can still hear the others.");
+        return;
+    }
+    if(perm != Voice::PERM_GRANTED) { Voice::RequestMicPermission(); SysMsg(COL_YELLOW, "Allow the microphone, then tap the mic again."); return; }
+    if(!Voice::StartMic(myId)) { SysMsg(COL_RED, "Could not turn on the microphone: %s.", Voice::LastError()); return; }
+    SysMsg(COL_GREEN, "*** Microphone on: players near you hear you (louder up close, nothing past %d m).", (int)MP_VOICE_RANGE);
+}
+static void ProcessVoice()
+{
+    bool conn = MP::IsConnected();
+    if(!conn) { if(s_bVoiceInit) { if(Voice::MicOn()) Voice::StopMic(); Voice::SetOutput(false); } return; }
+    VoiceEnsure();
+    if(!Voice::Available()) return;
+    Voice::SetOutput(settings.voiceChat);
+    if(!settings.voiceChat && Voice::MicOn()) Voice::StopMic();
+    Voice::SetVolume(settings.voiceVolume);
+    Voice::SetMicGain(settings.micGain);
+    Voice::SetPitch(settings.voicePitch);
+    if(!Voice::MicOn() && Voice::Monitor()) Voice::SetMonitor(false);
+    // distance volume: full up to 8 m, silent at MP_VOICE_RANGE
+    int lp = Game::LocalPed(); Vec3 me; bool haveMe = lp > 0 && Game::GetCharPos(lp, me);
+    for(int i = 0; i < MP_MAX_PLAYERS; ++i)
+    {
+        RemotePlayer& p = players[i];
+        if(!p.active || i == myId) continue;
+        float g = 1.0f;
+        if(VoiceMutedId(i)) g = 0.0f;
+        else if(s_bVoiceMuteAll) g = 0.0f;
+        else if(haveMe && p.hasSync)
+        {
+            // like real life: full voice right next to you, quieter the further away (inverse distance,
+            // reference 4 m), fading to nothing at MP_VOICE_RANGE (40 m). Walk closer = louder.
+            Vec3 at = MP_LoadVec3((p.sync.flags & SYNC_IN_CAR) ? (const void*)p.sync.carPos : (const void*)p.sync.pos);
+            float dx = at.x - me.x, dy = at.y - me.y, dz = at.z - me.z;
+            g = VoiceDistanceGain(sqrtf(dx * dx + dy * dy + dz * dz));
+        }
+        else g = 0.0f;   // no position yet: don't play someone we can't place
+        Voice::SetGain(i, g);
+    }
+}
+bool MP::VoiceSpeaking(int id) { return id >= 0 && id < MP_MAX_PLAYERS && players[id].active && !VoiceMutedId(id) && Voice::IsSpeaking(id); }
+bool MP::VoiceMuted(int id) { return VoiceMutedId(id); }
+bool MP::MeTalking() { return Voice::MicTalking(); }
 
 // 3.10: clothing sync - send what your CJ wears (on change + every 8 s for anyone who missed it).
 // Not CJ / "show my real model" off -> one "off" packet, so the others show your avatar skin again.
@@ -1852,12 +1936,15 @@ public:
     }
     void OnConnectFailed() override
     {
+        if(s_szDirectRelay[0]) { Online::DirectFailed(s_szDirectRelay); s_szDirectRelay[0] = 0; }   // 3.11: next try uses the relay
         StopFeed(); JoinOverlayCancel(); s_bQuietRejoin = false;
         SysMsg(COL_RED, "Could not connect to %s (no response).", s_szJobName[0] ? s_szJobName : "the server");   // 2.16: no IP
         ClearAllPlayers();
     }
     void OnLostConnection() override
     {
+        if(s_szDirectRelay[0] && client.IsDirect()) Online::DirectFailed(s_szDirectRelay);   // 3.11: rejoin over the relay
+        s_szDirectRelay[0] = 0;
         // decide before the player list is cleared (takeover order = player id order)
         StopFeed(); JoinOverlayCancel();
         if(!OnLostServer()) SysMsg(COL_RED, "Lost connection to the server. (Timeout)");
@@ -2101,6 +2188,12 @@ public:
     }
     void OnServerMessage(const PktServerMsg& m) override { MP::AddSystemMessage(m.color, m.text); }
     void OnSetColor(const PktSetColor& c) override { ApplyPlayerColor(c.id, c.color); }
+    void OnVoice(int id, uint16_t seq, uint8_t flags, const uint8_t* opus, int len) override   // 3.11
+    {
+        if(id < 0 || id >= MP_MAX_PLAYERS || id == myId || !players[id].active || !settings.voiceChat) return;
+        if(VoiceMutedId(id)) return;   // muted in the player list: not even decoded
+        Voice::OnPacket(id, seq, flags, opus, len);
+    }
     void OnClothes(const PktClothes& c0) override   // 3.10: clothing sync
     {
         if(c0.id >= MP_MAX_PLAYERS || c0.id == myId) return;
@@ -3455,6 +3548,7 @@ void MP::Process()
     BcwProcess(ped, now);        // 3.04: Brief Case War
     ProcessGates(ped, now);      // 3.04.2: Area 69 gates
     ProcessClothes(now);         // 3.10: clothing sync
+    ProcessVoice();              // 3.11: voice chat
     ProcessCheats(ped, now);     // 2.19: chat-command cheats
     ProcessGames(ped, now);      // 2.21: races, deathmatch, jobs, open world
     ProcessSamp(ped, now);       // 3.01: map icons, actors, turf HUD, class skin, team
@@ -3612,6 +3706,16 @@ static void DoConnect(const char* host, int port)
             SysMsg(COL_RED, "That online server is gone. Tap Connect / Join again.");
             return;
         }
+        // 3.11: a 24/7 server that answers over direct UDP: connect straight to it (real low ping),
+        // the relay stays open as the fallback if the direct join gets no answer
+        uint32_t dip = 0; int drtt = -1;
+        if(Online::DirectAddr(host, (uint16_t)port, &dip, &drtt))
+        {
+            client.SetDirect(dip, via);
+            MP_CopyStr(s_szDirectRelay, host, sizeof(s_szDirectRelay));
+            logger->Info("Direct UDP to the 24/7 server (probe %d ms)", drtt);
+        }
+        else s_szDirectRelay[0] = 0;
     }
     else Online::CloseProxy();
     client.SetJoinPassword(s_szJoinPw);   // 2.19
@@ -4195,6 +4299,7 @@ void MP::SaveConfig()
     I("Region", settings.region); B("LobbyAuto", settings.lobbyAuto); B("RegionPicked", settings.regionPicked); I("NameColor", (int)settings.nameColor); I("MaxPlayers", settings.maxPlayers); I("HostGamemodes", settings.hostModes); I("ServerIcon", settings.serverIcon); S("ServerLang", settings.serverLang); S("DeviceId", settings.deviceId);
     B("FullProgressDefault", settings.fullProgressDefault);
     B("UnlockWorld", settings.unlockWorld); B("Girlfriends", settings.girlfriends); B("EventTips", settings.eventTips);   // 2.21
+    B("ChatTimestamps", settings.chatTimestamps); B("VoiceChat", settings.voiceChat); F("VoiceVolume", settings.voiceVolume); F("MicGain", settings.micGain); F("VoicePitch", settings.voicePitch);   // 3.11
     B("ChatBubbles", settings.chatBubbles); B("Labels3D", settings.labels3d); B("MapIcons", settings.mapIcons); B("Actors", settings.actors); B("GangZones", settings.gangZones);   // 3.01
     I("Team", settings.team); I("ClassSkin", settings.classSkin);
     S("ServerPassword", settings.serverPassword); S("HostedPassword", settings.hostedPassword);   // 2.19
@@ -4227,6 +4332,11 @@ static void LoadConfig()
     settings.allowCheatMenu = ::cfg->GetBool("AllowCheatMenu", false, "MP");   // 3.00
     settings.hitSound = ::cfg->GetBool("HitSound", true, "MP");               // 3.00
     settings.chatBubbles = ::cfg->GetBool("ChatBubbles", false, "MP");   // 3.01: off by default
+    settings.chatTimestamps = ::cfg->GetBool("ChatTimestamps", false, "MP");   // 3.11: off until the player turns it on
+    settings.voiceChat   = ::cfg->GetBool("VoiceChat", true, "MP");
+    settings.voiceVolume = ::cfg->GetFloat("VoiceVolume", 1.0f, "MP");
+    settings.micGain     = ::cfg->GetFloat("MicGain", 1.0f, "MP");
+    settings.voicePitch  = ::cfg->GetFloat("VoicePitch", 1.0f, "MP");
     settings.disableCheats = ::cfg->GetBool("DisableCheats", false, "MP");   // 2.35
     settings.showStatus      = ::cfg->GetBool("ShowStatus", true, "MP");
     settings.chatX           = ::cfg->GetFloat("ChatX", 0.22f, "MP");
@@ -4930,7 +5040,7 @@ static void SectionConnection(void*)
     else if(IsBusy()) { snprintf(lbl, sizeof(lbl), "Searching online + Wi-Fi..."); col = kWaitCol; }
     if(FloatMenu::BigButton(lbl, col)) MP::ToggleConnect();
     if(client.GetState() != NET_DISCONNECTED)
-        ImGui::TextColored(kGreenTxt, "On \"%s\"  (%s)", client.GetServerName()[0] ? client.GetServerName() : "...", Online::IsRelayIp(client.GetHost()) ? "internet" : "IP hidden");
+        ImGui::TextColored(kGreenTxt, "On \"%s\"  (%s)", client.GetServerName()[0] ? client.GetServerName() : "...", Online::IsRelayIp(client.GetHost()) ? (client.IsDirect() ? "internet, direct UDP" : "internet") : "IP hidden");
     if(!s_bHasNetwork)
         ImGui::TextColored(kRedTxt, "Offline: turn on Wi-Fi or mobile data to play.");
     else if(s_bTakeoverPending)
@@ -4955,6 +5065,120 @@ static void SectionSound(void*)
         char snd[512]; snprintf(snd, sizeof(snd), "%s/sound_010.mp3", s_szDataDir);
         if(!Sound::PlayHit(snd, 1.0f)) SysMsg(COL_RED, "sound_010.mp3 is missing from the MP folder (assets/MP).");
     }
+}
+
+static void SectionVoice(void*)   // 3.11
+{
+    bool changed = false;
+    ImGui::TextUnformatted("Voice chat");
+    changed |= FloatMenu::ToggleSwitch("Voice chat (hear players near you)", &settings.voiceChat);
+    ImGui::TextDisabled("Only on a server. Turn your mic on/off with the mic button next to Chat at the top. Players within 40 m hear you: louder up close, quieter further away.");
+    ImGui::TextUnformatted("Voice volume");
+    int vv = (int)(settings.voiceVolume * 100 + 0.5f);
+    ImGui::SetNextItemWidth(-FLT_MIN);
+    if(ImGui::SliderInt("##vvol", &vv, 0, 200, "%d %%")) { settings.voiceVolume = vv / 100.0f; changed = true; }
+    ImGui::TextUnformatted("Microphone boost");
+    int mg = (int)(settings.micGain * 100 + 0.5f);
+    ImGui::SetNextItemWidth(-FLT_MIN);
+    if(ImGui::SliderInt("##mgain", &mg, 50, 300, "%d %%")) { settings.micGain = mg / 100.0f; changed = true; }
+    ImGui::TextUnformatted("Voice pitch (how the others hear you)");
+    int pc = (int)(settings.voicePitch * 100 + 0.5f);
+    ImGui::SetNextItemWidth(-FLT_MIN);
+    if(ImGui::SliderInt("##spitch", &pc, 60, 160, pc == 100 ? "normal" : "%d %%")) { settings.voicePitch = pc / 100.0f; changed = true; }
+    if(MP::IsConnected())
+    {
+        bool on = Voice::MicOn();
+        if(FloatMenu::BigButton(on ? "Turn microphone off" : "Turn microphone on")) VoiceMicTap(nullptr);
+        if(on) { ImGui::TextUnformatted("Mic level"); ImGui::ProgressBar(Voice::MicLevel(), ImVec2(-1, UI::S(18)), ""); }
+    }
+    else ImGui::TextDisabled("Connect to a server to turn on your microphone.");
+    if(!s_VoiceMuted.empty())
+    {
+        ImGui::Separator();
+        ImGui::Text("Muted players: %d", (int)s_VoiceMuted.size());
+        if(FloatMenu::BigButton("Unmute everybody")) s_VoiceMuted.clear();
+    }
+    if(changed) SaveConfig();
+}
+
+// 3.11: the panel under the top bar when the mic pill is tapped
+static void VoicePanelTap(void*) { s_bVoicePanel = !s_bVoicePanel; VoiceEnsure(); }
+static void RenderVoicePanel(void*)
+{
+    if(!s_bVoicePanel || FloatMenu::IsModal()) return;
+    float cx, y;
+    const ImVec2 ds = ImGui::GetIO().DisplaySize;
+    if(!FloatMenu::BarBottom(&cx, &y)) { cx = ds.x * 0.5f; y = ds.y * 0.12f; }
+    float w = ImMin(UI::S(640), ds.x * 0.6f);
+    ImGui::SetNextWindowPos(ImVec2(ImClamp(cx - w * 0.5f, UI::S(8), ds.x - w - UI::S(8)), y), ImGuiCond_Always);
+    ImGui::SetNextWindowSize(ImVec2(w, 0), ImGuiCond_Always);
+    ImGui::SetNextWindowBgAlpha(0.88f);
+    if(!ImGui::Begin("Voice chat##MPVoice", &s_bVoicePanel, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize))
+    { ImGui::End(); return; }
+    bool changed = false;
+    const bool conn = MP::IsConnected();
+    float bw = ImGui::GetContentRegionAvail().x;
+    // microphone on / off (big button with the mic icon + level)
+    {
+        bool on = Voice::MicOn();
+        ImGui::PushStyleColor(ImGuiCol_Button, !conn ? ImVec4(0.25f, 0.25f, 0.25f, 0.9f) : (on ? ImVec4(0.12f, 0.55f, 0.22f, 0.95f) : ImVec4(0.55f, 0.12f, 0.12f, 0.95f)));
+        ImVec2 bp = ImGui::GetCursorScreenPos(); float bh = UI::S(78);
+        if(ImGui::Button(!conn ? "          Microphone (connect to a server first)##vmic" : (on ? "          Microphone ON - tap to turn off##vmic" : "          Microphone OFF - tap to turn on##vmic"), ImVec2(bw, bh))) VoiceMicTap(nullptr);
+        ImGui::PopStyleColor();
+        UI::DrawMic(ImGui::GetWindowDrawList(), ImVec2(bp.x + UI::S(40), bp.y + bh * 0.5f), UI::S(20), IM_COL32_WHITE, !on);
+        if(on)
+        {
+            float lv = Voice::MicLevel();
+            ImVec2 a = ImGui::GetCursorScreenPos();
+            ImGui::GetWindowDrawList()->AddRectFilled(a, ImVec2(a.x + bw, a.y + UI::S(10)), IM_COL32(255, 255, 255, 40), UI::S(4));
+            ImGui::GetWindowDrawList()->AddRectFilled(a, ImVec2(a.x + bw * lv, a.y + UI::S(10)), Voice::MicTalking() ? IM_COL32(60, 220, 90, 255) : IM_COL32(200, 200, 200, 200), UI::S(4));
+            ImGui::Dummy(ImVec2(bw, UI::S(12)));
+            ImGui::TextDisabled(Voice::MicTalking() ? "Sending your voice..." : "Listening - talk and the bar turns green.");
+        }
+    }
+    ImGui::Separator();
+    changed |= FloatMenu::ToggleSwitch("Hear voice chat", &settings.voiceChat);
+    if(FloatMenu::ToggleSwitch("Mute everybody (only for you)", &s_bVoiceMuteAll) && s_bVoiceMuteAll) Voice::ResetAll();
+    ImGui::TextUnformatted("Voice volume (what you hear)");
+    int vv = (int)(settings.voiceVolume * 100 + 0.5f);
+    ImGui::SetNextItemWidth(-FLT_MIN);
+    if(ImGui::SliderInt("##pvvol", &vv, 0, 200, "%d %%")) { settings.voiceVolume = vv / 100.0f; changed = true; }
+    ImGui::TextUnformatted("Microphone boost");
+    int mg = (int)(settings.micGain * 100 + 0.5f);
+    ImGui::SetNextItemWidth(-FLT_MIN);
+    if(ImGui::SliderInt("##pmgain", &mg, 50, 300, "%d %%")) { settings.micGain = mg / 100.0f; changed = true; }
+    ImGui::TextUnformatted("Voice pitch (how the others hear you)");
+    int pc = (int)(settings.voicePitch * 100 + 0.5f);
+    ImGui::SetNextItemWidth(-FLT_MIN);
+    if(ImGui::SliderInt("##ppitch", &pc, 60, 160, pc == 100 ? "normal" : "%d %%")) { settings.voicePitch = pc / 100.0f; changed = true; }
+    {
+        static const struct { const char* n; float v; } kP[] = { { "Deep", 0.80f }, { "Normal", 1.0f }, { "High", 1.25f }, { "Chipmunk", 1.5f } };
+        float q = (bw - ImGui::GetStyle().ItemSpacing.x * 3) / 4;
+        for(int k = 0; k < 4; ++k)
+        {
+            if(k) ImGui::SameLine();
+            bool sel = fabsf(settings.voicePitch - kP[k].v) < 0.01f;
+            if(sel) ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1, 1, 1, 0.92f)), ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0, 0, 0, 1));
+            if(ImGui::Button(kP[k].n, ImVec2(q, UI::S(58)))) { settings.voicePitch = kP[k].v; changed = true; }
+            if(sel) ImGui::PopStyleColor(2);
+        }
+    }
+    {
+        bool mon = Voice::Monitor();
+        if(!Voice::MicOn()) ImGui::BeginDisabled();
+        if(FloatMenu::ToggleSwitch("Hear myself (test the pitch, use earphones)", &mon)) Voice::SetMonitor(mon);
+        if(!Voice::MicOn()) ImGui::EndDisabled();
+    }
+    if(!s_VoiceMuted.empty())
+    {
+        ImGui::Text("Muted in the player list: %d", (int)s_VoiceMuted.size());
+        ImGui::SameLine();
+        if(ImGui::SmallButton("Unmute all")) s_VoiceMuted.clear();
+    }
+    ImGui::Separator();
+    ImGui::TextWrapped("Like real life: players right next to you are loud, further away they get quieter, past %d m you can't hear them. Walk closer to hear someone.", (int)MP_VOICE_RANGE);
+    ImGui::End();
+    if(changed) SaveConfig();
 }
 
 static bool ChatPlacementOptions(const char* id);   // 2.22
@@ -5071,6 +5295,8 @@ static bool ChatScaleOptions(const char* id)
 static void SectionChat(void*)
 {
     bool changed = false;
+    changed |= FloatMenu::ToggleSwitch("Chat timestamps [HH:MM:SS]", &settings.chatTimestamps);   // 3.11
+    ImGui::TextDisabled(settings.chatTimestamps ? "On: every chat line starts with the time it arrived, like [18:02:48]." : "Off: no time in front of the chat lines (turn on to see [18:02:48]).");
     changed |= ChatScaleOptions("chatsc");   // 3.04.5
     ImGui::TextUnformatted("Lines shown (0 = only while typing)");
     ImGui::SetNextItemWidth(-FLT_MIN);
@@ -5227,11 +5453,14 @@ void MP::Init(const char* dataDir)
     FloatMenu::AddSection("Display", SectionDisplay);
     FloatMenu::AddSection("Chat", SectionChat);   // 2.19.6
     FloatMenu::AddSection("Sound", SectionSound);  // 3.00
+    FloatMenu::AddSection("Voice", SectionVoice);  // 3.11
     FloatMenu::AddSection("Player", SectionPlayer);
     FloatMenu::AddSection("Cheats", SectionCheats);   // 2.35
     // 2.19 TopbarPlus bar: [ ... ] (Help / Server / Player list) + [ Chat ] (chat box)
     FloatMenu::AddDotsButton();
     FloatMenu::AddBarButton("Chat", BubbleChat, nullptr, &s_bChatBox);
+    FloatMenu::AddMicButton(VoicePanelTap, VoiceMicState);   // 3.11: [ ... ][ Chat ][ mic ] -> voice chat panel
+    FloatMenu::AddFloatingWindow(RenderVoicePanel);
     FloatMenu::SetPage(FloatMenu::PAGE_PLAYERS, PagePlayers);
     FloatMenu::SetPage(FloatMenu::PAGE_HELP, PageHelp);
     FloatMenu::AddFloatingWindow(Render219);

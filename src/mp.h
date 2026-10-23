@@ -70,7 +70,13 @@ struct MPSettings
     int   hostModes         = 0;       // 3.02: gamemodes (GM_*) of the custom server I host; new custom servers: none
     bool  allowCheatMenu    = false;   // 3.00: host permission (custom servers): players may use CheatMenu (libCheatMenu.so / libCheatMenu64.so)
     bool  hitSound          = true;    // 3.00: play sound_010.mp3 when your shot hits a player
-    bool  allowMissionPair  = true;    // 2.16: host permission (custom servers): "Mission sync" (players see each other + share mission markers on missions)
+    bool  allowMissionPair  = true;
+    // 3.11
+    bool  chatTimestamps    = false;   // "[18:02:48]" in front of every chat line (Settings > Chat), off until turned on
+    bool  voiceChat         = true;    // hear voice chat (the mic is turned on with the mic pill, only while connected)
+    float voiceVolume       = 1.0f;    // 0..2
+    float micGain           = 1.0f;    // 0.5..3
+    float voicePitch        = 1.0f;    // 0.6..1.6: how your voice sounds to the others    // 2.16: host permission (custom servers): "Mission sync" (players see each other + share mission markers on missions)
 };
 
 struct RemotePlayer
@@ -172,6 +178,7 @@ struct ChatLine
     std::string prefix; uint32_t prefixColor;
     std::string text;   uint32_t textColor;
     uint64_t t = 0;     // 2.19.6: arrival time (fade out)
+    char stamp[12] = ""; // 3.11: "[HH:MM:SS]" local time it arrived (shown when settings.chatTimestamps)
 };
 
 struct KillEntry
@@ -222,6 +229,9 @@ namespace MP
     bool IsSearching();             // LAN search in progress
     void SendChat(const char* text);
     bool IsConnected();
+    bool VoiceSpeaking(int id);   // 3.11: this player's voice is playing right now
+    bool VoiceMuted(int id);      // 3.11: muted in the player list
+    bool MeTalking();             // 3.11: my mic is on and I'm talking
     void AddSystemMessage(uint32_t rgba, const char* text);
     void SaveConfig();
     const char* DataDir();

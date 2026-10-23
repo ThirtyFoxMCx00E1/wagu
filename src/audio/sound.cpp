@@ -231,3 +231,6 @@ void Sound::StopMusic()
 }
 
 bool Sound::MusicPlaying() { return s_Music.state == 3 && s_Music.want; }
+
+void* Sound::EngineItf() { return EnsureEngine() ? (void*)g_EngineItf : nullptr; }   // 3.11
+void* Sound::OutputMix() { return EnsureEngine() ? (void*)g_Mix : nullptr; }

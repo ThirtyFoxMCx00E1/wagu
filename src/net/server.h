@@ -120,6 +120,9 @@ private:
         bool         hasClothes;     // 3.10: CJ clothing sync (last PKT_CLOTHES, sent to new joiners)
         PktClothes   clothes;
         uint64_t     lastClothes;
+        uint32_t     build;          // 3.11: the phone's MP build (0 = older than 3.04.6)
+        uint64_t     voiceWin;       // 3.11: voice rate limit
+        int          voiceCount;
     };
     void SetPermsLocked(uint8_t perms);                                         // 2.37, m_Mutex held
     bool KickLocked(int id, const char* admin, const char* reason, bool ban);   // 2.37, m_Mutex held
@@ -158,6 +161,12 @@ private:
     float   m_TurfProg[MP_TURF_MAX] = {0};
     bool    m_bTurfWars = true;
     uint64_t m_nLastTurfSend = 0;
+    uint64_t m_nNextAd = 0;          // 3.11: next Discord message
+    uint64_t m_nAdInterval = MP_AD_INTERVAL_MS;
+public:
+    void     SetAdInterval(uint64_t ms) { m_nAdInterval = ms ? ms : MP_AD_INTERVAL_MS; }   // tests
+private:
+    void     AdTick(uint64_t now);
     char    m_szMotdCaption[64] = {0};
     char    m_szMotd[MP_DIALOG_INFO_LEN] = {0};
     char    m_szBanner[128] = {0};

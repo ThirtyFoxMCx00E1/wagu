@@ -1,10 +1,27 @@
 {
-"latest": "3.10",
+"latest": "3.11",
 "supported": [
+"3.11",
 "3.10",
 "3.04.6"
 ],
 "versions": [
+{
+"v": "3.11",
+"summary": "voice chat, chat timestamps, lower ping on the 24/7 servers, Discord message. **3.10 and 3.04.6 still work**: all three play together on the same servers and lobby (`thirtyfox/mp5/`).",
+"items": [
+"**Voice chat.** A small white mic button sits next to Chat at the top: `[ ... ][ Chat ][ mic ]`. Tap it to open the voice panel: microphone on / off, a level bar, **Hear voice chat**, **Mute everybody**, voice volume, microphone boost, **voice pitch** (Deep / Normal / High / Chipmunk, or any value from 60 to 160 %) and **Hear myself** to test the pitch. It only works on a server; while you are not connected the button is grey. The mic button shows a red X while your mic is off and turns white with a green ring while you talk.",
+"**Like real life.** Players right next to you are loud; further away they get quieter (4 m 100 %, 8 m 50 %, 16 m 25 %, 30 m ~12 %), and past 40 m you hear nothing. The server sends your voice only to players within 40 m.",
+"**Who is talking.** A white speaker icon appears over a player's name tag while they talk and disappears as soon as they stop. The left side of the screen lists who is talking, like SA-MP mobile (`speaker Name (id)`).",
+"**Mute a player.** Player list > tap a player > **Mute voice** (red X icon). Only you stop hearing them; it lasts until you restart the game. Players muted by the admin can't use voice either.",
+"**How it works.** The microphone records 48 kHz mono with the phone's voice-call echo cancellation and noise suppression, and each 20 ms piece is compressed with Opus 1.6.1 (24 kbit/s, with packet-loss protection). It is sent the moment it is recorded, with no batching and no waiting for the game frame. Only speech is sent, so an open mic in a quiet room costs nothing. Each speaker has a small buffer that starts after 40 ms and never holds more than 100 ms, so the delay can't build up. On top of the network ping, voice adds about 100 ms. Lost pieces are rebuilt from the next one (Opus FEC) or covered over.",
+"**Microphone permission.** Android asks for the microphone the first time you turn the mic on. If your GTA SA APK has no `android.permission.RECORD_AUDIO` in its `AndroidManifest.xml`, the mod says so: add it (APK Editor), reinstall, and try again. You can always hear the others, even without the permission.",
+"**Chat timestamps.** Settings > Chat > **Chat timestamps [HH:MM:SS]** puts the time each line arrived in front of it, like SA-MP (`[18:02:48] Name: hi`). It is off until you turn it on and also works on lines that are already in the chat.",
+"**Lower ping on the 24/7 servers (real, not a smoothed number).** Over mobile data every packet used to travel phone -> MQTT broker (TCP) -> server and back, batched every 25 ms. That path, plus TCP stalling on any lost packet, is where the 200-500 ms came from. A 24/7 server installed with the HiveMQ kit runs on the same machine as its region's broker, so the mod now asks that machine directly over UDP every 15 s. If the same server answers (same name and start time), the mod connects straight to it: one UDP hop each way, no TCP, no batching. The server list then shows that real, measured ping. If UDP is blocked on your network (no answer within 2.5 s), the mod falls back to the relay by itself. The server must have its UDP game ports (1922, and 1930 for Brief Case War) open to the internet; see the HiveMQ kit.",
+"**Relay (phone-hosted servers).** Our own regional brokers now batch for 10 ms instead of 25 ms, and voice skips the batch entirely. HiveMQ runs on Generational ZGC (GC pauses under 1 ms instead of up to 20 ms), and the kernel no longer drops back to TCP slow start after a short pause (`tcp_slow_start_after_idle=0`), which caused spikes after a quiet moment.",
+"**Discord message.** Every server running 3.11 sends `Join our discord server for more updates & info! https://discord.gg/ZqgXKYhNmv` to everyone on it every 45 min 20 s. There is one clock per server, started when the server starts, so a player joining never triggers it (no spam on join), and nothing is sent while the server is empty."
+]
+},
 {
 "v": "3.10",
 "summary": "crash fix, clothing sync, 100-player default server, cheat-menu and reconnect fixes. **3.04.6 still works**: 3.04.6 and 3.10 play together on the same servers and the same lobby (`thirtyfox/mp5/`). Only 3.04.5 and older (the `mp4` versions with cheats) stay blocked.",

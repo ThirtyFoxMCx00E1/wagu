@@ -11,4 +11,6 @@ namespace Sound
     void SetMusicVolume(float volume);
     void StopMusic();
     bool MusicPlaying();
+    void* EngineItf();   // 3.11: the shared OpenSL engine (SLEngineItf) for voice chat
+    void* OutputMix();   // 3.11: SLObjectItf output mix
 }

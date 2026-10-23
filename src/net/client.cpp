@@ -60,8 +60,19 @@ bool MPClient::Connect(const char* host, uint16_t port, const char* name, uint16
 {
     Disconnect(false);
     m_fPingAvg = -1.0f; m_nPing = 0;
+    m_bDirect = false; m_bDirectFellBack = false; m_bGotReply = false; m_nFallbackVia = 0;
 
-    if(viaLocalPort)
+    if(m_nDirectIp)   // 3.11: straight to the 24/7 server's public address (relay only as fallback)
+    {
+        memset(&m_Server, 0, sizeof(m_Server));
+        m_Server.sin_family = AF_INET;
+        m_Server.sin_addr.s_addr = m_nDirectIp;
+        m_Server.sin_port = htons(port);
+        m_bDirect = true;
+        m_nFallbackVia = m_nDirectVia ? m_nDirectVia : viaLocalPort;
+        m_nDirectIp = 0; m_nDirectVia = 0;
+    }
+    else if(viaLocalPort)
     {
         memset(&m_Server, 0, sizeof(m_Server));
         m_Server.sin_family = AF_INET;
@@ -155,6 +166,7 @@ void MPClient::Poll(INetEvents* ev)
         if(r <= 0) break;
         if(from.sin_addr.s_addr != m_Server.sin_addr.s_addr || from.sin_port != m_Server.sin_port) continue;
         m_nLastRecv = now;
+        m_bGotReply = true;
 
         switch(buf[0])
         {
@@ -250,6 +262,7 @@ void MPClient::Poll(INetEvents* ev)
                 }
                 break;
             case PKT_SET_COLOR:    if(r >= (int)sizeof(PktSetColor))    ev->OnSetColor(*(PktSetColor*)buf);       break;
+            case PKT_VOICE:        if(r >= (int)sizeof(PktVoiceHdr)) { PktVoiceHdr h; memcpy(&h, buf, sizeof(h)); if(h.len && (int)sizeof(h) + h.len <= r) ev->OnVoice(h.id, h.seq, h.flags, buf + sizeof(h), h.len); } break;   // 3.11
             case PKT_CLOTHES:      if(r >= (int)sizeof(PktClothes))     { PktClothes c; memcpy(&c, buf, sizeof(c)); ev->OnClothes(c); } break;   // 3.10
             case PKT_PONG:
                 if(r >= (int)sizeof(PktPing))
@@ -283,6 +296,17 @@ void MPClient::Poll(INetEvents* ev)
     if(m_eState == NET_CONNECTING)
     {
         if(now - m_nConnectStart > CONNECT_TIMEOUT_MS) { Disconnect(false); ev->OnConnectFailed(); return; }
+        // 3.11: direct UDP got no answer (UDP blocked on this network?) -> use the relay from now on
+        if(m_bDirect && !m_bGotReply && m_nFallbackVia && now - m_nConnectStart > 2500)
+        {
+            std::lock_guard<std::mutex> lk(m_SockMutex);
+            memset(&m_Server, 0, sizeof(m_Server));
+            m_Server.sin_family = AF_INET;
+            m_Server.sin_addr.s_addr = htonl(0x7F000001u);
+            m_Server.sin_port = htons(m_nFallbackVia);
+            m_bDirect = false; m_bDirectFellBack = true;
+            m_nLastJoinSend = 0;
+        }
         if(now - m_nLastJoinSend > JOIN_RETRY_MS) SendJoin();
     }
     else if(m_eState == NET_CONNECTED)
