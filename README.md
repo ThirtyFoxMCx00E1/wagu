@@ -55,7 +55,7 @@ Rebuild `mp_server` on every region (console menu **7) update**). New in 3.00:
 
 2.37 moves some rules into the server, so rebuild `mp_server` on every region (console menu **7) update**, it pulls the wagu source and runs `install.sh` again):
 
-- The default server's administrator is **SENJI** (proof: `admin.txt` with the admin key on his phone). He shows as `[ADMIN] SENJI` and can kick / ban / mute and switch cheats off. Joining first no longer makes anyone the host.
+- The default server's administrator is **SENJI** (proof: `administrator.txt` with the admin key on his phone; since 3.11.6 only the new key is accepted, so keep `mp_server` updated). He shows as `[ADMIN] SENJI` and can kick / ban / mute and switch cheats off. Joining first no longer makes anyone the host.
 - The name SENJI is refused for everybody else (`REJECT_NAME_RESERVED`), and fake `[ADMIN]` tags are removed.
 - When everybody has left, the admin's "Disable cheats" switch is reset and the server stays online 24/7.
 - Optional: use your own admin key hash with `--admin-hash <sha256 hex of "wagu-admin-v1:" + key>` in `systemd/mp-server.service`.
