@@ -1,0 +1,672 @@
+{
+"latest": "3.04.6",
+"versions": [
+{
+"v": "3.04.6",
+"summary": "**old versions are shut out** (they let players use cheats). Everyone must update to 3.04.6.",
+"items": [
+"**Servers refuse old phones.** The mod now sends its build number when joining. Every server (24/7, Brief Case War, phone-hosted) refuses MP 3.04.5 and older with `Your MP version is too old. Download MP 3.04.6: thirtyfoxmcx00e1.github.io/wagu`, over Wi-Fi (LAN) and mobile data (internet) alike.",
+"**Phones refuse old servers.** A server hosted by an old MP (it would let old cheaters in) is refused: `This server runs an old MP version`.",
+"**New lobby.** The internet lobby moved from `thirtyfox/mp4/` to `thirtyfox/mp5/`. Old phones still have the broker login (`broker.txt` / `regions.txt`), but on the regional brokers they can only read the old lobby. There they see a single **UPDATE MP TO 3.04.6** server, and can't host anything. New phones never see old ones, not even on the free public brokers.",
+"**Tracking.** Every refused old phone is written to `outdated_clients.log` next to the 24/7 server: time, name, version range (`2.37 - 3.04.5`, `2.25 - 2.36`, `2.19 - 2.24`, `2.18 or older`, judged from their join packet), phone id, IP and port. Each phone is logged once per 10 minutes. HiveMQ console: `o`.",
+"**HiveMQ kit 3.04.6.** New topic rules, a new `mp-legacy` service (the UPDATE notice, using the bridge login), and MpBridge copies both lobbies. Run console option 7 (update) on every region, or the 3.04.6 phones can't see your 24/7 servers.",
+"**Website.** Live server list on the new lobby, plus a **Version history** with every version. Only the latest one can be downloaded.",
+"mp_server: `--outdated-log file`, `--legacy-notice`."
+]
+},
+{
+"v": "3.04.5",
+"summary": "chat scale setting.",
+"items": [
+"New **Chat scale (chat lines + chat box)** slider, 50 % to 200 %, in the MP Launcher under Settings > **Chat** (at the top) and Settings > **Display** (under the Chat switch). It scales the whole chat together: the chat lines, the \"Tap to chat\" box and the command suggestions. Quick buttons: Small 75 %, Normal 100 %, Big 130 %, Huge 160 %, plus a live preview line. It's saved in the config (`ChatScale`) and works on top of the chat text size. Also `/chatscale 50-200`. Reset chat layout sets it back to 100 %."
+]
+},
+{
+"v": "3.04.4",
+"summary": "Brief Case War respawn on the connection screen.",
+"items": [
+"When you die (after the game's own \"wasted\"), you go back to the Brief Case War connection screen, looking at **your own team's base** (Gustav: Verdant Meadows / Gant Bridge, Schelapz: Area 69 / Bayside Marina). It shows `YOU DIED`, your team, and a team-coloured **`Respawn in 10.95`** label button with a white cooldown bar: **10 s + 20 ticks**, counted in 20-tick steps. Then you spawn in your safe zone with your weapons and 5 s spawn protection (was: 30 s hidden, countdown under the crosshair). The server keeps you out of steals / captures and keeps the spawn protection for the new time."
+]
+},
+{
+"v": "3.04.3",
+"summary": "Brief Case War base flags.",
+"items": [
+"A very high team flag stands on each base coordinate: a 60 m pole with a gold top and an 18 x 10 m waving cloth, red with `GTV` on the Gustav base and blue with `SLZ` on the Schelapz base. It waves in a slowly turning wind and shows on the connection screen too. Far away the cloth grows (up to 4x), so you can always see where the enemy territory is."
+]
+},
+{
+"v": "3.04.2",
+"summary": "Area 69 gate teleports.",
+"items": [
+"The Area 69 fence gates never open in single player (the whole fence with its gates is one map object, model 16094 `des_a51infenc`). Now walk or drive up to one: the screen fades to black, you (and your car if you are the driver, passengers ride along) are moved to the other side, and the screen fades back in. A small yellow name floats over each gate when you are close. Works on every server, including Brief Case War (the Schelapz base is inside the fence).",
+"Built-in gates: Area 69 North Gate (134.55, 1941.53) and Area 69 East Gate (286.01, 1822.74).",
+"`/gatepos` prints a ready line with your position and facing; put it in `files/MP/gates.txt` (see `gates.example.txt`) and type `/gates reload`. `/gates` lists them."
+]
+},
+{
+"v": "3.04.1",
+"summary": "Brief Case War fixes + score bar only for real gamemodes.",
+"items": [
+"**Team buttons** are wider with slightly smaller text, so `Gustav Team 0/10` / `Schelapz Team 0/10` fit.",
+"**Connection screen follows your team**: after tapping Gustav Team the camera moves to the Gustav base (Verdant Meadows Airfield on Bone County, Gant Bridge on San Fierro Bay); Schelapz Team shows Area 69 / Bayside Marina. Before a pick it shows the map overview.",
+"**Score bar (top right)**: `DM SCORE / RACE SCORE / JOB SCORE / SCORE` only shows for gamemodes the server has. Brief Case War never shows it (it has its own HUD). A custom server shows DM score only with Deathmatch on, race score only with Races or Derbies on, job score only with Jobs on (MP Launcher > Add server > Gamemodes), and SCORE only together with one of them. A freeroam / RP server without them shows nothing. The default server keeps all of them."
+]
+},
+{
+"v": "3.04",
+"summary": "**Brief Case War** - a private 24/7 capture-the-briefcase gamemode server (20 players, Gustav Team vs Schelapz Team).",
+"items": [
+"**Server list.** \"Brief Case War\" is pinned in the MP Launcher Internet list right under the default server, with a red highlight, a red outline and a briefcase texture (`bcw_icon.png`, `bcw_briefcase.png`). It is always listed, even empty (`0/20`), like the default server. It is a private gamemode: it can't be created from \"+ Add server\" (the name and port 1930 are reserved). If no VPS runs it, the first phone that taps it hosts it.",
+"**Rules.** Max **20 players = 10 per team**. MP cheats and the CLEO cheat menu are switched off automatically (Settings > Cheats shows them off), and phones with `libCheatMenu.so` / `libCheatMenu64.so` are refused, like on the default server. Other gamemodes and cheat / teleport commands (`/spawn`, `/w`, `/race`, ...) are off.",
+"**Joining.** No Santa Maria beach: the connection screen looks at the war map (Area 69 on Bone County). The `< Spawn >` picker is replaced by **Gustav Team** (red) and **Schelapz Team** (blue) buttons with `n/10`. After a pick you can't move and wait in the queue (`WAITING FOR PLAYERS 12/20`). If a war is already running you join a team with a free slot straight away.",
+"**Music.** `war_ambient.mp3` (put it in `files/MP`) starts 4 s + 20 ticks after connecting, fades in over 20 ticks and loops forever at 45 %.",
+"**Leaders.** At 20/20 a slot machine rolls the names of each team in the centre of the screen (`user > user`), slows down and stops on the team leader. A player who was leader isn't picked again until everybody in the team had a turn.",
+"**Teams.** Name tags `[GTV] name` (red) and `[SLZ] name` (blue), the leader gets `[Leader]`; chat names and the kill feed use the team colours too. Admins keep their own tag and colours. No friendly fire.",
+"**Maps.** Bone County: Verdant Meadows Airfield (Gustav base, 372.50, 2500.50, 16.50) vs Area 69 Restricted Area (Schelapz base, 210.50, 1900.20, 17.60). San Fierro Bay: Pleasure Domes / Gant Bridge Base (-2680.00, 1590.00, 11.50) vs Bayside Boat Marina & Helipad (-2330.00, 2300.00, 4.30). 4 more maps are shown locked in the vote.",
+"**Safe zones.** Each base has a glowing red / blue circle (radius 9) with flowing particles and a big floating base name, plus **3 vehicle spawner circles** (radius 4) with floating names: MILITARY VEHICLES (Patriot, Barracks), TANK (Rhino, only one), HELICOPTER (Hunter, only one); stand in one and the list pops up. Vehicles are synced like `/spawn`.",
+"**World barrier.** An animated yellow-orange striped wall (Minecraft-style world border) 240 m around the war area (both bases); you can't get out on foot, by car, tank or helicopter.",
+"**Briefcase.** Stand 5 s on foot in the enemy circle: a white progress bar with a thick black outline fills up near the bottom, then you carry their briefcase (model in your hand). Bring it to your own circle while your briefcase is at home = **victory**. If both briefcases are stolen nobody can win until a carrier is killed. Carriers get an x-ray outline in their team colour, visible through walls. A killed carrier drops the briefcase (highlighted with a beam, seen through walls); enemies pick it up, owners touching it send it home, and it goes home by itself after 60 s.",
+"**Respawn.** You get your weapons when you spawn (M4, Desert Eagle, MP5, shotgun, sniper, grenades, 100 armour). After a death the game's own respawn (hospital / save point) is caught: you are hidden and frozen, then (3.04.4) you are back on the Brief Case War connection screen looking at your own team's base, with a `Respawn in 10.95` label button and a cooldown bar (10 s + 20 ticks, 20-tick steps), and you spawn in your team's safe zone with 5 s spawn protection. No wanted level in the war area.",
+"**After a victory.** 24 s + 20 ticks **cooldown**: briefcases, briefcase objects and spawned war vehicles are cleared, everybody goes back to the connection screen (`Cooldown - resetting the war zone 24.95`). Then the **scoreboard**: top 3 most kills, `Gustav Team [Defeat] || Schelapz Team [Victory]`, every player with kills, deaths, K/D, steals, captures, returns, damage and score, and a Close button. Then the **map vote** (6 maps: 2 open, 4 locked, 20 s), and a new team queue.",
+"Server: `server_bcw.inc` is the referee (queue, leaders, steal bars, carriers, drops, captures, stats, cooldown, scoreboard, vote), tested in `test/bcw_test.cpp` (a full 20-player match). 24/7: `./mp_server 1930 \"Brief Case War\" 20 Asia --persistent [--bcw-min 20]`; the HiveMQ kit installs it as `mp-bcw.service` (UDP 1930)."
+]
+},
+{
+"v": "3.03",
+"summary": "gamemode switches for custom servers, mission peds / cars synced to the mission group, turf box moved.",
+"items": [
+"**Gamemodes.** MP Launcher > Add server > **Gamemodes**: Class selection, Turf wars, Races, Derbies, Deathmatch, Jobs, 3D text labels, Actors (+ All on / All off). Map icons and Chat bubbles are not gamemodes: each player switches them in Settings (Display > Map icons, Chat > Chat bubbles). The **default server always has all of them**. **Every custom server starts with all of them off** - only its owner turns them on. The switches are only for a **new** server you create (Host): a server that already exists always keeps the gamemodes it was created with - also when your phone ends up running it (joining a custom server nobody runs, host takeover, restart). Each phone remembers every custom server's gamemodes. Players on a custom server see \"Gamemodes here: ...\" on join, and a command of a gamemode that is off says so. 24/7 custom servers: `mp_server ... --gamemodes all` or a list (`--gamemodes class,turf,race,derby,dm,jobs,labels,actors`); without it: none.",
+"**Mission sync: mission peds and cars.** Only the phone that starts a mission runs its script, so the others in the group saw the markers but none of the people / cars it made. Now the mission's peds and cars (enemies, homies, targets, mission vehicles near the player) are sent to the whole mission sync group (up to 16 players, tested with 14) and appear on their phones, moving, fighting and dying; their hits go to the mission owner's real ped. Tested in test/mission_npc_test.cpp.",
+"**Turf box** moved from the bottom left (over the radar with a PC-style HUD) to the middle of the left edge."
+]
+},
+{
+"v": "3.02",
+"summary": "crash fix (sound), GTA SA races with a 14-player queue, race scoreboard at the top, no name tags in class selection.",
+"items": [
+"**Crash fix.** SIGSEGV in `libstagefright_foundation.so` (`android::MediaBuffer::~MediaBuffer`) on Android 16: the hit sound and the \"connected\" sound were played by OpenSL ES file players, which decode the mp3 in Android's media framework on its own threads; restarting / destroying them while decoding crashed it. The mp3s are now decoded once by MP itself ([minimp3](https://github.com/lieff/minimp3), CC0) and played from memory by buffer-queue players: the media framework isn't used any more.",
+"**GTA SA races.** The 27 races of the single player Race Tournament with their real starts, checkpoints and vehicles (from the original script): Lowrider Race, Little Loop, Backroad Wanderer, City Circuit, Vinewood, Freeway, Into the Country, Badlands A + B, Dirtbike Danger, Bandito County, Go-Go Karting, San Fierro Fastlane, San Fierro Hills, Country Endurance, SF to LV, Dam Rider, Desert Tricks, LV Ringroad, the air races World War Ace, Barnstorming, Military Service, Chopper Checkpoint, Whirly Bird Waypoint, Heli Hell, and 8-Track + Dirt Track in the stadiums (4 and 3 laps). The old custom races 1-12 are gone.",
+"**Race queue.** `/race` puts you in the queue (you stay where you are, \"RACE QUEUE 3/14\" at the top). When **14 players** are in it, the server picks a race and everybody is teleported to it at the same time, each on their own grid place, in the race vehicle, 3-2-1-GO together. `/leave` leaves the queue. `/races` lists the 27 tracks (Mark = the start on your radar for 90 s). Needs the 3.02 server.",
+"**Race scoreboard** at the top centre, a little above the crosshair: `POS 3/14   CP 7/27   TIME 1:23.456` (derbies and jobs use the same spot).",
+"**Class selection** (`/class`) hides all name tags, 3D labels and chat bubbles, like SA-MP.",
+"Server: race queue (`RaceQueueTick`), tested in test/racequeue_test.cpp. Update the 24/7 servers (HiveMQ console option 7, or `mp-server update` on Termux)."
+]
+},
+{
+"v": "3.01",
+"summary": "SA-MP features: class selection, gang zones + turf wars, derbies, races with other players, dialogs, textdraws, 3D labels, map icons, actors.",
+"items": [
+"**Class selection (`/class`).** The SA-MP spawn screen: `<<` `>>` `SPAWN` `CANCEL` with a fixed camera on your player. 30 classes: Grove Street Families (CJ, 105-107), Ballas (102-104), Los Santos Vagos (108-110), Varrios Los Aztecas (114-116), San Fierro Rifa (173-175), Da Nang Boys (121-123), Police (280-282) and civilians (your own skin, 7, 19, 29, 101, 170, 188, 250). Spawn puts you at your team's spawn; the team and skin are saved (`Team`, `ClassSkin`). On story missions you are CJ again (cutscenes need him), the class skin comes back after. Name tags are unchanged (RGB + rank only).",
+"**Gang zones + turf wars (`/turf`, `/teams`).** 24 zones (20 Los Santos, 4 San Fierro) drawn by the game on the radar and the map in the owner's colour; a zone under attack flashes in the attacker's colour. Stand in an enemy zone for 60 s with your gang to take it (\"TURF: X took Y from Z!\" for everybody). Bottom-left HUD: zone name, owner, war progress. `/turf` lists all zones (Mark = radar blip for 90 s), `/teams` shows turf and players per gang. The server decides and saves the owners (`turf.txt`).",
+"**Derbies (`/derby`).** Last car standing: Blood Bowl Derby and Monster Truck Derby (stadium interior 15), Ocean Docks Derby, Verdant Meadows Derby and Chiliad Sumo. You are out when your car is wrecked or under 250 HP, you are out of it for 5 s, out of the arena for 5 s or (sumo) fall off. Alone: survive 60 s. Time limit 4 minutes. You go back to where you came from after.",
+"**Races with other players.** Same grid, same GO (3, 2, 1 in Pricedown), live POS / CP / TIME, prize by place, \"finished 1st / 2nd / 3rd\" announced (3.02: GTA SA races + 14-player queue).",
+"**Dialogs.** `/race`, `/job`, `/dm`, `/derby` with nothing after open SA-MP list dialogs (name, vehicle, prize, best time, who is racing). Message box, input, list, password, tablist and tablist-with-headers styles, `{RRGGBB}` colours, the same look as SA-MP. The server can send dialogs too (welcome dialog on join).",
+"**Textdraws.** SA-MP game texts (styles 1, 3, 4, 6) and textdraws with `~r~ ~g~ ~b~ ~y~ ~w~ ~h~ ~n~` codes, boxes, outlines, alignment, in Pricedown when it is installed; the server can show its own (banner).",
+"**Chat bubbles (option, off by default).** What a player types shows over their head for a few seconds (SA-MP chat bubble, `{RRGGBB}` colours, up to 4 wrapped lines, hidden behind walls and beyond the name tag distance). Off until you turn it on: MP Launcher > Settings > Chat > **Chat bubbles** (or `/bubbles`). Saved as `ChatBubbles` in the MP config.",
+"**3D text labels.** Over every race, job, derby and DM start and every gang spawn, within 35 m, hidden behind walls (`/labels`).",
+"**Map icons.** SA-MP map icon ids on the radar: race flag, trucking, quarry, pizza, Burger Shot, Cluckin' Bell, hospital, fire, car, enemy attack (DM), race (derby) and the gang icons at the spawns (`/icons`).",
+"**Actors.** People standing at the job starts (pizza, Burger Shot, Cluckin' Bell, trucker, quarry worker, taxi driver, paramedic, firefighter), a Grove member at race 1 and a guard at the War Zone; they can't be hurt and are never shared as NPCs (`/actors`).",
+"**Admin kill popup removed.** No more fire flash, rings or \"ADMIN KILL\" on an admin kill: the kill feed line is a normal line (still with the RGB rank + name).",
+"Settings > Display: 3D text labels, map icons, actors, gang zones switches.",
+"Server (`mp_server`): `--motd \"text\"` / `--motd-file motd.txt` (welcome dialog), `--banner \"text\"` (textdraw bottom right), `--turf-file turf.txt`, `--no-turf`. New packets PKT_EVENT, PKT_TEAM, PKT_TURF, PKT_DIALOG, PKT_DIALOG_RESPONSE, PKT_TEXTDRAW. Tested in test/samp301_test.cpp.",
+"Update every phone and the 24/7 servers (HiveMQ console option 7, or `mp-server update` on Termux)."
+]
+},
+{
+"v": "3.00",
+"summary": "Hit sound, Cheat Menu permission for custom servers, coloured Pricedown score bar.",
+"items": [
+"**Hit sound.** `assets/MP/sound_010.mp3` plays when your hit lands on a player: guns, fists, knife / bat and the other melee weapons, drive-by and car rams. Fists used to be silent: a punch can take HP off without the game noting who did it, so it was not counted (no damage sent, no sound). Now a punch that lands in front of you within 2.5 m counts as yours, and a punch that lands but takes almost no HP still sounds. The sound is loaded once and only restarted per hit (3 voices), so a minigun doesn't stutter; at most one sound every 70 ms.",
+"**Settings > Sound** (new page in the MP Launcher): **Hitsound effect** switch (enable / disable) and a Test button. Saved as `HitSound` in the MP config.",
+"**Cheat Menu permission (custom servers).** Add server > scroll down to the permissions (under Mission sync) > **Cheat Menu** on / off. On: players with Cheat Menu (libCheatMenu.so / libCheatMenu64.so) join directly, no message, and its button / window work. Off (default): they get \"This server doesn't allow cheat menus\" and leave right away. Never on the default server (the server strips the permission), and \"Disable cheats\" switches it off too. Hosting your own server with Cheat Menu installed works only when your switch is on. 24/7 servers: `mp_server ... --cheat-menu`. New permission bit `PERM_CHEAT_MENU = 4` (older servers never send it = not allowed). Tested in test/cheatperm_test.cpp.",
+"**Score bar (top right): one colour per score, in Pricedown.** DM SCORE blue, RACE SCORE yellow, JOB SCORE red, SCORE green, with a thick black edge like the HUD money. MP draws it itself with the bundled `assets/MP/pricedown.ttf` (the original freeware Pricedown, (c) 1998 Ray Larabie, unchanged; licence in `assets/MP/PRICEDOWN_LICENSE.txt`). The first build tried to draw it through the game's own font, but that didn't show on the phone, so you saw the default font. MP also picks up a pricedown .ttf from other mods' folders if the MP one is missing; the game font and then Arial are the last fallbacks.",
+"**MP Launcher icon** in the title bar is white (was green).",
+"**Admin look without dragons.** Name tag, chat and kill feed show only the RGB `[ADMIN]` rank and the flowing SENJI name; the dragons are removed (code too). The name tag sits at the normal height again. The fire flash + \"ADMIN KILL\" on an admin kill stays.",
+"Update every phone and the 24/7 servers (HiveMQ console option 7, or `mp-server update` on Termux)."
+]
+},
+{
+"v": "2.37",
+"summary": "Administrator, CheatMenu block, launcher clean-up and ramming fixes.",
+"items": [
+"**Default server administrator = SENJI.** Joining the default server first no longer makes you its host (administrator); the phone that happens to host it gets no admin powers either. The administrator is the player named SENJI, and the proof is the file `files/MP/admin.txt` (`/sdcard/Android/data/com.rockstargames.gtasa/files/MP/admin.txt`, one line: the admin key). The server checks the key (only its SHA-256 is in the source; the 24/7 server can use another one with `mp_server --admin-hash <hex>`). On the default server he shows as **[ADMIN] SENJI**: the `[ADMIN]` rank is an animated RGB wave (red, blue, violet, yellow, green) and the name SENJI flows white/black, in name tags, chat, kill feed and the player list. From MP Launcher > Players he can kick, ban, mute / unmute, and Settings > Cheats > \"Disable cheats\" switches cheats off for everyone (reset when everybody has left). Nobody else can use a fake `[ADMIN]` tag (it is removed by the server).",
+"**The name SENJI is reserved.** Without `admin.txt` the name (also look-alikes like `senji`, `S_E_N_J_I`, `SENJ1`) turns red in the keyboard and Enter does nothing, the mod refuses to connect with it, and the server refuses the join (`REJECT_NAME_RESERVED`), so editing the config doesn't help either.",
+"**CheatMenu is not allowed.** `libCheatMenu.so` / `libCheatMenu64.so` is detected in `ON_ALL_MODS_LOAD` with `aml->HasMod()` (+ `aml->GetLib()`, the loaded libraries and the AML mods folders), and again before every join and every 5 s while connected. If it is found, joining the default server or any custom server and hosting are refused with a \"This server doesn't allow cheat menus\" window telling you to remove the file and restart; it still works in single player.",
+"**Default server stays 24/7.** When everybody has left, the server keeps running and stays in the list.",
+"**Launcher: \"Hosted\" merged into \"Add server\".** The two pages had the same server name, port, password, language, icon, max players and permission switches. Now there is one page: fill it in once, then \"Add server\" (with a Host / IP) or \"Host this server on my phone\" (Host / IP empty). Permission switches are shown once.",
+"**Tug Stairs no longer flies.** Trailers (Tug Stairs, baggage, farm, utility, article trailers) can't be spawned with /spawn, a player who gets into one (cheat / CLEO) is put next to it, and other phones don't build a flying copy.",
+"**Ramming is no longer a one-hit kill.** A car hitting a player on foot used to send the whole avatar damage (or \"instant kill\"). Now a ram is scaled by speed and capped at 20 HP, once per 0.7 s per attacker; the victim's phone enforces the cap too, so older or modified phones can't exploit it. Rams from trailers do nothing. Drive-by shooting and vehicle weapons are unchanged.",
+"**Kill feed: new car-hit icon.** Running somebody over showed the driver's hand weapon (the damage was sent with the weapon in his hand). Car hits are now marked as car damage (also when an older phone sends them) and the kill feed shows a car-hits-player icon; heli blades got their own icon.",
+"**Admin name effects (one style per place).** Name tag: a golden Chinese dragon circles the name (front half passes under the letters, back half behind them) chasing a flaming pearl, with a breathing aura, rising embers, glints and a light sweep. Chat: a jade dragon swims under your 2 newest lines. Kill feed: a crimson fire dragon orbits the name. The body is a shaded ribbon with belly plates, scales, a rippling crest, clawed legs and a flowing tail; the head has antlers, mane, beard, a glowing eye, an opening jaw and trailing whiskers. Motion uses smooth noise (no two laps the same) and runs every frame. Your own tag and chat show it at once; others see it once the server tags you (every server now gives `[ADMIN] SENJI` the rank; admin powers stay on the default server). With admin.txt and the name SENJI, a live preview shows under the Name field.",
+"**Admin kill popup.** When [ADMIN] SENJI gets a kill, the line pops big and settles, with a fireball flash, two shockwave rings, flying sparks, smoke, a crimson dragon swooping across and \"ADMIN KILL\" stamping in.",
+"**Kill feed without the delay.** A kill used to appear only after your hit reached the victim's phone, it noticed its own death and the death came back (2 round trips, ~0.5-1.5 s on the internet relay). Now your phone shows the kill the moment your hit is lethal (from the victim's last health + armour); the victim's death confirms it without a second line, replaces it if somebody else got the kill, or removes it after 3 s if they survived.",
+"**Admin tag clears the health bar.** The [ADMIN] SENJI name and its dragon sit higher, so the dragon never covers the health / armour bars. The bars stay in the normal place; every other player's tag is unchanged.",
+"**One dragon in the kill feed.** The admin kill popup no longer adds a second swooping dragon; only the one circling the name stays (flash, rings, sparks and \"ADMIN KILL\" are kept).",
+"**Everyone sees the admin effects.** The server sends the name `[ADMIN] SENJI` to every player, and every 2.37 mod draws the name tag, chat and kill feed effects from it (checked in test/admin_test.cpp). Players on an older mod, or on a server that isn't updated to 2.37, see a plain name.",
+"**ScriptGuard: crash in CPhysical::Add fixed** (SIGSEGV at libGTASA.so + 0x3FCF6C, 32-bit, 68 mods). Every car / ped / object added to the world, by MP, CLEO or any other mod, is checked first. Past the map edge: moved back inside and stopped (a negative sector used to read memory in front of the sector table). NaN position or a broken / huge bounding box: not added. World node pools nearly full: not added (a null node used to crash). Each case is written to the AML log (`ScriptGuard: CPhysical::Add ...`). Tested in test/addguard_test.cpp.",
+"**Renamed CheatMenu is caught and its button removed.** Renaming libCheatMenu.so no longer works: every lib in the mods folders is read and checked for the menu's own Dear ImGui label \"CheatMenu\" / \"Cheat Menu\" (MP's own libs are recognised and skipped). When found, MP still refuses every server, and the menu's ImGui is hooked: the small \"CheatMenu\" button at the bottom of the screen is no longer drawn and can't be pressed, and if its window opens anyway it is moved off-screen, closed and draws nothing. Logged as `ModScan: ...`. Tested in test/modscan_test.cpp.",
+"Update every phone and the 24/7 servers (HiveMQ console option 7, or `mp-server update` on Termux)."
+]
+},
+{
+"v": "2.36",
+"summary": "Disable cheats (host setting). MP Launcher > Settings > Cheats has one switch, \"Disable cheats\". Only the host can turn it on (the phone running the server; on the default server that is the first player who joined). When it is on, for every player on that server: the MP cheat commands (/fly, /god, /invincible, /nofall, /wh, /freeze, /invisible, /flash, /gravity, /tp, /behind) are refused and any that were on are turned off, and the CLEO menu (swipe down) and CLEO touch / swipe menu scripts get no touches (an open CLEO menu is closed). The CLEO part works with CLEO Android (CLEOMod, 32-bit game); the switch is sent as a server permission, so no server update is needed.",
+"items": []
+},
+{
+"v": "2.35",
+"summary": "One shared world when players drive / walk together. Every phone runs the same game scripts (parked-car generators, gang / dealer peds), and each phone also sent those as \"its spawned\" ones, so two or three players together saw the same people and cars two or three times (worlds merged). Now a phone only shares what it really made: things that first appear right next to that player (CLEO menu / spawner / summon) or a car the player drove; and a shared car / ped is not shown when the same one already stands there. The copy of a driven NPC car no longer gets out by itself (its driver is a sync-only puppet that stays in the car) and is deleted with its car instead of being left behind as a second person. Visible enter / exit: other players now walk to the door and get in / out with the game's real animation for that car type (CAR_getin / getout, bikes, trucks, bus, ...) instead of teleporting; when they get out, the car stays parked where it was instead of vanishing and popping back. The kill feed is cleared when you leave the server. While the MP Launcher is open the game's HUD (radar, weapon, buttons) and MP's own HUD (tags, chat, kill feed) are hidden and get no touches. No server change.",
+"items": []
+},
+{
+"v": "2.34",
+"summary": "NPC flicker fix - cars / people driving or walking past players no longer blink out and back in (a copy near a player was deleted and re-made every packet, and cars were pushed out of the packet when the number of spawned ones changed; the packet is now sticky as a whole). Cars you spawn with a CLEO menu / vehicle spawner / summon are no longer deleted when you are near other players (empty cars and cars that appear right next to you are kept; only traffic that drives in is removed) - other players see them. Taking another player's NPC car needs you to really be at the car. Crash log `CPhysical::Add` (SEGV_UNKNOWN): the signal was sent by the game process itself, not a bad position (the ped was inside the map, Ganton) - fewer cars / people are now deleted and re-created by MP, which lowers that load.",
+"items": []
+},
+{
+"v": "2.33",
+"summary": "Crash fix in `CPhysical::Add` (libGTASA + 0x3FCF6C, SIGSEGV): MP put an entity outside the world grid (+-3000 m) or at an invalid (NaN) position - a remote player beyond the map edge (plane, jetpack, teleport cheat) or a bad packet - and the game read past its sector arrays. Every position / speed MP gives the game (avatars, their cars, NPC copies, aim / shoot targets, explosions, fires, pickups) is now checked: garbage is dropped, positions are kept inside the map, speeds max 150 m/s and never further out past the edge.",
+"items": []
+},
+{
+"v": "2.32",
+"summary": "Fixed: remote players turning into bots (a player's avatar walking around on its own like a normal ped, or a frozen player while others move). A mission ending, \"clear area\" or a CLEO cleanup released MP's avatars to the game (script ped -> street ped): they got the game's own wander / flee brain and the NPC sync even shared them as pedestrians. Now every avatar ped / car is locked as a sync-only puppet 4x a second (never released, empty decision maker): only the real player's controls move it. Every avatar MP makes is tracked; it is never shared as an NPC, and a leftover avatar no player owns is deleted. Phones also ignore a \"NPC\" that is really a player (at a player's position, or with a player's skin near them), so older phones can't send these bots either.",
+"items": [
+"**Fixed: gun arm / elbow not raised when another player aims or shoots.** The aim task was restarted every 300 ms, so the \"raise the gun\" motion never finished, and the copied body anims covered the arms. Now the aim is given once and renewed only when the aim point moves, the mirrored anims step aside while aiming, and aiming while walking / strafing raises the gun too.",
+"Server icons: the slot numbers are gone from all 250 pictures (rebuilt from the original Wikimedia Commons photos) and from the menus.",
+"Update every phone (and the hosting phone) to 2.32."
+]
+},
+{
+"v": "2.31",
+"summary": "Mission sync for more than 2 players: up to 16 players in one Mission sync group (3+ friends can all do the same mission together, see each other and share the mission markers). Ask any member and accept to join the group. In the player list, a synced player has an **Unsync mission** button that takes only that player out of your mission sync; **Leave Mission sync** takes you out while the rest stay synced. The list shows the whole group (\"Mission sync (3/16): you, A, B\"). The server must be 2.31 too (also the 24/7 `mp_server`). Test: `test/group_test.cpp`.",
+"items": []
+},
+{
+"v": "2.30",
+"summary": "MP Launcher watermark: \"powered by HiveMQ/ThirtyFoxMC\" on the right side of the title bar (left of the close button), green at 50% transparency. It hides itself on narrow screens rather than covering the launcher name.",
+"items": []
+},
+{
+"v": "2.29",
+"summary": "The default server \"MP LAN Server\" is always there. A 24/7 server (`mp_server --persistent`: the region VPS from the HiveMQ repo or a Termux phone that stays on) is announced in the lobby as dedicated (`@start!d`; older phones ignore it) and always wins over a phone copy: phones join it first, a phone already hosting a copy moves its players there, and when a phone host leaves everybody lands on the 24/7 copy instead of the server disappearing. `mp_server --persistent` no longer exits (code 2, restart loop) when a phone already runs the same server; it starts anyway and takes the players over. Port 1922 without a name = \"MP LAN Server\". The default server always has 100 slots, also when a phone hosts it, and the Internet tab always lists it (0/100 when nobody plays; Join starts it).",
+"items": []
+},
+{
+"v": "2.28",
+"summary": "Crash fix in `CRunningScript::ProcessCommands1000To1099` (libGTASA + 0x34EB76, called from `Game::GetCharTagPos` -> `Game::GetPassengerSeat`): passenger name tags asked the game who sits in every seat of a player's car with opcode 0432, and the game crashes on an empty seat or a car that was just deleted. Empty seats are now skipped and every car / ped query checks the handle is still alive; ScriptGuard also skips 0432 with a dead car for any script (CLEO too). Player list: tapping a name only selects it. No more teleport + \"flying\" glitch: touches on MP windows no longer reach the game HUD / CLEO touch-zone shortcuts behind the list, and **Go behind** is no longer instant: 3 2 1 countdown in the middle of the screen with Cancel, cancelled if the player leaves, pauses, is in another interior, on a mission or their position is old, 30 s cooldown (time limit) shown on the button, safe landing (ground found, clear of their car, speed zeroed, held still for 0.7 s). `/behind [id|stop]` uses the same countdown. Shared world: cars and people spawned by a script (CLEO cheat menus, `/v`, ...) and cars left parked by their driver are now synced to every player near them (new `*_SPAWNED` NPC flag, works without being the NPC host), so everybody sees the same car / ped in the same place instead of each phone having its own; getting in one claims it, damage goes to its owner. The host's ping is now real: the host's game talks to the server on its own phone (127.0.0.1 = 0-1 ms), so the host now shows the round trip to the online relay (HiveMQ broker) the players' packets go through, or the players' average ping on Wi-Fi / LAN.",
+"items": []
+},
+{
+"v": "2.27",
+"summary": "Fixed \"someone joins and I get Connecting... / resources / Connected successfully again\" (and the teleport to Grove Street). A phone that joined before it could see your server started its own copy of the same server; the duplicate merge then broke the 1-1 tie by token / IP, so the player who was already playing sometimes had to leave and rejoin the newcomer's copy. Every server now announces when it started (Wi-Fi query + online listing `proto:icon@start:language`, older phones still read it) and on a tie the older copy always wins, so the newcomer moves, not you. Moving to another copy of the same server (duplicate merge or host takeover) is now silent: no Connecting feed, no resource list, no teleport, you keep playing where you are. 24/7 server announces its start time too.",
+"items": []
+},
+{
+"v": "2.26",
+"summary": "Crash fix in `CPed::GiveWeapon` (libGTASA + 0x49F61E): another player's weapon is now only given when it is a real SA weapon (19-21 are empty slots), its model really loaded (weapon mods / full streaming) and the avatar still exists; goggles (44/45) and the parachute (46) are never given to avatars (they need player data only your own CJ has). A weapon that fails 3 times shows fists instead of retrying. The launcher is now a real full-screen window: while it is open nothing behind it gets your touches (no more hitting the game HUD through it), the game behind is dimmed, and the floating ⋮ / Chat buttons and the chat box are hidden until you close it with X. Server icons: the 250 + 1 icons (`icon_1.png` ... `icon_250.png` and `main_df_icon.png`) are now real photos from [Wikimedia Commons](https://commons.wikimedia.org) (horror, gangs / street art / lowriders, artists / concerts, cars, bikes, Los Santos / Las Venturas / San Fierro style cities, guns, games and arcades, wild animals), each free to share; author + license of every icon in `files/MP/ICONS_CREDITS.txt`.",
+"items": []
+},
+{
+"v": "2.25",
+"summary": "New full-screen server launcher (Orbit Launcher style). Tapping **Server** in the floating menu now opens an almost full-screen window (95% of the screen, 40% see-through): title bar \"MP Launcher v2.25\", toolbar (search, Connect / Leave, add, delete, refresh, settings, your nickname, display settings, help), left sidebar (Servers: Internet, Favorites, Hosted, Add server; Admin: Players, Bans; Settings: every other menu page), the server table (padlock, icon, HostName, Players, Ping, Mode, Language; tap a header to sort, tap a row to select, tap it again to join) and a right panel with the selected server's players (Player | Score) and rules (address, port, region, language, version...). Player management for hosts: kick or ban any player with a reason (type one or tap Cheating / Spamming / Insulting / Griefing / Bug abuse / AFK); bans use the player's phone id (new `DeviceId` in the config), so a new nickname doesn't help; ban list with unban and \"ban a name\" in Admin > Bans (saved in `files/MP/bans.txt`). Kicked / banned players see the SA-MP style box \"You are banned from the server!\" with Server, Ban date, Administrator (the host) and Reason; older phones get the same text in the chat. Server language: pick or type it on Host your own server and on Add server (e.g. `English`, `Filipino / English`); it shows in everyone's Language column and the search also finds it. 250 new server icons from [game-icons.net](https://game-icons.net) (CC BY 3.0, credits in `files/MP/ICONS_CREDITS.txt`): guns, skulls, gangs, cars, crews, music and artists. 24/7 server: `--lang`, `--admin NAME`, `--bans FILE` and console commands `players`, `kick <id> [reason]`, `ban <id> [reason]`, `banname <name> [reason]`, `bans`, `unban <n>` (Termux `server.conf`: `SERVER_LANG=`, `ADMIN=`). Repository renamed to **wagu**: website now [thirtyfoxmcx00e1.github.io/wagu](https://thirtyfoxmcx00e1.github.io/wagu/) (regions.txt moved with it).",
+"items": []
+},
+{
+"v": "2.24",
+"summary": "Crash fix + server icons. Fixed a crash in `CStreaming::RequestModel` (libGTASA + 0x2D2AAE): NPC world sync requested the car / ped model ids sent by the host's phone before checking them, so a model the host has but your game doesn't (limit adjusters, modded peds/cars, garbage ids) crashed. Every model is now checked against this game's model table before it is requested. Server icons: 250 template icons `files/MP/icon_1.png` ... `icon_250.png` plus the default `main_df_icon.png` (replace any of them with your own PNG, max 256x256). Hosts pick theirs in Server > Host your own server: tap the icon for the next one (Default -> 1 ... 250 -> Default), or use - / + / Default. Every phone shows the icon in the server list (online lobby, Wi-Fi and saved servers); the default MP LAN Server always shows `main_df_icon.png`. Older phones still see the server normally (the icon rides behind the protocol number). 24/7 server: `--icon N` / `ICON=N` in server.conf.",
+"items": []
+},
+{
+"v": "2.23",
+"summary": "Lobby no longer flips online / offline when the region servers are down. A region now counts as \"up\" only when a real MQTT login works (before: a plain TCP connect, which a router or firewall can accept on every port without a broker behind it). Region checks run in parallel (~5 s instead of ~40 s), the first connect waits for them, dead regions are skipped instead of costing 4-8 s each on every reconnect, failed brokers back off (30 s up to 10 min), and the mod never drops a working public-lobby connection to try a region that is down. Connection page shows \"All regions down: staying on the public lobby\". Same fix for the 24/7 server (`mp_server`, Termux).",
+"items": []
+},
+{
+"v": "2.22",
+"summary": "Crash + chat fix. The touch hook (Android UI thread) no longer touches ImGui while the game thread is drawing it: touches are queued and applied on the game thread, and the menu/chat hit test uses a snapshot of the last frame. This removes a heap race that could crash anywhere (often reported as `SIGSEGV` inside `libart.so`) and the stale-position taps that opened the chat \"anywhere I press\". The chat box only opens on a real short tap on the box. New in **Server > Display** (scroll down) and **Chat**: chat lines position X/Y, own chat box position (or right under the chat), show/hide the chat background, the chat box background and the \"Tap to chat\" label, and \"Tap the chat box to type\" (off = only the Chat button opens the keyboard, taps go to the game). New config keys: `ChatBoxBackground`, `ChatBoxLabel`, `ChatBoxTap`, `ChatBoxX`, `ChatBoxY`. Website: new [Termux page](https://thirtyfoxmcx00e1.github.io/wagu/termux.html) for the 24/7 phone server, and the MP Bot now runs Termius + Termux by itself (types the command, presses Enter, reacts to region / server changes, no input box). `regions.txt` now lists the HiveMQ public cluster as the shared Asia lobby (same lobby for 2.19-2.22 phones and the Termux 24/7 server) and `broker.txt` is ready to copy. HiveMQ kit: autopilot (auto-restart + reports shown by the MP Bot).",
+"items": []
+},
+{
+"v": "2.21",
+"summary": "Stability + games. No more random 5-minute \"timeout\" kicks: the mod stays on the same broker during a game (no background region switch), reconnects to the last good broker within a second, detects dead relay sockets after 7 s, ignores short network blips (3 checks) and the game timeout is 20 s instead of 10 s. \"Please wait\" no longer appears while a server is online: background lobby jobs no longer block Join/Host, and Join waits up to 4.5 s for the server list. One shared broker login for 100 phones is safe (each phone has its own client id). NPC world sync like normal SA-MP: one stable NPC host (keeps the same 48 people / 32 cars instead of flickering), NPC copies and player avatars no longer attack the host (empty decision maker), wanted level no longer swaps the NPC host. Passenger name tags sit above the right seat. Open world: all cities, safe houses, schools, Pay 'n' Spray, barbers, Well Stacked Pizza, Burger Shot, Cluckin' Bell, tattoo, gyms, clothes, mod garages, Ammu-Nation, trucking, quarry, Emmet, race tournaments (`/unlock`, `/girlfriends` optional). Games for the default and custom servers: `/spawn id|name` (vehicles 400-611), `/w` weapons, `/fix /flip /heal /armour`, 37 teleports announced in chat (`(/ls) Name teleported to Los Santos!`), 8 races with checkpoints and times (`RACE: Name finished Off-Road Race 1! (1/2 - 1:20.994)`), 8 jobs, 5 deathmatch zones (`/war`), kill streak and wanted announcements, score bar (DM / RACE / JOB SCORE), chat tips. 125 built-in server resources (35 new). Website: new [Termius page](https://thirtyfoxmcx00e1.github.io/wagu/termius.html) (24/7 region status, live servers, ping, browser terminal of each HiveMQ server). HiveMQ kit: web console, status beacon, phone-only cloud-init setup.",
+"items": []
+},
+{
+"v": "2.20",
+"summary": "Regional lobby servers. The mod downloads `regions.txt` from the website ([thirtyfoxmcx00e1.github.io/wagu](https://thirtyfoxmcx00e1.github.io/wagu/)), measures the ping to the Asia, Europe, NA and Oceania brokers in the background and joins the fastest one (MP menu shows \"Asia 38 ms\" etc. on the region buttons; \"Lobby: lowest ping region\" toggle). Hosting uses your server's region; joining a server from another region moves you to that region's broker and back afterwards. Server lists are shared between regions by the bridge, so everyone still sees every server. Until regions are filled in, the free public lobby is used exactly like 2.19. `broker.txt` now also accepts `[Asia]`/`[Europe]`/`[NA]`/`[Oceania]` blocks, `mqtt://`/`mqtts://` prefixes and `regions_url=` (`off` to disable). New website with live server list and region ping (`docs/`). Self-hosted HiveMQ regional broker kit: [ThirtyFoxMCx00E1/HiveMQ](https://github.com/ThirtyFoxMCx00E1/HiveMQ).",
+"items": []
+},
+{
+"v": "2.19.7",
+"summary": "Fixed the \"100% progress: couldn't back up your saves\" spam + lag on the default server: after a failure the save backup was retried every frame (copying every save file and posting the message each time). Now it gives up once per session. Empty or unreadable save slots no longer make the backup fail - they are just left untouched.",
+"items": []
+},
+{
+"v": "2.19.6",
+"summary": "Player model sync: others now see your real ped model (skin mods, skin-changer scripts, story characters loaded by scripts); CJ players are shown with the avatar skin from the menu (Player > Show my real model). Story characters (special characters) work as avatar skins and over the network: Rose, Paul, Cesar, OG Loc, Woozie, Mike Toreno, Jizzy, Madd Dogg, Catalina, Claude (SA-MP ids 290-299) plus Kendl, The Truth, Maccer, Emmet, T-Bone, Jethro, Zero, Andre (312-319), loaded into MP's own special slots 8-10 on each phone. More gang / cop skins in the picker. Chat no longer covers the screen: lines shown, text size, width (long lines wrap), fade-out time, background and position are set in game (Server > Chat, or /pagesize /fontsize /chatwidth /chatfade /chatbg /clearchat). Hosting fixed: Host server with the default name / port no longer just joins the default server - it gets \"<your name>'s server\" on port 1923 and you join it right away; \"Leave + join my server\" while on another server; your own password is used when you join your own server. Sync status (animations, story characters, NPCs) shown under Display.",
+"items": []
+},
+{
+"v": "2.19.5",
+"summary": "While the virtual keyboard is open, taps no longer reach the game HUD behind it (radar / map, weapon, enter-car and other buttons, camera swipes). Remote players no longer T-pose when walking or running without the sprint button: plain walk / run now uses the game's own walk at the same gait (sprint, jumps, fights etc. are still mirrored).",
+"items": []
+},
+{
+"v": "2.19.4",
+"summary": "The passenger icon only shows next to a car another player is driving (they got in first). Next to empty or parked cars and traffic there is no icon, so you just get in as the driver.",
+"items": []
+},
+{
+"v": "2.19.3",
+"summary": "The Passenger button is now an icon: a car seen from above with its door open, white with a dark outline and no background. It shrinks a little while you press it.",
+"items": []
+},
+{
+"v": "2.19.2",
+"summary": "Crash fix.",
+"items": [
+"Fixed a game crash (SIGSEGV in `CPed::GiveWeapon`) that could happen when another player used a jetpack. The 2.19 jetpack sync gave the avatar on your phone the game's real jetpack, but the game only supports that on the player, not on other characters. Avatars now carry a jetpack model on their back instead, and the flight comes from the position sync.",
+"Weapons are never given to a character that is already gone, and only valid weapon ids are used."
+]
+},
+{
+"v": "2.19.1",
+"summary": "Fixes for 2.19, plus a Local IP join and a Passenger button.",
+"items": [
+"**Server page**: the text in the white fields (Server name, Host / IP, Port, Password) is black now, with a grey hint while a field is empty. A long label goes on its own line instead of running under the field. The extra password field under \"Delete selected\" (it overlapped and opened the keyboard) is gone; the password goes in when you add the server.",
+"**Local IP**: new section on the Server page: type the IP and the port, tap Connect (same Wi-Fi / hotspot, or a public IP). It also shows your own local IP.",
+"**Join view**: no name tag or health bar (not even yours) on the Santa Maria Beach connection view and the spawn picker.",
+"**Passenger button**: walk up to any car with a free seat (a friend's car, traffic or a parked car) and tap Passenger. You get in as a passenger, and when it's a player's car, both phones see you riding in it.",
+"**Car colour sync**: the colours of players' cars and synced traffic are checked against what the car really has and set again if the game changed them, so every phone shows the same colours (default and custom servers).",
+"**Pause-menu map**: player icons and names stay on the right spot when you zoom or move the map. They were placed with the small HUD radar's scale around you, which made them fly off when zooming."
+]
+},
+{
+"v": "2.19",
+"summary": "Animation fix, mission sync, emoji chat, server passwords, a TopbarPlus-style menu, chat commands, a join screen with a spawn picker.",
+"items": [
+"**Remote walk / run fixed (no more T-pose)**: every phone now sends its joystick deflection with each position update. The avatar on other phones uses it (plus the real ground speed) to pick idle / walk / jog / sprint and turning, and the anim blend is always filled to 100%, so legs move and turning left / right while running no longer freezes into a T-pose.",
+"**Mission sync**: tap a player in the Player list, then Mission sync. The other phone gets a popup with Accept / Decline (closes itself after 30 s). Synced partners see each other in every mission, including scripted mission scenes (only real cut-scenes are kept separate), share mission markers, can damage each other and see each other's mission explosions / fires.",
+"**Emojis in chat**: the virtual keyboard has an emoji page (40 emojis), and they show in the chat. Emoji art: [Twemoji](https://github.com/jdecked/twemoji) by Twitter / jdecked, CC-BY 4.0.",
+"**Server passwords**: custom servers have a fourth field, Password (optional, max 16 characters), next to Server name, Host / IP and Port. You can also set the password of a selected server and of the server you host. A wrong password is rejected with a \"Wrong server password\" message. Standalone server: `./mp_server [port] [name] [max] [region] --password <pw>`.",
+"**TopbarPlus-style menu**: the old \"MP MENU | CHAT\" bar is replaced by translucent, rounded pills: a \"...\" pill with a dropdown (Help, Server, Player list) and a Chat pill. Light buttons now use black text; there are no green outlines anymore. Server holds all the settings; Help and Player list are one page each.",
+"**Player list** in the SA-MP scoreboard style: server name, Players: N, columns for id / name / score / ping, a red highlight on the selected row, and Mission sync / Go behind buttons.",
+"**Chat box**: shows only while the Chat pill is on. Type `/` to get command suggestions (e.g. `/tp :grove_street`); tap a suggestion to use it.",
+"**Chat commands**: `/tp :place` (34 places, `/tp` lists them; `/tp <id>` = go to a player), `/wallhack`, `/nofall`, `/invincible`, `/freeze`, `/invisible`, `/fly`, `/flash`, `/behind [id]`, `/gravity [0.1-3]`, `/help`. They only affect your own game; invisible also hides you on the other phones.",
+"**Jetpack sync**: other players see your jetpack.",
+"**Carjacking fixed**: the car you are entering (and its driver) no longer get cleared by the traffic sync. Entering a player's full car pulls the driver out (2.19 servers); otherwise you ride as their passenger.",
+"**Name tags** are hidden behind walls (they show again with `/wallhack`).",
+"**Join screen**: tapping Connect / Join hides the game HUD (radar, joystick) and slides a full black screen in from the left (1 s) without covering the chat or the title logo. Once you are connected it slides open over the Santa Maria Beach connection view. 3 s later `<  Spawn  >` appears: pick one of 34 spawn spots (14 in Los Santos, 5 in the countryside, 7 in San Fierro, 8 in Las Venturas; coordinates from the Grand Larceny gamemode `gl_spawns.inc`) with smooth eased camera flights, then tap Spawn.",
+"The protocol stays v4: 2.18 phones can still play with 2.19 phones on servers without a password, but only 2.19 gets the new features. Everybody should update."
+]
+},
+{
+"v": "2.18.3",
+"summary": "Ping no longer climbs when more players join internet servers (2, 3, 4 ... up to 100), plus tidier floating buttons. Everybody should update (older phones still work together, but only 2.18.3 players get the shared updates).",
+"items": [
+"**Why it climbed:** on a phone host with a normal mobile upload, every extra player adds position updates the host has to upload. Once that's more than the upload carries, updates queued up and every ping reply waited behind the whole queue: 300 ms became 500-750 ms with 4 players in our test (host upload limited to 6 KB/s), and kept growing with more.",
+"**Positions wait instead of queuing:** while the upload is busy (our own queue, unsent bytes in the phone, or the TCP round trip clearly above normal), position / NPC / car-state updates stay in the batch and get replaced by newer ones. Chat, joins, shots etc. are never held. Same test: ping stays ~300-350 ms with 1 or 4 players.",
+"**Ping replies jump the queue:** ping / pong / damage frames are sent on their own, before anything already waiting (never in the middle of a packet, TLS-safe).",
+"**Shared updates (big servers):** a position the host would send to most players (60%+, at least 3) is published once on `b/<host token>` and the broker copies it to everybody, instead of one copy per player. Host upload with 9 players: ~95 KB/s -> ~13 KB/s, same ping (~250-320 ms through the public broker). 9 players on a host limited to 20 KB/s: ping ~270-310 ms, full update rate. The game now skips a position older than one it already has (shared + direct updates can cross).",
+"Congestion batching waits at most 40 ms (was 100 ms).",
+"Note: through the internet lobby ping is roughly your round trip to the broker + the host's round trip to the broker (~250-320 ms from our test machine). The \"Online at internet ... ms\" before joining is only your side. A player with ~1000 ms usually has a weak connection himself (his own upload); the same holding / queue-jumping now also runs on his phone.",
+"**Buttons:** MP MENU and CHAT are now one tidy bar (\"MP MENU | CHAT\") with a fixed gap and a thin divider, still just the text with a shadow. Drag either one and the bar moves as one; it stays on screen and the position is remembered (`ButtonsX` / `ButtonsY` in the config). In the menu, the regular buttons have one height and \"Lobby details\" is a normal button.",
+"Test: `test/relay_host_test.cpp` hosts a server in the internet lobby on a PC (`MP_TEST_UPLOAD_KBPS` simulates a slow phone upload); join it with `test/relay_test.cpp`."
+]
+},
+{
+"v": "2.18.2",
+"summary": "\"Time is set by the server - change blocked.\" and \"Weather is set by the server - change blocked.\" are shown **only once per connection** (default server or custom server), not every 15 s while a script / cheat / mod keeps trying to change them. Time once, weather once (\"Time and weather are...\" if both at the same moment); joining a server again resets it. The server still keeps the time and weather locked the whole time.",
+"items": []
+},
+{
+"v": "2.18.1",
+"summary": "Fixed a game crash when a player's tuned car is shown on another phone.",
+"items": [
+"**Fixed: SIGSEGV in `RwFrameForAllObjects` (`libGTASA.so + 0x1D88E8`) <- `CVehicle::GetReplacementUpgrade`, R0 = 0.** Fitting a tuning part (`CVehicle::AddVehicleUpgrade`, and removing one) looks the part's place up in the car's 3D model (`CClumpModelInfo::GetFrameFromId`). If that car model has no frame for it (a modded / replaced car `.dff` on one of the phones, or a part that doesn't belong on that car) the frame is NULL and the game crashes. The 2.17.2 fix removed the same crash when *reading* parts; this one is *fitting* them on other players' cars.",
+"**Now:** parts are fitted with a direct call to the game's function (no longer through the script engine / CLEO), inside a fault guard. If it faults, MP jumps back out, that part is never tried again on that car model (logged once: \"tuning part ... doesn't fit car model ...\"), and the game keeps running. Other parts and other cars are still tuned. A crash anywhere else still goes to the normal crash log."
+]
+},
+{
+"v": "2.18.0",
+"summary": "NPC sync: people and traffic are the same for players near each other.",
+"items": [
+"**How it works:** in every area one phone is the **NPC host**: the lowest player id around that isn't on a mission. It keeps its own people and traffic and sends them (the nearest 16 people and 10 cars within 150 m, 5 times a second, only to players within 200 m; one packet is at most 862 bytes). The other phones there switch their own people / traffic off and show copies of the host's: same models, positions, walking / running, crouching, weapons, dead bodies; cars with the same model, driver, colours, position, rotation, speed, health, siren / lights. Walk away (more than 200 m) and your phone makes its own world again after 2 s.",
+"**Damage:** what you do to a copied person or car (shooting, punching, running over) is sent to the host, who applies it; the result (dead person, burning / exploding car) comes back to everybody. Copies bumping into each other on your phone don't count.",
+"**Taking a car:** get into a copied car and it's yours: the host's version is removed and the others see your car like any player's car.",
+"**Own world:** players on a mission or in a cutscene, and players with a wanted level (so the police come), keep their own people and traffic. Parked cars stay local.",
+"**Menu:** Display > \"Sync NPCs (people + traffic)\" (on by default) and a status line (who your NPCs come from / how many players you're the host for).",
+"Older phones ignore the new packets (2.18 still plays with 2.16 / 2.17; NPCs are only shared between 2.18 phones). Test: `test/npc_test.cpp`."
+]
+},
+{
+"v": "2.17.2",
+"summary": "Fixed a game crash when getting into a car.",
+"items": [
+"**Fixed: SIGSEGV in `RwFrameForAllObjects` <- `CVehicle::GetReplacementUpgrade` <- `Game::ReadVehState` (`libGTASA.so + 0x1D88E8`).** The 2.17 car state sync asked the game for the fitted part of every tuning slot with opcode `096D` (GET_CURRENT_CAR_MOD). The game looks the slot up in the car model's frames and, on cars that don't have that frame (most cars for some slots), walks a garbage pointer and crashes, right when you drive.",
+"**Now:** the fitted parts are read straight from the car's own upgrade list (`CVehicle::m_anUpgrades`, offset 1086 on 32-bit / 1402 on 64-bit, measured from aml-psdk), a plain memory read. `096D` is not used anywhere any more.",
+"Fitting parts on other players' cars now compares with what that car really has: a part is only removed if it's on the car and only added if it isn't, and only for cars, monster trucks and quads (bikes, boats, planes, helis, trains are never tuned).",
+"No protocol change."
+]
+},
+{
+"v": "2.17.1",
+"summary": "The custom server permission switch (MP menu > Connection > Host your own server, and Servers > Add custom server) is now called **\"Mission sync with somebody\"** (it was \"Pair up with somebody on missions\" up to 2.16.2). Server log lines say \"Mission sync started / ended\". No protocol change.",
+"items": []
+},
+{
+"v": "2.17",
+"summary": "Host crash fixed, much fuller remote player / weapon / car sync, players on the pause map, Mission sync, lower ping with many players, kill feed stays.",
+"items": [
+"**Fixed: host crash (SIGBUS / BUS_ADRALN in `MPServer`, 32-bit).** The explosion and fire relays passed the position inside the packed packet (odd address) as a `float*`; 32-bit ARM loads floats with `VLDR`, which needs an aligned address, so the hosting phone died as soon as someone near another player blew something up. The position is now copied to an aligned buffer first (same for all new relays). Test: `test/sync217_test.cpp`.",
+"**Kill feed:** no slide-in and no fade-out any more. Lines just appear and stay; the newest 5 are shown.",
+"**Pause-menu map:** every player's marker in their own colour plus the name they set, like the radar icons in game (hidden for players in their own story world, a Mission sync partner is shown).",
+"**Remote players (aml-psdk based):** a slow walk is now a real walk: any movement from 0.12 m/s plays the walk cycle with the leg speed matched to the real speed (0.45x - 1.15x), and the full-body blend is always filled up to 100 %, so no more T-pose / sliding. Crouch is re-checked every 0.5 s and fixed if it went out of sync. Aiming is shown (aim task to the real aim point), interiors are synced.",
+"**Weapons:** shot sync: every bullet you fire (start + impact point) is sent and replayed with the game's own weapon code, so others see the tracer, impact and hit. Rockets / grenades / Hydra and Hunter missiles are sent as projectiles and appear for everybody. Replayed bullets never hurt you twice (damage still comes from the shooter). Players on an older version fall back to lag-shot (aim + fire key).",
+"**Cars:** colours 1/2, paintjob, all tuning parts, health, damage (doors, panels, lights, tyres), door open angles, lock, engine / lights / siren, landing gear; plus steering angle, gas / brake, horn, Hydra thrusters, turret aim (Rhino, firetruck...). State is sent on change (at least every 2 s), inputs with every sync.",
+"**Mission sync** (was \"Pair up on missions\", the same host permission): the two players see each other on missions and now also share their mission's radar markers / checkpoints. Shots, cars and explosions of a partner on a mission reach the partner.",
+"**Ping with many players:** ping is measured from the kernel receive time (not from when the game frame got to the packet), important packets (ping / damage) skip the send queue, the send rate is only cut when our own queue backs up, and the network threads run at a higher priority. Before, the host's own load made ping rise as soon as a 2nd player joined.",
+"Protocol: new packets are appended and the sync extra block is ignored by 2.16 phones, so 2.17 still plays with 2.16 players (they just don't get the new extras)."
+]
+},
+{
+"v": "2.16.2",
+"summary": "Fixed a game crash when a script uses a car or object that no longer exists.",
+"items": [
+"**Fixed: SIGSEGV in `CRunningScript::ProcessCommands1000To1099` (`libGTASA.so + 0x34F022`).** The crash log showed a CLEO script (`_carfix.csa`) running opcode `0407` (GET_OFFSET_FROM_CAR_IN_WORLD_COORDS) with a car handle that no longer existed. The game turns the handle into a car pointer and, when the car is gone, carries on with a NULL pointer: it reads `[NULL + 0x14]` and the whole game dies. This is a bug in the game itself (the 64-bit game has the same code), and `0400` (the same command for objects) has it too. A script gets there when it keeps a car for a moment and that car is deleted, despawns, or the game is loaded in between. The cars MP creates for other players are removed when those players leave their car, which can leave such a handle behind in a script.",
+"**Now:** before these two commands run, MP asks the game's own car / object pool whether the handle is alive. If not, the command is skipped and the script simply carries on with its next command (the result variables keep their old values). A handle that is alive goes straight to the game's own code, unchanged. Every other command is not touched at all.",
+"The skip is written to the log as `ScriptGuard: 0407 skipped, car 0x... doesn't exist (script \"...\")` (the first 5 times, then every 1000th, so a script that loops every frame can't flood it). On start the log says `ScriptGuard: on`.",
+"Only installed when the game's code is the known GTA SA 2.00 (32-bit) / 2.10 (64-bit) one; on anything else the log says `ScriptGuard: off (...)` and nothing changes.",
+"No protocol change: 2.16.2 works with 2.16 / 2.16.1 players and servers.",
+"Tests: `test/guard_test.cpp` (dead / negative / zero handle, car vs object handles, a live handle goes to the game untouched, the script stands right behind the command after a skip)."
+]
+},
+{
+"v": "2.16.1",
+"summary": "The \"Pair up with somebody on missions\" permission switch is now always in the MP menu: Connection > Host your own server (above \"Host server\") and Servers > under \"Add custom server\". 2.16 only showed it after the server was already running, so it couldn't be set while creating one. It's used for every custom server you create or host (also when Join hosts a custom server nobody runs) and applies at once if you're hosting.",
+"items": []
+},
+{
+"v": "2.16",
+"summary": "Kill feed fades out, mission pairs (host permission), new Grove Street spawn, hidden IPs.",
+"items": [
+"**Kill feed:** every kill line slides in, stays 12 seconds, then fades out over 20 ticks (20 x 50 ms) while sliding to the right; the lines below move up smoothly. Lines no longer stay on screen forever.",
+"**Permission: pair up with somebody on missions.** Hosts of a custom server get a \"Permissions (your server)\" switch in MP menu > Connection (under Host server): \"Pair up with somebody on missions\", on by default, saved in the config (`AllowMissionPair`). The default server always allows it.",
+"Players: MP menu > Players online > \"Pair up on missions\" on a player; they get a message and an \"Accept pair request\" button. Paired players see each other while either of them is on a mission (normally everybody else is hidden then). Cutscenes still hide everyone. Tap \"Paired - tap to unpair\" to end it.",
+"The server checks everything: no accepting without a request, and turning the switch off ends every pair right away and tells all players. A partner leaving ends the pair too.",
+"Only visibility is shared; the mission itself (cutscenes, mission cars and objects) is still each player's own story.",
+"New packets `PKT_PERMS` / `PKT_PAIR`; older phones ignore them, and the buttons only show when the server is on 2.16.",
+"**Spawn moved to the middle of Grove Street** (2487.6, -1667.4), away from CJ's front door (2495, -1686), where the story started a mission as soon as you arrived. Used when joining, after a save load and by \"Teleport to Grove Street\".",
+"**IPs are hidden:** custom servers show \"IP hidden\" in the server list, the connection screen, the hosting screen and the bottom status line (which now shows the server name). The Host / IP field shows `****` once typed, and chat messages no longer print addresses.",
+"Tests: `test/pair_test.cpp` (request / accept / unpair / host switch off / partner leaves)."
+]
+},
+{
+"v": "2.15",
+"summary": "Ping stays low for hours, ride in other players' cars, full animation sync.",
+"items": [
+"**Fixed: ping slowly climbing to 30,000 ms after a few minutes, even with 3 players.** When the host's upload was even slightly slower than what the game sends (a weak mobile signal, a busy Wi-Fi), the extra data waited in the network's own buffers (the phone's TCP buffer, the carrier, the router). The phone can't see those, so 2.14 never dropped anything and every message (pings too) waited longer and longer.",
+"The relay now pings the broker twice a second while relaying. The ping waits in the same queue, so its extra delay is the backlog. Above 150 ms the relay lowers its send rate (to 70 % of what actually got through), below 60 ms it speeds up again. Position batches over the rate are skipped; chat, deaths, joins and explosions never are.",
+"While congested it also sends fewer, bigger messages (up to +150 ms batching), and players send 10 or 7 updates per second instead of 20.",
+"The kernel may only hold 16 KB unsent (`TCP_NOTSENT_LOWAT`, 64 KB send buffer), and queued data older than 150 ms is skipped.",
+"Test (Linux, host upload limited to 7 KB/s while 3 players need about 9): 2.14 ping went 6 s, 13 s, 20 s, 27 s over two minutes; 2.15 stayed at 200-480 ms.",
+"**Ride with other players.** Press \"enter car\" next to a car another player is driving: you get in as their passenger (their avatar can't be dragged out, which is why it did nothing before). They see you in their real car, everyone else sees you in their car too. If they get out, you stay in the parked car. Works the other way round as well: players who get into your car sit in your real car.",
+"**Full animation sync (fixes the T-pose).** The T-pose came from 2.13's anim sync: starting another player's animation faded the avatar's walk out, and the game never brought it back. Now the whole blend tree of the player is sent (up to 8 anims: walk / run / sprint / crouch / sneak / idle / fight / jump / climb / swim / weapon stances / custom IFP, with weights, times and speeds) and mirrored on the avatar 1:1, time-aligned with its drawn position. The avatar has no walk task any more; the anims themselves move it, so the legs match the real player. If an anim block is still loading, the avatar keeps its pose instead of going T-pose. 2.13/2.14 players still get the old way, now with the T-pose fix.",
+"Sync format v3: group anims cost 9 bytes (no names), custom IFP anims 11 bytes + the block name. A walking player with 4 anims and a seat is 52 bytes (2.13: 108 without the walk anims). Standing still with the same looping idle anims sends 4 updates per second.",
+"The host must be on 2.15 for passengers and full animations (a 2.14 host passes them through, but 2.14 players don't understand them and use the old smoothing).",
+"Tests: `test/env_test.cpp` checks v3 (full blend tree, passenger seat) and that 2.13 extensions still work."
+]
+},
+{
+"v": "2.14",
+"summary": "Low ping with many players, no more walking in place.",
+"items": [
+"**Fixed: ping climbing to 30,000+ ms with many players.** This was the mod, not Wi-Fi. On the internet relay the host phone uploads every player's position to everyone. When its upload couldn't keep up, the relay thread waited up to 3 s per message while the 1 MB socket buffers added in 2.11 filled with thousands of old positions, so everybody saw data that was many seconds old until they timed out.",
+"The relay never waits for the upload any more: a send queue goes out as fast as the connection allows; when it is behind, position-only batches are skipped (the next one has newer positions). Chat, deaths, joins and explosions are never skipped.",
+"Each batch keeps only the newest position of each player; older ones in the same batch are dropped.",
+"Relay socket buffers are 128 KB (old positions are useless), game sockets 512 KB.",
+"The server sends updates by distance: closer than 60 m every update (15 Hz in a crowd of 25+), 60-150 m 5 per second, 150-350 m 2 per second, farther every 2 s. State changes (car, death, mission) always go out at once.",
+"Syncs are smaller: the 2.13 extension (108 bytes) is now a compact one, 14 bytes on foot, about 50 with a car and an animation.",
+"Standing still sends 4 updates per second instead of 10-20.",
+"Test (Linux, host upload limited to 300 KB/s like a phone, 20 relayed players): 2.13 stalled at about 12 players and everyone timed out; 2.14 kept all players connected at 270-440 ms ping (the public broker's own delay is about 150 ms each way).",
+"**Fixed: walking in place / people standing still.**",
+"When updates stop for a moment (lag spike), the avatar stands instead of walking on the spot.",
+"The walk/run choice follows the real speed: below 0.4 m/s it stands, above 3.2 m/s it runs.",
+"Ahead of the real position, the avatar slows down (run -> walk -> stand); behind, it speeds up (walk -> run -> sprint), so the legs match the ground instead of sliding.",
+"Only the sideways error is corrected firmly while walking; the forward motion comes from the walk animation itself.",
+"The walk task is renewed before the avatar reaches its target point (it used to stop there briefly, a stutter).",
+"Far players (updates every 200-500 ms) are drawn far enough behind to always have two real positions to move between.",
+"2.13 players still see 2.14 players and vice versa. For the full effect the **host must be on 2.14** (a 2.13 host cuts the compact extension, and 2.14 players then fall back to the old smoothing).",
+"Tests: `test/env_test.cpp` checks the compact extension; `test/relay_test.cpp` can send 2.13/2.14 syncs (`MP_TEST_EXT=1/2`) and prints the ping over time. `MP_TEST_UPLOAD_KBPS` (Linux builds only) simulates a slow host upload."
+]
+},
+{
+"v": "2.13",
+"summary": "Smooth players, animation sync, environment sync.",
+"items": [
+"**Fixed: avatars standing still, then sliding / teleporting (\"500 ping\" look).** Not just bad Wi-Fi: the mod measured a player's speed from when packets *arrived*. The relay delivers them in bursts, so running players were measured as walking (or standing), fell behind and snapped forward. Now every sync carries the sender's own clock and real velocity; each avatar keeps a small snapshot buffer and is drawn slightly in the past (70 ms on a good connection, up to 350 ms on a bad one, adapts by itself) between two real positions. Small errors are pulled out smoothly every frame instead of teleporting every 0.6 m, and the walk task is no longer restarted 4 times a second.",
+"Walk / jog / run / sprint now comes from the sender's real move state, not a speed guess.",
+"Cars: interpolated position, full 3D rotation (pitch and roll, not just heading) and the real speed, so they glide instead of jumping.",
+"**Animation sync**: every non-walking animation the player is playing is sent (up to 2 at a time, strongest first): fighting, jumping, climbing, falling, swimming, idle moves, dancing, phone, script/IFP anims and more. The receiver streams the IFP block in if needed, starts the same anim at the same time and speed, and fades it out when the player stops. Locomotion stays with the game's own walk task.",
+"**Environment sync** (needs a 2.13 host): explosions you cause (grenades, rockets, your car blowing up), fires you start (flamethrower), and the weapon you were holding when you die (a shared pickup: first player to grab it gets it, it disappears for everyone, late joiners see it, gone after 60 s). Sent only to players within 400 m; explosions your phone already showed because of an avatar's shot aren't doubled.",
+"Settings: \"Sync player animations\" and \"Sync explosions, fire, weapons\" switches (on by default).",
+"Wire format: `SyncExt` is appended to `PktSync`; 2.12 players ignore it, and through a 2.12 host 2.13 falls back to the old smoothing. Protocol is still v4.",
+"Offsets for both ABIs come from aml-psdk and were measured with `offsetof()` (see the table at the top of `src/game/netstate.cpp`). Every game function is looked up by symbol and the feature turns itself off if one is missing.",
+"`test/env_test.cpp`: extension forwarding, near/far explosions and fires, pickup drop / take / late join.",
+"Not included: mission sync (being worked on separately), CJ clothes on avatars (the game builds CJ's clothed model only for the real player; remote avatars use ped skins)."
+]
+},
+{
+"v": "2.12",
+"summary": "Crash fix when another player's avatar is created (`SIGSEGV` in `CStreaming::RequestModel`).",
+"items": [
+"Seen on 64-bit with ZyZ Limit Adjuster / ZyZ Model Variations: a remote player using the Big Smoke skin (269) made the game request a ped model that has no model info on that setup, so `REQUEST_MODEL` crashed while spawning the avatar (`Game::CreateRemotePed`).",
+"Remote skins are now checked before they're loaded: the model must be a real ped (1..311, not 74, not the mission-only SPECIAL01..10 slots 290-299) and exist in `CModelInfo::ms_modelInfoPtrs`. Anything else, or a model that failed to load once, shows as GSF 2 (106) instead of crashing. Skin ids from the network are never trusted as-is.",
+"Works with limit adjusters that move the model table (the check is skipped if the stock table looks empty)."
+]
+},
+{
+"v": "2.11",
+"summary": "Crash fix when joining a server with other players + full 100-player relay.",
+"items": [
+"**Fixed**: the 32-bit build (`libMP32.so`) crashed with `SIGBUS (BUS_ADRALN)` in `Events::OnSync` as soon as another player's sync arrived (for example, joining a custom Asia server that showed 1/100). The sync packet is packed, so its floats sit at unaligned offsets (offset 6), and a plain `float*` into it made the compiler use `VLDR`, which faults on ARMv7. All packet reads now copy the bytes into aligned memory first. 64-bit was not affected.",
+"**100 players on one server, Wi-Fi and internet relay**:",
+"Avatar streaming: only the nearest 32 players within 250 m get a real ped/car in your game (they disappear past 290 m), so the game's ped and vehicle pools never overflow. Everyone stays in the player list, chat and kill feed.",
+"Server interest management: players closer than 350 m get every sync, players farther away get 1 per second. State changes (death, car enter/exit, mission, cutscene) always go to everyone right away. Works in the in-game host and in `mp_server`.",
+"Sync rate scales with the player count: 20 Hz up to 16 players, 15 Hz up to 40, 10 Hz above.",
+"Relay: bigger UDP buffers (1 MB) on the server, client, proxy and bridges, more packets read per tick, and longer batching on the host (25 ms up to 8 relayed players, 50 ms up to 32, 80 ms beyond) to stay under the broker's message rate.",
+"`test/load_test.cpp`: 100 clients on one server (Linux): 100/100 connected, far players thinned out.",
+"Protocol is still v4: 2.11 works with 2.10 servers and players. Everyone should update to 2.11 so 32-bit phones stop crashing."
+]
+},
+{
+"v": "2.10",
+"summary": "100% progress on the default server.",
+"items": [
+"Joining the **default server** loads a 100% save (all missions done, 187/187 progress; built in from `progress/GTASAsf1.b`). Before that, every save slot (`GTASAsf1.b` .. `GTASAsf10.b`) is copied to `files/MP/progress/backup`, the 100% save is written into a free slot, loaded like picking it in Load Game, and that slot is put back right away.",
+"**Leaving** the default server (or joining a custom server) puts every save file back exactly as it was and loads your **own newest save** (your last mission save point). Anything you saved while on the default server is undone. Short connection drops (under 15 s) don't trigger it.",
+"**Custom servers** always use your own progress.",
+"If the game closes while you're on the default server, the next start restores your save files before anything else.",
+"Menu: Player > \"100% progress on the default server\" (on by default) with its current status. Your own 100% save can replace the built-in one: `files/MP/progress/100.b`.",
+"If the game doesn't take the load request, nothing changes: you keep your own progress and the chat says so."
+]
+},
+{
+"v": "2.9",
+"summary": "Separate missions and cutscenes for every player.",
+"items": [
+"While a player is **on a mission** (story missions, side jobs, schools, races) or **in a cutscene / scripted scene** (black bars, no control), they are in their own story world: the others don't see them (no avatar, car, radar icon or name tag) and they can't hurt or be hurt by other players. While you are on a mission or in a cutscene, the other players are hidden for you too, so nobody walks into your cutscene, bumps your mission cars or shows up in your scenes. Everyone comes back automatically when the mission or cutscene ends.",
+"Players online list shows \"On mission: Tagging Up Turf\" (all story missions from In the Beginning to End of the Line, plus side jobs) or \"In a cutscene\". Chat shows \"<name> is on a mission: ...\" and \"<name> finished their mission.\"",
+"Mission progress is per player: every phone keeps its own save and mission progress, nobody's missions change anybody else's game.",
+"During your mission / cutscene the server's time and weather lock pauses (missions set their own time and weather); afterwards the server's day comes back, without a \"change blocked\" notice.",
+"Detection: `CTheScripts::OnAMissionFlag`, the running mission script (`CRunningScript::m_bIsMission`, name e.g. `SWEET1`), `CCutsceneMgr::ms_running` and opcode `09E7` (player control off during a mission). New packet `PKT_STATUS` + sync flags `SYNC_MISSION` / `SYNC_CUTSCENE`; older servers still pass the flags through."
+]
+},
+{
+"v": "2.8",
+"summary": "Server-controlled time + weather, live region counts.",
+"items": [
+"**Time and weather belong to the server** (default and custom servers, and `mp_server`). Every frame, right after the game's own update, the phone puts the clock and weather back to the server's, so CLEO scripts, cheats, sleeping or time-speed scripts can't change them while you're on a server. You'll see \"Time and weather is set by the server - change blocked.\" When you leave, your own time and weather come back.",
+"Every server now runs the **same normal day**: 1 game minute per real second (24 real minutes per game day) from the real clock, with the game's own weather cycle for each map area. A host can't start a server at night anymore, and the day doesn't jump when another player takes over hosting.",
+"**Region buttons show players online** (Asia / Europe / NA / Oceania), counting every live server in that region, including the one you host and the one you're playing on. Before, they counted only servers found by the last search, so they often stayed at 0.",
+"Older 2.7 players on a 2.8 server still get the time (forced sunny weather); 2.8 players on an older server work as before."
+]
+},
+{
+"v": "2.7",
+"summary": "Private lobby broker (TLS + login).",
+"items": [
+"The mod can now use your **own** MQTT broker instead of the free public ones. Put a `broker.txt` in the `files/MP/` folder (template: `assets/MP/broker.example.txt`). Connections to it are encrypted (TLS 1.2, certificate checked) and use a username and password. See \"Private lobby\" below.",
+"Works with EMQX Serverless (free plan), HiveMQ Cloud Starter, or your own Mosquitto. `rate=` keeps the mod under a broker's messages-per-second limit by batching updates (no updates are lost).",
+"Clear errors in **Lobby details**: wrong username/password, certificate not trusted, phone date wrong, TLS timeout.",
+"HiveMQ's public broker is also tried over TLS (port 8883) if plain TCP and WebSocket are blocked.",
+"Built-in root certificates (Let's Encrypt, Amazon, DigiCert, Google, USERTrust, Starfield) plus the phone's own Android certificate store. mbedTLS 3.6.2 (Apache-2.0) is linked statically with hidden symbols, so it can't clash with other mods."
+]
+},
+{
+"v": "2.6",
+"summary": "Online lobby fixes and diagnostics.",
+"items": [
+"The Servers tab now lists **every** live server under \"Online now\", including the default server, and the region buttons show how many servers are **online** in each region. Before, the region number only counted saved custom servers, so it always showed 0 even when a server was online.",
+"New lobby status line + **Lobby details** button (Servers and Connection tabs): which broker you're on, how many servers the lobby sees, and why each broker failed (DNS, timeout / port blocked, refused). It opens by itself when the lobby can't connect.",
+"Networks that block port 1883 now work: the mod falls back to MQTT over WebSocket (HiveMQ 8000, Mosquitto 8080, EMQX 8083).",
+"Uses `poll()` instead of `select()` (safe with the many files the game keeps open), and the relay proxy now listens on plain `127.0.0.1` so it works on every phone.",
+"Joining waits until the lobby is really ready (up to 10 s right after the game starts), so a phone no longer creates its own default server just because the lobby wasn't loaded yet.",
+"`lobby/index.html`: a web page that shows the live lobby in any browser (secure WebSocket to the same broker). If your hosting phone shows up there, other phones can see it."
+]
+},
+{
+"v": "2.5",
+"summary": "Online play over mobile data and different networks, with no website, no VPS and no port forwarding.",
+"items": [
+"Why it didn't work before: phones on mobile data (or on a router that isolates devices) can't reach each other, and the old search only looked at your own Wi-Fi. So the second phone saw no server and created its own default server.",
+"New internet lobby: every copy of the mod keeps one outgoing connection to a free, always-on public MQTT broker (`broker.hivemq.com`, then `test.mosquitto.org`, then `broker.emqx.io`). A phone that hosts a server announces it there, so every phone in the world sees it in a few seconds. Game packets are relayed through the broker, so Wi-Fi, mobile data and hotspot players all play together.",
+"Default server is created only once: **Connect** first looks in the internet lobby and on your Wi-Fi. If \"MP LAN Server\" already runs anywhere, you join it. Only when nobody has it does your phone host it. Two phones that host at the same moment merge into one within about 8 s.",
+"Custom servers are checked the same way: turning on *Host server* with a name + port that's already online joins that server instead of creating a copy.",
+"Dead servers disappear on their own: if the host closes the game or loses signal, the broker removes the listing (MQTT last will), and the players take over the server like before.",
+"Servers tab: \"Online now (internet + Wi-Fi)\" lists every live server with a Join button. The Connection tab shows the lobby status (`Internet lobby: online (broker, ms)`).",
+"`mp_server` (PC/Termux/VPS) also shows up in the internet lobby. Use `--no-online` to turn that off.",
+"Ping through the relay is about 2x the broker round trip (around 250-400 ms in tests). For lower ping, run `mp_server` on a VPS near your players and add its IP as a custom server.",
+"Protocol is still v4, but every player needs 2.5 to see internet servers."
+]
+},
+{
+"v": "2.3",
+"summary": "Fixed a freeze (no crash) when tapping Leave on a server hosted on your phone (any custom server you host via Join, or the default server). The server thread locked its player list twice when a player left, so it got stuck, and the menu froze waiting for it. Leaving and timeouts now work normally, and the server stays online. Your own weather comes back safely after leaving.",
+"items": []
+},
+{
+"v": "2.2",
+"summary": "Join order: `Connecting.` ... `Connecting....` waits until the server accepts you, then all 90 `: ... resources` lines, then **Connected successfully!**. Only then you're teleported to Grove Street and the title logo and connected sound play together.",
+"items": []
+},
+{
+"v": "2.1",
+"summary": "88 more server resources are built into the mod (90 in total, no `resources.txt` needed). They're listed in the chat after `Connecting....` when you join any server: `serverworld_host`, `server_combat system`, then `server_player sync`, `server_vehicle sync`, `server_weapon sync` ... through `server_hud system`. Other mods can still add more with `IMPMenu::AddResource`.",
+"items": []
+},
+{
+"v": "2.0",
+"summary": "Joining feed, server resources, server day (timecycle), cleaner chat.",
+"items": [
+"When you join any server (default or custom), the chat shows `Connecting.` through `Connecting.....`, then `Connecting.` through `Connecting....`, followed by the server resources: ``` : serverworld_host resources : server_combat system resources ```",
+"Up to **88 extra resources**: put one per line in `files/MP/resources.txt` (for example `: server_example`), or call `IMPMenu::AddResource(\"server_example\")` from another mod (interface version 2).",
+"**serverworld_host**: every server now keeps its own day. The host's time of day and weather start it, the clock runs at GTA speed (1 game minute = 1 s), and every player gets it on join and every 5 s. Leaving the server gives you your own weather back. Works on the standalone `mp_server` too.",
+"Guide/help text removed from the chat (startup hint, connecting/searching/found/hosting messages). Only short errors and join/leave notices remain.",
+"Server list: servers found on Wi-Fi are no longer added to your list automatically (they're only shown with a Join button). Duplicate entries such as a second `ggwar` are removed on load, and adding a server that's already in the list is blocked (\"already created\")."
+]
+},
+{
+"v": "1.9",
+"summary": "Custom servers are always active, just like the default server.",
+"items": [
+"No more \"offline - can't join\". Join is always available while you have Wi-Fi or data. Tapping it: 1. joins the server at its host/IP if one answers there (a PC, VPS or domain like `net.ggwar.org`), 2. otherwise joins the phone on your Wi-Fi/hotspot that runs the same name and port, 3. otherwise **your phone hosts it** and you join it. Friends tapping Join then find you.",
+"Status line: connected / online (you host it) / online x/max / online on Wi-Fi / **always active - tap Join**.",
+"Host/IP accepts names like `ggwar` or `net.ggwar.org` (also `http://...`, which gets cleaned up). Name lookups now run in the background, so an unknown name never freezes the game.",
+"One server per phone: if you host the default server and Join an unhosted custom server (or the other way round), your old server is handed over to its players automatically.",
+"Port 1922 is reserved for the default server. New custom servers default to port 1923.",
+"The Wi-Fi/hotspot scan also checks the ports of your saved custom servers."
+]
+},
+{
+"v": "1.8",
+"summary": "Default server + custom servers with Join buttons.",
+"items": [
+"The big **Connect** button is now only for the **default server** (\"MP LAN Server\", port 1922). It's always available: it joins the default server on your Wi-Fi/hotspot, or your phone hosts it when nobody has it yet.",
+"The **Servers** tab shows the default server pinned on top with its own Connect button, then up to **99 custom servers**, each with a **Join** button (Leave when you're on it). 1 default + 99 custom = 100.",
+"Custom servers show online x/max and ping, \"checking...\", or **offline - use the default server**. Join is greyed out while a custom server is offline, so you pick the default server instead.",
+"Custom servers found on your Wi-Fi/hotspot get Join buttons too, and they're saved automatically.",
+"*Host your own server*: set your server name and port (port 1922 is reserved for the default server, so use 1923 or higher). It's saved and restarts with the game, and if you leave, a player takes over. A *Join my server* button appears while you host.",
+"The search now checks the default port and your own port together."
+]
+},
+{
+"v": "1.7",
+"summary": "Players always meet on the same server.",
+"items": [
+"One server per Wi-Fi/hotspot: with the default host `127.0.0.1`, Connect first searches your Wi-Fi/hotspot (broadcast + unicast sweep, so it also works on phones that drop broadcasts) and joins the server that is already online. If there is none, your phone becomes the host and others join you.",
+"No duplicates: turning on *Host LAN server* first checks for a server with the same name and port. If it's already online (another phone with the same libMP32/libMP64), you join it instead of creating a second copy. If two copies still appear (two phones hosting at the same moment), they merge into one within 15 s.",
+"Server stays online: the host can disconnect and the server keeps running. It's saved (`HostLAN`, `ServerName`, `Port`) and comes back when the game starts. If the host closes the game or turns hosting off, the remaining players take over: the first player becomes the new host with the same name and port, and everyone reconnects to it automatically. The host closing the server now tells everyone right away, so nobody waits for the 10 s timeout.",
+"Online only: you need Wi-Fi, mobile data or a hotspot to connect or host. If the network turns off, you're disconnected with a message, and Connect won't work until it's back on.",
+"Servers tab: new \"On your Wi-Fi / hotspot\" list (all regions, refreshed every 15 s). Tap one to join. Servers found there are saved to `servers.txt` automatically, and if the host's IP changes the saved entry follows it.",
+"New setting: *Server name (yours)*. The same name and port means the same server.",
+"Dedicated server: `server/run_forever.sh` (Termux/Linux auto restart) and `server/mp_server.service` (systemd) keep a server online 24/7. Players on mobile data on different networks need a server like this, because phones on mobile data can't reach each other directly.",
+"Protocol is still v4 (`REJECT_SHUTDOWN` = 3 added). Everyone should update to get the takeover."
+]
+},
+{
+"v": "1.6",
+"summary": "Pausing no longer affects anyone else.",
+"items": [
+"A background heartbeat keeps a paused player connected, whether they're in the pause menu or the app is in the background, so they're not dropped after the 10 s timeout.",
+"Other players see a yellow \"PAUSED\" tag above that player's name and \"(paused)\" in the player list. The paused player's character stands still, and nobody can damage them (blocked on the server too).",
+"When the host pauses, the LAN server keeps running on its own thread, so everyone else keeps playing.",
+"Note: Android may freeze apps that stay in the background for a long time. Keep the host's game open (the pause menu is fine).",
+"Protocol v4: everyone must update."
+]
+},
+{
+"v": "1.5",
+"summary": "",
+"items": [
+"Name color: pick one of 16 colors or any custom R/G/B color in the Player tab, or \"Automatic\" to use the server's color. It's synced to every player and used for your name tag, chat name (older messages are recolored too), kill feed and radar icon. Changes apply live, and players who join later see it too.",
+"PvP: instant kills (headshots, explosions) on another player's avatar are now reported to that player, so they really die and show in the kill feed. Before, the avatar died only on the shooter's screen.",
+"Protocol v3: everyone must update."
+]
+},
+{
+"v": "1.4",
+"summary": "",
+"items": [
+"Regions: Asia, Europe, NA, Oceania, picked at the top of the new Servers tab.",
+"Server list: save up to 100 servers (`files/MP/servers.txt`, format `region|port|host|name`). Each one shows players online x/max and ping, refreshed every 10 s.",
+"Player limit: raised to 100. The \"Max players\" slider (1-100) sets the limit for your LAN server, live. Lowering it never kicks anyone; it only blocks new joins.",
+"Players online: shown as x/max in the menu and the bottom-left status line.",
+"Floating MP MENU / CHAT buttons: now just the text label, with a transparent background and no outline.",
+"Protocol v2: everyone must update. Standalone server usage: `./mp_server [port] [name] [max players 1-100] [Asia|Europe|NA|Oceania]`."
+]
+},
+{
+"v": "1.3",
+"summary": "Fixed a crash when tapping Connect (SIGSEGV in `_rwOpenGLRasterSetImage`). The connected logo (896x531) is not a power-of-two size, so the game's texture upload read past the end of the image. The PNG is now placed on a transparent 1024x1024 canvas and drawn with matching UVs. If the game ever picks a different texture size, the logo is skipped with a log message instead of crashing.",
+"items": []
+},
+{
+"v": "1.2",
+"summary": "The floating buttons are now labeled pills, \"MP MENU\" and \"CHAT\", at the top-center of the screen. Hold and drag them anywhere; tap to open. If the game's touch hook doesn't deliver events on your build, MP now reads touches directly from the game every frame (`LIB_PointerGetButton` / `LIB_PointerGetCoordinates`). The menu also opens automatically the first time you start the game.",
+"items": []
+},
+{
+"v": "1.1",
+"summary": "Fixed the MP and Chat bubbles not responding to taps. The touch hook now also handles the game's pointer-up event (type 4), which the game sends when a finger lifts while another is still down (for example while holding the joystick). Bubble taps are now detected straight from touch events, a finger that never lifted no longer blocks the menu, and touch coordinates are corrected when the game renders below native resolution. The Chat bubble now always opens the keyboard (tap again to close it).",
+"items": []
+},
+{
+"v": "1.0",
+"summary": "First release.",
+"items": []
+}
+]
+}

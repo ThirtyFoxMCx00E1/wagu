@@ -1,0 +1,44 @@
+# MP Multiplayer - private lobby broker (optional)
+# --------------------------------------------------
+# Rename this file to broker.txt (same folder as servers.txt, the mod's "MP" data folder)
+# and put the SAME file on every phone that should play together. Phones without it
+# stay on the free public brokers and will not see servers on your private broker.
+#
+# Works with any MQTT 3.1.1 broker that supports TLS + username/password, e.g.
+#   EMQX Serverless (free plan):  host = xxxxxxx.ala.<region>.emqxsl.com   port 8883   rate=10
+#   HiveMQ Cloud Starter:         host = xxxxxxxx.s1.eu.hivemq.cloud       port 8883
+#   Your own Mosquitto server:    host = your.domain                        port 8883
+#
+# Give the login only Publish + Subscribe rights on topics  thirtyfox/mp4/#
+
+host=YOUR-CLUSTER-ADDRESS
+port=8883
+tls=1
+user=YOUR-USERNAME
+pass=YOUR-PASSWORD
+
+# Max messages per second per phone (EMQX Serverless free plan allows 10). Leave out for no limit.
+#rate=10
+
+# 1 = if your broker is down, fall back to the free public brokers. 0 = private only.
+public=0
+
+# Only for self-signed servers: extra root certificate file (PEM)
+#ca=/sdcard/Android/data/<game package>/files/MP/my_ca.pem
+
+# ---- 2.20: regional brokers (optional) ----
+# Normally not needed: the mod downloads the official region list from
+#   https://thirtyfoxmcx00e1.github.io/wagu/regions.txt
+# and picks the region with the lowest ping. Use your own list instead:
+#regions_url=https://example.com/my-regions.txt
+# or turn the download off:
+#regions_url=off
+# or list your regions here (one block per region: Asia, Europe, NA, Oceania):
+#[Asia]
+#host=mqtt://asia.example.com:1883
+#user=mp
+#pass=YOUR-PASSWORD
+#[Europe]
+#host=mqtts://eu.example.com:8883
+#user=mp
+#pass=YOUR-PASSWORD

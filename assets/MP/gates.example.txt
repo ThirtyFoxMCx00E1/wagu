@@ -1,0 +1,13 @@
+# MP gate teleports (3.04.2). Rename this file to gates.txt to use it.
+# Walk or drive up to a gate that never opens: the screen fades to black, you are moved
+# to the other side, the screen fades back in.
+#
+# One gate per line:   x  y  z  heading  width  name
+#   heading = the direction you walk THROUGH the gate (game heading)
+#   width   = width of the gate opening in metres
+# Easiest: stand in the middle of the gate facing through it, type /gatepos, copy the line here,
+# then type /gates reload.
+# Keep "default" to also use the built-in Area 69 gates.
+default
+# 134.55 1941.53 17.70 0 11 Area 69 North Gate
+# 286.01 1822.74 16.00 90 11 Area 69 East Gate

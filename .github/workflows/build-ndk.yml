@@ -1,0 +1,40 @@
+name: Build Android MP libraries
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'Android.mk'
+      - 'Application.mk'
+      - 'src/**'
+      - '.github/workflows/build-ndk.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: nttld/setup-ndk@v1
+        id: ndk
+        with:
+          ndk-version: r27
+          add-to-path: true
+      - name: Build
+        env:
+          ANDROID_NDK_HOME: ${{ steps.ndk.outputs.ndk-path }}
+          NDK_HOME: ${{ steps.ndk.outputs.ndk-path }}
+        run: |
+          chmod +x build_ndk.sh
+          ./build_ndk.sh "armeabi-v7a arm64-v8a"
+      - name: Upload binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: MP-Android-NDK-r27-binaries
+          path: |
+            bin/libMP32.so
+            bin/libMP64.so
+          if-no-files-found: error
