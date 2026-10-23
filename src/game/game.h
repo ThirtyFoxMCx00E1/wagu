@@ -3,6 +3,7 @@
 #include <stdint.h>
 
 struct Vec3 { float x, y, z; };
+struct PktClothes;   // net/protocol.h (3.10)
 // 2.33: crash fix (CPhysical::Add, libGTASA + 0x3FCF6C): an entity MP put outside the world grid
 // (+-3000 m: 120 sectors) or at NaN made the game index past its sector arrays. Every position /
 // speed MP gives the game goes through these first.
@@ -54,6 +55,13 @@ namespace Game
     int   ModelForSkin(int skin, int& specialSlot);   // 0 = can't now
     void  NoteSpecialPed(int slot, int ped);
     int   LocalSkinForNet(int fallback);              // your real model (CJ -> fallback)
+    // 3.10 (skins.cpp): clothing sync
+    void  InitClothes(void* gameHandle);
+    bool  ClothesSyncAvailable();
+    bool  GetLocalClothes(PktClothes& out);    // false = you are not CJ
+    int   ModelForClothes(const PktClothes& c, int& specialSlot);   // 0 = can't now
+    bool  ClothesCanBuild(const PktClothes& c);  // a slot has this outfit already / is free now
+    int   CreateRemoteClothedCJ(const PktClothes& c, const Vec3& pos);   // 0 = can't (use CreateRemotePed)
     void  DeleteChar(int ped);
     void  GiveAndSelectWeapon(int ped, int weapon);
     void  TaskGoTo(int ped, const Vec3& p, int moveState);

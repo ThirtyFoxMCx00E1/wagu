@@ -11,9 +11,11 @@
 // 3.04.6: mod build number (3.04.6 = 30406), sent when joining (PktJoin5) and in the welcome (PktWelcome2).
 // Servers refuse phones older than MP_MIN_BUILD (old versions let players use cheats) and log them;
 // phones refuse servers older than that too (they would let old phones in).
-#define MP_BUILD           30406
+// 3.10: build 31000. MP_MIN_BUILD stays 30406 and the lobby stays thirtyfox/mp5/: 3.04.6 (no cheats)
+// and 3.10 phones play together on the same servers; only 3.04.5 and older (mp4) stay shut out.
+#define MP_BUILD           31000
 #define MP_MIN_BUILD       30406
-#define MP_VERSION_STR     "3.04.6"
+#define MP_VERSION_STR     "3.10"
 #define MP_DOWNLOAD_URL    "thirtyfoxmcx00e1.github.io/wagu"
 #define MP_DEFAULT_HOST    "127.0.0.1"
 #define MP_DEFAULT_PORT    1922
@@ -93,6 +95,7 @@ enum ePacket : uint8_t
     PKT_BCW_ROLL,       // S->C          3.04: leader pick (slot-machine roll) for both teams
     PKT_BCW_SCORE,      // S->C          3.04: end-of-match scoreboard (one packet per team)
     PKT_BCW_EVENT,      // S->C          3.04: steal / drop / return / capture / victory notices
+    PKT_CLOTHES,        // C->S->C       3.10: CJ's clothes (3.04.6 phones / servers simply ignore it)
 };
 
 enum eRegion : uint8_t { REGION_ASIA = 0, REGION_EUROPE, REGION_NA, REGION_OCEANIA, REGION_COUNT };
@@ -538,7 +541,40 @@ struct PktBcwScore  { uint8_t type; uint8_t winner; uint8_t team; uint8_t map; u
 enum eBcwEvent : uint8_t { BCWE_STOLEN = 1, BCWE_DROPPED, BCWE_PICKED, BCWE_RETURNED, BCWE_VICTORY, BCWE_MATCH_START, BCWE_MAP };
 struct PktBcwEvent  { uint8_t type; uint8_t ev; uint8_t team; uint8_t who; };
 
+// 3.10: clothing sync. CJ (model 0) can't be put on another ped, so a remote CJ is rebuilt the way
+// the game builds the cutscene CJ ("csplay" in a special slot + CClothes::ConstructPedModel) from
+// these keys (CPedClothesDesc: 10 model keys, 18 texture keys, fat + muscle stat). on = 0: the
+// player is not CJ any more (or turned "real skin" off) -> show the normal avatar skin again.
+#define MP_CLOTHES_MODELS   10
+#define MP_CLOTHES_TEXTURES 18
+struct PktClothes
+{
+    uint8_t  type;           // PKT_CLOTHES
+    uint8_t  id;             // sender (set by the server)
+    uint8_t  on;             // 1 = wearing these clothes (CJ), 0 = off
+    uint8_t  pad;
+    uint32_t model[MP_CLOTHES_MODELS];
+    uint32_t tex[MP_CLOTHES_TEXTURES];
+    float    fat, muscle;
+};
 #pragma pack(pop)
+
+inline uint32_t MP_ClothesHash(const PktClothes& c)   // FNV-1a over the outfit, 0 = none
+{
+    if(!c.on) return 0;
+    uint32_t h = 2166136261u;
+    const uint8_t* b = (const uint8_t*)c.model;
+    for(size_t i = 0; i < sizeof(c.model) + sizeof(c.tex) + 2 * sizeof(float); ++i) { h ^= b[i]; h *= 16777619u; }
+    return h ? h : 1;
+}
+inline bool MP_ClothesSane(PktClothes& c)
+{
+    if(!c.on) return true;
+    if(!(c.fat == c.fat) || c.fat < 0.0f || c.fat > 1000.0f) c.fat = 0.0f;
+    if(!(c.muscle == c.muscle) || c.muscle < 0.0f || c.muscle > 1000.0f) c.muscle = 0.0f;
+    int n = 0; for(int i = 0; i < MP_CLOTHES_MODELS; ++i) if(c.model[i]) ++n;
+    return n >= 1;   // at least a body piece, or it's not a real outfit
+}
 
 // 2.18: NPC packet encode / decode (variable length, every field copied: no unaligned access)
 inline int MP_EncodeNpc(const PktNpc& m, uint8_t* out)

@@ -190,8 +190,9 @@
   setInterval(render, 3000);
   setInterval(measure, 60000);
 
-  // 3.04.6: version history (versions.json is made from the README changelog). Only the latest
-  // version gets a download button: older ones allowed cheats and every server refuses them.
+  // 3.04.6: version history (versions.json is made from the README changelog).
+  // 3.10: every version in "supported" (3.10 + 3.04.6, they play together) gets a download button;
+  // older ones allowed cheats and every server refuses them.
   function md(t) {
     return esc(t).replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>').replace(/`([^`]+)`/g, '<code>$1</code>');
   }
@@ -202,18 +203,19 @@
       var SHOW = 12;
       box.innerHTML = j.versions.map(function (v, i) {
         var top = i === 0;
+        var ok = top || (j.supported || []).indexOf(v.v) >= 0;
         var full = v.summary || '';
         var m = full.match(/^(.{20,160}?[.!?])(\s|$)/);   // collapsed line: first sentence only
         var short = m ? m[1] : (full.length > 160 ? full.slice(0, 157) + '...' : full);
         var rest = full.length > short.length ? '<p>' + md(full) + '</p>' : '';
         var items = rest + (v.items.length ? '<ul>' + v.items.map(function (x) { return '<li>' + md(x) + '</li>'; }).join('') + '</ul>' : '');
-        var dl = top
+        var dl = ok
           ? '<p class="vdl"><a class="btn btn-main" href="https://github.com/ThirtyFoxMCx00E1/wagu/releases/tag/v' + esc(v.v) + '">Download MP ' + esc(v.v) + '</a></p>'
           : '<p class="vnodl">No download: this version is shut out of every server. Download MP ' + esc(latest) + ' instead.</p>';
         return '<details class="vcard' + (top ? ' latest' : '') + (i >= SHOW ? ' vmore' : '') + '"' + (top ? ' open' : '') + (i >= SHOW ? ' hidden' : '') + '><summary><span class="vnum">' + esc(v.v) + '</span>' +
           '<span class="vsum">' + md(short) + '</span>' +
-          (top ? '<span class="vtag ok">Latest - required</span>' : '<span class="vtag no">Blocked</span>') +
-          '</summary><div class="vbody">' + (top ? dl + items : items + dl) + '</div></details>';
+          (top ? '<span class="vtag ok">Latest</span>' : ok ? '<span class="vtag ok">Supported - plays with ' + esc(latest) + '</span>' : '<span class="vtag no">Blocked</span>') +
+          '</summary><div class="vbody">' + (ok ? dl + items : items + dl) + '</div></details>';
       }).join('') + (j.versions.length > SHOW ? '<button type="button" class="btn btn-ghost vall" id="v-all">Show all ' + j.versions.length + ' versions</button>' : '');
       var all = $('v-all');
       if (all) all.addEventListener('click', function () {

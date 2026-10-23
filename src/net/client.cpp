@@ -250,6 +250,7 @@ void MPClient::Poll(INetEvents* ev)
                 }
                 break;
             case PKT_SET_COLOR:    if(r >= (int)sizeof(PktSetColor))    ev->OnSetColor(*(PktSetColor*)buf);       break;
+            case PKT_CLOTHES:      if(r >= (int)sizeof(PktClothes))     { PktClothes c; memcpy(&c, buf, sizeof(c)); ev->OnClothes(c); } break;   // 3.10
             case PKT_PONG:
                 if(r >= (int)sizeof(PktPing))
                 {

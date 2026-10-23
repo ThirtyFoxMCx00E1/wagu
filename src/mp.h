@@ -87,6 +87,11 @@ struct RemotePlayer
     Vec3      vel = {0, 0, 0};
 
     int       ped = 0, blip = 0, car = 0, carModel = 0, pedSkin = -1;
+    // 3.10: clothing sync - what their CJ wears (clothesHash 0 = not CJ / no clothes). pedClothes =
+    // the outfit the current avatar was made for (or tried: 0 + retry when no slot was free)
+    PktClothes clothes = {};
+    uint32_t  clothesHash = 0, pedClothes = 0;
+    uint64_t  clothesRetryAt = 0;
     float     pedBase = 1.0f, carBase = 0.6f;
     // 2.35: visible enter / exit. leftCar = the car they just got out of (stays parked, handed to the
     // NPC copy of it); enterT / leaveT = when the enter / leave task started
@@ -244,6 +249,7 @@ namespace MP
     // 3.04: Brief Case War (private 24/7 gamemode server, pinned in the Internet list)
     void JoinBcw();            // join it (or leave it when you are on it)
     bool IsOnBcw();
+    bool BcwOwnTagHidden();    // 3.10: your ped is parked hidden (connection screen - e.g. Gustav's base view - or respawn wait)
     uint32_t BcwDecorate(int id, const char* name, uint32_t color, char* out, size_t n);   // [GTV] / [SLZ] tag + team colour
 }
 bool MP_WallhackOn();   // 2.19 /wallhack

@@ -5,9 +5,9 @@
 // If anything is found, MP refuses to join any server (default or custom) and refuses to host.
 namespace ModScan
 {
-    void        Scan();            // full scan: aml->HasMod GUIDs + loaded libs + mods folders
+    void        Scan();            // full scan: aml->HasMod GUIDs + libs loaded in the game (3.10: files in folders no longer count)
     bool        CheatMenu();       // result of the last scan (cheap)
-    bool        Recheck();         // re-scans (rate-limited to once per 3 s), returns CheatMenu()
+    bool        Recheck();         // re-scans from scratch (rate-limited to once per 3 s), returns CheatMenu()
     const char* What();            // e.g. "libCheatMenu64.so" - what was found, for the message
     void        SetAllowed(bool on); // 3.00: on a server that allows Cheat Menu: its button / window are not hidden
 }

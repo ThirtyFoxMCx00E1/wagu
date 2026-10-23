@@ -942,9 +942,35 @@ static void OnAfterSaveLoad()
 
 static inline float Dist2D(const Vec3& a, const Vec3& b) { float x = a.x - b.x, y = a.y - b.y; return sqrtf(x * x + y * y); }
 
+// 3.10: clothing sync - send what your CJ wears (on change + every 8 s for anyone who missed it).
+// Not CJ / "show my real model" off -> one "off" packet, so the others show your avatar skin again.
+static void ProcessClothes(uint64_t now)
+{
+    static uint64_t s_nCheck = 0, s_nSent = 0;
+    static uint32_t s_nHash = 0xFFFFFFFFu;
+    if(client.GetState() != NET_CONNECTED || myId == MP_INVALID_ID) { s_nHash = 0xFFFFFFFFu; return; }
+    if(now - s_nCheck < 1000) return;
+    s_nCheck = now;
+    PktClothes c;
+    bool on = settings.realSkin && Game::GetLocalClothes(c);
+    if(!on) { memset(&c, 0, sizeof(c)); c.type = PKT_CLOTHES; }
+    c.id = myId;
+    uint32_t h = MP_ClothesHash(c);
+    if(h == s_nHash && (!h || now - s_nSent < 8000)) return;   // nothing new ("off" is sent once)
+    s_nHash = h; s_nSent = now;
+    client.Send(&c, sizeof(c));
+}
+
 static void SpawnAvatar(RemotePlayer& p, const Vec3& at)
 {
-    p.ped = Game::CreateRemotePed(p.skin, at);
+    p.ped = 0;
+    p.pedClothes = p.clothesHash;
+    if(p.clothesHash)   // 3.10: their CJ with their clothes (0 = no free slot right now -> avatar skin, retried)
+    {
+        p.ped = Game::CreateRemoteClothedCJ(p.clothes, at);
+        if(!p.ped) p.clothesRetryAt = MP_NowMs() + 5000;   // pedClothes stays = the outfit we tried
+    }
+    if(!p.ped) p.ped = Game::CreateRemotePed(p.skin, at);
     if(!p.ped) return;
     AvatarTrack(s_AvatarPeds, s_nAvatarPeds, 256, p.ped);   // 2.32
     p.pedSkin = p.skin;
@@ -1278,6 +1304,14 @@ static void UpdateRemote(int id, int localPed, uint64_t now)
         DestroyAvatar(p);
     }
     if(p.ped && p.pedSkin != p.skin && !(s.flags & SYNC_IN_CAR)) DestroyAvatar(p);
+    // 3.10: clothing sync - they changed clothes / stopped being CJ, or a slot may be free now
+    if(p.ped && !(s.flags & SYNC_IN_CAR))
+    {
+        bool changed = p.pedClothes != p.clothesHash;
+        bool retry = !changed && p.clothesHash && p.clothesRetryAt && MP_NowMs() >= p.clothesRetryAt;   // shown with the avatar skin: no slot was free
+        if(retry) { p.clothesRetryAt = MP_NowMs() + 5000; retry = Game::ClothesCanBuild(p.clothes); }
+        if(changed || retry) { p.clothesRetryAt = 0; DestroyAvatar(p); }
+    }
 
     // 2.13: interpolated motion (see SampleMotion)
     float dt = p.lastFrame ? (now - p.lastFrame) / 1000.0f : 0.016f;
@@ -1768,6 +1802,8 @@ static void SampReset();
 static void GamemodesChanged(uint16_t modes);   // 3.02 (mp_world.inc)
 static void SrvModesPut(const char* name, int port, uint16_t modes);   // 3.03
 static uint16_t s_nRunModes = 0;   // 3.03: gamemodes of the server running on this phone (fixed at creation)
+static void SrvCmPut(const char* name, int port, bool allow);   // 3.10
+static bool s_bRunCheatMenu = false;  // 3.10: Cheat Menu permission of the server running on this phone (kept per server)
 static void SampOnChat(int id, const char* text);
 static bool IsSampActor(int h);
 static void ProcessSamp(int ped, uint64_t now);
@@ -1857,6 +1893,10 @@ public:
         bool nc0 = s_nServerPerms & PERM_NO_CHEATS, nc1 = m.perms & PERM_NO_CHEATS;
         s_nServerPerms = m.perms;
         s_bPermsSeen = true;
+        // 3.10: remember this custom server's Cheat Menu permission, so if this phone ever hosts it
+        // (the host left / nobody runs it yet) it keeps the permission its creator chose
+        if(!MP::IsOnDefault() && !MP_IsBcwServerName(client.GetServerName()) && client.GetServerName()[0])
+            SrvCmPut(client.GetServerName(), client.GetPort(), (m.perms & PERM_CHEAT_MENU) != 0);
         GamemodesChanged(m.modesMagic == MP_MODES_MAGIC ? m.modes : 0);   // 3.02   // 3.00: allowed -> you just play; not allowed -> Process() refuses at once
         if(nc1 && !nc0) SysMsg(COL_YELLOW, "*** The host disabled cheats on this server (MP cheats + CLEO menu).");
         else if(!nc1 && nc0 && IsConnected()) SysMsg(COL_SYSTEM, "*** The host allowed cheats again.");
@@ -2061,6 +2101,17 @@ public:
     }
     void OnServerMessage(const PktServerMsg& m) override { MP::AddSystemMessage(m.color, m.text); }
     void OnSetColor(const PktSetColor& c) override { ApplyPlayerColor(c.id, c.color); }
+    void OnClothes(const PktClothes& c0) override   // 3.10: clothing sync
+    {
+        if(c0.id >= MP_MAX_PLAYERS || c0.id == myId) return;
+        RemotePlayer& p = players[c0.id];
+        if(!p.active) return;
+        PktClothes c = c0;
+        if(!MP_ClothesSane(c)) return;
+        uint32_t h = MP_ClothesHash(c);
+        if(h == p.clothesHash) return;
+        p.clothes = c; p.clothesHash = h; p.clothesRetryAt = 0;   // the avatar is rebuilt in UpdateRemote
+    }
     void OnWorld(const PktWorld& w) override { s_World = w; s_bWorldPending = true; }
     void OnStatus(const PktStatus& st) override
     {
@@ -3403,6 +3454,7 @@ void MP::Process()
     JoinFlowProcess(ped, now);   // 2.19: join screen, connection camera, spawn picker
     BcwProcess(ped, now);        // 3.04: Brief Case War
     ProcessGates(ped, now);      // 3.04.2: Area 69 gates
+    ProcessClothes(now);         // 3.10: clothing sync
     ProcessCheats(ped, now);     // 2.19: chat-command cheats
     ProcessGames(ped, now);      // 2.21: races, deathmatch, jobs, open world
     ProcessSamp(ped, now);       // 3.01: map icons, actors, turf HUD, class skin, team
@@ -3467,7 +3519,7 @@ static void ApplyServerPerms()
     // 2.37: on the default server only [ADMIN] SENJI switches cheats off (from his phone, PKT_ADMIN_CMD) -
     // the phone that happens to host it is not the administrator any more
     s_Server.SetPerms(((def || settings.allowMissionPair) ? PERM_MISSION_PAIR : 0) | (!def && settings.disableCheats ? PERM_NO_CHEATS : 0)
-                      | (!def && settings.allowCheatMenu ? PERM_CHEAT_MENU : 0));   // 3.00
+                      | (!def && s_bRunCheatMenu ? PERM_CHEAT_MENU : 0));   // 3.00 / 3.10: the server's own permission
     s_Server.SetModes(def ? (uint16_t)GM_ALL : s_nRunModes);   // 3.03: fixed when the server was created
 }
 
@@ -3539,7 +3591,7 @@ static bool CheatMenuBlocks(const char* serverName, bool isDefault)
     StopFeed();
     s_CheatGate.show = true;
     MP_CopyStr(s_CheatGate.server, serverName && serverName[0] ? serverName : "this server", sizeof(s_CheatGate.server));
-    SysMsg(COL_RED, "Sorry, this server doesn't allow cheat menus. Remove %s to join.", ModScan::What());
+    SysMsg(COL_RED, "Sorry, this server doesn't allow cheat menus. %s is loaded in your game: remove it from your mods folder and restart the game.", ModScan::What());
     return true;
 }
 
@@ -3665,6 +3717,24 @@ static int SrvModesGet(const char* name, int port)   // -1 = unknown
     char k[16]; SrvModesKey(name, port, k, sizeof(k));
     return ::cfg->GetInt(k, -1, "MPServerModes");
 }
+// 3.10: the Cheat Menu permission is kept per server too. It used to be the Cheat Menu switch of
+// whatever phone happened to host the server: the creator allowed Cheat Menu, but as soon as
+// another phone hosted it (the creator left, the server restarted on someone else's phone) that
+// phone's switch (off) was used and every Cheat Menu player got "this server doesn't allow cheat
+// menus". Saved in [MPServerCheatMenu]; learnt from the server's permissions when you are on it.
+static int SrvCmGet(const char* name, int port)   // -1 = unknown, 0 = not allowed, 1 = allowed
+{
+    char k[16]; SrvModesKey(name, port, k, sizeof(k)); k[0] = 'C'; k[1] = 'M';
+    return ::cfg->GetInt(k, -1, "MPServerCheatMenu");
+}
+static void SrvCmPut(const char* name, int port, bool allow)
+{
+    if(!name || !*name || MP::IsDefaultServer(name, port) || MP_IsBcwServerName(name)) return;
+    if(SrvCmGet(name, port) == (allow ? 1 : 0)) return;
+    char k[16]; SrvModesKey(name, port, k, sizeof(k)); k[0] = 'C'; k[1] = 'M';
+    ConfigEntry* e = ::cfg->Bind(k, allow ? 1 : 0, "MPServerCheatMenu"); e->SetInt(allow ? 1 : 0); delete e;
+    ::cfg->Save();
+}
 static void SrvModesPut(const char* name, int port, uint16_t modes)
 {
     if(!name || !*name || MP::IsDefaultServer(name, port)) return;
@@ -3706,6 +3776,12 @@ static bool StartLocalServer(const char* name, int port)
         else if(known >= 0) s_nRunModes = (uint16_t)known;                 // it exists: keeps its own
         else if(creating) { s_nRunModes = (uint16_t)settings.hostModes; SrvModesPut(name, port, s_nRunModes); }   // new: your choice
         else s_nRunModes = 0;                                               // someone else's server we never saw: none
+        // 3.10: Cheat Menu permission - the server's own, not this phone's switch
+        int cm = SrvCmGet(name, port);
+        bool own = !strcasecmp(name, settings.serverName) && port == settings.port;
+        if(MP::IsDefaultServer(name, port) || bcw) s_bRunCheatMenu = false;
+        else if(creating || (cm < 0 && own)) { s_bRunCheatMenu = settings.allowCheatMenu; SrvCmPut(name, port, s_bRunCheatMenu); }
+        else s_bRunCheatMenu = cm > 0;
     }
     MP_CopyStr(settings.hostedPassword, MP::IsDefaultServer(name, port) || bcw ? "" : s_szJoinPw, sizeof(settings.hostedPassword));
     ApplyServerPerms();   // 2.16
@@ -3749,6 +3825,16 @@ void MP::ToggleConnect()
 //  3. nobody runs it yet                                    -> this phone hosts it and joins
 void MP::JoinServer(const char* host, int port, const char* name)
 {
+    {   // 3.10: the server you are already on -> don't leave it and connect all over again
+        const char* nm = name && *name ? name : host;
+        if(client.GetState() != NET_DISCONNECTED && client.GetPort() == port && nm &&
+           ((client.GetServerName()[0] && !strcasecmp(client.GetServerName(), nm)) || (host && *host && !strcmp(client.GetHost(), host)) ||
+            (IsDefaultServer(nm, port) && IsOnDefault())))
+        {
+            SysMsg(COL_SYSTEM, client.GetState() == NET_CONNECTED ? "You are already connected to %s." : "Already connecting to %s...", nm);
+            return;
+        }
+    }
     if(CheatMenuBlocks(name && *name ? name : host, IsDefaultServer(name && *name ? name : host, port))) return;   // 2.37 / 3.00
     if(!LAN::HasNetwork()) { s_bHasNetwork = false; OfflineMsg(); return; }
     s_bHasNetwork = true;
@@ -4504,7 +4590,12 @@ static void PermissionSwitches(const char* where)
     ImGui::TextDisabled(settings.allowMissionPair ? "On: two players can sync up: they see each other on missions and share their mission markers."
                                                   : "Off: everyone is alone on missions; running mission syncs end.");
     // 3.00: Cheat Menu permission (libCheatMenu.so / libCheatMenu64.so)
-    if(FloatMenu::ToggleSwitch("Cheat Menu", &settings.allowCheatMenu)) { ApplyServerPerms(); SaveConfig(); }
+    if(FloatMenu::ToggleSwitch("Cheat Menu", &settings.allowCheatMenu))
+    {
+        if(s_Server.IsRunning() && !IsHostingDefault() && !s_Server.IsBcwServer())   // 3.10: the server you host now keeps it
+        { s_bRunCheatMenu = settings.allowCheatMenu; SrvCmPut(s_Server.GetName(), s_Server.GetPort(), s_bRunCheatMenu); }
+        ApplyServerPerms(); SaveConfig();
+    }
     ImGui::TextDisabled(settings.allowCheatMenu ? "On: players may use Cheat Menu (libCheatMenu.so / libCheatMenu64.so) on your server."
                                                 : "Off: players with Cheat Menu (libCheatMenu.so / libCheatMenu64.so) can't join.");
     ImGui::TextDisabled("Never on the default server. \"Disable cheats\" (Settings > Cheats) switches it off too.");
@@ -4594,7 +4685,7 @@ static void SectionServers(void*)
                          IsDefaultServer(sv.name, sv.port) ? 0 : sv.icon))
             {
                 if(on) LeaveServer("Left the server.");
-                else if(IsDefaultServer(sv.name, sv.port)) { LeaveServer(nullptr); MP::ToggleConnect(); }
+                else if(IsDefaultServer(sv.name, sv.port)) { if(IsOnDefault()) SysMsg(COL_SYSTEM, "You are already connected to %s.", MP_DEFAULT_SERVER_NAME); else { LeaveServer(nullptr); MP::ToggleConnect(); } }   // 3.10
                 else MP::JoinServer(sv.ip, sv.port, sv.name);
             }
         }
@@ -5087,7 +5178,7 @@ static void SectionPlayer(void*)
     if(cur < 0) cur = 1;
     ImGui::SetNextItemWidth(-FLT_MIN);
     if(ImGui::Combo("##skin", &cur, labels.data(), (int)labels.size(), 10)) { settings.skin = ids[cur]; SaveConfig(); }
-    if(FloatMenu::ToggleSwitch("Show my real model (skin mods, story characters)", &settings.realSkin)) SaveConfig();
+    if(FloatMenu::ToggleSwitch("Show my real model (skin mods, story characters, CJ's clothes)", &settings.realSkin)) SaveConfig();
     {
         int net = settings.realSkin ? Game::LocalSkinForNet(settings.skin) : settings.skin;
         const char* sl = Game::SkinLabel(net);
