@@ -1956,7 +1956,7 @@ public:
                 MP_CopyStr(settings.adminKey, s_AdminKeys[s_nAdminKeyIdx].c_str(), sizeof(settings.adminKey));
                 client.SetAdminKey(settings.adminKey);
                 ClearAllPlayers();
-                SysMsg(COL_YELLOW, "This server didn't take your first admin key - trying your other key from admin.txt...");
+                SysMsg(COL_YELLOW, "This server didn't take your first admin key - trying your other key from administrator.txt...");
                 char h[256]; MP_CopyStr(h, s_szLastConnHost, sizeof(h));
                 DoConnect(h, s_nLastConnPort);
                 return;
@@ -1964,8 +1964,8 @@ public:
             if(HaveAdminKey())
             {   // our key is valid here. A 3.10+ server always accepts it, so the SERVER program is older than 3.10
                 // (it only knows the first admin key). Not this phone - updating the mod doesn't help.
-                SysMsg(COL_RED, "This server refused your admin key. Your MP %s and admin.txt are fine: the problem is the SERVER - it still runs MP older than 3.10, which only knows the old admin key.", MP_VERSION_STR);
-                SysMsg(COL_YELLOW, "Fix: update the server program. Your 24/7 servers: Termius > console > 7) update. A phone host: that player updates MP. Or put your old admin key on a 2nd line of admin.txt.");
+                SysMsg(COL_RED, "This server refused your admin key. Your MP %s and administrator.txt are fine: the problem is the SERVER - it runs MP older than 3.11.6, which doesn't know the new admin key.", MP_VERSION_STR);
+                SysMsg(COL_YELLOW, "Fix: update the server program. Your 24/7 servers: Termius > console > 7) update. Termux server: mp-server update. A phone host: that player updates MP.");
             }
             else SenjiBlockedMsg();
             if(s_AdminKeys.size() > 1) { s_nAdminKeyIdx = 0; MP_CopyStr(settings.adminKey, s_AdminKeys[0].c_str(), sizeof(settings.adminKey)); client.SetAdminKey(settings.adminKey); }
@@ -4476,6 +4476,15 @@ static void AdminCandidates(std::vector<std::string>& v)
     v.push_back("/storage/emulated/0/Download/MP/admin.txt");
     v.push_back("/storage/emulated/0/admin.txt");
     v.push_back("/storage/emulated/0/MP/admin.txt");
+    // 3.11.6: the admin key file is administrator.txt (admin.txt still read, in case it was renamed back)
+    std::vector<std::string> both;
+    for(auto& p : v)
+    {
+        size_t k = p.rfind("/admin.txt");
+        if(k != std::string::npos) both.push_back(p.substr(0, k) + "/administrator.txt");
+    }
+    for(auto& p : v) both.push_back(p);
+    v.swap(both);
 }
 static void LoadAdminFile()
 {
@@ -4496,13 +4505,13 @@ static void LoadAdminFile()
         MP_CopyStr(settings.adminKey, s_AdminKeys[0].c_str(), sizeof(settings.adminKey));
         if(!inMine)   // found somewhere else: keep a copy (all keys) in the MP folder too
         {
-            char dst[512]; snprintf(dst, sizeof(dst), "%s/admin.txt", s_szDataDir);
+            char dst[512]; snprintf(dst, sizeof(dst), "%s/administrator.txt", s_szDataDir);
             if(FILE* o = fopen(dst, "w")) { for(auto& k : s_AdminKeys) fprintf(o, "%s\n", k.c_str()); fclose(o); }
         }
     }
     client.SetAdminKey(settings.adminKey);
-    if(settings.adminKey[0]) logger->Info("MP: admin.txt OK (%s, %d key(s)) - you are the administrator (SENJI)", s_szAdminFound, (int)s_AdminKeys.size());
-    else logger->Info("MP: no valid admin.txt (looked in %s and %d other places)", cand[0].c_str(), (int)cand.size() - 1);
+    if(settings.adminKey[0]) logger->Info("MP: administrator.txt OK (%s, %d key(s)) - you are the administrator (SENJI)", s_szAdminFound, (int)s_AdminKeys.size());
+    else logger->Info("MP: no valid administrator.txt (looked in %s and %d other places)", cand[0].c_str(), (int)cand.size() - 1);
 }
 static bool ReadAdminKeyFile(const char* path, char* out, size_t outSz)
 {
@@ -4552,8 +4561,8 @@ static void ReadAdminKeys(const char* path, std::vector<std::string>& keys)   //
 }
 static void SenjiBlockedMsg()   // 3.11.2: say exactly where admin.txt has to go
 {
-    SysMsg(COL_RED, "The name SENJI is reserved for the administrator. No valid admin.txt found.");
-    SysMsg(COL_YELLOW, "Put admin.txt here: %s/admin.txt", s_szDataDir);
+    SysMsg(COL_RED, "The name SENJI is reserved for the administrator. No valid administrator.txt found.");
+    SysMsg(COL_YELLOW, "Put administrator.txt here: %s/administrator.txt", s_szDataDir);
 }
 static bool HaveAdminKey() { return settings.adminKey[0] && MP_AdminKeyOk(settings.adminKey); }
 static const char* NameBlocked(const char* t)
@@ -4572,7 +4581,7 @@ static void OnName(const char* t, void*)
         if(MP_IsReservedName(t)) SenjiBlockedMsg(); else SysMsg(COL_RED, "Names can't start with [ADMIN].");
         return;
     }
-    if(MP_IsReservedName(t)) { MP_CopyStr(settings.name, MP_ADMIN_NAME, sizeof(settings.name)); SaveConfig(); SysMsg(COL_GREEN, "admin.txt found: you are the administrator. On the default server you show as [ADMIN] SENJI."); return; }
+    if(MP_IsReservedName(t)) { MP_CopyStr(settings.name, MP_ADMIN_NAME, sizeof(settings.name)); SaveConfig(); SysMsg(COL_GREEN, "administrator.txt found: you are the administrator. On the default server you show as [ADMIN] SENJI."); return; }
     MP_CopyStr(settings.name, t, sizeof(settings.name)); SaveConfig();
 }
 static void OnHost(const char* t, void*) { if(*t) { MP_CopyStr(settings.host, t, sizeof(settings.host)); SaveConfig(); } }
@@ -5158,7 +5167,7 @@ static void SectionConnection(void*)
         float tw = UI::Font()->CalcTextSizeA(fs, FLT_MAX, 0, nm).x;
         UI::NameText(dl, fs, ImVec2(p.x + (w - tw) * 0.5f, p.y + (h - fs) * 0.5f), IM_COL32_WHITE, nm);
         ImGui::Dummy(ImVec2(w, h));
-        ImGui::TextColored(kGreenTxt, "admin.txt OK - this is how everyone sees you (name tag, chat, kill feed).");
+        ImGui::TextColored(kGreenTxt, "administrator.txt OK - this is how everyone sees you (name tag, chat, kill feed).");
     }
     if(!idle) ImGui::EndDisabled();
 

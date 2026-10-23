@@ -20,3 +20,5 @@ test/guard_test
 admin.txt
 **/admin.txt
 test/admin_test
+administrator.txt
+**/administrator.txt

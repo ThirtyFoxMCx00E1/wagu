@@ -1,17 +1,32 @@
 {
- "tag_name": "v3.11.5",
- "name": "MP Multiplayer 3.11.5",
+ "tag_name": "v3.11.6",
+ "name": "MP Multiplayer 3.11.6",
  "published_at": "2026-10-23",
- "also_supported": "v3.11.4, v3.11.3, v3.11.2, v3.11.1, v3.11, v3.10, v3.04.6",
+ "also_supported": "v3.11.5, v3.11.4, v3.11.3, v3.11.2, v3.11.1, v3.11, v3.10, v3.04.6",
  "assets": [
   {
    "name": "bin/libMP32.so",
-   "size": 3194788,
+   "size": 3195332,
    "download_count": 0
   },
   {
    "name": "bin/libMP64.so",
-   "size": 3986080,
+   "size": 3986848,
+   "download_count": 0
+  },
+  {
+   "name": "release/MP-3.11.6-full.zip",
+   "size": 14871912,
+   "download_count": 0
+  },
+  {
+   "name": "release/HiveMQ-kit-3.11.6.zip",
+   "size": 35609,
+   "download_count": 0
+  },
+  {
+   "name": "release/MP-Voice.apk",
+   "size": 16876,
    "download_count": 0
   },
   {
@@ -22,11 +37,6 @@
   {
    "name": "release/HiveMQ-kit-3.11.5.zip",
    "size": 35578,
-   "download_count": 0
-  },
-  {
-   "name": "release/MP-Voice.apk",
-   "size": 16876,
    "download_count": 0
   },
   {

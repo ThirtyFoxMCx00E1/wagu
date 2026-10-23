@@ -19,10 +19,9 @@
 #define MP_ADMIN_NAME      "SENJI"
 #define MP_ADMIN_TAG       "[ADMIN] "
 #define MP_ADMIN_KEY_LEN   128   // long keys with symbols (2.37: 88 characters)
-#define MP_ADMIN_KEY_HASH  "e77bf27eaeb77088c97e17903677366c90dfaeb6fa4b5d78a07d722058ddf633"
-// 3.10: a second admin key (new admin.txt). Both keys work on 3.10 phones / servers; a server still
-// run by a 3.04.6 phone only knows the first one.
-#define MP_ADMIN_KEY_HASH2 "2a12f3acbdb4c820d18f784aff3261fabeddb7fffc35b8123970095def9a5d1b"
+// 3.11.6: ONE admin key, in administrator.txt. The keys of 2.37 (lost) and 3.10 (admin.txt) are no
+// longer accepted by 3.11.6+ servers. Older servers only know the old keys: update them.
+#define MP_ADMIN_KEY_HASH  "420b31a8e646f682dadd484b41fb46cd69810971edecb97165cfe675465d9ed0"
 
 // "SENJI", " senji ", "[ADMIN] SENJI", "S E N J I", "SENJ1"... -> true
 inline bool MP_IsReservedName(const char* name)
@@ -67,7 +66,7 @@ inline bool MP_AdminKeyOk(const char* key, const char* hashHex = nullptr)
     if(!key || !*key) return false;
     char h[65]; MP_AdminKeyHash(key, h);
     if(hashHex && *hashHex && !strcasecmp(h, hashHex)) return true;   // mp_server --admin-hash <hex>
-    return !strcasecmp(h, MP_ADMIN_KEY_HASH) || !strcasecmp(h, MP_ADMIN_KEY_HASH2);
+    return !strcasecmp(h, MP_ADMIN_KEY_HASH);
 }
 
 inline bool MP_IsAdminTagged(const char* name) { return name && !strncmp(name, MP_ADMIN_TAG, strlen(MP_ADMIN_TAG)); }
