@@ -444,6 +444,10 @@ static bool IsBusy();
 static void LoadAdminFile();
 static bool HaveAdminKey();
 static void SenjiBlockedMsg();   // 3.11.2
+static std::vector<std::string> s_AdminKeys;   // 3.11.3: every valid key found (old + new admin key)
+static size_t s_nAdminKeyIdx = 0;
+static char s_szLastConnHost[256] = ""; static int s_nLastConnPort = 0;
+static void DoConnect(const char* host, int port);
 static void JoinOverlayCancel();
 static void JoinMarkConnected();
 static void JoinFlowProcess(int ped, uint64_t now);
@@ -1946,9 +1950,25 @@ public:
         if(r == REJECT_PASSWORD) { SysMsg(COL_RED, "Wrong server password. Edit the server and type the right one (max 16 characters)."); ClearAllPlayers(); return; }
         if(r == REJECT_NAME_RESERVED)   // 2.37
         {
-            if(HaveAdminKey())   // 3.11.2: our key is fine - that server runs an MP older than 3.10 (only knows the first admin key)
-                SysMsg(COL_RED, "This server runs an old MP version that doesn't know your admin key yet. Update that server to MP %s, then join as SENJI.", MP_VERSION_STR);
+            if(HaveAdminKey() && s_nAdminKeyIdx + 1 < s_AdminKeys.size() && s_szLastConnHost[0])
+            {   // 3.11.3: admin.txt has another key (old + new): try it on this server
+                ++s_nAdminKeyIdx;
+                MP_CopyStr(settings.adminKey, s_AdminKeys[s_nAdminKeyIdx].c_str(), sizeof(settings.adminKey));
+                client.SetAdminKey(settings.adminKey);
+                ClearAllPlayers();
+                SysMsg(COL_YELLOW, "This server didn't take your first admin key - trying your other key from admin.txt...");
+                char h[256]; MP_CopyStr(h, s_szLastConnHost, sizeof(h));
+                DoConnect(h, s_nLastConnPort);
+                return;
+            }
+            if(HaveAdminKey())
+            {   // our key is valid here. A 3.10+ server always accepts it, so the SERVER program is older than 3.10
+                // (it only knows the first admin key). Not this phone - updating the mod doesn't help.
+                SysMsg(COL_RED, "This server refused your admin key. Your MP %s and admin.txt are fine: the problem is the SERVER - it still runs MP older than 3.10, which only knows the old admin key.", MP_VERSION_STR);
+                SysMsg(COL_YELLOW, "Fix: update the server program. Your 24/7 servers: Termius > console > 7) update. A phone host: that player updates MP. Or put your old admin key on a 2nd line of admin.txt.");
+            }
             else SenjiBlockedMsg();
+            if(s_AdminKeys.size() > 1) { s_nAdminKeyIdx = 0; MP_CopyStr(settings.adminKey, s_AdminKeys[0].c_str(), sizeof(settings.adminKey)); client.SetAdminKey(settings.adminKey); }
             ClearAllPlayers(); return;
         }
         if(r == REJECT_BANNED || r == REJECT_KICKED)   // 2.25
@@ -3722,6 +3742,7 @@ static void DoConnect(const char* host, int port)
         if(!HaveAdminKey()) LoadAdminFile();
         if(!HaveAdminKey()) { JoinOverlayCancel(); SenjiBlockedMsg(); return; }
     }
+    MP_CopyStr(s_szLastConnHost, host, sizeof(s_szLastConnHost)); s_nLastConnPort = port;   // 3.11.3: retry with the other admin key
     // internet server: packets go through the online relay (local proxy on 127.77.x.y:port)
     uint16_t via = 0;
     if(Online::IsRelayIp(host))
@@ -4430,6 +4451,7 @@ static void LoadConfig()
 // (AML on Android 11+ uses /storage/emulated/0/Android_unprotected/data/<game>/files, while people
 // copy files to /sdcard/Android/data/<game>/files). Found somewhere else = copied into the MP folder.
 static char s_szAdminFound[512] = "";
+static void ReadAdminKeys(const char* path, std::vector<std::string>& keys);
 static bool ReadAdminKeyFile(const char* path, char* out, size_t outSz);
 static void AdminCandidates(std::vector<std::string>& v)
 {
@@ -4459,21 +4481,27 @@ static void LoadAdminFile()
 {
     settings.adminKey[0] = 0; s_szAdminFound[0] = 0;
     std::vector<std::string> cand; AdminCandidates(cand);
-    char key[256] = "";
+    s_AdminKeys.clear(); s_nAdminKeyIdx = 0;
+    bool inMine = false;
     for(size_t i = 0; i < cand.size(); ++i)
     {
-        if(!ReadAdminKeyFile(cand[i].c_str(), key, sizeof(key))) continue;
-        MP_CopyStr(s_szAdminFound, cand[i].c_str(), sizeof(s_szAdminFound));
-        MP_CopyStr(settings.adminKey, key, sizeof(settings.adminKey));
-        if(i > 0)   // found somewhere else: keep a copy in the MP folder too
+        size_t before = s_AdminKeys.size();
+        ReadAdminKeys(cand[i].c_str(), s_AdminKeys);
+        if(s_AdminKeys.size() == before) continue;
+        if(!s_szAdminFound[0]) MP_CopyStr(s_szAdminFound, cand[i].c_str(), sizeof(s_szAdminFound));
+        if(i == 0) inMine = true;
+    }
+    if(!s_AdminKeys.empty())
+    {
+        MP_CopyStr(settings.adminKey, s_AdminKeys[0].c_str(), sizeof(settings.adminKey));
+        if(!inMine)   // found somewhere else: keep a copy (all keys) in the MP folder too
         {
             char dst[512]; snprintf(dst, sizeof(dst), "%s/admin.txt", s_szDataDir);
-            if(FILE* o = fopen(dst, "w")) { fprintf(o, "%s\n", key); fclose(o); }
+            if(FILE* o = fopen(dst, "w")) { for(auto& k : s_AdminKeys) fprintf(o, "%s\n", k.c_str()); fclose(o); }
         }
-        break;
     }
     client.SetAdminKey(settings.adminKey);
-    if(settings.adminKey[0]) logger->Info("MP: admin.txt OK (%s) - you are the administrator (SENJI)", s_szAdminFound);
+    if(settings.adminKey[0]) logger->Info("MP: admin.txt OK (%s, %d key(s)) - you are the administrator (SENJI)", s_szAdminFound, (int)s_AdminKeys.size());
     else logger->Info("MP: no valid admin.txt (looked in %s and %d other places)", cand[0].c_str(), (int)cand.size() - 1);
 }
 static bool ReadAdminKeyFile(const char* path, char* out, size_t outSz)
@@ -4499,6 +4527,28 @@ static bool ReadAdminKeyFile(const char* path, char* out, size_t outSz)
     }
     fclose(f);
     return ok;
+}
+static void ReadAdminKeys(const char* path, std::vector<std::string>& keys)   // every valid line
+{
+    FILE* f = fopen(path, "r");
+    if(!f) return;
+    char line[512];
+    while(fgets(line, sizeof(line), f))
+    {
+        char* p = line;
+        while(*p == ' ' || *p == '\t' || (unsigned char)*p == 0xEF || (unsigned char)*p == 0xBB || (unsigned char)*p == 0xBF) ++p;
+        if(!strncasecmp(p, "key=", 4) || !strncasecmp(p, "key:", 4)) p += 4;
+        char clean[256]; size_t k = 0;
+        for(const char* q = p; *q && k + 1 < sizeof(clean); ++q) if(*q != '"' && *q != '\'' && *q != ' ' && *q != '\t' && *q != '\r' && *q != '\n') clean[k++] = *q;
+        clean[k] = 0;
+        if(!clean[0] || clean[0] == '#') continue;
+        size_t n = strlen(p); while(n && (p[n-1] == '\n' || p[n-1] == '\r' || p[n-1] == ' ' || p[n-1] == '\t')) p[--n] = 0;
+        std::string key = MP_AdminKeyOk(p) ? std::string(p) : (MP_AdminKeyOk(clean) ? std::string(clean) : std::string());
+        if(key.empty()) continue;
+        bool dup = false; for(auto& e : keys) if(e == key) dup = true;
+        if(!dup) keys.push_back(key);
+    }
+    fclose(f);
 }
 static void SenjiBlockedMsg()   // 3.11.2: say exactly where admin.txt has to go
 {

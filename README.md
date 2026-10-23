@@ -46,6 +46,9 @@ It builds `mp_server` on the phone and runs it 24/7 in the internet lobby (free 
 
 ## Changelog
 
+- **3.11.3**: clearer message when a server refuses SENJI, plus old and new admin keys in one admin.txt.
+  - If your admin.txt is valid but a server still refuses SENJI, the problem is not your phone. That **server program** runs an MP older than 3.10 and only knows the old admin key; servers on 3.10 or newer always accept both keys. The message now says this plainly and how to fix it (your 24/7 servers: Termius > console > **7) update**).
+  - admin.txt can hold several keys, one per line (for example your old key and the new one). The mod tries the first key, and if a server refuses it, it retries the same server with the next key by itself.
 - **3.11.2**: SENJI can join again with admin.txt. 3.11.1, 3.11, 3.10 and 3.04.6 still play together.
   - On many phones AML keeps the game files in `/storage/emulated/0/Android_unprotected/data/com.rockstargames.gtasa/files/`, not in `/sdcard/Android/data/...`. If admin.txt was copied to the other folder, the mod never found it and refused the name SENJI on every server ("reserved for the administrator"). The mod now looks in both folders, in the `mods` folder, in `Download` and in the root of the storage, then copies the file into its own MP folder. If it still finds no valid admin.txt, it shows the exact folder to put it in.
   - Stray quotes or spaces around the key in admin.txt no longer matter.
