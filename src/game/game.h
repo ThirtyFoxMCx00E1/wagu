@@ -47,6 +47,8 @@ namespace Game
     bool  IsSafePedModel(int model);   // ped model exists and may be requested (2.12)
     // 2.19.6 (skins.cpp): player model sync + story characters (special slots)
     void  InitSkins(void* gameHandle);
+    void  InitFileGuard(void* gameHandle);   // 3.11.5: bad file handles in the game's streaming don't crash
+    int   FileGuardBlocked();
     bool  IsSafeSkin(int skin);        // network skin id we can show (normal ped or a known story character)
     bool  IsSpecialSkin(int skin);
     const char* SkinLabel(int skin);   // story character name, nullptr for normal peds

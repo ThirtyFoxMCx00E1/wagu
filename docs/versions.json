@@ -1,6 +1,7 @@
 {
-"latest": "3.11.4",
+"latest": "3.11.5",
 "supported": [
+"3.11.5",
 "3.11.4",
 "3.11.3",
 "3.11.2",
@@ -10,6 +11,13 @@
 "3.04.6"
 ],
 "versions": [
+{
+"v": "3.11.5",
+"summary": "guard against the game's streaming crash (`OS_FileSetPosition` / `OS_FileRead`).",
+"items": [
+"Two crash reports (realme, Android 16, and Samsung A02, Android 11; both with 60+ mods and MP 3.04.6) crashed in the game's own model streaming thread (`libGTASA.so`, `OS_FileSetPosition`), reading through a null file handle. This is a known GTA SA mobile crash with IMG, streaming and limit mods. MP 3.11.5 checks the game's file functions (set position, read, size, get position, close): a null handle now makes that one read fail (the game skips or retries the model) instead of crashing the game, and the AML log says `FileGuard: ... blocked`. Valid files are not touched."
+]
+},
 {
 "v": "3.11.4",
 "summary": "no crash when the game closes.",
