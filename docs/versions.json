@@ -1,6 +1,7 @@
 {
-"latest": "3.21.3",
+"latest": "3.21.4",
 "supported": [
+"3.21.4",
 "3.21.3",
 "3.21.2",
 "3.21.1",
@@ -16,6 +17,15 @@
 "3.04.6"
 ],
 "versions": [
+{
+"v": "3.21.4",
+"summary": "no more automatic /dm grove after joining, no roof spawns, rings hidden by walls.",
+"items": [
+"**Auto deathmatch on join:** the red /dm grove start marker (3.21) stood exactly on the Grove Street spawn, so spawning there counted as walking into it and the Grove Street DM started by itself after 1.2 s. The same happened at Fort Carson (/dm minigun), Mount Chiliad (/dm sniper, /derby sumo), Idlewood (/job medic), Downtown LS (/job taxi) and El Corona (/job firetruck). Start markers are no longer placed within 30 m of a spawn spot or a hospital safe zone (those still start with their command), and a marker never starts by itself after you join, spawn, respawn, die or teleport: you have to leave it and walk / drive in yourself (4 s calm time after every jump).",
+"**Spawning on roofs:** the ground search for teleports started 40 m above the point and took the first surface it hit: the roof of a house, a bridge, a tree. Now it looks just above the point first. DM spawns / respawns pick street points with open sky (12 tries, else the zone centre).",
+"**Rings / beams through walls:** the red beams, the derby / DM ring, the green hospital safe zone rings and their labels were drawn over the game picture, so you saw them through houses like a ghost outline. Every corner is now checked with the game's line of sight from the camera (buildings + objects, cached 150 ms, max 220 checks per frame); parts behind a wall are not drawn. The Brief Case War briefcase marker stays visible through walls on purpose."
+]
+},
 {
 "v": "3.21.3",
 "summary": "crash when tapping Connect (default server) with CLEO scripts installed.",

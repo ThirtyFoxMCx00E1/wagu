@@ -285,6 +285,8 @@ namespace Game
     // 2.21 world.cpp
     void  UnlockWorld(bool girlfriends);      // all cities, shop / gym / food / barber / tattoo doors, garages
     float GroundZ(float x, float y, float zHint);
+    float GroundBelow(float x, float y, float fromZ);              // 3.21.4: -1000 = none
+    bool  OpenGround(float x, float y, float zHint, float& out);   // 3.21.4: ground with open sky
     void  TeleportGround(int ped, Vec3 at, float heading);   // on the ground (car too if driving)
     int   CreateRaceCheckpoint(int type, const Vec3& p, const Vec3& next, float radius);
     void  DeleteRaceCheckpoint(int h);

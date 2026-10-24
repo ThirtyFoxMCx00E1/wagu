@@ -1,3 +1,4 @@
+#include <math.h>
 // 2.21: open world for multiplayer: all cities unlocked, shops / restaurants / gyms / barbers /
 // tattoo / clothes / Ammu-Nation doors open, Pay 'n' Spray + mod garages active, race checkpoints,
 // ground height, money. Everything here is plain game script commands (same as main.scm uses).
@@ -68,13 +69,35 @@ float Game::GroundZ(float x, float y, float zHint)
     return z;
 }
 
+// 3.21.4: the first surface below fromZ, or -1000 (nothing / not loaded)
+float Game::GroundBelow(float x, float y, float fromZ)
+{
+    float z = 0;
+    CALLSCM(GET_GROUND_Z_FOR_3D_COORD, x, y, fromZ, F2U(z));
+    if(z < -90.0f || z > 1500.0f || z == 0.0f || z > fromZ + 0.5f) return -1000.0f;
+    return z;
+}
+// 3.21.4: a place with open sky (no roof / bridge / tree over it) near the ground at zHint
+bool Game::OpenGround(float x, float y, float zHint, float& out)
+{
+    CALLSCM(REQUEST_COLLISION_W, x, y);
+    float low = GroundBelow(x, y, zHint + 3.0f);
+    if(low < -999.0f || fabsf(low - zHint) > 6.0f) return false;
+    float top = GroundBelow(x, y, zHint + 80.0f);
+    if(top < -999.0f || top > low + 1.5f) return false;   // something above: a roof
+    out = low; return true;
+}
+
 void Game::TeleportGround(int ped, Vec3 at, float heading)
 {
     if(ped <= 0) return;
     CALLSCM(REQUEST_COLLISION_W, at.x, at.y);
     CALLSCM(LOAD_SCENE_W, at.x, at.y, at.z);
-    float g = GroundZ(at.x, at.y, at.z);
-    if(g > at.z - 15.0f && g < at.z + 40.0f) at.z = g + 1.0f;
+    // 3.21.4: look for the ground just above the point first (it used to start 40 m up and took
+    // the roof of the house / the bridge over the spot), the old way only when nothing is there
+    float g = GroundBelow(at.x, at.y, at.z + 3.0f);
+    if(g > at.z - 15.0f) at.z = g + 1.0f;
+    else { g = GroundZ(at.x, at.y, at.z); if(g > at.z - 15.0f && g < at.z + 40.0f) at.z = g + 1.0f; }
     if(IsCharInAnyCar(ped))
     {
         int car = GetCarCharIsIn(ped);
