@@ -20,6 +20,19 @@ The mod (2.20+) downloads [regions.txt](https://thirtyfoxmcx00e1.github.io/wagu/
 Game traffic stays inside one region (no bridging), so ping is only phone -> nearest broker.
 
 
+## MP 3.21: update the 24/7 servers (important)
+
+Run this on every region (or Termius console **7) update**, which now runs the same script):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/update.sh | sudo bash
+```
+
+- **Why the old servers never updated:** `install.sh` copied the new `mp_server` over the running one. Linux refuses that ("Text file busy"), and `set -e` stopped the whole update, so the regions kept an old `mp_server`. That old server refuses SENJI's new admin key (`administrator.txt`), and phones kept becoming the host of the default server. Fixed: the binary is now copied to `mp_server.new` and renamed, and the kit in `/opt/mp/kit` is a real git clone (the old copy had no `.git`, so `git pull` in menu 7 failed too).
+- **`update.sh`** downloads the newest kit, re-runs `install.sh` with your saved `/etc/mp-hivemq/mp.env` and restarts `mp-server`, `mp-bcw` and `mp-legacy`.
+- New in `mp_server` 3.21: hospital safe zones + 5 s spawn protection checked on the server (`--no-safezones` to turn off), race queue (14 players, or 45 s with 2+, or 60 s alone, 20 s GO), and phones on MP 3.21 move to the 24/7 copy by themselves, so a phone host leaving no longer "restarts" the server.
+- **Ping (~400 ms):** that is the internet relay through the broker. Direct UDP (about the real distance ping) needs the server's UDP port reachable: open `1922/udp` (and `1930/udp` for Brief Case War) in the VPS firewall, or forward them on the router when the server runs at home. A VPN (Amnezia, OpenVPN) adds one more hop, it doesn't lower the ping; a VPS in each region does.
+
 ## MP 3.03: update the 24/7 servers
 
 Rebuild `mp_server` on every region (console menu **7) update**). New in 3.03:

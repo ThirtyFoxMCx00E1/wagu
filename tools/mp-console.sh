@@ -25,7 +25,7 @@ while true; do
     header
     echo "  1) live broker log        5) restart 24/7 server"
     echo "  2) live server log        6) restart everything"
-    echo "  3) full status            7) update (git pull + install.sh)"
+    echo "  3) full status            7) update (new mp_server + kit)"
     echo "  4) restart HiveMQ         8) regions.txt for the website"
     echo "  9) shell (bash)           0) logout"
     echo "  o) old MP versions refused (name, version, phone id, IP)"
@@ -38,7 +38,7 @@ while true; do
         4) systemctl restart hivemq && echo restarted; sleep 2 ;;
         5) systemctl restart mp-server mp-bcw mp-legacy && echo restarted; sleep 2 ;;
         6) systemctl restart hivemq mp-server mp-bcw mp-legacy mp-status; systemctl is-enabled -q mp-bridge 2>/dev/null && systemctl restart mp-bridge; echo restarted; sleep 2 ;;
-        7) cd /opt/mp/kit && git pull -q && ./install.sh --region "${REGION:-Asia}"; read -r -p "  enter to continue" _ ;;
+        7) REGION="${REGION:-Asia}" bash /opt/mp/kit/update.sh 2>/dev/null || curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/update.sh | REGION="${REGION:-Asia}" bash; read -r -p "  enter to continue" _ ;;
         8) /opt/mp/kit/tools/make-regions.sh; read -r -p "  enter to continue" _ ;;
         o|O) { echo "time  name  version  phone  IP  port"; tail -n 200 /opt/mp/server/outdated_clients.log 2>/dev/null || echo "(none yet)"; } | less -R ;;
         9) echo "type exit to come back"; bash -l ;;
