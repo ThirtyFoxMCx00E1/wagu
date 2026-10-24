@@ -46,6 +46,8 @@ It builds `mp_server` on the phone and runs it 24/7 in the internet lobby (free 
 
 ## Changelog
 
+- **3.21.5**: the ring no longer covers the camera.
+  - Standing at the edge of a ring (green hospital safe zone, red DM / derby ring, Brief Case War zones) put the camera right next to the ring wall; its corners stretched over the whole screen and everything turned green / red like a camera filter (Screenshots/Screenshot_20261024-160306.png). The part of a ring wall near the camera now fades out (from 14 m to 5 m away, the ground line from 3 m to 1 m), and the red start / checkpoint beams fade out when the camera is in them or within 2-8 m of them.
 - **3.21.4**: no more automatic /dm grove after joining, no roof spawns, rings hidden by walls.
   - **Auto deathmatch on join:** the red /dm grove start marker (3.21) stood exactly on the Grove Street spawn, so spawning there counted as walking into it and the Grove Street DM started by itself after 1.2 s. The same happened at Fort Carson (/dm minigun), Mount Chiliad (/dm sniper, /derby sumo), Idlewood (/job medic), Downtown LS (/job taxi) and El Corona (/job firetruck). Start markers are no longer placed within 30 m of a spawn spot or a hospital safe zone (those still start with their command), and a marker never starts by itself after you join, spawn, respawn, die or teleport: you have to leave it and walk / drive in yourself (4 s calm time after every jump).
   - **Spawning on roofs:** the ground search for teleports started 40 m above the point and took the first surface it hit: the roof of a house, a bridge, a tree. Now it looks just above the point first. DM spawns / respawns pick street points with open sky (12 tries, else the zone centre).

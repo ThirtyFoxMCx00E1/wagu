@@ -83,6 +83,17 @@ static void MkBeam(ImDrawList* dl, const Vec3& c, float r, float h, uint32_t rgb
     float d = BcwCamDist(c);
     if(d > 900.0f) return;
     float fade = d < 600 ? 1.0f : 1.0f - (d - 600) / 300.0f;
+    {   // 3.21.5: camera in / right next to the beam: fade it out (it covered the screen in red)
+        Vec3 cam, look;
+        if(Game::GetCameraPos(cam, look))
+        {
+            float dx = cam.x - c.x, dy = cam.y - c.y, edge = sqrtf(dx * dx + dy * dy) - r;
+            float k = edge <= 2.0f ? 0.0f : (edge >= 8.0f ? 1.0f : (edge - 2.0f) / 6.0f);
+            if(cam.z > c.z + h + 2.0f) k = 1.0f;   // above it (helicopter): fine
+            fade *= k;
+            if(fade <= 0.01f) return;
+        }
+    }
     const int N = 20;
     ImVec2 g[N + 1], t[N + 1]; bool okG[N + 1], okT[N + 1];
     for(int i = 0; i <= N; ++i)
