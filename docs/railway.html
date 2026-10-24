@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MP Railway - our own Railway for the MP Discord bot (24/7)</title>
+<meta name="description" content="MP Railway: the self-hosted Railway that keeps the MP Multiplayer Discord login bot (/gen, /stats, /char) online 24/7 - live signed status, deployments, variables and the MP Bot terminal.">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self' wss: https://api.github.com https://raw.githubusercontent.com; img-src 'self' data:; worker-src blob:; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#0b0614">
+<link rel="stylesheet" href="termux.css">
+<link rel="stylesheet" href="railway.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b0614'/%3E%3Cpath d='M8 22h16M8 16h16M8 10h16' stroke='%23b48cff' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+</head>
+<body class="rw">
+<header class="bar">
+  <a class="brand" href="./">MP <span>Railway</span></a>
+  <span id="live" class="live"><span class="dot"></span><span id="live-t">connecting…</span></span>
+  <nav class="rw-nav" aria-label="Pages"><a href="termius.html">Termius</a><a href="termux.html">Termux</a></nav>
+</header>
+
+<section class="rw-top" aria-label="Service">
+  <article class="card svc" id="svc">
+    <div class="svc-h">
+      <span class="svc-dot" id="svc-dot"></span>
+      <div class="svc-t"><strong>discordpy-bot</strong><span id="svc-sub">MP login bot · waiting for the first status…</span></div>
+      <span class="badge" id="svc-badge">…</span>
+    </div>
+    <dl class="kv">
+      <div><dt>Bot</dt><dd id="k-bot">-</dd></div>
+      <div><dt>Version</dt><dd id="k-ver">-</dd></div>
+      <div><dt>Commit</dt><dd id="k-commit">-</dd></div>
+      <div><dt>Uptime</dt><dd id="k-up">-</dd></div>
+      <div><dt>Discord servers</dt><dd id="k-guilds">-</dd></div>
+      <div><dt>Accounts</dt><dd id="k-acc">-</dd></div>
+      <div><dt>Gateway ping</dt><dd id="k-ping">-</dd></div>
+      <div><dt>MQTT brokers</dt><dd id="k-brk">-</dd></div>
+    </dl>
+    <div class="cmds" id="k-cmds" aria-label="Slash commands"></div>
+    <p class="sig" id="k-sig">signature: -</p>
+  </article>
+  <article class="card deps">
+    <h2>Deployments <span class="m">auto deploy on push to main</span></h2>
+    <ol id="deps" class="dep-list"><li class="m">loading…</li></ol>
+  </article>
+</section>
+
+<main class="screen" aria-label="Terminal">
+  <div id="out" class="out" role="log" aria-live="polite"></div>
+  <div class="prompt" aria-hidden="true"><span class="ps">mp@railway:~$</span><span id="typed" class="typed"></span><span class="cur"></span></div>
+</main>
+
+<p id="botst" class="botst" role="status">bot: starting…</p>
+<div class="xkeys" aria-hidden="true">
+  <span>ESC</span><span>/</span><span>-</span><span>HOME</span><span>&uarr;</span><span>END</span><span>PGUP</span>
+  <span>TAB</span><span>CTRL</span><span>ALT</span><span>&larr;</span><span>&darr;</span><span>&rarr;</span><span id="kenter">&#x23CE;</span>
+</div>
+
+<footer class="foot">The bot runs 24/7 on our own server (MP Railway, no cloud account). Set it up once on ONE server:
+  <code>curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/railway/install.sh | sudo bash</code>
+  · <a href="./">Website</a> · <a href="https://github.com/ThirtyFoxMCx00E1/discordpy-bot">Bot source</a> · <a href="https://github.com/ThirtyFoxMCx00E1/HiveMQ#mp-3217-mp-railway---the-discord-bot-247-on-our-own-server">Guide</a> · <a href="termux.html">Termux</a></footer>
+<script src="vendor/mqtt-5.10.1.min.js"></script>
+<script src="autobot.js"></script>
+<script src="railway.js"></script>
+</body>
+</html>

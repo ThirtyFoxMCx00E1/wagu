@@ -28,3 +28,4 @@ code{color:var(--y);overflow-wrap:anywhere}
 .foot{color:var(--muted);font-size:12px;padding:10px 12px 14px;text-align:center;line-height:1.7}
 @media (prefers-reduced-motion:reduce){.cur{animation:none}}
 @media (max-width:560px){body{font-size:13px}.out{padding:8px 10px 4px}}
+.other2{font-size:12px;flex:none}
