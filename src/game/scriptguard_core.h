@@ -41,6 +41,47 @@ namespace ScriptGuard
     }
 }
 
+// 3.21: LOCATE_CHAR_ANY_MEANS / ON_FOOT / IN_CAR _OBJECT_2D (0471-0473, 5 params: char, object,
+// radius x, radius y, sphere) and _3D (0474-0476, 6 params). Two crash logs (realme RE6054, Android
+// 16, CLEO scripts): SIGSEGV in CRunningScript::LocateCharObjectCommand - the game looks the char and
+// the object up and uses whatever comes back, also NULL. The guard reads both handles first (the
+// object is the 2nd parameter: step over the 1st, read, step back) and skips the opcode with
+// "condition false" when either is gone. The script position is only touched when it looks like a
+// script position (inside the script, moved forward by 1..16 bytes); else only the char is checked.
+namespace ScriptGuard
+{
+    enum { OP_LOCATE_OBJ_FIRST = 0x0471, OP_LOCATE_OBJ_LAST_2D = 0x0473, OP_LOCATE_OBJ_LAST = 0x0476 };
+    inline bool IsLocateObject(int op) { return op >= OP_LOCATE_OBJ_FIRST && op <= OP_LOCATE_OBJ_LAST; }
+    inline int16_t LocateParams(int op) { return op <= OP_LOCATE_OBJ_LAST_2D ? 5 : 6; }
+
+    struct LocateEnv
+    {
+        Env       e;
+        void*     (*getPed)(int handle);           // CPools::GetPed (null when the handle is dead)
+        uintptr_t (*getIp)(void* script);          // CRunningScript::m_pCurrentIP
+        void      (*setIp)(void* script, uintptr_t ip);
+        uintptr_t (*getBase)(void* script);        // CRunningScript::m_pBaseIP
+    };
+
+    // true = skip (the caller then moves the script past the params and sets the condition false)
+    inline bool LocateShouldSkip(const LocateEnv& l, void* script, int opcode, bool& ipOk, int& ch, int& obj)
+    {
+        ch = -1; obj = -1;
+        if(!IsLocateObject(opcode) || !script) return false;
+        ch = l.e.peekParam(script);
+        if(ch <= 0 || !l.getPed(ch)) return true;
+        if(!ipOk || !l.getIp) return false;
+        uintptr_t save = l.getIp(script), base = l.getBase ? l.getBase(script) : 0;
+        if(!save || save < base || save - base > 0x1000000) { ipOk = false; return false; }
+        l.e.skipParams(script, 1);
+        uintptr_t now = l.getIp(script);
+        if(now <= save || now - save > 16) { l.setIp(script, save); ipOk = false; return false; }
+        obj = l.e.peekParam(script);
+        l.setIp(script, save);
+        return obj <= 0 || !l.e.getObject(obj);
+    }
+}
+
 // 2.37: world-add guard (see scriptguard.cpp, "CPhysical::Add").
 // CPhysical::Add files a car / ped / object into the 50 x 50 m repeat sectors its bounding rect
 // covers, taking one CPtrNodeDoubleLink + one CEntryInfoNode from the game's pools per sector. It

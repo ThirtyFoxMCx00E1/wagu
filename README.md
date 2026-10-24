@@ -46,6 +46,9 @@ It builds `mp_server` on the phone and runs it 24/7 in the internet lobby (free 
 
 ## Changelog
 
+- **3.21.1**: fix for the `LocateCharObjectCommand` crash (CLEO scripts, realme RE6054).
+  - Two crash logs (SIGSEGV in `libGTASA.so + 0x34B6C0`, `CRunningScript::LocateCharObjectCommand`, opcode `0471` in R8) come from a CLEO script running `LOCATE_CHAR_ANY_MEANS_OBJECT_2D` (0471-0476) on a char or object that no longer exists: the game reads both handles and uses whatever comes back, also nothing. MP now hooks that game function itself (any caller: the game, CLEO, CLEOPlus, other mods): a dead char or object makes the check "false" and the script carries on with its next command, a script pointer of 0 does nothing. The AML log says `ScriptGuard: ... opcode 0471 ... skipped`. New Linux test `test/locate_test.cpp`.
+  - The logs were made with MP 3.04.6: install 3.21.1 (the mod line in the AML log must say `version 3.21.1`).
 - **3.21**: hospital safe zones, red mission markers, no more "restart" when a phone host leaves, servers really update, crash guards.
   - **Hospital safe zones.** All 8 hospitals of San Andreas (All Saints and County General in Los Santos, Crippen Memorial in Montgomery, Angel Pine, San Fierro Medical Center, El Quebrados, Fort Carson, Las Venturas) are safe zones (32 m around the entrance, green ring + label, "SAFE ZONE" on screen). Inside one you can't be hurt: no bullets, no melee, no explosions or fire (also not from a player shooting in from outside), nobody can pull you out of a car, and your own weapon is switched to fists (no drive-by). The server checks it too, so a modded client can't get around it. Off in Brief Case War, races / derbies / DM and missions. Host option: `mp_server --no-safezones`.
   - **5 s spawn protection** after joining and after every respawn ("SPAWN PROTECTION 5" on screen): no damage from other players, and you can't hurt anyone either while it runs.

@@ -7,7 +7,7 @@ cl = text.split('## Changelog', 1)[1]
 m = re.search(r'\n## ', cl)
 if m: cl = cl[:m.start()]
 out, cur = [], None
-SUPPORTED = ['3.21', '3.11.6', '3.11.5', '3.11.4', '3.11.3', '3.11.2', '3.11.1', '3.11', '3.10', '3.04.6']   # 3.11 (3.10: versions that can still play (and be downloaded); the rest are blocked
+SUPPORTED = ['3.21.1', '3.21', '3.11.6', '3.11.5', '3.11.4', '3.11.3', '3.11.2', '3.11.1', '3.11', '3.10', '3.04.6']   # 3.11 (3.10: versions that can still play (and be downloaded); the rest are blocked
 for line in cl.splitlines():
     h = re.match(r'^- \*\*([0-9][0-9.]*)\*\*:?\s*(.*)$', line)
     if h:

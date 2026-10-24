@@ -24,7 +24,7 @@
 #include "../imgui/rw_glue.h"
 #include "net/server.h"
 
-MYMODCFG(net.thirtyfox.mp, MP Multiplayer, 3.21, ThirtyFoxMCx00E1)   // 3.21: was stuck at 3.04.6 (crash logs showed the wrong version)
+MYMODCFG(net.thirtyfox.mp, MP Multiplayer, 3.21.1, ThirtyFoxMCx00E1)   // 3.21: was stuck at 3.04.6 (crash logs showed the wrong version)
 NEEDGAME(com.rockstargames.gtasa)
 
 // Globals used by the embedded RenderWare ImGui backend
