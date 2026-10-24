@@ -232,56 +232,60 @@ static void InitColGuard(void* h)
   #define OFS_SCRIPT_BASEIP 24
   #define OFS_SCRIPT_IP     32
 #endif
-static int8_t (*ProcessCommands1100To1199)(void*, int) = nullptr;
 static void* (*s_GetPed)(int) = nullptr;
 static void  (*s_UpdateCompareFlag)(void*, uint8_t) = nullptr;
 static int   s_nLocateSkipped = 0;
 static bool  s_bIpOk = true;
+static uintptr_t LocGetIp(void* s)            { return (uintptr_t)*(uint8_t**)((uint8_t*)s + OFS_SCRIPT_IP); }
+static void      LocSetIp(void* s, uintptr_t v) { *(uint8_t**)((uint8_t*)s + OFS_SCRIPT_IP) = (uint8_t*)v; }
+static uintptr_t LocGetBase(void* s)          { return (uintptr_t)*(uint8_t**)((uint8_t*)s + OFS_SCRIPT_BASEIP); }
+static ScriptGuard::LocateEnv s_Loc;
+
+// true = handled (skipped), the game's code must not run
+static bool LocateGuard(void* script, int opcode)
+{
+    int ch, obj;
+    if(!ScriptGuard::LocateShouldSkip(s_Loc, script, opcode, s_bIpOk, ch, obj)) return false;
+    s_Env.skipParams(script, ScriptGuard::LocateParams(opcode));
+    if(s_UpdateCompareFlag) s_UpdateCompareFlag(script, 0);
+    if(++s_nLocateSkipped <= 5 || s_nLocateSkipped % 1000 == 0)
+    {
+        char name[9] = {0}; memcpy(name, (const uint8_t*)script + OFS_SCRIPT_NAME, 8);
+        logger->Info("ScriptGuard: script '%s' opcode %04X with a dead char (%d) / object (%d) skipped - this would have crashed the game (#%d)", name, opcode, ch, obj, s_nLocateSkipped);
+    }
+    return true;
+}
+
+// Preferred: the crashing function itself (every caller - the game's opcode table, CLEO, other mods).
+static void (*LocateCharObjectCommand)(void*, int) = nullptr;
+static void HookOf_LocateCharObjectCommand(void* script, int opcode)
+{
+    if(!script || (uintptr_t)script < 0x10000) return;   // log: R0 = 0 at the crash - nothing to run on
+    if(LocateGuard(script, opcode)) return;
+    LocateCharObjectCommand(script, opcode);
+}
+// Fallback when that symbol isn't exported: the opcode range that calls it.
+static int8_t (*ProcessCommands1100To1199)(void*, int) = nullptr;
 static int8_t HookOf_ProcessCommands1100To1199(void* script, int opcode)
 {
-    if(opcode >= 0x0471 && opcode <= 0x0476 && script)
-    {
-        const int16_t nParams = opcode <= 0x0473 ? 5 : 6;
-        int ch = s_Env.peekParam(script), obj = -1;
-        bool dead = ch <= 0 || !s_GetPed(ch);
-        if(!dead && s_bIpOk)
-        {   // peek the 2nd parameter (the object): step over the 1st, read, step back
-            uint8_t** ip = (uint8_t**)((uint8_t*)script + OFS_SCRIPT_IP);
-            uint8_t* base = *(uint8_t**)((uint8_t*)script + OFS_SCRIPT_BASEIP);
-            uint8_t* save = *ip;
-            if(!save || save < base || (uintptr_t)(save - base) > 0x1000000) s_bIpOk = false;   // not the layout we know: char check only
-            else
-            {
-                s_Env.skipParams(script, 1);
-                if(*ip == save || *ip - save > 16) { s_bIpOk = false; *ip = save; }
-                else { obj = s_Env.peekParam(script); *ip = save; dead = obj <= 0 || !s_Env.getObject(obj); }
-            }
-        }
-        if(dead)
-        {
-            s_Env.skipParams(script, nParams);
-            if(s_UpdateCompareFlag) s_UpdateCompareFlag(script, 0);
-            if(++s_nLocateSkipped <= 5 || s_nLocateSkipped % 1000 == 0)
-            {
-                char name[9] = {0}; memcpy(name, (const uint8_t*)script + OFS_SCRIPT_NAME, 8);
-                logger->Info("ScriptGuard: script '%s' opcode %04X with a dead char (%d) / object (%d) skipped - this would have crashed the game (#%d)", name, opcode, ch, obj, s_nLocateSkipped);
-            }
-            return 0;
-        }
-    }
+    if(ScriptGuard::IsLocateObject(opcode) && script && LocateGuard(script, opcode)) return 0;
     return ProcessCommands1100To1199(script, opcode);
 }
 static void InitLocateGuard(void* h)
 {
-    void* fn = (void*)aml->GetSym(h, "_ZN14CRunningScript25ProcessCommands1100To1199Ei");
     SET_TO(s_GetPed, aml->GetSym(h, "_ZN6CPools6GetPedEi"));
     SET_TO(s_UpdateCompareFlag, aml->GetSym(h, "_ZN14CRunningScript17UpdateCompareFlagEh"));
     if(!s_UpdateCompareFlag) SET_TO(s_UpdateCompareFlag, aml->GetSym(h, "_ZN14CRunningScript17UpdateCompareFlagEb"));
-    if(!fn || !s_GetPed || !s_Env.peekParam || !s_Env.skipParams || !s_Env.getObject)
+    if(!s_GetPed || !s_Env.peekParam || !s_Env.skipParams || !s_Env.getObject)
     { logger->Info("ScriptGuard: locate guard off (game functions not found)"); return; }
-    if(!aml->Hook(fn, (void*)&HookOf_ProcessCommands1100To1199, (void**)&ProcessCommands1100To1199) || !ProcessCommands1100To1199)
-    { logger->Info("ScriptGuard: locate guard off (hook failed)"); return; }
-    logger->Info("ScriptGuard: locate guard on (0471-0476 with a dead char / object are skipped, not crashed)");
+    s_Loc.e = s_Env; s_Loc.getPed = s_GetPed; s_Loc.getIp = LocGetIp; s_Loc.setIp = LocSetIp; s_Loc.getBase = LocGetBase;
+    void* fn = (void*)aml->GetSym(h, "_ZN14CRunningScript23LocateCharObjectCommandEi");
+    if(fn && aml->Hook(fn, (void*)&HookOf_LocateCharObjectCommand, (void**)&LocateCharObjectCommand) && LocateCharObjectCommand)
+    { logger->Info("ScriptGuard: locate guard on (LocateCharObjectCommand: 0471-0476 with a dead char / object are skipped, not crashed)"); return; }
+    fn = (void*)aml->GetSym(h, "_ZN14CRunningScript25ProcessCommands1100To1199Ei");
+    if(fn && aml->Hook(fn, (void*)&HookOf_ProcessCommands1100To1199, (void**)&ProcessCommands1100To1199) && ProcessCommands1100To1199)
+    { logger->Info("ScriptGuard: locate guard on (ProcessCommands1100To1199)"); return; }
+    logger->Info("ScriptGuard: locate guard off (hook failed)");
 }
 
 // ---- 3.21: model collision guard ---------------------------------------------------------------
