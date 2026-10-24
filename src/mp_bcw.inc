@@ -560,12 +560,30 @@ static void BcwDrawZone(ImDrawList* dl, const Vec3& c, float r, uint32_t rgba, f
     if(occlude) { float lv[2] = { c.z + 0.4f, c.z + wallH }; vis = OccSample(c, r, N, lv, 2, 1); useVis = true; }
     auto vG = [&](int i) { return !useVis || vis[i]; };
     auto vT = [&](int i) { return !useVis || vis[(N + 1) + i]; };
+    // 3.21.5: the wall right next to the camera is not drawn (it filled the whole screen with its
+    // colour, like a filter on the camera, when you stood at the edge of a ring): fades out from 14 m
+    // to 5 m, the ground line from 3 m to 1 m
+    Vec3 cam, look; bool haveCam = Game::GetCameraPos(cam, look);
+    auto near = [&](int i, float zA, float zB, float d0, float d1)
+    {
+        if(!haveCam) return 1.0f;
+        float a0 = (float)i / N * 6.2831853f, a1 = (float)(i + 1) / N * 6.2831853f;
+        float best = 1e9f;
+        for(int k = 0; k <= 4; ++k)
+        {   // closest of a few points on the segment
+            float a = a0 + (a1 - a0) * k / 4.0f, x = c.x + cosf(a) * r - cam.x, y = c.y + sinf(a) * r - cam.y;
+            float z = cam.z < zA ? zA - cam.z : (cam.z > zB ? cam.z - zB : 0.0f);
+            float dd = sqrtf(x * x + y * y + z * z); if(dd < best) best = dd;
+        }
+        return best <= d1 ? 0.0f : (best >= d0 ? 1.0f : (best - d1) / (d0 - d1));
+    };
     for(int i = 0; i < N; ++i)
     {
         if(!vG(i) || !vG(i + 1)) continue;
-        if(ok[i] && ok[i + 1] && okT[i] && okT[i + 1] && vT(i) && vT(i + 1))
+        float wallK = near(i, c.z, c.z + wallH, 14.0f, 5.0f);
+        if(wallK > 0.0f && ok[i] && ok[i + 1] && okT[i] && okT[i + 1] && vT(i) && vT(i + 1))
         {   // wall: bright at the bottom, gone at the top
-            ImU32 cb = BcwCol(rgba, 0.42f * fade * pulse), ct = BcwCol(rgba, 0.0f);
+            ImU32 cb = BcwCol(rgba, 0.42f * fade * pulse * wallK), ct = BcwCol(rgba, 0.0f);
             dl->PrimReserve(6, 4);
             ImVec2 uv = ImGui::GetFontTexUvWhitePixel();
             ImDrawIdx idx = (ImDrawIdx)dl->_VtxCurrentIdx;
@@ -574,11 +592,12 @@ static void BcwDrawZone(ImDrawList* dl, const Vec3& c, float r, uint32_t rgba, f
             dl->PrimWriteIdx(idx); dl->PrimWriteIdx(idx + 1); dl->PrimWriteIdx(idx + 2);
             dl->PrimWriteIdx(idx); dl->PrimWriteIdx(idx + 2); dl->PrimWriteIdx(idx + 3);
         }
-        if(ok[i] && ok[i + 1])
+        float lineK = near(i, c.z, c.z, 3.0f, 1.0f);
+        if(lineK > 0.0f && ok[i] && ok[i + 1])
         {
-            dl->AddLine(pts[i], pts[i + 1], BcwCol(rgba, 0.25f * fade), UI::S(14));   // glow
-            dl->AddLine(pts[i], pts[i + 1], BcwCol(rgba, 0.55f * fade), UI::S(6));
-            dl->AddLine(pts[i], pts[i + 1], BcwCol(0xFFFFFFFF, 0.65f * fade * pulse), UI::S(2));
+            dl->AddLine(pts[i], pts[i + 1], BcwCol(rgba, 0.25f * fade * lineK), UI::S(14));   // glow
+            dl->AddLine(pts[i], pts[i + 1], BcwCol(rgba, 0.55f * fade * lineK), UI::S(6));
+            dl->AddLine(pts[i], pts[i + 1], BcwCol(0xFFFFFFFF, 0.65f * fade * pulse * lineK), UI::S(2));
         }
     }
     if(!particles || d > 160.0f) return;
