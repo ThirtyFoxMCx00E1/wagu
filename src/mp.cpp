@@ -136,6 +136,7 @@ static QueuedJob              s_Queued;                      // waits for a back
 static char                   s_szLostServerName[32] = "";
 static bool OnLostServer();   // defined below; true when a takeover search was scheduled
 static void ProcessLan(uint64_t now);
+static void RunHostRequest();   // 3.21.2: host / stop from the Add server page, run on the game frame
 
 using namespace MP;
 
@@ -4285,6 +4286,7 @@ static void FinishJob(int job, std::vector<LanServer>& list)
 
 static void ProcessLan(uint64_t now)
 {
+    RunHostRequest();
     // online lobby: announce the server this phone hosts (player count refreshed every 0.5 s)
     {
         static uint64_t lastCount = 0; static int count = 0;
@@ -5117,17 +5119,24 @@ static void AddFormPrefill()
     if(!s_szNewPort[0] && settings.port > 0 && settings.port != MP_DEFAULT_PORT) snprintf(s_szNewPort, sizeof(s_szNewPort), "%d", settings.port);
     if(!s_szNewLang[0] && settings.serverLang[0]) MP_CopyStr(s_szNewLang, settings.serverLang, sizeof(s_szNewLang));
 }
-static void HostFromForm(bool on)
+// 3.21.2: 0 = nothing, 1 = host, 2 = stop. The page only asks; ProcessLan does it on the next game
+// frame. Starting / stopping a server from inside the menu drawing removed players + cars while the
+// game was still drawing them (the crash when tapping the old "Host this server on my phone" switch).
+static int s_nHostRequest = 0;
+static void HostFormApply()
+{   // the same fields become your hosted server's settings
+    if(s_szNewName[0]) MP_CopyStr(settings.serverName, s_szNewName, sizeof(settings.serverName));
+    if(atoi(s_szNewPort) > 0 && atoi(s_szNewPort) <= 65535) settings.port = atoi(s_szNewPort);
+    MP_CopyStr(settings.serverPassword, s_szNewPw, sizeof(settings.serverPassword));
+    if(s_szNewLang[0]) MP_CopyStr(settings.serverLang, s_szNewLang, sizeof(settings.serverLang));
+    SaveConfig();
+}
+// called from ProcessLan (game frame, outside the menu drawing)
+static void RunHostRequest()
 {
-    if(on)
-    {   // the same fields become your hosted server's settings
-        if(s_szNewName[0]) MP_CopyStr(settings.serverName, s_szNewName, sizeof(settings.serverName));
-        if(atoi(s_szNewPort) > 0 && atoi(s_szNewPort) <= 65535) settings.port = atoi(s_szNewPort);
-        MP_CopyStr(settings.serverPassword, s_szNewPw, sizeof(settings.serverPassword));
-        if(s_szNewLang[0]) MP_CopyStr(settings.serverLang, s_szNewLang, sizeof(settings.serverLang));
-        SaveConfig();
-    }
-    MP::SetHostLan(on, client.GetState() == NET_DISCONNECTED);   // 2.19.6: join it right away
+    const int r = s_nHostRequest; s_nHostRequest = 0;
+    if(r == 1 && !s_Server.IsRunning()) MP::SetHostLan(true, client.GetState() == NET_DISCONNECTED);   // 2.19.6: join it right away
+    else if(r == 2 && s_Server.IsRunning()) MP::SetHostLan(false, false);
 }
 
 // 3.02: Add server > Gamemodes. The default server always has all of them; a custom server you
@@ -5187,9 +5196,29 @@ static void SectionAddServer(void*)
     ImGui::Separator();
 
     bool hasHost = s_szNewHost[0] != 0;
-    if(full || !hasHost) ImGui::BeginDisabled();
-    char addLbl[64]; snprintf(addLbl, sizeof(addLbl), full ? "Server list full (%d/%d)" : "Add server  (%d/%d)", ServerList::Count(), MP_MAX_SERVERS);
-    if(FloatMenu::BigButton(addLbl))
+    // 3.21.2: one button. With a Host / IP it saves the server to your list; with Host / IP empty it
+    // hosts the server on this phone (the separate "Host this server on my phone" switch is gone).
+    const bool pending = s_nHostRequest != 0 || (IsBusy() && s_nJob == JOB_HOST);
+    const bool disabled = hasHost ? full : (hosting || pending);
+    if(disabled) ImGui::BeginDisabled();
+    char addLbl[80];
+    if(hasHost) snprintf(addLbl, sizeof(addLbl), full ? "Server list full (%d/%d)" : "Add server  (%d/%d)", ServerList::Count(), MP_MAX_SERVERS);
+    else snprintf(addLbl, sizeof(addLbl), hosting ? "Add server  (hosted on this phone)" : pending ? "Add server  (starting...)" : "Add server  (host on this phone)");
+    const bool clicked = FloatMenu::BigButton(addLbl);
+    if(clicked && !hasHost)
+    {
+        const int port = atoi(s_szNewPort[0] ? s_szNewPort : "0") > 0 ? atoi(s_szNewPort) : settings.port;
+        if(MP_IsBcwServerName(s_szNewName) || port == MP_BCW_PORT)
+            SysMsg(COL_YELLOW, "Brief Case War is a private gamemode server - it is always in the Internet list, just tap it.");
+        else if(port == MP_DEFAULT_PORT && !IsDefaultServer(s_szNewName[0] ? s_szNewName : settings.serverName, port))
+            SysMsg(COL_RED, "Port %d is for the default server. Use %d or higher for a custom server.", MP_DEFAULT_PORT, MP_DEFAULT_PORT + 1);
+        else
+        {
+            HostFormApply();      // the fields become your hosted server's settings
+            s_nHostRequest = 1;   // the server itself starts on the next game frame (ProcessLan)
+        }
+    }
+    else if(clicked)
     {
         // accept "ggwar", "net.ggwar.org", "http://net.ggwar.org/" or an IP
         char* h = s_szNewHost;
@@ -5214,11 +5243,9 @@ static void SectionAddServer(void*)
         }
         else SysMsg(COL_RED, "Enter a host/IP and a port (1-65535).");
     }
-    if(full || !hasHost) ImGui::EndDisabled();
+    if(disabled) ImGui::EndDisabled();
 
-    // host the same server on this phone (was the "Hosted" page)
-    bool lan = hosting;
-    if(FloatMenu::ToggleSwitch("Host this server on my phone", &lan)) HostFromForm(lan);
+    // the server this phone hosts (was the "Host this server on my phone" switch)
     if(hosting)
     {
         ImGui::TextColored(kGreenTxt, "Hosting \"%s\"  (IP hidden, %d/%d online)", s_Server.GetName(), s_Server.GetPlayerCount(), s_Server.GetMaxPlayers());
@@ -5228,12 +5255,13 @@ static void SectionAddServer(void*)
         if(!IsHostingDefault() && !IsConnectedTo("127.0.0.1", s_Server.GetPort()) &&
            FloatMenu::BigButton(client.GetState() == NET_DISCONNECTED ? "Join my server" : "Leave + join my server"))
             MP::JoinServer("127.0.0.1", s_Server.GetPort(), s_Server.GetName());
+        if(!IsHostingDefault() && FloatMenu::BigButton(s_nHostRequest == 2 ? "Stopping..." : "Stop my server", kLeaveCol) && !s_nHostRequest) s_nHostRequest = 2;
     }
-    else if(IsBusy() && s_nJob == JOB_HOST)
+    else if(pending)
         ImGui::TextColored(kYellowTxt, "Checking online + Wi-Fi for \"%s\"...", settings.serverName);
     else
-        ImGui::TextDisabled(hasHost ? "Add server = save it to your list.  Host = run it on this phone with the same name, port and password."
-                                    : "No Host / IP: tap Host to run it on this phone. If it already runs on another phone, you join it.");
+        ImGui::TextDisabled(hasHost ? "Add server = save it to your server list."
+                                    : "No Host / IP: Add server runs it on this phone. If it already runs on another phone, you join it.");
 
     // 2.19.1: Local IP - join a phone / PC on the same Wi-Fi (or a public IP) directly
     ImGui::Separator();
