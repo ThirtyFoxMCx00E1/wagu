@@ -46,6 +46,11 @@ It builds `mp_server` on the phone and runs it 24/7 in the internet lobby (free 
 
 ## Changelog
 
+- **3.21.7**: MP Railway - the Discord login bot online 24/7 on our own server.
+  - **MP Railway:** Railway.app stopped taking new accounts, so the login bot ([discordpy-bot](https://github.com/ThirtyFoxMCx00E1/discordpy-bot)) now runs on our own self-hosted Railway, part of the [HiveMQ kit](https://github.com/ThirtyFoxMCx00E1/HiveMQ#mp-3217-mp-railway---the-discord-bot-247-on-our-own-server): build from git, restart on crash and on reboot, auto deploy of every push within 2 minutes. One command on the server: `sudo mp-railway setup`. Without the bot Discord didn't show `/gen` and nobody could log in.
+  - **Railway page:** new [Railway](https://thirtyfoxmcx00e1.github.io/wagu/railway.html) page next to Termux on the website: live bot status (signed by the bot, checked with the mod's public key), deployments, variables and the MP Bot terminal (types every command by itself).
+  - **Discord:** `/stats` and `/char` show an account card with your avatar and Refresh / Switch view buttons (only you see it). Each command shows once (no more double `/gen`).
+  - **Login screen:** if the broker answers but the bot doesn't, the game now says the login bot is offline (not your internet) and links the live status page.
 - **3.21.6**: login system (accounts verified with Discord).
   - **First join:** after connecting, a "Code authentication" screen shows a random 8-character code (a new one every time, never the same; it works 10 minutes). Join the Discord server [discord.gg/tbsDknk34y](https://discord.gg/tbsDknk34y) (**Open Discord** button) and type `/gen CODE` in the **#verification** channel. The game then shows **Sign up**: User, Password, Gender (Male / Female / Other), Age and **Create**, then "Your account was created successfully" and the **< Spawn >** buttons. One account per Discord account.
   - **Rejoin:** only the **Login** screen (User + Password). A reconnect in the same game session (host change, lost connection) logs you in by itself. "New account" asks for a new Discord code; a Discord account that already has one goes back to Login.

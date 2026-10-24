@@ -1,0 +1,41 @@
+/* MP Railway (3.21.7) - on top of termux.css */
+body.rw{--p:#b48cff;--bg:#0b0614;background:var(--bg)}
+.rw .bar{background:var(--bg)}
+.rw .brand span{color:var(--p)}
+.rw-nav{margin-left:auto;display:flex;gap:12px;font-size:12px;flex:none}
+.rw-top{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:12px;max-width:1000px;width:100%;margin:12px auto 0;padding:0 12px}
+.card{border:1px solid #2a1f3d;border-radius:10px;background:#120b20;padding:12px 14px;min-width:0}
+.svc-h{display:flex;align-items:center;gap:10px}
+.svc-dot{width:12px;height:12px;border-radius:50%;background:var(--muted);flex:none}
+.svc.on .svc-dot{background:var(--g);box-shadow:0 0 8px var(--g)}
+.svc.off .svc-dot{background:var(--r)}
+.svc.stale .svc-dot{background:var(--y)}
+.svc-t{display:flex;flex-direction:column;min-width:0}
+.svc-t span{color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.badge{margin-left:auto;font-size:11px;padding:2px 8px;border-radius:99px;border:1px solid #3a2d55;color:var(--muted);flex:none}
+.svc.on .badge{color:#000;background:var(--g);border-color:var(--g)}
+.svc.off .badge{color:#fff;background:#7a2a22;border-color:#7a2a22}
+.svc.stale .badge{color:#000;background:var(--y);border-color:var(--y)}
+.kv{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px 12px;margin:12px 0 8px}
+.kv div{min-width:0}
+.kv dt{color:var(--muted);font-size:11px}
+.kv dd{margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cmds{display:flex;flex-wrap:wrap;gap:6px}
+.cmds span{font-size:12px;padding:2px 8px;border-radius:6px;background:#1f1433;color:var(--p);border:1px solid #3a2d55}
+.sig{margin:8px 0 0;font-size:11px;color:var(--muted);overflow-wrap:anywhere}
+.sig.ok{color:var(--g)}.sig.bad{color:var(--r)}
+.deps h2{font-size:13px;margin:0 0 8px;font-weight:700}
+.deps h2 .m,.m{color:var(--muted);font-weight:400;font-size:11px}
+.dep-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;max-height:190px;overflow-y:auto}
+.dep-list li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;font-size:12px;align-items:baseline}
+.dep-list .sha{color:var(--p)}
+.dep-list .msg{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dep-list .when{color:var(--muted)}
+.dep-list li.cur .sha::after{content:" live";color:var(--g)}
+.rw .screen{min-height:260px}
+.rw .ps{color:var(--p)}
+.rw .xkeys span.hit{background:var(--p)}
+@media (max-width:760px){.rw-top{grid-template-columns:minmax(0,1fr)}.kv{grid-template-columns:repeat(2,minmax(0,1fr))}}
+html:has(body.rw),body.rw{height:auto;min-height:100%}
+.rw .out{min-height:260px;max-height:62vh}
+@media (max-width:560px){.rw .out{max-height:55vh}.rw-nav{gap:8px}}

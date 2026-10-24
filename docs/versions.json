@@ -1,6 +1,7 @@
 {
-"latest": "3.21.6",
+"latest": "3.21.7",
 "supported": [
+"3.21.7",
 "3.21.6",
 "3.21.5",
 "3.21.4",
@@ -19,6 +20,16 @@
 "3.04.6"
 ],
 "versions": [
+{
+"v": "3.21.7",
+"summary": "MP Railway - the Discord login bot online 24/7 on our own server.",
+"items": [
+"**MP Railway:** Railway.app stopped taking new accounts, so the login bot ([discordpy-bot](https://github.com/ThirtyFoxMCx00E1/discordpy-bot)) now runs on our own self-hosted Railway, part of the [HiveMQ kit](https://github.com/ThirtyFoxMCx00E1/HiveMQ#mp-3217-mp-railway---the-discord-bot-247-on-our-own-server): build from git, restart on crash and on reboot, auto deploy of every push within 2 minutes. One command on the server: `sudo mp-railway setup`. Without the bot Discord didn't show `/gen` and nobody could log in.",
+"**Railway page:** new [Railway](https://thirtyfoxmcx00e1.github.io/wagu/railway.html) page next to Termux on the website: live bot status (signed by the bot, checked with the mod's public key), deployments, variables and the MP Bot terminal (types every command by itself).",
+"**Discord:** `/stats` and `/char` show an account card with your avatar and Refresh / Switch view buttons (only you see it). Each command shows once (no more double `/gen`).",
+"**Login screen:** if the broker answers but the bot doesn't, the game now says the login bot is offline (not your internet) and links the live status page."
+]
+},
 {
 "v": "3.21.6",
 "summary": "login system (accounts verified with Discord).",
