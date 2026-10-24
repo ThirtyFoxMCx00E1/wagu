@@ -1,6 +1,7 @@
 {
-"latest": "3.21.1",
+"latest": "3.21.2",
 "supported": [
+"3.21.2",
 "3.21.1",
 "3.21",
 "3.11.6",
@@ -14,6 +15,14 @@
 "3.04.6"
 ],
 "versions": [
+{
+"v": "3.21.2",
+"summary": "launcher \"+ Add\" page - the extra Host switch is gone.",
+"items": [
+"The \"Host this server on my phone\" switch is removed: **Add server** does both. With a Host / IP it saves the server to your list; with Host / IP empty it hosts the server on this phone (same name, port, password, language, icon, gamemodes). While it runs, the page shows \"Hosting ...\" with **Join my server** and **Stop my server**.",
+"Crash fix: the switch started / stopped the server from inside the menu drawing, which removed players and cars while the game was still drawing them. Hosting and stopping now happen on the next game frame."
+]
+},
 {
 "v": "3.21.1",
 "summary": "fix for the `LocateCharObjectCommand` crash (CLEO scripts, realme RE6054).",

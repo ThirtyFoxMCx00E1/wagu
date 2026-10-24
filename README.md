@@ -46,6 +46,9 @@ It builds `mp_server` on the phone and runs it 24/7 in the internet lobby (free 
 
 ## Changelog
 
+- **3.21.2**: launcher "+ Add" page - the extra Host switch is gone.
+  - The "Host this server on my phone" switch is removed: **Add server** does both. With a Host / IP it saves the server to your list; with Host / IP empty it hosts the server on this phone (same name, port, password, language, icon, gamemodes). While it runs, the page shows "Hosting ..." with **Join my server** and **Stop my server**.
+  - Crash fix: the switch started / stopped the server from inside the menu drawing, which removed players and cars while the game was still drawing them. Hosting and stopping now happen on the next game frame.
 - **3.21.1**: fix for the `LocateCharObjectCommand` crash (CLEO scripts, realme RE6054).
   - Two crash logs (SIGSEGV in `libGTASA.so + 0x34B6C0`, `CRunningScript::LocateCharObjectCommand`, opcode `0471` in R8) come from a CLEO script running `LOCATE_CHAR_ANY_MEANS_OBJECT_2D` (0471-0476) on a char or object that no longer exists: the game reads both handles and uses whatever comes back, also nothing. MP now hooks that game function itself (any caller: the game, CLEO, CLEOPlus, other mods): a dead char or object makes the check "false" and the script carries on with its next command, a script pointer of 0 does nothing. The AML log says `ScriptGuard: ... opcode 0471 ... skipped`. New Linux test `test/locate_test.cpp`.
   - The logs were made with MP 3.04.6: install 3.21.1 (the mod line in the AML log must say `version 3.21.1`).

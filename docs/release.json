@@ -1,17 +1,27 @@
 {
- "tag_name": "v3.21.1",
- "name": "MP Multiplayer 3.21.1",
+ "tag_name": "v3.21.2",
+ "name": "MP Multiplayer 3.21.2",
  "published_at": "2026-10-24",
- "also_supported": "v3.21, v3.11.6, v3.11.5, v3.11.4, v3.11.3, v3.11.2, v3.11.1, v3.11, v3.10, v3.04.6",
+ "also_supported": "v3.21.1, v3.21, v3.11.6, v3.11.5, v3.11.4, v3.11.3, v3.11.2, v3.11.1, v3.11, v3.10, v3.04.6",
  "assets": [
   {
    "name": "bin/libMP32.so",
-   "size": 3218584,
+   "size": 3218968,
    "download_count": 0
   },
   {
    "name": "bin/libMP64.so",
-   "size": 4016128,
+   "size": 4016640,
+   "download_count": 0
+  },
+  {
+   "name": "release/MP-3.21.2-full.zip",
+   "size": 14901932,
+   "download_count": 0
+  },
+  {
+   "name": "release/HiveMQ-kit-3.21.2.zip",
+   "size": 37567,
    "download_count": 0
   },
   {
