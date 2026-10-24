@@ -21,6 +21,7 @@
 #include "mbedtls/net_sockets.h"
 #include "mbedtls/error.h"
 #include "ca_roots.h"
+#include "authcrypto.h"   // 3.21.6: login system topics
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <sys/ioctl.h>
@@ -2227,4 +2228,116 @@ void Online::GetDiagnostics(std::vector<std::string>& out)
         if(s_bPingedOnce && !anyUp) out.push_back("All regions down: staying on the public lobby, regions re-checked every 2 min (2.23)");
     }
     for(int i = 0; i < (int)s_Brokers.size() && i < (int)s_Diag.size(); ++i) if(!s_Diag[i].empty()) out.push_back(s_Diag[i]);
+}
+
+// ---------------------------------------------------------------------------------------------
+// 3.21.6: AUTH LINK. The login system talks to the MP Discord bot over its own small MQTT
+// connection (never the game relay: a login can't slow the game, the game can't delay a login).
+// Everything on it is end-to-end encrypted (authcrypto.h), so plain public brokers are fine.
+// The bot listens on all of these; we use the first one that answers.
+// ---------------------------------------------------------------------------------------------
+static const Broker kAuthBrokers[] = {
+    { "broker.hivemq.com",  1883, false, false, "",      "hivemq tcp" },
+    { "broker.hivemq.com",  8000, true,  false, "/mqtt", "hivemq ws"  },
+    { "test.mosquitto.org", 1883, false, false, "",      "mosquitto tcp" },
+    { "broker.emqx.io",     1883, false, false, "",      "emqx tcp" },
+};
+static std::mutex              s_AuthM;
+static std::atomic<bool>       s_bAuthRun{false}, s_bAuthUp{false};
+static std::thread             s_AuthThread;
+static std::string             s_AuthSid;               // guarded: response topic id (empty = none)
+static std::deque<std::string> s_AuthOut, s_AuthIn;     // guarded
+static char                    s_szAuthBroker[32] = "";
+
+static void AuthThread()
+{
+    Mqtt mq;
+    int bi = 0;
+    std::string subbed;
+    while(s_bAuthRun)
+    {
+        if(mq.fd < 0)
+        {
+            s_bAuthUp = false; subbed.clear();
+            const Broker& b = kAuthBrokers[bi % (int)(sizeof(kAuthBrokers) / sizeof(kAuthBrokers[0]))];
+            char cid[24]; snprintf(cid, sizeof(cid), "wa%08x%08x", Rand32(), Rand32());
+            if(!mq.Open(b, cid, nullptr, 5000))
+            {
+                OLOG("auth link: %s failed (%s)", b.label.c_str(), mq.err);
+                ++bi;
+                for(int i = 0; i < 20 && s_bAuthRun; ++i) std::this_thread::sleep_for(std::chrono::milliseconds(50));
+                continue;
+            }
+            snprintf(s_szAuthBroker, sizeof(s_szAuthBroker), "%s", b.label.c_str());
+            s_bAuthUp = true;
+        }
+        std::string sid;
+        { std::lock_guard<std::mutex> lk(s_AuthM); sid = s_AuthSid; }
+        if(sid != subbed)
+        {
+            if(!subbed.empty()) mq.Unsubscribe((std::string(MP_AUTH_TOPIC_RES) + subbed).c_str(), 2);
+            if(!sid.empty() && !mq.Subscribe((std::string(MP_AUTH_TOPIC_RES) + sid).c_str(), 1)) { mq.Close(); continue; }
+            subbed = sid;
+            std::this_thread::sleep_for(std::chrono::milliseconds(150));   // SUBACK before the first request
+        }
+        for(;;)
+        {
+            std::string f;
+            { std::lock_guard<std::mutex> lk(s_AuthM); if(s_AuthOut.empty()) break; f = s_AuthOut.front(); s_AuthOut.pop_front(); }
+            if(!mq.Publish(MP_AUTH_TOPIC_REQ, f.data(), f.size(), false)) { std::lock_guard<std::mutex> lk(s_AuthM); s_AuthOut.push_front(f); mq.Close(); break; }
+        }
+        if(mq.fd < 0) continue;
+        mq.FlushOut(50);
+        uint8_t type; std::string body;
+        int r = mq.ReadPacket(type, body, 100);
+        if(r < 0) { OLOG("auth link: connection lost"); mq.Close(); continue; }
+        if(r > 0 && (type >> 4) == 3 && body.size() >= 2)
+        {
+            size_t tl = ((uint8_t)body[0] << 8) | (uint8_t)body[1];
+            size_t off = 2 + tl + (((type >> 1) & 3) ? 2 : 0);
+            if(off <= body.size())
+            {
+                std::string topic = body.substr(2, tl);
+                std::lock_guard<std::mutex> lk(s_AuthM);
+                if(!subbed.empty() && topic == std::string(MP_AUTH_TOPIC_RES) + subbed && s_AuthIn.size() < 64)
+                    s_AuthIn.push_back(body.substr(off));
+            }
+        }
+        static uint64_t lastPing = 0;
+        uint64_t now = MP_NowMs();
+        if(now - lastPing > 20000) { lastPing = now; if(!mq.Ping()) mq.Close(); }
+    }
+    if(mq.fd >= 0) mq.Disconnect();
+    s_bAuthUp = false;
+}
+
+void Online::AuthLinkStart(const char* sid)
+{
+    {
+        std::lock_guard<std::mutex> lk(s_AuthM);
+        s_AuthSid = sid ? sid : "";
+        s_AuthIn.clear(); s_AuthOut.clear();
+    }
+    if(!s_bAuthRun.exchange(true))
+    {
+        if(s_AuthThread.joinable()) s_AuthThread.join();
+        s_AuthThread = std::thread(AuthThread);
+    }
+}
+void Online::AuthLinkStop()
+{
+    if(!s_bAuthRun.exchange(false)) return;
+    if(s_AuthThread.joinable()) s_AuthThread.join();
+    std::lock_guard<std::mutex> lk(s_AuthM);
+    s_AuthSid.clear(); s_AuthIn.clear(); s_AuthOut.clear();
+}
+bool Online::AuthLinkUp() { return s_bAuthUp; }
+const char* Online::AuthLinkBroker() { return s_bAuthUp ? s_szAuthBroker : ""; }
+void Online::AuthLinkSend(const std::string& frame) { std::lock_guard<std::mutex> lk(s_AuthM); if(s_AuthOut.size() < 32) s_AuthOut.push_back(frame); }
+bool Online::AuthLinkRecv(std::string& frame)
+{
+    std::lock_guard<std::mutex> lk(s_AuthM);
+    if(s_AuthIn.empty()) return false;
+    frame = s_AuthIn.front(); s_AuthIn.pop_front();
+    return true;
 }

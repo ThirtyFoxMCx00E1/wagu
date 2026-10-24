@@ -21,6 +21,8 @@
 #include "net/serverlist.h"
 #include "net/lan.h"
 #include "net/online.h"
+#include "net/authclient.h"   // 3.21.6: login system
+#include "net/authcrypto.h"
 #include <map>
 #include <algorithm>
 #include <string>
@@ -458,6 +460,11 @@ static std::vector<std::string> s_AdminKeys;   // 3.11.3: every valid key found 
 static size_t s_nAdminKeyIdx = 0;
 static char s_szLastConnHost[256] = ""; static int s_nLastConnPort = 0;
 static void DoConnect(const char* host, int port);
+static void AuthOnPacket(const uint8_t* d, int len);   // 3.21.6 (mp_auth.inc)
+static void AuthFrame(uint64_t now);
+static void AuthReset();
+static int  SrvAuthGet(const char* name, int port);
+static void SrvAuthPut(const char* name, int port, bool on);
 static void JoinOverlayCancel();
 static void JoinMarkConnected();
 static void JoinFlowProcess(int ped, uint64_t now);
@@ -2202,6 +2209,7 @@ public:
     void OnTurf(const PktTurf& t) override { SampOnTurf(t); }
     void OnDialog(const PktDialog& d) override { SampOnDialog(d); }
     void OnTextDraw(const PktTextDraw& t) override { SampOnTextDraw(t); }
+    void OnAuth(const uint8_t* d, int len) override { AuthOnPacket(d, len); }   // 3.21.6: login system
     void OnBcw(const uint8_t* d, int len) override { BcwOnPacket(d, len); }   // 3.04   // 2.25: the dialog opens; PKT_REJECT follows
     void OnJack(const PktJack& j) override   // 2.19: somebody pulls me out of my car
     {
@@ -3550,6 +3558,7 @@ void MP::Process()
     const bool paused = Game::IsPaused();
     client.SetGamePaused(paused);
     client.Poll(&s_Events);
+    AuthFrame(MP_NowMs());   // 3.21.6: login screens + ticket
     // 2.17: kill feed lines no longer expire - they stay until pushed out by newer kills.
     // 2.35: ...but they belong to that server: left / lost the server = feed cleared
     if(client.GetState() == NET_DISCONNECTED && !kills.empty()) kills.clear();
@@ -3742,6 +3751,7 @@ static bool JoinHudOff() { return s_bJoinHudOff; }
 #include "mp_gates.inc"  // 3.04.2: gates that never open (Area 69): fade out, through, fade in
 #include "mp_safezone.inc"  // 3.21: hospital safe zones + 5 s spawn protection
 #include "mp_markers.inc"   // 3.21: SA-MP style red checkpoint beams for races, derbies, DM, jobs
+#include "mp_auth.inc"      // 3.21.6: login system (Discord code, sign up, login, /stats)
 
 // 2.37: CheatMenu (libCheatMenu.so / libCheatMenu64.so) is not allowed on any server - the default
 // server and every custom server. Detected with aml->HasMod() in ON_ALL_MODS_LOAD (+ a re-check of
@@ -3770,6 +3780,7 @@ static void DoConnect(const char* host, int port)
         if(!HaveAdminKey()) { JoinOverlayCancel(); SenjiBlockedMsg(); return; }
     }
     MP_CopyStr(s_szLastConnHost, host, sizeof(s_szLastConnHost)); s_nLastConnPort = port;   // 3.11.3: retry with the other admin key
+    AuthReset();   // 3.21.6: a new connection = a new login challenge
     // internet server: packets go through the online relay (local proxy on 127.77.x.y:port)
     uint16_t via = 0;
     if(Online::IsRelayIp(host))
@@ -3912,6 +3923,21 @@ static void SrvCmPut(const char* name, int port, bool allow)
     ConfigEntry* e = ::cfg->Bind(k, allow ? 1 : 0, "MPServerCheatMenu"); e->SetInt(allow ? 1 : 0); delete e;
     ::cfg->Save();
 }
+// 3.21.6: the login system of a custom server (kept per server, like its gamemodes: a phone that
+// takes the server over keeps it on). The default server and Brief Case War always have it.
+static int SrvAuthGet(const char* name, int port)   // -1 = unknown, 0 = off, 1 = on
+{
+    char k[16]; SrvModesKey(name, port, k, sizeof(k)); k[0] = 'A'; k[1] = 'U';
+    return ::cfg->GetInt(k, -1, "MPServerAuth");
+}
+static void SrvAuthPut(const char* name, int port, bool on)
+{
+    if(!name || !*name || MP::IsDefaultServer(name, port) || MP_IsBcwServerName(name)) return;
+    if(SrvAuthGet(name, port) == (on ? 1 : 0)) return;
+    char k[16]; SrvModesKey(name, port, k, sizeof(k)); k[0] = 'A'; k[1] = 'U';
+    ConfigEntry* e = ::cfg->Bind(k, on ? 1 : 0, "MPServerAuth"); e->SetInt(on ? 1 : 0); delete e;
+    ::cfg->Save();
+}
 static void SrvModesPut(const char* name, int port, uint16_t modes)
 {
     if(!name || !*name || MP::IsDefaultServer(name, port)) return;
@@ -3959,6 +3985,12 @@ static bool StartLocalServer(const char* name, int port)
         if(MP::IsDefaultServer(name, port) || bcw) s_bRunCheatMenu = false;
         else if(creating || (cm < 0 && own)) { s_bRunCheatMenu = settings.allowCheatMenu; SrvCmPut(name, port, s_bRunCheatMenu); }
         else s_bRunCheatMenu = cm > 0;
+        // 3.21.6: login system (default + Brief Case War: always, in MPServer itself)
+        int au = SrvAuthGet(name, port);
+        bool auth = false;
+        if(creating || (au < 0 && own)) { auth = settings.hostAuth; SrvAuthPut(name, port, auth); }
+        else auth = au > 0;
+        s_Server.SetAuth(auth);
     }
     MP_CopyStr(settings.hostedPassword, MP::IsDefaultServer(name, port) || bcw ? "" : s_szJoinPw, sizeof(settings.hostedPassword));
     ApplyServerPerms();   // 2.16
@@ -4438,7 +4470,7 @@ void MP::SaveConfig()
     F("NametagSize", settings.nametagSize); F("NametagDistance", settings.nametagDistance);
     B("ShowOwnNametag", settings.showOwnTag); B("ShowHealthBars", settings.showHealthBars); B("ShowRadarIcons", settings.showRadarIcons);
     B("ShowChat", settings.showChat); B("ShowKillFeed", settings.showKillFeed); B("ShowStatus", settings.showStatus);
-    B("SyncAnims", settings.syncAnims); B("SyncEnv", settings.syncEnv); B("SyncNPCs", settings.syncNpcs); B("AllowMissionPair", settings.allowMissionPair); B("AllowCheatMenu", settings.allowCheatMenu); B("HitSound", settings.hitSound); B("DisableCheats", settings.disableCheats);
+    B("SyncAnims", settings.syncAnims); B("SyncEnv", settings.syncEnv); B("SyncNPCs", settings.syncNpcs); B("AllowMissionPair", settings.allowMissionPair); B("AllowCheatMenu", settings.allowCheatMenu); B("HostAuth", settings.hostAuth); B("HitSound", settings.hitSound); B("DisableCheats", settings.disableCheats);
     F("ChatX", settings.chatX); F("ChatY", settings.chatY); I("Skin", settings.skin);
     I("ChatLines", settings.chatLines); F("ChatSize", settings.chatSize); F("ChatScale", settings.chatScale); F("ChatWidth", settings.chatWidth);   // 2.19.6
     I("ChatFade", settings.chatFade); B("ChatBackground", settings.chatBg);
@@ -4478,6 +4510,7 @@ static void LoadConfig()
     settings.syncNpcs        = ::cfg->GetBool("SyncNPCs", true, "MP");
     settings.allowMissionPair = ::cfg->GetBool("AllowMissionPair", true, "MP");
     settings.allowCheatMenu = ::cfg->GetBool("AllowCheatMenu", false, "MP");   // 3.00
+    settings.hostAuth        = ::cfg->GetBool("HostAuth", false, "MP");   // 3.21.6
     settings.hitSound = ::cfg->GetBool("HitSound", true, "MP");               // 3.00
     settings.chatBubbles = ::cfg->GetBool("ChatBubbles", false, "MP");   // 3.01: off by default
     settings.chatTimestamps = ::cfg->GetBool("ChatTimestamps", false, "MP");   // 3.11: off until the player turns it on
@@ -5282,6 +5315,26 @@ static void SectionAddServer(void*)
         }
     }
     ImGui::TextDisabled("Same Wi-Fi / hotspot: type the host's local IP and port, then Connect.");
+
+    // 3.21.6: Authentication system - players verify with Discord (/gen code), then sign up / log in
+    ImGui::Separator();
+    ImGui::TextUnformatted("Authentication system");
+    const bool ownCustom = s_Server.IsRunning() && !IsHostingDefault() && !s_Server.IsBcwServer();
+    if(FloatMenu::ToggleSwitch("Login with Discord", &settings.hostAuth))
+    {
+        SaveConfig();
+        if(ownCustom)   // the server you host now
+        {
+            SrvAuthPut(s_Server.GetName(), s_Server.GetPort(), settings.hostAuth);
+            s_Server.SetAuth(settings.hostAuth);
+            SysMsg(COL_GREEN, "Login system %s on \"%s\" (players who join from now on).", settings.hostAuth ? "on" : "off", s_Server.GetName());
+        }
+    }
+    ImGui::TextDisabled(settings.hostAuth ? "On: a new player gets a code, types /gen CODE in #verification on Discord, then creates an account (user, password, gender, age). Next time: login only."
+                                          : "Off: players spawn right away (no account).");
+    ImGui::TextDisabled("Discord: %s  (accounts are kept by the MP bot, never by the host, never shown to the others)", MP_AUTH_DISCORD_URL);
+    ImGui::TextDisabled("The default server and Brief Case War always use it. Needs MP %s or newer on every phone.", MP_VERSION_STR);
+    if(ownCustom) ImGui::TextColored(s_Server.AuthOn() ? kGreenTxt : kYellowTxt, "\"%s\": login %s", s_Server.GetName(), s_Server.AuthOn() ? "on" : "off");
 }
 
 static void SectionConnection(void*)

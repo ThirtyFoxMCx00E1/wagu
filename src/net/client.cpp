@@ -240,6 +240,7 @@ void MPClient::Poll(INetEvents* ev)
                 break;
             case PKT_NPC:           { static PktNpc m; if(MP_DecodeNpc(buf, r, m)) ev->OnNpc(m); } break;   // 2.18
             case PKT_BCW_STATE: case PKT_BCW_ROLL: case PKT_BCW_SCORE: case PKT_BCW_EVENT: ev->OnBcw(buf, r); break;   // 3.04
+            case PKT_AUTH:     ev->OnAuth(buf, r); break;   // 3.21.6: login system
             case PKT_MISSION_NPC:   { static PktNpc m; if(MP_DecodeNpc(buf, r, m)) ev->OnMissionNpc(m); } break;   // 3.02
             case PKT_NPC_HIT:       if(r >= (int)sizeof(PktNpcHit))       { PktNpcHit m; memcpy(&m, buf, sizeof(m)); ev->OnNpcHit(m); } break;
             case PKT_NPC_CLAIM:     if(r >= (int)sizeof(PktNpcClaim))     { PktNpcClaim m; memcpy(&m, buf, sizeof(m)); ev->OnNpcClaim(m); } break;

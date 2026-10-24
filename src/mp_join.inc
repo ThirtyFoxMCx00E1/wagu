@@ -113,6 +113,7 @@ static void JoinOverlayCancel()
     s_nJoinPhase = JP_NONE;
 }
 
+static bool AuthHoldsJoin(uint64_t now);   // 3.21.6 (mp_auth.inc)
 static bool JoinFlowActive() { return s_nJoinPhase != JP_NONE; }
 static void JoinMarkConnected() { s_bJoinConnected = true; }
 
@@ -160,7 +161,7 @@ static void JoinFlowProcess(int ped, uint64_t now)
             if(t >= JOIN_SLIDE_MS) { s_nJoinPhase = JP_WAIT; s_nJoinT0 = now; }
             break;
         case JP_WAIT:
-            if(t >= JOIN_BUTTONS_MS)
+            if(t >= JOIN_BUTTONS_MS && !AuthHoldsJoin(now))   // 3.21.6: login first
             {
                 if(s_bBcwJoin || MP_IsBcwServerName(client.GetServerName()))
                 {   // 3.04: Brief Case War: the team buttons replace < Spawn > (the war module keeps the camera)

@@ -424,6 +424,37 @@ static void OpenHelperOnUi(void*)
     e->CallVoidMethod(act, sa, in);
     s_nOpenResult = ClearEx(e) ? 2 : 1;   // ActivityNotFoundException = MP Voice not installed
 }
+// 3.21.6: open a web link (the login screen's Discord invite) in the browser / Discord app
+static char s_szOpenUrl[256];
+static void OpenUrlOnUi(void*)
+{
+    JNIEnv* e = Env();
+    jobject act = aml->GetCurrentActivity();
+    if(!act) act = aml->GetAppContextObject();
+    if(!e || !act) return;
+    jclass uc = e->FindClass("android/net/Uri");
+    jclass ic = e->FindClass("android/content/Intent");
+    if(ClearEx(e) || !uc || !ic) return;
+    jmethodID parse = e->GetStaticMethodID(uc, "parse", "(Ljava/lang/String;)Landroid/net/Uri;");
+    jmethodID init = e->GetMethodID(ic, "<init>", "(Ljava/lang/String;Landroid/net/Uri;)V");
+    jmethodID afl = e->GetMethodID(ic, "addFlags", "(I)Landroid/content/Intent;");
+    if(ClearEx(e) || !parse || !init || !afl) return;
+    jobject uri = e->CallStaticObjectMethod(uc, parse, e->NewStringUTF(s_szOpenUrl));
+    if(ClearEx(e) || !uri) return;
+    jobject in = e->NewObject(ic, init, e->NewStringUTF("android.intent.action.VIEW"), uri);
+    if(ClearEx(e) || !in) return;
+    e->CallObjectMethod(in, afl, (jint)0x10000000);   // FLAG_ACTIVITY_NEW_TASK
+    jclass cc = e->GetObjectClass(act);
+    jmethodID sa = e->GetMethodID(cc, "startActivity", "(Landroid/content/Intent;)V");
+    if(ClearEx(e) || !sa) return;
+    e->CallVoidMethod(act, sa, in);
+    ClearEx(e);
+}
+void Voice::OpenUrl(const char* url)
+{
+    snprintf(s_szOpenUrl, sizeof(s_szOpenUrl), "%s", url ? url : "");
+    if(!aml->PushToJavaUIThread(OpenUrlOnUi, nullptr)) OpenUrlOnUi(nullptr);
+}
 void Voice::OpenHelperApp()
 {
     s_nOpenResult = 0;

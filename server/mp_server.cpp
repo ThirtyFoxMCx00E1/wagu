@@ -3,7 +3,7 @@
 // Standalone MP server (Linux / Windows / Termux). Same core as the in-game "Host LAN server".
 //   g++ -O2 -std=c++17 -pthread -I../src mp_server.cpp ../src/net/server.cpp ../src/net/lan.cpp ../src/net/online.cpp -o mp_server
 //   ./mp_server [port] [server name] [max players 1-100] [region: Asia|Europe|NA|Oceania] [--persistent] [--no-online]
-//               [--broker-file broker.txt] [--password pw] [--admin-hash sha256hex] [--no-safezones]
+//               [--broker-file broker.txt] [--password pw] [--admin-hash sha256hex] [--no-safezones] [--auth]
 //               3.04: Brief Case War 24/7: ./mp_server 1930 "Brief Case War" 20 Asia --persistent [--bcw-min 20]
 //               3.04.6: [--outdated-log file] (default outdated_clients.log): phones with an old MP version
 //               are refused + written there. --legacy-notice: run in the OLD lobby (thirtyfox/mp4/, what
@@ -87,6 +87,9 @@ int main(int argc, char** argv)
 
     MPServer server;
     server.SetPersistent(persistent);
+    // 3.21.6: --auth = login system (Discord verification + account) on a custom server too.
+    // The default server and Brief Case War always have it.
+    for(int i = 1; i < argc; ++i) if(!strcasecmp(argv[i], "--auth")) server.SetAuth(true);
     for(int i = 1; i + 1 < argc; ++i) if(!strcasecmp(argv[i], "--password")) server.SetPassword(argv[i + 1]);   // 2.19 (max 16 chars)
     if(!server.Start((uint16_t)port, name, nullptr, maxPlayers, region)) return 1;
     server.SetIcon(icon);   // 2.24

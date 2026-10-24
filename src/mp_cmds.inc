@@ -22,11 +22,14 @@ static const ChatCmd kCmds[] =
     { "/chatfade",   "[0-300]",  "seconds before chat lines fade (0 = never)" },
     { "/chatbg",     "",         "chat background on / off" },
     { "/clearchat",  "",         "clear your chat" },
+    { "/stats",      "",         "your account (user, Discord, gender, age, logins)" },
+    { "/char",       "",         "same as /stats" },
     { "/help",       "",         "list the commands" },
 };
 #define MP_CMD_COUNT ((int)(sizeof(kCmds) / sizeof(kCmds[0])))
 
 #define s_nMyScore s_nMyScoreFwd
+static bool AuthCommand(const char* cmd);   // 3.21.6 (mp_auth.inc)
 static uint64_t s_nLastInfo = 0;
 static uint64_t s_nCheatLast = 0;
 static uint64_t s_nCheatRefresh = 0;
@@ -242,6 +245,7 @@ static bool HandleCommand(const char* text)
     cmd[n] = 0;
     while(*arg == ' ') ++arg;
     if(GatesCommand(cmd, arg)) return true;   // 3.04.2: /gatepos, /gates
+    if(AuthCommand(cmd)) return true;       // 3.21.6: /stats  /char (also on Brief Case War)
     if(BcwBlockCommand(cmd)) return true;   // 3.04: Brief Case War: no gamemodes / cheats / teleports
     if(GamesCommand(cmd, arg)) return true;
     // 2.35: the host disabled cheats
@@ -955,6 +959,8 @@ static void RenderPassengerButton()
 
 // all 2.19 windows, every frame (FloatMenu floating window)
 static void RenderGames();
+static void RenderAuth();   // 3.21.6 (mp_auth.inc)
+static void RenderStats();
 static void RenderSamp();   // 3.01 (mp_world.inc): 3D labels, textdraws, class selection, dialogs
 static void Render219(void*)
 {
@@ -970,6 +976,8 @@ static void Render219(void*)
     RenderSafeZones();         // 3.21: hospital safe zones
     RenderMarkers();           // 3.21: red checkpoint beams
     RenderGates();             // 3.04.2: gate fade (over everything)
+    RenderStats();             // 3.21.6: /stats  /char
+    RenderAuth();              // 3.21.6: login screens (over the join view)
 }
 
 bool MP::JoinScreenActive() { return JoinFlowActive(); }

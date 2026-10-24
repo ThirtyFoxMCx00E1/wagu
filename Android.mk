@@ -39,7 +39,7 @@ endif
 LOCAL_SRC_FILES := \
     src/main.cpp src/mp.cpp \
     src/game/scripting.cpp src/game/scriptguard.cpp src/game/cleoblock.cpp src/game/game.cpp src/game/netstate.cpp src/game/npcgame.cpp src/game/game219.cpp src/game/game301.cpp src/game/game304.cpp src/game/skins.cpp src/game/fileguard.cpp src/game/world.cpp src/game/modscan.cpp \
-    src/net/client.cpp src/net/server.cpp src/net/serverlist.cpp src/net/lan.cpp src/net/online.cpp \
+    src/net/client.cpp src/net/server.cpp src/net/serverlist.cpp src/net/lan.cpp src/net/online.cpp src/net/authcrypto.cpp src/net/authclient.cpp \
     src/ui/hud.cpp src/ui/nametext.cpp src/ui/floatmenu.cpp src/ui/vkeyboard.cpp src/ui/emoji.cpp \
     src/audio/sound.cpp src/audio/voice.cpp src/progress/progress.cpp \
     include/mod/logger.cpp include/mod/config.cpp \

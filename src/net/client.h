@@ -52,6 +52,7 @@ public:
     virtual void OnBcw(const uint8_t* /*data*/, int /*len*/) {}   // 3.04: PKT_BCW_STATE / ROLL / SCORE / EVENT
     virtual void OnClothes(const PktClothes&) {}                  // 3.10: CJ clothing sync
     virtual void OnVoice(int /*id*/, uint16_t /*seq*/, uint8_t /*flags*/, const uint8_t* /*opus*/, int /*len*/) {}   // 3.11
+    virtual void OnAuth(const uint8_t* /*data*/, int /*len*/) {}  // 3.21.6: PKT_AUTH challenge / result
 };
 
 class MPClient
