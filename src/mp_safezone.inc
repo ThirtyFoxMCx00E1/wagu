@@ -139,6 +139,7 @@ static void RenderSafeZones()
         Vec3 c = { z.x, z.y, z.z - 1.0f };
         if(BcwCamDist(c) > 420.0f) continue;
         BcwDrawZone(bg, c, MP_SAFEZONE_RADIUS, 0x3CDC64FF, now, false, 5.0f);   // green ring + low wall
+        if(!OccPoint({ z.x, z.y, z.z + 6.0f })) continue;   // 3.21.4: behind houses: no text
         BcwLabel3D(bg, { z.x, z.y, z.z + 7.0f }, "SAFE ZONE", 0x3CDC64FF, 44, 60.0f);
         BcwLabel3D(bg, { z.x, z.y, z.z + 5.2f }, z.name, 0xFFFFFFFF, 26, 50.0f);
     }

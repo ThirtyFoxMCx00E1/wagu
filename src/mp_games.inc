@@ -481,14 +481,25 @@ static void FinishRoute()
     EndEvent("");
 }
 
+// 3.21.4: a random DM point in the street, not on a roof (up to 12 tries, else the zone centre)
+static Vec3 DmSpot(const GDm& d, float spread)
+{
+    for(int t = 0; t < 12; ++t)
+    {
+        float a = (float)(rand() % 360) * 0.0174533f, rr = d.r * spread * (float)(rand() % 100) / 100.0f;
+        float x = d.x + cosf(a) * rr, y = d.y + sinf(a) * rr, z;
+        if(Game::OpenGround(x, y, d.z, z)) return { x, y, z + 1.0f };
+    }
+    return { d.x, d.y, d.z };
+}
+
 static void StartDm(int i)
 {
     int ped = Game::LocalPed(); if(ped <= 0) return;
     if(InEvent()) EndEvent("");
     const GDm& d = kDms[i];
     s_Ev.kind = EV_DM; s_Ev.idx = i; s_Ev.streak = 0;
-    float a = (float)(rand() % 360) * 0.0174533f, rr = d.r * 0.4f * (float)(rand() % 100) / 100.0f;
-    Game::TeleportGround(ped, { d.x + cosf(a) * rr, d.y + sinf(a) * rr, d.z }, (float)(rand() % 360));
+    Game::TeleportGround(ped, DmSpot(d, 0.4f), (float)(rand() % 360));
     Game::SetCharHealth(ped, 100);
     Game::AddArmour(ped, 100);
     for(int k = 3; k >= 0; --k) if(d.w[k] > 0) Game::GiveAndSelectWeapon(ped, d.w[k]);
@@ -975,8 +986,7 @@ static void ProcessGames(int ped, uint64_t now)
         if(s_Ev.wasDead)
         {   // respawned (hospital): straight back into the zone
             s_Ev.wasDead = false;
-            float a = (float)(rand() % 360) * 0.0174533f, rr = d.r * 0.5f * (float)(rand() % 100) / 100.0f;
-            Game::TeleportGround(ped, { d.x + cosf(a) * rr, d.y + sinf(a) * rr, d.z }, (float)(rand() % 360));
+            Game::TeleportGround(ped, DmSpot(d, 0.5f), (float)(rand() % 360));
             Game::SetCharHealth(ped, 100); Game::AddArmour(ped, 100);
             for(int k = 3; k >= 0; --k) if(d.w[k] > 0) Game::GiveAndSelectWeapon(ped, d.w[k]);
             return;

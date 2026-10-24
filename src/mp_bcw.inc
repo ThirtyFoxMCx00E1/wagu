@@ -470,8 +470,74 @@ static float BcwCamDist(const Vec3& p)
     Vec3 c, l; if(!Game::GetCameraPos(c, l)) return 0;
     return sqrtf((c.x - p.x) * (c.x - p.x) + (c.y - p.y) * (c.y - p.y) + (c.z - p.z) * (c.z - p.z));
 }
+// 3.21.4: WALLS HIDE THE RINGS / BEAMS. They are drawn over the game picture, so before 3.21.4 you
+// saw them through houses like a ghost outline. Now every corner of a ring / beam is checked with
+// the game's own line of sight (camera -> point, buildings + objects): the parts behind a wall are
+// not drawn. The checks are cached (refreshed every 150 ms) and limited per frame (cheap on phones).
+#define OCC_MAX_PTS   (65 * 3)
+#define OCC_SLOTS     128
+#define OCC_REFRESH   150
+#define OCC_RAYS      220          // per frame, all rings together
+struct OccCache { uint32_t key = 0; uint64_t at = 0, used = 0; int n = 0; uint8_t v[OCC_MAX_PTS]; };
+static OccCache s_Occ[OCC_SLOTS];
+static int s_nOccFrame = -1, s_nOccRays = 0;
+static uint32_t OccKey(const Vec3& c, float r, float h, int salt)
+{
+    uint32_t k = 2166136261u;
+    int q[5] = { (int)(c.x * 4), (int)(c.y * 4), (int)(c.z * 4), (int)(r * 16) + salt * 7919, (int)(h * 16) };
+    for(int i = 0; i < 5; ++i) { k ^= (uint32_t)q[i]; k *= 16777619u; }
+    return k ? k : 1;
+}
+static bool OccRay(const Vec3& cam, const Vec3& p)
+{   // stop 0.6 m before the point so the point's own surface doesn't block it
+    float dx = p.x - cam.x, dy = p.y - cam.y, dz = p.z - cam.z, d = sqrtf(dx * dx + dy * dy + dz * dz);
+    if(d < 1.0f) return true;
+    float k = (d - 0.6f) / d;
+    return Game::LineOfSightClear(cam, { cam.x + dx * k, cam.y + dy * k, cam.z + dz * k });
+}
+// visibility of the points (angle i of N, level j of H): v[j * (N + 1) + i]
+static const uint8_t* OccSample(const Vec3& c, float r, int N, const float* lv, int H, int salt)
+{
+    if(N > 64) N = 64; if(H > 3) H = 3;
+    int frame = ImGui::GetFrameCount();
+    if(frame != s_nOccFrame) { s_nOccFrame = frame; s_nOccRays = 0; }
+    uint64_t now = MP_NowMs();
+    uint32_t key = OccKey(c, r, lv[H - 1], salt);
+    OccCache* oc = nullptr; OccCache* old = &s_Occ[0];
+    for(int i = 0; i < OCC_SLOTS; ++i)
+    {
+        if(s_Occ[i].key == key) { oc = &s_Occ[i]; break; }
+        if(s_Occ[i].used < old->used) old = &s_Occ[i];
+    }
+    const int n = (N + 1) * H;
+    if(!oc) { oc = old; oc->key = key; oc->at = 0; oc->n = 0; memset(oc->v, 1, sizeof(oc->v)); }
+    oc->used = now;
+    bool first = oc->n != n;
+    if(first || (now - oc->at >= OCC_REFRESH && s_nOccRays + n <= OCC_RAYS))
+    {
+        Vec3 cam, look;
+        if(Game::GetCameraPos(cam, look))
+        {
+            for(int j = 0; j < H; ++j)
+                for(int i = 0; i <= N; ++i)
+                {
+                    float a = (float)i / N * 6.2831853f;
+                    oc->v[j * (N + 1) + i] = OccRay(cam, { c.x + cosf(a) * r, c.y + sinf(a) * r, lv[j] }) ? 1 : 0;
+                }
+            s_nOccRays += n;
+        }
+        oc->n = n; oc->at = now;
+    }
+    return oc->v;
+}
+// one point (labels)
+static bool OccPoint(const Vec3& p)
+{
+    float lv[1] = { p.z };
+    return OccSample(p, 0.0f, 1, lv, 1, 99)[0] != 0;
+}
 // glowing ground circle + a soft "mission marker" wall + particles flowing up (mission / cutscene style)
-static void BcwDrawZone(ImDrawList* dl, const Vec3& c, float r, uint32_t rgba, float now, bool particles, float wallH)
+static void BcwDrawZone(ImDrawList* dl, const Vec3& c, float r, uint32_t rgba, float now, bool particles, float wallH, bool occlude = true)
 {
     float d = BcwCamDist(c);
     if(d > 420.0f) return;
@@ -488,9 +554,16 @@ static void BcwDrawZone(ImDrawList* dl, const Vec3& c, float r, uint32_t rgba, f
         okT[i] = BcwW2S(t, top[i]);
     }
     float pulse = 0.75f + 0.25f * sinf(now * 0.004f);
+    // 3.21.4: the parts behind houses / walls are not drawn (ground at +0.4 m, so the ground itself doesn't hide it)
+    static const uint8_t kAll[OCC_MAX_PTS] = { 0 };
+    const uint8_t* vis = kAll; bool useVis = false;
+    if(occlude) { float lv[2] = { c.z + 0.4f, c.z + wallH }; vis = OccSample(c, r, N, lv, 2, 1); useVis = true; }
+    auto vG = [&](int i) { return !useVis || vis[i]; };
+    auto vT = [&](int i) { return !useVis || vis[(N + 1) + i]; };
     for(int i = 0; i < N; ++i)
     {
-        if(ok[i] && ok[i + 1] && okT[i] && okT[i + 1])
+        if(!vG(i) || !vG(i + 1)) continue;
+        if(ok[i] && ok[i + 1] && okT[i] && okT[i + 1] && vT(i) && vT(i + 1))
         {   // wall: bright at the bottom, gone at the top
             ImU32 cb = BcwCol(rgba, 0.42f * fade * pulse), ct = BcwCol(rgba, 0.0f);
             dl->PrimReserve(6, 4);
@@ -516,6 +589,7 @@ static void BcwDrawZone(ImDrawList* dl, const Vec3& c, float r, uint32_t rgba, f
         float rise = fmodf(now * 0.00045f + ph, 1.0f);
         float rr = r * (0.92f + 0.12f * sinf(ph * 40.0f + now * 0.002f));
         Vec3 p = { c.x + cosf(a) * rr, c.y + sinf(a) * rr, c.z + rise * (wallH + 1.2f) };
+        if(useVis && !vis[(int)((fmodf(a, 6.2831853f) + 6.2831853f) / 6.2831853f * N + 0.5f) % N]) continue;
         ImVec2 s; if(!BcwW2S(p, s)) continue;
         float sz = UI::S(7) * (1.0f - rise * 0.6f) * (d < 25 ? 1.3f : 25.0f / d + 0.3f);
         float al = (1.0f - rise) * fade;
@@ -574,7 +648,7 @@ static void BcwBriefcaseMarker(ImDrawList* dl, const Vec3& p, uint32_t rgba, flo
         dl->AddLine(g, t, BcwCol(rgba, 0.7f), UI::S(5));
         dl->AddLine(g, t, BcwCol(0xFFFFFFFF, 0.8f), UI::S(1.5f));
     }
-    if(beam) BcwDrawZone(dl, { p.x, p.y, p.z - 0.3f }, 1.3f, rgba, now, false, 0.8f);
+    if(beam) BcwDrawZone(dl, { p.x, p.y, p.z - 0.3f }, 1.3f, rgba, now, false, 0.8f, false);   // the briefcase: seen through walls on purpose
     ImVec2 s; if(!BcwW2S({ p.x, p.y, p.z + 1.4f }, s)) return;
     float bob = sinf(now * 0.005f) * UI::S(5);
     ImVec2 uv(1, 1); float is = UI::S(40);

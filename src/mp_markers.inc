@@ -21,13 +21,29 @@ static struct
     uint64_t insideSince = 0;
     bool     needExit = true;      // after an event / join: leave the marker first (no instant restart)
     bool     wasInEvent = false;
+    Vec3     last = { 0, 0, 0 };   // 3.21.4: where I was last frame (spawn / respawn / teleport = a jump)
+    bool     haveLast = false;
+    uint64_t calmUntil = 0;        // no auto start before this (just joined / spawned / teleported)
 } s_Mk;
+#define MK_CALM_MS     4000
 
 #define MK_BEAM_RGBA   0xFF1E1EFF   // SA-MP checkpoint red
 #define MK_BEAM_H      60.0f
 #define MK_TRIGGER_R   4.0f
 #define MK_TRIGGER_MS  1200         // stand in it this long
 
+// 3.21.4: no start marker on a spawn spot or a hospital (you'd be put into /dm grove just by
+// spawning at Grove Street). Those still start with their command (/dm grove, /job taxi ...).
+#define MK_SPAWN_CLEAR 30.0f
+static bool MkNearSpawn(const Vec3& p)
+{
+    for(int i = 0; i < MP_SPAWN_COUNT; ++i)
+        if(GDist2D(p, { kSpawns[i].x, kSpawns[i].y, kSpawns[i].z }) < MK_SPAWN_CLEAR) return true;
+    for(int i = 0; i < g_MPSafeZoneCount; ++i)
+        if(GDist2D(p, { g_MPSafeZones[i].x, g_MPSafeZones[i].y, g_MPSafeZones[i].z }) < MK_SPAWN_CLEAR + MP_SAFEZONE_RADIUS) return true;
+    return GDist2D(p, kGroveStreet) < MK_SPAWN_CLEAR;
+}
+static void MkPush(const MkStart& m) { if(!MkNearSpawn(m.pos)) s_Mk.starts.push_back(m); }
 static void MkBuild()
 {
     if(s_Mk.built) return;
@@ -37,7 +53,7 @@ static void MkBuild()
         MkStart m; m.kind = MK_JOB; m.idx = i; m.pos = kRoutes[i].cp[0];
         snprintf(m.label, sizeof(m.label), "JOB: %s", kRoutes[i].name);
         snprintf(m.cmd, sizeof(m.cmd), "/job %s", kRoutes[i].cmd);
-        s_Mk.starts.push_back(m);
+        MkPush(m);
     }
     for(int i = 0; i < MP_DERBY_COUNT; ++i)
     {
@@ -45,14 +61,14 @@ static void MkBuild()
         MkStart m; m.kind = MK_DERBY; m.idx = i; m.pos = { kDerbies[i].x, kDerbies[i].y, kDerbies[i].z };
         snprintf(m.label, sizeof(m.label), "DERBY: %s", kDerbies[i].name);
         snprintf(m.cmd, sizeof(m.cmd), "/derby %s", kDerbies[i].cmd);
-        s_Mk.starts.push_back(m);
+        MkPush(m);
     }
     for(int i = 0; i < MP_DM_COUNT; ++i)
     {
         MkStart m; m.kind = MK_DM; m.idx = i; m.pos = { kDms[i].x, kDms[i].y, kDms[i].z };
         snprintf(m.label, sizeof(m.label), "DM: %s", kDms[i].name);
         snprintf(m.cmd, sizeof(m.cmd), "/dm %s", kDms[i].cmd);
-        s_Mk.starts.push_back(m);
+        MkPush(m);
     }
 }
 static bool MkModeOn(int kind)
@@ -77,18 +93,39 @@ static void MkBeam(ImDrawList* dl, const Vec3& c, float r, float h, uint32_t rgb
         okT[i] = BcwW2S({ b.x, b.y, b.z + h }, t[i]);
     }
     ImU32 cb = BcwCol(rgba, 0.40f * alpha * fade), ct = BcwCol(rgba, 0.12f * alpha * fade);
+    ImU32 cm = BcwCol(rgba, 0.26f * alpha * fade);
     ImVec2 uv = ImGui::GetFontTexUvWhitePixel();
-    for(int i = 0; i < N; ++i)
+    // 3.21.4: walls / houses hide it: 3 levels (ground, middle, top), each part only where it is in sight
+    ImVec2 m[N + 1]; bool okM[N + 1];
+    for(int i = 0; i <= N; ++i)
     {
-        if(!(okG[i] && okG[i + 1] && okT[i] && okT[i + 1])) continue;
+        float a = (float)i / N * 6.2831853f;
+        okM[i] = BcwW2S({ c.x + cosf(a) * r, c.y + sinf(a) * r, c.z - 0.5f + h * 0.5f }, m[i]);
+    }
+    float lv[3] = { c.z + 0.4f, c.z - 0.5f + h * 0.5f, c.z - 0.5f + h };
+    const uint8_t* vis = OccSample(c, r, N, lv, 3, 2);
+    auto quad = [&](const ImVec2& a0, const ImVec2& a1, const ImVec2& b1, const ImVec2& b0, ImU32 ca, ImU32 cbb)
+    {
         dl->PrimReserve(6, 4);
         ImDrawIdx idx = (ImDrawIdx)dl->_VtxCurrentIdx;
-        dl->PrimWriteVtx(g[i], uv, cb); dl->PrimWriteVtx(g[i + 1], uv, cb);
-        dl->PrimWriteVtx(t[i + 1], uv, ct); dl->PrimWriteVtx(t[i], uv, ct);
+        dl->PrimWriteVtx(a0, uv, ca); dl->PrimWriteVtx(a1, uv, ca);
+        dl->PrimWriteVtx(b1, uv, cbb); dl->PrimWriteVtx(b0, uv, cbb);
         dl->PrimWriteIdx(idx); dl->PrimWriteIdx(idx + 1); dl->PrimWriteIdx(idx + 2);
         dl->PrimWriteIdx(idx); dl->PrimWriteIdx(idx + 2); dl->PrimWriteIdx(idx + 3);
+    };
+    for(int i = 0; i < N; ++i)
+    {
+        const uint8_t* v0 = vis; const uint8_t* v1 = vis + (N + 1); const uint8_t* v2 = vis + 2 * (N + 1);
+        if(okG[i] && okG[i + 1] && okM[i] && okM[i + 1] && v0[i] && v0[i + 1] && v1[i] && v1[i + 1]) quad(g[i], g[i + 1], m[i + 1], m[i], cb, cm);
+        if(okM[i] && okM[i + 1] && okT[i] && okT[i + 1] && v1[i] && v1[i + 1] && v2[i] && v2[i + 1]) quad(m[i], m[i + 1], t[i + 1], t[i], cm, ct);
+        if(okG[i] && okG[i + 1] && v0[i] && v0[i + 1]) dl->AddLine(g[i], g[i + 1], BcwCol(rgba, 0.85f * alpha * fade), UI::S(2.5f));
     }
-    for(int i = 0; i < N; ++i) if(okG[i] && okG[i + 1]) dl->AddLine(g[i], g[i + 1], BcwCol(rgba, 0.85f * alpha * fade), UI::S(2.5f));
+}
+// 3.21.4: a 3D label that walls hide too
+static void MkLabel(ImDrawList* dl, const Vec3& p, const char* text, uint32_t rgba, float size, float ref)
+{
+    if(!OccPoint(p)) return;
+    BcwLabel3D(dl, p, text, rgba, size, ref);
 }
 
 static void MkReleaseBlips()
@@ -134,8 +171,8 @@ static void MkProcessStarts(const Vec3& me, uint64_t now)
         float dz = me.z - m.pos.z;
         if(GDist2D(me, m.pos) < MK_TRIGGER_R && dz > -6.0f && dz < 8.0f) { in = i; break; }
     }
-    if(in < 0) { s_Mk.inside = -1; s_Mk.needExit = false; return; }
-    if(s_Mk.needExit) return;
+    if(in < 0) { s_Mk.inside = -1; if(now >= s_Mk.calmUntil) s_Mk.needExit = false; return; }
+    if(s_Mk.needExit || now < s_Mk.calmUntil) { s_Mk.needExit = true; s_Mk.inside = -1; return; }
     if(in != s_Mk.inside) { s_Mk.inside = in; s_Mk.insideSince = now; return; }
     if(now - s_Mk.insideSince < MK_TRIGGER_MS) return;
     const MkStart& m = s_Mk.starts[in];
@@ -145,13 +182,24 @@ static void MkProcessStarts(const Vec3& me, uint64_t now)
     else StartDm(m.idx);
 }
 
+static void MkCalm(uint64_t now) { s_Mk.needExit = true; s_Mk.inside = -1; s_Mk.calmUntil = now + MK_CALM_MS; }
 static void RenderMarkers()
 {
-    if(!MkActive() || Game::IsPaused()) { if(s_Mk.blipFor[0] >= 0) MkReleaseBlips(); return; }
+    if(!MkActive() || Game::IsPaused() || JoinFlowActive())
+    {   // 3.21.4: not playing yet (connecting, spawn picker): the next start needs a real walk in
+        if(s_Mk.blipFor[0] >= 0) MkReleaseBlips();
+        if(!Game::IsPaused()) { s_Mk.haveLast = false; MkCalm(MP_NowMs()); }
+        return;
+    }
     MkBuild();
     int ped = Game::LocalPed(); if(ped <= 0) return;
     Vec3 me; if(!Game::GetCharPos(ped, me)) return;
     uint64_t nowMs = MP_NowMs();
+    {   // 3.21.4: spawned / respawned / teleported (a jump of 12 m+ in one frame) or dead: no auto start there
+        float dx = me.x - s_Mk.last.x, dy = me.y - s_Mk.last.y, dz = me.z - s_Mk.last.z;
+        if(!s_Mk.haveLast || dx * dx + dy * dy + dz * dz > 144.0f || Game::IsCharDead(ped)) MkCalm(nowMs);
+        s_Mk.last = me; s_Mk.haveLast = true;
+    }
     ImDrawList* bg = ImGui::GetBackgroundDrawList();
     ImDrawList* fg = ImGui::GetForegroundDrawList();
     float now = (float)(nowMs % 100000000ULL);
@@ -168,6 +216,7 @@ static void RenderMarkers()
             const MkStart& m = s_Mk.starts[i];
             if(!MkModeOn(m.kind) || BcwCamDist(m.pos) > 450.0f) continue;
             MkBeam(bg, m.pos, 2.2f, 26.0f, MK_BEAM_RGBA, 1.0f);
+            if(!OccPoint({ m.pos.x, m.pos.y, m.pos.z + 3.5f })) continue;   // 3.21.4: behind a house: no text
             BcwLabel3D(bg, { m.pos.x, m.pos.y, m.pos.z + 4.2f }, m.label, MK_BEAM_RGBA, 34, 40.0f);
             BcwLabel3D(bg, { m.pos.x, m.pos.y, m.pos.z + 2.8f }, m.cmd, 0xFFFFFFFF, 24, 35.0f);
         }
@@ -195,7 +244,7 @@ static void RenderMarkers()
             char t[64];
             int shown = s_Ev.kind == EV_RACE ? s_Ev.cp : s_Ev.cp + 1, total = s_Ev.kind == EV_RACE ? n - 1 : n;
             snprintf(t, sizeof(t), "%s %d/%d - %d m", s_Ev.cp == n - 1 ? "FINISH" : "CHECKPOINT", shown, total, (int)GDist2D(me, p));
-            BcwLabel3D(bg, { p.x, p.y, p.z + 8.0f }, t, 0xFFFFFFFF, 34, 80.0f);
+            MkLabel(bg, { p.x, p.y, p.z + 8.0f }, t, 0xFFFFFFFF, 34, 80.0f);
         }
     }
     // derby / DM: red ring at the edge + countdown when you are out
