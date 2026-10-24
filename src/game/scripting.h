@@ -19,6 +19,7 @@ namespace Scripting
     bool Init(void* gameHandle);
     bool IsReady();
     int  Command(const SCRIPT_COMMAND* cmd, ...);
+    bool IsOwnThread(const void* script);   // 3.21.3: MP's internal script (never parked by the fault guard)
 }
 
 // Opcodes (verified against sannybuilder/library sa_mobile.json)

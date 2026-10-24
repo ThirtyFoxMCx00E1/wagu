@@ -46,6 +46,9 @@ It builds `mp_server` on the phone and runs it 24/7 in the internet lobby (free 
 
 ## Changelog
 
+- **3.21.3**: crash when tapping Connect (default server) with CLEO scripts installed.
+  - Crash log (realme RE6054): SIGSEGV in `CRunningScript::ProcessCommands1100To1199`, opcode `0491` (HAS_CHAR_GOT_WEAPON) from a CLEO script. When you join, MP turns the phone's own street people / traffic off and removes the ones around you (the server's players replace them). A CLEO script that kept one of those people then asked the game about it and the game read a dead pointer. Same cause as the `0471` crash in 3.21.1, just another opcode - there are hundreds that take a person / car / object.
+  - **Script fault guard:** every opcode range of the game (`ProcessCommands0To99` ... `2600To2699`) now runs inside a fault guard. An opcode that crashes no longer takes the game down: that one script is stopped on that opcode, every other script and the game keep running, and the AML log says `ScriptGuard: script 'xxx' crashed in opcode 0491 ... that script is stopped there`. MP's own commands are never stopped. Crashes outside scripts still go to AML's crash log as before. New Linux test `test/scriptfault_test.cpp` (real SIGSEGV, 200 in a row, nested, other threads, old handler).
 - **3.21.2**: launcher "+ Add" page - the extra Host switch is gone.
   - The "Host this server on my phone" switch is removed: **Add server** does both. With a Host / IP it saves the server to your list; with Host / IP empty it hosts the server on this phone (same name, port, password, language, icon, gamemodes). While it runs, the page shows "Hosting ..." with **Join my server** and **Stop my server**.
   - Crash fix: the switch started / stopped the server from inside the menu drawing, which removed players and cars while the game was still drawing them. Hosting and stopping now happen on the next game frame.

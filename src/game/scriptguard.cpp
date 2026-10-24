@@ -19,6 +19,8 @@
 #include <stdint.h>
 #include "scriptguard.h"
 #include "scriptguard_core.h"
+#include "scriptfault_core.h"
+#include "scripting.h"
 
 // CRunningScript::m_szName (char[8], not always 0-terminated): after the two list pointers
 #ifdef AML32
@@ -339,4 +341,68 @@ bool ScriptGuard::Init(void* h)
     }
     logger->Info("ScriptGuard: on (0400 / 0407 / 0432 with a dead car or object handle are skipped, not crashed)");
     return true;
+}
+
+// ---- 3.21.3: script fault guard (see scriptfault_core.h) --------------------------------------------
+// Every opcode range of the game runs inside a fault guard. An opcode that faults (a CLEO script using
+// a person / car / object that is gone) no longer crashes the game: that script is parked on the
+// opcode (it waits there for good), the AML log says which script and opcode, the rest goes on.
+static ScriptFault::Table s_Parked;
+static int s_nFaultLogs = 0;
+static uintptr_t FaultGetIp(void* s)            { return (uintptr_t)*(uint8_t**)((uint8_t*)s + OFS_SCRIPT_IP); }
+static void      FaultSetIp(void* s, uintptr_t v) { *(uint8_t**)((uint8_t*)s + OFS_SCRIPT_IP) = (uint8_t*)v; }
+
+typedef int8_t (*RangeFn)(void*, int);
+enum { RANGES = 27 };   // 0To99 ... 2600To2699
+static RangeFn s_RangeOrig[RANGES] = {};
+
+static int8_t GuardedRange(int r, void* script, int opcode)
+{
+    RangeFn orig = s_RangeOrig[r];
+    if(!script || (uintptr_t)script < 0x10000) return 1;
+    const bool own = Scripting::IsOwnThread(script);
+    const uintptr_t opIp = own ? 0 : FaultGetIp(script) - 2;   // the opcode itself (IP is past its 2 bytes)
+    if(!own)
+    {
+        if(s_Parked.IsParked(script, opIp)) { FaultSetIp(script, opIp); return 1; }   // stays on it, yields
+        if(s_Parked.n) s_Parked.Forget(script, opIp);
+    }
+    int8_t res = 0;
+    if(ScriptFault::Call<int8_t, void*>(orig, script, opcode, res)) return res;
+    // it faulted
+    char name[9] = {0};
+    if(!own) memcpy(name, (const uint8_t*)script + OFS_SCRIPT_NAME, 8);
+    if(++s_nFaultLogs <= 20 || s_nFaultLogs % 500 == 0)
+        logger->Info("ScriptGuard: %s '%s' crashed in opcode %04X (a person / car / object it used is gone) - %s, the game keeps running (#%d)",
+                     own ? "MP command" : "script", own ? "MP" : name, opcode & 0x7FFF, own ? "skipped" : "that script is stopped there", s_nFaultLogs);
+    if(own) return 1;
+    FaultSetIp(script, opIp);
+    s_Parked.Add(script, opIp, (uint16_t)(opcode & 0x7FFF));
+    return 1;   // stop this script for this frame
+}
+template<int R> static int8_t RangeHook(void* script, int opcode) { return GuardedRange(R, script, opcode); }
+template<int R> static void HookRange(void* h, int& ok)
+{
+    if constexpr(R < RANGES)
+    {
+        char fn[64], sym[96];
+        snprintf(fn, sizeof(fn), "ProcessCommands%dTo%d", R * 100, R * 100 + 99);
+        snprintf(sym, sizeof(sym), "_ZN14CRunningScript%zu%sEi", strlen(fn), fn);
+        void* f = (void*)aml->GetSym(h, sym);
+        if(f && aml->Hook(f, (void*)&RangeHook<R>, (void**)&s_RangeOrig[R]) && s_RangeOrig[R]) ++ok;
+        HookRange<R + 1>(h, ok);
+    }
+}
+void ScriptGuard::InitFaultGuard(void* h)
+{
+    int ok = 0;
+    HookRange<0>(h, ok);
+    ScriptFault::Install();
+    logger->Info("ScriptGuard: fault guard on (%d/%d opcode ranges) - a script opcode that crashes stops that script instead of the game", ok, (int)RANGES);
+}
+void ScriptGuard::Tick()
+{
+    static int n = 0;
+    if(++n % 60) return;   // about once a second: still first in line for SIGSEGV?
+    if(ScriptFault::Install()) logger->Info("ScriptGuard: fault handler put back in front (another mod had replaced it)");
 }
