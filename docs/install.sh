@@ -39,8 +39,10 @@ fi
 say "building mp_server (first time takes a few minutes)"
 AR_BIN="$(command -v llvm-ar || command -v ar)"
 make -s -C "$SRC/server" -j"$(nproc 2>/dev/null || echo 4)" CXX=clang++ CC=clang AR="$AR_BIN" </dev/null >/dev/null || die "build failed"
-cp "$SRC/server/mp_server" "$HOME_DIR/mp_server"
-chmod 755 "$HOME_DIR/mp_server"
+# 3.21: cp + mv - a plain cp onto a running mp_server fails ("Text file busy") and the update stopped
+cp "$SRC/server/mp_server" "$HOME_DIR/mp_server.new"
+chmod 755 "$HOME_DIR/mp_server.new"
+mv -f "$HOME_DIR/mp_server.new" "$HOME_DIR/mp_server"
 
 if [ ! -f "$CONF" ]; then
     cat > "$CONF" <<'EOF'
@@ -131,7 +133,7 @@ EOF
 chmod 755 "$HOME/.termux/boot/mp-server.sh"
 
 mp-server stop </dev/null >/dev/null 2>&1 || true
-mp-server start </dev/null
+mp-server restart </dev/null   # 3.21: an update must restart the running (old) server
 echo
 say "Done. Your 24/7 MP server runs on this phone."
 echo "    mp-server status    mp-server log    mp-server config    mp-server restart    mp-server update"

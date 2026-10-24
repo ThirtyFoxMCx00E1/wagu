@@ -83,12 +83,12 @@ int main()
         ++started;
         if(race < 0) race = q[i]->start.idx; else if(q[i]->start.idx != race) sameRace = false;
         int sl = q[i]->start.slot; if(sl >= MP_RACE_PLAYERS || used[sl]) slotsOk = false; else used[sl] = true;
-        if(q[i]->start.ms != 12000 || q[i]->start.cp != MP_RACE_PLAYERS) goOk = false;
+        if(q[i]->start.ms != MP_RACE_GO_MS || q[i]->start.cp != MP_RACE_PLAYERS) goOk = false;
     }
     CHECK(started == MP_RACE_PLAYERS, "14th player -> the race starts for all 14");
     CHECK(sameRace && race >= 0 && race < MP_SA_RACE_COUNT, "everybody got the same GTA SA race");
     CHECK(slotsOk, "grid places 0..13, each once");
-    CHECK(goOk, "same GO time (12 s) and racer count for everybody");
+    CHECK(goOk, "same GO time (MP_RACE_GO_MS, 20 s) and racer count for everybody");
     CHECK(!q[N - 1]->started && q[N - 1]->qCount == 1, "the 15th player waits in the queue (1/14)");
     { PktEvent j{}; j.type = PKT_EVENT; j.kind = EVK_RACE; j.idx = MP_EV_QUEUE; j.state = EVS_LEAVE; c[N - 1]->Send(&j, sizeof(j)); Pump(c, qe, 300); }
     CHECK(true, "15th player left the queue");

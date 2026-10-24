@@ -449,6 +449,18 @@ void Game::GiveAndSelectWeapon(int ped, int weapon)
     CALLSCM(SET_CURRENT_CHAR_WEAPON, ped, weapon);
 }
 
+// 3.21: safe zones - put the weapon away (the weapon stays in the inventory) / no drive-by
+void Game::SetCurrentWeapon(int ped, int weapon)
+{
+    if(ped <= 0 || !PedPtr(ped) || weapon < 0 || weapon > 46) return;
+    CALLSCM(SET_CURRENT_CHAR_WEAPON, ped, weapon);
+}
+void Game::SetDriveByAllowed(bool on)
+{
+    if(!IsReady()) return;
+    CALLSCM(SET_PLAYER_CAN_DO_DRIVE_BY, 0, on);
+}
+
 void Game::TaskGoTo(int ped, const Vec3& p0, int moveState) { Vec3 p = p0; if(!MP_WorldPos(p)) return; CALLSCM(TASK_GO_STRAIGHT_TO_COORD, ped, p.x, p.y, p.z, moveState, 2000); }
 void Game::TaskStandStill(int ped) { CALLSCM(TASK_STAND_STILL, ped, 1000); }
 void Game::TaskShootAt(int ped, const Vec3& p0, int t) { Vec3 p = p0; if(!MP_WorldPos(p)) return; CALLSCM(TASK_SHOOT_AT_COORD, ped, p.x, p.y, p.z, t); }

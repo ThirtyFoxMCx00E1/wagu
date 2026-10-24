@@ -255,7 +255,8 @@ static const GDm kDms[] =
 // ---- 3.01: derbies (last car standing) -------------------------------------------------------
 // Blood Bowl = the stadium interior 15 (floor -1394.2, 987.6, 1024.0, the SA-MP interior list);
 // the others are open-air arenas. You are out when your car is wrecked, you are out of it for
-// 5 s, you leave the arena or (sumo) fall off the top.
+// 15 s (3.21, was 5), you leave the arena for 15 s or (sumo) fall off the top.
+#define MP_DERBY_GRACE_MS 15000
 struct GDerby { const char* cmd; const char* name; int model; int area; float x, y, z, arena, ring, fallZ; int reward; };
 static const GDerby kDerbies[] =
 {
@@ -359,7 +360,7 @@ static void StartRoute(int i)
     if(InEvent()) EndEvent("");
     const GRoute& r = kRoutes[i];
     s_Ev.kind = EV_ROUTE; s_Ev.idx = i; s_Ev.cp = 1;
-    s_Ev.goAt = MP_NowMs() + 3500; s_Ev.countdown = 99;
+    s_Ev.goAt = MP_NowMs() + 5000; s_Ev.countdown = 99;   // 3.21: 5 s to get ready (was 3.5)
     Vec3 st = r.cp[0];
     float h = HeadingTo(st, r.cp[1]);
     Game::TeleportGround(ped, st, h);
@@ -384,7 +385,7 @@ static void RaceQueueJoin()
     if(s_RQ.on) { SysMsg(COL_RACE, "You are in the race queue: %d/%d players. The race starts at %d. /leave to leave.", s_RQ.count, s_RQ.need, s_RQ.need); return; }
     s_RQ = RaceQueue(); s_RQ.on = true; s_RQ.count = 1; s_RQ.lastSend = MP_NowMs();
     SendEvent(EVK_RACE, MP_EV_QUEUE, EVS_LOBBY, 0, 0, 0, 0);
-    Announce(COL_RACE, "[Race] %s is waiting for a race - type /race to join (%d players start a race).", MyName(), MP_RACE_PLAYERS);
+    Announce(COL_RACE, "[Race] %s is waiting for a race - type /race to join (starts with %d players, or %d s after 2 players join).", MyName(), MP_RACE_PLAYERS, MP_RACE_WAIT_MS / 1000);
 }
 static void RaceQueueLeave(bool quiet)
 {
@@ -403,7 +404,7 @@ static void StartSaRace(int i, int slot, int racers, uint32_t goMs)
     s_Ev.ret = me; s_Ev.retH = Game::GetCharHeading(ped); s_Ev.retArea = Game::GetCharArea(ped);
     if(Game::IsCharInAnyCar(ped)) Game::WarpOutOfCar(ped, me);
     s_Ev.kind = EV_RACE; s_Ev.idx = i; s_Ev.cp = 1; s_Ev.slot = slot; s_Ev.rivals = racers - 1;
-    s_Ev.goAt = MP_NowMs() + (goMs ? goMs : 12000); s_Ev.countdown = 99;
+    s_Ev.goAt = MP_NowMs() + (goMs ? goMs : MP_RACE_GO_MS); s_Ev.countdown = 99;
     Vec3 st = r.gh || r.gx ? Vec3{ r.gx, r.gy, r.gz } : r.cp[0];
     float h = r.gx ? r.gh : HeadingTo(r.cp[0], r.cp[1]);
     Vec3 at = GridPos(st, h, slot, r.air);
@@ -502,7 +503,7 @@ static void JoinLobby(int kind, int idx)
     int used = 0;
     uint64_t go = EventLobbyGo(kind, idx, &used);
     if(go) s_Ev.slot = used;
-    else { go = now + (OthersOnline() > 0 && s_bServer301 ? 15000 : 3500); s_Ev.slot = 0; }
+    else { go = now + (OthersOnline() > 0 && s_bServer301 ? 30000 : 8000); s_Ev.slot = 0; }   // 3.21: 30 s for the others to join (was 15), 8 s alone (was 3.5)
     s_Ev.goAt = go; s_Ev.countdown = 99;
     SendEvent(kind, idx, EVS_LOBBY, 0, s_Ev.slot, (uint32_t)(go - now), 0);
     s_Ev.lastSend = now;
@@ -829,7 +830,7 @@ static void GamesOnDeath(const PktDeath& d)
 struct GTip { uint16_t mode; const char* text; };
 static const GTip kTips[] =
 {
-    { GM_RACE, "[Race] Type /race to queue for a GTA SA race. When 14 players are in, everybody is taken to the race together." },
+    { GM_RACE, "[Race] Type /race to queue for a GTA SA race. It starts with 14 players, or 45 s after 2 players are in (alone: a time trial after 60 s)." },
     { GM_DERBY, "[Derby] Type /derby for Blood Bowl, Monster, Docks, Desert or Chiliad Sumo. Last car standing wins." },
     { GM_DM, "[DM] Type /dm war for the War Zone DM. Kill streaks are announced to everyone." },
     { GM_JOBS, "[Job] Type /job trucking, /job quarry or /job pizza to earn money." },
@@ -949,16 +950,16 @@ static void ProcessGames(int ped, uint64_t now)
         if(Game::IsCarDead(s_Ev.car) || (inMyCar && Game::GetCarHealth(s_Ev.car) < 250)) { DerbyOut("was wrecked"); return; }
         if(!inMyCar)
         {
-            if(!s_Ev.outOfCarSince) { s_Ev.outOfCarSince = now; SysMsg(COL_YELLOW, "Get back in your car within 5 seconds!"); }
-            else if(now - s_Ev.outOfCarSince > 5000) { DerbyOut("was out of the car"); return; }
+            if(!s_Ev.outOfCarSince) { s_Ev.outOfCarSince = now; SysMsg(COL_YELLOW, "Get back in your car within %d seconds!", MP_DERBY_GRACE_MS / 1000); }
+            else if(now - s_Ev.outOfCarSince > MP_DERBY_GRACE_MS) { DerbyOut("was out of the car"); return; }   // 3.21: 15 s (was 5)
         }
         else s_Ev.outOfCarSince = 0;
         Vec3 me; Game::GetCharPos(ped, me);
         if(me.z < d.fallZ) { DerbyOut("fell off"); return; }
         if(GDist2D(me, { d.x, d.y, d.z }) > d.arena)
         {
-            if(!s_Ev.outOfZoneSince) { s_Ev.outOfZoneSince = now; SysMsg(COL_YELLOW, "Back into the arena within 5 seconds!"); }
-            else if(now - s_Ev.outOfZoneSince > 5000) { DerbyOut("left the arena"); return; }
+            if(!s_Ev.outOfZoneSince) { s_Ev.outOfZoneSince = now; SysMsg(COL_YELLOW, "Back into the arena within %d seconds! (follow the red ring)", MP_DERBY_GRACE_MS / 1000); }
+            else if(now - s_Ev.outOfZoneSince > MP_DERBY_GRACE_MS) { DerbyOut("left the arena"); return; }   // 3.21: 15 s (was 5)
         }
         else s_Ev.outOfZoneSince = 0;
         // winner: everybody else is out. Alone: survive 60 s. Time limit 4 min (everybody left wins)

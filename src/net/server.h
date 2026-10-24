@@ -56,6 +56,8 @@ public:
     void SetPerms(uint8_t perms);
     void SetAdminHash(const char* sha256Hex);   // 2.37: mp_server --admin-hash (default: MP_ADMIN_KEY_HASH)
     bool IsDefaultServer() const;               // 2.37: the name is MP_DEFAULT_SERVER_NAME
+    void SetSafeZones(bool on) { m_bSafeZones = on; }   // 3.21: hospital safe zones (default on, --no-safezones)
+    bool SafeZoneBlocks(int from, int to) const;       // 3.21: damage from -> to dropped (zone / spawn protection)
     bool IsBcwServer() const;                   // 3.04: the name is MP_BCW_SERVER_NAME (Brief Case War)
     // 3.04.6: refuse + track old MP versions
     void SetMinBuild(uint32_t b) { m_nMinBuild = b; }
@@ -106,6 +108,7 @@ private:
         float        pos[3];
         bool         hasPos;
         uint8_t      lastFlags;
+        uint64_t     spawnProtUntil;   // 3.21: 5 s spawn protection after every respawn (and the join)
         uint64_t     lastFwd[MP_MAX_PLAYERS];
         uint8_t      pair;        // 2.31: mission-sync GROUP id (MP_INVALID_ID = none; was the partner id)
         uint8_t      pairReq;     // 2.16: who this player asked for Mission sync
@@ -160,6 +163,7 @@ private:
     uint8_t m_TurfOwner[MP_TURF_MAX] = {0}, m_TurfAtk[MP_TURF_MAX] = {0};
     float   m_TurfProg[MP_TURF_MAX] = {0};
     bool    m_bTurfWars = true;
+    bool    m_bSafeZones = true;   // 3.21
     uint64_t m_nLastTurfSend = 0;
     uint64_t m_nNextAd = 0;          // 3.11: next Discord message
     uint64_t m_nAdInterval = MP_AD_INTERVAL_MS;

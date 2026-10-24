@@ -62,6 +62,7 @@ namespace Game
     bool  ClothesSyncAvailable();
     bool  GetLocalClothes(PktClothes& out);    // false = you are not CJ
     int   ModelForClothes(const PktClothes& c, int& specialSlot);   // 0 = can't now
+    bool  ClothesLoadPending();   // 3.21: an outfit model is still streaming in
     bool  ClothesCanBuild(const PktClothes& c);  // a slot has this outfit already / is free now
     int   CreateRemoteClothedCJ(const PktClothes& c, const Vec3& pos);   // 0 = can't (use CreateRemotePed)
     void  DeleteChar(int ped);
@@ -251,6 +252,8 @@ namespace Game
     void  FreezeChar(int ped, bool on);
     void  FreezeCar(int car, bool on);
     void  SetCharGodMode(int ped, bool on);
+    void  SetCurrentWeapon(int ped, int weapon);   // 3.21: select a weapon the ped already has (0 = fists)
+    void  SetDriveByAllowed(bool on);             // 3.21: local player drive-by on / off
     void  SetCarGodMode(int car, bool on);
     bool  IsLocalOnJetpack();
     int   GiveJetpack(int ped);      // 2.19.1: jetpack object on an avatar's back (0 = not yet)

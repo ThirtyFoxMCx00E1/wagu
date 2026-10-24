@@ -1,5 +1,6 @@
 #include <time.h>
 #include "server.h"
+#include "safezone.h"
 #include "admin.h"
 #include <sys/resource.h>
 #include <sys/syscall.h>
@@ -316,6 +317,22 @@ void MPServer::SetAdminHash(const char* h)
     MP_CopyStr(m_szAdminHash, h ? h : "", sizeof(m_szAdminHash));
 }
 
+// 3.21: hospital safe zones (safezone.h) + 5 s spawn protection. A hit is dropped when the target is
+// in a zone or just respawned, or when the shooter stands in a zone (nobody shoots out of a zone).
+// Not on Brief Case War servers (own base protection: BcwOnDamage).
+bool MPServer::SafeZoneBlocks(int from, int to) const
+{
+    if(!m_bSafeZones || IsBcwServer()) return false;
+    if(to < 0 || to >= MP_MAX_PLAYERS || !m_Slots[to].used) return false;
+    const Slot& t = m_Slots[to];
+    if(t.spawnProtUntil && MP_NowMs() < t.spawnProtUntil) return true;
+    if(t.hasPos && MP_InSafeZone(t.pos[0], t.pos[1], t.pos[2])) return true;
+    if(from >= 0 && from < MP_MAX_PLAYERS && m_Slots[from].used && m_Slots[from].spawnProtUntil && MP_NowMs() < m_Slots[from].spawnProtUntil) return true;   // protected players don't hurt others either
+    if(from >= 0 && from < MP_MAX_PLAYERS && m_Slots[from].used && m_Slots[from].hasPos
+       && MP_InSafeZone(m_Slots[from].pos[0], m_Slots[from].pos[1], m_Slots[from].pos[2])) return true;
+    return false;
+}
+
 bool MPServer::IsDefaultServer() const { return !strcasecmp(m_szName, MP_DEFAULT_SERVER_NAME); }
 
 void MPServer::SetPermsLocked(uint8_t perms)
@@ -537,6 +554,7 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
                 s.used = true; s.addr = from; s.lastSeen = MP_NowMs();
                 s.pair = s.pairReq = MP_INVALID_ID;
                 MP_CopyStr(s.uid, juid, sizeof(s.uid)); s.joinedMs = MP_NowMs();   // 2.25
+                s.spawnProtUntil = MP_NowMs() + MP_SPAWN_PROTECT_MS;   // 3.21: the first spawn is protected too
                 if(len >= (int)sizeof(PktJoin5)) memcpy(&s.build, data + offsetof(PktJoin5, build), sizeof(s.build));   // 3.11: who gets voice
                 MP_CopyStr(s.name, j->name[0] ? j->name : "Player", MP_NAME_LEN);
                 s.name[MP_NAME_LEN - 1] = 0;
@@ -625,6 +643,8 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             }
             const uint8_t stateMask = SYNC_IN_CAR | SYNC_DEAD | SYNC_MISSION | SYNC_CUTSCENE | SYNC_DRIVER;
             bool important = ((p.d.flags ^ m_Slots[slot].lastFlags) & stateMask) != 0;
+            if((m_Slots[slot].lastFlags & SYNC_DEAD) && !(p.d.flags & SYNC_DEAD))
+                m_Slots[slot].spawnProtUntil = MP_NowMs() + MP_SPAWN_PROTECT_MS;   // 3.21: respawned -> 5 s spawn protection
             m_Slots[slot].lastFlags = p.d.flags;
             m_Slots[slot].skin = p.d.skin;
             m_Slots[slot].paused = false;
@@ -644,6 +664,10 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             if(slot < 0 || len < (int)sizeof(PktExplosion)) return;
             PktExplosion e; memcpy(&e, data, sizeof(e));
             if(e.expType > 12) return;
+            {   // 3.21: no explosion (rocket, grenade, car bomb, satchel...) is shared inside a hospital safe zone
+                float ep[3]; memcpy(ep, e.pos, sizeof(ep));
+                if(m_bSafeZones && !IsBcwServer() && MP_InSafeZone(ep[0], ep[1], ep[2])) return;
+            }
             e.id = (uint8_t)slot;
             if(m_Slots[slot].status)   // 2.19: on a mission: only the mission-sync partner shares it
             {
@@ -663,6 +687,10 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             if(slot < 0 || len < (int)sizeof(PktFire)) return;
             PktFire f; memcpy(&f, data, sizeof(f));
             if(f.size < 1) f.size = 1; if(f.size > 4) f.size = 4;
+            {   // 3.21: no fire inside a hospital safe zone
+                float fp[3]; memcpy(fp, f.pos, sizeof(fp));
+                if(m_bSafeZones && !IsBcwServer() && MP_InSafeZone(fp[0], fp[1], fp[2])) return;
+            }
             f.id = (uint8_t)slot;
             if(m_Slots[slot].status)   // 2.19: partner only
             {
@@ -884,6 +912,7 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             // paused players and players on a mission / in a cutscene can't be hurt (or hurt others)
             // 2.19: mission-sync partners share one story world: they can hurt each other on a mission
             if(p.target < MP_MAX_PLAYERS && p.target != slot && m_Slots[p.target].used && !m_Slots[p.target].paused
+               && !SafeZoneBlocks(slot, p.target)   // 3.21: hospital safe zones + 5 s spawn protection
                && ((!m_Slots[p.target].status && !m_Slots[slot].status) || IsPartner(slot, p.target))
                && BcwOnDamage(slot, p.target, p.amount)) SendTo(p.target, &p, sizeof(p));   // 3.04: no friendly fire in Brief Case War
             break;
@@ -1047,6 +1076,7 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             PktJack j; memcpy(&j, data, sizeof(j));
             if(j.victim >= MP_MAX_PLAYERS || j.victim == slot || !m_Slots[j.victim].used || m_Slots[j.victim].paused) return;
             if((m_Slots[j.victim].status || m_Slots[slot].status) && !IsPartner(slot, j.victim)) return;
+            if(SafeZoneBlocks(slot, j.victim)) return;   // 3.21: nobody is pulled out of a car in a safe zone
             j.from = (uint8_t)slot;
             SendTo(j.victim, &j, sizeof(j));
             Log("%s carjacked %s", m_Slots[slot].name, m_Slots[j.victim].name);
@@ -1391,22 +1421,28 @@ void MPServer::RaceQueueTick(uint64_t now, bool changed)
     int q[MP_MAX_PLAYERS], n = 0;
     for(int i = 0; i < MP_MAX_PLAYERS; ++i) if(m_Slots[i].used && m_Slots[i].raceQueuedAt) q[n++] = i;
     for(int a = 1; a < n; ++a) for(int b = a; b > 0 && m_Slots[q[b]].raceQueuedAt < m_Slots[q[b - 1]].raceQueuedAt; --b) { int t = q[b]; q[b] = q[b - 1]; q[b - 1] = t; }
-    if(n >= MP_RACE_PLAYERS)
+    // 3.21: a race also starts without 14 players: 2+ players waited MP_RACE_WAIT_MS, or one player
+    // waited MP_RACE_SOLO_MS (solo time trial). Before, the queue waited for 14 forever.
+    uint64_t waited = n ? now - m_Slots[q[0]].raceQueuedAt : 0;
+    int go = n >= MP_RACE_PLAYERS ? MP_RACE_PLAYERS
+           : (n >= 2 && waited >= MP_RACE_WAIT_MS) ? n
+           : (n == 1 && waited >= MP_RACE_SOLO_MS) ? 1 : 0;
+    if(go > 0)
     {
         int race = rand() % MP_SA_RACE_COUNT;
         if(race == m_nLastRace) race = (race + 1) % MP_SA_RACE_COUNT;
         m_nLastRace = race;
-        for(int k = 0; k < MP_RACE_PLAYERS; ++k)
+        for(int k = 0; k < go; ++k)
         {
             PktEvent e; memset(&e, 0, sizeof(e));
             e.type = PKT_EVENT; e.id = MP_EV_SERVER; e.kind = EVK_RACE; e.idx = (uint8_t)race; e.state = EVS_LOBBY;
-            e.slot = (uint8_t)k; e.cp = MP_RACE_PLAYERS; e.ms = 12000;
+            e.slot = (uint8_t)k; e.cp = (uint8_t)go; e.ms = MP_RACE_GO_MS;   // 3.21: 20 s to get ready (was 12)
             SendTo(q[k], &e, sizeof(e));
             m_Slots[q[k]].raceQueuedAt = 0;
         }
-        Log("Race %d starts with %d players", race, MP_RACE_PLAYERS);
-        for(int k = MP_RACE_PLAYERS; k < n; ++k) q[k - MP_RACE_PLAYERS] = q[k];
-        n -= MP_RACE_PLAYERS;
+        Log("Race %d starts with %d players", race, go);
+        for(int k = go; k < n; ++k) q[k - go] = q[k];
+        n -= go;
         changed = true;
     }
     if(!changed && now - lastSend < 3000) return;
