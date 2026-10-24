@@ -8,9 +8,9 @@ AR  ?= ar
 ifeq ($(shell uname -o 2>/dev/null),Android)
   EXTRA += -DMP_LOG_STDOUT -llog
 endif
-SRC = mp_server.cpp ../src/net/server.cpp ../src/net/lan.cpp ../src/net/online.cpp
+SRC = mp_server.cpp ../src/net/server.cpp ../src/net/lan.cpp ../src/net/online.cpp ../src/net/authcrypto.cpp
 
-mp_server: $(SRC) ../src/net/server.h ../src/net/protocol.h ../src/net/lan.h ../src/net/online.h obj/libmbedtls.a
+mp_server: $(SRC) ../src/net/server.h ../src/net/protocol.h ../src/net/lan.h ../src/net/online.h ../src/net/authcrypto.h obj/libmbedtls.a
 	$(CXX) -O2 -std=c++17 -pthread -I../src -I$(MBED)/include $(SRC) obj/libmbedtls.a $(EXTRA) -o mp_server
 
 obj/mbedtls/%.o: $(MBED)/library/%.c

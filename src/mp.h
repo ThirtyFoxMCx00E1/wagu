@@ -68,6 +68,7 @@ struct MPSettings
     char  hostedPassword[MP_PASSWORD_LEN + 1] = "";   // 2.19: password of the server this phone hosted last
     bool  disableCheats     = false;   // 2.35: host setting: no MP chat cheats + no CLEO menu for everyone
     int   hostModes         = 0;       // 3.02: gamemodes (GM_*) of the custom server I host; new custom servers: none
+    bool  hostAuth          = false;   // 3.21.6: Add server > Authentication system (login with Discord) for a NEW server you host
     bool  allowCheatMenu    = false;   // 3.00: host permission (custom servers): players may use CheatMenu (libCheatMenu.so / libCheatMenu64.so)
     bool  hitSound          = true;    // 3.00: play sound_010.mp3 when your shot hits a player
     bool  allowMissionPair  = true;
@@ -255,6 +256,7 @@ namespace MP
     void SpawnStep(int d);
     void SpawnConfirm();
     float SpawnPickerAlpha();
+    bool AuthScreenShown();    // 3.21.6: login screen on top
     bool JoinScreenActive();   // 2.19.1: join screen / connection view / spawn picker on screen
     // 3.04: Brief Case War (private 24/7 gamemode server, pinned in the Internet list)
     void JoinBcw();            // join it (or leave it when you are on it)

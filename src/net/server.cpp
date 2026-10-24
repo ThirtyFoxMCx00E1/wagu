@@ -2,6 +2,7 @@
 #include "server.h"
 #include "safezone.h"
 #include "admin.h"
+#include "authcrypto.h"   // 3.21.6: login tickets
 #include <sys/resource.h>
 #include <sys/syscall.h>
 #include <unistd.h>
@@ -365,6 +366,91 @@ void MPServer::SetModes(uint16_t modes)
     if(m_bRunning) Broadcast(&p, sizeof(p));
 }
 
+// ---- 3.21.6: login system ----
+void MPServer::AnnounceJoin(int slot)
+{
+    Slot& s = m_Slots[slot];
+    PktPlayerJoin pj; memset(&pj, 0, sizeof(pj));
+    pj.type = PKT_PLAYER_JOIN; pj.id = (uint8_t)slot; pj.color = s.color; pj.skin = s.skin;
+    MP_CopyStr(pj.name, s.name, MP_NAME_LEN);
+    Broadcast(&pj, sizeof(pj), slot);
+}
+
+static void AuthServerName(const char* in, char* out, size_t n)
+{   // the name as the bot writes it into the ticket (no '|', max 39)
+    size_t o = 0;
+    for(size_t i = 0; in[i] && o + 1 < n && o < 31; ++i) if(in[i] != '|' && in[i] != '\n' && in[i] != '\r' && in[i] != '=') out[o++] = in[i];
+    out[o] = 0;
+}
+
+void MPServer::AuthBegin(int slot)
+{
+    Slot& s = m_Slots[slot];
+    if(!s.chal[0])
+    {
+        uint8_t r[16];
+        if(!AuthCrypto::Random(r, sizeof(r))) for(int i = 0; i < 16; ++i) r[i] = (uint8_t)(rand() ^ (MP_NowMs() >> (i % 8)));
+        AuthCrypto::Hex(r, 16, s.chal);
+    }
+    PktAuthChal c; memset(&c, 0, sizeof(c));
+    c.type = PKT_AUTH; c.op = AUTH_CHALLENGE; c.style = IsBcwServer() ? AUTH_STYLE_BCW : AUTH_STYLE_NORMAL;
+    memcpy(c.chal, s.chal, sizeof(c.chal));
+    MP_CopyStr(c.server, m_szName, sizeof(c.server));
+    SendTo(slot, &c, sizeof(c));
+}
+
+void MPServer::AuthHandle(int slot, const uint8_t* data, int len)
+{
+    Slot& s = m_Slots[slot];
+    if(len < (int)sizeof(PktAuthTicket) || data[1] != AUTH_TICKET) return;
+    PktAuthResult res; memset(&res, 0, sizeof(res)); res.type = PKT_AUTH; res.op = AUTH_RESULT;
+    if(s.authed)
+    {   // the answer got lost: say it again
+        res.ok = 1; MP_CopyStr(res.user, s.account, sizeof(res.user));
+        SendTo(slot, &res, sizeof(res));
+        return;
+    }
+    uint64_t now = MP_NowMs();
+    if(now - s.lastAuthTry < 400) return;   // a signature check costs CPU: max ~2 per second
+    s.lastAuthTry = now;
+    PktAuthTicket h; memcpy(&h, data, sizeof(h));
+    int plen = h.plen;
+    const char* fail = nullptr;
+    AuthCrypto::Ticket t;
+    char srv[40]; AuthServerName(m_szName, srv, sizeof(srv));
+    if(plen <= 0 || plen > MP_AUTH_TICKET_MAX || (int)sizeof(PktAuthTicket) + plen > len) fail = "Bad login ticket.";
+    else if(!AuthCrypto::VerifyTicket((const char*)data + sizeof(PktAuthTicket), (size_t)plen, h.sig)) fail = "Login ticket not signed by the MP bot.";
+    else if(!AuthCrypto::ParseTicket((const char*)data + sizeof(PktAuthTicket), (size_t)plen, t)) fail = "Bad login ticket.";
+    else if(strcmp(t.chal, s.chal)) fail = "Login ticket is for another connection. Log in again.";
+    else if(strcmp(t.server, srv)) fail = "Login ticket is for another server. Log in again.";
+    if(fail)
+    {
+        res.ok = 0; MP_CopyStr(res.msg, fail, sizeof(res.msg));
+        SendTo(slot, &res, sizeof(res));
+        Log("Login refused for id %d: %s", slot, fail);
+        if(++s.authFails >= 8) Drop(slot, LEAVE_KICK);
+        return;
+    }
+    for(int i = 0; i < MP_MAX_PLAYERS; ++i)   // the same account on another slot (other phone / ghost): the new one wins
+        if(i != slot && m_Slots[i].used && m_Slots[i].authed && !strcasecmp(m_Slots[i].account, t.user)) Drop(i, LEAVE_TIMEOUT);
+    s.authed = true;
+    MP_CopyStr(s.account, t.user, sizeof(s.account));
+    s.chal[0] = 0;   // used up
+    res.ok = 1; MP_CopyStr(res.user, t.user, sizeof(res.user));
+    SendTo(slot, &res, sizeof(res));
+    Log("%s (id %d) logged in", s.name, slot);   // the account name stays private (not in the public log)
+    AnnounceJoin(slot);
+    s.spawnProtUntil = now + MP_SPAWN_PROTECT_MS;
+}
+
+bool MPServer::AccountOf(int id, char* out, size_t n)
+{
+    std::lock_guard<std::mutex> lk(m_Mutex);
+    if(id < 0 || id >= MP_MAX_PLAYERS || !m_Slots[id].used || !m_Slots[id].account[0]) return false;
+    MP_CopyStr(out, m_Slots[id].account, n);
+    return true;
+}
+
 void MPServer::Drop(int slot, uint8_t reason)
 {
     if(!m_Slots[slot].used) return;
@@ -413,6 +499,10 @@ void MPServer::Loop()
             std::lock_guard<std::mutex> lk(m_Mutex);
             for(int i = 0; i < MP_MAX_PLAYERS; ++i)
                 if(m_Slots[i].used && now - m_Slots[i].lastSeen > MP_TIMEOUT_MS) Drop(i, LEAVE_TIMEOUT);
+            static thread_local uint32_t chalTick = 0;
+            if(++chalTick % 3 == 0)   // 3.21.6: the login challenge again (UDP may lose it)
+                for(int i = 0; i < MP_MAX_PLAYERS; ++i)
+                    if(m_Slots[i].used && !m_Slots[i].authed && m_Slots[i].chal[0]) AuthBegin(i);
             static thread_local uint64_t lastWorld = 0;
             if(now - lastWorld >= 3000) { lastWorld = now; PktWorld w; FillWorld(w); Broadcast(&w, sizeof(w)); }
             ExpirePickups(now);
@@ -444,9 +534,18 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
 {
     int slot = FindSlot(from);
     if(slot >= 0) m_Slots[slot].lastSeen = MP_NowMs();
+    // 3.21.6: not logged in yet: only joining, ping, leaving and the login itself
+    if(slot >= 0 && !m_Slots[slot].authed)
+    {
+        uint8_t t = data[0];
+        if(t != PKT_JOIN && t != PKT_PING && t != PKT_LEAVE && t != PKT_AUTH && t != PKT_QUERY && t != PKT_PAUSE) return;
+    }
 
     switch(data[0])
     {
+        case PKT_AUTH:
+            if(slot >= 0) AuthHandle(slot, data, len);
+            return;
         case PKT_QUERY:   // server list: anyone may ask, no slot needed
         {
             if(len < (int)sizeof(PktQuery)) return;
@@ -480,7 +579,7 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             {   // 3.04.6: old MP versions (no build / too old) are refused and tracked - they allowed cheats
                 uint32_t build = 0;
                 if(len >= (int)sizeof(PktJoin5)) memcpy(&build, data + offsetof(PktJoin5, build), sizeof(build));
-                if(build < m_nMinBuild)
+                if(build < m_nMinBuild || (AuthOn() && build < MP_AUTH_MIN_BUILD))   // 3.21.6: older phones can't log in
                 {
                     TrackOutdated(from, data, len, build);
                     PktServerMsg m; memset(&m, 0, sizeof(m)); m.type = PKT_SERVER_MSG; m.color = 0xFF5050FF;
@@ -561,6 +660,7 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
                 MP_StripAdminTag(s.name);                 // 2.37: nobody can fake the [ADMIN] tag
                 if(!s.name[0]) MP_CopyStr(s.name, "Player", MP_NAME_LEN);
                 s.admin = isAdmin;
+                s.authed = !AuthOn();   // 3.21.6
                 if(isAdmin) MP_CopyStr(s.name, MP_ADMIN_TAG MP_ADMIN_NAME, MP_NAME_LEN);   // 2.37: the rank shows on every server (admin powers: default server only)
                 // make the name unique
                 for(int i = 0; i < MP_MAX_PLAYERS; ++i)
@@ -615,13 +715,8 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             SendPickups(slot);   // 2.13: weapons lying around
             SendJoinExtras(slot, fresh);   // 3.01: turf, teams, welcome dialog, banner textdraw
             BcwOnJoin(slot, fresh);        // 3.04: Brief Case War state
-            if(fresh)
-            {
-                PktPlayerJoin pj; memset(&pj, 0, sizeof(pj));
-                pj.type = PKT_PLAYER_JOIN; pj.id = (uint8_t)slot; pj.color = s.color; pj.skin = s.skin;
-                MP_CopyStr(pj.name, s.name, MP_NAME_LEN);
-                Broadcast(&pj, sizeof(pj), slot);
-            }
+            if(!s.authed) AuthBegin(slot);              // 3.21.6: log in first (the others see you after that)
+            else if(fresh) AnnounceJoin(slot);
             break;
         }
 

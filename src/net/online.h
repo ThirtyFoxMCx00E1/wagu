@@ -66,4 +66,12 @@ namespace Online
     int  CurrentRegion();              // region of the broker in use (-1 = public / offline)
     int  RegionPingMs(int region);     // -1 unknown / no broker, -2 unreachable
     int  BestRegion();                 // lowest ping region (-1 = none)
+
+    // 3.21.6: login system link to the MP Discord bot (own connection, end-to-end encrypted frames)
+    void AuthLinkStart(const char* sid);   // (re)start, listen for answers to this session id
+    void AuthLinkStop();
+    bool AuthLinkUp();
+    const char* AuthLinkBroker();
+    void AuthLinkSend(const std::string& frame);
+    bool AuthLinkRecv(std::string& frame);
 }

@@ -27,6 +27,7 @@ namespace Voice
     // 3.11.1: MP Voice helper app (com.thirtyfox.mpvoice) for GTA SA APKs without RECORD_AUDIO
     bool  UsingHelper();
     int   HelperState();                    // 0 not used, 1 waiting for MP Voice, 2 getting your voice
+    void  OpenUrl(const char* url);         // 3.21.6: open a link (browser / Discord app)
     void  OpenHelperApp();                  // opens MP Voice (it turns its mic on and comes back)
     int   OpenHelperResult();               // 0 pending, 1 opened, 2 not installed
     void  StopMic();

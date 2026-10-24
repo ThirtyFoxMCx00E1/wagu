@@ -59,6 +59,11 @@ public:
     void SetSafeZones(bool on) { m_bSafeZones = on; }   // 3.21: hospital safe zones (default on, --no-safezones)
     bool SafeZoneBlocks(int from, int to) const;       // 3.21: damage from -> to dropped (zone / spawn protection)
     bool IsBcwServer() const;                   // 3.04: the name is MP_BCW_SERVER_NAME (Brief Case War)
+    // 3.21.6: login system (Discord verification + account). Always on for the default server and
+    // Brief Case War; custom servers: SetAuth(true) (Add server -> Authentication system, --auth)
+    void SetAuth(bool on) { m_bAuthCustom = on; }
+    bool AuthOn() const { return IsDefaultServer() || IsBcwServer() || m_bAuthCustom; }
+    bool AccountOf(int id, char* out, size_t n);   // the logged in account of player id (false = none)
     // 3.04.6: refuse + track old MP versions
     void SetMinBuild(uint32_t b) { m_nMinBuild = b; }
     void SetOutdatedLog(const char* path) { snprintf(m_szOutdatedLog, sizeof(m_szOutdatedLog), "%s", path ? path : ""); }
@@ -126,7 +131,16 @@ private:
         uint32_t     build;          // 3.11: the phone's MP build (0 = older than 3.04.6)
         uint64_t     voiceWin;       // 3.11: voice rate limit
         int          voiceCount;
+        bool         authed;         // 3.21.6: login done (always true on servers without the login system)
+        char         account[24];    // 3.21.6: the account (only the server knows it, never sent to others)
+        char         chal[33];       // 3.21.6: this connection's random challenge (hex)
+        uint64_t     lastAuthTry;
+        uint8_t      authFails;
     };
+    void AuthBegin(int slot);                    // 3.21.6, m_Mutex held
+    void AuthHandle(int slot, const uint8_t* data, int len);
+    void AnnounceJoin(int slot);                 // 3.21.6: PKT_PLAYER_JOIN to everybody else
+    std::atomic<bool> m_bAuthCustom{false};
     void SetPermsLocked(uint8_t perms);                                         // 2.37, m_Mutex held
     bool KickLocked(int id, const char* admin, const char* reason, bool ban);   // 2.37, m_Mutex held
     char               m_szAdminHash[65] = {0};

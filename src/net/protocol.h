@@ -13,9 +13,10 @@
 // phones refuse servers older than that too (they would let old phones in).
 // 3.10: build 31000. MP_MIN_BUILD stays 30406 and the lobby stays thirtyfox/mp5/: 3.04.6 (no cheats)
 // and 3.10 phones play together on the same servers; only 3.04.5 and older (mp4) stay shut out.
-#define MP_BUILD           32105   // 3.21.5
+#define MP_BUILD           32106   // 3.21.6
 #define MP_MIN_BUILD       30406
-#define MP_VERSION_STR     "3.21.5"
+#define MP_AUTH_MIN_BUILD  32106   // 3.21.6: servers with the login system refuse older phones (they could not log in)
+#define MP_VERSION_STR     "3.21.6"
 #define MP_VOICE_BUILD     31100   // 3.11: phones from this build on get voice packets
 #define MP_DOWNLOAD_URL    "thirtyfoxmcx00e1.github.io/wagu"
 #define MP_DEFAULT_HOST    "127.0.0.1"
@@ -98,6 +99,7 @@ enum ePacket : uint8_t
     PKT_BCW_EVENT,      // S->C          3.04: steal / drop / return / capture / victory notices
     PKT_CLOTHES,        // C->S->C       3.10: CJ's clothes (3.04.6 phones / servers simply ignore it)
     PKT_VOICE,          // C->S->C       3.11: voice chat (one Opus frame, 20 ms), only to players nearby
+    PKT_AUTH,           // S<->C         3.21.6: login system (challenge / ticket / result), see net/authcrypto.h
 };
 
 enum eRegion : uint8_t { REGION_ASIA = 0, REGION_EUROPE, REGION_NA, REGION_OCEANIA, REGION_COUNT };
@@ -562,6 +564,16 @@ struct PktClothes
     uint32_t tex[MP_CLOTHES_TEXTURES];
     float    fat, muscle;
 };
+// 3.21.6: login system. The default server and Brief Case War always ask for a login, custom
+// servers when their owner turns it on (Add server -> Authentication system, mp_server --auth).
+// Until the login is done the player is connected but nobody sees them and nothing they send
+// (position, chat, shots...) reaches anybody.
+enum eAuthOp : uint8_t { AUTH_CHALLENGE = 1, AUTH_TICKET = 2, AUTH_RESULT = 3 };
+enum eAuthStyle : uint8_t { AUTH_STYLE_NORMAL = 0, AUTH_STYLE_BCW = 1 };
+struct PktAuthChal   { uint8_t type; uint8_t op; uint8_t style; uint8_t pad; char chal[33]; char server[32]; };
+struct PktAuthTicket { uint8_t type; uint8_t op; uint16_t plen; uint8_t sig[64]; };   // + plen bytes of ticket text
+struct PktAuthResult { uint8_t type; uint8_t op; uint8_t ok; uint8_t pad; char user[24]; char msg[96]; };
+#define MP_AUTH_TICKET_MAX 255
 #pragma pack(pop)
 
 // 3.11: voice chat. One Opus frame (48 kHz mono, 20 ms) per packet, sent the moment it is
