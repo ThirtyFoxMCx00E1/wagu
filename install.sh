@@ -15,6 +15,7 @@
 #   - systemd services (start on boot, restart on crash), firewall, network tuning
 #   - optional TLS (Let's Encrypt) for MQTT 8883 and WebSocket 8884 (the website needs 8884)
 #   - web console (ttyd, https://DOMAIN:7681, password) + status beacon for the website's Termius page
+#   - 3.21.7: MP Railway (our own Railway): the Discord login bot 24/7, auto deploy on git push
 set -euo pipefail
 
 HIVEMQ_VER="2026.5"
@@ -351,6 +352,19 @@ if [ "${CONSOLE:-1}" = 1 ]; then
 fi
 sed -e "s|@@BASE@@|$BASE|g" "$SRC_DIR/systemd/mp-status.service" > /etc/systemd/system/mp-status.service
 
+# ---------------------------------------------------------------- 3.21.7: MP Railway (our own Railway)
+# Runs the MP Discord login bot (discordpy-bot) 24/7 with auto deploy. The tool is installed on every
+# server, but the bot runs only where it was set up once (sudo mp-railway setup) - ONE server only,
+# else two bots answer /gen and the accounts split.
+if [ -f "$SRC_DIR/railway/mp-railway.sh" ]; then
+    install -m 755 "$SRC_DIR/railway/mp-railway.sh" /usr/local/bin/mp-railway
+    /usr/local/bin/mp-railway install >/dev/null || warn "MP Railway install failed (sudo mp-railway install)"
+    if [ -s /etc/mp-railway/discordpy-bot.env ]; then
+        say "MP Railway: deploying the Discord bot"
+        /usr/local/bin/mp-railway deploy discordpy-bot || warn "Discord bot not online yet: sudo mp-railway logs"
+    fi
+fi
+
 # ---------------------------------------------------------------- systemd
 say "installing services"
 sed -e "s|@@JAVA_HOME@@|$JAVA_HOME|g; s|@@BASE@@|$BASE|g; s|@@XMS@@|$JVM_XMS|; s|@@XMX@@|$JVM_XMX|" "$SRC_DIR/systemd/hivemq.service" > /etc/systemd/system/hivemq.service
@@ -394,3 +408,5 @@ echo "    logs:    journalctl -u hivemq -f    |  journalctl -u mp-server -f   | 
 echo "    logins:  $ENV_FILE  (copy to the other regions; keep BRIDGE_PASS / ADMIN_PASS secret)"
 echo "    open these ports in your cloud provider's firewall too: 1883/tcp 8000/tcp ${DOMAIN:+8883/tcp 8884/tcp 7681/tcp 80/tcp }${SERVER_PORT:-1922}/udp"
 echo "    then put this server into the website's regions.txt:  sudo $SRC_DIR/tools/make-regions.sh"
+if [ -s /etc/mp-railway/discordpy-bot.env ]; then echo "    Discord bot (MP Railway): sudo mp-railway status   |  sudo mp-railway logs -f"
+else echo "    Discord bot 24/7 on this server (ONE server only): sudo mp-railway setup   (console: r)"; fi

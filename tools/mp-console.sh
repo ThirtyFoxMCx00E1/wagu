@@ -17,9 +17,37 @@ header() {
     printf '  old-MP notice   %s   %s old phones refused (o = list)\n' "$(svc mp-legacy)" "$(wc -l < /opt/mp/server/outdated_clients.log 2>/dev/null || echo 0)"
     printf '  region bridge   %s\n' "$(svc mp-bridge)"
     printf '  status beacon   %s\n' "$(svc mp-status)"
+    printf '  Discord bot     %s   MP Railway (r = menu)\n' "$(svc mp-railway@discordpy-bot)"
     printf '  uptime          %s   load %s\n' "$(uptime -p 2>/dev/null)" "$(cut -d' ' -f1-3 /proc/loadavg)"
     printf '  memory          %s\n' "$(free -m | awk '/Mem:/ {printf "%d / %d MB used", $3, $2}')"
     line
+}
+RW=/usr/local/bin/mp-railway
+railway_menu() {
+    [ -x "$RW" ] || { curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/railway/mp-railway.sh -o /tmp/mp-railway.sh && bash /tmp/mp-railway.sh install; }
+    while true; do
+        clear; c '1;35' "  MP Railway - our own Railway (Discord bot 24/7)"; echo; line
+        "$RW" status 2>/dev/null | sed 's/^/  /'
+        line
+        echo "  1) first-time setup (asks DISCORD_TOKEN + AUTH_PRIVATE_KEY, deploys)"
+        echo "  2) live bot log           5) set DISCORD_TOKEN"
+        echo "  3) deploy now (git pull)  6) set AUTH_PRIVATE_KEY"
+        echo "  4) restart bot            7) variables (masked)"
+        echo "  8) deploy history         0) back"
+        line
+        read -r -p "  choose: " k || return
+        case "$k" in
+            1) "$RW" setup; read -r -p "  enter to continue" _ ;;
+            2) echo "(Ctrl+C to go back)"; "$RW" logs -f ;;
+            3) "$RW" deploy; read -r -p "  enter to continue" _ ;;
+            4) "$RW" restart; read -r -p "  enter to continue" _ ;;
+            5) "$RW" env set DISCORD_TOKEN; read -r -p "  enter to continue" _ ;;
+            6) "$RW" env set AUTH_PRIVATE_KEY; read -r -p "  enter to continue" _ ;;
+            7) "$RW" env; read -r -p "  enter to continue" _ ;;
+            8) tail -n 30 /opt/mp/railway/discordpy-bot/deploys.log 2>/dev/null || echo "(no deploys yet)"; read -r -p "  enter to continue" _ ;;
+            0|q|b) return ;;
+        esac
+    done
 }
 while true; do
     header
@@ -29,6 +57,7 @@ while true; do
     echo "  4) restart HiveMQ         8) regions.txt for the website"
     echo "  9) shell (bash)           0) logout"
     echo "  o) old MP versions refused (name, version, phone id, IP)"
+    echo "  r) MP Railway: Discord bot 24/7 (/gen /stats /char)"
     line
     read -r -p "  choose: " k || exit 0
     case "$k" in
@@ -42,6 +71,7 @@ while true; do
         8) /opt/mp/kit/tools/make-regions.sh; read -r -p "  enter to continue" _ ;;
         o|O) { echo "time  name  version  phone  IP  port"; tail -n 200 /opt/mp/server/outdated_clients.log 2>/dev/null || echo "(none yet)"; } | less -R ;;
         9) echo "type exit to come back"; bash -l ;;
+        r|R) railway_menu ;;
         0|q|exit) exit 0 ;;
     esac
 done

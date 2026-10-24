@@ -20,6 +20,37 @@ The mod (2.20+) downloads [regions.txt](https://thirtyfoxmcx00e1.github.io/wagu/
 Game traffic stays inside one region (no bridging), so ping is only phone -> nearest broker.
 
 
+## MP 3.21.7: MP Railway - the Discord bot 24/7 on our own server
+
+Railway.app stopped taking new accounts, so the MP login bot ([discordpy-bot](https://github.com/ThirtyFoxMCx00E1/discordpy-bot): `/gen`, `/stats`, `/char`) now runs on **MP Railway**, our own small Railway that is part of this kit. Without a running bot Discord doesn't show `/gen` and nobody can log in on 3.21.6+ servers.
+
+On **one** server (the Asia / bridge server), once:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/update.sh | sudo bash   # new kit + mp-railway tool
+sudo mp-railway setup                                                                            # asks DISCORD_TOKEN + AUTH_PRIVATE_KEY (hidden)
+```
+
+or in the Termius console: **7) update**, then **r) MP Railway > 1) first-time setup**. It prints `ONLINE - /gen, /stats, /char are in your Discord server` when the bot is logged in and the commands are synced.
+
+What MP Railway does (like Railway, without the cloud):
+
+- clones the bot repo to `/opt/mp/railway/discordpy-bot`, builds it (Python venv + `requirements.txt`, or `npm` for Node apps), starts the `Procfile` command as the `mp-railway@discordpy-bot` systemd service (own user `mprail`, restart on crash, start on boot)
+- **auto deploy:** `mp-railway-watch.timer` checks GitHub every 2 minutes; a new commit on `main` is built and restarted by itself (`/opt/mp/railway/discordpy-bot/deploys.log`)
+- secrets in `/etc/mp-railway/discordpy-bot.env` (mode 600, never in git), accounts in `/var/lib/mp-railway/discordpy-bot/accounts.db`
+- the bot publishes a signed status every 30 s; the website's [Railway page](https://thirtyfoxmcx00e1.github.io/wagu/railway.html) shows it live (checked with the mod's public key, so it can't be faked)
+
+```
+sudo mp-railway status            online / crashing / offline, commit, servers with the commands
+sudo mp-railway logs -f           live log
+sudo mp-railway deploy            deploy now
+sudo mp-railway restart | stop | start
+sudo mp-railway env               variables (masked)     sudo mp-railway env set DISCORD_TOKEN   (asks, restarts)
+sudo mp-railway add NAME REPO     host another Python / Node app the same way
+```
+
+Without a VPS it also runs on an Android phone in Termux: `curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/railway/install.sh | bash` (Termux:Boot starts it after a reboot). Run the bot in **one** place only.
+
 ## MP 3.21: update the 24/7 servers (important)
 
 Run this on every region (or Termius console **7) update**, which now runs the same script):
