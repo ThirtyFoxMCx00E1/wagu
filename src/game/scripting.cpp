@@ -48,6 +48,7 @@ bool Scripting::Init(void* gameHandle)
 }
 
 bool Scripting::IsReady() { return ProcessOneCommand != nullptr; }
+bool Scripting::IsOwnThread(const void* script) { return script && script == (const void*)gst; }
 
 int Scripting::Command(const SCRIPT_COMMAND* cmd, ...)
 {

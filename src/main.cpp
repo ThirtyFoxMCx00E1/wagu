@@ -24,7 +24,7 @@
 #include "../imgui/rw_glue.h"
 #include "net/server.h"
 
-MYMODCFG(net.thirtyfox.mp, MP Multiplayer, 3.21.2, ThirtyFoxMCx00E1)   // 3.21: was stuck at 3.04.6 (crash logs showed the wrong version)
+MYMODCFG(net.thirtyfox.mp, MP Multiplayer, 3.21.3, ThirtyFoxMCx00E1)   // 3.21: was stuck at 3.04.6 (crash logs showed the wrong version)
 NEEDGAME(com.rockstargames.gtasa)
 
 // Globals used by the embedded RenderWare ImGui backend
@@ -88,6 +88,7 @@ static void PollTouches();
 DECL_HOOKv(CGame_Process)
 {
     CGame_Process();
+    ScriptGuard::Tick();   // 3.21.3
     MP::Process();
 }
 
@@ -328,6 +329,7 @@ extern "C" void OnModLoad()
     MP::Init(dir);
 
     ScriptGuard::Init(pGameHandle);   // 2.16.2: a script using a dead car / object handle no longer crashes the game
+    ScriptGuard::InitFaultGuard(pGameHandle);   // 3.21.3: any script opcode that crashes stops that script, not the game
 
     HOOKSYM(CGame_Process, pGameHandle, "_ZN5CGame7ProcessEv");
     HOOKSYM(Render2dStuff, pGameHandle, "_Z13Render2dStuffv");

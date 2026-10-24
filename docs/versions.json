@@ -1,6 +1,7 @@
 {
-"latest": "3.21.2",
+"latest": "3.21.3",
 "supported": [
+"3.21.3",
 "3.21.2",
 "3.21.1",
 "3.21",
@@ -15,6 +16,14 @@
 "3.04.6"
 ],
 "versions": [
+{
+"v": "3.21.3",
+"summary": "crash when tapping Connect (default server) with CLEO scripts installed.",
+"items": [
+"Crash log (realme RE6054): SIGSEGV in `CRunningScript::ProcessCommands1100To1199`, opcode `0491` (HAS_CHAR_GOT_WEAPON) from a CLEO script. When you join, MP turns the phone's own street people / traffic off and removes the ones around you (the server's players replace them). A CLEO script that kept one of those people then asked the game about it and the game read a dead pointer. Same cause as the `0471` crash in 3.21.1, just another opcode - there are hundreds that take a person / car / object.",
+"**Script fault guard:** every opcode range of the game (`ProcessCommands0To99` ... `2600To2699`) now runs inside a fault guard. An opcode that crashes no longer takes the game down: that one script is stopped on that opcode, every other script and the game keep running, and the AML log says `ScriptGuard: script 'xxx' crashed in opcode 0491 ... that script is stopped there`. MP's own commands are never stopped. Crashes outside scripts still go to AML's crash log as before. New Linux test `test/scriptfault_test.cpp` (real SIGSEGV, 200 in a row, nested, other threads, old handler)."
+]
+},
 {
 "v": "3.21.2",
 "summary": "launcher \"+ Add\" page - the extra Host switch is gone.",
