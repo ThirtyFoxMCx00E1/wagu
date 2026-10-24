@@ -3,7 +3,7 @@
 // Standalone MP server (Linux / Windows / Termux). Same core as the in-game "Host LAN server".
 //   g++ -O2 -std=c++17 -pthread -I../src mp_server.cpp ../src/net/server.cpp ../src/net/lan.cpp ../src/net/online.cpp -o mp_server
 //   ./mp_server [port] [server name] [max players 1-100] [region: Asia|Europe|NA|Oceania] [--persistent] [--no-online]
-//               [--broker-file broker.txt] [--password pw] [--admin-hash sha256hex]
+//               [--broker-file broker.txt] [--password pw] [--admin-hash sha256hex] [--no-safezones]
 //               3.04: Brief Case War 24/7: ./mp_server 1930 "Brief Case War" 20 Asia --persistent [--bcw-min 20]
 //               3.04.6: [--outdated-log file] (default outdated_clients.log): phones with an old MP version
 //               are refused + written there. --legacy-notice: run in the OLD lobby (thirtyfox/mp4/, what
@@ -157,6 +157,7 @@ int main(int argc, char** argv)
     {   // 3.01: SA-MP features
         const char* tf = "turf.txt"; std::string motd; bool turf = true;
         for(int i = 1; i < argc; ++i) if(!strcasecmp(argv[i], "--no-turf")) turf = false;
+        for(int i = 1; i < argc; ++i) if(!strcasecmp(argv[i], "--no-safezones")) { server.SetSafeZones(false); printf("[MP Server] Hospital safe zones: off\n"); }   // 3.21
         for(int i = 1; i + 1 < argc; ++i)
         {
             if(!strcasecmp(argv[i], "--turf-file")) tf = argv[i + 1];

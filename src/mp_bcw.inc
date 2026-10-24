@@ -24,7 +24,7 @@ struct BcwClientState
     PktBcwScore score[2]{}; bool haveScore[2] = { false, false }; bool scoreClosed = false; uint64_t scoreAt = 0;
     uint64_t    connectedAt = 0; bool musicTried = false, musicMissingSaid = false;
     uint64_t    deathAt = 0, heldAt = 0; bool held = false;   // dead: game respawned us (hospital) and we're parked hidden
-    uint64_t    protectUntil = 0, lastVeh = 0, lastHudOff = 0, lastWanted = 0;
+    uint64_t    protectUntil = 0, lastVeh = 0, lastHudOff = 0, lastWanted = 0, lastNoWanted = 0;   // 3.21: lastNoWanted
     int         lobbyMap = -1;
     int         homeObj[2] = { 0, 0 }, carryObj[2] = { 0, 0 }, carryPed[2] = { 0, 0 };
     float       groundZ[BCW_MAP_COUNT][2] = {};
@@ -167,6 +167,7 @@ static void BcwEnterLobby(int ped)
     }
     BcwDeleteObjects();
     s_Bcw.protectUntil = 0;
+    Game::SetMaxWanted(0); Game::ClearWanted();   // 3.21: the lobby camera / parking spot is in Bone County too
     int m = BcwCurMap();
     const BcwMap& M = g_BcwMaps[m];
     Vec3 cam = { M.cam[0], M.cam[1], M.cam[2] }, look = { M.look[0], M.look[1], M.look[2] };
@@ -206,6 +207,7 @@ static void BcwSpawnInBase(int ped, uint64_t now)
     float a = (float)(rand() % 628) / 100.0f, r = 1.0f + (float)(rand() % 250) / 100.0f;   // spread inside the circle
     Vec3 at = { base[0] + cosf(a) * r, base[1] + sinf(a) * r, base[2] };
     float h; BcwHeadingTo(base, enemy, h);
+    Game::SetMaxWanted(0); Game::ClearWanted();   // 3.21: BEFORE the teleport (Bone County / Area 69 = 4 stars at once)
     Game::PreloadArea(at, true);
     Game::FreezeChar(ped, false);
     Game::SetCharVisible(ped, !s_Cheat.invisible);
@@ -224,6 +226,7 @@ static void BcwHoldDead(int ped)
     uint8_t t = BcwMyTeam(); int ti = BcwTeamIndex(t); if(ti < 0) ti = 0;
     const float* b = g_BcwMaps[BcwCurMap()].spawn[ti];
     Vec3 cam, look; BcwLobbyCam(BcwCurMap(), t, cam, look);
+    Game::SetMaxWanted(0); Game::ClearWanted();   // 3.21: parked under Area 69 = restricted zone, no stars
     Game::PreloadArea(look, true);
     Game::FreezeChar(ped, false);
     Game::PlaceChar(ped, { b[0], b[1], -100.0f });
@@ -342,6 +345,15 @@ static void BcwProcess(int ped, uint64_t now)
         BcwEnterLobby(ped);
     }
     if(!s_Bcw.connectedAt) s_Bcw.connectedAt = now;
+    // 3.21: never wanted in Brief Case War, in EVERY view (lobby, playing, dead / respawning). Before,
+    // the stars were only cleared while playing (view 2, every 0.5 s): teleporting into Bone County
+    // (Area 69 / Verdant Meadows = restricted area) gave 4 stars at once and the police / SAM sites
+    // came before the next clear. Now: max wanted 0 every 250 ms and any star is removed the same frame.
+    if(Game::IsReady() && !Game::IsPaused())
+    {
+        if(now - s_Bcw.lastNoWanted >= 250) { s_Bcw.lastNoWanted = now; Game::SetMaxWanted(0); }
+        if(Game::GetWantedLevel() > 0) Game::ClearWanted();
+    }
     // music: 4 s + 20 ticks after connecting, fades in over 20 ticks, 45 %, endless
     if(now - s_Bcw.connectedAt >= BCW_MUSIC_DELAY_MS)
     {

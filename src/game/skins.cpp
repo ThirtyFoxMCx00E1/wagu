@@ -17,6 +17,8 @@
 // be put on another ped, so CJ players are shown with the avatar skin chosen in the menu.
 #include "game.h"
 #include "scripting.h"
+#include <stdint.h>
+uint64_t MP_NowMs();   // 3.21 (net/server.cpp)
 #include <mod/amlmod.h>
 #include <mod/logger.h>
 #include <string.h>
@@ -56,6 +58,7 @@ static bool s_SlotOurs[11];                      // we loaded it
 static int  s_SlotPeds[11][MAX_SLOT_PEDS];       // our avatars using the slot
 static bool s_BadSpecial[SPECIAL_COUNT];
 static uint64_t s_SlotUse[11];
+static uint64_t s_SlotLoadAt[11];                // 3.21: csplay requested at (ms), streaming in the background
 static uint32_t s_SlotOutfit[11];                // 3.10: "csplay" slot rebuilt with this outfit (MP_ClothesHash)
 static uint64_t s_nUseTick = 0;
 
@@ -299,6 +302,13 @@ bool Game::ClothesCanBuild(const PktClothes& c)
     return false;
 }
 
+// 3.21: a csplay slot is streaming in for an outfit (the avatar retries soon)
+bool Game::ClothesLoadPending()
+{
+    for(int k = 0; k < MP_SLOT_COUNT; ++k) if(s_SlotLoadAt[kMpSlots[k]]) return true;
+    return false;
+}
+
 // model to create for a remote CJ wearing this outfit, 0 = not possible now (use the avatar skin)
 int Game::ModelForClothes(const PktClothes& c0, int& slotOut)
 {
@@ -324,14 +334,39 @@ int Game::ModelForClothes(const PktClothes& c0, int& slotOut)
         if(SlotLivePeds(s) > 0) continue;   // never rebuild a model under a live ped
         if(best < 0 || s_SlotUse[s] < s_SlotUse[best]) best = s;
     }
+    // 3.21: crash log CBaseModelInfo::SetColModel (this = NULL) <- CStreaming::LoadAllRequestedModels
+    // <- Game::ModelForClothes. LOAD_ALL_MODELS_NOW forced the streamer to finish EVERYTHING it had
+    // queued, in the middle of the game's own streaming (RetryLoadFile), and a half-registered model
+    // got its collision. Now csplay streams in the background like any model: the slot is asked
+    // for here, and the outfit is built on a later call (the avatar retries every 1.5 s meanwhile).
+    uint64_t nowMs = MP_NowMs();
+    for(int k = 0; k < MP_SLOT_COUNT; ++k)
+    {
+        int s = kMpSlots[k];
+        if(!s_SlotLoadAt[s]) continue;
+        if(!s_SlotOurs[s] || strcasecmp(s_SlotName[s], "csplay") || SlotLivePeds(s) > 0) { s_SlotLoadAt[s] = 0; continue; }
+        best = s; break;   // already streaming csplay for us: use that slot
+    }
     if(best < 0) return 0;
-    CALLSCM(LOAD_SPECIAL_CHARACTER, best, "csplay");
-    CALLSCM(LOAD_ALL_MODELS_NOW_SK);
-    strncpy(s_SlotName[best], "csplay", sizeof(s_SlotName[best]) - 1);
-    s_SlotOurs[best] = true;
-    s_SlotOutfit[best] = 0;
-    s_SlotUse[best] = ++s_nUseTick;
-    if(!CALLSCM(HAS_SPECIAL_CHARACTER_LOADED, best)) { logger->Info("Skins: couldn't load the cutscene CJ model (csplay)"); s_nClothesFaults = 3; return 0; }
+    if(!s_SlotLoadAt[best])
+    {
+        CALLSCM(LOAD_SPECIAL_CHARACTER, best, "csplay");
+        strncpy(s_SlotName[best], "csplay", sizeof(s_SlotName[best]) - 1);
+        s_SlotOurs[best] = true;
+        s_SlotOutfit[best] = 0;
+        s_SlotUse[best] = ++s_nUseTick;
+        s_SlotLoadAt[best] = nowMs;
+    }
+    if(!CALLSCM(HAS_SPECIAL_CHARACTER_LOADED, best))
+    {
+        if(nowMs - s_SlotLoadAt[best] > 20000)
+        {   // 20 s and still not in: give up on clothes for now (avatar skin)
+            s_SlotLoadAt[best] = 0; s_SlotName[best][0] = 0; s_SlotOurs[best] = false;
+            logger->Info("Skins: couldn't load the cutscene CJ model (csplay)"); ++s_nClothesFaults;
+        }
+        return 0;
+    }
+    s_SlotLoadAt[best] = 0;
     ClothesDescRaw d;
     memcpy(d.model, c.model, sizeof(d.model)); memcpy(d.tex, c.tex, sizeof(d.tex));
     d.fat = c.fat; d.muscle = c.muscle;

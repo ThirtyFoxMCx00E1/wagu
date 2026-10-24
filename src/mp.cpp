@@ -35,6 +35,7 @@
 #include "game/cleoblock.h"
 #include "game/modscan.h"
 #include "net/admin.h"
+#include "net/safezone.h"   // 3.21: hospital safe zones
 #include "ui/emoji.h"
 #include <ctype.h>
 #include <strings.h>
@@ -116,6 +117,14 @@ static std::atomic<bool>      s_bHasNetwork{true};
 static uint64_t               s_nLastNetCheck = 0, s_nLastDupCheck = 0;
 static bool                   s_bTakeoverPending = false;
 static uint64_t               s_nTakeoverAt = 0;
+// 3.21: "the host left -> another phone hosts -> the server restarts, although it's a 24/7 server".
+// The 24/7 machine (dedicated) is the copy everybody should be on. Remember when we last saw it
+// and whether we are on it: a phone copy is only a stop-gap and we move back to the 24/7 one
+// quietly as soon as it is visible again; when the host leaves, we look for the 24/7 copy FIRST
+// and wait for it a little instead of starting yet another phone copy.
+static bool                   s_bOnDedicated = false;
+static uint64_t               s_nDedicatedSeenAt = 0;
+static int                    s_nDedicatedRetries = 0;
 static int                    s_nLostPort = MP_DEFAULT_PORT;
 static bool                   s_bConnectingDefault = false;  // current connection is the default server
 static char                   s_szJobName[32] = "";          // server the running job is about
@@ -452,6 +461,14 @@ static void JoinOverlayCancel();
 static void JoinMarkConnected();
 static void JoinFlowProcess(int ped, uint64_t now);
 static void ProcessCheats(int ped, uint64_t now);
+// 3.21: hospital safe zones + 5 s spawn protection (mp_safezone.inc)
+static bool SafeProtected();               // local player can't be hurt right now
+static bool SafeBlocksHit(int id);         // our hit on player id must not count
+static bool SafePointProtected(const Vec3& p);   // explosion / fire there would hit a protected area
+static void SafeOnRespawn(uint64_t now);
+static void ProcessSafeZones(int ped, uint64_t now);
+static void RenderSafeZones();
+static void RenderMarkers();               // 3.21: mp_markers.inc
 static void ProcessGames(int ped, uint64_t now);   // 2.21 mp_games.inc
 static void GamesOnDeath(const PktDeath& d);
 static void SendPlayerInfo(uint64_t now);
@@ -847,6 +864,7 @@ static void ApplyNetExplosion(const PktExplosion& e)
     if(!EnvAllowed() || e.id == myId || e.expType > 12) return;
     if(e.id < MP_MAX_PLAYERS && players[e.id].status) return;
     Vec3 pos = MP_LoadVec3(e.pos);
+    if(SafePointProtected(pos)) return;   // 3.21: no bombs / rockets in a hospital safe zone (old servers still relay them)
     if(Near(s_Foreign, s_nForeign, pos, 8.0f, 2500, 1, true)) return;   // already blew up here (avatar's shot)
     Game::AddExplosionNet(e.expType, pos);
     Mark(s_RecentExp, s_nRecentExp, 8, pos, true);
@@ -855,6 +873,7 @@ static void ApplyNetFire(const PktFire& f)
 {
     if(!EnvAllowed() || f.id == myId) return;
     Vec3 pos = MP_LoadVec3(f.pos);
+    if(SafePointProtected(pos)) return;   // 3.21: no fire in a safe zone
     if(Near(s_Foreign, s_nForeign, pos, 4.0f, 2500, 0, true)) return;
     if(Near(s_RecentExp, s_nRecentExp, pos, 12.0f, 5000, -1, false)) return;
     int slot = -1; uint64_t soonest = ~0ull;
@@ -1079,7 +1098,7 @@ static void SpawnAvatar(RemotePlayer& p, const Vec3& at)
     if(p.clothesHash)   // 3.10: their CJ with their clothes (0 = no free slot right now -> avatar skin, retried)
     {
         p.ped = Game::CreateRemoteClothedCJ(p.clothes, at);
-        if(!p.ped) p.clothesRetryAt = MP_NowMs() + 5000;   // pedClothes stays = the outfit we tried
+        if(!p.ped) p.clothesRetryAt = MP_NowMs() + (Game::ClothesLoadPending() ? 1500 : 5000);   // pedClothes stays = the outfit we tried (3.21: 1.5 s while csplay streams in)
     }
     if(!p.ped) p.ped = Game::CreateRemotePed(p.skin, at);
     if(!p.ped) return;
@@ -1410,7 +1429,7 @@ static void UpdateRemote(int id, int localPed, uint64_t now)
         {
             PktDamage d; d.type = PKT_DAMAGE; d.from = myId; d.target = (uint8_t)id;
             d.weapon = (uint8_t)Game::GetCharWeapon(localPed); d.amount = 1000.0f;
-            if(RamDamage(localPed, p, d)) { client.Send(&d, sizeof(d)); PredictKill(id, d.amount, d.weapon); PlayHitSound(); }
+            if(!SafeBlocksHit(id) && RamDamage(localPed, p, d)) { client.Send(&d, sizeof(d)); PredictKill(id, d.amount, d.weapon); PlayHitSound(); }   // 3.21: safe zones
         }
         DestroyAvatar(p);
     }
@@ -1468,7 +1487,7 @@ static void UpdateRemote(int id, int localPed, uint64_t now)
             {
                 PktDamage d; d.type = PKT_DAMAGE; d.from = myId; d.target = (uint8_t)id;
                 d.weapon = (uint8_t)Game::GetCharWeapon(localPed); d.amount = dmg;
-                if(RamDamage(localPed, p, d)) { client.Send(&d, sizeof(d)); PredictKill(id, d.amount, d.weapon); PlayHitSound(); }
+                if(!SafeBlocksHit(id) && RamDamage(localPed, p, d)) { client.Send(&d, sizeof(d)); PredictKill(id, d.amount, d.weapon); PlayHitSound(); }   // 3.21: safe zones
             }
             else PlayHitSound();   // 3.00: a punch that landed but took (almost) no HP still sounds like a hit
             if(instantKill)
@@ -1956,7 +1975,7 @@ public:
                 MP_CopyStr(settings.adminKey, s_AdminKeys[s_nAdminKeyIdx].c_str(), sizeof(settings.adminKey));
                 client.SetAdminKey(settings.adminKey);
                 ClearAllPlayers();
-                SysMsg(COL_YELLOW, "This server didn't take your first admin key - trying your other key from administrator.txt...");
+                SysMsg(COL_YELLOW, MP_AdminKeyLegacyOk(settings.adminKey) ? "This server runs an old MP (before 3.11.6) - trying your old admin key (admin.txt) on it..." : "This server didn't take your first admin key - trying your other key from administrator.txt...");
                 char h[256]; MP_CopyStr(h, s_szLastConnHost, sizeof(h));
                 DoConnect(h, s_nLastConnPort);
                 return;
@@ -1964,8 +1983,9 @@ public:
             if(HaveAdminKey())
             {   // our key is valid here. A 3.10+ server always accepts it, so the SERVER program is older than 3.10
                 // (it only knows the first admin key). Not this phone - updating the mod doesn't help.
-                SysMsg(COL_RED, "This server refused your admin key. Your MP %s and administrator.txt are fine: the problem is the SERVER - it runs MP older than 3.11.6, which doesn't know the new admin key.", MP_VERSION_STR);
-                SysMsg(COL_YELLOW, "Fix: update the server program. Your 24/7 servers: Termius > console > 7) update. Termux server: mp-server update. A phone host: that player updates MP.");
+                SysMsg(COL_RED, "This server refused your admin key. Your MP %s and administrator.txt are fine: the SERVER runs MP older than 3.11.6 and only knows the old key.", MP_VERSION_STR);
+                SysMsg(COL_YELLOW, "Quick fix: keep your old admin.txt next to administrator.txt (MP folder) - MP %s tries the old key on old servers by itself.", MP_VERSION_STR);
+                SysMsg(COL_YELLOW, "Real fix: update the server. 24/7 VPS: sudo bash /opt/mp/kit/update.sh (or: curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/update.sh | sudo bash). Termux: mp-server update.");
             }
             else SenjiBlockedMsg();
             if(s_AdminKeys.size() > 1) { s_nAdminKeyIdx = 0; MP_CopyStr(settings.adminKey, s_AdminKeys[0].c_str(), sizeof(settings.adminKey)); client.SetAdminKey(settings.adminKey); }
@@ -2185,6 +2205,7 @@ public:
     void OnJack(const PktJack& j) override   // 2.19: somebody pulls me out of my car
     {
         if(j.victim != myId || !Game::IsReady()) return;
+        if(SafeProtected()) return;   // 3.21: safe zone / spawn protection: nobody pulls you out
         int ped = Game::LocalPed();
         if(!Game::IsCharInAnyCar(ped)) return;
         int car = Game::GetCarCharIsIn(ped);
@@ -2199,6 +2220,7 @@ public:
         if(d.amount <= 0 || d.amount > 1000) return;
         if(Game::IsPaused()) return;   // can't be hurt while paused
         if(s_Cheat.invincible) return;   // 2.19 /invincible
+        if(SafeProtected()) return;      // 3.21: hospital safe zone / 5 s spawn protection
         bool partner = IsPartner(d.from) && !s_bLocalCutscene;   // 2.19: mission-sync partners share one world
         if(s_bLocalSeparate && !partner) return;   // on a mission / in a cutscene: own story world
         if(!partner && d.from < MP_MAX_PLAYERS && (players[d.from].status || (players[d.from].sync.flags & (SYNC_MISSION | SYNC_CUTSCENE)))) return;   // 1000 = instant kill (headshot / explosion)
@@ -2528,6 +2550,7 @@ static void ProcessLocalCombat(int ped)
     else if(!dead && s_bLocalDead)
     {
         s_bLocalDead = false;
+        SafeOnRespawn(MP_NowMs());   // 3.21: 5 s spawn protection
         s_nLastDamager = MP_INVALID_ID;
         s_nPrevLocalHealth = hp;
     }
@@ -3595,6 +3618,7 @@ void MP::Process()
     ProcessClothes(now);         // 3.10: clothing sync
     ProcessVoice();              // 3.11: voice chat
     ProcessCheats(ped, now);     // 2.19: chat-command cheats
+    ProcessSafeZones(ped, now);  // 3.21: hospital safe zones + spawn protection
     ProcessGames(ped, now);      // 2.21: races, deathmatch, jobs, open world
     ProcessSamp(ped, now);       // 3.01: map icons, actors, turf HUD, class skin, team
     UpdatePassengerCandidate(ped, now);   // 2.19.1: Passenger button
@@ -3715,6 +3739,8 @@ static bool JoinHudOff() { return s_bJoinHudOff; }
 #include "mp_world.inc"  // 3.01: 3D labels, map icons, actors, gang zones + turf wars, class selection
 #include "mp_bcw.inc"    // 3.04: Brief Case War
 #include "mp_gates.inc"  // 3.04.2: gates that never open (Area 69): fade out, through, fade in
+#include "mp_safezone.inc"  // 3.21: hospital safe zones + 5 s spawn protection
+#include "mp_markers.inc"   // 3.21: SA-MP style red checkpoint beams for races, derbies, DM, jobs
 
 // 2.37: CheatMenu (libCheatMenu.so / libCheatMenu64.so) is not allowed on any server - the default
 // server and every custom server. Detected with aml->HasMod() in ON_ALL_MODS_LOAD (+ a re-check of
@@ -3942,9 +3968,25 @@ static bool StartLocalServer(const char* name, int port)
 
 static void JoinFound(const LanServer& sv, bool connect)
 {
+    if(sv.dedicated) { s_nDedicatedSeenAt = MP_NowMs(); s_nDedicatedRetries = 0; }
     if(!sv.token) { MP_CopyStr(settings.host, sv.ip, sizeof(settings.host)); SaveConfig(); }  // relay IPs change every session
     s_bConnectingDefault = IsDefaultServer(sv.name, sv.port);
-    if(connect && client.GetState() == NET_DISCONNECTED) DoConnect(sv.ip, sv.port);
+    if(connect && client.GetState() == NET_DISCONNECTED) { DoConnect(sv.ip, sv.port); s_bOnDedicated = sv.dedicated != 0; }
+}
+
+// 3.21: the 24/7 copy of a server in the lobby / LAN list (-1 = none)
+static int FindDedicated(const std::vector<LanServer>& list, const char* name, int port)
+{
+    for(int i = 0; i < (int)list.size(); ++i)
+        if(list[i].dedicated && list[i].port == port && list[i].proto == MP_PROTO_VERSION && name && !strcasecmp(list[i].name, name)) return i;
+    return -1;
+}
+// 3.21: a 24/7 copy was seen in the last 5 minutes and we haven't waited for it twice yet
+static bool WaitForDedicated(const char* name, int port)
+{
+    if(!IsDefaultServer(name, port) && !s_nDedicatedSeenAt) return false;
+    if(!s_nDedicatedSeenAt || MP_NowMs() - s_nDedicatedSeenAt > 5 * 60 * 1000) return false;
+    return s_nDedicatedRetries++ < 2;
 }
 
 // Big Connect button: the default server.
@@ -4054,11 +4096,27 @@ void MP::SetHostLan(bool on, bool autoConnect)
 static bool OnLostServer()
 {
     // our own server (127.0.0.1) or an internet server: nothing to take over
+    const bool wasDedicated = s_bOnDedicated; s_bOnDedicated = false;
+    if(wasDedicated) s_nDedicatedSeenAt = MP_NowMs();   // 3.21: the 24/7 copy only dropped us / restarts: wait for it first
     if(IsHosting() || IsLocalHost(client.GetHost()) || !LAN::IsPrivateAddress(client.GetHost()) || !LAN::HasNetwork()) return false;
     int rank = 0;
     for(int i = 0; i < MP_MAX_PLAYERS && i < myId; ++i) if(players[i].active) ++rank;
     MP_CopyStr(s_szLostServerName, client.GetServerName()[0] ? client.GetServerName() : MP_DEFAULT_SERVER_NAME, sizeof(s_szLostServerName));
     s_nLostPort = client.GetPort();
+    if(!s_bOnDedicated)
+    {   // 3.21: a phone host left: the 24/7 copy (if it is online) takes everybody, nobody restarts a copy
+        std::vector<LanServer> snap = Online::Snapshot();
+        int d = FindDedicated(snap, s_szLostServerName, s_nLostPort);
+        if(d >= 0 && strcmp(snap[d].ip, client.GetHost()))
+        {
+            s_bTakeoverPending = true;
+            s_nTakeoverAt = MP_NowMs() + 300;   // no rank wait: everybody joins the same 24/7 copy
+            s_nDedicatedSeenAt = MP_NowMs(); s_nDedicatedRetries = 0;
+            SysMsg(COL_YELLOW, "The host left - moving to the 24/7 server (you keep playing)...");
+            s_bQuietRejoin = true;
+            return true;
+        }
+    }
     s_bTakeoverPending = true;
     s_nTakeoverAt = MP_NowMs() + 500 + (uint64_t)(rank > 20 ? 20 : rank) * 2500;
     SysMsg(COL_YELLOW, "The host left - moving to the new host...");
@@ -4118,6 +4176,15 @@ static void FinishJob(int job, std::vector<LanServer>& list)
                 JoinFound(list[best], true);
                 return;
             }
+            // 3.21: the 24/7 copy was online a moment ago (restart / update / short drop): look again
+            // before this phone starts its own copy (a phone copy = "restart" for everybody later)
+            if(WaitForDedicated(name, port))
+            {
+                SysMsg(COL_SYSTEM, "Looking for the 24/7 server again...");
+                char nm[sizeof(s_szJobName)]; MP_CopyStr(nm, name, sizeof(nm));
+                StartJob(JOB_CONNECT, true, nm, port);
+                return;
+            }
             // nobody runs it yet: this phone hosts it, so the default server is always online
             if(StartLocalServer(name, port)) { s_bConnectingDefault = true; DoConnect("127.0.0.1", port); }
             return;
@@ -4157,6 +4224,12 @@ static void FinishJob(int job, std::vector<LanServer>& list)
             if(best >= 0)
             {
                 JoinFound(list[best], true);
+                return;
+            }
+            if(WaitForDedicated(s_szLostServerName, s_nLostPort))   // 3.21: the 24/7 copy comes back: don't start a phone copy yet
+            {
+                s_bTakeoverPending = true;
+                s_nTakeoverAt = MP_NowMs() + 4000;
                 return;
             }
             if(StartLocalServer(s_szLostServerName, s_nLostPort))
@@ -4286,6 +4359,33 @@ static void ProcessLan(uint64_t now)
     {
         StartJob(JOB_TAKEOVER, true, s_szLostServerName, s_nLostPort);
         return;
+    }
+    // 3.21: on a phone copy of a server while its 24/7 copy is online -> move there quietly, so the
+    // phone host leaving later can't "restart" the server for everybody
+    {
+        static uint64_t lastDed = 0;
+        if(now - lastDed > 10000 && client.GetState() == NET_CONNECTED && !IsHosting() && !s_bOnDedicated && !InEvent() && !BcwOnServer())
+        {
+            lastDed = now;
+            const char* nm = client.GetServerName()[0] ? client.GetServerName() : (s_bConnectingDefault ? MP_DEFAULT_SERVER_NAME : "");
+            std::vector<LanServer> snap = Online::Snapshot();
+            int d = nm[0] ? FindDedicated(snap, nm, client.GetPort()) : -1;
+            if(d >= 0)
+            {
+                s_nDedicatedSeenAt = now;
+                if(strcmp(snap[d].ip, client.GetHost()))
+                {
+                    LanServer sv = snap[d];
+                    SysMsg(COL_SYSTEM, "The 24/7 server is online - moving there (you keep playing).");
+                    s_bQuietRejoin = true;
+                    LeaveServer(nullptr);
+                    JoinFound(sv, true);
+                    if(client.GetState() == NET_DISCONNECTED) s_bQuietRejoin = false;
+                    return;
+                }
+                s_bOnDedicated = true;   // we were on it already (joined through another path)
+            }
+        }
     }
     if(IsHosting() && now - s_nLastDupCheck > 8000)
     {
@@ -4500,6 +4600,8 @@ static void LoadAdminFile()
         if(!s_szAdminFound[0]) MP_CopyStr(s_szAdminFound, cand[i].c_str(), sizeof(s_szAdminFound));
         if(i == 0) inMine = true;
     }
+    // 3.21: new key(s) first, old keys (only for servers older than 3.11.6) after them
+    std::stable_sort(s_AdminKeys.begin(), s_AdminKeys.end(), [](const std::string& a, const std::string& b) { return MP_AdminKeyOk(a.c_str()) && !MP_AdminKeyOk(b.c_str()); });
     if(!s_AdminKeys.empty())
     {
         MP_CopyStr(settings.adminKey, s_AdminKeys[0].c_str(), sizeof(settings.adminKey));
@@ -4553,6 +4655,9 @@ static void ReadAdminKeys(const char* path, std::vector<std::string>& keys)   //
         if(!clean[0] || clean[0] == '#') continue;
         size_t n = strlen(p); while(n && (p[n-1] == '\n' || p[n-1] == '\r' || p[n-1] == ' ' || p[n-1] == '\t')) p[--n] = 0;
         std::string key = MP_AdminKeyOk(p) ? std::string(p) : (MP_AdminKeyOk(clean) ? std::string(clean) : std::string());
+        // 3.21: an old key (3.10 admin.txt / 2.37) is kept too, behind the new one: it is only sent
+        // when a server refuses the new key (a server older than 3.11.6 knows only the old keys)
+        if(key.empty()) key = MP_AdminKeyLegacyOk(p) ? std::string(p) : (MP_AdminKeyLegacyOk(clean) ? std::string(clean) : std::string());
         if(key.empty()) continue;
         bool dup = false; for(auto& e : keys) if(e == key) dup = true;
         if(!dup) keys.push_back(key);
@@ -4564,7 +4669,7 @@ static void SenjiBlockedMsg()   // 3.11.2: say exactly where admin.txt has to go
     SysMsg(COL_RED, "The name SENJI is reserved for the administrator. No valid administrator.txt found.");
     SysMsg(COL_YELLOW, "Put administrator.txt here: %s/administrator.txt", s_szDataDir);
 }
-static bool HaveAdminKey() { return settings.adminKey[0] && MP_AdminKeyOk(settings.adminKey); }
+static bool HaveAdminKey() { return settings.adminKey[0] && (MP_AdminKeyOk(settings.adminKey) || MP_AdminKeyLegacyOk(settings.adminKey)); }   // 3.21: + the old key (old servers only)
 static const char* NameBlocked(const char* t)
 {
     if(!t || !*t) return nullptr;

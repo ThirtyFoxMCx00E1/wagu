@@ -69,4 +69,17 @@ inline bool MP_AdminKeyOk(const char* key, const char* hashHex = nullptr)
     return !strcasecmp(h, MP_ADMIN_KEY_HASH);
 }
 
+// 3.21: the keys of 3.10 (admin.txt) and 2.37, used ONLY by the phone, ONLY as a retry when a server
+// refuses the new key (= that server runs MP older than 3.11.6 and only knows these). Servers never
+// accept them (MP_AdminKeyOk above), so a 3.21 server still takes the new key only. This changes
+// nothing for security: an old server accepts an old key from any phone anyway.
+#define MP_ADMIN_KEY_HASH_LEGACY1 "2a12f3acbdb4c820d18f784aff3261fabeddb7fffc35b8123970095def9a5d1b"   // 3.10 admin.txt
+#define MP_ADMIN_KEY_HASH_LEGACY2 "e77bf27eaeb77088c97e17903677366c90dfaeb6fa4b5d78a07d722058ddf633"   // 2.37
+inline bool MP_AdminKeyLegacyOk(const char* key)
+{
+    if(!key || !*key) return false;
+    char h[65]; MP_AdminKeyHash(key, h);
+    return !strcasecmp(h, MP_ADMIN_KEY_HASH_LEGACY1) || !strcasecmp(h, MP_ADMIN_KEY_HASH_LEGACY2);
+}
+
 inline bool MP_IsAdminTagged(const char* name) { return name && !strncmp(name, MP_ADMIN_TAG, strlen(MP_ADMIN_TAG)); }

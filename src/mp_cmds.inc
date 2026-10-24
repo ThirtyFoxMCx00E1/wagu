@@ -967,6 +967,8 @@ static void Render219(void*)
     RenderGames();             // 2.21: score bar + race / DM / job HUD
     RenderSamp();              // 3.01
     RenderBcw();               // 3.04: Brief Case War
+    RenderSafeZones();         // 3.21: hospital safe zones
+    RenderMarkers();           // 3.21: red checkpoint beams
     RenderGates();             // 3.04.2: gate fade (over everything)
 }
 
