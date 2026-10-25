@@ -138,6 +138,7 @@ static char                   s_szJobResolved[16] = "";      // that host resolv
 static QueuedJob              s_Queued;                      // waits for a background scan to finish
 static char                   s_szLostServerName[32] = "";
 static bool OnLostServer();   // defined below; true when a takeover search was scheduled
+static bool DupFallBack();    // 3.23.5
 static void ProcessLan(uint64_t now);
 static void RunHostRequest();   // 3.21.2: host / stop from the Add server page, run on the game frame
 
@@ -147,6 +148,14 @@ using namespace MP;
 const char* MP::DataDir() { return s_szDataDir; }
 bool MP::IsConnected() { return client.GetState() == NET_CONNECTED; }
 bool MP::IsHosting() { return s_Server.IsRunning(); }
+// 3.23.5: the default server, Brief Case War and MW3 are hosted by the bot "Broker": the game never
+// shows a player as their host, even when this phone runs the copy (VPS down)
+static bool FeaturedName(const char* n, int port) { return n && n[0] && (MP_IsBcwServerName(n) || MP_IsMw3ServerName(n) || (port == MP_DEFAULT_PORT && !strcasecmp(n, MP_DEFAULT_SERVER_NAME))); }
+bool MP::IsBotHosted()
+{
+    if(s_Server.IsRunning() && s_Server.HasBot()) return true;
+    return client.GetState() == NET_CONNECTED && FeaturedName(client.GetServerName(), client.GetPort());
+}
 // 2.28: the ping shown for ME. The host's game talks to the server on its own phone (127.0.0.1),
 // so the measured round trip is honestly 0-1 ms - no network in between. That told nobody how
 // good the host's connection is. A host now shows its real network leg: the round trip to the
@@ -2027,8 +2036,9 @@ public:
     {
         if(s_szDirectRelay[0]) { Online::DirectFailed(s_szDirectRelay); s_szDirectRelay[0] = 0; }   // 3.11: next try uses the relay
         StopFeed(); JoinOverlayCancel(); s_bQuietRejoin = false;
-        SysMsg(COL_RED, "Could not connect to %s (no response).", s_szJobName[0] ? s_szJobName : "the server");   // 2.16: no IP
         ClearAllPlayers();
+        if(DupFallBack()) return;   // 3.23.5
+        SysMsg(COL_RED, "Could not connect to %s (no response).", s_szJobName[0] ? s_szJobName : "the server");   // 2.16: no IP
     }
     void OnLostConnection() override
     {
@@ -4168,14 +4178,30 @@ void MP::SetHostLan(bool on, bool autoConnect)
 // Called when the connection to the server is lost. On a LAN server the remaining players
 // take over: the first player (lowest id) becomes the new host with the same name and port,
 // everybody else finds that new host and joins it, so the server never disappears.
+static char     s_szDupBackName[64] = "";   // 3.23.5: the server this phone handed over (duplicate merge)
+static int      s_nDupBackPort = 0;
+static uint64_t s_nDupBackUntil = 0;
+static bool DupFallBack()
+{   // 3.23.5: the copy we moved to did not answer: host our server again instead of "host left"
+    if(!s_nDupBackUntil || MP_NowMs() > s_nDupBackUntil || !s_szDupBackName[0]) { s_nDupBackUntil = 0; return false; }
+    s_nDupBackUntil = 0;
+    char nm[64]; MP_CopyStr(nm, s_szDupBackName, sizeof(nm));
+    if(FeaturedName(nm, s_nDupBackPort)) SysMsg(COL_YELLOW, "Reconnecting to \"%s\" (host: " MP_BOT_NAME ")...", nm);
+    else SysMsg(COL_YELLOW, "The other copy of \"%s\" did not answer - you host it again.", nm);
+    if(StartLocalServer(nm, s_nDupBackPort)) { s_bConnectingDefault = IsDefaultServer(nm, s_nDupBackPort); s_bQuietRejoin = true; DoConnect("127.0.0.1", s_nDupBackPort); return true; }
+    return false;
+}
+
 static bool OnLostServer()
 {
     // our own server (127.0.0.1) or an internet server: nothing to take over
     const bool wasDedicated = s_bOnDedicated; s_bOnDedicated = false;
     if(wasDedicated) s_nDedicatedSeenAt = MP_NowMs();   // 3.21: the 24/7 copy only dropped us / restarts: wait for it first
     if(IsHosting() || IsLocalHost(client.GetHost()) || !LAN::IsPrivateAddress(client.GetHost()) || !LAN::HasNetwork()) return false;
-    int rank = 0;
-    for(int i = 0; i < MP_MAX_PLAYERS && i < myId; ++i) if(players[i].active) ++rank;
+    if(DupFallBack()) return true;
+    int rank = 0, others = 0;
+    for(int i = 0; i < MP_MAX_PLAYERS && i < myId; ++i) if(players[i].active && i != MP_BOT_ID) ++rank;
+    for(int i = 0; i < MP_MAX_PLAYERS; ++i) if(players[i].active && i != myId && i != MP_BOT_ID) ++others;
     MP_CopyStr(s_szLostServerName, client.GetServerName()[0] ? client.GetServerName() : MP_DEFAULT_SERVER_NAME, sizeof(s_szLostServerName));
     s_nLostPort = client.GetPort();
     if(!s_bOnDedicated)
@@ -4194,7 +4220,9 @@ static bool OnLostServer()
     }
     s_bTakeoverPending = true;
     s_nTakeoverAt = MP_NowMs() + 500 + (uint64_t)(rank > 20 ? 20 : rank) * 2500;
-    SysMsg(COL_YELLOW, "The host left - moving to the new host...");
+    if(FeaturedName(s_szLostServerName, s_nLostPort)) SysMsg(COL_YELLOW, "Reconnecting to \"%s\" (host: " MP_BOT_NAME ")...", s_szLostServerName);   // 3.23.5
+    else if(!others) SysMsg(COL_YELLOW, "Connection to \"%s\" lost - you host it now (nobody else was on it)...", s_szLostServerName);
+    else SysMsg(COL_YELLOW, "The host left - moving to the new host...");
     s_bQuietRejoin = true;   // 2.27: same server on another phone, you keep playing where you are
     return true;
 }
@@ -4327,6 +4355,12 @@ static void FinishJob(int job, std::vector<LanServer>& list)
             for(auto& sv : list)
             {
                 if(sv.port != s_Server.GetPort() || strcasecmp(sv.name, s_Server.GetName()) || sv.proto != MP_PROTO_VERSION) continue;
+                // 3.23.5: never "merge" into ourselves. Our own listing (old token, our Wi-Fi address,
+                // the same start second) made a phone that was alone stop its own server and then
+                // lose it: "The host left - moving to the new host..." with nobody else there.
+                if(myTok && sv.token == myTok) continue;
+                if(!sv.token && (!strcmp(sv.ip, me) || IsLocalHost(sv.ip))) continue;
+                if(!sv.dedicated && sv.startUnix && sv.startUnix == s_Server.GetStartUnix()) continue;
                 bool otherWins;
                 if(sv.token) otherWins = sv.players > mine || (sv.players == mine && myTok && sv.token < myTok);
                 else if(onlineCopy && myTok) continue;
@@ -4345,6 +4379,9 @@ static void FinishJob(int job, std::vector<LanServer>& list)
                 if(!otherWins) continue;
                 bool wasConnected = client.GetState() != NET_DISCONNECTED;
                 if(client.GetState() == NET_CONNECTED) { s_bQuietRejoin = true; SysMsg(COL_SYSTEM, "Same server on another phone - moving there (you stay connected)."); }
+                // 3.23.5: if the other copy does not answer, this phone hosts it again right away
+                MP_CopyStr(s_szDupBackName, s_Server.GetName(), sizeof(s_szDupBackName));
+                s_nDupBackPort = s_Server.GetPort(); s_nDupBackUntil = MP_NowMs() + 20000;
                 LeaveServer(nullptr);
                 s_Server.Stop();
                 settings.hostLan = false; SaveConfig();
@@ -4976,7 +5013,7 @@ static void DefaultServerCard(const std::vector<LanServer>& nearby)
         if(IsDefaultServer(nearby[i].name, nearby[i].port)) { found = i; break; }
     if(!s_bHasNetwork)                       { snprintf(info, sizeof(info), "Offline: turn on Wi-Fi or mobile data"); col = kRedTxt; }
     else if(IsOnDefault() && IsConnected())  snprintf(info, sizeof(info), "Connected  |  %d/%d  |  %d ms", OnlineCount(), OnlineMax(), MP::DisplayPing());
-    else if(IsHostingDefault())              snprintf(info, sizeof(info), "Online (you host it)  |  %d/%d", s_Server.GetPlayerCount(), s_Server.GetMaxPlayers());
+    else if(IsHostingDefault())              snprintf(info, sizeof(info), "Online  |  host: " MP_BOT_NAME " (24/7)  |  %d/%d", s_Server.GetPlayerCount(), s_Server.GetMaxPlayers());
     else if(found >= 0)                      snprintf(info, sizeof(info), "Online at %s  |  %d/%d  |  %d ms", nearby[found].token ? "internet" : nearby[found].ip, nearby[found].players, nearby[found].maxPlayers, nearby[found].ping);
     else                                     snprintf(info, sizeof(info), "Always online  |  tap Connect");
 
@@ -5146,7 +5183,7 @@ static void SectionServers(void*)
         ImVec4 col = kGreenTxt;
         // 2.16: a custom server's IP / host is never shown (only its name)
         if(on && IsConnected())  snprintf(info, sizeof(info), "IP hidden  |  connected  |  %d/%d  |  %d ms", OnlineCount(), OnlineMax(), MP::DisplayPing());
-        else if(mine)            snprintf(info, sizeof(info), "IP hidden  |  online (you host it)  |  %d/%d", s_Server.GetPlayerCount(), s_Server.GetMaxPlayers());
+        else if(mine)            snprintf(info, sizeof(info), s_Server.HasBot() ? "online  |  host: " MP_BOT_NAME " (24/7)  |  %d/%d" : "IP hidden  |  online (you host it)  |  %d/%d", s_Server.GetPlayerCount(), s_Server.GetMaxPlayers());
         else if(e->online)       snprintf(info, sizeof(info), "IP hidden  |  online %d/%d  |  %d ms", e->players, e->maxPlayers, e->ping);
         else if(lan)             snprintf(info, sizeof(info), "IP hidden  |  online %s %d/%d  |  %d ms", lan->token ? "(internet)" : "on Wi-Fi", lan->players, lan->maxPlayers, lan->ping);
         else if(!s_bHasNetwork)  { snprintf(info, sizeof(info), "IP hidden  |  you are offline (Wi-Fi/data off)"); col = kRedTxt; }
@@ -5325,7 +5362,9 @@ static void SectionAddServer(void*)
     if(disabled) ImGui::EndDisabled();
 
     // the server this phone hosts (was the "Host this server on my phone" switch)
-    if(hosting)
+    if(hosting && s_Server.HasBot())
+        ImGui::TextColored(kGreenTxt, "\"%s\" is hosted by " MP_BOT_NAME " (24/7 bot), %d/%d online", s_Server.GetName(), s_Server.GetPlayerCount(), s_Server.GetMaxPlayers());   // 3.23.5
+    else if(hosting)
     {
         ImGui::TextColored(kGreenTxt, "Hosting \"%s\"  (IP hidden, %d/%d online)", s_Server.GetName(), s_Server.GetPlayerCount(), s_Server.GetMaxPlayers());
         if(Online::IsConnected()) ImGui::TextColored(kGreenTxt, "Listed in the internet lobby: players on mobile data can join.");

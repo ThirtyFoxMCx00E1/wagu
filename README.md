@@ -46,6 +46,11 @@ It builds `mp_server` on the phone and runs it 24/7 in the internet lobby (free 
 
 ## Changelog
 
+- **3.23.5**: fixed "host left / finding new host" while alone, and a 24/7 host bot.
+  - The cause: the check that merges two copies of the same featured server matched your own listing (or another phone's copy of it), so it stopped your server and moved you to a copy that was not there. It now skips its own server, and if the copy it moves you to does not answer within 20 s, your phone hosts again right away.
+  - Timeout raised from 20 s to 30 s, so a short lag spike on mobile data no longer kicks you.
+  - New 24/7 bot **Broker** that always stays in Default Server (1/100), Brief Case War (1/20) and Call Of Duty: Modern Warfare 3 (1/64). It counts in the server list, shows in the Player list as `Broker (host, 24/7 bot)`, and is shown as the host of those 3 servers (`Host: Broker` on the HUD, `host: Broker (24/7)` on the server card). Nobody else becomes host there.
+  - Discord bot: `/stats` and `/char` cards no longer have a website link, only Refresh and Switch view.
 - **3.23.4**: new MW3 stats display.
   - The stats box in the bottom right is gone: no background, no green outline, and it no longer covers the sprint button.
   - The stats are now two plain text lines at the bottom of the HUD, right aligned, on the same rows as the tournament and event lines: `[TAG] Rank (rank progress %)   Score   XP` in the team colour, then `Kills   Deaths   K/D   Spree   Caps` in white. The +score / +$ reward still floats up above them.

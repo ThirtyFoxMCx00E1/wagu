@@ -13,10 +13,10 @@
 // phones refuse servers older than that too (they would let old phones in).
 // 3.10: build 31000. MP_MIN_BUILD stays 30406 and the lobby stays thirtyfox/mp5/: 3.04.6 (no cheats)
 // and 3.10 phones play together on the same servers; only 3.04.5 and older (mp4) stay shut out.
-#define MP_BUILD           32340   // 3.23.4
+#define MP_BUILD           32350   // 3.23.5
 #define MP_MIN_BUILD       30406
 #define MP_AUTH_MIN_BUILD  32106   // 3.21.6: servers with the login system refuse older phones (they could not log in)
-#define MP_VERSION_STR     "3.23.4"
+#define MP_VERSION_STR     "3.23.5"
 #define MP_VOICE_BUILD     31100   // 3.11: phones from this build on get voice packets
 #define MP_DOWNLOAD_URL    "thirtyfoxmcx00e1.github.io/wagu"
 #define MP_DEFAULT_HOST    "127.0.0.1"
@@ -27,7 +27,9 @@
 #define MP_NAME_LEN        24
 #define MP_CHAT_LEN        128
 #define MP_INVALID_ID      0xFF
-#define MP_TIMEOUT_MS      20000   // 2.21: was 10 s; covers an internet relay reconnect (no more random timeouts)
+#define MP_TIMEOUT_MS      30000   // 2.21: was 10 s; 3.23.5: 30 s (the public relay broker can stall for 20 s; no more random timeouts)
+#define MP_BOT_ID          (MP_MAX_PLAYERS - 1)   // 3.23.5: the 24/7 bot on the featured servers (never a real player's slot)
+#define MP_BOT_NAME        "Broker"
 #define MP_SYNC_RATE_MS    50     // 20 Hz on-foot / in-car sync (lower with many players, 2.11)
 #define MP_SYNC_NEAR_M     350.0f // server forwards every sync between players closer than this
 #define MP_SYNC_FAR_MS     1000   // ...and 1 sync per second between players farther apart

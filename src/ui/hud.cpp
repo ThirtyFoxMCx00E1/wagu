@@ -600,13 +600,13 @@ static void DrawStatus(ImDrawList* dl)
         case NET_CONNECTED:
             // 2.16: server name only, the IP is never shown
             snprintf(buf, sizeof(buf), "MP: Connected to %s  |  %s  |  Players: %d/%d  |  Ping: %d ms%s",
-                     MP::client.GetServerName()[0] ? MP::client.GetServerName() : "server", g_MPRegionNames[MP::settings.region], MP::OnlineCount(), MP::OnlineMax(), MP::DisplayPing(), MP::IsHosting() ? "  |  Hosting" : "");
+                     MP::client.GetServerName()[0] ? MP::client.GetServerName() : "server", g_MPRegionNames[MP::settings.region], MP::OnlineCount(), MP::OnlineMax(), MP::DisplayPing(), MP::IsBotHosted() ? "  |  Host: " MP_BOT_NAME : (MP::IsHosting() ? "  |  Hosting" : ""));
             col = IM_COL32(60, 220, 90, 255); break;
         case NET_CONNECTING:
             snprintf(buf, sizeof(buf), "MP: Connecting ...");
             col = IM_COL32(240, 200, 40, 255); break;
         default:
-            snprintf(buf, sizeof(buf), "MP: Disconnected%s", MP::IsHosting() ? "  |  Hosting" : "");
+            snprintf(buf, sizeof(buf), "MP: Disconnected%s", MP::IsBotHosted() ? "  |  Host: " MP_BOT_NAME : (MP::IsHosting() ? "  |  Hosting" : ""));
             col = IM_COL32(230, 60, 60, 255); break;
     }
     UI::OutlinedText(dl, fs, ImVec2(UI::S(12), ds.y - fs - UI::S(10)), col, buf);
