@@ -6,17 +6,17 @@
  "assets": [
   {
    "name": "bin/libMP32.so",
-   "size": 3545596,
+   "size": 3545788,
    "download_count": 0
   },
   {
    "name": "bin/libMP64.so",
-   "size": 4444488,
+   "size": 4445000,
    "download_count": 0
   },
   {
    "name": "release/MP-3.25-full.zip",
-   "size": 15582210,
+   "size": 15601499,
    "download_count": 0
   },
   {
