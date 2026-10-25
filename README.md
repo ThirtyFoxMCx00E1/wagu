@@ -128,12 +128,14 @@ All four use the same `mp.env` (same `mp` / `web` / bridge / admin passwords); o
 | | Minimum | Recommended |
 |---|---|---|
 | CPU | 2 vCPU (small tests) | **4 vCPU** (HiveMQ CE system requirement) |
-| RAM | 2 GB | **8 GB for the JVM** (`-Xms4g -Xmx8g`, 3.25) + 2 GB for the OS = 10 GB+ (16 GB machine ideal) |
+| RAM | 2 GB | **10 GB for the JVM** (`-Xms5g -Xmx10g`, 3.25) + ~2 GB JVM overhead + 2 GB for the OS = 14 GB+ (16 GB machine ideal); 10-14 GB machines get the 8 GB heap |
 | Disk | 10 GB SSD | SSD, 900+ IOPS |
 | OS | Ubuntu 22.04 / 24.04 or Debian 12, x86_64 or arm64 | |
 | Network | public IPv4, open ports below | |
 
-Java heap is automatic (3.25): `-Xms4g -Xmx8g` with 10 GB RAM or more, `-Xms2g -Xmx4g` with 6 GB+, about 60 % of RAM below that (giving Java all the RAM leaves nothing for Linux and gets HiveMQ killed). Override with `JVM_XMS=4g` / `JVM_XMX=8g` in `/etc/mp-hivemq/mp.env`. `sudo ./update.sh` picks the new heap up by itself. More heap = room for many more phones and no garbage-collection stalls under load; the ping itself depends on the internet line and how close the machine is to the players.
+Java heap is automatic (3.25): `-Xms5g -Xmx10g` with 14 GB RAM or more, `-Xms4g -Xmx8g` with 10 GB+, `-Xms2g -Xmx4g` with 6 GB+, about 60 % of RAM below that (giving Java all the RAM leaves nothing for Linux and gets HiveMQ killed). Override with `JVM_XMS=5g` / `JVM_XMX=10g` in `/etc/mp-hivemq/mp.env`. `sudo ./update.sh` picks the new heap up by itself. More heap = room for many more phones and no garbage-collection stalls under load; the ping itself depends on the internet line and how close the machine is to the players.
+
+**HiveMQ CE from our fork (3.25):** `install.sh` / `update.sh` install HiveMQ CE built from [ThirtyFoxMCx00E1/hivemq-community-edition](https://github.com/ThirtyFoxMCx00E1/hivemq-community-edition) (Apache 2.0). Its `MP build` workflow builds `hivemq-ce-<version>.zip` on every change and publishes it as the release `mp-<version>` (with a `.sha256`, checked on install). If that release is missing, the official HiveMQ CE release is used. Force the official one with `HIVEMQ_SOURCE=official` in `/etc/mp-hivemq/mp.env`.
 
 Pick each VPS in a data center close to its players, e.g. Singapore or Tokyo for Asia, Frankfurt for Europe, Virginia or Ohio for NA, Sydney for Oceania.
 
@@ -253,7 +255,7 @@ All services start on boot and restart after a crash.
 
 | Option | What you get | Notes |
 |---|---|---|
-| [Oracle Cloud Always Free](https://docs.oracle.com/iaas/Content/FreeTier/freetier_topic-Always_Free_Resources.htm) | Ampere arm64, 2 OCPU / 12 GB in total | Only in your home region (one region per account), card needed for verification. Good for one region with `-Xms4g -Xmx8g` (12 GB). |
+| [Oracle Cloud Always Free](https://docs.oracle.com/iaas/Content/FreeTier/freetier_topic-Always_Free_Resources.htm) | Ampere arm64, 2 OCPU / 12 GB in total | Only in your home region (one region per account), card needed for verification. Good for one region with `-Xms4g -Xmx8g` (12 GB; the 10 GB heap needs 14 GB+). |
 | Google Cloud / AWS free tiers | 1-2 small vCPUs, 1 GB RAM | Too small for 4 GB heap; fine for testing with automatic heap. |
 | Paid VPS | 4 vCPU / 8 GB from about 10-25 USD a month | Hetzner, DigitalOcean, Vultr, Linode all have Asia/EU/US/Sydney locations. |
 
@@ -278,7 +280,7 @@ Why Community Edition: the HiveMQ Enterprise download without a license is an ev
 Walang computer? Gumawa ng VM sa browser ng phone, i-paste ang `cloud-init/user-data.yaml` (palitan ang REGION at DuckDNS), hintayin ang 10 minuto, tapos buksan ang Termius page ng website.
 
 
-Isang VPS bawat rehiyon (Asia, Europe, NA, Oceania). Sa una: `sudo ./install.sh --region Asia --bridge`. Kopyahin ang `/etc/mp-hivemq/mp.env` sa ibang VPS at patakbuhin ang `install.sh` gamit ang rehiyon nila (walang `--bridge`). Ilagay ang address ng bawat server sa `HOST_*` sa `mp.env`, patakbuhin ang `tools/make-regions.sh`, at ilagay ang resulta sa `docs/regions.txt` ng Sa-mp repo. Ang mod na mismo ang pipili ng rehiyon na may pinakamababang ping. Inirerekomenda: 4 vCPU, 8 GB para sa JVM (`-Xms4g -Xmx8g`, kaya 10 GB+ RAM sa buong server), SSD na 900+ IOPS.
+Isang VPS bawat rehiyon (Asia, Europe, NA, Oceania). Sa una: `sudo ./install.sh --region Asia --bridge`. Kopyahin ang `/etc/mp-hivemq/mp.env` sa ibang VPS at patakbuhin ang `install.sh` gamit ang rehiyon nila (walang `--bridge`). Ilagay ang address ng bawat server sa `HOST_*` sa `mp.env`, patakbuhin ang `tools/make-regions.sh`, at ilagay ang resulta sa `docs/regions.txt` ng Sa-mp repo. Ang mod na mismo ang pipili ng rehiyon na may pinakamababang ping. Inirerekomenda: 4 vCPU, 10 GB para sa JVM (`-Xms5g -Xmx10g`, kaya 14 GB+ RAM sa buong server; 8 GB heap sa 10-14 GB), SSD na 900+ IOPS.
 
 ## Brief Case War 24/7 (MP 3.04)
 

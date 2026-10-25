@@ -18,6 +18,12 @@
 #   - 3.21.7: MP Railway (our own Railway): the Discord login bot 24/7, auto deploy on git push
 set -euo pipefail
 
+# 3.25: HiveMQ CE comes from our own fork first (ThirtyFoxMCx00E1/hivemq-community-edition, Apache 2.0,
+# built by its "MP build" workflow into the release mp-<version>); the official release is the fallback.
+# HIVEMQ_SOURCE=official in mp.env (or the environment) skips the fork.
+HIVEMQ_FORK="ThirtyFoxMCx00E1/hivemq-community-edition"
+HIVEMQ_FORK_VER="2026.6"
+HIVEMQ_FORK_URL="https://github.com/${HIVEMQ_FORK}/releases/download/mp-${HIVEMQ_FORK_VER}/hivemq-ce-${HIVEMQ_FORK_VER}.zip"
 HIVEMQ_VER="2026.5"
 HIVEMQ_URL="https://github.com/hivemq/hivemq-community-edition/releases/download/${HIVEMQ_VER}/hivemq-ce-${HIVEMQ_VER}.zip"
 RBAC_VER="4.6.18"
@@ -90,7 +96,9 @@ MAX_PLAYERS=100
 # run MpBridge here (only on ONE server of the whole network)
 RUN_BRIDGE=0
 
-# Java heap. Empty = automatic: -Xms4g -Xmx8g with 10 GB RAM or more (3.25), -Xms2g -Xmx4g with 6 GB+, ~60 % of RAM below that.
+# Java heap. Empty = automatic: -Xms5g -Xmx10g with 14 GB RAM or more, -Xms4g -Xmx8g with 10 GB+ (3.25), -Xms2g -Xmx4g with 6 GB+, ~60 % of RAM below that.
+# HiveMQ CE source: fork (default, our build) or official
+HIVEMQ_SOURCE=fork
 JVM_XMS=
 JVM_XMX=
 # limits per broker
@@ -133,6 +141,7 @@ say "machine: $ARCH, $CPUS vCPU, $RAM_MB MB RAM"
 [ "$CPUS" -lt 4 ] && warn "HiveMQ recommends 4 vCPUs (you have $CPUS). It runs, but keep the player count lower."
 [ "$RAM_MB" -lt 3500 ] && warn "less than 4 GB RAM: the heap is reduced automatically."
 [ "$RAM_MB" -ge 3500 ] && [ "$RAM_MB" -lt 10000 ] && warn "the 8 GB Java heap needs 10 GB+ RAM on this machine (you have $RAM_MB MB): using a smaller heap."
+[ "$RAM_MB" -ge 10000 ] && [ "$RAM_MB" -lt 14000 ] && warn "the 10 GB Java heap needs 14 GB+ RAM on this machine (you have $RAM_MB MB): using the 8 GB heap."
 
 # ---------------------------------------------------------------- packages
 export DEBIAN_FRONTEND=noninteractive
@@ -161,14 +170,22 @@ fi
 
 # ---------------------------------------------------------------- HiveMQ CE + RBAC
 HQ="$BASE/hivemq"
-if [ ! -f "$HQ/bin/hivemq.jar" ] || [ "$(cat "$HQ/.version" 2>/dev/null)" != "$HIVEMQ_VER" ]; then
-    say "installing HiveMQ CE $HIVEMQ_VER"
+# 3.25: try the fork's build first; if its release isn't there (or HIVEMQ_SOURCE=official) use the official one
+HQ_TAG="official-$HIVEMQ_VER"
+if [ "${HIVEMQ_SOURCE:-fork}" != official ] && curl -fsIL --retry 2 -o /dev/null "$HIVEMQ_FORK_URL"; then
+    HIVEMQ_VER="$HIVEMQ_FORK_VER"; HIVEMQ_URL="$HIVEMQ_FORK_URL"; HQ_TAG="fork-$HIVEMQ_FORK_VER"
+fi
+if [ ! -f "$HQ/bin/hivemq.jar" ] || [ "$(cat "$HQ/.version" 2>/dev/null)" != "$HQ_TAG" ]; then
+    say "installing HiveMQ CE $HIVEMQ_VER (${HQ_TAG%%-*} build)"
     tmp="$(mktemp -d)"
     curl -fL --retry 3 -o "$tmp/hq.zip" "$HIVEMQ_URL"
+    if [ "${HQ_TAG%%-*}" = fork ] && curl -fsL "$HIVEMQ_FORK_URL.sha256" -o "$tmp/hq.sha256" 2>/dev/null; then
+        echo "$(cat "$tmp/hq.sha256")  $tmp/hq.zip" | sha256sum -c --quiet - || die "HiveMQ CE fork zip: checksum mismatch"
+    fi
     unzip -q "$tmp/hq.zip" -d "$tmp"
     systemctl stop hivemq 2>/dev/null || true
     rm -rf "$HQ"; mv "$tmp/hivemq-ce-$HIVEMQ_VER" "$HQ"; rm -rf "$tmp"
-    echo "$HIVEMQ_VER" > "$HQ/.version"
+    echo "$HQ_TAG" > "$HQ/.version"
     chmod +x "$HQ/bin/"*.sh
 fi
 rm -rf "$HQ/extensions/hivemq-allow-all-extension"     # NEVER allow anonymous clients
@@ -255,10 +272,13 @@ PY
 chown -R mp:mp "$BASE"
 chmod 600 "$HQ/conf/config.xml"
 
-# Java heap: 3.25: 8 GB (-Xms4g -Xmx8g) when the machine has 10 GB+ RAM, 4 GB (-Xms2g -Xmx4g) with
-# 6 GB+, else ~60 % of RAM. Linux always keeps 2 GB+ for itself (all RAM to Java = HiveMQ killed).
+# Java heap: 3.25: 10 GB (-Xms5g -Xmx10g) when the machine has 14 GB+ RAM, 8 GB (-Xms4g -Xmx8g) with
+# 10 GB+, 4 GB (-Xms2g -Xmx4g) with 6 GB+, else ~60 % of RAM. The JVM needs ~1.5-2 GB on top of the heap
+# (metaspace, threads, direct buffers) and Linux + the mp_server processes need ~2 GB more, so a 10 GB
+# heap wants 14 GB of RAM. More heap = more queued messages / connections; it does NOT lower the ping.
 if [ -z "${JVM_XMX:-}" ]; then
-    if   [ "$RAM_MB" -ge 10000 ]; then JVM_XMS=4g; JVM_XMX=8g
+    if   [ "$RAM_MB" -ge 14000 ]; then JVM_XMS=5g; JVM_XMX=10g
+    elif [ "$RAM_MB" -ge 10000 ]; then JVM_XMS=4g; JVM_XMX=8g
     elif [ "$RAM_MB" -ge 6000 ];  then JVM_XMS=2g; JVM_XMX=4g
     else x=$(( RAM_MB * 60 / 100 )); JVM_XMX="${x}m"; JVM_XMS="$(( x < 2048 ? x : 2048 ))m"; fi
 fi
