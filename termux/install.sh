@@ -112,12 +112,22 @@ case "$1" in
     log) tail -n 40 -f "$D/server.log" ;;
     config) ${EDITOR:-nano} "$D/server.conf" 2>/dev/null || vi "$D/server.conf"; echo "mp-server restart to apply" ;;
     update) curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/termux/install.sh | bash ;;
+    vps-update)
+        # 3.23.5: update the 24/7 VPS (HiveMQ kit + mp_server + MW3/BCW) from the phone over SSH.
+        # The VPS autopilot also does it by itself within 10 min of a new release.
+        UPD='curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/update.sh | sudo bash'
+        H="$2"; [ -z "$H" ] && [ -f "$D/vps.txt" ] && H="$(cat "$D/vps.txt")"
+        if [ -z "$H" ]; then echo "mp-server vps-update user@host   (for example ubuntu@mpsamp.duckdns.org; saved for next time)"; echo "or on the VPS: $UPD"; exit 1; fi
+        echo "$H" > "$D/vps.txt"
+        command -v ssh >/dev/null || pkg install -y openssh </dev/null >/dev/null 2>&1 || { echo "pkg install openssh failed"; exit 1; }
+        echo "running on $H: $UPD"
+        ssh -t -o ServerAliveInterval=20 "$H" "$UPD" ;;
     status|"")
         . "$D/server.conf"
         if running; then printf '\033[1;32monline\033[0m'; else printf '\033[1;31moffline\033[0m'; fi
         echo "  $NAME  port $PORT  $MAX_PLAYERS slots  region $REGION"
         grep -E "connected to|listed|player|joined|left" "$D/server.log" 2>/dev/null | tail -n 5 ;;
-    *) echo "mp-server start|stop|restart|status|log|config|update" ;;
+    *) echo "mp-server start|stop|restart|status|log|config|update|vps-update [user@host]" ;;
 esac
 EOF
 chmod 755 "$PREFIX/bin/mp-server"

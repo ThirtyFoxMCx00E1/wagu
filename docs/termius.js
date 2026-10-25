@@ -192,6 +192,11 @@
     if (load || $('cframe').dataset.u) { if ($('cframe').dataset.u !== u) { $('cframe').src = u; $('cframe').dataset.u = u; } }
     return true;
   }
+  var cp = $('updcopy');
+  if (cp) cp.addEventListener('click', function () {
+    var done = function () { cp.textContent = 'Copied'; setTimeout(function () { cp.textContent = 'Copy'; }, 1500); };
+    if (navigator.clipboard) navigator.clipboard.writeText(UPD).then(done, function () {}); 
+  });
   $('csel').addEventListener('change', function () { showConsole(+this.value, true); });
   function tab(v) {
     document.querySelectorAll('.tab').forEach(function (t) { t.classList.toggle('on', t.dataset.v === v); });
@@ -209,13 +214,40 @@
     if (a === 'eu') i = 1; if (a === 'us') i = 2; if (a === 'au' || a === 'oc') i = 3;
     return i;
   }
+  // 3.23.5: VPS update. The region autopilot runs it by itself when a new version is out;
+  // a region with an older autopilot (no "mod" in its beacon) needs it run once by hand.
+  var UPD = 'curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/update.sh | sudo bash';
+  var latestMod = '', updAsked = {};
+  fetch('release.json', { cache: 'no-cache' }).then(function (r) { return r.json(); }).then(function (j) { latestMod = String(j.tag_name || '').replace(/^v/, ''); }).catch(function () {});
+  function behind(i) {
+    var be = beacon[i];
+    if (!be || be.online === false) return '';
+    if (!be.mod) return 'old autopilot (no auto update yet)';
+    var want = be.latest || latestMod;
+    if (be.updating) return 'updating now ' + be.mod + ' -> ' + want;
+    return want && be.mod !== want ? 'on ' + be.mod + ', latest ' + want : '';
+  }
   var CMDS = {
+    update: function (a) {
+      var list = a ? [regionArg(a)] : REG.map(function (_, i) { return i; }).filter(function (i) { return beacon[i]; });
+      if (!list.length) list = [Math.max(0, bestRegion())];
+      list.forEach(function (i) {
+        var be = beacon[i], b = behind(i);
+        if (!be) { print('<span class="m">' + esc(REG[i] || '?') + '</span> no status beacon - run on the VPS:'); return; }
+        if (be.updating) print('<span class="c">' + esc(REG[i]) + '</span> ' + esc(b) + ' <span class="m">(autopilot is running the update)</span>');
+        else if (!be.mod) print('<span class="y">' + esc(REG[i]) + '</span> ' + esc(b) + ' - run this once on the VPS, after that it updates by itself:');
+        else if (b) print('<span class="y">' + esc(REG[i]) + '</span> ' + esc(b) + ' <span class="m">· autopilot updates it within 10 min' + (be.autoupdate === false ? ' (MP_AUTOUPDATE=0: run it by hand)' : '') + '</span>');
+        else print('<span class="g">' + esc(REG[i]) + '</span> up to date (' + esc(be.mod) + ') · auto update ' + (be.autoupdate === false ? 'off' : 'on'));
+      });
+      print('  <span class="g">$</span> ' + esc(UPD));
+      p('m', '  from Termux on your phone: mp-server vps-update ubuntu@your-vps   ·   Server console tab: menu 7) update');
+    },
     help: function () {
       p('a', 'MP Termius 2.22 - commands the bot uses');
       [['status', 'health of every region (broker, 24/7 server, bridge, uptime)'], ['servers', 'live server list (all regions)'],
        ['ping', 'measure ping to every region now'], ['regions', 'what regions.txt contains (no passwords shown)'],
        ['console [region]', 'open the server terminal of a region (login admin)'], ['ssh [region]', 'SSH command / Termius link for a region'],
-       ['broker', 'connection details for the mod / MQTT apps'], ['diagnose [region]', 'what is wrong with a region + what its autopilot did'], ['autopilot', 'new actions of the server autopilots'], ['clear', 'clear the screen']].forEach(function (c) {
+       ['broker', 'connection details for the mod / MQTT apps'], ['diagnose [region]', 'what is wrong with a region + what its autopilot did'], ['autopilot', 'new actions of the server autopilots'], ['update [region]', 'is the VPS on the newest version + the update command'], ['clear', 'clear the screen']].forEach(function (c) {
         print('  <span class="g">' + esc(c[0]) + '</span>' + ' '.repeat(Math.max(1, 18 - c[0].length)) + '<span class="m">' + esc(c[1]) + '</span>');
       });
     },
@@ -302,11 +334,12 @@
   }
 
   // ---------------------------------------------------------------- 2.22: MP Bot planner
-  var boot = ['status', 'regions', 'servers', 'broker'], rot = ['status', 'servers', 'autopilot', 'status', 'servers', 'broker'], ri = 0, cycles = 0;
+  var boot = ['status', 'regions', 'servers', 'broker', 'update'], rot = ['status', 'servers', 'autopilot', 'status', 'servers', 'broker', 'update'], ri = 0, cycles = 0;
   function next() {
     if (boot.length) return { cmd: boot.shift(), why: 'start-up check' };
     if (changed.length) { var i = changed.shift(); return { cmd: 'diagnose ' + REG[i].toLowerCase(), why: REG[i] + ' changed: ' + lastSig[i] }; }
     if (botLog.length > botSeen) return { cmd: 'autopilot', why: 'new report from a region autopilot' };
+    for (var u = 0; u < 4; u++) { var bh = behind(u); if (bh && updAsked[u] !== bh) { updAsked[u] = bh; return { cmd: 'update ' + REG[u].toLowerCase(), why: REG[u] + ': ' + bh }; } }
     if (serversChanged) { serversChanged = false; return { cmd: 'servers', why: 'server list changed' }; }
     if (Date.now() - lastPingAt > 90000) return { cmd: 'ping', why: 'ping every 90 s', wait: 7000 };
     if (++cycles % 9 === 0) return { cmd: 'clear', why: 'keeping the screen short', wait: 600 };
