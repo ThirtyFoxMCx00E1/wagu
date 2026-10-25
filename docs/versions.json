@@ -1,6 +1,7 @@
 {
-"latest": "3.21.7",
+"latest": "3.21.8",
 "supported": [
+"3.21.8",
 "3.21.7",
 "3.21.6",
 "3.21.5",
@@ -20,6 +21,14 @@
 "3.04.6"
 ],
 "versions": [
+{
+"v": "3.21.8",
+"summary": "cleaner login screen.",
+"items": [
+"**Login screen:** the SAFE ZONE / SPAWN PROTECTION text (and the Brief Case War match bar) no longer shows on top of the login pop-up and its animated background.",
+"**Verification:** the Code authentication / Login pop-up opens only after the login server is connected. Until then a small \"Connecting to the login server...\" line shows at the top (the pop-up still opens with the error if it can't connect)."
+]
+},
 {
 "v": "3.21.7",
 "summary": "MP Railway - the Discord login bot online 24/7 on our own server.",

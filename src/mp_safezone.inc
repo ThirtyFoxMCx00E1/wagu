@@ -131,6 +131,7 @@ static void ProcessSafeZones(int ped, uint64_t now)
 static void RenderSafeZones()
 {
     if(client.GetState() != NET_CONNECTED || BcwOnServer() || !Game::IsReady() || Game::IsPaused()) return;
+    if(MP::AuthScreenShown()) return;   // 3.21.7: no SAFE ZONE / SPAWN PROTECTION text over the login screen
     float now = (float)(MP_NowMs() % 100000000ULL);
     ImDrawList* bg = ImGui::GetBackgroundDrawList();
     for(int i = 0; i < g_MPSafeZoneCount; ++i)
