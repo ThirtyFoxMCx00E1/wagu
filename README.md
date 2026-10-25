@@ -51,6 +51,14 @@ sudo mp-railway add NAME REPO     host another Python / Node app the same way
 
 Without a VPS it also runs on an Android phone in Termux: `curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/railway/install.sh | bash` (Termux:Boot starts it after a reboot). Run the bot in **one** place only.
 
+
+## Auto update (3.23.5)
+
+The autopilot (mp-status) checks GitHub every 10 minutes. When the mod or this kit has a new version it runs
+`curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/update.sh | sudo bash` by itself
+(unit `mp-autoupdate`, log: `journalctl -u mp-autoupdate`). `MP_AUTOUPDATE=0` in `/etc/mp-hivemq/mp.env` turns it off.
+It also restarts mp-bcw, mp-mw3 and mp-legacy when they stop. Servers older than this need the command run once by hand.
+
 ## MP 3.21: update the 24/7 servers (important)
 
 Run this on every region (or Termius console **7) update**, which now runs the same script):

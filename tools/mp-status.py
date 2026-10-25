@@ -10,8 +10,14 @@ publishes the last will {"online": false}. Only Python's standard library, MQTT 
   - disk above 90 %: journal vacuum + old HiveMQ logs removed
   - low memory (< 5 % available): reported, the broker is restarted only if it also stopped answering
 Every action is published on thirtyfox/mp4/bot/<Region> as {"t", "cmd", "out", "ok"}; the MP Bot on
-the website (Termius) shows it as a command it ran. MP_AUTOPILOT=0 in mp.env turns it off."""
-import json, os, socket, struct, subprocess, time
+the website (Termius) shows it as a command it ran. MP_AUTOPILOT=0 in mp.env turns it off.
+
+3.23.5 auto update: every 10 minutes the autopilot checks GitHub. When the mod (wagu MP_VERSION_STR)
+or the HiveMQ kit has a new version, it runs by itself
+  curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/update.sh | sudo bash
+in its own systemd unit (mp-autoupdate), so nobody has to type it. MP_AUTOUPDATE=0 in mp.env turns it off.
+The 24/7 featured servers (mp-bcw, mp-mw3, mp-legacy) are now restarted too when they stop."""
+import json, os, re, socket, struct, subprocess, time, urllib.request
 
 def env(path="/etc/mp-hivemq/mp.env"):
     d = {}
@@ -59,9 +65,41 @@ def sh(cmd):
         return False, [str(x)]
 
 class Autopilot:
-    SERVICES = ("hivemq", "mp-server", "mp-bridge", "mp-console")
-    def __init__(self, base):
+    SERVICES = ("hivemq", "mp-server", "mp-bcw", "mp-mw3", "mp-legacy", "mp-bridge", "mp-console")
+    UPDATE_CMD = "curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/update.sh | sudo bash"
+    WAGU_PROTO = "https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/src/net/protocol.h"
+    def __init__(self, base, auto_update=True):
         self.base = base; self.hist = {}; self.last_disk = 0
+        self.auto_update = auto_update; self.last_check = time.time() - 480; self.last_update = 0
+        self.latest = ""
+    def installed(self):
+        try: return re.search(r'MP_VERSION_STR\s+"([^"]+)"', open(os.path.join(self.base, "src", "src", "net", "protocol.h")).read()).group(1)
+        except Exception: return ""
+    def kit_sha(self):
+        r = subprocess.run(["git", "-C", os.path.join(self.base, "kit"), "rev-parse", "HEAD"], capture_output=True, text=True)
+        return r.stdout.strip()
+    def check_update(self):
+        """-> (cmd, out, ok) when an update was started, else None"""
+        now = time.time()
+        if not self.auto_update or now - self.last_check < 600: return None
+        self.last_check = now
+        if active("mp-autoupdate"): return None                  # one is already running
+        try:
+            txt = urllib.request.urlopen(self.WAGU_PROTO + "?t=%d" % int(now), timeout=15).read().decode("utf-8", "replace")
+            self.latest = re.search(r'MP_VERSION_STR\s+"([^"]+)"', txt).group(1)
+            r = subprocess.run(["git", "ls-remote", "https://github.com/ThirtyFoxMCx00E1/HiveMQ.git", "HEAD"], capture_output=True, text=True, timeout=15)
+            kit_new = (r.stdout.split() or [""])[0]
+        except Exception:
+            return None
+        have, kit = self.installed(), self.kit_sha()
+        why = []
+        if self.latest and have and have != self.latest: why.append("mod %s -> %s" % (have or "?", self.latest))
+        if kit_new and kit and kit_new != kit: why.append("kit %s -> %s" % (kit[:7], kit_new[:7]))
+        if not why or now - self.last_update < 1800: return None   # at most one auto update per 30 min
+        self.last_update = now
+        ok, out = sh(["systemd-run", "--unit", "mp-autoupdate", "--collect", "--quiet", "/bin/bash", "-c",
+                      "curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/update.sh | bash"])
+        return (self.UPDATE_CMD, ("started: " + ", ".join(why)) if ok else (out[0] or "could not start"), ok)
     def _allowed(self, n):
         now = time.time(); h = [t for t in self.hist.get(n, []) if now - t < 600]
         self.hist[n] = h
@@ -86,13 +124,15 @@ class Autopilot:
                 acts.append(("journalctl --vacuum-size=100M", "disk was %d %% full" % int(used * 100), ok))
         except Exception:
             pass
+        u = self.check_update()
+        if u: acts.append(u)
         return acts
 
 def main():
     e = env(); region = e.get("REGION", "Asia"); dom = e.get("DOMAIN", "")
     topic = "thirtyfox/mp4/st/" + region
     bot_topic = "thirtyfox/mp4/bot/" + region
-    pilot = Autopilot(e.get("BASE", "/opt/mp")) if e.get("MP_AUTOPILOT", "1") != "0" else None
+    pilot = Autopilot(e.get("BASE", "/opt/mp"), e.get("MP_AUTOUPDATE", "1") != "0") if e.get("MP_AUTOPILOT", "1") != "0" else None
     pending = []   # actions done while the broker was down are sent after the reconnect
     while True:
         try:
@@ -110,7 +150,10 @@ def main():
                       "load": os.getloadavg()[0], "mem": [ (mem["MemTotal"] - mem["MemAvailable"]) // 1024, mem["MemTotal"] // 1024 ],
                       "clients": clients(), "broker": active("hivemq"), "server": active("mp-server"),
                       "bridge": active("mp-bridge"), "console": ("https://%s:7681/" % dom) if dom and active("mp-console") else "",
-                      "slots": int(e.get("MAX_PLAYERS", "100") or 100), "ver": "2.22", "autopilot": bool(pilot)}
+                      "slots": int(e.get("MAX_PLAYERS", "100") or 100), "ver": "3.23.5", "autopilot": bool(pilot),
+                      "mod": pilot.installed() if pilot else "", "latest": pilot.latest if pilot else "",
+                      "autoupdate": bool(pilot and pilot.auto_update), "updating": active("mp-autoupdate"),
+                      "bcw": active("mp-bcw"), "mw3": active("mp-mw3")}
                 publish(k, topic, json.dumps(st, separators=(",", ":")))
                 k.sendall(b"\xc0\x00")   # ping
                 time.sleep(10)
