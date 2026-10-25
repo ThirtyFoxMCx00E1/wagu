@@ -17,5 +17,6 @@ namespace Progress
     // onDefault = connected to the default server, canLoad = game running, not paused, not on a mission
     void Process(uint64_t now, bool enabled, bool onDefault, bool connectedElsewhere, bool canLoad);
     bool IsActive();             // 100% save is loaded (or loading)
+    bool Pending();              // 3.22.1: a save load is about to start or running (the login pop-up waits for it)
     const char* StatusText();    // one line for the menu
 }

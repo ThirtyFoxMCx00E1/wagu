@@ -106,6 +106,12 @@ bool MPClient::Connect(const char* host, uint16_t port, const char* name, uint16
     m_nLastGamePoll = MP_NowMs();
     m_bSentPaused = false;
     if(!m_bHbRun) { m_bHbRun = true; m_Heartbeat = std::thread(&MPClient::Heartbeat, this); }
+    if(m_bLeaveFirst)
+    {   // 3.22.1: drop a ghost slot of the closed game first (the server ignores a leave without a slot)
+        m_bLeaveFirst = false;
+        PktLeave l; l.type = PKT_LEAVE;
+        Send(&l, sizeof(l));
+    }
     SendJoin();
     return true;
 }

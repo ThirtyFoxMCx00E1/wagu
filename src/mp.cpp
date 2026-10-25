@@ -3784,6 +3784,7 @@ static void DoConnect(const char* host, int port)
     }
     MP_CopyStr(s_szLastConnHost, host, sizeof(s_szLastConnHost)); s_nLastConnPort = port;   // 3.11.3: retry with the other admin key
     AuthReset();   // 3.21.6: a new connection = a new login challenge
+    client.SetLeaveFirst(!s_Auth.LoggedIn());   // 3.22.1: after a game restart the join is always a new one (login screen)
     // internet server: packets go through the online relay (local proxy on 127.77.x.y:port)
     uint16_t via = 0;
     if(Online::IsRelayIp(host))

@@ -75,6 +75,10 @@ public:
     // doesn't answer within 2.5 s the client switches to the relay proxy (fallbackVia) by itself.
     void SetDirect(uint32_t ipNetOrder, uint16_t fallbackVia) { m_nDirectIp = ipNetOrder; m_nDirectVia = fallbackVia; }
     bool IsDirect() const { return m_bDirect; }
+    // 3.22.1: a fresh game start (not logged in yet): Connect() sends a PKT_LEAVE before the join, so a ghost
+    // slot left on the server by the closed game (same relay / NAT address) is dropped and the join is a new
+    // one: the server asks for the login again (the default server kept the old, already logged-in slot).
+    void SetLeaveFirst(bool on) { m_bLeaveFirst = on; }
     bool DirectFellBack() const { return m_bDirectFellBack; }
     void Disconnect(bool sendLeave = true);
     void Poll(INetEvents* ev);           // call every frame from the game thread
@@ -112,6 +116,7 @@ private:
     uint16_t    m_nPort, m_nSkin;
     uint32_t    m_nColor = 0;
     uint64_t    m_nConnectStart, m_nLastJoinSend, m_nLastPing, m_nLastRecv;
+    bool        m_bLeaveFirst = false;   // 3.22.1
     uint32_t    m_nDirectIp = 0;          // 3.11
     uint16_t    m_nDirectVia = 0, m_nFallbackVia = 0;
     bool        m_bDirect = false, m_bDirectFellBack = false, m_bGotReply = false;

@@ -295,5 +295,6 @@ void Progress::Process(uint64_t now, bool enabled, bool onDefault, bool connecte
     }
 }
 
+bool Progress::Pending() { return s_Phase == PH_WAIT || s_Phase == PH_LOADING_100 || s_Phase == PH_LOADING_OWN; }
 bool Progress::IsActive() { return s_Phase == PH_LOADING_100 || s_Phase == PH_ACTIVE; }
 const char* Progress::StatusText() { return s_szStatus; }
