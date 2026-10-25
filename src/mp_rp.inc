@@ -992,25 +992,38 @@ static void RpGlowRect(ImDrawList* dl, ImVec2 a, ImVec2 b, float r, float now, f
 static void RpText(ImDrawList* dl, float fs, ImVec2 p, ImU32 c, const char* t) { UI::OutlinedText(dl, fs, p, c, t); }
 static float RpTextW(float fs, const char* t) { return UI::Font()->CalcTextSizeA(fs, FLT_MAX, 0, t).x; }
 
-// the logo at the top (screenshot 1): MEGA VIL FUTURISTIC / ROLEPLAY / The future awaits
+// the title at the top (screenshot 1). Drawn like the GTA SA titles: Pricedown, thick black outline and a
+// drop shadow, "Mega Vil" in sky blue, "Futuristic" in white, a small ROLEPLAY ribbon, the badge on the left.
+// (falls back to the normal font when pricedown.ttf isn't on the phone)
+static void RpGtaText(ImDrawList* dl, ImFont* f, float fs, ImVec2 p, ImU32 fill, const char* t, float th)
+{
+    dl->AddText(f, fs, ImVec2(p.x + th * 1.6f, p.y + th * 1.9f), IM_COL32(0, 0, 0, 140), t);   // drop shadow
+    for(int k = 0; k < 12; ++k) { float a = k * (IM_PI * 2.0f / 12.0f); dl->AddText(f, fs, ImVec2(p.x + cosf(a) * th, p.y + sinf(a) * th), IM_COL32(0, 0, 0, 255), t); }
+    dl->AddText(f, fs, p, fill, t);
+}
 static void RpDrawLogo(ImDrawList* dl, float cx, float y, float scale, float now)
 {
+    ImFont* pd = UI::PricedownFont(); ImFont* f = pd ? pd : UI::Font();
+    const float k = pd ? 1.0f : 0.8f;
+    const char* t1 = "Mega Vil"; const char* t2 = "Futuristic";
+    float fs1 = UI::S(46) * scale * k, fs2 = UI::S(30) * scale * k, th = UI::S(2.6f) * scale;
+    float w1 = f->CalcTextSizeA(fs1, FLT_MAX, 0, t1).x, w2 = f->CalcTextSizeA(fs2, FLT_MAX, 0, t2).x;
+    float gap = UI::S(10) * scale, tw = w1 + gap + w2;
+    float bs = fs1 * 1.25f;
     ImVec2 uv(1, 1);
-    float glow = 0.55f + 0.45f * sinf(now * 0.003f);
-    if(void* tex = HUD::Texture("rp_icon.png", &uv))
-    {
-        float s = UI::S(58) * scale;
-        dl->AddImage((ImTextureID)tex, ImVec2(cx - RpTextW(UI::S(34) * scale, "MEGA VIL FUTURISTIC") * 0.5f - s - UI::S(10), y - UI::S(6) * scale), ImVec2(cx - RpTextW(UI::S(34) * scale, "MEGA VIL FUTURISTIC") * 0.5f - UI::S(10), y - UI::S(6) * scale + s), ImVec2(0, 0), uv);
-    }
-    float fs = UI::S(34) * scale;
-    const char* t1 = "MEGA VIL FUTURISTIC";
-    float w1 = RpTextW(fs, t1);
-    dl->AddText(UI::Font(), fs, ImVec2(cx - w1 * 0.5f + UI::S(2), y + UI::S(2)), RpCol(RP_SKY, 0.45f * glow), t1);
-    RpText(dl, fs, ImVec2(cx - w1 * 0.5f, y), RpCol(RP_SKY, 1), t1);
-    const char* t2 = "ROLEPLAY"; float fs2 = UI::S(18) * scale, w2 = RpTextW(fs2, t2);
-    RpText(dl, fs2, ImVec2(cx - w2 * 0.5f, y + fs + UI::S(1)), IM_COL32_WHITE, t2);
-    const char* t3 = "- The future awaits -"; float fs3 = UI::S(14) * scale, w3 = RpTextW(fs3, t3);
-    RpText(dl, fs3, ImVec2(cx - w3 * 0.5f, y + fs + fs2 + UI::S(2)), RpCol(0xBAE6FDFF, 0.9f), t3);
+    void* tex = HUD::Texture("rp_icon.png", &uv);
+    float x = cx - (tw + (tex ? bs + gap : 0)) * 0.5f;
+    if(tex) { dl->AddImage((ImTextureID)tex, ImVec2(x, y), ImVec2(x + bs, y + bs), ImVec2(0, 0), uv); x += bs + gap; }
+    float ty = y + (bs - fs1) * 0.5f - UI::S(4) * scale;
+    RpGtaText(dl, f, fs1, ImVec2(x, ty), RpCol(0x7DD3FCFF, 1), t1, th);
+    RpGtaText(dl, f, fs2, ImVec2(x + w1 + gap, ty + (fs1 - fs2) * 0.78f), IM_COL32(255, 255, 255, 255), t2, th * 0.85f);
+    // the ROLEPLAY ribbon under the words, slightly off-centre like a sticker
+    const char* t3 = "ROLEPLAY"; float fs3 = UI::S(15) * scale; float w3 = RpTextW(fs3, t3);
+    float rx = x + w1 - w3 * 0.5f, ry = ty + fs1 * 0.98f;
+    float pad = UI::S(8) * scale, rh = fs3 + UI::S(4) * scale;
+    dl->AddQuadFilled(ImVec2(rx - pad, ry), ImVec2(rx + w3 + pad, ry - UI::S(1) * scale), ImVec2(rx + w3 + pad - UI::S(4) * scale, ry + rh), ImVec2(rx - pad + UI::S(3) * scale, ry + rh + UI::S(1) * scale), IM_COL32(255, 255, 255, 235));
+    dl->AddText(UI::Font(), fs3, ImVec2(rx, ry + UI::S(2) * scale), RpCol(0x0C3C64FF, 1), t3);
+    (void)now;
 }
 // a round status icon with a ring (health / armour / hunger / thirst / stamina) and the %
 static void RpStatCircle(ImDrawList* dl, ImVec2 c, float r, float k, uint32_t col, const char* glyph, const char* label)
