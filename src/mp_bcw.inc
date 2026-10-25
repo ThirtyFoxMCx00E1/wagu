@@ -1246,6 +1246,7 @@ static void BcwDrawSpawnerMenu()
 static void RenderBcw()
 {
     if(!s_Bcw.engaged || !s_Bcw.haveState) return;
+    if(FloatMenu::IsModal()) return;   // 3.25.1: the full-screen MP launcher is open: no Brief Case War HUD / team picker over it
     float now = (float)(MP_NowMs() % 100000000ULL);
     uint64_t nowMs = MP_NowMs();
     ImDrawList* bg = ImGui::GetBackgroundDrawList();

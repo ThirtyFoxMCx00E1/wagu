@@ -552,21 +552,40 @@ static void RpDrawCallScreen(float w, float h)
 static void RpDrawPhoneButton()
 {
     ImVec2 ds = ImGui::GetIO().DisplaySize;
-    float s = UI::S(76);
-    ImVec2 pos(ds.x - s - UI::S(24), ds.y * 0.62f);
+    // 3.25.1: only the phone icon - no circle / ring behind it - big, and OUTSIDE the game's button column.
+    // It used to sit on the right edge at 62 % of the height, right on top of the fist / attack button.
+    // Now its centre is 560 (1080p units) from the right edge: left of the game's buttons, below the info panel.
+    const float s = UI::S(160);
+    ImVec2 pos(ds.x - UI::S(560) - s * 0.5f, ds.y * 0.60f - s * 0.5f);
     BcwBeginOverlay("##RpPhoneBtn", ImVec2(pos.x - UI::S(6), pos.y - UI::S(6)), ImVec2(s + UI::S(12), s + UI::S(12)), 0.0f);
     ImGui::SetCursorScreenPos(pos);
     if(ImGui::InvisibleButton("##ph", ImVec2(s, s))) { if(s_Rp.phone) s_Rp.phone = false; else RpPhoneOpen(s_Rp.ringFrom >= 0 || s_Rp.callWith >= 0 ? -2 : RPA_HOME); }
+    const bool down = ImGui::IsItemActive();
     ImDrawList* dl = ImGui::GetWindowDrawList();
-    float now = (float)(MP_NowMs() % 100000);
+    const uint64_t nowMs = MP_NowMs();
     bool ring = s_Rp.ringFrom >= 0 && !s_Rp.ringOut && s_Rp.callWith < 0;
-    ImVec2 c(pos.x + s * 0.5f, pos.y + s * 0.5f);
-    dl->AddCircleFilled(c, s * 0.5f, RpCol(ring ? (fmodf(now, 600) < 300 ? 0x16A34AFF : RP_SKY) : 0x0B1E3AFF, 0.92f), 32);
-    dl->AddCircle(c, s * 0.5f, RpCol(RP_SKY, 1), 32, UI::S(3));
-    // phone glyph
-    dl->AddRectFilled(ImVec2(c.x - s * 0.15f, c.y - s * 0.26f), ImVec2(c.x + s * 0.15f, c.y + s * 0.26f), IM_COL32_WHITE, UI::S(5));
-    dl->AddRectFilled(ImVec2(c.x - s * 0.11f, c.y - s * 0.20f), ImVec2(c.x + s * 0.11f, c.y + s * 0.16f), RpCol(RP_SKY, 1), UI::S(2));
-    if(s_Rp.unreadSms) { dl->AddCircleFilled(ImVec2(pos.x + s * 0.85f, pos.y + s * 0.15f), UI::S(13), IM_COL32(239, 68, 68, 255)); char n[8]; snprintf(n, sizeof(n), "%d", s_Rp.unreadSms > 9 ? 9 : s_Rp.unreadSms); UI::OutlinedText(dl, UI::S(18), ImVec2(pos.x + s * 0.85f - UI::S(5), pos.y + s * 0.15f - UI::S(10)), IM_COL32_WHITE, n); }
+    // an incoming call: the icon shakes and flashes green (there is no background left to flash)
+    const float shake = ring ? sinf((float)(nowMs % 100000) * 0.03f) * UI::S(6) : 0.0f;
+    const ImVec2 c(pos.x + s * 0.5f + shake, pos.y + s * 0.5f);
+    const float is = down ? s * 0.9f : s;
+    const ImU32 tint = (ring && nowMs % 600 < 300) ? IM_COL32(120, 255, 160, 255) : IM_COL32_WHITE;
+    ImVec2 uv(1, 1);
+    if(void* tex = HUD::Texture("rp_phone.png", &uv))
+        dl->AddImage((ImTextureID)tex, ImVec2(c.x - is * 0.5f, c.y - is * 0.5f), ImVec2(c.x + is * 0.5f, c.y + is * 0.5f), ImVec2(0, 0), uv, tint);
+    else
+    {   // the art is missing: a drawn phone (black body, light screen)
+        const float bw = is * 0.30f, bh = is * 0.46f;
+        dl->AddRectFilled(ImVec2(c.x - bw, c.y - bh), ImVec2(c.x + bw, c.y + bh), IM_COL32(12, 14, 20, 255), UI::S(12));
+        dl->AddRectFilled(ImVec2(c.x - bw + UI::S(6), c.y - bh + UI::S(8)), ImVec2(c.x + bw - UI::S(6), c.y + bh - UI::S(14)), RpCol(RP_SKY, 1), UI::S(8));
+        dl->AddRect(ImVec2(c.x - bw, c.y - bh), ImVec2(c.x + bw, c.y + bh), tint, UI::S(12), 0, UI::S(4));
+    }
+    if(s_Rp.unreadSms)
+    {
+        const ImVec2 b(c.x + is * 0.30f, c.y - is * 0.36f);
+        dl->AddCircleFilled(b, UI::S(15), IM_COL32(239, 68, 68, 255));
+        char n[8]; snprintf(n, sizeof(n), "%d", s_Rp.unreadSms > 9 ? 9 : s_Rp.unreadSms);
+        UI::OutlinedText(dl, UI::S(20), ImVec2(b.x - UI::S(6), b.y - UI::S(11)), IM_COL32_WHITE, n);
+    }
     BcwEndOverlay();
 }
 static void RenderRpPhone(float nowF)

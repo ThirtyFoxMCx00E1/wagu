@@ -37,7 +37,7 @@ static void ShowKicked(const PktKicked& k)
 
 // ---- small drawing helpers -------------------------------------------------------------------
 enum { IC_PLAY, IC_PLUS, IC_TRASH, IC_REFRESH, IC_GEAR, IC_SLIDERS, IC_INFO, IC_CLOSE, IC_GLOBE, IC_HEART,
-       IC_BOX, IC_USERS, IC_BAN, IC_LIST, IC_SEARCH, IC_CHAT, IC_USER, IC_STOP };
+       IC_BOX, IC_USERS, IC_BAN, IC_LIST, IC_SEARCH, IC_CHAT, IC_USER, IC_STOP, IC_REGION };
 
 static void LIcon(ImDrawList* dl, int k, ImVec2 c, float r, ImU32 col)
 {
@@ -114,6 +114,16 @@ static void LIcon(ImDrawList* dl, int k, ImVec2 c, float r, ImU32 col)
     case IC_CHAT:
         dl->AddRect(ImVec2(c.x - r * 0.65f, c.y - r * 0.5f), ImVec2(c.x + r * 0.65f, c.y + r * 0.3f), col, r * 0.2f, 0, t);
         dl->AddTriangleFilled(ImVec2(c.x - r * 0.3f, c.y + r * 0.28f), ImVec2(c.x - r * 0.05f, c.y + r * 0.28f), ImVec2(c.x - r * 0.38f, c.y + r * 0.62f), col); break;
+    case IC_REGION:
+    {   // 3.25.1: map pin = the region switch (round head, point at the bottom, a hole in the middle)
+        const ImVec2 hc(c.x, c.y - r * 0.2f); const float pr = r * 0.46f, tipY = c.y + r * 0.75f;
+        const float ta = acosf(pr / (tipY - hc.y));   // where the two straight sides leave the head
+        dl->PathArcTo(hc, pr, IM_PI * 0.5f + ta, IM_PI * 2.5f - ta, 24);
+        dl->PathLineTo(ImVec2(c.x, tipY));
+        dl->PathStroke(col, ImDrawFlags_Closed, t);
+        dl->AddCircle(hc, pr * 0.38f, col, 12, t);
+        break;
+    }
     }
 }
 
@@ -351,75 +361,109 @@ static void LJoin(const LRow& r)
 
 static void LRowKey(const LRow& r, char* out, size_t n) { snprintf(out, n, "%d|%s|%d", r.kind, r.name, r.port); }
 
-// ---- 3.25: region switch above the server table: Auto | Asia | Europe | NA | Oceania ---------------
+// ---- 3.25: region switch: Auto | Asia | Europe | NA | Oceania --------------------------------------
+// 3.25.1: it is an icon button (map pin) in the toolbar, next to the gear. Tapping it opens this small list under
+// the icon (it used to be a row of tabs above the server table).
 // Auto = the lobby uses the lowest ping region and the list shows every region. Picking a region moves
 // the lobby to that region's broker, makes it your hosting region and shows only its servers (the
 // featured 24/7 servers and Wi-Fi servers always stay in the list).
-static float LRegionBar(const std::vector<LanServer>& nearby, float w)
+static bool   s_bRegionPick = false;            // the region list is open
+static ImVec2 s_vRegionBtn(0, 0);               // top-left of the toolbar icon (set every frame by the toolbar)
+static float  s_fRegionBtn = 0;                 // its size
+
+static void LRegionChoose(int i)                // i < 0 = Auto
 {
-    const float h = UI::S(58), gap = UI::S(6);
-    ImDrawList* dl = ImGui::GetWindowDrawList();
-    ImVec2 p = ImGui::GetCursorScreenPos();
+    if(i < 0)
+    {
+        settings.lobbyAuto = true;
+        int best = Online::BestRegion();
+        if(best >= 0) { settings.region = best; s_Server.SetRegion(best); }
+        SysMsg(COL_SYSTEM, "Region: Auto (lowest ping)%s%s. All regions are listed.", best >= 0 ? " - " : "", best >= 0 ? g_MPRegionNames[best] : "");
+    }
+    else
+    {
+        settings.lobbyAuto = false; settings.region = i; settings.regionPicked = true;
+        s_Server.SetRegion(i);
+        int ms = Online::RegionPingMs(i);
+        if(ms >= 0) SysMsg(COL_SYSTEM, "Region: %s (%d ms). The lobby moves to the %s broker; only %s servers are listed.", g_MPRegionNames[i], ms, g_MPRegionNames[i], g_MPRegionNames[i]);
+        else SysMsg(COL_SYSTEM, "Region: %s. Only %s servers are listed.", g_MPRegionNames[i], g_MPRegionNames[i]);
+    }
+    Online::SetRegionPrefs(settings.region, settings.lobbyAuto);
+    s_nLSel = -1; s_szLSelKey[0] = 0;
+    SaveConfig();
+}
+
+static void LRegionPicker(const std::vector<LanServer>& nearby)
+{
+    if(!s_bRegionPick) return;
+    const ImVec2 ds = ImGui::GetIO().DisplaySize;
+    const float rowH = UI::S(62), gap = UI::S(6), pw = UI::S(12);
+    const float w = ImMin(ImMax(UI::S(470), ds.x * 0.26f), ds.x - UI::S(20));
+    const float h = pw * 2 + (REGION_COUNT + 1) * rowH + REGION_COUNT * gap;
+    float x = s_vRegionBtn.x, y = s_vRegionBtn.y + s_fRegionBtn + UI::S(8);
+    if(x + w > ds.x - UI::S(10)) x = ds.x - UI::S(10) - w;
+    if(y + h > ds.y - UI::S(10)) y = ds.y - UI::S(10) - h;
     int cnt[REGION_COUNT] = { 0 }, all = 0;
     for(auto& sv : nearby) if(sv.token != 0 && sv.region < REGION_COUNT) { ++cnt[sv.region]; ++all; }
-    int cur = Online::CurrentRegion();
-    float bw = (w - gap * REGION_COUNT) / (REGION_COUNT + 1);
-    for(int i = -1; i < REGION_COUNT; ++i)
+    const int cur = Online::CurrentRegion();
+
+    ImGui::SetNextWindowPos(ImVec2(x, y)); ImGui::SetNextWindowSize(ImVec2(w, h));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(pw, pw));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, UI::S(14));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, UI::S(2));
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.04f, 0.04f, 0.05f, 0.97f));
+    ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(1, 1, 1, 0.20f));
+    ImGui::SetNextWindowFocus();
+    if(ImGui::Begin("##MPRegionPick", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse))
     {
-        ImVec2 a(p.x + (i + 1) * (bw + gap), p.y), b(a.x + bw, a.y + h);
-        ImGui::SetCursorScreenPos(a);
-        ImGui::PushID(i + 100);
-        bool tap = ImGui::InvisibleButton("##reg", ImVec2(bw, h));
-        bool held = ImGui::IsItemActive();
-        ImGui::PopID();
-        bool sel = i < 0 ? settings.lobbyAuto : (!settings.lobbyAuto && settings.region == i);
-        dl->AddRectFilled(a, b, sel ? IM_COL32(255, 255, 255, held ? 200 : 235) : IM_COL32(255, 255, 255, held ? 45 : 22), UI::S(10));
-        if(!sel) dl->AddRect(a, b, IM_COL32(255, 255, 255, 40), UI::S(10), 0, UI::S(1.5f));
-        ImU32 tc = sel ? IM_COL32(15, 15, 15, 255) : IM_COL32(235, 235, 235, 255), sc = sel ? IM_COL32(60, 60, 60, 255) : IM_COL32(160, 160, 160, 255);
-        char l1[32], l2[40];
-        if(i < 0)
+        ImDrawList* dl = ImGui::GetWindowDrawList();
+        const ImVec2 p = ImGui::GetWindowPos();
+        for(int i = -1; i < REGION_COUNT; ++i)
         {
-            int best = Online::BestRegion();
-            snprintf(l1, sizeof(l1), "Auto");
-            if(best >= 0) snprintf(l2, sizeof(l2), "%s  |  %d servers", g_MPRegionNames[best], all); else snprintf(l2, sizeof(l2), "lowest ping  |  %d", all);
-        }
-        else
-        {
-            snprintf(l1, sizeof(l1), "%s", g_MPRegionNames[i]);
-            int ms = Online::RegionPingMs(i);
-            if(ms >= 0) snprintf(l2, sizeof(l2), "%d ms  |  %d servers", ms, cnt[i]);
-            else snprintf(l2, sizeof(l2), "%s  |  %d servers", ms == -2 ? "offline" : "-- ms", cnt[i]);
-        }
-        float fs1 = UI::S(22), fs2 = UI::S(16);
-        ImVec2 s1 = UI::Font()->CalcTextSizeA(fs1, FLT_MAX, 0, l1), s2 = UI::Font()->CalcTextSizeA(fs2, FLT_MAX, 0, l2);
-        float ty = a.y + (h - fs1 - fs2 - UI::S(2)) * 0.5f;
-        dl->AddText(UI::Font(), fs1, ImVec2(a.x + (bw - s1.x) * 0.5f, ty), tc, l1);
-        dl->AddText(UI::Font(), fs2, ImVec2(a.x + (bw - s2.x) * 0.5f, ty + fs1 + UI::S(2)), sc, l2);
-        if(i >= 0 && cur == i) dl->AddCircleFilled(ImVec2(a.x + UI::S(12), a.y + UI::S(12)), UI::S(5), IM_COL32(34, 197, 94, 255));   // lobby broker in use
-        if(tap && !sel)
-        {
+            ImVec2 a(p.x + pw, p.y + pw + (i + 1) * (rowH + gap)), b(a.x + w - pw * 2, a.y + rowH);
+            ImGui::SetCursorScreenPos(a);
+            ImGui::PushID(i + 100);
+            bool tap = ImGui::InvisibleButton("##reg", ImVec2(b.x - a.x, rowH));
+            bool held = ImGui::IsItemActive();
+            ImGui::PopID();
+            const bool sel = i < 0 ? settings.lobbyAuto : (!settings.lobbyAuto && settings.region == i);
+            dl->AddRectFilled(a, b, sel ? IM_COL32(255, 255, 255, held ? 200 : 235) : IM_COL32(255, 255, 255, held ? 45 : 22), UI::S(10));
+            if(!sel) dl->AddRect(a, b, IM_COL32(255, 255, 255, 40), UI::S(10), 0, UI::S(1.5f));
+            const ImU32 tc = sel ? IM_COL32(15, 15, 15, 255) : IM_COL32(235, 235, 235, 255), sc = sel ? IM_COL32(60, 60, 60, 255) : IM_COL32(160, 160, 160, 255);
+            char l1[32], l2[48];
             if(i < 0)
             {
-                settings.lobbyAuto = true;
                 int best = Online::BestRegion();
-                if(best >= 0) { settings.region = best; s_Server.SetRegion(best); }
-                SysMsg(COL_SYSTEM, "Region: Auto (lowest ping)%s%s. All regions are listed.", best >= 0 ? " - " : "", best >= 0 ? g_MPRegionNames[best] : "");
+                snprintf(l1, sizeof(l1), "Auto");
+                if(best >= 0) snprintf(l2, sizeof(l2), "%s  |  %d servers", g_MPRegionNames[best], all); else snprintf(l2, sizeof(l2), "lowest ping  |  %d", all);
             }
             else
             {
-                settings.lobbyAuto = false; settings.region = i; settings.regionPicked = true;
-                s_Server.SetRegion(i);
+                snprintf(l1, sizeof(l1), "%s", g_MPRegionNames[i]);
                 int ms = Online::RegionPingMs(i);
-                if(ms >= 0) SysMsg(COL_SYSTEM, "Region: %s (%d ms). The lobby moves to the %s broker; only %s servers are listed.", g_MPRegionNames[i], ms, g_MPRegionNames[i], g_MPRegionNames[i]);
-                else SysMsg(COL_SYSTEM, "Region: %s. Only %s servers are listed.", g_MPRegionNames[i], g_MPRegionNames[i]);
+                if(ms >= 0) snprintf(l2, sizeof(l2), "%d ms  |  %d servers", ms, cnt[i]);
+                else snprintf(l2, sizeof(l2), "%s  |  %d servers", ms == -2 ? "offline" : "-- ms", cnt[i]);
             }
-            Online::SetRegionPrefs(settings.region, settings.lobbyAuto);
-            s_nLSel = -1; s_szLSelKey[0] = 0;
-            SaveConfig();
+            const float fs1 = UI::S(26), fs2 = UI::S(19);
+            const ImVec2 s2 = UI::Font()->CalcTextSizeA(fs2, FLT_MAX, 0, l2);
+            dl->AddText(UI::Font(), fs1, ImVec2(a.x + UI::S(34), a.y + (rowH - fs1) * 0.5f), tc, l1);
+            dl->AddText(UI::Font(), fs2, ImVec2(b.x - UI::S(16) - s2.x, a.y + (rowH - fs2) * 0.5f), sc, l2);
+            if(i >= 0 && cur == i) dl->AddCircleFilled(ImVec2(a.x + UI::S(18), a.y + rowH * 0.5f), UI::S(6), IM_COL32(34, 197, 94, 255));   // lobby broker in use
+            if(tap)
+            {
+                if(!sel) LRegionChoose(i);
+                s_bRegionPick = false;
+            }
         }
     }
-    ImGui::SetCursorScreenPos(ImVec2(p.x, p.y + h + UI::S(8)));
-    return h + UI::S(8);
+    ImGui::End();
+    ImGui::PopStyleColor(2);
+    ImGui::PopStyleVar(3);
+    // a tap anywhere else (not on the picker, not on the icon that toggles it) closes the list
+    if(s_bRegionPick && ImGui::IsMouseClicked(0)
+       && !ImGui::IsMouseHoveringRect(ImVec2(x, y), ImVec2(x + w, y + h), false)
+       && !ImGui::IsMouseHoveringRect(s_vRegionBtn, ImVec2(s_vRegionBtn.x + s_fRegionBtn, s_vRegionBtn.y + s_fRegionBtn), false))
+        s_bRegionPick = false;
 }
 
 // ---- centre table ------------------------------------------------------------------------------
@@ -992,7 +1036,7 @@ static void RenderLauncher(void* openPtr)
             if(wx > minX) dl->AddText(ImVec2(wx, ty), IM_COL32(95, 211, 95, 128), wm);
         }
         ImGui::SetCursorScreenPos(ImVec2(wp.x + ws.x - titleH - UI::S(6), wp.y));
-        if(LToolButton("close", IC_CLOSE, nullptr, titleH)) *open = false;
+        if(LToolButton("close", IC_CLOSE, nullptr, titleH)) { *open = false; s_bRegionPick = false; }
         dl->AddLine(ImVec2(wp.x, wp.y + titleH), ImVec2(wp.x + ws.x, wp.y + titleH), line, UI::S(2));
     }
 
@@ -1036,6 +1080,9 @@ static void RenderLauncher(void* openPtr)
         int connTab = -1;
         for(int i = 0; i < FloatMenu::SectionCount(); ++i) if(!strcasecmp(FloatMenu::SectionTitle(i), "Connection")) connTab = LT_SECTIONS + i;
         if(LToolButton("gear", IC_GEAR, nullptr, btnH, connTab >= 0, s_nLTab == connTab) && connTab >= 0) s_nLTab = connTab;
+        ImGui::SameLine(0, UI::S(6));
+        s_vRegionBtn = ImGui::GetCursorScreenPos(); s_fRegionBtn = btnH;   // 3.25.1: region switch icon, right after the gear
+        if(LToolButton("region", IC_REGION, nullptr, btnH, true, s_bRegionPick)) s_bRegionPick = !s_bRegionPick;
 
         // right side: nickname, display settings, help
         float nickW = ImMax(UI::S(280), ws.x * 0.15f);
@@ -1087,9 +1134,9 @@ static void RenderLauncher(void* openPtr)
         float rightW = ImMax(UI::S(330), ws.x * 0.22f);
         float tableW = contentW - rightW - UI::S(6);
         ImGui::SetCursorScreenPos(ImVec2(cx0 + UI::S(4), bodyY + UI::S(6)));
-        float regH = s_nLTab == LT_INTERNET ? LRegionBar(nearby, tableW) + UI::S(6) : 0.0f;   // 3.25: region switch
-        if(!regH) ImGui::SetCursorScreenPos(ImVec2(cx0 + UI::S(4), bodyY));
-        LTable(rows, tableW, bodyH - regH);
+        // 3.25.1: the region switch is an icon in the toolbar now, the table gets the whole height again
+        ImGui::SetCursorScreenPos(ImVec2(cx0 + UI::S(4), bodyY));
+        LTable(rows, tableW, bodyH);
         float rx0 = cx0 + UI::S(4) + tableW + UI::S(2);
         dl->AddLine(ImVec2(rx0, bodyY), ImVec2(rx0, wp.y + ws.y), line, UI::S(2));
         ImGui::SetCursorScreenPos(ImVec2(rx0 + UI::S(4), bodyY));
@@ -1119,6 +1166,7 @@ static void RenderLauncher(void* openPtr)
     ImGui::End();
     ImGui::PopStyleColor(3);
     ImGui::PopStyleVar(3);
+    LRegionPicker(nearby);   // 3.25.1: the region list opened by the toolbar icon (its own window, on top of the launcher)
 }
 
 // ---- kick / ban dialog (SA-MP style) -----------------------------------------------------------
