@@ -221,6 +221,22 @@ void* HUD::ServerIcon(int id, ImVec2* uv)
     if(uv) *uv = s.uv;
     return (void*)s.r;
 }
+// 3.25: a missing built-in texture (Mega Vil badge / phone) is written into files/MP from the copy inside the .so
+#include "embedded_assets.h"
+static void EnsureEmbeddedAsset(const char* file, const char* path)
+{
+    for(const EmbeddedAsset& e : k_EmbeddedAssets)
+    {
+        if(strcmp(e.name, file)) continue;
+        FILE* f = fopen(path, "rb");
+        if(f) { fseek(f, 0, SEEK_END); long n = ftell(f); fclose(f); if(n == (long)e.size) return; }
+        f = fopen(path, "wb");
+        if(!f) { logger->Error("can't write %s", path); return; }
+        fwrite(e.data, 1, e.size, f); fclose(f);
+        logger->Info("3.25: installed the built-in %s", file);
+        return;
+    }
+}
 // 3.04: any other PNG in files/MP by file name (Brief Case War briefcase / lock / banner), max 512x512
 struct NamedTex { char file[48]; RwRaster* r; ImVec2 uv; };
 static NamedTex s_NamedTex[16]; static int s_nNamedTex = 0;
@@ -236,6 +252,7 @@ void* HUD::Texture(const char* file, ImVec2* uv)
     NamedTex& t = s_NamedTex[s_nNamedTex++];
     snprintf(t.file, sizeof(t.file), "%s", file); t.r = nullptr; t.uv = ImVec2(1, 1);
     char path[512]; snprintf(path, sizeof(path), "%s/%s", MP::DataDir(), file);
+    EnsureEmbeddedAsset(file, path);   // 3.25
     int w = 0, h = 0, n = 0;
     if(stbi_info(path, &w, &h, &n) && w > 0 && h > 0 && w <= 512 && h <= 512)
     {

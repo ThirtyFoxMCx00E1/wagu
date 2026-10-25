@@ -457,7 +457,7 @@ static void RenderAuth()
             float bob = sinf(t * 2.2f) * UI::S(4);
             ImVec2 c(P.p0.x + P.w * 0.5f, P.y + is * 0.5f + bob);
             dl->AddCircleFilled(c, is * 0.62f, rp ? IM_COL32(56, 189, 248, (int)(70 + 50 * sinf(t * 3.0f))) : mw3 ? IM_COL32(60, 255, 106, (int)(70 + 50 * sinf(t * 3.0f))) : IM_COL32(230, 30, 40, (int)(70 + 50 * sinf(t * 3.0f))), 40);
-            if(void* tex = HUD::Texture(rp ? "rp_icon.png" : mw3 ? "mw3_guns.png" : "bcw_briefcase.png", &uv))
+            if(void* tex = HUD::Texture(rp ? "rp_phone.png" : mw3 ? "mw3_guns.png" : "bcw_briefcase.png", &uv))
                 dl->AddImage((ImTextureID)tex, ImVec2(c.x - is * 0.5f, c.y - is * 0.5f), ImVec2(c.x + is * 0.5f, c.y + is * 0.5f), ImVec2(0, 0), uv);
             else
             {   // no texture: a drawn briefcase
