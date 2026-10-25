@@ -3972,13 +3972,6 @@ static void SrvModesPut(const char* name, int port, uint16_t modes)
 // (HostLAN / HostedName / HostedPort) so it comes back the next time the game starts.
 static bool StartLocalServer(const char* name, int port)
 {
-    if(MP_IsMw3ServerName(name) || port == MP_MW3_PORT)
-    {   // 3.23: only the VPS runs Modern Warfare 3 - nobody becomes host
-        SysMsg(COL_YELLOW, "The MW3 24/7 server is offline right now. Try again in a minute.");
-        s_bMw3Join = false;
-        JoinOverlayCancel();
-        return false;
-    }
     if(s_Server.IsRunning())
     {
         if(port == s_Server.GetPort() && !strcasecmp(name, s_Server.GetName())) return true;
@@ -3987,7 +3980,9 @@ static bool StartLocalServer(const char* name, int port)
         s_Server.Stop();
     }
     s_Server.SetPersistent(true);
-    const bool bcw = MP_IsBcwServerName(name);   // 3.04: Brief Case War: open, 20 players, its own gamemode only
+    // 3.04: Brief Case War: open, 20 players, its own gamemode only
+    // 3.23.1: MW3 the same way: the VPS copy wins when it is up, otherwise this phone keeps it 24/7
+    const bool bcw = MP_IsBcwServerName(name) || MP_IsMw3ServerName(name) || port == MP_MW3_PORT;
     s_Server.SetPassword(MP::IsDefaultServer(name, port) || bcw ? "" : s_szJoinPw);   // 2.19
     // 2.29: the default server always has the full 100 slots (0/100), wherever it runs
     int maxp = MP::IsDefaultServer(name, port) ? MP_MAX_PLAYERS : settings.maxPlayers;
@@ -3999,6 +3994,7 @@ static bool StartLocalServer(const char* name, int port)
     }
     MP_CopyStr(settings.hostedName, name, sizeof(settings.hostedName));
     settings.hostedPort = port;
+    if(s_Server.IsMw3Server()) { char mp_[512]; snprintf(mp_, sizeof(mp_), "%s/mw3_stats.txt", s_szDataDir); s_Server.SetMw3File(mp_); }   // 3.23.1
     {   // 3.03: the gamemodes of this server
         const bool creating = s_bCreatingNew; s_bCreatingNew = false;
         int known = SrvModesGet(name, port);

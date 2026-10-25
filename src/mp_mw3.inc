@@ -915,7 +915,7 @@ static void RenderMw3()
     }
 }
 
-// launcher / menu entry: join the 24/7 MW3 server (only the VPS hosts it)
+// launcher / menu entry: join the 24/7 MW3 server (the VPS, or a phone when the VPS is down)
 void MP::JoinMw3()
 {
     if(Mw3OnServer()) { LeaveServer("Left Modern Warfare 3."); return; }
