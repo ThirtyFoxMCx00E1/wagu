@@ -1,6 +1,7 @@
 {
-"latest": "3.22",
+"latest": "3.22.1",
 "supported": [
+"3.22.1",
 "3.22",
 "3.21.9",
 "3.21.8",
@@ -23,6 +24,16 @@
 "3.04.6"
 ],
 "versions": [
+{
+"v": "3.22.1",
+"summary": "login screen on the default server after a game restart (like Brief Case War), no red background on the Brief Case War login.",
+"items": [
+"**Default server login:** closing / restarting the game and joining back now always opens the login screen, the same as on Brief Case War. The server kept the old player slot of the closed game (same relay / network address, up to 20 s) and that slot was still logged in, so no login was asked. Now the phone clears that old slot before it joins after a game start, and the server asks for the login again when a closed game comes back on its old slot.",
+"**100% progress:** on the default server the login pop-up waits until the 100% progress save has loaded (that load used to start under the open login screen and threw it away).",
+"**Brief Case War login:** no red background, red corner tint or glowing red frame any more: the same plain dim background as the normal login screen.",
+"**Server (HiveMQ kit):** run `7) update` in the console once to get the new mp_server."
+]
+},
 {
 "v": "3.22",
 "summary": "saved login in account.txt (no new /gen or account after a mod update), lower ping with 100 players.",
