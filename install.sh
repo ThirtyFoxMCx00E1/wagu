@@ -26,6 +26,10 @@ HIVEMQ_FORK_VER="2026.6"
 HIVEMQ_FORK_URL="https://github.com/${HIVEMQ_FORK}/releases/download/mp-${HIVEMQ_FORK_VER}/hivemq-ce-${HIVEMQ_FORK_VER}.zip"
 HIVEMQ_VER="2026.5"
 HIVEMQ_URL="https://github.com/hivemq/hivemq-community-edition/releases/download/${HIVEMQ_VER}/hivemq-ce-${HIVEMQ_VER}.zip"
+# 3.25: prebuilt copy in the wagu v3.25 release (same file as the official 2026.5 zip, sha256 below);
+# used before github.com/hivemq for the official build, the official link stays as the last fallback
+HIVEMQ_MIRROR_URL="https://github.com/ThirtyFoxMCx00E1/wagu/releases/download/v3.25/hivemq-ce-${HIVEMQ_VER}.zip"
+HIVEMQ_SHA256="fd005e535eca0baffb085e11b1512885d06ce00786f961701c76449816f7dec5"
 RBAC_VER="4.6.18"
 RBAC_URL="https://github.com/hivemq/hivemq-file-rbac-extension/releases/download/${RBAC_VER}/hivemq-file-rbac-extension-${RBAC_VER}.zip"
 RBAC_SHA256="4089d09e5d2b6621a07aa86032230dce5aefbcc37130ef5c714fb6fa7185e3e6"
@@ -178,9 +182,18 @@ fi
 if [ ! -f "$HQ/bin/hivemq.jar" ] || [ "$(cat "$HQ/.version" 2>/dev/null)" != "$HQ_TAG" ]; then
     say "installing HiveMQ CE $HIVEMQ_VER (${HQ_TAG%%-*} build)"
     tmp="$(mktemp -d)"
-    curl -fL --retry 3 -o "$tmp/hq.zip" "$HIVEMQ_URL"
-    if [ "${HQ_TAG%%-*}" = fork ] && curl -fsL "$HIVEMQ_FORK_URL.sha256" -o "$tmp/hq.sha256" 2>/dev/null; then
-        echo "$(cat "$tmp/hq.sha256")  $tmp/hq.zip" | sha256sum -c --quiet - || die "HiveMQ CE fork zip: checksum mismatch"
+    if [ "${HQ_TAG%%-*}" = fork ]; then
+        curl -fL --retry 3 -o "$tmp/hq.zip" "$HIVEMQ_URL"
+        if curl -fsL "$HIVEMQ_FORK_URL.sha256" -o "$tmp/hq.sha256" 2>/dev/null; then
+            echo "$(cat "$tmp/hq.sha256")  $tmp/hq.zip" | sha256sum -c --quiet - || die "HiveMQ CE fork zip: checksum mismatch"
+        fi
+    else
+        # official 2026.5: the wagu v3.25 copy first, then github.com/hivemq; both must match the sha256
+        if ! { curl -fL --retry 3 -o "$tmp/hq.zip" "$HIVEMQ_MIRROR_URL" && echo "$HIVEMQ_SHA256  $tmp/hq.zip" | sha256sum -c --quiet -; }; then
+            say "wagu copy of HiveMQ CE not usable, downloading from hivemq"
+            curl -fL --retry 3 -o "$tmp/hq.zip" "$HIVEMQ_URL"
+            echo "$HIVEMQ_SHA256  $tmp/hq.zip" | sha256sum -c --quiet - || die "HiveMQ CE $HIVEMQ_VER zip: checksum mismatch"
+        fi
     fi
     unzip -q "$tmp/hq.zip" -d "$tmp"
     systemctl stop hivemq 2>/dev/null || true
