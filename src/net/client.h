@@ -49,6 +49,7 @@ public:
     virtual void OnTurf(const PktTurf&) {}
     virtual void OnDialog(const PktDialog&) {}
     virtual void OnTextDraw(const PktTextDraw&) {}
+    virtual void OnMw3(const uint8_t* /*data*/, int /*len*/) {}   // 3.23: PKT_MW3_STATE / PLAYERS / ME / EVENT
     virtual void OnBcw(const uint8_t* /*data*/, int /*len*/) {}   // 3.04: PKT_BCW_STATE / ROLL / SCORE / EVENT
     virtual void OnClothes(const PktClothes&) {}                  // 3.10: CJ clothing sync
     virtual void OnVoice(int /*id*/, uint16_t /*seq*/, uint8_t /*flags*/, const uint8_t* /*opus*/, int /*len*/) {}   // 3.11

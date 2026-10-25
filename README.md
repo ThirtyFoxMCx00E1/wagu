@@ -46,6 +46,15 @@ It builds `mp_server` on the phone and runs it 24/7 in the internet lobby (free 
 
 ## Changelog
 
+- **3.23**: new 24/7 featured server **Call Of Duty: Modern Warfare 3** (MW3, port 1931), a full port of the SA-MP gamemode MW3SAMP.
+  - **Always on, never hosted by a phone:** only the VPS runs it (`mp-mw3.service`). It is pinned in the Internet list with a green banner and the crossed guns icon, like Brief Case War, even at 0/64. MP 3.23+ only, login on, cheats and CheatMenu off.
+  - **Connection screen:** the Los Santos Docks & Warehouses. Tap one of the 8 teams (Eurasia, Arabia, Soviet, USA, Australia, Brazil, Taliban, France) and you spawn in its base right away, no waiting for other players. `/class` opens the 15 classes (the locked ones need a rank).
+  - **Gamemode:** 34 capture zones (Bone County / Verdant Meadows, LV + Easter Bay airports, LS Docks container yard, SF Easter Basin military base and more) with green rings, names and radar zones in the owner colours. Capture: 25 s on foot (45 s for special zones), +5 score and $5000, team mates in the zone +2. Owned zones pay every 10 minutes. Bases are safe. The MW3SAMP map objects are placed too.
+  - **Ranks and classes:** 21 ranks (Private to Commander) with health / armour bonuses, 15 classes (Assault, Sniper, Medic `/heal`, JetTrooper `/jp`, Engineer `/tank`, Pilot `/air`, Spy and more).
+  - **Kills:** +2 score, $1500. Multi kill badges (DOUBLE KILL, TRIPLE KILL, ULTRA KILL, MULTI KILL, MEGA KILL, SAVAGE) in a green box with a black outline on the top and bottom only, killing sprees every 5 kills, spree ender bonus.
+  - **Extras:** 6 DM arenas (`/dm /sdm /mdm /chdm /cbdm /hsdm`, `/qdm`), duels (`/duel id weapon`, `/accept`), events every 15 minutes at the docks (Team DM, Deathmatch, Zombie infection, Last Man Standing; `/join`, `/leave`), hourly tournament (most kills, captures, Desert Eagle kills, best spree; $50000 prize).
+  - **Look:** name tags with a second line "Rank - Class", `[TAG] name` in the team colour in chat, the kill feed and the tags. Green login / sign-up / code screens, green HUD with VFX, no Pricedown score counter. The MW3 player list (`/players` or the LIST button): id, name, score, ping, each row in the team colour, your row on a red bar.
+  - Stats (score, XP, cash, kills, deaths, captures, team, class) and zone owners are saved per account on the server.
 - **3.22.1**: login screen on the default server after a game restart (like Brief Case War), no red background on the Brief Case War login.
   - **Default server login:** closing / restarting the game and joining back now always opens the login screen, the same as on Brief Case War. The server kept the old player slot of the closed game (same relay / network address, up to 20 s) and that slot was still logged in, so no login was asked. Now the phone clears that old slot before it joins after a game start, and the server asks for the login again when a closed game comes back on its old slot.
   - **100% progress:** on the default server the login pop-up waits until the 100% progress save has loaded (that load used to start under the open login screen and threw it away).

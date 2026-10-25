@@ -54,3 +54,19 @@ void Game::SetMaxWanted(int stars)
     if(!IsReady()) return;
     CALLSCM(SET_MAX_WANTED_LEVEL_304, stars < 0 ? 0 : (stars > 6 ? 6 : stars));
 }
+
+// 3.23: MW3 map objects (bases, zones, the LS Docks container arena): solid (collision on), any
+// rotation, anywhere on the map. 0 = the model is still loading (call again next tick).
+int Game::CreateMapObject(int model, const Vec3& p, float rx, float ry, float rz)
+{
+    if(!IsReady() || model <= 0 || model >= 20000) return 0;
+    if(!(p.x == p.x) || p.x < -3500.0f || p.x > 3500.0f || p.y < -3500.0f || p.y > 3500.0f) return 0;
+    if(!CALLSCM(HAS_MODEL_LOADED_304, model)) { CALLSCM(REQUEST_MODEL_304, model); return 0; }
+    uint32_t obj = 0;
+    CALLSCM(CREATE_OBJECT_304, model, p.x, p.y, p.z, &obj);
+    if(!obj) return 0;
+    CALLSCM(SET_OBJECT_COORDINATES_304, (int)obj, p.x, p.y, p.z);   // exact z (no ground snap)
+    CALLSCM(SET_OBJECT_ROTATION_304, (int)obj, rx, ry, rz);
+    CALLSCM(SET_OBJECT_COLLISION_304, (int)obj, 1);
+    return (int)obj;
+}

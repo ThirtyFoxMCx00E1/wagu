@@ -210,10 +210,17 @@ struct AuthLook
 {
     ImU32 panel, header, accent, accentHeld, text, dim, field, fieldBorder, btn, btnHeld, btnText, err, ok;
 };
-static AuthLook AuthStyleLook(bool bcw)
+static AuthLook AuthStyleLook(bool bcw, bool mw3 = false)
 {
     AuthLook l;
-    if(bcw)
+    if(mw3)
+    {   // 3.23: Modern Warfare 3 - the same layout as Brief Case War, in green
+        l.panel = IM_COL32(6, 10, 7, 236); l.header = IM_COL32(18, 110, 40, 245); l.accent = IM_COL32(60, 255, 106, 255);
+        l.accentHeld = IM_COL32(170, 255, 190, 255); l.text = IM_COL32(255, 255, 255, 255); l.dim = IM_COL32(190, 215, 195, 255);
+        l.field = IM_COL32(255, 255, 255, 22); l.fieldBorder = IM_COL32(60, 255, 106, 200); l.btn = IM_COL32(30, 150, 58, 240);
+        l.btnHeld = IM_COL32(255, 255, 255, 240); l.btnText = IM_COL32(255, 255, 255, 255);
+    }
+    else if(bcw)
     {
         l.panel = IM_COL32(8, 8, 10, 236); l.header = IM_COL32(150, 12, 18, 245); l.accent = IM_COL32(230, 30, 40, 255);
         l.accentHeld = IM_COL32(255, 80, 80, 255); l.text = IM_COL32(255, 255, 255, 255); l.dim = IM_COL32(205, 190, 190, 255);
@@ -319,13 +326,14 @@ static void RenderAuth()
         fg->AddText(f, fs, ImVec2(a0.x + UI::S(18), a0.y + UI::S(8)), IM_COL32(255, 255, 255, 230), b);
         return;
     }
-    const bool bcw = s_nAuthStyle == AUTH_STYLE_BCW;
+    const bool mw3 = s_nAuthStyle == AUTH_STYLE_MW3 || MP::IsOnMw3();   // 3.23
+    const bool bcw = s_nAuthStyle == AUTH_STYLE_BCW || mw3;
     const float t = (float)(MP_NowMs() % 3600000ull) / 1000.0f;
     ImDrawList* bg = ImGui::GetBackgroundDrawList();
     if(bcw) AuthBcwBackdrop(bg, ds, t);
     else bg->AddRectFilled(ImVec2(0, 0), ds, IM_COL32(0, 0, 0, 120));
 
-    AuthPanel P; P.f = UI::Font(); P.L = AuthStyleLook(bcw); P.pad = UI::S(28); P.fs = UI::S(30); P.ids = 0;
+    AuthPanel P; P.f = UI::Font(); P.L = AuthStyleLook(bcw, mw3); P.pad = UI::S(28); P.fs = UI::S(30); P.ids = 0;
     P.w = fminf(fmaxf(UI::S(760), ds.x * 0.46f), ds.x * 0.94f);
     const AuthClient::State st = s_Auth.state;
     float h = UI::S(st == AuthClient::SIGNUP ? 700 : st == AuthClient::LOGIN ? 560 : st == AuthClient::CODE ? 640 : 380);
@@ -355,7 +363,7 @@ static void RenderAuth()
         }
         const char* title = st == AuthClient::SIGNUP ? "Create your account" : st == AuthClient::LOGIN ? "Login" :
                             st == AuthClient::CODE ? "Code authentication" : st == AuthClient::DONE ? "Welcome" : "Login";
-        char cap[96]; snprintf(cap, sizeof(cap), "%s%s", bcw ? "BRIEF CASE WAR  |  " : "MP  |  ", title);
+        char cap[96]; snprintf(cap, sizeof(cap), "%s%s", mw3 ? "MODERN WARFARE 3  |  " : (bcw ? "BRIEF CASE WAR  |  " : "MP  |  "), title);
         dl->AddText(P.f, UI::S(32), ImVec2(P.p0.x + P.pad, P.p0.y + (capH - UI::S(32)) * 0.5f), IM_COL32_WHITE, cap);
         P.y = P.p0.y + capH + UI::S(18);
         if(bcw)
@@ -363,8 +371,8 @@ static void RenderAuth()
             ImVec2 uv(1, 1); const float is = UI::S(84);
             float bob = sinf(t * 2.2f) * UI::S(4);
             ImVec2 c(P.p0.x + P.w * 0.5f, P.y + is * 0.5f + bob);
-            dl->AddCircleFilled(c, is * 0.62f, IM_COL32(230, 30, 40, (int)(70 + 50 * sinf(t * 3.0f))), 40);
-            if(void* tex = HUD::Texture("bcw_briefcase.png", &uv))
+            dl->AddCircleFilled(c, is * 0.62f, mw3 ? IM_COL32(60, 255, 106, (int)(70 + 50 * sinf(t * 3.0f))) : IM_COL32(230, 30, 40, (int)(70 + 50 * sinf(t * 3.0f))), 40);
+            if(void* tex = HUD::Texture(mw3 ? "mw3_guns.png" : "bcw_briefcase.png", &uv))
                 dl->AddImage((ImTextureID)tex, ImVec2(c.x - is * 0.5f, c.y - is * 0.5f), ImVec2(c.x + is * 0.5f, c.y + is * 0.5f), ImVec2(0, 0), uv);
             else
             {   // no texture: a drawn briefcase
@@ -512,8 +520,9 @@ static void RenderStats()
 {
     if(!s_bStatsOpen) return;
     const ImVec2 ds = ImGui::GetIO().DisplaySize;
-    const bool bcw = MP::IsOnBcw();
-    AuthPanel P; P.f = UI::Font(); P.L = AuthStyleLook(bcw); P.pad = UI::S(26); P.fs = UI::S(28); P.ids = 900;
+    const bool mw3 = MP::IsOnMw3();   // 3.23
+    const bool bcw = MP::IsOnBcw() || mw3;
+    AuthPanel P; P.f = UI::Font(); P.L = AuthStyleLook(bcw, mw3); P.pad = UI::S(26); P.fs = UI::S(28); P.ids = 900;
     P.w = fminf(UI::S(700), ds.x * 0.9f);
     const float h = UI::S(600);
     P.p0 = ImVec2((ds.x - P.w) * 0.5f, (ds.y - h) * 0.5f);

@@ -154,6 +154,14 @@ int Game::GiveJetpack(int ped)
     return (int)obj;
 }
 
+// 3.23: the real jetpack for the local player (MW3 JetTrooper class)
+void Game::GiveLocalJetpack()
+{
+    int ped = LocalPed();
+    if(ped <= 0 || !PedPtr(ped) || IsCharInAnyCar(ped) || IsLocalOnJetpack()) return;
+    CALLSCM(TASK_JETPACK, ped);
+}
+
 void Game::RemoveJetpack(int obj)
 {
     if(obj > 0 && CALLSCM(DOES_OBJECT_EXIST_219, obj)) CALLSCM(DELETE_OBJECT_219, obj);

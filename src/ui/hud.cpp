@@ -373,7 +373,7 @@ static void DrawWeaponIcon(ImDrawList* dl, ImVec2 c, float s, uint8_t weapon)
 }
 
 // ---- name tag + health bar --------------------------------------------------------------
-static void DrawNameTag(ImDrawList* dl, const Vec3& head, const char* name, uint32_t rgba, int health, int armour, const Vec3& camRef, bool paused = false, bool talking = false)
+static void DrawNameTag(ImDrawList* dl, const Vec3& head, const char* name, uint32_t rgba, int health, int armour, const Vec3& camRef, bool paused = false, bool talking = false, const char* sub = nullptr)
 {
     float dx = head.x - camRef.x, dy = head.y - camRef.y, dz = head.z - camRef.z;
     float dist = sqrtf(dx * dx + dy * dy + dz * dz);
@@ -392,6 +392,14 @@ static void DrawNameTag(ImDrawList* dl, const Vec3& head, const char* name, uint
     // AdminTagLift is 0 since 3.00 (no dragon), kept so the tag position has one place to change
     const float lift = UI::IsAdminName(name) ? UI::AdminTagLift(fs) : 0.0f;
     y -= lift;
+    const float nameY = y;
+    if(sub && *sub)
+    {   // 3.23 MW3: second tag over the name, "Rank - Class", same colour
+        const float sfs = fs * 0.78f;
+        ImVec2 sts = UI::Font()->CalcTextSizeA(sfs, FLT_MAX, 0, sub);
+        y -= sfs + UI::S(2) * k;
+        UI::OutlinedText(dl, sfs, ImVec2(sx - sts.x * 0.5f, y), UI::FromRGBA(rgba | 0xFF), sub);
+    }
     if(paused)
     {
         const float pfs = fs * 0.8f;
@@ -405,6 +413,7 @@ static void DrawNameTag(ImDrawList* dl, const Vec3& head, const char* name, uint
         UI::DrawSpeaker(dl, ImVec2(c.x + UI::S(1.5f), c.y + UI::S(1.5f)), r, IM_COL32(0, 0, 0, 200), 2, false);
         UI::DrawSpeaker(dl, c, r, IM_COL32_WHITE, 2, false);
     }
+    y = nameY;
     UI::NameText(dl, fs, ImVec2(sx - ts.x * 0.5f, y), UI::FromRGBA(rgba | 0xFF), name);   // 2.37
     y += fs + UI::S(3) * k + lift;
 
@@ -436,14 +445,16 @@ static void DrawNameTags(ImDrawList* dl)
         if(p.invisible) continue;                               // 2.19 /invisible
         if(p.tagBlocked && !MP_WallhackOn()) continue;          // 2.19: wall in between
         char bn[64]; uint32_t bc = MP::BcwDecorate(i, p.name, p.color, bn, sizeof(bn));   // 3.04: [GTV] / [SLZ] team tag + colour
-        DrawNameTag(dl, p.drawPos, bn, bc, p.sync.health, p.sync.armour, ref, p.paused, MP::VoiceSpeaking(i));
+        char sb[64]; bool hasSub = MP::Mw3SubTag(i, sb, sizeof(sb));   // 3.23
+        DrawNameTag(dl, p.drawPos, bn, bc, p.sync.health, p.sync.armour, ref, p.paused, MP::VoiceSpeaking(i), hasSub ? sb : nullptr);
     }
-    if(MP::settings.showOwnTag && MP::myDrawValid && !MP::BcwOwnTagHidden())   // 3.10: never on the Brief Case War connection / respawn screen
+    if(MP::settings.showOwnTag && MP::myDrawValid && !MP::BcwOwnTagHidden() && !MP::Mw3OwnTagHidden())   // 3.10: never on the Brief Case War connection / respawn screen
     {
         const char* nm = (MP::myId < MP_MAX_PLAYERS && MP::players[MP::myId].active) ? MP::players[MP::myId].name : MP::settings.name;
         if(MP::IsLocalAdmin()) nm = "[ADMIN] SENJI";   // 2.37: admin.txt + name SENJI: my own tag always has the RGB rank
         char bn[64]; uint32_t bc = MP::BcwDecorate(MP::myId, nm, MP::myColor, bn, sizeof(bn));   // 3.04
-        DrawNameTag(dl, MP::myDrawPos, bn, bc, MP::myHealth, MP::myArmour, ref, false, MP::MeTalking());
+        char sb[64]; bool hasSub = MP::Mw3SubTag(MP::myId, sb, sizeof(sb));
+        DrawNameTag(dl, MP::myDrawPos, bn, bc, MP::myHealth, MP::myArmour, ref, false, MP::MeTalking(), hasSub ? sb : nullptr);
     }
 }
 

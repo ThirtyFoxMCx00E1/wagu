@@ -449,6 +449,20 @@ static bool BcwJoinTakeover(int ped);
 static void BcwJoinCam(Vec3& pos, Vec3& look);
 static void BcwDecorateStr(int id, std::string& name, uint32_t& color);
 static void RenderBcw();
+// 3.23: Call Of Duty: Modern Warfare 3 (mp_mw3.inc)
+static bool s_bMw3Join = false;   // the join in progress is MW3
+static bool Mw3OnServer();
+static bool Mw3Hidden();
+static bool Mw3SameTeam(int a, int b);
+static void Mw3Process(int ped, uint64_t now);
+static void Mw3OnPacket(const uint8_t* d, int len);
+static bool Mw3Command(const char* cmd, const char* arg);
+static bool Mw3JoinTakeover(int ped);
+static void Mw3JoinCam(Vec3& pos, Vec3& look);
+static void RenderMw3();
+static void Mw3OpenList();
+static int  Mw3RadarZones(Game::RadarZone* out, int maxOut);
+static bool Mw3Decorate(int id, const char* name, uint32_t& color, char* out, size_t n);
 static void ProcessGates(int ped, uint64_t now);
 static void RenderGates();
 static bool GatesCommand(const char* cmd, const char* arg);
@@ -2055,7 +2069,7 @@ public:
         s_bPermsSeen = true;
         // 3.10: remember this custom server's Cheat Menu permission, so if this phone ever hosts it
         // (the host left / nobody runs it yet) it keeps the permission its creator chose
-        if(!MP::IsOnDefault() && !MP_IsBcwServerName(client.GetServerName()) && client.GetServerName()[0])
+        if(!MP::IsOnDefault() && !MP_IsBcwServerName(client.GetServerName()) && !MP_IsMw3ServerName(client.GetServerName()) && client.GetServerName()[0])
             SrvCmPut(client.GetServerName(), client.GetPort(), (m.perms & PERM_CHEAT_MENU) != 0);
         GamemodesChanged(m.modesMagic == MP_MODES_MAGIC ? m.modes : 0);   // 3.02   // 3.00: allowed -> you just play; not allowed -> Process() refuses at once
         if(nc1 && !nc0) SysMsg(COL_YELLOW, "*** The host disabled cheats on this server (MP cheats + CLEO menu).");
@@ -2210,6 +2224,7 @@ public:
     void OnDialog(const PktDialog& d) override { SampOnDialog(d); }
     void OnTextDraw(const PktTextDraw& t) override { SampOnTextDraw(t); }
     void OnAuth(const uint8_t* d, int len) override { AuthOnPacket(d, len); }   // 3.21.6: login system
+    void OnMw3(const uint8_t* d, int len) override { Mw3OnPacket(d, len); }   // 3.23
     void OnBcw(const uint8_t* d, int len) override { BcwOnPacket(d, len); }   // 3.04   // 2.25: the dialog opens; PKT_REJECT follows
     void OnJack(const PktJack& j) override   // 2.19: somebody pulls me out of my car
     {
@@ -2406,7 +2421,7 @@ static void SendLocalSync(int ped, uint64_t now)
         }
         if(Game::IsLocalOnJetpack()) e.x2flags |= X2_JETPACK;
     }
-    if(s_Cheat.invisible || JoinFlowActive() || BcwHidden()) e.x2flags |= X2_INVISIBLE;   // 3.04: Brief Case War lobby / respawn wait
+    if(s_Cheat.invisible || JoinFlowActive() || BcwHidden() || Mw3Hidden()) e.x2flags |= X2_INVISIBLE;   // 3.04: Brief Case War lobby / respawn wait
     if(!(d.flags & SYNC_IN_CAR) && d.weapon >= 22 && d.weapon <= 38 && (Game::IsPedAimingGun(ped) || (d.flags & SYNC_SHOOTING)))
     {
         // the real point the player aims at (was: 25 m straight ahead of the body)
@@ -3624,6 +3639,7 @@ void MP::Process()
     }
     JoinFlowProcess(ped, now);   // 2.19: join screen, connection camera, spawn picker
     BcwProcess(ped, now);        // 3.04: Brief Case War
+    Mw3Process(ped, now);        // 3.23: Modern Warfare 3
     ProcessGates(ped, now);      // 3.04.2: Area 69 gates
     ProcessClothes(now);         // 3.10: clothing sync
     ProcessVoice();              // 3.11: voice chat
@@ -3751,6 +3767,7 @@ static bool JoinHudOff() { return s_bJoinHudOff; }
 #include "mp_games.inc"  // 2.21: /spawn, /w, races, deathmatch, jobs, teleport events, open world (3.01: derbies, live race positions)
 #include "mp_world.inc"  // 3.01: 3D labels, map icons, actors, gang zones + turf wars, class selection
 #include "mp_bcw.inc"    // 3.04: Brief Case War
+#include "mp_mw3.inc"    // 3.23: Call Of Duty: Modern Warfare 3
 #include "mp_gates.inc"  // 3.04.2: gates that never open (Area 69): fade out, through, fade in
 #include "mp_safezone.inc"  // 3.21: hospital safe zones + 5 s spawn protection
 #include "mp_markers.inc"   // 3.21: SA-MP style red checkpoint beams for races, derbies, DM, jobs
@@ -3765,7 +3782,7 @@ static CheatGateInfo s_CheatGate = {};
 // its permissions (PKT_PERMS, right after the welcome) whether Cheat Menu is allowed - see Process().
 static bool CheatMenuBlocks(const char* serverName, bool isDefault)
 {
-    if(!(isDefault || MP_IsBcwServerName(serverName)) || !ModScan::Recheck()) return false;   // 3.04: Brief Case War refuses cheat menus too
+    if(!(isDefault || MP_IsBcwServerName(serverName) || MP_IsMw3ServerName(serverName)) || !ModScan::Recheck()) return false;   // 3.04: Brief Case War refuses cheat menus too
     JoinOverlayCancel();
     StopFeed();
     s_CheatGate.show = true;
@@ -3921,7 +3938,7 @@ static int SrvCmGet(const char* name, int port)   // -1 = unknown, 0 = not allow
 }
 static void SrvCmPut(const char* name, int port, bool allow)
 {
-    if(!name || !*name || MP::IsDefaultServer(name, port) || MP_IsBcwServerName(name)) return;
+    if(!name || !*name || MP::IsDefaultServer(name, port) || MP_IsBcwServerName(name) || MP_IsMw3ServerName(name)) return;
     if(SrvCmGet(name, port) == (allow ? 1 : 0)) return;
     char k[16]; SrvModesKey(name, port, k, sizeof(k)); k[0] = 'C'; k[1] = 'M';
     ConfigEntry* e = ::cfg->Bind(k, allow ? 1 : 0, "MPServerCheatMenu"); e->SetInt(allow ? 1 : 0); delete e;
@@ -3936,7 +3953,7 @@ static int SrvAuthGet(const char* name, int port)   // -1 = unknown, 0 = off, 1 
 }
 static void SrvAuthPut(const char* name, int port, bool on)
 {
-    if(!name || !*name || MP::IsDefaultServer(name, port) || MP_IsBcwServerName(name)) return;
+    if(!name || !*name || MP::IsDefaultServer(name, port) || MP_IsBcwServerName(name) || MP_IsMw3ServerName(name)) return;
     if(SrvAuthGet(name, port) == (on ? 1 : 0)) return;
     char k[16]; SrvModesKey(name, port, k, sizeof(k)); k[0] = 'A'; k[1] = 'U';
     ConfigEntry* e = ::cfg->Bind(k, on ? 1 : 0, "MPServerAuth"); e->SetInt(on ? 1 : 0); delete e;
@@ -3955,6 +3972,13 @@ static void SrvModesPut(const char* name, int port, uint16_t modes)
 // (HostLAN / HostedName / HostedPort) so it comes back the next time the game starts.
 static bool StartLocalServer(const char* name, int port)
 {
+    if(MP_IsMw3ServerName(name) || port == MP_MW3_PORT)
+    {   // 3.23: only the VPS runs Modern Warfare 3 - nobody becomes host
+        SysMsg(COL_YELLOW, "The MW3 24/7 server is offline right now. Try again in a minute.");
+        s_bMw3Join = false;
+        JoinOverlayCancel();
+        return false;
+    }
     if(s_Server.IsRunning())
     {
         if(port == s_Server.GetPort() && !strcasecmp(name, s_Server.GetName())) return true;
@@ -4040,6 +4064,7 @@ void MP::ToggleConnect()
     if(IsBusy()) { SysMsg(COL_YELLOW, "Please wait..."); return; }
     s_bConnectingDefault = true;
     s_bBcwJoin = false;       // 3.04
+    s_bMw3Join = false;       // 3.23
     s_bQuietRejoin = false;   // 2.27: a join you start yourself shows the normal feed
     s_szJoinPw[0] = 0;   // the default server is open
     JoinOverlayStart();  // 2.19: black slide + connection camera
@@ -4072,6 +4097,7 @@ void MP::JoinServer(const char* host, int port, const char* name)
     if(!name || !*name) name = host;
     s_bConnectingDefault = IsDefaultServer(name, port);
     s_bBcwJoin = MP_IsBcwServerName(name);   // 3.04
+    s_bMw3Join = MP_IsMw3ServerName(name);   // 3.23
     s_bQuietRejoin = false;   // 2.27
     s_szJoinPw[0] = 0;   // 2.19: the saved password of that custom server
     for(int i = 0; i < ServerList::Count(); ++i)
@@ -4099,7 +4125,7 @@ void MP::SetHostLan(bool on, bool autoConnect)
         // 2.19.6: hosting used to fail silently. With the default name + port, "Host" found the
         // default server online and just joined it; a custom name on port 1922 was refused.
         // Now the name / port are fixed up so you always get your own server.
-        if(!settings.serverName[0] || !strcasecmp(settings.serverName, MP_DEFAULT_SERVER_NAME) || MP_IsBcwServerName(settings.serverName))   // 3.04: Brief Case War is private
+        if(!settings.serverName[0] || !strcasecmp(settings.serverName, MP_DEFAULT_SERVER_NAME) || MP_IsBcwServerName(settings.serverName) || MP_IsMw3ServerName(settings.serverName))   // 3.04: Brief Case War is private
         {
             char nm[64]; snprintf(nm, sizeof(nm), "%s's server", settings.name[0] ? settings.name : "Player");
             MP_CopyStr(settings.serverName, nm, sizeof(settings.serverName));
@@ -4402,7 +4428,7 @@ static void ProcessLan(uint64_t now)
     // phone host leaving later can't "restart" the server for everybody
     {
         static uint64_t lastDed = 0;
-        if(now - lastDed > 10000 && client.GetState() == NET_CONNECTED && !IsHosting() && !s_bOnDedicated && !InEvent() && !BcwOnServer())
+        if(now - lastDed > 10000 && client.GetState() == NET_CONNECTED && !IsHosting() && !s_bOnDedicated && !InEvent() && !BcwOnServer() && !Mw3OnServer())
         {
             lastDed = now;
             const char* nm = client.GetServerName()[0] ? client.GetServerName() : (s_bConnectingDefault ? MP_DEFAULT_SERVER_NAME : "");
@@ -5247,6 +5273,8 @@ static void SectionAddServer(void*)
         const int port = atoi(s_szNewPort[0] ? s_szNewPort : "0") > 0 ? atoi(s_szNewPort) : settings.port;
         if(MP_IsBcwServerName(s_szNewName) || port == MP_BCW_PORT)
             SysMsg(COL_YELLOW, "Brief Case War is a private gamemode server - it is always in the Internet list, just tap it.");
+        else if(MP_IsMw3ServerName(s_szNewName) || port == MP_MW3_PORT)
+            SysMsg(COL_YELLOW, "Modern Warfare 3 is a 24/7 featured server - it is always in the Internet list, just tap it.");
         else if(port == MP_DEFAULT_PORT && !IsDefaultServer(s_szNewName[0] ? s_szNewName : settings.serverName, port))
             SysMsg(COL_RED, "Port %d is for the default server. Use %d or higher for a custom server.", MP_DEFAULT_PORT, MP_DEFAULT_PORT + 1);
         else
@@ -5265,6 +5293,8 @@ static void SectionAddServer(void*)
         for(char* c = h; *c; ++c) if(*c == '/' || *c == ' ') { *c = 0; break; }
         if(MP_IsBcwServerName(s_szNewName) || atoi(s_szNewPort) == MP_BCW_PORT)   // 3.04
             SysMsg(COL_YELLOW, "Brief Case War is a private gamemode server - it is always in the Internet list, just tap it.");
+        else if(MP_IsMw3ServerName(s_szNewName) || atoi(s_szNewPort) == MP_MW3_PORT)   // 3.23
+            SysMsg(COL_YELLOW, "Modern Warfare 3 is a 24/7 featured server - it is always in the Internet list, just tap it.");
         else if(IsDefaultServer(s_szNewName, atoi(s_szNewPort)) || IsLocalHost(s_szNewHost))
             SysMsg(COL_YELLOW, "That is the default server - it is always on top, just tap Connect.");
         else if(atoi(s_szNewPort) == MP_DEFAULT_PORT)

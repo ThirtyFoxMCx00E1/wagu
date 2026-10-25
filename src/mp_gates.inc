@@ -72,7 +72,8 @@ static const uint64_t GATE_FADE_OUT = 350, GATE_HOLD = 400, GATE_FADE_IN = 450;
 static bool GatesAllowed()
 {
     if(JoinFlowActive()) return false;                         // connection screen / spawn picker
-    if(MP::IsOnBcw() && s_Bcw.view < 2) return false;          // BCW lobby / respawn wait
+    if(MP::IsOnBcw() && s_Bcw.view < 2) return false;
+    if(MP::IsOnMw3() && s_Mw3.view < 2) return false;   // 3.23          // BCW lobby / respawn wait
     return true;
 }
 

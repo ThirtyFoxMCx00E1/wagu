@@ -8,6 +8,7 @@
 #include "protocol.h"
 #include "turf.h"
 #include "bcw.h"
+#include "mw3.h"   // 3.23
 #include <string>
 #include <map>
 
@@ -41,7 +42,7 @@ public:
     bool IsPersistent() const { return m_bPersistent; }
 
     // Player limit 1..100. Lowering it never kicks anyone; it only blocks new joins.
-    void SetMaxPlayers(int n) { m_nMaxPlayers = n < 1 ? 1 : (n > MP_MAX_PLAYERS ? MP_MAX_PLAYERS : n); if(IsBcwServer()) m_nMaxPlayers = MP_BCW_MAX_PLAYERS; else if(IsDefaultServer()) m_nMaxPlayers = MP_MAX_PLAYERS; }   // 3.04: Brief Case War = 20; 3.10: the default server is always 100
+    void SetMaxPlayers(int n) { m_nMaxPlayers = n < 1 ? 1 : (n > MP_MAX_PLAYERS ? MP_MAX_PLAYERS : n); if(IsBcwServer()) m_nMaxPlayers = MP_BCW_MAX_PLAYERS; else if(IsMw3Server()) m_nMaxPlayers = MP_MW3_MAX_PLAYERS; else if(IsDefaultServer()) m_nMaxPlayers = MP_MAX_PLAYERS; }   // 3.04: Brief Case War = 20; 3.10: the default server is always 100
     int  GetMaxPlayers() const { return m_nMaxPlayers; }
     void SetRegion(int r) { m_nRegion = (r >= 0 && r < REGION_COUNT) ? r : REGION_ASIA; }
     int  GetRegion() const { return m_nRegion; }
@@ -59,10 +60,12 @@ public:
     void SetSafeZones(bool on) { m_bSafeZones = on; }   // 3.21: hospital safe zones (default on, --no-safezones)
     bool SafeZoneBlocks(int from, int to) const;       // 3.21: damage from -> to dropped (zone / spawn protection)
     bool IsBcwServer() const;                   // 3.04: the name is MP_BCW_SERVER_NAME (Brief Case War)
+    bool IsMw3Server() const;                   // 3.23: Call Of Duty: Modern Warfare 3
+    void SetMw3File(const char* path);          // 3.23: MW3 stats + zone owners (default mw3_stats.txt)
     // 3.21.6: login system (Discord verification + account). Always on for the default server and
     // Brief Case War; custom servers: SetAuth(true) (Add server -> Authentication system, --auth)
     void SetAuth(bool on) { m_bAuthCustom = on; }
-    bool AuthOn() const { return IsDefaultServer() || IsBcwServer() || m_bAuthCustom; }
+    bool AuthOn() const { return IsDefaultServer() || IsBcwServer() || IsMw3Server() || m_bAuthCustom; }
     bool AccountOf(int id, char* out, size_t n);   // the logged in account of player id (false = none)
     // 3.04.6: refuse + track old MP versions
     void SetMinBuild(uint32_t b) { m_nMinBuild = b; }
@@ -219,6 +222,59 @@ private:
     bool BcwOnDamage(int from, int target, float amount);
     void BcwOnLeave(int slot);
     void BcwOnJoin(int slot, bool fresh);
+    // ---- 3.23: MW3 (server_mw3.inc) ----
+    struct Mw3SrvPlayer
+    {
+        uint8_t  team, cls, arena, sub, rank;
+        bool     spawned, loaded, zombie;
+        int32_t  score, xp, cash;
+        uint16_t kills, deaths, caps, deagle, spree, best;
+        uint16_t hKills, hCaps, hDeagle, hSpree;   // this hour's tournament
+        uint8_t  multi; uint64_t lastKill;
+        uint64_t spawnedAt, lastHeal;
+        uint8_t  duelAsk, duelAskW, duelWith; uint64_t duelAskAt;
+        uint8_t  arenaSpot;
+        uint16_t evKills;
+        bool     evIn;
+    };
+    struct Mw3SrvZone { uint8_t owner, atk, capper; uint64_t capStart; };
+    struct Mw3Saved   { int32_t score, xp, cash; uint16_t kills, deaths, caps, best; uint8_t team, cls; };
+    Mw3SrvPlayer m_Mw3[MP_MAX_PLAYERS];
+    Mw3SrvZone   m_Mw3Zone[MW3_ZONES_WIRE];
+    std::map<std::string, Mw3Saved> m_Mw3Saved;
+    char         m_szMw3File[256] = "mw3_stats.txt";
+    uint64_t     m_nMw3LastSend = 0, m_nMw3LastPlayers = 0, m_nMw3LastSave = 0, m_nMw3TourneyStart = 0, m_nMw3NextEvent = 0, m_nMw3EvAt = 0, m_nMw3ZonePay = 0;
+    uint8_t      m_nMw3TKind = 0, m_nMw3EvKind = 0, m_nMw3EvState = 0, m_nMw3EvNextKind = 1;
+    bool         m_bMw3Dirty = false;
+    void Mw3Reset();
+    void Mw3Load();
+    void Mw3Save();
+    const char* Mw3Key(int slot, char* buf, size_t n);
+    void Mw3Store(int slot);
+    void Mw3SendState(int slot);
+    void Mw3SendPlayers(int slot);
+    void Mw3SendMe(int slot);
+    void Mw3Ev(int slot, uint8_t ev, uint8_t a, uint8_t b, uint8_t c, uint8_t who, int32_t val, const char* text = nullptr);
+    void Mw3Msg(int slot, uint32_t rgba, const char* fmt, ...);
+    void Mw3Reward(int slot, int score, int cash, int xp);
+    void Mw3Tick(uint64_t now);
+    void Mw3ZoneTick(uint64_t now);
+    void Mw3TourneyTick(uint64_t now);
+    void Mw3EventTick(uint64_t now);
+    void Mw3EventStart(uint8_t kind);
+    void Mw3EventEnd(int winnerSide, int winner);
+    void Mw3EventLeave(int slot, bool msg);
+    int  Mw3TeamCount(int team) const;
+    uint16_t Mw3TourneyVal(int slot) const;
+    void Mw3HandleCmd(int slot, const PktMw3Cmd& c);
+    void Mw3OnDeath(int victim, int killer, int weapon);
+    bool Mw3OnDamage(int from, int target, float amount);
+    void Mw3OnLeave(int slot);
+    void Mw3OnJoin(int slot, bool fresh);
+    void Mw3OnAuthed(int slot);
+    void Mw3Spawned(int slot);
+    int  Mw3EvAlive(int side) const;
+    uint16_t m_nMw3EvSideKills[2] = { 0, 0 };
     void Log(const char* fmt, ...);
     void FillWorld(PktWorld& w);
 

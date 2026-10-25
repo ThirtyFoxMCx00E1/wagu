@@ -114,6 +114,8 @@ int Game::CreateRaceCheckpoint(int type, const Vec3& p, const Vec3& next, float 
 }
 void Game::DeleteRaceCheckpoint(int h) { if(h > 0) CALLSCM(DELETE_CHECKPOINT, h); }
 void Game::AddMoney(int amount) { CALLSCM(ADD_SCORE, 0, amount); }
+DEFOPCODE(010B, STORE_SCORE_W, iv);
+int Game::GetMoney() { if(!IsReady()) return 0; uint32_t v = 0; CALLSCM(STORE_SCORE_W, 0, &v); return (int)v; }   // 3.23
 
 DEFOPCODE(035F, ADD_ARMOUR_TO_CHAR_W, ii);
 DEFOPCODE(048F, REMOVE_ALL_CHAR_WEAPONS, i);

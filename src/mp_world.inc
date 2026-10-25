@@ -182,6 +182,7 @@ static void TurfInit()
 }
 static int TurfZoneProvider(Game::RadarZone* out, int maxOut)
 {
+    if(Mw3OnServer()) return Mw3RadarZones(out, maxOut);   // 3.23
     if(!settings.gangZones || client.GetState() != NET_CONNECTED || JoinFlowActive() || !MP::ModeOn(GM_TURF)) return 0;
     if(!s_bTurfInit) TurfInit();
     const bool flash = (MP_NowMs() / 500) % 2 == 0;

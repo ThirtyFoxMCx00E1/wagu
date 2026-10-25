@@ -13,10 +13,10 @@
 // phones refuse servers older than that too (they would let old phones in).
 // 3.10: build 31000. MP_MIN_BUILD stays 30406 and the lobby stays thirtyfox/mp5/: 3.04.6 (no cheats)
 // and 3.10 phones play together on the same servers; only 3.04.5 and older (mp4) stay shut out.
-#define MP_BUILD           32201   // 3.22.1
+#define MP_BUILD           32300   // 3.23
 #define MP_MIN_BUILD       30406
 #define MP_AUTH_MIN_BUILD  32106   // 3.21.6: servers with the login system refuse older phones (they could not log in)
-#define MP_VERSION_STR     "3.22.1"
+#define MP_VERSION_STR     "3.23"
 #define MP_VOICE_BUILD     31100   // 3.11: phones from this build on get voice packets
 #define MP_DOWNLOAD_URL    "thirtyfoxmcx00e1.github.io/wagu"
 #define MP_DEFAULT_HOST    "127.0.0.1"
@@ -101,6 +101,11 @@ enum ePacket : uint8_t
     PKT_CLOTHES,        // C->S->C       3.10: CJ's clothes (3.04.6 phones / servers simply ignore it)
     PKT_VOICE,          // C->S->C       3.11: voice chat (one Opus frame, 20 ms), only to players nearby
     PKT_AUTH,           // S<->C         3.21.6: login system (challenge / ticket / result), see net/authcrypto.h
+    PKT_MW3_STATE,      // S->C          3.23: MW3 world state (zones, tournament, event, team counts)
+    PKT_MW3_PLAYERS,    // S->C          3.23: MW3 team / class / rank / arena / score of every player
+    PKT_MW3_ME,         // S->C          3.23: MW3 my own stats (score, XP, cash, kills...)
+    PKT_MW3_EVENT,      // S->C          3.23: MW3 badges, rewards, captures, event / duel spawns
+    PKT_MW3_CMD,        // C->S          3.23: MW3 team / class / spawn / arena / duel / event commands
 };
 
 enum eRegion : uint8_t { REGION_ASIA = 0, REGION_EUROPE, REGION_NA, REGION_OCEANIA, REGION_COUNT };
@@ -570,11 +575,53 @@ struct PktClothes
 // Until the login is done the player is connected but nobody sees them and nothing they send
 // (position, chat, shots...) reaches anybody.
 enum eAuthOp : uint8_t { AUTH_CHALLENGE = 1, AUTH_TICKET = 2, AUTH_RESULT = 3 };
-enum eAuthStyle : uint8_t { AUTH_STYLE_NORMAL = 0, AUTH_STYLE_BCW = 1 };
+enum eAuthStyle : uint8_t { AUTH_STYLE_NORMAL = 0, AUTH_STYLE_BCW = 1, AUTH_STYLE_MW3 = 2 };   // 3.23: MW3 = green
 struct PktAuthChal   { uint8_t type; uint8_t op; uint8_t style; uint8_t pad; char chal[33]; char server[32]; };
 struct PktAuthTicket { uint8_t type; uint8_t op; uint16_t plen; uint8_t sig[64]; };   // + plen bytes of ticket text
 struct PktAuthResult { uint8_t type; uint8_t op; uint8_t ok; uint8_t pad; char user[24]; char msg[96]; };
 #define MP_AUTH_TICKET_MAX 255
+// ---- 3.23: Call Of Duty: Modern Warfare 3 (24/7 featured gamemode server, see net/mw3.h) ----
+#define MW3_ZONES_WIRE   34
+#define MW3_ROWS_WIRE    64
+struct PktMw3State
+{
+    uint8_t  type;
+    uint8_t  tKind;              // eMw3Tourney running now
+    uint16_t tLeftS;             // seconds left in the hourly tournament
+    uint8_t  tLeader;            // leading player (MP_INVALID_ID = nobody yet)
+    uint8_t  evKind, evState;    // eMw3EventKind / eMw3EventState
+    uint8_t  evCount;            // players signed up / alive in the event
+    uint16_t tLeaderVal;
+    uint16_t evLeftS;            // sign-up / match seconds left, or seconds to the next event
+    uint8_t  evSide[2];          // TDM: red / blue alive, Zombie: humans / zombies
+    uint8_t  teamCount[8];
+    uint8_t  zoneOwner[MW3_ZONES_WIRE];    // team 1..8, 0 = nobody
+    uint8_t  zoneAtk[MW3_ZONES_WIRE];      // team capturing it now (0 = none)
+    uint8_t  zoneProg[MW3_ZONES_WIRE];     // capture progress 0..255
+    uint8_t  zoneCapper[MW3_ZONES_WIRE];   // who captures it (MP_INVALID_ID = nobody)
+};
+struct Mw3Row        { uint8_t id, team, cls, rank, arena, sub; int32_t score; };   // sub: event side (1/2), duel partner + 1
+struct PktMw3Players { uint8_t type; uint8_t n; Mw3Row rows[MW3_ROWS_WIRE]; };      // sent with n rows only
+struct PktMw3Me      { uint8_t type; uint8_t rank; uint16_t spree; int32_t score, xp, cash; uint16_t kills, deaths, caps, deagle; uint16_t best; uint16_t pad; };
+enum eMw3Ev : uint8_t
+{
+    MW3V_BADGE = 1,     // a = 2..7 multi kill level (to the killer)
+    MW3V_REWARD,        // val = cash, a = score, b = xp (to that player; the phone adds the money)
+    MW3V_CAP_START,     // a = zone, b = team, who
+    MW3V_CAP_FAIL,      // a = zone, who
+    MW3V_CAPTURED,      // a = zone, b = team, who
+    MW3V_EVENT_SPAWN,   // a = kind, b = side, c = spawn point (to that player)
+    MW3V_EVENT_OUT,     // you are out of the event (back to your base)
+    MW3V_DUEL_START,    // who = enemy, a = weapon, c = spot (to both)
+    MW3V_ARENA,         // a = eMw3Arena, c = spawn point: go there now
+    MW3V_RANKUP,        // a = new rank
+    MW3V_ZOMBIE,        // you became a zombie (Zombie Survival)
+    MW3V_HEAL,          // val = health given (Medic)
+    MW3V_TEXT,          // banner: text, val = colour
+};
+struct PktMw3Event   { uint8_t type, ev, a, b, c, who; uint16_t pad; int32_t val; char text[72]; };
+enum eMw3Cmd : uint8_t { MW3C_TEAM = 1, MW3C_CLASS, MW3C_SPAWNED, MW3C_ARENA, MW3C_DUEL, MW3C_ACCEPT, MW3C_JOIN_EVENT, MW3C_LEAVE_EVENT, MW3C_START_EVENT, MW3C_HEAL, MW3C_DIED_OUT };
+struct PktMw3Cmd     { uint8_t type, cmd, arg, arg2; };
 #pragma pack(pop)
 
 // 3.11: voice chat. One Opus frame (48 kHz mono, 20 ms) per packet, sent the moment it is
