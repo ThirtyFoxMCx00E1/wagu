@@ -21,9 +21,10 @@ static bool       s_bStatsOpen = false;
 static uint64_t   s_nStatsAt = 0;
 
 struct AuthField { char buf[40]; int max; bool secret; bool numeric; const char* title; };
-static AuthField s_AfUser = { "", 20, false, false, "User" };
-static AuthField s_AfPass = { "", 32, true,  false, "Password" };
-static AuthField s_AfAge  = { "", 2,  false, true,  "Age" };
+// .max is the VKeyboard buffer size (it allows max-1 characters, room for the '\0'): 20 chars = 21, 32 = 33, 2 digits = 3
+static AuthField s_AfUser = { "", 21, false, false, "User" };
+static AuthField s_AfPass = { "", 33, true,  false, "Password" };
+static AuthField s_AfAge  = { "", 3,  false, true,  "Age" };
 static int       s_nAfGender = 0;            // 0 Male, 1 Female, 2 Other
 static AuthField* s_pAfEditing = nullptr;
 static const char* kAuthGenders[3] = { "Male", "Female", "Other" };
