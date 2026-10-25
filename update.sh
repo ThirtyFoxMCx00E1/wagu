@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# MP 24/7 server update (3.21.7). Gets the newest kit + mp_server and reinstalls with your saved
+# MP 24/7 server update (3.22). Gets the newest kit + mp_server and reinstalls with your saved
 # settings (/etc/mp-hivemq/mp.env stays as it is). Safe to run while the servers are running.
 #   curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/update.sh | sudo bash
 #   or on the server:  sudo bash /opt/mp/kit/update.sh      (Termius console: 7) update)
