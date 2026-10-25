@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Quick health check of this region's MP services.
-for s in hivemq mp-server mp-bcw mp-legacy mp-bridge mp-status mp-console mp-railway@discordpy-bot; do
+for s in hivemq mp-server mp-bcw mp-mw3 mp-legacy mp-bridge mp-status mp-console mp-railway@discordpy-bot; do
     printf '%-26s %s\n' "$s" "$(systemctl is-active "$s" 2>/dev/null)"
 done
 echo; echo "listening:"; ss -ltnup 2>/dev/null | grep -E ':(1883|8000|8883|8884|1922|7681)\b' || true

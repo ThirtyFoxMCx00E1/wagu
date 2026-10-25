@@ -372,6 +372,8 @@ sed -e "s|@@BASE@@|$BASE|g; s|@@PORT@@|${SERVER_PORT:-1922}|; s|@@NAME@@|${SERVE
 sed -e "s|@@JAVA_HOME@@|$JAVA_HOME|g; s|@@BASE@@|$BASE|g; s|@@ETC@@|$ETC|g" "$SRC_DIR/systemd/mp-bridge.service" > /etc/systemd/system/mp-bridge.service
 # 3.04: Brief Case War 24/7 (UDP 1930)
 sed -e "s|@@BASE@@|$BASE|g; s|@@REGION@@|$REGION|; s|@@BCWMIN@@|${BCW_MIN:-20}|" "$SRC_DIR/systemd/mp-bcw.service" > /etc/systemd/system/mp-bcw.service
+# 3.23: Call Of Duty: Modern Warfare 3 24/7 (UDP 1931)
+sed -e "s|@@BASE@@|$BASE|g; s|@@REGION@@|$REGION|" "$SRC_DIR/systemd/mp-mw3.service" > /etc/systemd/system/mp-mw3.service
 # 3.04.6: "UPDATE MP" notice server in the old lobby (refuses + logs MP 3.04.5 and older)
 sed -e "s|@@BASE@@|$BASE|g; s|@@REGION@@|$REGION|" "$SRC_DIR/systemd/mp-legacy.service" > /etc/systemd/system/mp-legacy.service
 systemctl daemon-reload
@@ -379,6 +381,7 @@ systemctl enable --now hivemq >/dev/null
 systemctl restart hivemq
 if [ "${RUN_SERVER:-1}" = 1 ]; then systemctl enable mp-server >/dev/null; systemctl restart mp-server; else systemctl disable --now mp-server 2>/dev/null || true; fi
 if [ "${RUN_SERVER:-1}" = 1 ] && [ "${RUN_BCW:-1}" = 1 ]; then systemctl enable mp-bcw >/dev/null; systemctl restart mp-bcw; else systemctl disable --now mp-bcw 2>/dev/null || true; fi   # 3.04
+if [ "${RUN_SERVER:-1}" = 1 ] && [ "${RUN_MW3:-1}" = 1 ]; then systemctl enable mp-mw3 >/dev/null; systemctl restart mp-mw3; else systemctl disable --now mp-mw3 2>/dev/null || true; fi   # 3.23
 if [ "${RUN_SERVER:-1}" = 1 ] && [ "${RUN_LEGACY:-1}" = 1 ]; then systemctl enable mp-legacy >/dev/null; systemctl restart mp-legacy; else systemctl disable --now mp-legacy 2>/dev/null || true; fi   # 3.04.6
 if [ "${RUN_BRIDGE:-0}" = 1 ]; then systemctl enable mp-bridge >/dev/null; systemctl restart mp-bridge; else systemctl disable --now mp-bridge 2>/dev/null || true; fi
 systemctl enable mp-status >/dev/null; systemctl restart mp-status
@@ -387,13 +390,14 @@ if [ "${CONSOLE:-1}" = 1 ]; then systemctl enable mp-console >/dev/null; systemc
 # ---------------------------------------------------------------- network tuning + firewall
 cp "$SRC_DIR/config/99-mp-network.conf" /etc/sysctl.d/99-mp-network.conf
 sysctl -q --system || true
-say "firewall: SSH, MQTT 1883, WebSocket 8000${DOMAIN:+, TLS 8883/8884}, game UDP ${SERVER_PORT:-1922} + 1930 (Brief Case War)"
+say "firewall: SSH, MQTT 1883, WebSocket 8000${DOMAIN:+, TLS 8883/8884}, game UDP ${SERVER_PORT:-1922} + 1930 (Brief Case War) + 1931 (MW3)"
 ufw allow OpenSSH >/dev/null 2>&1 || ufw allow 22/tcp >/dev/null
 ufw allow 1883/tcp >/dev/null; ufw allow 8000/tcp >/dev/null
 [ -n "${DOMAIN:-}" ] && { ufw allow 8883/tcp >/dev/null; ufw allow 8884/tcp >/dev/null; }
 if [ "${CONSOLE:-1}" = 1 ] && { [ -n "${DOMAIN:-}" ] || [ "${CONSOLE_INSECURE:-0}" = 1 ]; }; then ufw allow 7681/tcp >/dev/null; fi
 ufw allow "${SERVER_PORT:-1922}"/udp >/dev/null
 ufw allow 1930/udp >/dev/null   # 3.04: Brief Case War
+ufw allow 1931/udp >/dev/null   # 3.23: Modern Warfare 3
 ufw deny 9010/tcp >/dev/null 2>&1 || true    # JMX (also switched off in the service)
 ufw --force enable >/dev/null
 
@@ -404,7 +408,7 @@ echo
 say "Done. This region: $REGION"
 echo "    status:  sudo $SRC_DIR/tools/status.sh     menu: sudo $BASE/console/mp-console.sh"
 if [ "${CONSOLE:-1}" = 1 ] && [ -n "${DOMAIN:-}" ]; then echo "    web console (website Termius page): https://$DOMAIN:7681  login ${CONSOLE_USER:-admin} / CONSOLE_PASS in $ENV_FILE"; fi
-echo "    logs:    journalctl -u hivemq -f    |  journalctl -u mp-server -f   |  journalctl -u mp-bcw -f   |  journalctl -u mp-legacy -f (old versions refused: $SV/outdated_clients.log)   |  journalctl -u mp-bridge -f"
+echo "    logs:    journalctl -u hivemq -f    |  journalctl -u mp-server -f   |  journalctl -u mp-bcw -f   |  journalctl -u mp-mw3 -f   |  journalctl -u mp-legacy -f (old versions refused: $SV/outdated_clients.log)   |  journalctl -u mp-bridge -f"
 echo "    logins:  $ENV_FILE  (copy to the other regions; keep BRIDGE_PASS / ADMIN_PASS secret)"
 echo "    open these ports in your cloud provider's firewall too: 1883/tcp 8000/tcp ${DOMAIN:+8883/tcp 8884/tcp 7681/tcp 80/tcp }${SERVER_PORT:-1922}/udp"
 echo "    then put this server into the website's regions.txt:  sudo $SRC_DIR/tools/make-regions.sh"

@@ -14,6 +14,7 @@ header() {
     printf '  HiveMQ broker   %s   MQTT clients: %s\n' "$(svc hivemq)" "$(conns)"
     printf '  24/7 server     %s   UDP %s, %s slots\n' "$(svc mp-server)" "${SERVER_PORT:-1922}" "${MAX_PLAYERS:-100}"
     printf '  Brief Case War  %s   UDP 1930, 20 slots\n' "$(svc mp-bcw)"
+    printf '  Modern Warfare 3 %s  UDP 1931, 64 slots\n' "$(svc mp-mw3)"
     printf '  old-MP notice   %s   %s old phones refused (o = list)\n' "$(svc mp-legacy)" "$(wc -l < /opt/mp/server/outdated_clients.log 2>/dev/null || echo 0)"
     printf '  region bridge   %s\n' "$(svc mp-bridge)"
     printf '  status beacon   %s\n' "$(svc mp-status)"
@@ -65,8 +66,8 @@ while true; do
         2) echo "(Ctrl+C to go back)"; journalctl -u mp-server -f -n 40 ;;
         3) /opt/mp/console/status.sh | less -R ;;
         4) systemctl restart hivemq && echo restarted; sleep 2 ;;
-        5) systemctl restart mp-server mp-bcw mp-legacy && echo restarted; sleep 2 ;;
-        6) systemctl restart hivemq mp-server mp-bcw mp-legacy mp-status; systemctl is-enabled -q mp-bridge 2>/dev/null && systemctl restart mp-bridge; echo restarted; sleep 2 ;;
+        5) systemctl restart mp-server mp-bcw mp-mw3 mp-legacy && echo restarted; sleep 2 ;;
+        6) systemctl restart hivemq mp-server mp-bcw mp-mw3 mp-legacy mp-status; systemctl is-enabled -q mp-bridge 2>/dev/null && systemctl restart mp-bridge; echo restarted; sleep 2 ;;
         7) REGION="${REGION:-Asia}" bash /opt/mp/kit/update.sh 2>/dev/null || curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/update.sh | REGION="${REGION:-Asia}" bash; read -r -p "  enter to continue" _ ;;
         8) /opt/mp/kit/tools/make-regions.sh; read -r -p "  enter to continue" _ ;;
         o|O) { echo "time  name  version  phone  IP  port"; tail -n 200 /opt/mp/server/outdated_clients.log 2>/dev/null || echo "(none yet)"; } | less -R ;;

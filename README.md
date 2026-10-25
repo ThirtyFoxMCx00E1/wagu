@@ -60,9 +60,9 @@ curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/update
 ```
 
 - **Why the old servers never updated:** `install.sh` copied the new `mp_server` over the running one. Linux refuses that ("Text file busy"), and `set -e` stopped the whole update, so the regions kept an old `mp_server`. That old server refuses SENJI's new admin key (`administrator.txt`), and phones kept becoming the host of the default server. Fixed: the binary is now copied to `mp_server.new` and renamed, and the kit in `/opt/mp/kit` is a real git clone (the old copy had no `.git`, so `git pull` in menu 7 failed too).
-- **`update.sh`** downloads the newest kit, re-runs `install.sh` with your saved `/etc/mp-hivemq/mp.env` and restarts `mp-server`, `mp-bcw` and `mp-legacy`.
+- **`update.sh`** downloads the newest kit, re-runs `install.sh` with your saved `/etc/mp-hivemq/mp.env` and restarts `mp-server`, `mp-bcw`, `mp-mw3` and `mp-legacy`.
 - New in `mp_server` 3.21: hospital safe zones + 5 s spawn protection checked on the server (`--no-safezones` to turn off), race queue (14 players, or 45 s with 2+, or 60 s alone, 20 s GO), and phones on MP 3.21 move to the 24/7 copy by themselves, so a phone host leaving no longer "restarts" the server.
-- **Ping (~400 ms):** that is the internet relay through the broker. Direct UDP (about the real distance ping) needs the server's UDP port reachable: open `1922/udp` (and `1930/udp` for Brief Case War) in the VPS firewall, or forward them on the router when the server runs at home. A VPN (Amnezia, OpenVPN) adds one more hop, it doesn't lower the ping; a VPS in each region does.
+- **Ping (~400 ms):** that is the internet relay through the broker. Direct UDP (about the real distance ping) needs the server's UDP port reachable: open `1922/udp` (and `1930/udp` for Brief Case War, `1931/udp` for MW3) in the VPS firewall, or forward them on the router when the server runs at home. A VPN (Amnezia, OpenVPN) adds one more hop, it doesn't lower the ping; a VPS in each region does.
 
 ## MP 3.03: update the 24/7 servers
 
@@ -278,6 +278,14 @@ Isang VPS bawat rehiyon (Asia, Europe, NA, Oceania). Sa una: `sudo ./install.sh 
 
 - logs: `journalctl -u mp-bcw -f`  |  restart: `systemctl restart mp-bcw` (console option 5 restarts it too)
 - a match starts at 20 queued players; for testing with fewer: `BCW_MIN=4 ./install.sh` (or edit `--bcw-min` in `/etc/systemd/system/mp-bcw.service`)
+
+### Call Of Duty: Modern Warfare 3 (3.23)
+
+`install.sh` also installs **`mp-mw3.service`**: the region's 24/7 featured "Call Of Duty: Modern Warfare 3" server on **UDP 1931** (64 players, 8 teams, 34 capture zones, 6 DM arenas, duels, events every 15 min, hourly tournament; login on, cheats off, MP 3.23+ only). It is pinned in the in-game Internet list with a green banner. Only the VPS runs it, phones never become host.
+
+- logs: `journalctl -u mp-mw3 -f`  |  restart: `systemctl restart mp-mw3` (console option 5 restarts it too)
+- stats + zone owners: `/opt/mp/server/mw3_stats.txt` (saved every minute and on stop)
+- turn it off: `RUN_MW3=0 ./install.sh`
 - don't want it: `RUN_BCW=0 ./install.sh`
 
 ## MP 3.11: lower ping + voice chat
@@ -285,8 +293,8 @@ Isang VPS bawat rehiyon (Asia, Europe, NA, Oceania). Sa una: `sudo ./install.sh 
 Rebuild `mp_server` on every region (console menu **7) update**), then re-run `install.sh` (or copy `systemd/hivemq.service` + `config/99-mp-network.conf` and restart). New in 3.11:
 
 - **Direct UDP (the big ping drop).** 3.11 phones ask the region's broker machine over UDP (`PKT_QUERY` to `<broker host>:1922` / `:1930`). If the 24/7 server answers, they play straight over UDP instead of through MQTT: one hop, no TCP stalls, no batching. **The UDP ports must be reachable from the internet:**
-  - cloud server: open **UDP 1922 and 1930** in the provider's firewall / security group (ufw is already done by `install.sh`)
-  - home server (e.g. `*.duckdns.org` on a home connection): on the router, **port-forward UDP 1922 and 1930** to the machine running `mp_server`, the same way TCP 1883/8883 are forwarded
+  - cloud server: open **UDP 1922, 1930 and 1931** in the provider's firewall / security group (ufw is already done by `install.sh`)
+  - home server (e.g. `*.duckdns.org` on a home connection): on the router, **port-forward UDP 1922, 1930 and 1931** to the machine running `mp_server`, the same way TCP 1883/8883 are forwarded
   - check from outside: `printf '\x0e\x00\x00\x00\x00' | nc -u -w2 <host> 1922 | head -c 40` should print the server name
   If the ports are closed nothing breaks: phones keep using the relay (and its ping).
 - **Voice chat relay.** The server forwards voice (`PKT_VOICE`, Opus frames) only to 3.11 phones within 40 m of the talker, max 60 frames/s per player, nothing for admin-muted players.
@@ -306,7 +314,7 @@ MP 3.04.5 and older let players use cheats. From 3.04.6 on:
 
 - The lobby moved from `thirtyfox/mp4/` to `thirtyfox/mp5/`. The public `mp` login has full access on mp5, but on mp4 it can only **read** the server list and send a join. So old phones can't host anything on these brokers, even though their `broker.txt` / `regions.txt` still has the login.
 - **`mp-legacy.service`** runs `mp_server 1931 --legacy-notice` in the old lobby as **UPDATE MP TO 3.04.6** (bridge login, `server/broker-legacy.txt`). It's the only server old phones can see. Joining it gets refused with the download link.
-- Every server (`mp-server`, `mp-bcw`, `mp-legacy`) refuses old versions and logs them to `/opt/mp/server/outdated_clients.log`: time, name, version range, phone id, IP, port. Console: `o`. Disable the notice with `RUN_LEGACY=0 ./install.sh`.
+- Every server (`mp-server`, `mp-bcw`, `mp-mw3`, `mp-legacy`) refuses old versions and logs them to `/opt/mp/server/outdated_clients.log`: time, name, version range, phone id, IP, port. Console: `o`. Disable the notice with `RUN_LEGACY=0 ./install.sh`.
 - MpBridge copies both lobbies between the regions.
 - **Update every region** (console option 7, or `git pull && sudo ./install.sh --region <Region>`). Until then, 3.04.6 phones can't see that region's 24/7 servers.
 

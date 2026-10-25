@@ -24,7 +24,7 @@ say "installing (saved settings from /etc/mp-hivemq/mp.env are kept)"
 cd "$BASE/kit"
 bash ./install.sh ${ARGS[@]+"${ARGS[@]}"}
 
-for s in mp-server mp-bcw mp-legacy; do
+for s in mp-server mp-bcw mp-mw3 mp-legacy; do
     systemctl is-enabled --quiet "$s" 2>/dev/null && systemctl restart "$s" || true
 done
 sleep 2
