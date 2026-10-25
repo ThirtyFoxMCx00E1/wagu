@@ -220,28 +220,11 @@ static AuthLook AuthStyleLook(bool bcw)
     return l;
 }
 
-// Brief Case War: dark red/black background with moving light sweeps, a glow and sparks
-static void AuthBcwBackdrop(ImDrawList* dl, ImVec2 ds, float t)
+// Brief Case War: plain dark background. The red VFX (sliding light bars, pulsing glow, rising sparks) was removed;
+// the time argument is kept so the call site did not change.
+static void AuthBcwBackdrop(ImDrawList* dl, ImVec2 ds, float /*t*/)
 {
     dl->AddRectFilledMultiColor(ImVec2(0, 0), ds, IM_COL32(40, 0, 4, 235), IM_COL32(0, 0, 0, 235), IM_COL32(0, 0, 0, 240), IM_COL32(70, 4, 8, 235));
-    for(int i = 0; i < 3; ++i)
-    {   // diagonal highlight bars sliding across
-        float ph = fmodf(t * (0.16f + 0.05f * i) + i * 0.37f, 1.0f);
-        float x = -ds.x * 0.4f + ph * ds.x * 1.8f, w = ds.x * (0.05f + 0.03f * i), sk = ds.y * 0.45f;
-        ImU32 c0 = IM_COL32(255, 40, 50, 0), c1 = IM_COL32(255, 60, 70, 46 - i * 10);
-        dl->AddQuadFilled(ImVec2(x, 0), ImVec2(x + w, 0), ImVec2(x + w - sk, ds.y), ImVec2(x - sk, ds.y), c1);
-        dl->AddQuadFilled(ImVec2(x - w * 0.6f, 0), ImVec2(x, 0), ImVec2(x - sk, ds.y), ImVec2(x - w * 0.6f - sk, ds.y), c0 | IM_COL32(0, 0, 0, 18));
-    }
-    float pulse = 0.5f + 0.5f * sinf(t * 2.4f);
-    ImVec2 c(ds.x * 0.5f, ds.y * 0.45f);
-    for(int r = 6; r >= 1; --r) dl->AddCircleFilled(c, ds.y * (0.12f + r * 0.07f), IM_COL32(200, 10, 20, (int)((6 + pulse * 6) * (7 - r) / 3)), 48);
-    for(int i = 0; i < 40; ++i)
-    {   // sparks rising
-        float sx = fmodf(i * 97.31f, 1.0f) * ds.x, sp = 0.05f + fmodf(i * 0.618f, 1.0f) * 0.09f;
-        float sy = ds.y - fmodf(t * sp + i * 0.137f, 1.0f) * ds.y * 1.1f;
-        float a = 0.3f + 0.7f * fabsf(sinf(t * 3.0f + i));
-        dl->AddCircleFilled(ImVec2(sx + sinf(t + i) * UI::S(12), sy), UI::S(1.5f + (i % 3)), IM_COL32(255, (i % 2) ? 255 : 70, (i % 2) ? 255 : 60, (int)(120 * a)));
-    }
 }
 
 static void OnAuthFieldText(const char* text, void* data)
