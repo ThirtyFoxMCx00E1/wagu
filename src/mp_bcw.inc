@@ -1250,7 +1250,7 @@ static void RenderBcw()
     uint64_t nowMs = MP_NowMs();
     ImDrawList* bg = ImGui::GetBackgroundDrawList();
     if(Game::IsReady() && !Game::IsPaused()) BcwDrawWorld(bg, now);
-    if(s_Bcw.st.state == BCW_LIVE && s_Bcw.view >= 2) BcwDrawMatchHud(ImGui::GetForegroundDrawList(), now);
+    if(s_Bcw.st.state == BCW_LIVE && s_Bcw.view >= 2 && !MP::AuthScreenShown()) BcwDrawMatchHud(ImGui::GetForegroundDrawList(), now);
     if(s_Bcw.view == 1) BcwDrawTeamPicker(now);
     BcwDrawRespawnScreen(now);   // 3.04.4
     BcwDrawRoll(now);

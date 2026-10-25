@@ -245,6 +245,17 @@ static void RenderAuth()
 {
     if(!AuthScreenUp() || !Game::IsReady()) return;
     const ImVec2 ds = ImGui::GetIO().DisplaySize;
+    if(s_Auth.state == AuthClient::LINKING && s_Auth.err.empty())
+    {   // 3.21.7: the login screen opens only once the login server is connected; until then a small line
+        static const char* dots[4] = { "", ".", "..", "..." };
+        char b[64]; snprintf(b, sizeof(b), "Connecting to the login server%s", dots[(MP_NowMs() / 400) % 4]);
+        ImDrawList* fg = ImGui::GetForegroundDrawList(); ImFont* f = UI::Font(); const float fs = UI::S(28);
+        ImVec2 ts = f->CalcTextSizeA(fs, FLT_MAX, 0, "Connecting to the login server...");
+        ImVec2 a0((ds.x - ts.x) * 0.5f - UI::S(18), UI::S(14)), a1((ds.x + ts.x) * 0.5f + UI::S(18), UI::S(14) + ts.y + UI::S(16));
+        fg->AddRectFilled(a0, a1, IM_COL32(0, 0, 0, 170), UI::S(8));
+        fg->AddText(f, fs, ImVec2(a0.x + UI::S(18), a0.y + UI::S(8)), IM_COL32(255, 255, 255, 230), b);
+        return;
+    }
     const bool bcw = s_nAuthStyle == AUTH_STYLE_BCW;
     const float t = (float)(MP_NowMs() % 3600000ull) / 1000.0f;
     ImDrawList* bg = ImGui::GetBackgroundDrawList();
