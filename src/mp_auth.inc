@@ -148,11 +148,87 @@ static void AuthOnPacket(const uint8_t* d, int len)
     }
 }
 
+// ---- 3.24: launcher profile (top left): your Discord profile picture + account name ----------
+// MP/avatar.png + MP/profile.txt (user= / discord=) are written after a login: the bot sends the
+// picture of the Discord account that made the /gen (64 px PNG). No account on this phone yet (never
+// verified on Discord / never created one) = the blank default picture and "Not logged in".
+static const char* kAvatarFile = "avatar.png";
+static std::string s_ProfDiscord, s_ProfOwner;   // profile.txt: whose avatar.png it is
+static bool        s_bProfRead = false;
+static uint64_t    s_nAvatarAskAt = 0;
+static void ProfilePath(char* out, size_t n) { snprintf(out, n, "%s/profile.txt", s_szDataDir); }
+static void ProfileRead()
+{
+    if(s_bProfRead) return;
+    s_bProfRead = true;
+    char p[512]; ProfilePath(p, sizeof(p));
+    if(FILE* f = fopen(p, "r"))
+    {
+        char line[160];
+        while(fgets(line, sizeof(line), f))
+        {
+            std::string v = line; while(!v.empty() && (v.back() == '\n' || v.back() == '\r')) v.pop_back();
+            if(!v.compare(0, 5, "user=")) s_ProfOwner = v.substr(5);
+            else if(!v.compare(0, 8, "discord=")) s_ProfDiscord = v.substr(8);
+        }
+        fclose(f);
+    }
+}
+static void ProfileFrame(uint64_t now)
+{
+    ProfileRead();
+    if(s_Auth.avatarReady)
+    {
+        s_Auth.avatarReady = false;
+        char p[512]; snprintf(p, sizeof(p), "%s/%s", s_szDataDir, kAvatarFile);
+        if(FILE* f = fopen(p, "wb")) { fwrite(s_Auth.avatarPng.data(), 1, s_Auth.avatarPng.size(), f); fclose(f); }
+        s_ProfOwner = s_AuthUser.empty() ? s_Auth.user : s_AuthUser;
+        if(!s_Auth.avatarDiscord.empty()) s_ProfDiscord = s_Auth.avatarDiscord;
+        ProfilePath(p, sizeof(p));
+        if(FILE* f = fopen(p, "w")) { fprintf(f, "# MP launcher profile (your Discord picture is avatar.png)\nuser=%s\ndiscord=%s\n", s_ProfOwner.c_str(), s_ProfDiscord.c_str()); fclose(f); }
+        HUD::ReloadTexture(kAvatarFile);
+        s_Auth.avatarPng.clear();
+        logger->Info("Profile: Discord avatar saved for %s", s_ProfOwner.c_str());
+    }
+    // logged in during this game session: get the picture (again every 30 min: a changed Discord pfp)
+    if(s_Auth.LoggedIn() && s_nAuthDoneAt && !s_Auth.avatarPending &&
+       (!s_nAvatarAskAt || now - s_nAvatarAskAt > 30 * 60 * 1000ull) && now - s_nAuthDoneAt > 3000)
+    { s_nAvatarAskAt = now; s_Auth.RequestAvatar(); }
+}
+// the account shown in the launcher ("" = none on this phone: blank picture)
+static std::string ProfileUser()
+{
+    if(!s_AuthUser.empty()) return s_AuthUser;
+    return AuthLastUser();
+}
+// draws the round picture: Discord avatar if this account has one, else the blank default
+static void ProfileDrawAvatar(ImDrawList* dl, ImVec2 c, float r)
+{
+    ProfileRead();
+    const std::string u = ProfileUser();
+    ImVec2 uv1;
+    void* tex = (!u.empty() && !strcasecmp(u.c_str(), s_ProfOwner.c_str())) ? HUD::Texture(kAvatarFile, &uv1) : nullptr;
+    if(tex)
+    {
+        dl->AddImageRounded((ImTextureID)tex, ImVec2(c.x - r, c.y - r), ImVec2(c.x + r, c.y + r), ImVec2(0, 0), uv1, IM_COL32_WHITE, r);
+        dl->AddCircle(c, r, IM_COL32(255, 255, 255, 90), 40, UI::S(2));
+        return;
+    }
+    // blank default: grey disc + a plain head-and-shoulders silhouette
+    dl->AddCircleFilled(c, r, IM_COL32(70, 72, 78, 255), 40);
+    dl->PushClipRect(ImVec2(c.x - r, c.y - r), ImVec2(c.x + r, c.y + r), true);
+    dl->AddCircleFilled(ImVec2(c.x, c.y - r * 0.18f), r * 0.36f, IM_COL32(150, 153, 160, 255), 28);
+    dl->AddCircleFilled(ImVec2(c.x, c.y + r * 0.95f), r * 0.68f, IM_COL32(150, 153, 160, 255), 32);
+    dl->PopClipRect();
+    dl->AddCircle(c, r, IM_COL32(255, 255, 255, 60), 40, UI::S(2));
+}
+
 // every game frame
 static void AuthFrame(uint64_t now)
 {
     if(client.GetState() == NET_DISCONNECTED) { if(s_bAuthReq) AuthReset(); }
-    if(s_Auth.state != AuthClient::IDLE || s_Auth.statsPending) s_Auth.Tick(now);
+    if(s_Auth.state != AuthClient::IDLE || s_Auth.statsPending || s_Auth.avatarPending) s_Auth.Tick(now);
+    ProfileFrame(now);   // 3.24
     if(!s_szAuthSavedTok.empty() && !s_Auth.LoggedIn())
     {   // 3.22: the bot said the saved login ended (180 days unused / account gone): forget it, keep the name
         s_szAuthSavedTok.clear();

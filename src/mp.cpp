@@ -823,7 +823,7 @@ static void DestroyAvatar(RemotePlayer& p)
 {
     if(p.blip) { Game::RemoveBlip(p.blip); p.blip = 0; }
     if(p.car)  { Vec3 at = MP_LoadVec3(p.sync.carPos); RemoveAvatarCar(p, at); }
-    DropLeftCar(p); p.enterT = p.leaveT = 0;   // 2.35
+    DropLeftCar(p); p.enterT = p.leaveT = 0; p.passEnterT = p.passLeaveT = 0; p.passCar = 0;   // 2.35
     if(p.jetObj) { Game::RemoveJetpack(p.jetObj); p.jetObj = 0; p.jetApplied = false; }   // 2.19.1
     if(p.ped)  { Game::DeleteChar(p.ped); p.ped = 0; }
     p.rideCar = 0; p.mirror = false; p.gunUp = false;
@@ -1574,8 +1574,31 @@ static void UpdateRemote(int id, int localPed, uint64_t now)
             {
                 if(Game::IsCharInAnyCar(p.ped)) { Vec3 o = MP_LoadVec3(s.carPos); o.x += 2.0f; Game::WarpOutOfCar(p.ped, o); }
                 int seat = Game::FreePassengerSeat(car, p.vehSeat);
-                if(seat >= 0 && now - p.lastTask > 400) { Game::WarpIntoCarAsPassenger(p.ped, car, seat); p.lastTask = now; }
+                // 3.24: real passenger entry. Next to the (almost) standing car the avatar does the full
+                // game sequence: walks to the door, reaches the handle, pulls the door open, climbs in
+                // and pulls the door shut from inside (CTaskComplexEnterCarAsPassenger anims). Far away,
+                // car moving, or the task stuck for 4.5 s = warp in as before.
+                Vec3 pp, cc;
+                bool nearCar = Game::GetCharPos(p.ped, pp) && Game::GetCarPos(car, cc) && Dist2D(pp, cc) < 8.0f;
+                float csp2 = mvel.x * mvel.x + mvel.y * mvel.y;
+                if(p.passEnterT && p.passCar == car)
+                {
+                    if(now - p.passEnterT > 4500 || !nearCar || csp2 > 6.0f * 6.0f)
+                    {
+                        int s2 = Game::FreePassengerSeat(car, p.vehSeat);
+                        if(s2 >= 0) Game::WarpIntoCarAsPassenger(p.ped, car, s2);
+                        p.passEnterT = 0; p.lastTask = now;
+                    }
+                }
+                else if(seat >= 0 && now - p.lastTask > 400)
+                {
+                    if(nearCar && csp2 < 3.0f * 3.0f && settings.syncAnims && !Game::IsCharInAnyCar(p.ped))
+                    { Game::TaskEnterCarAsPassenger(p.ped, car, seat); p.passEnterT = now; p.passCar = car; }
+                    else { Game::WarpIntoCarAsPassenger(p.ped, car, seat); p.passEnterT = 0; }
+                    p.lastTask = now;
+                }
             }
+            else p.passEnterT = 0;
             p.rideCar = car; p.mirror = false; p.moveState = -1;
             // 2.21: tag on the passenger's own seat, not on the middle of the car (on top of the driver's)
             Vec3 cp;
@@ -1587,8 +1610,21 @@ static void UpdateRemote(int id, int localPed, uint64_t now)
     }
     if(p.rideCar)
     {
-        if(p.ped && Game::IsCharInCar(p.ped, p.rideCar)) Game::WarpOutOfCar(p.ped, target);
-        p.rideCar = 0; p.moveState = -1;
+        // 3.24: getting out as a passenger = open the door, climb out, push it shut (game anims) when
+        // the car stands still; moving car / stuck for 3 s = warp out as before
+        if(p.ped && Game::IsCharInCar(p.ped, p.rideCar))
+        {
+            float sp2 = p.vel.x * p.vel.x + p.vel.y * p.vel.y;
+            if(!p.passLeaveT && settings.syncAnims && sp2 < 3.0f * 3.0f && !(s.flags & SYNC_DEAD))
+            { Game::TaskLeaveCar(p.ped, p.rideCar); p.passLeaveT = now; }
+            if(p.passLeaveT && now - p.passLeaveT < 3000)
+            {   // the anim is still playing: the tag follows the ped
+                Vec3 tp; if(Game::GetCharTagPos(p.ped, tp)) { p.drawPos = tp; p.drawValid = true; }
+                return;
+            }
+            Game::WarpOutOfCar(p.ped, target);
+        }
+        p.rideCar = 0; p.moveState = -1; p.passLeaveT = 0; p.passEnterT = 0;
     }
 
     // --- vehicle ---------------------------------------------------------------------------
@@ -4012,6 +4048,8 @@ static bool StartLocalServer(const char* name, int port)
     s_Server.SetPassword(MP::IsDefaultServer(name, port) || bcw ? "" : s_szJoinPw);   // 2.19
     // 2.29: the default server always has the full 100 slots (0/100), wherever it runs
     int maxp = MP::IsDefaultServer(name, port) ? MP_MAX_PLAYERS : settings.maxPlayers;
+    if(MP_IsMw3ServerName(name)) maxp = MP_MW3_MAX_PLAYERS;        // 3.24: a phone copy listed itself as x/100
+    else if(MP_IsBcwServerName(name)) maxp = MP_BCW_MAX_PLAYERS;
     if(!s_Server.Start((uint16_t)port, name, ServerLog, maxp, settings.region))
     {
         SysMsg(COL_RED, "Could not start the server on port %d", port);
@@ -4395,9 +4433,78 @@ static void FinishJob(int job, std::vector<LanServer>& list)
     }
 }
 
+// ---- 3.24: Broker standby pool (100 backup hosts) ----------------------------------------------
+// The featured servers (Modern Warfare 3, Brief Case War, MP LAN Server) live on the 24/7 machine.
+// When it is down, a featured server used to exist only while somebody's phone had joined it, so
+// the next player found "no Broker" and had to wait / host it themselves. Now every phone that has
+// MP open, is online, idle (not on a server, not hosting) and has "Broker standby" on is one of
+// 100 standby Brokers: its rank (#1..#100, from its device id) decides how long it waits after a
+// featured server vanished from the lobby (20 s + 2 s per rank). The first one whose turn comes
+// hosts it in the background (Broker shows as the host, nobody has to be on it); everybody else
+// sees it listed again and keeps standing by. The older copy / the 24/7 machine still wins the
+// duplicate merge, and joining or hosting anything yourself simply replaces the standby copy.
+#define MP_BROKER_POOL 100
+static bool     s_bStandbyHost = false;
+static int      s_nStandbyRank = 0;
+int MP::BrokerStandbyRank()
+{
+    if(!s_nStandbyRank)
+    {
+        uint32_t h = 2166136261u;
+        for(const char* p = settings.deviceId; *p; ++p) { h ^= (uint8_t)*p; h *= 16777619u; }
+        s_nStandbyRank = 1 + (int)(h % MP_BROKER_POOL);
+    }
+    return s_nStandbyRank;
+}
+bool MP::IsBrokerStandbyHost() { return s_bStandbyHost && s_Server.IsRunning(); }
+static void ProcessBrokerStandby(uint64_t now)
+{
+    static uint64_t lastCheck = 0, onlineSince = 0, missing[3] = { 0, 0, 0 };
+    if(now - lastCheck < 1000) return;
+    lastCheck = now;
+    if(s_bStandbyHost && !s_Server.IsRunning()) s_bStandbyHost = false;
+    if(!Online::IsConnected()) { onlineSince = 0; missing[0] = missing[1] = missing[2] = 0; return; }
+    if(!onlineSince) onlineSince = now;
+    if(now - onlineSince < 20000) return;   // the lobby needs a moment before "not listed" means anything
+    static const char* names[3] = { MP_MW3_SERVER_NAME, MP_BCW_SERVER_NAME, MP_DEFAULT_SERVER_NAME };
+    static const int   ports[3] = { MP_MW3_PORT, MP_BCW_PORT, MP_DEFAULT_PORT };
+    std::vector<LanServer> live = Online::Snapshot();
+    bool listed[3] = { false, false, false }, dedi[3] = { false, false, false };
+    for(auto& sv : live)
+        for(int k = 0; k < 3; ++k)
+            if((k == 0 && MP_IsMw3ServerName(sv.name)) || (k == 1 && MP_IsBcwServerName(sv.name)) || (k == 2 && MP::IsDefaultServer(sv.name, sv.port)))
+            { listed[k] = true; if(sv.dedicated) dedi[k] = true; }
+    if(s_bStandbyHost)
+    {   // the 24/7 machine is back and nobody is on our copy: hand it back quietly
+        for(int k = 0; k < 3; ++k)
+            if(s_Server.GetPort() == ports[k] && dedi[k] && s_Server.GetPlayerCount() == 0)
+            {
+                logger->Info("Broker standby: the 24/7 host of %s is back, standby copy closed", names[k]);
+                s_Server.Stop(); s_bStandbyHost = false;
+            }
+        return;
+    }
+    for(int k = 0; k < 3; ++k) { if(listed[k]) missing[k] = 0; else if(!missing[k]) missing[k] = now; }
+    if(!settings.brokerStandby || s_Server.IsRunning() || client.GetState() != NET_DISCONNECTED || IsBusy() || JoinFlowActive()) return;
+    uint64_t wait = 20000ull + (uint64_t)(MP::BrokerStandbyRank() - 1) * 2000ull;
+    for(int k = 0; k < 3; ++k)
+    {
+        if(!missing[k] || now - missing[k] < wait) continue;
+        bool hostLan = settings.hostLan; int hostedPort = settings.hostedPort;
+        char hostedName[sizeof(settings.hostedName)]; MP_CopyStr(hostedName, settings.hostedName, sizeof(hostedName));
+        if(!StartLocalServer(names[k], ports[k])) { settings.hostLan = hostLan; SaveConfig(); return; }
+        settings.hostLan = hostLan; settings.hostedPort = hostedPort; MP_CopyStr(settings.hostedName, hostedName, sizeof(settings.hostedName)); SaveConfig();   // standby only: never re-hosted at the next start
+        s_bStandbyHost = true; missing[k] = 0;
+        logger->Info("Broker standby #%d: hosting %s in the background", MP::BrokerStandbyRank(), names[k]);
+        SysMsg(COL_SYSTEM, "*** Broker standby #%d/%d: \"%s\" was offline - this phone hosts it in the background until the 24/7 host is back.", MP::BrokerStandbyRank(), MP_BROKER_POOL, names[k]);
+        return;
+    }
+}
+
 static void ProcessLan(uint64_t now)
 {
     RunHostRequest();
+    ProcessBrokerStandby(now);
     // online lobby: announce the server this phone hosts (player count refreshed every 0.5 s)
     {
         static uint64_t lastCount = 0; static int count = 0;
@@ -4549,7 +4656,7 @@ void MP::SaveConfig()
     F("NametagSize", settings.nametagSize); F("NametagDistance", settings.nametagDistance);
     B("ShowOwnNametag", settings.showOwnTag); B("ShowHealthBars", settings.showHealthBars); B("ShowRadarIcons", settings.showRadarIcons);
     B("ShowChat", settings.showChat); B("ShowKillFeed", settings.showKillFeed); B("ShowStatus", settings.showStatus);
-    B("SyncAnims", settings.syncAnims); B("SyncEnv", settings.syncEnv); B("SyncNPCs", settings.syncNpcs); B("AllowMissionPair", settings.allowMissionPair); B("AllowCheatMenu", settings.allowCheatMenu); B("HostAuth", settings.hostAuth); B("HitSound", settings.hitSound); B("DisableCheats", settings.disableCheats);
+    B("SyncAnims", settings.syncAnims); B("BrokerStandby", settings.brokerStandby); B("SyncEnv", settings.syncEnv); B("SyncNPCs", settings.syncNpcs); B("AllowMissionPair", settings.allowMissionPair); B("AllowCheatMenu", settings.allowCheatMenu); B("HostAuth", settings.hostAuth); B("HitSound", settings.hitSound); B("DisableCheats", settings.disableCheats);
     F("ChatX", settings.chatX); F("ChatY", settings.chatY); I("Skin", settings.skin);
     I("ChatLines", settings.chatLines); F("ChatSize", settings.chatSize); F("ChatScale", settings.chatScale); F("ChatWidth", settings.chatWidth);   // 2.19.6
     I("ChatFade", settings.chatFade); B("ChatBackground", settings.chatBg);
@@ -4585,6 +4692,7 @@ static void LoadConfig()
     settings.showChat        = ::cfg->GetBool("ShowChat", true, "MP");
     settings.showKillFeed    = ::cfg->GetBool("ShowKillFeed", true, "MP");
     settings.syncAnims       = ::cfg->GetBool("SyncAnims", true, "MP");
+    settings.brokerStandby   = ::cfg->GetBool("BrokerStandby", true, "MP");
     settings.syncEnv         = ::cfg->GetBool("SyncEnv", true, "MP");
     settings.syncNpcs        = ::cfg->GetBool("SyncNPCs", true, "MP");
     settings.allowMissionPair = ::cfg->GetBool("AllowMissionPair", true, "MP");
@@ -5623,6 +5731,10 @@ static void SectionDisplay(void*)
     changed |= FloatMenu::ToggleSwitch("Sync player animations", &settings.syncAnims);
     changed |= FloatMenu::ToggleSwitch("Sync explosions, fire, weapons", &settings.syncEnv);
     changed |= FloatMenu::ToggleSwitch("Sync NPCs (people + traffic)", &settings.syncNpcs);
+    {   // 3.24
+        char lb[96]; snprintf(lb, sizeof(lb), "Broker standby #%d/100 (host offline featured servers)", MP::BrokerStandbyRank());
+        changed |= FloatMenu::ToggleSwitch(lb, &settings.brokerStandby);
+    }
     changed |= FloatMenu::ToggleSwitch("Open world (cities, shops, food, gyms, garages)", &settings.unlockWorld);   // 2.21
     changed |= FloatMenu::ToggleSwitch("Girlfriend houses (optional)", &settings.girlfriends);
     changed |= FloatMenu::ToggleSwitch("[Race] / [DM] / [Job] tips in the chat", &settings.eventTips);

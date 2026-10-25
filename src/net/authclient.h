@@ -33,6 +33,7 @@ public:
     bool TakeTicket(std::string& payload, uint8_t sig[64]);
 
     void RequestStats();                // /stats: answer in Stats()
+    void RequestAvatar();               // 3.24: the Discord profile picture (PNG, 64 px) -> avatarPng
     bool LoggedIn() const { return !m_Sess.empty(); }
     void ForgetSession() { m_Sess.clear(); }
     const std::string& Session() const { return m_Sess; }                 // 3.22: saved in account.txt
@@ -47,6 +48,9 @@ public:
     bool        createdNow = false;     // DONE after a sign up ("account created")
     std::map<std::string, std::string> stats;   // op=stats answer (empty = none yet)
     bool        statsPending = false;
+    bool        avatarPending = false, avatarReady = false;   // 3.24: avatarReady = avatarPng is new (take it)
+    uint64_t    avatarAt = 0;
+    std::string avatarPng, avatarDiscord;
     uint64_t    stateAt = 0;
 
 private:

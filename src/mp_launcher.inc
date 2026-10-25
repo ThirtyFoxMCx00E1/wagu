@@ -841,18 +841,38 @@ static void RenderLauncher(void* openPtr)
     // ---- title bar ----
     const float titleH = UI::S(70);
     {
-        ImVec2 c(wp.x + pad + UI::S(24), wp.y + titleH * 0.5f);
-        dl->AddCircleFilled(c, UI::S(22), IM_COL32(255, 255, 255, 255));   // 3.00: white (was green)
-        dl->AddCircleFilled(ImVec2(c.x + UI::S(6), c.y - UI::S(2)), UI::S(15), IM_COL32(15, 15, 18, 255));
-        float tx = c.x + UI::S(40), ty = wp.y + (titleH - ImGui::GetTextLineHeight()) * 0.5f;
+        // 3.24: profile at the top left: your Discord picture + account (blank default when no account)
+        ImVec2 c(wp.x + pad + UI::S(26), wp.y + titleH * 0.5f);
+        const float ar = UI::S(25);
+        ProfileDrawAvatar(dl, c, ar);
+        const std::string pu = ProfileUser();
+        const bool online = s_Auth.LoggedIn() && !s_AuthUser.empty();
+        const char* l1 = pu.empty() ? "Guest" : pu.c_str();
+        char l2[96];
+        if(pu.empty()) snprintf(l2, sizeof(l2), "Not logged in");
+        else if(!s_ProfDiscord.empty() && !strcasecmp(pu.c_str(), s_ProfOwner.c_str())) snprintf(l2, sizeof(l2), "@%s%s", s_ProfDiscord.c_str(), online ? "" : "  (offline)");
+        else snprintf(l2, sizeof(l2), online ? "Logged in" : "Log in on a server");
+        const float lh = ImGui::GetTextLineHeight();
+        float px = c.x + ar + UI::S(12);
+        float sc = 0.78f;
+        ImFont* fnt = ImGui::GetFont();
+        dl->AddText(ImVec2(px, c.y - lh * 0.5f - lh * sc * 0.5f), IM_COL32_WHITE, l1);
+        dl->AddText(fnt, ImGui::GetFontSize() * sc, ImVec2(px, c.y + lh * 0.5f - lh * sc * 0.45f), online ? IM_COL32(95, 211, 95, 255) : IM_COL32(150, 150, 150, 255), l2);
+        float pw = std::max(ImGui::CalcTextSize(l1).x, ImGui::CalcTextSize(l2).x * sc);
+        // a status dot on the picture: green = logged in this game session
+        dl->AddCircleFilled(ImVec2(c.x + ar * 0.72f, c.y + ar * 0.72f), UI::S(6), online ? IM_COL32(67, 181, 129, 255) : IM_COL32(116, 127, 141, 255), 16);
+        dl->AddCircle(ImVec2(c.x + ar * 0.72f, c.y + ar * 0.72f), UI::S(6), IM_COL32(15, 15, 18, 255), 16, UI::S(2));
+        float sepX = px + pw + UI::S(20);
+        dl->AddLine(ImVec2(sepX, wp.y + titleH * 0.22f), ImVec2(sepX, wp.y + titleH * 0.78f), line, UI::S(2));
+        float tx = sepX + UI::S(20), ty = wp.y + (titleH - ImGui::GetTextLineHeight()) * 0.5f;
         dl->AddText(ImVec2(tx, ty), IM_COL32_WHITE, "MP Launcher");
-        dl->AddText(ImVec2(tx + ImGui::CalcTextSize("MP Launcher").x + UI::S(16), ty), IM_COL32(150, 150, 150, 255), "v3.04.6");
+        dl->AddText(ImVec2(tx + ImGui::CalcTextSize("MP Launcher").x + UI::S(16), ty), IM_COL32(150, 150, 150, 255), "v3.24");
         // 2.30: watermark, right side of the title bar (left of [X]), green at 50% transparency
         {
             const char* wm = "powered by HiveMQ/ThirtyFoxMC";
             ImVec2 wsz = ImGui::CalcTextSize(wm);
             float wx = wp.x + ws.x - titleH - UI::S(6) - UI::S(18) - wsz.x;
-            float minX = tx + ImGui::CalcTextSize("MP Launcher  v3.04.6").x + UI::S(40);   // never over the name
+            float minX = tx + ImGui::CalcTextSize("MP Launcher  v3.24").x + UI::S(40);   // never over the name
             if(wx > minX) dl->AddText(ImVec2(wx, ty), IM_COL32(95, 211, 95, 128), wm);
         }
         ImGui::SetCursorScreenPos(ImVec2(wp.x + ws.x - titleH - UI::S(6), wp.y));

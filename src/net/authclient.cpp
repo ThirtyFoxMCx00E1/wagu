@@ -110,6 +110,36 @@ void AuthClient::RequestStats()
     Send({ { "op", "stats" }, { "sess", m_Sess }, { "rid", "s" } });
 }
 
+void AuthClient::RequestAvatar()
+{
+    if(m_Sess.empty() || avatarPending) return;
+    if(!m_bLinked) Online::AuthLinkStart(m_S.sid);
+    avatarPending = true; avatarAt = 0;
+    Send({ { "op", "avatar" }, { "sess", m_Sess }, { "rid", "a" } });
+}
+
+static int B64Val(char c)
+{
+    if(c >= 'A' && c <= 'Z') return c - 'A';
+    if(c >= 'a' && c <= 'z') return c - 'a' + 26;
+    if(c >= '0' && c <= '9') return c - '0' + 52;
+    if(c == '+') return 62;
+    if(c == '/') return 63;
+    return -1;
+}
+static std::string B64Decode(const std::string& in)
+{
+    std::string out; out.reserve(in.size() * 3 / 4);
+    int acc = 0, bits = 0;
+    for(char c : in)
+    {
+        int v = B64Val(c); if(v < 0) continue;
+        acc = (acc << 6) | v; bits += 6;
+        if(bits >= 8) { bits -= 8; out.push_back((char)((acc >> bits) & 0xFF)); }
+    }
+    return out;
+}
+
 bool AuthClient::TakeTicket(std::string& payload, uint8_t sig[64])
 {
     if(!m_bTicket) return false;
@@ -173,11 +203,25 @@ void AuthClient::OnAnswer(std::map<std::string, std::string>& a)
         stats = a;
         if(!ok && a["relogin"] == "1") m_Sess.clear();
     }
+    if(op == "avatar")   // 3.24: {ok, n, p0..p(n-1) = base64 PNG, dname} - wait=1: the bot is fetching it
+    {
+        if(ok && a["wait"] == "1") { avatarAt = 0; return; }   // the real answer comes as a push
+        avatarPending = false;
+        if(!ok) { if(a["relogin"] == "1") m_Sess.clear(); return; }
+        int n = atoi(a["n"].c_str());
+        if(n <= 0 || n > 400) return;
+        std::string b64;
+        for(int i = 0; i < n; ++i) { char k[8]; snprintf(k, sizeof(k), "p%d", i); b64 += a[k]; }
+        std::string png = B64Decode(b64);
+        if(png.size() < 8 || memcmp(png.data(), "\x89PNG", 4)) return;
+        avatarPng.swap(png); avatarDiscord = a["dname"]; avatarReady = true;
+    }
 }
 
 void AuthClient::Tick(uint64_t now)
 {
-    if(state == IDLE && !statsPending) return;
+    if(state == IDLE && !statsPending && !avatarPending) return;
+    if(avatarPending) { if(!avatarAt) avatarAt = now; else if(now - avatarAt > 20000) avatarPending = false; }   // 3.24
     std::string f, plain;
     while(Online::AuthLinkRecv(f))
         if(AuthCrypto::Open(m_S, f, plain)) { auto kv = ParseKv(plain); OnAnswer(kv); }

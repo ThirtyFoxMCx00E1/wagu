@@ -5,6 +5,7 @@
 //  - Server = every MP section (connection, servers, display, player, add-on sections of other mods)
 //  - Player list / Help = one page each (set by MP with SetPage)
 #include "floatmenu.h"
+#include "hud.h"
 #include "ui_common.h"
 #include "vkeyboard.h"
 #include <vector>
@@ -19,7 +20,7 @@ namespace
     struct Section  { std::string title; MPMenuSectionFn fn; void* data; };
     struct Window   { MPMenuWindowFn fn; void* data; };
     struct Bubble   { std::string label; ImVec2 rel; MPMenuSectionFn fn; void* data; bool bar; const bool* active; bool dots;
-                      int (*micState)() = nullptr; };   // 3.11: voice chat pill (0 not connected, 1 mic off, 2 mic on, 3 talking)
+                      int (*micState)() = nullptr; bool chatIcon = false; };   // 3.24: chatIcon = speech-bubble icon instead of the word "Chat"   // 3.11: voice chat pill (0 not connected, 1 mic off, 2 mic on, 3 talking)
     struct Page     { const char* title; MPMenuSectionFn fn; void* data; bool open; };
 
     std::vector<Section> s_Sections;
@@ -99,7 +100,12 @@ void FloatMenu::ApplyStyle()
 void FloatMenu::AddSection(const char* t, MPMenuSectionFn fn, void* d) { s_Sections.push_back({ t ? t : "Section", fn, d }); }
 void FloatMenu::AddFloatingWindow(MPMenuWindowFn fn, void* d)          { s_Windows.push_back({ fn, d }); }
 void FloatMenu::AddBubble(const char* l, float x, float y, MPMenuSectionFn fn, void* d) { s_Bubbles.push_back({ l ? l : "?", ImVec2(x, y), fn, d, false, nullptr, false }); }
-void FloatMenu::AddBarButton(const char* l, MPMenuSectionFn fn, void* d, const bool* active) { s_Bubbles.push_back({ l ? l : "?", ImVec2(0.5f, 0.06f), fn, d, true, active, false }); }
+void FloatMenu::AddBarButton(const char* l, MPMenuSectionFn fn, void* d, const bool* active)
+{
+    Bubble b = { l ? l : "?", ImVec2(0.5f, 0.06f), fn, d, true, active, false };
+    b.chatIcon = l && !strcmp(l, "Chat");   // 3.24: ⋮ | chat icon | mic - all three are square icon pills now
+    s_Bubbles.push_back(b);
+}
 void FloatMenu::AddMicButton(MPMenuSectionFn fn, int (*state)())
 {
     Bubble b = { "mic", ImVec2(0.5f, 0.06f), fn, nullptr, true, nullptr, false };
@@ -196,7 +202,7 @@ static float s_fGrabDX = 0, s_fGrabDY = 0;
 static float PillH() { return UI::S(64); }
 static ImVec2 BubbleSize(const Bubble& b)
 {
-    if(b.dots || b.micState) return ImVec2(PillH(), PillH());   // square icon pill
+    if(b.dots || b.micState || b.chatIcon) return ImVec2(PillH(), PillH());   // square icon pill
     float fs = UI::S(30);
     ImVec2 ts = UI::Font()->CalcTextSizeA(fs, FLT_MAX, 0, b.label.c_str());
     return ImVec2(ts.x + UI::S(44), PillH());
@@ -322,6 +328,22 @@ static void DrawBubble(ImDrawList* dl, const Bubble& b, ImVec2 c, bool held)
         UI::DrawMic(dl, c, r, col, ms <= 1);
         if(ms == 3)   // talking: green ring around the pill
             dl->AddRect(ImVec2(a.x - UI::S(2), a.y - UI::S(2)), ImVec2(z.x + UI::S(2), z.y + UI::S(2)), IM_COL32(60, 220, 90, 255), sz.y * 0.28f, 0, UI::S(4));
+        return;
+    }
+    if(b.chatIcon)   // 3.24: speech bubble icon (MP/chat_icon.png, white = tinted; drawn by hand if missing)
+    {
+        float s = sz.y * 0.62f;
+        ImVec2 uv1;
+        if(void* tex = HUD::Texture("chat_icon.png", &uv1))
+        {
+            dl->AddImage((ImTextureID)tex, ImVec2(c.x - s * 0.5f, c.y - s * 0.5f), ImVec2(c.x + s * 0.5f, c.y + s * 0.5f), ImVec2(0, 0), uv1, fg);
+            return;
+        }
+        ImVec2 a0(c.x - s * 0.5f, c.y - s * 0.42f), a1(c.x + s * 0.5f, c.y + s * 0.26f);
+        dl->AddRectFilled(a0, a1, fg, s * 0.22f);
+        dl->AddTriangleFilled(ImVec2(c.x - s * 0.30f, a1.y - 1), ImVec2(c.x - s * 0.02f, a1.y - 1), ImVec2(c.x - s * 0.36f, c.y + s * 0.48f), fg);
+        ImU32 hole = (fg == IM_COL32_WHITE) ? IM_COL32(0, 0, 0, 200) : IM_COL32(255, 255, 255, 235);
+        for(int k = -1; k <= 1; ++k) dl->AddCircleFilled(ImVec2(c.x + k * s * 0.24f, (a0.y + a1.y) * 0.5f), s * 0.075f, hole, 12);
         return;
     }
     if(b.dots)   // ⋮

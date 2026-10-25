@@ -49,6 +49,7 @@ struct MPSettings
     int   serverIcon        = 0;       // 2.24: icon of the server you host: 0 = default (main_df_icon.png), 1..250 = icon_N.png
     bool  fullProgressDefault = true;  // 100% save while on the default server (2.10)
     bool  syncAnims         = true;    // 2.13: copy other players' animations onto their avatars
+    bool  brokerStandby     = true;    // 3.24: one of the 100 standby Brokers (hosts an offline featured server in the background)
     bool  syncEnv           = true;    // 2.13: explosions, fires, dropped weapons
     bool  syncNpcs          = true;    // 2.18: people + traffic shared with the players around you
     bool  unlockWorld       = true;    // 2.21: all cities, shops, gyms, food, barbers, tattoo, clothes, Ammu-Nation, garages
@@ -103,6 +104,8 @@ struct RemotePlayer
     // 2.35: visible enter / exit. leftCar = the car they just got out of (stays parked, handed to the
     // NPC copy of it); enterT / leaveT = when the enter / leave task started
     int       leftCar = 0, leftModel = 0; float leftBase = 0.6f; uint64_t leftT = 0, enterT = 0, leaveT = 0;
+    // 3.24: passenger enter / exit with the real door anims (handle, open, get in, close)
+    int       passCar = 0; uint64_t passEnterT = 0, passLeaveT = 0;
     int       weapon = 0;
     bool      ducking = false, deadApplied = false;
     bool      paused = false;            // player has their game paused (shown as PAUSED, can't be hurt)
@@ -262,6 +265,8 @@ namespace MP
     // 3.04: Brief Case War (private 24/7 gamemode server, pinned in the Internet list)
     void JoinMw3();            // 3.23: Call Of Duty: Modern Warfare 3 24/7 (join it, or leave it when you are on it)
     bool IsOnMw3();
+    int  BrokerStandbyRank();     // 3.24: 1..100, this phone's place in the Broker standby pool
+    bool IsBrokerStandbyHost();   // 3.24: hosting an offline featured server in the background
     bool Mw3OwnTagHidden();
     bool Mw3SubTag(int id, char* out, size_t n);   // "Rank - Class" over the name
     void JoinBcw();            // join it (or leave it when you are on it)

@@ -237,11 +237,14 @@ private:
         uint64_t spawnedAt, lastHeal;
         uint8_t  duelAsk, duelAskW, duelWith; uint64_t duelAskAt;
         uint8_t  arenaSpot;
+        uint32_t statT, cardT;              // 3.24: when the stats last changed / the last card we sent
+        uint64_t cardWaitAt;
+        int32_t  lastSc, lastXp, lastCash; uint16_t lastK, lastD, lastC;
         uint16_t evKills;
         bool     evIn;
     };
     struct Mw3SrvZone { uint8_t owner, atk, capper; uint64_t capStart; };
-    struct Mw3Saved   { int32_t score, xp, cash; uint16_t kills, deaths, caps, best; uint8_t team, cls; };
+    struct Mw3Saved   { int32_t score, xp, cash; uint16_t kills, deaths, caps, best; uint8_t team, cls; uint32_t t = 0; };   // 3.24: + t
     Mw3SrvPlayer m_Mw3[MP_MAX_PLAYERS];
     Mw3SrvZone   m_Mw3Zone[MW3_ZONES_WIRE];
     std::map<std::string, Mw3Saved> m_Mw3Saved;
@@ -257,6 +260,8 @@ private:
     void Mw3SendState(int slot);
     void Mw3SendPlayers(int slot);
     void Mw3SendMe(int slot);
+    void Mw3SendCard(int slot);
+    void Mw3OnCard(int slot, const PktMw3Card& c);
     void Mw3Ev(int slot, uint8_t ev, uint8_t a, uint8_t b, uint8_t c, uint8_t who, int32_t val, const char* text = nullptr);
     void Mw3Msg(int slot, uint32_t rgba, const char* fmt, ...);
     void Mw3Reward(int slot, int score, int cash, int xp);

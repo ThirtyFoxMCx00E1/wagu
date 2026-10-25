@@ -10,4 +10,5 @@ namespace HUD
     void* ServerIcon(int id, ImVec2* uv);   // ImTextureID
     void ReloadServerIcons();
     void* Texture(const char* fileInDataDir, ImVec2* uv);   // 3.04: e.g. "bcw_briefcase.png" (nullptr if missing)
+    void  ReloadTexture(const char* fileInDataDir);          // 3.24: the file changed (Discord avatar): load it again
 }
