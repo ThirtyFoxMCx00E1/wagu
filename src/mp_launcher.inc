@@ -237,7 +237,7 @@ static void LBuildRows(int tab, const std::vector<LanServer>& nearby, std::vecto
             MP_CopyStr(w.lang, "All", sizeof(w.lang));
             if(LMatch(w.name) || LMatch("briefcase war")) rows.push_back(w);
         }
-        {   // 3.23: Call Of Duty: Modern Warfare 3 - 24/7 featured, pinned under Brief Case War, only the VPS hosts it
+        {   // 3.23: Call Of Duty: Modern Warfare 3 - 24/7 featured, pinned under Brief Case War, the VPS hosts it, or a phone when the VPS is down (3.23.1)
             LRow w; memset(&w, 0, sizeof(w));
             w.kind = 4; MP_CopyStr(w.name, MP_MW3_SERVER_NAME, sizeof(w.name)); w.port = MP_MW3_PORT;
             w.region = -1; w.icon = 0; w.saved = -1; w.live = true;
@@ -245,7 +245,9 @@ static void LBuildRows(int tab, const std::vector<LanServer>& nearby, std::vecto
             int bf = -1;
             for(int i = 0; i < (int)nearby.size(); ++i)
                 if(MP_IsMw3ServerName(nearby[i].name) && (bf < 0 || (nearby[i].dedicated && !nearby[bf].dedicated))) bf = i;
+            bool hosting = s_Server.IsRunning() && s_Server.IsMw3Server();   // 3.23.1: a phone keeps it up when the VPS is down
             if(w.on && IsConnected())  { w.players = OnlineCount(); w.maxp = OnlineMax(); w.ping = MP::DisplayPing(); }
+            else if(hosting)           { w.players = s_Server.GetPlayerCount(); w.maxp = MP_MW3_MAX_PLAYERS; w.ping = 0; w.mine = true; }
             else if(bf >= 0)           { w.players = nearby[bf].players; w.maxp = nearby[bf].maxPlayers; w.ping = nearby[bf].ping; w.internet = nearby[bf].token != 0; }
             else                       { w.players = 0; w.maxp = MP_MW3_MAX_PLAYERS; w.ping = -1; }
             MP_CopyStr(w.lang, "All", sizeof(w.lang));

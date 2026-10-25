@@ -2,7 +2,7 @@
 // Port of the SA-MP gamemode MW3SAMP (CODMW3.pwn) to MP: 8 teams with their bases, 34 capture
 // zones, 15 classes, 20 ranks, killing sprees + multi kill badges, the hourly tournament, 6 DM
 // arenas, duels and the events (TDM, DM, Zombie, Last Man Standing) in the LS Docks container
-// arena. It never runs on a phone: only the VPS hosts it (mp-mw3.service), nobody becomes host.
+// arena. The VPS hosts it (mp-mw3.service); 3.23.1: a phone keeps it up when the VPS is down.
 //
 // Shared by the client (libMP32/64) and the server (net/server_mw3.inc, mp_mw3.inc).
 #pragma once
