@@ -35,7 +35,6 @@ struct Mw3ClientState
     char        banner[96] = ""; uint32_t bannerCol = 0xFFFFFFFF; uint64_t bannerAt = 0;
     char        badge[32] = ""; uint64_t badgeAt = 0; int badgeLv = 0;
     int         rwScore = 0, rwCash = 0, rwXp = 0; uint64_t rwAt = 0;
-    bool        listOpen = false; float listScroll = 0;
     uint8_t     pendTeam = 0; uint64_t pendAt = 0;   // tapped a team: deploy as soon as the server has it
     int         interior = 0;
 };
@@ -571,7 +570,7 @@ static bool Mw3Command(const char* cmd, const char* arg)
     if(!strcmp(cmd, "ranks"))   { Mw3ShowRanks(); return true; }
     if(!strcmp(cmd, "classes")) { Mw3ShowClasses(); return true; }
     if(!strcmp(cmd, "stats"))   { Mw3ShowStats(); return true; }
-    if(!strcmp(cmd, "players") || !strcmp(cmd, "list") || !strcmp(cmd, "score")) { s_Mw3.listOpen = !s_Mw3.listOpen; return true; }
+    if(!strcmp(cmd, "players") || !strcmp(cmd, "list") || !strcmp(cmd, "score")) { FloatMenu::OpenPage(FloatMenu::PAGE_PLAYERS); return true; }
     static const char* const kOk[] = { "q", "quit", "pm", "me", "ping", "time", "clear", "id", "kill", "char" };
     for(const char* c : kOk) if(!strcmp(cmd, c)) return false;
     SysMsg(COL_RED, "/%s is not available on Modern Warfare 3. Type /help.", cmd);
@@ -849,82 +848,19 @@ static void Mw3DrawRespawn(float now)
     fg->AddRectFilled(p0, ImVec2(p0.x + bw * k, p0.y + UI::S(10)), Mw3Col(MW3_UI_GREEN, 1), UI::S(5));
 }
 
-// player list (SA-MP style): "Call Of Duty: Modern Warfare 3 (MW3 3.23)"  Players: N
-// id | name | score | ping, each row in the team colour, my row on a red bar with white text
-static void Mw3DrawPlayerList()
+// 3.23.3: no separate MW3 player list: the Player list in the top bar dots menu shows the MW3
+// team tag, team colour and MW3 score (/players opens it too).
+static int Mw3ScoreOf(int id, int fallback)
 {
-    if(!s_Mw3.listOpen) return;
-    ImVec2 ds = ImGui::GetIO().DisplaySize;
-    float w = ds.x * 0.56f, h = ds.y * 0.70f;
-    ImGui::SetNextWindowPos(ImVec2(ds.x * 0.5f - w * 0.5f, ds.y * 0.5f - h * 0.5f));
-    ImGui::SetNextWindowSize(ImVec2(w, h));
-    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.02f, 0.05f, 0.03f, 0.82f));
-    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrab, ImVec4(0.24f, 1.0f, 0.42f, 0.7f));
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, UI::S(6));
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(UI::S(16), UI::S(12)));
-    ImGui::PushStyleVar(ImGuiStyleVar_ScrollbarSize, UI::S(18));
-    ImGui::Begin("##Mw3List", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
-    ImDrawList* dl = ImGui::GetWindowDrawList();
-    ImVec2 wp = ImGui::GetWindowPos();
-    Mw3GlowRect(dl, wp, ImVec2(wp.x + w, wp.y + h), UI::S(6), (float)(MP_NowMs() % 100000000ULL), 0.7f);
-    int online = 0; for(int i = 0; i < MP_MAX_PLAYERS; ++i) if(players[i].active) ++online;
-    char t[96];
-    snprintf(t, sizeof(t), "%s (MW3 %s)", MP_MW3_SERVER_NAME, MP_VERSION_STR);
-    ImGui::TextUnformatted(t);
-    snprintf(t, sizeof(t), "Players: %d", online);
-    ImGui::SameLine(ImGui::GetContentRegionMax().x - ImGui::CalcTextSize(t).x - UI::S(70));
-    ImGui::TextUnformatted(t);
-    ImGui::SameLine(ImGui::GetContentRegionMax().x - UI::S(56));
-    if(ImGui::Button("X##mw3lc", ImVec2(UI::S(56), UI::S(44)))) s_Mw3.listOpen = false;
-    ImGui::Separator();
-    float W = ImGui::GetContentRegionAvail().x - UI::S(20);
-    float cId = UI::S(10), cName = W * 0.12f, cScore = W * 0.66f, cPing = W * 0.84f;
-    {
-        ImVec2 p = ImGui::GetCursorScreenPos();
-        ImU32 tc = IM_COL32(200, 200, 200, 255);
-        dl->AddText(ImVec2(p.x + cId, p.y), tc, "id");
-        dl->AddText(ImVec2(p.x + cName, p.y), tc, "name");
-        dl->AddText(ImVec2(p.x + cScore, p.y), tc, "score");
-        dl->AddText(ImVec2(p.x + cPing, p.y), tc, "ping");
-        ImGui::Dummy(ImVec2(W, ImGui::GetTextLineHeight() + UI::S(6)));
-    }
-    ImGui::BeginChild("##mw3rows", ImVec2(0, 0), false);
-    ImDrawList* cl = ImGui::GetWindowDrawList();
-    const float rowH = UI::S(46);
-    for(int i = 0; i < MP_MAX_PLAYERS; ++i)
-    {
-        RemotePlayer& p = players[i];
-        if(!p.active) continue;
-        ImVec2 a = ImGui::GetCursorScreenPos();
-        ImGui::Dummy(ImVec2(W, rowH));
-        bool me = i == myId;
-        if(me) cl->AddRectFilled(a, ImVec2(a.x + W, a.y + rowH), IM_COL32(190, 25, 25, 220));
-        uint8_t team = Mw3TeamOf(i);
-        ImU32 col = me ? IM_COL32_WHITE : UI::FromRGBA((team ? Mw3TeamCol(team) : (p.color | 0xFF)));
-        float ty = a.y + (rowH - ImGui::GetTextLineHeight()) * 0.5f;
-        char b[64];
-        snprintf(b, sizeof(b), "%d", i); cl->AddText(ImVec2(a.x + cId, ty), col, b);
-        snprintf(b, sizeof(b), "%s%s%s", team ? g_Mw3Teams[team].tag : "", team ? " " : "", me ? settings.name : p.name);
-        cl->AddText(ImVec2(a.x + cName, ty), col, b);
-        snprintf(b, sizeof(b), "%d", me ? s_Mw3.me.score : (s_Mw3.haveRow[i] ? s_Mw3.row[i].score : p.score)); cl->AddText(ImVec2(a.x + cScore, ty), col, b);
-        int ping = me ? MP::DisplayPing() : p.ping;
-        if(ping >= 0) snprintf(b, sizeof(b), "%d", ping); else snprintf(b, sizeof(b), "-");
-        cl->AddText(ImVec2(a.x + cPing, ty), col, b);
-    }
-    ImGui::EndChild();
-    ImGui::End();
-    ImGui::PopStyleVar(3); ImGui::PopStyleColor(2);
+    if(id == myId && s_Mw3.haveMe) return s_Mw3.me.score;
+    return (id >= 0 && id < MP_MAX_PLAYERS && s_Mw3.haveRow[id]) ? s_Mw3.row[id].score : fallback;
 }
-static void Mw3OpenList() { s_Mw3.listOpen = true; }
-// HUD button that opens the player list
-static void Mw3DrawListButton()
+static bool Mw3ListTeam(int id, const char** tag, uint32_t* rgba)
 {
-    if(s_Mw3.view != 2 || s_Mw3.listOpen || JoinFlowActive()) return;
-    ImVec2 ds = ImGui::GetIO().DisplaySize;
-    const float bw = UI::S(110), bh = UI::S(56);
-    BcwBeginOverlay("##Mw3ListBtn", ImVec2(ds.x - bw - UI::S(34), ds.y * 0.44f), ImVec2(bw + UI::S(36), bh + UI::S(28)), 0.0f);
-    if(BcwTeamButton("LIST##mw3l", 0x1E8C3AFF, ImVec2(bw, bh), false, false)) s_Mw3.listOpen = true;
-    BcwEndOverlay();
+    uint8_t t = Mw3TeamOf(id);
+    if(!t || t > MW3_TEAMS) return false;
+    *tag = g_Mw3Teams[t].tag; *rgba = g_Mw3Teams[t].rgba;
+    return true;
 }
 
 static void RenderMw3()
@@ -936,8 +872,6 @@ static void RenderMw3()
     if(s_Mw3.view == 2 && s_Mw3.haveState && !MP::AuthScreenShown()) Mw3DrawHud(ImGui::GetForegroundDrawList(), now, nowMs);
     if(s_Mw3.view == 1) Mw3DrawLobby(now);
     Mw3DrawRespawn(now);
-    Mw3DrawListButton();
-    Mw3DrawPlayerList();
     if(s_Mw3.bannerAt && nowMs - s_Mw3.bannerAt < 3500)
     {
         float a = nowMs - s_Mw3.bannerAt < 3000 ? 1.0f : 1.0f - (nowMs - s_Mw3.bannerAt - 3000) / 500.0f;
