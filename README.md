@@ -46,6 +46,11 @@ It builds `mp_server` on the phone and runs it 24/7 in the internet lobby (free 
 
 ## Changelog
 
+- **3.22.1**: login screen on the default server after a game restart (like Brief Case War), no red background on the Brief Case War login.
+  - **Default server login:** closing / restarting the game and joining back now always opens the login screen, the same as on Brief Case War. The server kept the old player slot of the closed game (same relay / network address, up to 20 s) and that slot was still logged in, so no login was asked. Now the phone clears that old slot before it joins after a game start, and the server asks for the login again when a closed game comes back on its old slot.
+  - **100% progress:** on the default server the login pop-up waits until the 100% progress save has loaded (that load used to start under the open login screen and threw it away).
+  - **Brief Case War login:** no red background, red corner tint or glowing red frame any more: the same plain dim background as the normal login screen.
+  - **Server (HiveMQ kit):** run `7) update` in the console once to get the new mp_server.
 - **3.22**: saved login in account.txt (no new /gen or account after a mod update), lower ping with 100 players.
   - **Saved login:** after you log in once, `account.txt` keeps your user name and a login token from the bot (no password). Updating the mod (new `libMP*.so` or the full zip) keeps the file, so the game logs you in by itself: no new Discord `/gen`, no new account, no pop-up (only "Logging in as NAME..." at the top). The token works 180 days after the last use, only on this phone (together with `auth_device.txt`), and it survives bot restarts. Delete `account.txt` to use another account.
   - **100 players, lower ping:** the server reads up to 64 packets per system call (`recvmmsg`) and sends everything for them in a few `sendmmsg` calls instead of one `sendto` per packet. Measured with 100 test players packed in one spot: ~1,700 send calls instead of ~814,000 for the same ~730,000 packets in 8 s. The server socket buffer is 8 MB (was 512 KB), so a burst from 100 phones isn't dropped.

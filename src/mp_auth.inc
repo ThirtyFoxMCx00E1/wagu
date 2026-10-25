@@ -187,9 +187,12 @@ static bool AuthHoldsJoin(uint64_t now)
 }
 // 3.21.8: the login pop-up waits for "Connected successfully!" (the Connecting.... / resources feed done
 // and the black join screen slid away); the login itself already runs in the background
+// 3.22.1: on the default server the 100% progress save loads ~4 s after the join; the login pop-up waits
+// for that load (it used to open first and the reload threw it away). Capped at 30 s so it never hangs.
 static bool AuthJoinSettled()
 {
     if(s_nFeedStep >= 0 || s_nFeedRes >= 0) return false;
+    if(Progress::Pending() && MP_NowMs() - s_nAuthJoinAt < 30000) return false;
     return s_nJoinPhase == JP_NONE || s_nJoinPhase >= JP_WAIT;
 }
 static bool AuthScreenUp()
@@ -228,11 +231,11 @@ static AuthLook AuthStyleLook(bool bcw)
     return l;
 }
 
-// Brief Case War: plain dark background. The red VFX (sliding light bars, pulsing glow, rising sparks) was removed;
-// the time argument is kept so the call site did not change.
+// Brief Case War: 3.22.1 no red background at all - the same plain dim layer as the normal login screen
+// (the red VFX, the red corner tint and the glowing red frame around the panel are gone).
 static void AuthBcwBackdrop(ImDrawList* dl, ImVec2 ds, float /*t*/)
 {
-    dl->AddRectFilledMultiColor(ImVec2(0, 0), ds, IM_COL32(40, 0, 4, 235), IM_COL32(0, 0, 0, 235), IM_COL32(0, 0, 0, 240), IM_COL32(70, 4, 8, 235));
+    dl->AddRectFilled(ImVec2(0, 0), ds, IM_COL32(0, 0, 0, 120));
 }
 
 static void OnAuthFieldText(const char* text, void* data)
@@ -340,11 +343,6 @@ static void RenderAuth()
         P.dl = ImGui::GetWindowDrawList();
         ImDrawList* dl = P.dl; const AuthLook& L = P.L;
         const ImVec2 p1(P.p0.x + P.w, P.p0.y + h);
-        if(bcw)
-        {   // glowing red frame
-            float gl = 0.5f + 0.5f * sinf(t * 3.0f);
-            for(int i = 3; i >= 1; --i) dl->AddRect(ImVec2(P.p0.x - i * UI::S(3), P.p0.y - i * UI::S(3)), ImVec2(p1.x + i * UI::S(3), p1.y + i * UI::S(3)), IM_COL32(255, 30, 40, (int)(40 + 50 * gl) / i), UI::S(10), 0, UI::S(3));
-        }
         dl->AddRectFilled(P.p0, p1, L.panel, UI::S(8));
         const float capH = UI::S(64);
         dl->AddRectFilled(P.p0, ImVec2(p1.x, P.p0.y + capH), L.header, UI::S(8), ImDrawFlags_RoundCornersTop);

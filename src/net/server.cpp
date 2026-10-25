@@ -781,6 +781,14 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
                 Log("%s (id %d) joined", s.name, slot);
             }
             Slot& s = m_Slots[slot];
+            if(!fresh && AuthOn() && s.authed && MP_NowMs() - s.joinedMs > 5000)
+            {   // 3.22.1: a new join on an old slot (the game was closed / restarted and came back from the same
+                // relay or NAT address before the slot timed out): log in again like a fresh join. A phone that
+                // is still in the same game session sends its ticket by itself (no login screen).
+                s.authed = false; s.chal[0] = 0; s.authFails = 0;
+                s.joinedMs = MP_NowMs();
+                Log("%s (id %d) joined again: login required", s.name, slot);
+            }
             PktWelcome2 w2; memset(&w2, 0, sizeof(w2));   // 3.04.6: + build
             PktWelcome& w = w2.w;
             w.type = PKT_WELCOME; w.yourId = (uint8_t)slot; w.maxPlayers = (uint8_t)m_nMaxPlayers.load(); w.color = s.color;
@@ -1132,7 +1140,9 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
         }
 
         case PKT_LEAVE:
-            if(slot >= 0) Drop(slot, LEAVE_QUIT);
+            // 3.22.1: a phone sends a leave right before a fresh join (ghost slot of a closed game); one that
+            // arrives just after that join (UDP order) must not drop the new slot
+            if(slot >= 0 && !(m_Slots[slot].joinedMs && MP_NowMs() - m_Slots[slot].joinedMs < 1500)) Drop(slot, LEAVE_QUIT);
             break;
 
         // ---- 2.17: shots, car state, mission markers ------------------------------------
