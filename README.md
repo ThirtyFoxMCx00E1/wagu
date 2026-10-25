@@ -46,6 +46,9 @@ It builds `mp_server` on the phone and runs it 24/7 in the internet lobby (free 
 
 ## Changelog
 
+- **3.23.4**: new MW3 stats display.
+  - The stats box in the bottom right is gone: no background, no green outline, and it no longer covers the sprint button.
+  - The stats are now two plain text lines at the bottom of the HUD, right aligned, on the same rows as the tournament and event lines: `[TAG] Rank (rank progress %)   Score   XP` in the team colour, then `Kills   Deaths   K/D   Spree   Caps` in white. The +score / +$ reward still floats up above them.
 - **3.23.3**: MW3 has no separate player list any more.
   - Removed the extra MW3 list window and its LIST button. The normal Player list in the top bar dots menu now shows MW3 players as `[TAG] name` in their team colour with their MW3 score, and keeps select and mute voice. `/players` opens that same list.
 - **3.23.2**: fixed the game closing (no crash log) after logging in to MW3.

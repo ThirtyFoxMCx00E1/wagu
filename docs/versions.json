@@ -1,6 +1,7 @@
 {
-"latest": "3.23.3",
+"latest": "3.23.4",
 "supported": [
+"3.23.4",
 "3.23.3",
 "3.23.2",
 "3.23.1",
@@ -28,6 +29,14 @@
 "3.04.6"
 ],
 "versions": [
+{
+"v": "3.23.4",
+"summary": "new MW3 stats display.",
+"items": [
+"The stats box in the bottom right is gone: no background, no green outline, and it no longer covers the sprint button.",
+"The stats are now two plain text lines at the bottom of the HUD, right aligned, on the same rows as the tournament and event lines: `[TAG] Rank (rank progress %)   Score   XP` in the team colour, then `Kills   Deaths   K/D   Spree   Caps` in white. The +score / +$ reward still floats up above them."
+]
+},
 {
 "v": "3.23.3",
 "summary": "MW3 has no separate player list any more.",

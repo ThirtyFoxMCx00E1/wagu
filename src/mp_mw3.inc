@@ -662,34 +662,35 @@ static void Mw3DrawHud(ImDrawList* dl, float now, uint64_t nowMs)
     const PktMw3Me& m = s_Mw3.me;
     const uint8_t mine = Mw3MyTeam();
     char t[160];
-    // bottom right: stats (normal font)
+    // bottom right: stats. 3.23.4: two text lines at the bottom of the HUD, on the same rows as the
+    // tournament / event lines, right aligned; no box, no green outline (it covered the sprint button)
     {
         int r = Mw3MyRank();
-        float fs = UI::S(22), lh = UI::S(27), w = UI::S(330), h = lh * 4 + UI::S(18);
-        ImVec2 a(ds.x - w - UI::S(16), ds.y - h - UI::S(16)), b(ds.x - UI::S(16), ds.y - UI::S(16));
-        dl->AddRectFilled(a, b, IM_COL32(0, 0, 0, 150), UI::S(10));
-        Mw3GlowRect(dl, a, b, UI::S(10), now, 0.8f);
-        float y = a.y + UI::S(9), x = a.x + UI::S(12);
-        snprintf(t, sizeof(t), "%s %s", mine ? g_Mw3Teams[mine].tag : "", g_Mw3RankName[r]);
-        UI::OutlinedText(dl, fs, ImVec2(x, y), Mw3Col(mine ? Mw3TeamCol(mine) : MW3_UI_GREEN, 1), t); y += lh;
-        snprintf(t, sizeof(t), "Score: %d   XP: %d", m.score, m.xp);
-        UI::OutlinedText(dl, fs, ImVec2(x, y), IM_COL32_WHITE, t); y += lh;
-        snprintf(t, sizeof(t), "Kills: %d   Deaths: %d   K/D: %.2f", m.kills, m.deaths, m.deaths ? (float)m.kills / m.deaths : (float)m.kills);
-        UI::OutlinedText(dl, fs, ImVec2(x, y), IM_COL32_WHITE, t); y += lh;
-        snprintf(t, sizeof(t), "Spree: %d   Caps: %d", m.spree, m.caps);
-        UI::OutlinedText(dl, fs, ImVec2(x, y), IM_COL32_WHITE, t);
+        const float fs = UI::S(22), right = ds.x - UI::S(16);
+        const float y1 = ds.y - UI::S(64), y2 = ds.y - UI::S(36);
+        char l1[96], l2[96];
         if(r < MW3_RANKS)
-        {   // rank progress line on the bottom of the box
+        {
             float k = (float)(m.score - g_Mw3RankScore[r]) / (float)(g_Mw3RankScore[r + 1] - g_Mw3RankScore[r]); if(k < 0) k = 0; if(k > 1) k = 1;
-            dl->AddRectFilled(ImVec2(a.x + UI::S(4), b.y - UI::S(6)), ImVec2(a.x + UI::S(4) + (w - UI::S(8)) * k, b.y - UI::S(3)), Mw3Col(MW3_UI_GREEN, 0.9f));
+            snprintf(l1, sizeof(l1), "%s %s (%d%%)   Score: %d   XP: %d", mine ? g_Mw3Teams[mine].tag : "", g_Mw3RankName[r], (int)(k * 100.0f), m.score, m.xp);
         }
+        else snprintf(l1, sizeof(l1), "%s %s   Score: %d   XP: %d", mine ? g_Mw3Teams[mine].tag : "", g_Mw3RankName[r], m.score, m.xp);
+        snprintf(l2, sizeof(l2), "Kills: %d   Deaths: %d   K/D: %.2f   Spree: %d   Caps: %d", m.kills, m.deaths, m.deaths ? (float)m.kills / m.deaths : (float)m.kills, m.spree, m.caps);
+        ImFont* f = ImGui::GetFont();
+        ImVec2 s1 = f->CalcTextSizeA(fs, FLT_MAX, 0.0f, l1), s2 = f->CalcTextSizeA(fs, FLT_MAX, 0.0f, l2);
+        UI::OutlinedText(dl, fs, ImVec2(right - s1.x, y1), Mw3Col(mine ? Mw3TeamCol(mine) : MW3_UI_GREEN, 1), l1);
+        UI::OutlinedText(dl, fs, ImVec2(right - s2.x, y2), IM_COL32_WHITE, l2);
         if(s_Mw3.rwAt && nowMs - s_Mw3.rwAt < 2500)
-        {   // reward popup, floats up
+        {   // reward popup, floats up from the stats
             float k = (nowMs - s_Mw3.rwAt) / 2500.0f;
             char rw[64]; int n = 0;
             if(s_Mw3.rwScore) n += snprintf(rw + n, sizeof(rw) - n, "+%d score  ", s_Mw3.rwScore);
             if(s_Mw3.rwCash)  n += snprintf(rw + n, sizeof(rw) - n, "+$%d", s_Mw3.rwCash);
-            if(n) UI::OutlinedText(dl, UI::S(26), ImVec2(a.x, a.y - UI::S(36) - k * UI::S(30)), Mw3Col(MW3_UI_GREEN, 1.0f - k * k), rw);
+            if(n)
+            {
+                ImVec2 rs = f->CalcTextSizeA(UI::S(26), FLT_MAX, 0.0f, rw);
+                UI::OutlinedText(dl, UI::S(26), ImVec2(right - rs.x, y1 - UI::S(36) - k * UI::S(30)), Mw3Col(MW3_UI_GREEN, 1.0f - k * k), rw);
+            }
         }
     }
     // bottom center: tournament + event
