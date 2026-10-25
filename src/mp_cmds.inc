@@ -543,7 +543,7 @@ static void PagePlayers(void* openPtr)
         char buf[64];
         snprintf(buf, sizeof(buf), "%d", i);
         dl->AddText(ImVec2(a.x + cId + UI::S(10), ty), IM_COL32_WHITE, buf);
-        std::string nm = p.name; if(i == myId) nm += " (you)"; if(IsPartner(i)) nm += "  [sync]"; if(p.paused) nm += "  (paused)";
+        std::string nm = p.name; if(i == myId) nm += " (you)"; if(i == MP_BOT_ID && !strcmp(p.name, MP_BOT_NAME)) nm += "  (host, 24/7 bot)"; if(IsPartner(i)) nm += "  [sync]"; if(p.paused) nm += "  (paused)";
         ImU32 nc = UI::FromRGBA((i == myId ? myColor : p.color) | 0xFF);
         if(Mw3OnServer())
         {   // 3.23.3: MW3 in this same list: "[EU] name" in the team colour

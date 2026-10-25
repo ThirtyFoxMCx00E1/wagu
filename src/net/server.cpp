@@ -215,7 +215,7 @@ void MPServer::FillWorld(PktWorld& w)
 int MPServer::GetPlayerCount()
 {
     std::lock_guard<std::mutex> lk(m_Mutex);
-    int n = 0;
+    int n = HasBot() ? 1 : 0;   // 3.23.5: + the 24/7 bot
     for(auto& s : m_Slots) if(s.used) ++n;
     return n;
 }
@@ -670,7 +670,7 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             PktInfo2& in2 = in3.i2;
             PktInfo& in = in2.i;
             in.type = PKT_INFO; in.time = q->time; in.proto = MP_PROTO_VERSION;
-            int n = 0; for(int i = 0; i < MP_MAX_PLAYERS; ++i) if(m_Slots[i].used) ++n;
+            int n = HasBot() ? 1 : 0; for(int i = 0; i < MP_MAX_PLAYERS; ++i) if(m_Slots[i].used) ++n;   // 3.23.5: + bot
             in.players = (uint8_t)n; in.maxPlayers = (uint8_t)m_nMaxPlayers.load(); in.region = (uint8_t)m_nRegion.load();
             MP_CopyStr(in.serverName, m_szName, sizeof(in.serverName));
             in2.locked = m_szPassword[0] ? 1 : 0;   // 2.19: old clients read only PktInfo
@@ -753,9 +753,10 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             bool fresh = false;
             if(slot < 0)
             {
-                int used = 0; for(int i = 0; i < MP_MAX_PLAYERS; ++i) if(m_Slots[i].used) ++used;
+                const bool bot = HasBot();   // 3.23.5: the bot takes one place and keeps its id
+                int used = bot ? 1 : 0; for(int i = 0; i < MP_MAX_PLAYERS; ++i) if(m_Slots[i].used) ++used;
                 if(used < m_nMaxPlayers)
-                    for(int i = 0; i < MP_MAX_PLAYERS; ++i) if(!m_Slots[i].used) { slot = i; break; }
+                    for(int i = 0; i < MP_MAX_PLAYERS; ++i) if(!m_Slots[i].used && !(bot && i == MP_BOT_ID)) { slot = i; break; }
                 if(slot < 0)
                 {
                     PktReject rj; rj.type = PKT_REJECT; rj.reason = REJECT_FULL; SendRaw(from, &rj, sizeof(rj));
@@ -777,6 +778,7 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
                 s.authed = !AuthOn();   // 3.21.6
                 if(isAdmin) MP_CopyStr(s.name, MP_ADMIN_TAG MP_ADMIN_NAME, MP_NAME_LEN);   // 2.37: the rank shows on every server (admin powers: default server only)
                 // make the name unique
+                if(bot && !strcasecmp(s.name, MP_BOT_NAME)) { char tmp[MP_NAME_LEN]; snprintf(tmp, sizeof(tmp), "%.18s_%d", s.name, slot); MP_CopyStr(s.name, tmp, MP_NAME_LEN); }   // 3.23.5
                 for(int i = 0; i < MP_MAX_PLAYERS; ++i)
                 {
                     if(i != slot && m_Slots[i].used && !strcmp(m_Slots[i].name, s.name))
@@ -830,6 +832,13 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
                 }
                 if(m_Slots[i].hasClothes && i != slot)   // 3.10: what everybody's CJ is wearing
                     SendTo(slot, &m_Slots[i].clothes, sizeof(PktClothes));
+            }
+            if(HasBot())
+            {   // 3.23.5: the 24/7 bot is always in the player list
+                PktPlayerJoin pj; memset(&pj, 0, sizeof(pj));
+                pj.type = PKT_PLAYER_JOIN; pj.id = (uint8_t)MP_BOT_ID; pj.color = 0x2BD94FFF; pj.skin = 285;
+                MP_CopyStr(pj.name, MP_BOT_NAME, MP_NAME_LEN);
+                SendTo(slot, &pj, sizeof(pj));
             }
             { PktWorld wd; FillWorld(wd); SendTo(slot, &wd, sizeof(wd)); }   // serverworld_host
             { PktPerms pm; MakePerms(pm, m_nPerms); SendTo(slot, &pm, sizeof(pm)); }   // 2.16
