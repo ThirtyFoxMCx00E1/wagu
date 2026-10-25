@@ -275,6 +275,7 @@ static void LBuildRows(int tab, const std::vector<LanServer>& nearby, std::vecto
             if(MP_IsBcwServerName(sv.name)) continue;   // 3.04: the pinned row
             if(MP_IsMw3ServerName(sv.name)) continue;   // 3.23: the pinned row
             if(MP_IsRpServerName(sv.name)) continue;    // 3.25: the pinned row
+            if(!settings.lobbyAuto && sv.token != 0 && sv.region != settings.region) continue;   // 3.25: region switch (Wi-Fi servers always show)
             LRow q; memset(&q, 0, sizeof(q));
             q.kind = 1; MP_CopyStr(q.name, sv.name, sizeof(q.name)); MP_CopyStr(q.ip, sv.ip, sizeof(q.ip)); q.port = sv.port;
             q.players = sv.players; q.maxp = sv.maxPlayers; q.ping = sv.ping; q.region = sv.region; q.icon = sv.icon;
@@ -349,6 +350,77 @@ static void LJoin(const LRow& r)
 }
 
 static void LRowKey(const LRow& r, char* out, size_t n) { snprintf(out, n, "%d|%s|%d", r.kind, r.name, r.port); }
+
+// ---- 3.25: region switch above the server table: Auto | Asia | Europe | NA | Oceania ---------------
+// Auto = the lobby uses the lowest ping region and the list shows every region. Picking a region moves
+// the lobby to that region's broker, makes it your hosting region and shows only its servers (the
+// featured 24/7 servers and Wi-Fi servers always stay in the list).
+static float LRegionBar(const std::vector<LanServer>& nearby, float w)
+{
+    const float h = UI::S(58), gap = UI::S(6);
+    ImDrawList* dl = ImGui::GetWindowDrawList();
+    ImVec2 p = ImGui::GetCursorScreenPos();
+    int cnt[REGION_COUNT] = { 0 }, all = 0;
+    for(auto& sv : nearby) if(sv.token != 0 && sv.region < REGION_COUNT) { ++cnt[sv.region]; ++all; }
+    int cur = Online::CurrentRegion();
+    float bw = (w - gap * REGION_COUNT) / (REGION_COUNT + 1);
+    for(int i = -1; i < REGION_COUNT; ++i)
+    {
+        ImVec2 a(p.x + (i + 1) * (bw + gap), p.y), b(a.x + bw, a.y + h);
+        ImGui::SetCursorScreenPos(a);
+        ImGui::PushID(i + 100);
+        bool tap = ImGui::InvisibleButton("##reg", ImVec2(bw, h));
+        bool held = ImGui::IsItemActive();
+        ImGui::PopID();
+        bool sel = i < 0 ? settings.lobbyAuto : (!settings.lobbyAuto && settings.region == i);
+        dl->AddRectFilled(a, b, sel ? IM_COL32(255, 255, 255, held ? 200 : 235) : IM_COL32(255, 255, 255, held ? 45 : 22), UI::S(10));
+        if(!sel) dl->AddRect(a, b, IM_COL32(255, 255, 255, 40), UI::S(10), 0, UI::S(1.5f));
+        ImU32 tc = sel ? IM_COL32(15, 15, 15, 255) : IM_COL32(235, 235, 235, 255), sc = sel ? IM_COL32(60, 60, 60, 255) : IM_COL32(160, 160, 160, 255);
+        char l1[32], l2[40];
+        if(i < 0)
+        {
+            int best = Online::BestRegion();
+            snprintf(l1, sizeof(l1), "Auto");
+            if(best >= 0) snprintf(l2, sizeof(l2), "%s  |  %d servers", g_MPRegionNames[best], all); else snprintf(l2, sizeof(l2), "lowest ping  |  %d", all);
+        }
+        else
+        {
+            snprintf(l1, sizeof(l1), "%s", g_MPRegionNames[i]);
+            int ms = Online::RegionPingMs(i);
+            if(ms >= 0) snprintf(l2, sizeof(l2), "%d ms  |  %d servers", ms, cnt[i]);
+            else snprintf(l2, sizeof(l2), "%s  |  %d servers", ms == -2 ? "offline" : "-- ms", cnt[i]);
+        }
+        float fs1 = UI::S(22), fs2 = UI::S(16);
+        ImVec2 s1 = UI::Font()->CalcTextSizeA(fs1, FLT_MAX, 0, l1), s2 = UI::Font()->CalcTextSizeA(fs2, FLT_MAX, 0, l2);
+        float ty = a.y + (h - fs1 - fs2 - UI::S(2)) * 0.5f;
+        dl->AddText(UI::Font(), fs1, ImVec2(a.x + (bw - s1.x) * 0.5f, ty), tc, l1);
+        dl->AddText(UI::Font(), fs2, ImVec2(a.x + (bw - s2.x) * 0.5f, ty + fs1 + UI::S(2)), sc, l2);
+        if(i >= 0 && cur == i) dl->AddCircleFilled(ImVec2(a.x + UI::S(12), a.y + UI::S(12)), UI::S(5), IM_COL32(34, 197, 94, 255));   // lobby broker in use
+        if(tap && !sel)
+        {
+            if(i < 0)
+            {
+                settings.lobbyAuto = true;
+                int best = Online::BestRegion();
+                if(best >= 0) { settings.region = best; s_Server.SetRegion(best); }
+                SysMsg(COL_SYSTEM, "Region: Auto (lowest ping)%s%s. All regions are listed.", best >= 0 ? " - " : "", best >= 0 ? g_MPRegionNames[best] : "");
+            }
+            else
+            {
+                settings.lobbyAuto = false; settings.region = i; settings.regionPicked = true;
+                s_Server.SetRegion(i);
+                int ms = Online::RegionPingMs(i);
+                if(ms >= 0) SysMsg(COL_SYSTEM, "Region: %s (%d ms). The lobby moves to the %s broker; only %s servers are listed.", g_MPRegionNames[i], ms, g_MPRegionNames[i], g_MPRegionNames[i]);
+                else SysMsg(COL_SYSTEM, "Region: %s. Only %s servers are listed.", g_MPRegionNames[i], g_MPRegionNames[i]);
+            }
+            Online::SetRegionPrefs(settings.region, settings.lobbyAuto);
+            s_nLSel = -1; s_szLSelKey[0] = 0;
+            SaveConfig();
+        }
+    }
+    ImGui::SetCursorScreenPos(ImVec2(p.x, p.y + h + UI::S(8)));
+    return h + UI::S(8);
+}
 
 // ---- centre table ------------------------------------------------------------------------------
 static void LTable(std::vector<LRow>& rows, float w, float h)
@@ -1014,8 +1086,10 @@ static void RenderLauncher(void* openPtr)
     {
         float rightW = ImMax(UI::S(330), ws.x * 0.22f);
         float tableW = contentW - rightW - UI::S(6);
-        ImGui::SetCursorScreenPos(ImVec2(cx0 + UI::S(4), bodyY));
-        LTable(rows, tableW, bodyH);
+        ImGui::SetCursorScreenPos(ImVec2(cx0 + UI::S(4), bodyY + UI::S(6)));
+        float regH = s_nLTab == LT_INTERNET ? LRegionBar(nearby, tableW) + UI::S(6) : 0.0f;   // 3.25: region switch
+        if(!regH) ImGui::SetCursorScreenPos(ImVec2(cx0 + UI::S(4), bodyY));
+        LTable(rows, tableW, bodyH - regH);
         float rx0 = cx0 + UI::S(4) + tableW + UI::S(2);
         dl->AddLine(ImVec2(rx0, bodyY), ImVec2(rx0, wp.y + ws.y), line, UI::S(2));
         ImGui::SetCursorScreenPos(ImVec2(rx0 + UI::S(4), bodyY));
