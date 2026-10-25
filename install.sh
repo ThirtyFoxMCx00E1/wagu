@@ -90,7 +90,7 @@ MAX_PLAYERS=100
 # run MpBridge here (only on ONE server of the whole network)
 RUN_BRIDGE=0
 
-# Java heap. Empty = automatic: -Xms2g -Xmx4g with 6 GB RAM or more, ~60 % of RAM below that.
+# Java heap. Empty = automatic: -Xms4g -Xmx8g with 10 GB RAM or more (3.25), -Xms2g -Xmx4g with 6 GB+, ~60 % of RAM below that.
 JVM_XMS=
 JVM_XMX=
 # limits per broker
@@ -132,6 +132,7 @@ CPUS="$(nproc)"; RAM_MB="$(awk '/MemTotal/ {print int($2/1024)}' /proc/meminfo)"
 say "machine: $ARCH, $CPUS vCPU, $RAM_MB MB RAM"
 [ "$CPUS" -lt 4 ] && warn "HiveMQ recommends 4 vCPUs (you have $CPUS). It runs, but keep the player count lower."
 [ "$RAM_MB" -lt 3500 ] && warn "less than 4 GB RAM: the heap is reduced automatically."
+[ "$RAM_MB" -ge 3500 ] && [ "$RAM_MB" -lt 10000 ] && warn "the 8 GB Java heap needs 10 GB+ RAM on this machine (you have $RAM_MB MB): using a smaller heap."
 
 # ---------------------------------------------------------------- packages
 export DEBIAN_FRONTEND=noninteractive
@@ -254,9 +255,11 @@ PY
 chown -R mp:mp "$BASE"
 chmod 600 "$HQ/conf/config.xml"
 
-# Java heap: the 2 GB / 4 GB you asked for when the machine has room, else ~60 % of RAM
+# Java heap: 3.25: 8 GB (-Xms4g -Xmx8g) when the machine has 10 GB+ RAM, 4 GB (-Xms2g -Xmx4g) with
+# 6 GB+, else ~60 % of RAM. Linux always keeps 2 GB+ for itself (all RAM to Java = HiveMQ killed).
 if [ -z "${JVM_XMX:-}" ]; then
-    if [ "$RAM_MB" -ge 6000 ]; then JVM_XMS=2g; JVM_XMX=4g
+    if   [ "$RAM_MB" -ge 10000 ]; then JVM_XMS=4g; JVM_XMX=8g
+    elif [ "$RAM_MB" -ge 6000 ];  then JVM_XMS=2g; JVM_XMX=4g
     else x=$(( RAM_MB * 60 / 100 )); JVM_XMX="${x}m"; JVM_XMS="$(( x < 2048 ? x : 2048 ))m"; fi
 fi
 JVM_XMS="${JVM_XMS:-$JVM_XMX}"
