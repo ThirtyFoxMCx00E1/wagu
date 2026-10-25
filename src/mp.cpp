@@ -2008,7 +2008,7 @@ public:
                 MP_CopyStr(settings.adminKey, s_AdminKeys[s_nAdminKeyIdx].c_str(), sizeof(settings.adminKey));
                 client.SetAdminKey(settings.adminKey);
                 ClearAllPlayers();
-                SysMsg(COL_YELLOW, MP_AdminKeyLegacyOk(settings.adminKey) ? "This server runs an old MP (before 3.11.6) - trying your old admin key (admin.txt) on it..." : "This server didn't take your first admin key - trying your other key from administrator.txt...");
+                SysMsg(COL_YELLOW, MP_AdminKeyLegacyOk(settings.adminKey) ? "This server runs an old MP (before 3.23.6) - trying your old admin key on it..." : "This server didn't take your first admin key - trying your other key from administrator.txt...");
                 char h[256]; MP_CopyStr(h, s_szLastConnHost, sizeof(h));
                 DoConnect(h, s_nLastConnPort);
                 return;
@@ -2016,8 +2016,8 @@ public:
             if(HaveAdminKey())
             {   // our key is valid here. A 3.10+ server always accepts it, so the SERVER program is older than 3.10
                 // (it only knows the first admin key). Not this phone - updating the mod doesn't help.
-                SysMsg(COL_RED, "This server refused your admin key. Your MP %s and administrator.txt are fine: the SERVER runs MP older than 3.11.6 and only knows the old key.", MP_VERSION_STR);
-                SysMsg(COL_YELLOW, "Quick fix: keep your old admin.txt next to administrator.txt (MP folder) - MP %s tries the old key on old servers by itself.", MP_VERSION_STR);
+                SysMsg(COL_RED, "This server refused your admin key. Your MP %s and administrator.txt are fine: the SERVER runs MP older than 3.23.6 and only knows the old key.", MP_VERSION_STR);
+                SysMsg(COL_YELLOW, "Quick fix: keep your old key as admin.txt next to administrator.txt (MP folder) - MP %s tries the old key on old servers by itself.", MP_VERSION_STR);
                 SysMsg(COL_YELLOW, "Real fix: update the server. 24/7 VPS: sudo bash /opt/mp/kit/update.sh (or: curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/update.sh | sudo bash). Termux: mp-server update.");
             }
             else SenjiBlockedMsg();

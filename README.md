@@ -46,6 +46,10 @@ It builds `mp_server` on the phone and runs it 24/7 in the internet lobby (free 
 
 ## Changelog
 
+- **3.23.6**: new admin key.
+  - The administrator (SENJI) has a new admin key with a new hash. 3.23.6 servers accept only the new key; the 3.11.6 key no longer works on them.
+  - The phone still sends the old key, as a retry, to a server that has not been updated yet (keep the old key file as `admin.txt` next to the new `administrator.txt`).
+  - The key itself is never in the repo or the public package, only its SHA-256.
 - **3.23.5**: fixed "host left / finding new host" while alone, and a 24/7 host bot.
   - The cause: the check that merges two copies of the same featured server matched your own listing (or another phone's copy of it), so it stopped your server and moved you to a copy that was not there. It now skips its own server, and if the copy it moves you to does not answer within 20 s, your phone hosts again right away.
   - Timeout raised from 20 s to 30 s, so a short lag spike on mobile data no longer kicks you.

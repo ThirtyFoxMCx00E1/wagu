@@ -19,9 +19,9 @@
 #define MP_ADMIN_NAME      "SENJI"
 #define MP_ADMIN_TAG       "[ADMIN] "
 #define MP_ADMIN_KEY_LEN   128   // long keys with symbols (2.37: 88 characters)
-// 3.11.6: ONE admin key, in administrator.txt. The keys of 2.37 (lost) and 3.10 (admin.txt) are no
-// longer accepted by 3.11.6+ servers. Older servers only know the old keys: update them.
-#define MP_ADMIN_KEY_HASH  "420b31a8e646f682dadd484b41fb46cd69810971edecb97165cfe675465d9ed0"
+// 3.23.6: NEW admin key (administrator.txt). The 3.11.6 key and the older ones are no longer accepted
+// by 3.23.6+ servers. Older servers only know the old keys: update them.
+#define MP_ADMIN_KEY_HASH  "16b216bb1901f1a6053a28fb0dcab7516e61e027eb0f6ef48ce43b344bae762e"
 
 // "SENJI", " senji ", "[ADMIN] SENJI", "S E N J I", "SENJ1"... -> true
 inline bool MP_IsReservedName(const char* name)
@@ -75,11 +75,12 @@ inline bool MP_AdminKeyOk(const char* key, const char* hashHex = nullptr)
 // nothing for security: an old server accepts an old key from any phone anyway.
 #define MP_ADMIN_KEY_HASH_LEGACY1 "2a12f3acbdb4c820d18f784aff3261fabeddb7fffc35b8123970095def9a5d1b"   // 3.10 admin.txt
 #define MP_ADMIN_KEY_HASH_LEGACY2 "e77bf27eaeb77088c97e17903677366c90dfaeb6fa4b5d78a07d722058ddf633"   // 2.37
+#define MP_ADMIN_KEY_HASH_LEGACY3 "420b31a8e646f682dadd484b41fb46cd69810971edecb97165cfe675465d9ed0"   // 3.11.6 - 3.23.5
 inline bool MP_AdminKeyLegacyOk(const char* key)
 {
     if(!key || !*key) return false;
     char h[65]; MP_AdminKeyHash(key, h);
-    return !strcasecmp(h, MP_ADMIN_KEY_HASH_LEGACY1) || !strcasecmp(h, MP_ADMIN_KEY_HASH_LEGACY2);
+    return !strcasecmp(h, MP_ADMIN_KEY_HASH_LEGACY1) || !strcasecmp(h, MP_ADMIN_KEY_HASH_LEGACY2) || !strcasecmp(h, MP_ADMIN_KEY_HASH_LEGACY3);
 }
 
 inline bool MP_IsAdminTagged(const char* name) { return name && !strncmp(name, MP_ADMIN_TAG, strlen(MP_ADMIN_TAG)); }
