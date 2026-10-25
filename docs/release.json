@@ -6,22 +6,22 @@
  "assets": [
   {
    "name": "bin/libMP32.so",
-   "size": 3545788,
+   "size": 3646324,
    "download_count": 0
   },
   {
    "name": "bin/libMP64.so",
-   "size": 4445000,
+   "size": 4545656,
    "download_count": 0
   },
   {
    "name": "release/MP-3.25-full.zip",
-   "size": 15601499,
+   "size": 15896058,
    "download_count": 0
   },
   {
    "name": "release/HiveMQ-kit-3.25.zip",
-   "size": 60456,
+   "size": 61215,
    "download_count": 0
   },
   {
