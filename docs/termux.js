@@ -169,6 +169,12 @@
       print('  5. <span class="g">mp-server update</span>   <span class="m">newest source + rebuild</span>');
       p('m', 'not installed yet? curl -fsSL ' + RAW + 'termux/install.sh | bash');
     },
+    'vps-update': function () {
+      var U = 'curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/update.sh | sudo bash';
+      p('m', 'mp-server vps-update ubuntu@your-vps   - updates the 24/7 VPS over SSH (asked once, then saved)');
+      print('  it runs: <span class="g">' + esc(U) + '</span>');
+      p('m', '  the VPS autopilot also runs it by itself within 10 min of a new release' + (release && release.tag_name ? ' (latest ' + release.tag_name + ')' : ''));
+    },
     'clear': function () { out.innerHTML = ''; }
   };
   // what the bot types -> which command runs
@@ -178,7 +184,7 @@
     'cat ~/mp-server/server.conf': 'cat-conf',
     'cat $MP_DATA/broker.txt': 'cat-broker',
     'cat $MP_DATA/regions.txt': 'cat-regions',
-    'mp-server status': 'status', 'mp-server list': 'list', 'mp-server log': 'log', 'mp-server doctor': 'doctor',
+    'mp-server status': 'status', 'mp-server list': 'list', 'mp-server log': 'log', 'mp-server doctor': 'doctor', 'mp-server vps-update': 'vps-update',
     'ping -c 2 $BROKERS': 'ping', 'gh release view --repo ThirtyFoxMCx00E1/wagu': 'release', 'clear': 'clear'
   };
   function run(line) {
@@ -189,7 +195,8 @@
   }
 
   // ------------------------------------------------------------ MP Bot planner
-  var boot = ['termux-info', 'curl -fsSL $MP/termux/install.sh | grep say', 'cat ~/mp-server/server.conf', 'cat $MP_DATA/broker.txt', 'cat $MP_DATA/regions.txt', 'gh release view --repo ThirtyFoxMCx00E1/wagu', 'mp-server status'];
+  var boot = ['termux-info', 'curl -fsSL $MP/termux/install.sh | grep say', 'cat ~/mp-server/server.conf', 'cat $MP_DATA/broker.txt', 'cat $MP_DATA/regions.txt', 'gh release view --repo ThirtyFoxMCx00E1/wagu', 'mp-server vps-update', 'mp-server status'];
+  var relCheck = false, relSeen = '';
   var rot = ['mp-server status', 'mp-server list', 'mp-server log', 'mp-server status', 'mp-server log'], ri = 0, cycles = 0, lastRel = Date.now();
   function next() {
     if (boot.length) return { cmd: boot.shift(), why: 'start-up check' };
@@ -197,7 +204,8 @@
     if (phoneChanged) { phoneChanged = false; return phoneSeen ? { cmd: 'mp-server status', why: '24/7 phone server came back' } : { cmd: 'mp-server doctor', why: '24/7 phone server left the lobby' }; }
     if (events.length - evSeen >= 3) return { cmd: 'mp-server log', why: (events.length - evSeen) + ' new lobby events' };
     if (Date.now() - lastPing > 90000) return { cmd: 'ping -c 2 $BROKERS', why: 'ping every 90 s', wait: 7000 };
-    if (Date.now() - lastRel > 600000) { lastRel = Date.now(); return { cmd: 'gh release view --repo ThirtyFoxMCx00E1/wagu', why: 'checking for a new release' }; }
+    if (Date.now() - lastRel > 600000) { lastRel = Date.now(); relCheck = true; return { cmd: 'gh release view --repo ThirtyFoxMCx00E1/wagu', why: 'checking for a new release' }; }
+    if (relCheck && release) { relCheck = false; if (release.tag_name !== relSeen) { relSeen = release.tag_name; return { cmd: 'mp-server vps-update', why: 'release ' + release.tag_name + ': update the VPS' }; } }
     if (++cycles % 10 === 0) return { cmd: 'clear', why: 'keeping the screen short', wait: 600 };
     if (!phoneSeen && cycles % 4 === 0) return { cmd: 'mp-server doctor', why: '24/7 phone server still not seen' };
     return { cmd: rot[ri++ % rot.length], why: 'routine check' };
