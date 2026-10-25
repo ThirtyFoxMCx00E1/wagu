@@ -119,6 +119,7 @@
   function isDefault(s) { return s.port === 1922 && s.name.toLowerCase() === 'mp lan server'; }
   function isBcw(s) { return s.port === 1930 && /^brief case war$/i.test(s.name || ''); }
   function isMw3(s) { return /^(call of duty: )?modern warfare 3$|^mw3$/i.test(s.name || ''); }   // 3.23
+  function isRp(s) { return /^mega vil futuristic$/i.test((s.name || '').trim()); }   // 3.25: Mega Vil Futuristic - sky blue
   function render() {
     var now = Date.now();
     servers.forEach(function (s, k) { if (now - s.seen > FRESH) servers.delete(k); });
@@ -127,7 +128,7 @@
     $('st-servers').textContent = all.length;
     $('st-players').textContent = players;
     var rows = all.filter(function (s) { return filter < 0 || s.region === filter; })
-      .sort(function (a, b) { return (isDefault(b) - isDefault(a)) || (isBcw(b) - isBcw(a)) || (isMw3(b) - isMw3(a)) || (b.players - a.players) || a.name.localeCompare(b.name); });
+      .sort(function (a, b) { return (isDefault(b) - isDefault(a)) || (isBcw(b) - isBcw(a)) || (isMw3(b) - isMw3(a)) || (isRp(b) - isRp(a)) || (b.players - a.players) || a.name.localeCompare(b.name); });
     var tb = $('server-rows');
     if (!rows.length) {
       var msg = filter < 0 ? 'No servers online right now. Host one from the game and it shows up here.' : 'No servers in ' + REG[filter] + ' right now.';
@@ -137,10 +138,11 @@
         var full = s.max && s.players >= s.max;
         var bcw = isBcw(s);   // 3.04: Brief Case War - red banner + briefcase
         var mw3 = !bcw && isMw3(s);   // 3.23: Modern Warfare 3 - green banner + guns
-        return '<tr' + (bcw ? ' class="bcw"' : mw3 ? ' class="mw3"' : '') + '><td>' + (bcw ? '<img class="bcw-ic" src="bcw_icon.png" alt="">' : mw3 ? '<img class="bcw-ic" src="mw3_icon.png" alt="">' : '') + '<span class="sname">' + esc(s.name || 'Unnamed server') + '</span><span class="ssub">Port ' + s.port + (bcw ? ' &middot; 10 vs 10 &middot; private gamemode' : mw3 ? ' &middot; 8 teams &middot; 24/7 featured' : '') + '</span></td>' +
+        var rp = !bcw && !mw3 && isRp(s);   // 3.25: Mega Vil Futuristic - sky blue banner + RP icon
+        return '<tr' + (bcw ? ' class="bcw"' : mw3 ? ' class="mw3"' : rp ? ' class="rp"' : '') + '><td>' + (bcw ? '<img class="bcw-ic" src="bcw_icon.png" alt="">' : mw3 ? '<img class="bcw-ic" src="mw3_icon.png" alt="">' : rp ? '<img class="bcw-ic" src="rp_icon.png" alt="">' : '') + '<span class="sname">' + esc(s.name || 'Unnamed server') + '</span><span class="ssub">Port ' + s.port + (bcw ? ' &middot; 10 vs 10 &middot; private gamemode' : mw3 ? ' &middot; 8 teams &middot; 24/7 featured' : rp ? ' &middot; Roleplay RP &middot; 24/7 featured' : '') + '</span></td>' +
           '<td>' + esc(REG[s.region] || 'Unknown') + '</td>' +
           '<td class="num' + (full ? ' full' : '') + '">' + s.players + ' / ' + s.max + '</td>' +
-          '<td>' + (bcw ? '<span class="tag bcw">Brief Case War 24/7</span>' : mw3 ? '<span class="tag mw3">MW3 24/7</span>' : isDefault(s) ? '<span class="tag def">Default 24/7</span>' : '<span class="tag">Player hosted</span>') + '</td></tr>';
+          '<td>' + (bcw ? '<span class="tag bcw">Brief Case War 24/7</span>' : mw3 ? '<span class="tag mw3">MW3 24/7</span>' : rp ? '<span class="tag rp">Roleplay 24/7</span>' : isDefault(s) ? '<span class="tag def">Default 24/7</span>' : '<span class="tag">Player hosted</span>') + '</td></tr>';
       }).join('');
     }
     renderRegions();

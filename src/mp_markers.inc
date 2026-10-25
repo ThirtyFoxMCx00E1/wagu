@@ -75,7 +75,7 @@ static bool MkModeOn(int kind)
 {
     return kind == MK_JOB ? MP::ModeOn(GM_JOBS) : kind == MK_DERBY ? MP::ModeOn(GM_DERBY) : MP::ModeOn(GM_DM);
 }
-static bool MkActive() { return client.GetState() == NET_CONNECTED && !BcwOnServer() && !Mw3OnServer() && Game::IsReady() && !s_bLocalSeparate; }
+static bool MkActive() { return client.GetState() == NET_CONNECTED && !BcwOnServer() && !Mw3OnServer() && !RpOnServer() && Game::IsReady() && !s_bLocalSeparate; }
 
 // the red column: translucent cylinder, brighter at the bottom, with a ground ring
 static void MkBeam(ImDrawList* dl, const Vec3& c, float r, float h, uint32_t rgba, float alpha)

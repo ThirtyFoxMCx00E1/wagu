@@ -73,6 +73,7 @@ static bool GatesAllowed()
 {
     if(JoinFlowActive()) return false;                         // connection screen / spawn picker
     if(MP::IsOnBcw() && s_Bcw.view < 2) return false;
+    if(MP::IsOnRp() && s_Rp.view < 2) return false;   // 3.25
     if(MP::IsOnMw3() && s_Mw3.view < 2) return false;   // 3.23          // BCW lobby / respawn wait
     return true;
 }

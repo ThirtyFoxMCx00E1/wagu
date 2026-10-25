@@ -1,6 +1,7 @@
 {
-"latest": "3.24",
+"latest": "3.25",
 "supported": [
+"3.25",
 "3.24",
 "3.23.6",
 "3.23.5",
@@ -32,6 +33,24 @@
 "3.04.6"
 ],
 "versions": [
+{
+"v": "3.25",
+"summary": "New 24/7 featured server **Mega Vil Futuristic** (Roleplay RP, 250 players), the RP phone, lobby / home spawn, Broker 24/7 on every featured server.",
+"items": [
+"Mega Vil Futuristic: a new pinned server like Brief Case War and MW3 (UDP 1932, `mp-rp.service` on the VPS, hosted by the Broker standby phones when the VPS is down). Roleplay RP is the only gamemode on it: no teams, all other gamemodes / race / DM / gates are off. Sky blue everywhere: the launcher row (sky blue highlight + outline + RP icon), the website list, the login / create account / MP auth panels, the HUD and the title + icon at the top.",
+"Spawn: citizens without a house spawn at the **Lobby Hub** (Mega Vil Plaza, sky blue `< SPAWN >`). Once you own a house you always spawn at home (also after the hospital), never at the hub; `/setspawn` inside your house saves the exact point.",
+"Citizens (saved on the server in `rp_citizens.txt`, plus a signed card on the phone so progress survives a host change): cash + bank, level / XP, phone number, job, house, vehicles, pets, items. Payday every 30 minutes played (salary + 0.1 % interest).",
+"20 jobs with real tasks and checkpoints: Taxi Driver, Trucker, Pizza Boy, Bus Driver, Garbage Collector, Mechanic, Paramedic, Police Officer, Military Soldier, Firefighter, Drone Courier, Street Sweeper, News Reporter, Pilot, Dock Worker, Lawyer, Ice Cream Vendor, Cyber Hacker, Holo Engineer (+ Citizen). Police: cuff, ticket, jail (/arrest), wanted list.",
+"Peaceful: you cannot kill or hurt other players. Only an on-duty Police Officer or Military Soldier can (fists or guns); everyone else's damage to players is blocked. Greenzones (the Plaza, City Hall, both hospitals, the bank) are always safe.",
+"The phone (button on the right, or /phone): status bar, wallpapers (Sky Blue, Neon, Sunset, Matrix), app grid. Contacts, Messages (SMS by phone number), Phone (calls with Answer / Decline - a connected call carries voice chat across the city), Bank (deposit / withdraw at ATMs, transfer anywhere), Jobs, GPS, Shop, Garage, Houses (48), Pets (8 holo pets), Emotes & Dances (from rpemotes), Vil Feed, News & Events, 911, Taxi, Settings, and real Games: Snake, 2048, Sky Hop, Tic-Tac-Toe (high scores saved).",
+"Shops: food & drinks, clothes, vehicles, tech, licensed Ammu-Nation (weapons only there), drone delivery anywhere (+10 %).",
+"Talk to pedestrians: walk close, they stop and look at you, then **Talk** / **Nevermind**, with custom subtitles.",
+"Needs (hunger, thirst) and stamina circles on the RP HUD, new citizen helper box, greenzone badge, info panel like the screenshots.",
+"City events every 15 minutes: Double Pay Hour, Holo Cash Drop, Neon Night Festival, Mega Lottery Draw, Holo Tower Rush. Mega Lottery (tickets 1-60).",
+"170 RP commands (no cheats): /shop, /phone, /bank, /atm, /jobs, /work, /duty, /gps, /buyhouse, /sellhouse, /setspawn, /myhouse, /myveh, /garage, /pet, /me, /do, /ooc, /b, /s, /w, /pay, /give, /call, /sms, /911, /taxi, /e [emote], /cuff, /ticket, /arrest, /frisk, /repair, /heal, /lotto, /stats, /id, /time, /help ... (`/rphelp` lists them all).",
+"Broker bot: stays on Mega Vil 24/7 like on MW3 / BCW, never leaves. Max players on Mega Vil: 250 (the other servers stay at 100)."
+]
+},
 {
 "v": "3.24",
 "summary": "Broker standby pool (100 backup hosts), MW3 stats that survive a host change, launcher profile, chat icon, real passenger door animations.",
