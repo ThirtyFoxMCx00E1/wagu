@@ -46,6 +46,8 @@ It builds `mp_server` on the phone and runs it 24/7 in the internet lobby (free 
 
 ## Changelog
 
+- **3.23.3**: MW3 has no separate player list any more.
+  - Removed the extra MW3 list window and its LIST button. The normal Player list in the top bar dots menu now shows MW3 players as `[TAG] name` in their team colour with their MW3 score, and keeps select and mute voice. `/players` opens that same list.
 - **3.23.2**: fixed the game closing (no crash log) after logging in to MW3.
   - 3.23 made all 162 MW3 map objects right after login, 99 of them at the LS Docks lobby, and kept their 26 models loaded for good. On phones with many mods this could run the game out of memory or fill the object pool, and Android closed it with no crash log.
   - Now the objects stream by distance like an SA-MP streamer: only the ones within 220 m of you exist (removed past 280 m), at most 3 new ones a frame, none in the lobby, and the game's object pool always keeps 60 free slots.
@@ -62,7 +64,7 @@ It builds `mp_server` on the phone and runs it 24/7 in the internet lobby (free 
   - **Ranks and classes:** 21 ranks (Private to Commander) with health / armour bonuses, 15 classes (Assault, Sniper, Medic `/heal`, JetTrooper `/jp`, Engineer `/tank`, Pilot `/air`, Spy and more).
   - **Kills:** +2 score, $1500. Multi kill badges (DOUBLE KILL, TRIPLE KILL, ULTRA KILL, MULTI KILL, MEGA KILL, SAVAGE) in a green box with a black outline on the top and bottom only, killing sprees every 5 kills, spree ender bonus.
   - **Extras:** 6 DM arenas (`/dm /sdm /mdm /chdm /cbdm /hsdm`, `/qdm`), duels (`/duel id weapon`, `/accept`), events every 15 minutes at the docks (Team DM, Deathmatch, Zombie infection, Last Man Standing; `/join`, `/leave`), hourly tournament (most kills, captures, Desert Eagle kills, best spree; $50000 prize).
-  - **Look:** name tags with a second line "Rank - Class", `[TAG] name` in the team colour in chat, the kill feed and the tags. Green login / sign-up / code screens, green HUD with VFX, no Pricedown score counter. The MW3 player list (`/players` or the LIST button): id, name, score, ping, each row in the team colour, your row on a red bar.
+  - **Look:** name tags with a second line "Rank - Class", `[TAG] name` in the team colour in chat, the kill feed and the tags. Green login / sign-up / code screens, green HUD with VFX, no Pricedown score counter. MW3 uses the normal Player list in the top bar dots menu (also `/players`), with `[TAG] name` in the team colour and the MW3 score (3.23.3).
   - Stats (score, XP, cash, kills, deaths, captures, team, class) and zone owners are saved per account on the server.
 - **3.22.1**: login screen on the default server after a game restart (like Brief Case War), no red background on the Brief Case War login.
   - **Default server login:** closing / restarting the game and joining back now always opens the login screen, the same as on Brief Case War. The server kept the old player slot of the closed game (same relay / network address, up to 20 s) and that slot was still logged in, so no login was asked. Now the phone clears that old slot before it joins after a game start, and the server asks for the login again when a closed game comes back on its old slot.
