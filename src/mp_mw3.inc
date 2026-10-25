@@ -67,6 +67,54 @@ static void Mw3Banner(uint32_t col, const char* fmt, ...)
     va_list ap; va_start(ap, fmt); vsnprintf(s_Mw3.banner, sizeof(s_Mw3.banner), fmt, ap); va_end(ap);
     s_Mw3.bannerCol = col; s_Mw3.bannerAt = MP_NowMs();
 }
+// ---- 3.24: stats backup cards (MP/mw3_card.txt: "<account> <hex of PktMw3Card>" per line) ----
+// The host signs them, so the phone can't change the numbers; it only keeps the newest per account
+// and gives them to every MW3 host it joins: a new host (VPS back, a phone copy, a Broker takeover)
+// restores your score instead of starting you at zero.
+static void Mw3CardPath(char* out, size_t n) { snprintf(out, n, "%s/mw3_card.txt", s_szDataDir); }
+static int Mw3CardsLoad(PktMw3Card* out, int max)
+{
+    char path[512]; Mw3CardPath(path, sizeof(path));
+    FILE* f = fopen(path, "r"); if(!f) return 0;
+    char line[512]; int n = 0;
+    while(n < max && fgets(line, sizeof(line), f))
+    {
+        char key[64], hex[400];
+        if(sscanf(line, "%63s %399s", key, hex) != 2 || strlen(hex) != sizeof(PktMw3Card) * 2) continue;
+        uint8_t* b = (uint8_t*)&out[n];
+        bool ok = true;
+        for(size_t i = 0; i < sizeof(PktMw3Card) && ok; ++i) { unsigned v; ok = sscanf(hex + i * 2, "%2x", &v) == 1; b[i] = (uint8_t)v; }
+        if(ok && out[n].type == PKT_MW3_CARD) { out[n].key[sizeof(out[n].key) - 1] = 0; ++n; }
+    }
+    fclose(f);
+    return n;
+}
+static void Mw3CardStore(const PktMw3Card& c)
+{
+    PktMw3Card all[9]; int n = Mw3CardsLoad(all, 8), at = -1;
+    for(int i = 0; i < n; ++i) if(!strcmp(all[i].key, c.key)) at = i;
+    if(at >= 0 && all[at].t > c.t) return;               // ours is newer (an old host's file): keep it
+    if(at < 0) { if(n == 8) { memmove(all, all + 1, sizeof(all[0]) * 7); n = 7; } at = n++; }
+    all[at] = c;
+    char path[512], tmp[520]; Mw3CardPath(path, sizeof(path)); snprintf(tmp, sizeof(tmp), "%s.tmp", path);
+    FILE* f = fopen(tmp, "w"); if(!f) return;
+    for(int i = 0; i < n; ++i)
+    {
+        fprintf(f, "%s ", all[i].key);
+        const uint8_t* b = (const uint8_t*)&all[i];
+        for(size_t k = 0; k < sizeof(PktMw3Card); ++k) fprintf(f, "%02x", b[k]);
+        fputc('\n', f);
+    }
+    fclose(f);
+    rename(tmp, path);
+}
+static void Mw3CardsSend()
+{   // the host only accepts the one of the account you logged in with (and only if it's newer)
+    PktMw3Card all[8]; int n = Mw3CardsLoad(all, 8);
+    for(int i = 0; i < n; ++i) client.Send(&all[i], sizeof(all[i]));
+    if(n) logger->Info("MW3: sent %d stats backup card(s) to the host", n);
+}
+
 static void Mw3Send(uint8_t cmd, uint8_t arg, uint8_t arg2 = 0) { PktMw3Cmd c; c.type = PKT_MW3_CMD; c.cmd = cmd; c.arg = arg; c.arg2 = arg2; client.Send(&c, sizeof(c)); }
 
 // [EU] name in the team colour (chat, kill feed, name tags). Admins keep their look.
@@ -311,6 +359,7 @@ static void Mw3OnPacket(const uint8_t* d, int len)
     }
     case PKT_MW3_ME:
         if(len < (int)sizeof(PktMw3Me)) return;
+        if(!s_Mw3.haveMe) Mw3CardsSend();   // 3.24: logged in on this host: give it our backup
         memcpy(&s_Mw3.me, d, sizeof(PktMw3Me)); s_Mw3.haveMe = true;
         s_nMyScore = s_Mw3.me.score;
         if(s_Mw3.view == 2 && Game::IsReady() && !Game::IsPaused())
@@ -319,6 +368,13 @@ static void Mw3OnPacket(const uint8_t* d, int len)
             if(diff) Game::AddMoney(diff);
         }
         break;
+    case PKT_MW3_CARD:   // 3.24: the host signed our current stats: keep them
+    {
+        if(len < (int)sizeof(PktMw3Card)) return;
+        PktMw3Card c; memcpy(&c, d, sizeof(c)); c.key[sizeof(c.key) - 1] = 0;
+        if(c.ver == MW3_CARD_VER && c.key[0]) Mw3CardStore(c);
+        break;
+    }
     case PKT_MW3_EVENT:
     {
         if(len < (int)sizeof(PktMw3Event)) return;

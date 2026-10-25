@@ -58,13 +58,14 @@ void MPServer::Mw3Load()
         else if(line[0] == 'P')
         {
             char key[64] = { 0 };
-            int sc = 0, xp = 0, cash = 0, k = 0, d = 0, c = 0, b = 0, t = 0, cl = 0;
-            if(sscanf(line + 1, "%63s %d %d %d %d %d %d %d %d %d", key, &sc, &xp, &cash, &k, &d, &c, &b, &t, &cl) >= 8)
+            int sc = 0, xp = 0, cash = 0, k = 0, d = 0, c = 0, b = 0, t = 0, cl = 0; unsigned int ts = 0;
+            if(sscanf(line + 1, "%63s %d %d %d %d %d %d %d %d %d %u", key, &sc, &xp, &cash, &k, &d, &c, &b, &t, &cl, &ts) >= 8)
             {
                 Mw3Saved v;
                 v.score = sc; v.xp = xp; v.cash = cash;
                 v.kills = (uint16_t)k; v.deaths = (uint16_t)d; v.caps = (uint16_t)c; v.best = (uint16_t)b;
                 v.team = (uint8_t)(t >= 0 && t <= MW3_TEAMS ? t : 0); v.cls = (uint8_t)(cl >= 0 && cl < MW3_CLASSES ? cl : 0);
+                v.t = ts;   // 3.24 (0 = an older file: any card wins)
                 m_Mw3Saved[key] = v; ++np;
             }
         }
@@ -84,7 +85,7 @@ void MPServer::Mw3Save()
     for(auto& kv : m_Mw3Saved)
     {
         const Mw3Saved& v = kv.second;
-        fprintf(f, "P %s %d %d %d %d %d %d %d %d %d\n", kv.first.c_str(), v.score, v.xp, v.cash, v.kills, v.deaths, v.caps, v.best, v.team, v.cls);
+        fprintf(f, "P %s %d %d %d %d %d %d %d %d %d %u\n", kv.first.c_str(), v.score, v.xp, v.cash, v.kills, v.deaths, v.caps, v.best, v.team, v.cls, v.t);
     }
     fclose(f);
     rename(tmp, m_szMw3File);
@@ -111,6 +112,7 @@ void MPServer::Mw3Store(int slot)
     if(!key) return;
     Mw3Saved v;
     v.score = m.score; v.xp = m.xp; v.cash = m.cash; v.kills = m.kills; v.deaths = m.deaths; v.caps = m.caps; v.best = m.best; v.team = m.team; v.cls = m.cls;
+    v.t = m.statT;
     m_Mw3Saved[key] = v;
     m_bMw3Dirty = true;
 }
@@ -217,6 +219,87 @@ void MPServer::Mw3SendMe(int slot)
     p.rank = m.rank ? m.rank : 1; p.spree = m.spree; p.score = m.score; p.xp = m.xp; p.cash = m.cash;
     p.kills = m.kills; p.deaths = m.deaths; p.caps = m.caps; p.deagle = m.deagle; p.best = m.best;
     SendTo(slot, &p, sizeof(p));
+    Mw3SendCard(slot);
+}
+
+// ---- 3.24: stats card (signed backup on the player's phone) ----
+static void Mw3CardKey(uint8_t out[32])
+{
+    static const uint8_t a[32] = { 0x32, 0x8C, 0x7E, 0xE9, 0xF4, 0x80, 0xBB, 0x20, 0xEC, 0xF5, 0x12, 0x5F, 0x47, 0x60, 0xD2, 0x13, 0x0B, 0x83, 0x9C, 0xB8, 0xA8, 0x6B, 0x03, 0x76, 0x9A, 0xA1, 0xFA, 0xF9, 0x6B, 0xA2, 0x60, 0x46 };
+    static const uint8_t b[32] = { 0xE2, 0x44, 0xA6, 0xDE, 0x32, 0x43, 0x1E, 0xC4, 0x46, 0xDC, 0xB3, 0x05, 0xB0, 0x26, 0x56, 0xBE, 0x36, 0x52, 0x8C, 0xD5, 0x6C, 0xB6, 0x4D, 0x76, 0xBA, 0x1C, 0xA2, 0xD5, 0xA7, 0x93, 0x2C, 0xC0 };
+    for(int i = 0; i < 32; ++i) out[i] = a[i] ^ b[i];
+}
+static void Mw3CardMac(const PktMw3Card& c, uint8_t mac[16])
+{   // HMAC-SHA256 over everything before mac[]
+    uint8_t k[32], ipad[64], opad[64], inner[32], full[32];
+    Mw3CardKey(k);
+    memset(ipad, 0x36, 64); memset(opad, 0x5C, 64);
+    for(int i = 0; i < 32; ++i) { ipad[i] ^= k[i]; opad[i] ^= k[i]; }
+    mbedtls_sha256_context h;
+    mbedtls_sha256_init(&h); mbedtls_sha256_starts(&h, 0);
+    mbedtls_sha256_update(&h, ipad, 64); mbedtls_sha256_update(&h, (const unsigned char*)&c, offsetof(PktMw3Card, mac));
+    mbedtls_sha256_finish(&h, inner); mbedtls_sha256_free(&h);
+    mbedtls_sha256_init(&h); mbedtls_sha256_starts(&h, 0);
+    mbedtls_sha256_update(&h, opad, 64); mbedtls_sha256_update(&h, inner, 32);
+    mbedtls_sha256_finish(&h, full); mbedtls_sha256_free(&h);
+    memcpy(mac, full, 16);
+}
+
+void MPServer::Mw3SendCard(int slot)
+{
+    Mw3SrvPlayer& m = m_Mw3[slot];
+    if(!m.loaded) return;
+    if(m.score != m.lastSc || m.xp != m.lastXp || m.cash != m.lastCash || m.kills != m.lastK || m.deaths != m.lastD || m.caps != m.lastC)
+    {
+        m.statT = (uint32_t)time(nullptr);
+        m.lastSc = m.score; m.lastXp = m.xp; m.lastCash = m.cash; m.lastK = m.kills; m.lastD = m.deaths; m.lastC = m.caps;
+        m_bMw3Dirty = true;
+    }
+    if(m.cardT == 0xFFFFFFFFu)
+    {   // waiting for the phone's own card first (so an older line here never overwrites its backup)
+        if(MP_NowMs() - m.cardWaitAt < 4000) return;
+        m.cardT = 0;
+    }
+    if(m.cardT == m.statT && m.cardT) return;   // the phone already has these stats
+    char kb[64];
+    const char* key = Mw3Key(slot, kb, sizeof(kb));
+    if(!key || strlen(key) >= sizeof(PktMw3Card::key)) return;
+    if(!m.statT) return;   // nothing earned yet: never send a t=0 card (it could not win anyway)
+    PktMw3Card c; memset(&c, 0, sizeof(c));
+    c.type = PKT_MW3_CARD; c.ver = MW3_CARD_VER; c.team = m.team; c.cls = m.cls; c.t = m.statT;
+    MP_CopyStr(c.key, key, sizeof(c.key));
+    c.score = m.score; c.xp = m.xp; c.cash = m.cash; c.kills = m.kills; c.deaths = m.deaths; c.caps = m.caps; c.best = m.best;
+    Mw3CardMac(c, c.mac);
+    SendTo(slot, &c, sizeof(c));
+    m.cardT = m.statT;
+}
+
+// the phone gave us its backup: newer than what this host knows = restore it
+void MPServer::Mw3OnCard(int slot, const PktMw3Card& in)
+{
+    if(!IsMw3Server()) return;
+    Mw3SrvPlayer& m = m_Mw3[slot];
+    if(!m.loaded || in.ver != MW3_CARD_VER) return;
+    PktMw3Card c = in; c.key[sizeof(c.key) - 1] = 0;
+    uint8_t mac[16]; Mw3CardMac(c, mac);
+    int diff = 0; for(int i = 0; i < 16; ++i) diff |= mac[i] ^ c.mac[i];
+    if(diff) { Log("MW3: %s sent a bad stats card (ignored)", m_Slots[slot].name); return; }
+    char kb[64];
+    const char* key = Mw3Key(slot, kb, sizeof(kb));
+    if(!key || strcmp(key, c.key)) return;                          // someone else's card
+    uint32_t now = (uint32_t)time(nullptr);
+    if(c.t > now + 600) return;                                      // from the future
+    if(c.t <= m.statT) { if(m.cardT == 0xFFFFFFFFu) m.cardT = 0; Mw3SendCard(slot); return; }   // ours is newer: the phone gets ours
+    m.score = c.score; m.xp = c.xp; m.cash = c.cash; m.kills = c.kills; m.deaths = c.deaths; m.caps = c.caps; m.best = c.best;
+    m.rank = (uint8_t)Mw3RankOf(m.score);
+    if(c.cls < MW3_CLASSES && g_Mw3Classes[c.cls].rank <= m.rank) m.cls = c.cls;
+    m.statT = c.t; m.cardT = c.t;
+    m.lastSc = m.score; m.lastXp = m.xp; m.lastCash = m.cash; m.lastK = m.kills; m.lastD = m.deaths; m.lastC = m.caps;
+    Mw3Store(slot);
+    Mw3Msg(slot, MW3_GREEN, "[MW3] Stats restored from your backup: rank %s, score %d, kills %d.", g_Mw3RankName[m.rank], m.score, m.kills);
+    Log("MW3: restored %s from their stats card (score %d)", c.key, m.score);
+    Mw3SendMe(slot);
+    Mw3SendPlayers(-1);
 }
 
 void MPServer::Mw3Ev(int slot, uint8_t ev, uint8_t a, uint8_t b, uint8_t c, uint8_t who, int32_t val, const char* text)
@@ -290,11 +373,15 @@ void MPServer::Mw3OnAuthed(int slot)
                 const Mw3Saved& v = it->second;
                 m.score = v.score; m.xp = v.xp; m.cash = v.cash; m.kills = v.kills; m.deaths = v.deaths; m.caps = v.caps; m.best = v.best;
                 m.cls = g_Mw3Classes[v.cls].rank <= Mw3RankOf(v.score) ? v.cls : 0;
+                m.statT = v.t;
                 Mw3Msg(slot, MW3_GREEN, "[MW3] Welcome back, %s. Rank: %s, score %d.", m_Slots[slot].name, g_Mw3RankName[Mw3RankOf(v.score)], v.score);
             }
             else Mw3Msg(slot, MW3_GREEN, "[MW3] Welcome to Call Of Duty: Modern Warfare 3, %s. Pick a team and a class.", m_Slots[slot].name);
         }
         m.rank = (uint8_t)Mw3RankOf(m.score);
+        m.lastSc = m.score; m.lastXp = m.xp; m.lastCash = m.cash; m.lastK = m.kills; m.lastD = m.deaths; m.lastC = m.caps;
+        m.cardT = 0xFFFFFFFFu;   // 3.24: no card until the phone had 4 s to send its own (newer?) backup
+        m.cardWaitAt = MP_NowMs();
         m.loaded = true;
     }
     Mw3SendMe(slot);
@@ -322,6 +409,7 @@ void MPServer::Mw3OnLeave(int slot)
         if(m_Mw3Zone[z].atk && m_Mw3Zone[z].capper == slot) { m_Mw3Zone[z].atk = 0; m_Mw3Zone[z].capper = MP_INVALID_ID; }
     for(int i = 0; i < MP_MAX_PLAYERS; ++i) if(m_Mw3[i].duelAsk == slot) m_Mw3[i].duelAsk = MP_INVALID_ID;
     Mw3Store(slot);
+    if(m_bMw3Dirty) Mw3Save();   // 3.24: on the disk right away (a phone host can be closed any second)
     memset(&m, 0, sizeof(m));
     m.duelAsk = m.duelWith = MP_INVALID_ID;
     m_nMw3LastPlayers = 0;
@@ -851,7 +939,7 @@ void MPServer::Mw3Tick(uint64_t now)
         m_nMw3LastPlayers = now;
         Mw3SendPlayers(-1);
     }
-    if(now - m_nMw3LastSave >= 60000)
+    if(m_bMw3Dirty && now - m_nMw3LastSave >= 15000)   // 3.24: every 15 s (was 60 s, and even when nothing changed)
     {
         m_nMw3LastSave = now;
         Mw3Save();

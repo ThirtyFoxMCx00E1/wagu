@@ -248,6 +248,18 @@ void* HUD::Texture(const char* file, ImVec2* uv)
     return (void*)t.r;
 }
 
+void HUD::ReloadTexture(const char* file)
+{
+    if(!file) return;
+    for(int i = 0; i < s_nNamedTex; ++i)
+        if(!strcmp(s_NamedTex[i].file, file))
+        {
+            if(s_NamedTex[i].r) RwRasterDestroy(s_NamedTex[i].r);
+            s_NamedTex[i] = s_NamedTex[--s_nNamedTex];
+            return;
+        }
+}
+
 void HUD::ReloadServerIcons()
 {
     for(auto& s : s_Icons) { if(s.r) RwRasterDestroy(s.r); s = IconSlot(); }

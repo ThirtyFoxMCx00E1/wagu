@@ -13,10 +13,10 @@
 // phones refuse servers older than that too (they would let old phones in).
 // 3.10: build 31000. MP_MIN_BUILD stays 30406 and the lobby stays thirtyfox/mp5/: 3.04.6 (no cheats)
 // and 3.10 phones play together on the same servers; only 3.04.5 and older (mp4) stay shut out.
-#define MP_BUILD           32360   // 3.23.6
+#define MP_BUILD           32400   // 3.24
 #define MP_MIN_BUILD       30406
 #define MP_AUTH_MIN_BUILD  32106   // 3.21.6: servers with the login system refuse older phones (they could not log in)
-#define MP_VERSION_STR     "3.23.6"
+#define MP_VERSION_STR     "3.24"
 #define MP_VOICE_BUILD     31100   // 3.11: phones from this build on get voice packets
 #define MP_DOWNLOAD_URL    "thirtyfoxmcx00e1.github.io/wagu"
 #define MP_DEFAULT_HOST    "127.0.0.1"
@@ -108,6 +108,7 @@ enum ePacket : uint8_t
     PKT_MW3_ME,         // S->C          3.23: MW3 my own stats (score, XP, cash, kills...)
     PKT_MW3_EVENT,      // S->C          3.23: MW3 badges, rewards, captures, event / duel spawns
     PKT_MW3_CMD,        // C->S          3.23: MW3 team / class / spawn / arena / duel / event commands
+    PKT_MW3_CARD,       // S<->C         3.24: MW3 signed stats backup (the phone keeps it, any host restores it)
 };
 
 enum eRegion : uint8_t { REGION_ASIA = 0, REGION_EUROPE, REGION_NA, REGION_OCEANIA, REGION_COUNT };
@@ -624,6 +625,12 @@ enum eMw3Ev : uint8_t
 struct PktMw3Event   { uint8_t type, ev, a, b, c, who; uint16_t pad; int32_t val; char text[72]; };
 enum eMw3Cmd : uint8_t { MW3C_TEAM = 1, MW3C_CLASS, MW3C_SPAWNED, MW3C_ARENA, MW3C_DUEL, MW3C_ACCEPT, MW3C_JOIN_EVENT, MW3C_LEAVE_EVENT, MW3C_START_EVENT, MW3C_HEAL, MW3C_DIED_OUT };
 struct PktMw3Cmd     { uint8_t type, cmd, arg, arg2; };
+// 3.24: MW3 stats card. Every MW3 host signs your stats (HMAC-SHA256, first 16 bytes) and sends the
+// card to your phone; the phone keeps the newest one per account (MP/mw3_card.txt) and gives it to
+// the next host. So stats survive a host change (VPS down, a phone copy, Broker takeover): the newer
+// card (t = when the stats last changed, Unix seconds) wins over an older line in that host's file.
+#define MW3_CARD_VER 1
+struct PktMw3Card    { uint8_t type, ver, team, cls; uint32_t t; char key[32]; int32_t score, xp, cash; uint16_t kills, deaths, caps, best; uint8_t mac[16]; };
 #pragma pack(pop)
 
 // 3.11: voice chat. One Opus frame (48 kHz mono, 20 ms) per packet, sent the moment it is

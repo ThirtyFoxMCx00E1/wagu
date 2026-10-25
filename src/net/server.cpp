@@ -3,6 +3,7 @@
 #include "safezone.h"
 #include "admin.h"
 #include "authcrypto.h"   // 3.21.6: login tickets
+#include <mbedtls/sha256.h>   // 3.24: MW3 stats cards
 #include <sys/resource.h>
 #include <sys/syscall.h>
 #include <unistd.h>
@@ -1146,6 +1147,13 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             break;
         }
 
+        case PKT_MW3_CARD:   // 3.24: the phone's stats backup
+        {
+            if(slot < 0 || len < (int)sizeof(PktMw3Card)) return;
+            PktMw3Card c; memcpy(&c, data, sizeof(c));
+            Mw3OnCard(slot, c);
+            break;
+        }
         case PKT_MW3_CMD:   // 3.23
         {
             if(slot < 0 || len < (int)sizeof(PktMw3Cmd)) return;

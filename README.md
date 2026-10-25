@@ -46,6 +46,13 @@ It builds `mp_server` on the phone and runs it 24/7 in the internet lobby (free 
 
 ## Changelog
 
+- **3.24**: Broker standby pool (100 backup hosts), MW3 stats that survive a host change, launcher profile, chat icon, real passenger door animations.
+  - Broker standby pool: every phone that has MP open, is online and idle is one of 100 standby Brokers (rank #1..#100 from its device id, shown in Settings). When Modern Warfare 3, Brief Case War or the MP LAN Server is missing from the lobby, the phone whose turn comes first (20 s + 2 s per rank) hosts it in the background, so **Broker** is already there when you join - nobody has to open it first. The 24/7 machine or the older copy still wins the duplicate merge; the standby copy closes by itself when the 24/7 host is back and nobody is on it. Settings: `Broker standby` (on by default).
+  - MW3 stats no longer reset when the host changes (24/7 host down, a phone copy, a Broker takeover). Every MW3 host signs your stats (HMAC-SHA256) and sends this "stats card" to your phone (`MP/mw3_card.txt`); the next host gets it from your phone and restores it when it is newer than what that host has. The phone can not change the numbers (bad signature = ignored).
+  - MW3 saves to disk every 15 s when something changed and right when a player leaves (was every 60 s, so up to a minute was lost when a phone host closed). A phone copy now lists itself as x/64 (MW3) and x/20 (Brief Case War) instead of x/100.
+  - MP Launcher: your profile at the top left - your Discord profile picture (fetched by the MP login bot after you log in, saved as `MP/avatar.png`), account name and `@discord` name, green dot = logged in this game session. No account on this phone yet (never verified with `/gen` / never created one) = the blank default picture and "Guest / Not logged in".
+  - Floating bar: `⋮ | chat icon | mic` - the word "Chat" is now a speech-bubble icon (`MP/chat_icon.png`, drawn by hand if the file is missing).
+  - Other players getting in as your passenger now do the full game sequence on your screen: walk to the door, reach for the handle, pull the door open, climb in and pull the door shut. Getting out: open the door, climb out. A moving car, a far avatar or a stuck task (4.5 s) still warps them in as before.
 - **3.23.6**: new admin key.
   - The administrator (SENJI) has a new admin key with a new hash. 3.23.6 servers accept only the new key; the 3.11.6 key no longer works on them.
   - The phone still sends the old key, as a retry, to a server that has not been updated yet (keep the old key file as `admin.txt` next to the new `administrator.txt`).
