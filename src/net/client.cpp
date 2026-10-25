@@ -245,6 +245,7 @@ void MPClient::Poll(INetEvents* ev)
                 }
                 break;
             case PKT_NPC:           { static PktNpc m; if(MP_DecodeNpc(buf, r, m)) ev->OnNpc(m); } break;   // 2.18
+            case PKT_MW3_STATE: case PKT_MW3_PLAYERS: case PKT_MW3_ME: case PKT_MW3_EVENT: ev->OnMw3(buf, r); break;   // 3.23
             case PKT_BCW_STATE: case PKT_BCW_ROLL: case PKT_BCW_SCORE: case PKT_BCW_EVENT: ev->OnBcw(buf, r); break;   // 3.04
             case PKT_AUTH:     ev->OnAuth(buf, r); break;   // 3.21.6: login system
             case PKT_MISSION_NPC:   { static PktNpc m; if(MP_DecodeNpc(buf, r, m)) ev->OnMissionNpc(m); } break;   // 3.02

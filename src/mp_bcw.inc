@@ -45,7 +45,7 @@ static bool BcwOnServer()
 static int  BcwCurMap()      { int m = s_Bcw.haveState ? s_Bcw.st.map : 0; return m < 0 || m >= BCW_MAP_COUNT ? 0 : m; }
 static uint8_t BcwTeamOf(int id) { return (s_Bcw.haveState && id >= 0 && id < MP_MAX_PLAYERS) ? s_Bcw.st.team[id] : 0; }
 static uint8_t BcwMyTeam() { return BcwTeamOf(myId); }
-static bool BcwSameTeam(int a, int b) { if(!BcwOnServer()) return false; uint8_t x = BcwTeamOf(a); return x && x == BcwTeamOf(b); }
+static bool BcwSameTeam(int a, int b) { if(Mw3OnServer()) return Mw3SameTeam(a, b); if(!BcwOnServer()) return false; uint8_t x = BcwTeamOf(a); return x && x == BcwTeamOf(b); }
 static bool BcwHidden()   { return s_Bcw.engaged && (s_Bcw.view == 1 || (s_Bcw.view == 3 && s_Bcw.held)); }
 static const char* BcwName(int id)
 {
@@ -77,6 +77,7 @@ static void BcwHeadingTo(const float* from, const float* to, float& h) { h = ata
 uint32_t MP::BcwDecorate(int id, const char* name, uint32_t color, char* out, size_t n)
 {
     if(!name) name = "";
+    if(Mw3Decorate(id, name, color, out, n)) return color;   // 3.23: MW3 [TAG] + team colour
     uint8_t t = BcwOnServer() ? BcwTeamOf(id) : 0;
     bool admin = !strncasecmp(name, "[ADMIN]", 7) || (id == myId && MP::IsLocalAdmin());
     if(!t || admin) { snprintf(out, n, "%s", name); return color; }   // admins keep their own tag and colour

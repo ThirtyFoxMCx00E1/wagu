@@ -245,6 +245,7 @@ static bool HandleCommand(const char* text)
     cmd[n] = 0;
     while(*arg == ' ') ++arg;
     if(GatesCommand(cmd, arg)) return true;   // 3.04.2: /gatepos, /gates
+    if(Mw3Command(cmd, arg)) return true;   // 3.23: MW3 commands (others blocked)
     if(AuthCommand(cmd)) return true;       // 3.21.6: /stats  /char (also on Brief Case War)
     if(BcwBlockCommand(cmd)) return true;   // 3.04: Brief Case War: no gamemodes / cheats / teleports
     if(GamesCommand(cmd, arg)) return true;
@@ -498,6 +499,7 @@ static void MissionSyncButton(int i, float w)
 static void PagePlayers(void* openPtr)
 {
     bool* open = (bool*)openPtr;
+    if(Mw3OnServer()) { Mw3OpenList(); if(open) *open = false; return; }   // 3.23: the MW3 player list
     const ImVec2 ds = ImGui::GetIO().DisplaySize;
     ImGui::SetNextWindowPos(ImVec2(ds.x * 0.5f, ds.y * 0.5f), ImGuiCond_FirstUseEver, ImVec2(0.5f, 0.5f));
     ImGui::SetNextWindowSize(ImVec2(ds.x * 0.50f, ds.y * 0.72f), ImGuiCond_FirstUseEver);
@@ -973,6 +975,7 @@ static void Render219(void*)
     RenderGames();             // 2.21: score bar + race / DM / job HUD
     RenderSamp();              // 3.01
     RenderBcw();               // 3.04: Brief Case War
+    RenderMw3();               // 3.23: Modern Warfare 3
     RenderSafeZones();         // 3.21: hospital safe zones
     RenderMarkers();           // 3.21: red checkpoint beams
     RenderGates();             // 3.04.2: gate fade (over everything)

@@ -158,6 +158,14 @@ bool MPServer::Start(uint16_t port, const char* serverName, MPServerLogFn log, i
     m_nStartUnix = (uint32_t)time(nullptr);   // 2.27
     LoadTurf();                               // 3.01
     BcwReset();                               // 3.04
+    Mw3Reset();                               // 3.23
+    if(IsMw3Server())
+    {
+        m_nMaxPlayers = MP_MW3_MAX_PLAYERS;
+        m_bTurfWars = false; m_bSafeZones = false;
+        m_nBasePerms = PERM_NO_CHEATS; m_nPerms = PERM_NO_CHEATS;
+        Mw3Load();
+    }
     if(IsBcwServer())
     {
         m_nMaxPlayers = MP_BCW_MAX_PLAYERS;
@@ -176,6 +184,7 @@ void MPServer::Stop()
     {
         // tell everyone right away (instead of a 10 s timeout) so a new host takes over
         std::lock_guard<std::mutex> lk(m_Mutex);
+        if(IsMw3Server()) Mw3Save();   // 3.23
         PktReject rj; rj.type = PKT_REJECT; rj.reason = REJECT_SHUTDOWN;
         for(int k = 0; k < 2; ++k) Broadcast(&rj, sizeof(rj));
     }
@@ -383,7 +392,7 @@ void MPServer::SetAdminHash(const char* h)
 // Not on Brief Case War servers (own base protection: BcwOnDamage).
 bool MPServer::SafeZoneBlocks(int from, int to) const
 {
-    if(!m_bSafeZones || IsBcwServer()) return false;
+    if(!m_bSafeZones || IsBcwServer() || IsMw3Server()) return false;
     if(to < 0 || to >= MP_MAX_PLAYERS || !m_Slots[to].used) return false;
     const Slot& t = m_Slots[to];
     if(t.spawnProtUntil && MP_NowMs() < t.spawnProtUntil) return true;
@@ -399,7 +408,7 @@ bool MPServer::IsDefaultServer() const { return !strcasecmp(m_szName, MP_DEFAULT
 void MPServer::SetPermsLocked(uint8_t perms)
 {
     if(IsDefaultServer()) perms &= ~PERM_CHEAT_MENU;   // 3.00: never a cheat menu on the default server
-    if(IsBcwServer()) { perms &= ~(PERM_CHEAT_MENU | PERM_MISSION_PAIR); perms |= PERM_NO_CHEATS; }   // 3.04: Brief Case War: no CheatMenu, MP + CLEO menu cheats off
+    if(IsBcwServer() || IsMw3Server()) { perms &= ~(PERM_CHEAT_MENU | PERM_MISSION_PAIR); perms |= PERM_NO_CHEATS; }   // 3.04 / 3.23 MW3: Brief Case War: no CheatMenu, MP + CLEO menu cheats off
     if(m_nPerms == perms) return;
     m_nPerms = perms;
     if(!(perms & PERM_MISSION_PAIR))
@@ -415,7 +424,7 @@ void MPServer::MakePerms(PktPerms& p, uint8_t perms) const
     p.type = PKT_PERMS; p.perms = perms | PERM_V219;
     p.modesMagic = MP_MODES_MAGIC; p.modes = GetModes();
 }
-uint16_t MPServer::GetModes() const { if(IsBcwServer()) return 0; return IsDefaultServer() ? (uint16_t)GM_ALL : (uint16_t)(m_nModes & GM_ALL); }   // 3.04: Brief Case War runs only its own gamemode
+uint16_t MPServer::GetModes() const { if(IsBcwServer() || IsMw3Server()) return 0; return IsDefaultServer() ? (uint16_t)GM_ALL : (uint16_t)(m_nModes & GM_ALL); }   // 3.04: Brief Case War runs only its own gamemode
 void MPServer::SetModes(uint16_t modes)
 {
     std::lock_guard<std::mutex> lk(m_Mutex);
@@ -453,7 +462,7 @@ void MPServer::AuthBegin(int slot)
         AuthCrypto::Hex(r, 16, s.chal);
     }
     PktAuthChal c; memset(&c, 0, sizeof(c));
-    c.type = PKT_AUTH; c.op = AUTH_CHALLENGE; c.style = IsBcwServer() ? AUTH_STYLE_BCW : AUTH_STYLE_NORMAL;
+    c.type = PKT_AUTH; c.op = AUTH_CHALLENGE; c.style = IsBcwServer() ? AUTH_STYLE_BCW : (IsMw3Server() ? AUTH_STYLE_MW3 : AUTH_STYLE_NORMAL);
     memcpy(c.chal, s.chal, sizeof(c.chal));
     MP_CopyStr(c.server, m_szName, sizeof(c.server));
     SendTo(slot, &c, sizeof(c));
@@ -500,6 +509,7 @@ void MPServer::AuthHandle(int slot, const uint8_t* data, int len)
     SendTo(slot, &res, sizeof(res));
     Log("%s (id %d) logged in", s.name, slot);   // the account name stays private (not in the public log)
     AnnounceJoin(slot);
+    Mw3OnAuthed(slot);   // 3.23: load the MW3 stats of this account
     s.spawnProtUntil = now + MP_SPAWN_PROTECT_MS;
 }
 
@@ -519,6 +529,7 @@ void MPServer::Drop(int slot, uint8_t reason)
     Log("%s (id %d) left (%s)", m_Slots[slot].name, slot, reason == LEAVE_TIMEOUT ? "Timeout" : (reason == LEAVE_KICK ? "Kicked" : "Quit"));
     m_Slots[slot].used = false;
     BcwOnLeave(slot);   // 3.04
+    Mw3OnLeave(slot);   // 3.23
     PktPlayerLeave p; p.type = PKT_PLAYER_LEAVE; p.id = (uint8_t)slot; p.reason = reason;
     Broadcast(&p, sizeof(p));
 
@@ -591,6 +602,7 @@ void MPServer::Loop()
             OutBatch ob((int)m_Sock);
 #endif
             BcwTick(now);
+            Mw3Tick(now);   // 3.23
         }   // 3.04: 10 Hz referee
         if(now - lastCheck > 1000)
         {
@@ -681,7 +693,7 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             {   // 3.04.6: old MP versions (no build / too old) are refused and tracked - they allowed cheats
                 uint32_t build = 0;
                 if(len >= (int)sizeof(PktJoin5)) memcpy(&build, data + offsetof(PktJoin5, build), sizeof(build));
-                if(build < m_nMinBuild || (AuthOn() && build < MP_AUTH_MIN_BUILD))   // 3.21.6: older phones can't log in
+                if(build < m_nMinBuild || (AuthOn() && build < MP_AUTH_MIN_BUILD) || (IsMw3Server() && build < MW3_MIN_BUILD))   // 3.23: MW3 needs 3.23   // 3.21.6: older phones can't log in
                 {
                     TrackOutdated(from, data, len, build);
                     PktServerMsg m; memset(&m, 0, sizeof(m)); m.type = PKT_SERVER_MSG; m.color = 0xFF5050FF;
@@ -825,6 +837,7 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             SendPickups(slot);   // 2.13: weapons lying around
             SendJoinExtras(slot, fresh);   // 3.01: turf, teams, welcome dialog, banner textdraw
             BcwOnJoin(slot, fresh);        // 3.04: Brief Case War state
+            Mw3OnJoin(slot, fresh);        // 3.23: MW3 state
             if(!s.authed) AuthBegin(slot);              // 3.21.6: log in first (the others see you after that)
             else if(fresh) AnnounceJoin(slot);
             break;
@@ -1105,6 +1118,7 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             p.victim = (uint8_t)slot;
             if(p.killer >= MP_MAX_PLAYERS || !m_Slots[p.killer].used) p.killer = MP_INVALID_ID;
             BcwOnDeath(slot, p.killer == MP_INVALID_ID ? -1 : p.killer);   // 3.04
+            Mw3OnDeath(slot, p.killer == MP_INVALID_ID ? -1 : p.killer, p.weapon);   // 3.23
             Broadcast(&p, sizeof(p));
             break;
         }
@@ -1119,7 +1133,14 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             if(p.target < MP_MAX_PLAYERS && p.target != slot && m_Slots[p.target].used && !m_Slots[p.target].paused
                && !SafeZoneBlocks(slot, p.target)   // 3.21: hospital safe zones + 5 s spawn protection
                && ((!m_Slots[p.target].status && !m_Slots[slot].status) || IsPartner(slot, p.target))
-               && BcwOnDamage(slot, p.target, p.amount)) SendTo(p.target, &p, sizeof(p));   // 3.04: no friendly fire in Brief Case War
+               && BcwOnDamage(slot, p.target, p.amount) && Mw3OnDamage(slot, p.target, p.amount)) SendTo(p.target, &p, sizeof(p));   // 3.04: no friendly fire in Brief Case War
+            break;
+        }
+
+        case PKT_MW3_CMD:   // 3.23
+        {
+            if(slot < 0 || len < (int)sizeof(PktMw3Cmd)) return;
+            Mw3HandleCmd(slot, *(const PktMw3Cmd*)data);
             break;
         }
 
@@ -1664,6 +1685,7 @@ void MPServer::RaceQueueTick(uint64_t now, bool changed)
 }
 
 #include "server_bcw.inc"   // 3.04: Brief Case War
+#include "server_mw3.inc"   // 3.23: Call Of Duty: Modern Warfare 3
 
 // 3.04.6: an old MP version tried to join: log it once per phone every 10 minutes (console + the
 // --outdated-log file of the 24/7 server) and count it

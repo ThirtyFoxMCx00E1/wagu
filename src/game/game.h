@@ -258,6 +258,7 @@ namespace Game
     bool  IsLocalOnJetpack();
     int   GiveJetpack(int ped);      // 2.19.1: jetpack object on an avatar's back (0 = not yet)
     void  RemoveJetpack(int obj);
+    void  GiveLocalJetpack();        // 3.23: the real jetpack (player only)
     void  PreloadArea(const Vec3& p, bool blocking);
     bool  GetMoveSpeed(int handle, bool isCar, Vec3& metresPerSec);
     void  PlaceChar(int ped, const Vec3& p);
@@ -291,6 +292,7 @@ namespace Game
     int   CreateRaceCheckpoint(int type, const Vec3& p, const Vec3& next, float radius);
     void  DeleteRaceCheckpoint(int h);
     void  AddMoney(int amount);
+    int   GetMoney();                         // 3.23
     void  AddArmour(int ped, int amount);
     void  RemoveAllWeapons(int ped);
     bool  ModelReady(int model);              // requests it if not loaded yet (never blocks)
@@ -308,6 +310,7 @@ namespace Game
     void  DeleteWorldObject(int obj);
     bool  WorldObjectExists(int obj);
     void  MoveWorldObject(int obj, const Vec3& p, float spinDeg);
+    int   CreateMapObject(int model, const Vec3& p, float rx, float ry, float rz);   // 3.23: solid map object (0 = loading)
     void  AttachObjectToChar(int obj, int ped, const Vec3& off);
     void  ClearWanted();
     void  SetMaxWanted(int stars);

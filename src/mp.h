@@ -259,6 +259,10 @@ namespace MP
     bool AuthScreenShown();    // 3.21.6: login screen on top
     bool JoinScreenActive();   // 2.19.1: join screen / connection view / spawn picker on screen
     // 3.04: Brief Case War (private 24/7 gamemode server, pinned in the Internet list)
+    void JoinMw3();            // 3.23: Call Of Duty: Modern Warfare 3 24/7 (join it, or leave it when you are on it)
+    bool IsOnMw3();
+    bool Mw3OwnTagHidden();
+    bool Mw3SubTag(int id, char* out, size_t n);   // "Rank - Class" over the name
     void JoinBcw();            // join it (or leave it when you are on it)
     bool IsOnBcw();
     bool BcwOwnTagHidden();    // 3.10: your ped is parked hidden (connection screen - e.g. Gustav's base view - or respawn wait)

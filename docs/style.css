@@ -141,6 +141,10 @@ tbody tr:not(.skel):not(.empty):hover{background:#241d17}
 .servers tr.bcw .sname{color:#ffe3e3}
 .bcw-ic{width:30px;height:30px;border-radius:7px;vertical-align:middle;margin-right:8px}
 .tag.bcw{background:#c8141e;color:#fff;border-color:#ff323c}
+/* 3.23: Modern Warfare 3 row - green highlight + outline + guns */
+.servers tr.mw3{background:linear-gradient(90deg,rgba(25,170,60,.38),rgba(10,90,30,.12));outline:2px solid #3cff6a;outline-offset:-2px}
+.servers tr.mw3 .sname{color:#e3ffe8}
+.tag.mw3{background:#19a03c;color:#fff;border-color:#3cff6a}
 
 /* 3.04.6: version history - only the latest version is downloadable */
 .vwarn{margin:18px 0 22px;padding:14px 16px;border:1px solid #6b2a1f;background:#2a1410;border-radius:var(--r);color:#f3d6cc;max-width:80ch}

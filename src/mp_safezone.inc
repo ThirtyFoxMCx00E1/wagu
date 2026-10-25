@@ -25,7 +25,7 @@ static struct
 
 static bool SafeZonesOn()
 {
-    return client.GetState() == NET_CONNECTED && myId != MP_INVALID_ID && !BcwOnServer()
+    return client.GetState() == NET_CONNECTED && myId != MP_INVALID_ID && !BcwOnServer() && !Mw3OnServer()
         && !s_bLocalSeparate && !InEvent();
 }
 static bool SafeProtected()
@@ -50,7 +50,7 @@ static bool SafeBlocksHit(int id)
 }
 static bool SafePointProtected(const Vec3& p)
 {
-    if(client.GetState() != NET_CONNECTED || BcwOnServer()) return false;
+    if(client.GetState() != NET_CONNECTED || BcwOnServer() || Mw3OnServer()) return false;
     return MP_InSafeZone(p.x, p.y, p.z);
 }
 
@@ -130,7 +130,7 @@ static void ProcessSafeZones(int ped, uint64_t now)
 
 static void RenderSafeZones()
 {
-    if(client.GetState() != NET_CONNECTED || BcwOnServer() || !Game::IsReady() || Game::IsPaused()) return;
+    if(client.GetState() != NET_CONNECTED || BcwOnServer() || Mw3OnServer() || !Game::IsReady() || Game::IsPaused()) return;
     if(MP::AuthScreenShown() || JoinFlowActive()) return;   // 3.21.8: nothing over the login / join screens
     float now = (float)(MP_NowMs() % 100000000ULL);
     ImDrawList* bg = ImGui::GetBackgroundDrawList();

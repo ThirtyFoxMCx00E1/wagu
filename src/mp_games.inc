@@ -1009,7 +1009,7 @@ static void ProcessGames(int ped, uint64_t now)
 // has all of them). Brief Case War and a custom server without DM / races / derbies / jobs show none.
 static int ScoreSegsBuild(Game::HudSeg* seg)
 {
-    if(MP::IsOnBcw()) return 0;
+    if(MP::IsOnBcw() || MP::IsOnMw3()) return 0;
     int n = 0;
     if(MP::ModeOn(GM_DM))                       { snprintf(seg[n].text, sizeof(seg[n].text), "DM SCORE: %d", s_nDmScore);     seg[n++].rgba = 0x3C8CFFFF; }   // blue
     if(MP::ModeOn(GM_RACE) || MP::ModeOn(GM_DERBY)) { snprintf(seg[n].text, sizeof(seg[n].text), "RACE SCORE: %d", s_nRaceScore); seg[n++].rgba = 0xFFD21EFF; }   // yellow

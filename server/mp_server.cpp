@@ -5,6 +5,7 @@
 //   ./mp_server [port] [server name] [max players 1-100] [region: Asia|Europe|NA|Oceania] [--persistent] [--no-online]
 //               [--broker-file broker.txt] [--password pw] [--admin-hash sha256hex] [--no-safezones] [--auth]
 //               3.04: Brief Case War 24/7: ./mp_server 1930 "Brief Case War" 20 Asia --persistent [--bcw-min 20]
+//               3.23: MW3 24/7: ./mp_server 1931 "Call Of Duty: Modern Warfare 3" 64 Asia --persistent [--mw3-file mw3_stats.txt]
 //               3.04.6: [--outdated-log file] (default outdated_clients.log): phones with an old MP version
 //               are refused + written there. --legacy-notice: run in the OLD lobby (thirtyfox/mp4/, what
 //               MP 3.04.5 and older use) as "UPDATE MP TO <version>": every join is refused with the
@@ -34,7 +35,7 @@ static void OnSignal(int) { g_bQuit = true; }
 int main(int argc, char** argv)
 {
     int port = argc > 1 ? atoi(argv[1]) : MP_DEFAULT_PORT;
-    const char* name = argc > 2 ? argv[2] : (port == MP_DEFAULT_PORT ? MP_DEFAULT_SERVER_NAME : (port == MP_BCW_PORT ? MP_BCW_SERVER_NAME : "MP Server"));   // 2.29: port 1922 = the default server, 3.04: 1930 = Brief Case War
+    const char* name = argc > 2 ? argv[2] : (port == MP_DEFAULT_PORT ? MP_DEFAULT_SERVER_NAME : (port == MP_BCW_PORT ? MP_BCW_SERVER_NAME : (port == MP_MW3_PORT ? MP_MW3_SERVER_NAME : "MP Server")));   // 2.29: port 1922 = the default server, 3.04: 1930 = Brief Case War
     int maxPlayers = argc > 3 ? atoi(argv[3]) : MP_MAX_PLAYERS;
     int region = REGION_ASIA;
     bool persistent = false;
@@ -105,6 +106,14 @@ int main(int argc, char** argv)
     {
         for(int i = 1; i + 1 < argc; ++i) if(!strcasecmp(argv[i], "--bcw-min")) server.SetBcwMinPlayers(atoi(argv[i + 1]));
         printf("[MP Server] Brief Case War: %d players max (10 per team), cheats off, CheatMenu refused\n", MP_BCW_MAX_PLAYERS);
+    }
+    // 3.23: Call Of Duty: Modern Warfare 3. --mw3-file PATH = stats + zone owners (default mw3_stats.txt)
+    if(server.IsMw3Server())
+    {
+        const char* mf = "mw3_stats.txt";
+        for(int i = 1; i + 1 < argc; ++i) if(!strcasecmp(argv[i], "--mw3-file")) mf = argv[i + 1];
+        server.SetMw3File(mf);
+        printf("[MP Server] MW3: %d players max, 8 teams, 34 zones, login on, cheats off, MP 3.23+ only, stats in %s\n", MP_MW3_MAX_PLAYERS, mf);
     }
     // 3.00: --cheat-menu = players may use CheatMenu (libCheatMenu.so / libCheatMenu64.so) here.
     // Custom servers only: the default server ignores it.
