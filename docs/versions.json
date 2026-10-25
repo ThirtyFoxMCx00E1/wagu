@@ -1,6 +1,7 @@
 {
-"latest": "3.23.1",
+"latest": "3.23.2",
 "supported": [
+"3.23.2",
 "3.23.1",
 "3.23",
 "3.22.1",
@@ -26,6 +27,16 @@
 "3.04.6"
 ],
 "versions": [
+{
+"v": "3.23.2",
+"summary": "fixed the game closing (no crash log) after logging in to MW3.",
+"items": [
+"3.23 made all 162 MW3 map objects right after login, 99 of them at the LS Docks lobby, and kept their 26 models loaded for good. On phones with many mods this could run the game out of memory or fill the object pool, and Android closed it with no crash log.",
+"Now the objects stream by distance like an SA-MP streamer: only the ones within 220 m of you exist (removed past 280 m), at most 3 new ones a frame, none in the lobby, and the game's object pool always keeps 60 free slots.",
+"The game thread now has its own signal stack, so a crash writes a crash log instead of closing silently.",
+"The MP log now records each MW3 step (join, lobby, team tapped, deploy, map objects), so if the game still closes, the last line shows where."
+]
+},
 {
 "v": "3.23.1",
 "summary": "the MW3 server is 24/7 like Brief Case War.",

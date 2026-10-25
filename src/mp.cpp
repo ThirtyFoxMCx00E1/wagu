@@ -1,4 +1,5 @@
 // MP core: networking events, local player sync, remote player avatars, combat, chat, menus.
+#include <signal.h>
 #include <mod/amlmod.h>
 #include <mod/logger.h>
 #include <mod/config.h>
@@ -3636,6 +3637,20 @@ void MP::Process()
     {
         s_bWantTeleport = false;
         Game::Teleport(ped, kGroveStreet, kGroveHeading);
+    }
+    {   // 3.23.2: a signal stack for the game thread. Without one a crash from a too deep / too big
+        // stack has nowhere to run the crash handlers and the game just closes with no crash log.
+        static bool s_bAltStack = false;
+        if(!s_bAltStack)
+        {
+            s_bAltStack = true;
+            stack_t old{}; 
+            if(sigaltstack(nullptr, &old) == 0 && (old.ss_flags & SS_DISABLE))
+            {
+                stack_t ss{}; ss.ss_size = 256 * 1024; ss.ss_sp = malloc(ss.ss_size); ss.ss_flags = 0;
+                if(ss.ss_sp && sigaltstack(&ss, nullptr) == 0) logger->Info("MP: game thread signal stack on");
+            }
+        }
     }
     JoinFlowProcess(ped, now);   // 2.19: join screen, connection camera, spawn picker
     BcwProcess(ped, now);        // 3.04: Brief Case War

@@ -4,6 +4,8 @@
 #include "game.h"
 #include "scripting.h"
 #include <string.h>
+#include <mod/amlmod.h>
+#include <mod/logger.h>
 
 DEFOPCODE(0247, REQUEST_MODEL_304, i);
 DEFOPCODE(0248, HAS_MODEL_LOADED_304, i);
@@ -16,6 +18,7 @@ DEFOPCODE(01BC, SET_OBJECT_COORDINATES_304, ifff);
 DEFOPCODE(0453, SET_OBJECT_ROTATION_304, ifff);
 DEFOPCODE(0110, CLEAR_WANTED_LEVEL_304, i);
 DEFOPCODE(01F0, SET_MAX_WANTED_LEVEL_304, i);
+DEFOPCODE(0249, MARK_MODEL_AS_NO_LONGER_NEEDED_304, i);
 
 int Game::CreateWorldObject(int model, const Vec3& p)
 {
@@ -55,16 +58,41 @@ void Game::SetMaxWanted(int stars)
     CALLSCM(SET_MAX_WANTED_LEVEL_304, stars < 0 ? 0 : (stars > 6 ? 6 : stars));
 }
 
+// 3.23.2: the game's object pool (CPools::ms_pObjectPool). MW3 has 162 map objects; on a game
+// with many mods the pool can be nearly full, and a full pool crashes CREATE_OBJECT. MW3 keeps
+// at least 60 slots free for the game and the other mods.
+struct ObjPool304 { void* objects; uint8_t* byteMap; int32_t size; int32_t firstFree; };   // CPool<T>
+static ObjPool304** s_ppObjectPool = nullptr;
+void Game::InitMapObjects(void* h)
+{
+    s_ppObjectPool = (ObjPool304**)aml->GetSym(h, "_ZN6CPools14ms_pObjectPoolE");
+    logger->Info("MW3: object pool reading %s", s_ppObjectPool ? "on" : "off");
+}
+int Game::FreeObjectSlots()
+{
+    if(!s_ppObjectPool || !*s_ppObjectPool) return -1;
+    ObjPool304* p = *s_ppObjectPool;
+    if(!p->byteMap || p->size <= 0 || p->size > 100000) return -1;
+    int n = 0;
+    for(int i = 0; i < p->size; ++i) if(p->byteMap[i] & 0x80) ++n;   // bEmpty = top bit
+    return n;
+}
+
 // 3.23: MW3 map objects (bases, zones, the LS Docks container arena): solid (collision on), any
 // rotation, anywhere on the map. 0 = the model is still loading (call again next tick).
+// 3.23.2: -1 = no room in the object pool; the model is released right after (the object keeps
+// it loaded), so 26 MW3 models are not pinned in memory for good.
 int Game::CreateMapObject(int model, const Vec3& p, float rx, float ry, float rz)
 {
     if(!IsReady() || model <= 0 || model >= 20000) return 0;
-    if(!(p.x == p.x) || p.x < -3500.0f || p.x > 3500.0f || p.y < -3500.0f || p.y > 3500.0f) return 0;
+    if(!(p.x == p.x) || !(p.z == p.z) || p.x < -3500.0f || p.x > 3500.0f || p.y < -3500.0f || p.y > 3500.0f) return 0;
+    int freeSlots = FreeObjectSlots();
+    if(freeSlots >= 0 && freeSlots < 60) return -1;
     if(!CALLSCM(HAS_MODEL_LOADED_304, model)) { CALLSCM(REQUEST_MODEL_304, model); return 0; }
     uint32_t obj = 0;
     CALLSCM(CREATE_OBJECT_304, model, p.x, p.y, p.z, &obj);
-    if(!obj) return 0;
+    CALLSCM(MARK_MODEL_AS_NO_LONGER_NEEDED_304, model);
+    if(!obj || !CALLSCM(DOES_OBJECT_EXIST_304, (int)obj)) return -1;
     CALLSCM(SET_OBJECT_COORDINATES_304, (int)obj, p.x, p.y, p.z);   // exact z (no ground snap)
     CALLSCM(SET_OBJECT_ROTATION_304, (int)obj, rx, ry, rz);
     CALLSCM(SET_OBJECT_COLLISION_304, (int)obj, 1);

@@ -100,18 +100,45 @@ static void Mw3DeleteObjects()
     for(int i = 0; i < MW3_OBJECT_COUNT; ++i) { if(s_Mw3.obj[i]) Game::DeleteWorldObject(s_Mw3.obj[i]); s_Mw3.obj[i] = 0; }
     s_Mw3.objNext = 0; s_Mw3.objDone = false;
 }
-static void Mw3UpdateObjects(uint64_t now)
+// 3.23.2: objects stream by distance like an SA-MP streamer: only the ones within 220 m of the
+// player exist (removed past 280 m), at most 3 new ones a frame, none in the lobby. 3.23 made all
+// 162 at once on login (99 of them at the LS Docks, 26 models pinned in memory), which could close
+// the game on phones with many mods without a crash log.
+#define MW3_OBJ_IN  (220.0f * 220.0f)
+#define MW3_OBJ_OUT (280.0f * 280.0f)
+static void Mw3UpdateObjects(uint64_t now, int ped)
 {
-    if(s_Mw3.objDone || !Game::IsReady() || Game::IsPaused() || now < s_Mw3.objRetryAt) return;
-    int made = 0;
-    while(s_Mw3.objNext < MW3_OBJECT_COUNT && made < 12)
+    if(!Game::IsReady() || Game::IsPaused() || now < s_Mw3.objRetryAt) return;
+    if(s_Mw3.view != 2 || ped <= 0) return;
+    Vec3 me; Game::GetCharPos(ped, me);
+    if(!(me.x == me.x) || me.z < -50.0f) return;
+    int made = 0, removed = 0;
+    for(int i = 0; i < MW3_OBJECT_COUNT; ++i)
     {
-        const Mw3Obj& o = g_Mw3Objects[s_Mw3.objNext];
+        const Mw3Obj& o = g_Mw3Objects[i];
+        float dx = o.x - me.x, dy = o.y - me.y, d2 = dx * dx + dy * dy;
+        if(s_Mw3.obj[i] > 0)
+        {
+            if(d2 > MW3_OBJ_OUT && removed < 6) { Game::DeleteWorldObject(s_Mw3.obj[i]); s_Mw3.obj[i] = 0; ++removed; }
+            continue;
+        }
+        if(d2 > MW3_OBJ_IN || made >= 3) continue;
         int h = Game::CreateMapObject(o.model, { o.x, o.y, o.z }, o.rx, o.ry, o.rz);
-        if(!h) { s_Mw3.objRetryAt = now + 250; return; }   // model still loading: next time
-        s_Mw3.obj[s_Mw3.objNext++] = h; ++made;
+        if(h == 0) { s_Mw3.objRetryAt = now + 100; return; }      // model still loading
+        if(h < 0)                                                  // object pool nearly full
+        {
+            if(!s_Mw3.objDone) { s_Mw3.objDone = true; logger->Info("MW3: object pool nearly full, map objects paused"); }
+            s_Mw3.objRetryAt = now + 3000; return;
+        }
+        s_Mw3.obj[i] = h; ++made;
     }
-    if(s_Mw3.objNext >= MW3_OBJECT_COUNT) s_Mw3.objDone = true;
+    if(made || removed)
+    {
+        int n = 0; for(int i = 0; i < MW3_OBJECT_COUNT; ++i) if(s_Mw3.obj[i] > 0) ++n;
+        if(made && s_Mw3.objNext == 0) logger->Info("MW3: map objects streaming in near you");
+        s_Mw3.objNext = n;
+    }
+    if(made) s_Mw3.objDone = false;
 }
 
 // ---- lobby / spawn ----------------------------------------------------------------------------
@@ -148,6 +175,7 @@ static void Mw3Park(int ped)
 }
 static void Mw3EnterLobby(int ped)
 {
+    logger->Info("MW3: lobby (LS Docks)"); fflush(nullptr);   // 3.23.2: the last step is in the log if the game closes
     if(s_nSpawnedCar > 0)
     {
         if(ped > 0 && Game::IsCharInAnyCar(ped) && Game::GetCarCharIsIn(ped) == s_nSpawnedCar) { Vec3 o; Game::GetCharPos(ped, o); o.z += 1.0f; Game::WarpOutOfCar(ped, o); }
@@ -166,6 +194,7 @@ static void Mw3GiveWeapons(int ped, const int* w, int n)
 // spawn where the server says I am: my base, a DM arena, the event (docks) or a duel
 static void Mw3SpawnNow(int ped, uint64_t now)
 {
+    logger->Info("MW3: deploy"); fflush(nullptr);   // 3.23.2: the last step is in the log if the game closes
     uint8_t team = Mw3MyTeam();
     if(ped <= 0 || !team) return;
     Vec3 at; float h = 0; int area = 0;
@@ -230,6 +259,7 @@ static void Mw3HoldDead(int ped)
 }
 static void Mw3Shutdown()
 {
+    logger->Info("MW3: left"); fflush(nullptr);   // 3.23.2: the last step is in the log if the game closes
     if(!s_Mw3.engaged) { s_bMw3Join = false; return; }
     Mw3DeleteObjects();
     int ped = Game::LocalPed();
@@ -249,6 +279,7 @@ static void Mw3Shutdown()
 }
 static bool Mw3JoinTakeover(int ped)
 {
+    logger->Info("MW3: join takeover"); fflush(nullptr);   // 3.23.2: the last step is in the log if the game closes
     if(!s_bMw3Join && !Mw3OnServer()) return false;
     s_bMw3Join = false;
     s_Mw3.engaged = true; s_Mw3.connectedAt = s_Mw3.connectedAt ? s_Mw3.connectedAt : MP_NowMs();
@@ -393,7 +424,7 @@ static void Mw3Process(int ped, uint64_t now)
         Mw3EnterLobby(ped);
     }
     Mw3NoWanted(now);   // never wanted (bases are in Bone County / restricted areas)
-    Mw3UpdateObjects(now);
+    Mw3UpdateObjects(now, ped);
     if(ped <= 0) return;
     if(s_Mw3.view == 1)
     {
@@ -746,7 +777,7 @@ static void Mw3DrawLobby(float now)
             if(BcwTeamButton(t, g_Mw3Teams[team].rgba, ImVec2(bw, bh), mine == team || s_Mw3.pendTeam == team, false) && !s_Mw3.pendTeam)
             {
                 if(mine == team) Mw3SpawnNow(Game::LocalPed(), MP_NowMs());
-                else { Mw3Send(MW3C_TEAM, (uint8_t)team); s_Mw3.pendTeam = (uint8_t)team; s_Mw3.pendAt = MP_NowMs(); }
+                else { logger->Info("MW3: team %d tapped", team); Mw3Send(MW3C_TEAM, (uint8_t)team); s_Mw3.pendTeam = (uint8_t)team; s_Mw3.pendAt = MP_NowMs(); }
             }
         }
         ImGui::SetWindowFontScale(1.0f);
