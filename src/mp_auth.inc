@@ -31,9 +31,12 @@ static AuthField* s_pAfEditing = nullptr;
 static const char* kAuthGenders[3] = { "Male", "Female", "Other" };
 
 static void AuthAccountPath(char* out, size_t n) { snprintf(out, n, "%s/account.txt", s_szDataDir); }
-// account.txt: user=NAME and (3.22) login=TOKEN - a "remember me" token from the login bot (180 days,
-// works only together with this phone's auth_device.txt). It is NOT in the mod files, so updating the
-// mod (new libMP*.so or the full zip) keeps it: the game logs in by itself, no new /gen, no new account.
+// account.txt: user=NAME (the login screen fills it in). 3.22 also kept a login=TOKEN "remember me" token
+// there so the game logged in by itself after a restart / mod update. Now the login screen always opens
+// after a game restart (you type the password), so no token is kept; an old login= line is removed the next
+// time the game connects. Set AUTH_AUTOLOGIN_AT_START to true to bring the 3.22 auto login back.
+// (A reconnect inside the same game session still needs no screen: its session lives in memory.)
+static const bool AUTH_AUTOLOGIN_AT_START = false;
 static std::string s_szAuthSavedTok;
 static std::string AuthAccountValue(const char* key)
 {
@@ -82,7 +85,7 @@ static void AuthSaveUser(const std::string& u)
 {
     char p[512]; AuthAccountPath(p, sizeof(p));
     const std::string& tok = s_Auth.Session();
-    const bool keep = tok.size() == 32;
+    const bool keep = AUTH_AUTOLOGIN_AT_START && tok.size() == 32;
     if(FILE* f = fopen(p, "w"))
     {
         fprintf(f, "# MP login: the account on this phone (no password is kept). Keep this file when you update the mod:\n"
@@ -117,7 +120,12 @@ static void AuthOnPacket(const uint8_t* d, int len)
         s_bAuthTicket = false; s_nAuthDoneAt = 0;
         const std::string last = AuthLastUser();
         if(s_Auth.device.empty()) s_Auth.device = AuthDeviceId();
-        if(!s_Auth.LoggedIn()) { std::string t = AuthSavedToken(); if(!t.empty()) { s_Auth.RestoreSession(t); s_szAuthSavedTok = t; } }
+        if(!s_Auth.LoggedIn())
+        {   // a fresh game start: the login screen opens (3.22 auto login is off unless AUTH_AUTOLOGIN_AT_START)
+            const std::string t = AuthSavedToken();
+            if(!t.empty() && AUTH_AUTOLOGIN_AT_START) { s_Auth.RestoreSession(t); s_szAuthSavedTok = t; }
+            else if(!t.empty() && !last.empty()) AuthSaveUser(last);   // drop the old login= token, keep the user name
+        }
         s_Auth.Begin(c.chal, c.server, !last.empty(), last.c_str());
         if(!s_AfUser.buf[0] && !last.empty()) MP_CopyStr(s_AfUser.buf, last.c_str(), sizeof(s_AfUser.buf));
         SrvAuthPut(client.GetServerName(), client.GetPort(), true);   // a phone that takes it over keeps it on
