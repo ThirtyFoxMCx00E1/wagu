@@ -1,6 +1,7 @@
 {
-"latest": "3.21.8",
+"latest": "3.21.9",
 "supported": [
+"3.21.9",
 "3.21.8",
 "3.21.7",
 "3.21.6",
@@ -21,6 +22,15 @@
 "3.04.6"
 ],
 "versions": [
+{
+"v": "3.21.9",
+"summary": "login after \"Connected successfully!\", no spawn protection text, verified phones remembered.",
+"items": [
+"**Login pop-up:** opens only after \"Connected successfully!\" (the Connecting.... / resources lines are done and the black join screen slid away). The login server is reached in the background meanwhile.",
+"**Spawn protection:** still protects you for 5 seconds after a spawn, but the \"SPAWN PROTECTION 5\" countdown text is gone (also in Brief Case War). Nothing from the safe zones shows on the join / login screens.",
+"**Verified, then restarted the game:** the bot remembers a `/gen` for this phone for 24 hours (a random phone id in `auth_device.txt`, no account data), so the game goes straight to **Create your account** instead of a new code. It also survives a bot restart."
+]
+},
 {
 "v": "3.21.8",
 "summary": "cleaner login screen.",

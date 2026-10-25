@@ -896,8 +896,7 @@ static void BcwDrawMatchHud(ImDrawList* dl, float now)
         BcwCenterText(dl, UI::S(28), ds.y * 0.72f, IM_COL32_WHITE, own.state == CASE_HOME ? "YOU HAVE THE BRIEFCASE - BRING IT TO YOUR BASE!" : "YOUR BRIEFCASE IS STOLEN TOO - KILL THEIR CARRIER FIRST!");
     if(s_Bcw.view == 2 && s_Bcw.barrierDist < 25.0f && fmodf(now, 900.0f) < 600.0f)
         BcwCenterText(dl, UI::S(30), ds.y * 0.30f, IM_COL32(255, 170, 40, 255), "WORLD BARRIER");
-    if(s_Bcw.protectUntil && now < s_Bcw.protectUntil)
-        BcwCenterText(dl, UI::S(22), ds.y * 0.5f + UI::S(70), IM_COL32(200, 230, 255, 255), "SPAWN PROTECTION");
+    // 3.21.8: spawn protection still on, no "SPAWN PROTECTION" text
 }
 
 static void BcwBeginOverlay(const char* id, ImVec2 pos, ImVec2 size, float bgAlpha)

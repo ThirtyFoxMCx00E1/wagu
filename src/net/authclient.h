@@ -41,6 +41,7 @@ public:
     uint64_t    codeAt = 0;             // when this code was made (it works 10 min)
     std::string err, info;              // red error / green info line
     std::string discordName, user, prefillUser;
+    std::string device;                 // 3.21.8: this phone's id (auth_device.txt): a /gen survives a game restart
     bool        createdNow = false;     // DONE after a sign up ("account created")
     std::map<std::string, std::string> stats;   // op=stats answer (empty = none yet)
     bool        statsPending = false;

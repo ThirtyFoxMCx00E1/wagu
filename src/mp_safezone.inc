@@ -131,7 +131,7 @@ static void ProcessSafeZones(int ped, uint64_t now)
 static void RenderSafeZones()
 {
     if(client.GetState() != NET_CONNECTED || BcwOnServer() || !Game::IsReady() || Game::IsPaused()) return;
-    if(MP::AuthScreenShown()) return;   // 3.21.7: no SAFE ZONE / SPAWN PROTECTION text over the login screen
+    if(MP::AuthScreenShown() || JoinFlowActive()) return;   // 3.21.8: nothing over the login / join screens
     float now = (float)(MP_NowMs() % 100000000ULL);
     ImDrawList* bg = ImGui::GetBackgroundDrawList();
     for(int i = 0; i < g_MPSafeZoneCount; ++i)
@@ -149,9 +149,6 @@ static void RenderSafeZones()
     ImDrawList* fg = ImGui::GetForegroundDrawList();
     float y = ImGui::GetIO().DisplaySize.y * 0.16f;
     if(s_Safe.zone >= 0) BcwCenterText(fg, UI::S(30), y, UI::FromRGBA(0x3CDC64FF, 1.0f), "SAFE ZONE - weapons away, nobody can hurt you");
-    else if(ms < s_Safe.spawnUntil)
-    {
-        char t[64]; snprintf(t, sizeof(t), "SPAWN PROTECTION  %d", (int)((s_Safe.spawnUntil - ms + 999) / 1000));
-        BcwCenterText(fg, UI::S(30), y, UI::FromRGBA(0x3CDC64FF, 1.0f), t);
-    }
+    // 3.21.8: the spawn protection still works (5 s after a spawn) but its countdown text is not shown
+    (void)ms;
 }
