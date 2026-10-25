@@ -431,12 +431,12 @@ static void LTable(std::vector<LRow>& rows, float w, float h)
             }
         }
         if(r.kind == 5)
-        {   // 3.25: Mega Vil Futuristic banner: sky blue highlight + sky blue outline + the RP icon faded on the right
+        {   // 3.25: Mega Vil Futuristic banner: sky blue highlight + sky blue outline + the RP phone faded on the right
             float pulse = 0.75f + 0.25f * sinf(MP_NowMs() * 0.004f);
             dl->AddRectFilledMultiColor(a, ImVec2(a.x + W, a.y + rowH), IM_COL32(56, 189, 248, (int)(150 * pulse)), IM_COL32(12, 74, 110, 70), IM_COL32(12, 74, 110, 70), IM_COL32(56, 189, 248, (int)(150 * pulse)));
             dl->AddRect(a, ImVec2(a.x + W, a.y + rowH), IM_COL32(56, 189, 248, 255), UI::S(6), 0, UI::S(sel ? 4 : 2.5f));
             ImVec2 buv(1, 1);
-            if(void* bt = HUD::Texture("rp_icon.png", &buv))
+            if(void* bt = HUD::Texture("rp_phone.png", &buv))
             {
                 float bs = rowH * 1.25f;
                 ImVec2 ba(a.x + W - bs - UI::S(10), a.y + rowH * 0.5f - bs * 0.5f);
