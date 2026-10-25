@@ -13,10 +13,10 @@
 // phones refuse servers older than that too (they would let old phones in).
 // 3.10: build 31000. MP_MIN_BUILD stays 30406 and the lobby stays thirtyfox/mp5/: 3.04.6 (no cheats)
 // and 3.10 phones play together on the same servers; only 3.04.5 and older (mp4) stay shut out.
-#define MP_BUILD           32109   // 3.21.9
+#define MP_BUILD           32200   // 3.22
 #define MP_MIN_BUILD       30406
 #define MP_AUTH_MIN_BUILD  32106   // 3.21.6: servers with the login system refuse older phones (they could not log in)
-#define MP_VERSION_STR     "3.21.9"
+#define MP_VERSION_STR     "3.22"
 #define MP_VOICE_BUILD     31100   // 3.11: phones from this build on get voice packets
 #define MP_DOWNLOAD_URL    "thirtyfoxmcx00e1.github.io/wagu"
 #define MP_DEFAULT_HOST    "127.0.0.1"
@@ -32,6 +32,7 @@
 #define MP_SYNC_NEAR_M     350.0f // server forwards every sync between players closer than this
 #define MP_SYNC_FAR_MS     1000   // ...and 1 sync per second between players farther apart
 #define MP_SOCK_BUF        (512 * 1024)    // UDP socket buffers (game client / server)
+#define MP_SERVER_SOCK_BUF (8 * 1024 * 1024)   // 3.22: the server socket: a burst from 100 phones never overflows (the kernel caps it at net.core.rmem_max)
 #define BCW_MAP_COUNT_WIRE 6      // 3.04: Brief Case War map vote slots (2 open, 4 locked)
 #define BCW_TEAM_SIZE_WIRE 10     // 3.04: 20 players = 10 per team
 #define MP_RELAY_SOCK_BUF  (128 * 1024)    // 2.14: relay bridges/proxy; anything older than ~0.2 s is useless

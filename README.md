@@ -46,6 +46,12 @@ It builds `mp_server` on the phone and runs it 24/7 in the internet lobby (free 
 
 ## Changelog
 
+- **3.22**: saved login in account.txt (no new /gen or account after a mod update), lower ping with 100 players.
+  - **Saved login:** after you log in once, `account.txt` keeps your user name and a login token from the bot (no password). Updating the mod (new `libMP*.so` or the full zip) keeps the file, so the game logs you in by itself: no new Discord `/gen`, no new account, no pop-up (only "Logging in as NAME..." at the top). The token works 180 days after the last use, only on this phone (together with `auth_device.txt`), and it survives bot restarts. Delete `account.txt` to use another account.
+  - **100 players, lower ping:** the server reads up to 64 packets per system call (`recvmmsg`) and sends everything for them in a few `sendmmsg` calls instead of one `sendto` per packet. Measured with 100 test players packed in one spot: ~1,700 send calls instead of ~814,000 for the same ~730,000 packets in 8 s. The server socket buffer is 8 MB (was 512 KB), so a burst from 100 phones isn't dropped.
+  - **Crowds:** with 50+ players on the server, players 30-60 m away update at ~7 Hz (closer ones still at full rate).
+  - **Phones:** each sync has 0-8 ms of random jitter, so 100 phones never send in the same millisecond.
+  - **Server (HiveMQ kit):** UDP buffers up to 25 MB (`net.core.rmem_max` / `wmem_max`). Run `7) update` in the console once to get the new mp_server.
 - **3.21.9**: login after "Connected successfully!", no spawn protection text, verified phones remembered.
   - **Login pop-up:** opens only after "Connected successfully!" (the Connecting.... / resources lines are done and the black join screen slid away). The login server is reached in the background meanwhile.
   - **Spawn protection:** still protects you for 5 seconds after a spawn, but the "SPAWN PROTECTION 5" countdown text is gone (also in Brief Case War). Nothing from the safe zones shows on the join / login screens.

@@ -85,7 +85,7 @@ void AuthClient::Signup(const char* u, const char* p, const char* g, int age)
     char a[8]; snprintf(a, sizeof(a), "%d", age);
     char rid[12]; snprintf(rid, sizeof(rid), "%d", ++m_nRid);
     Send({ { "op", "signup" }, { "vtoken", m_VToken }, { "user", u }, { "pass", p }, { "gender", g }, { "age", a },
-           { "chal", m_Chal }, { "srv", m_Server }, { "rid", rid } });
+           { "chal", m_Chal }, { "srv", m_Server }, { "rid", rid }, { "dev", device } });
     m_AfterLink = SIGNUP; Set(BUSY); m_nBusySince = 0;
 }
 
@@ -94,7 +94,7 @@ void AuthClient::Login(const char* u, const char* p)
     if(state != LOGIN) return;
     err.clear();
     char rid[12]; snprintf(rid, sizeof(rid), "%d", ++m_nRid);
-    Send({ { "op", "login" }, { "user", u }, { "pass", p }, { "chal", m_Chal }, { "srv", m_Server }, { "rid", rid } });
+    Send({ { "op", "login" }, { "user", u }, { "pass", p }, { "chal", m_Chal }, { "srv", m_Server }, { "rid", rid }, { "dev", device } });
     prefillUser = u;
     m_AfterLink = LOGIN; Set(BUSY); m_nBusySince = 0;
 }
@@ -131,7 +131,7 @@ void AuthClient::OnAnswer(std::map<std::string, std::string>& a)
     bool ok = a["ok"] == "1";
     if(op == "hello") { if(ok && !m_bLinked) { m_bLinked = true; err.clear(); State n = m_AfterLink; Set(n);
                           if(n == CODE) NewCode();
-                          else if(n == TICKET) Send({ { "op", "ticket" }, { "sess", m_Sess }, { "chal", m_Chal }, { "srv", m_Server }, { "rid", "t" } }); }
+                          else if(n == TICKET) Send({ { "op", "ticket" }, { "sess", m_Sess }, { "chal", m_Chal }, { "srv", m_Server }, { "rid", "t" }, { "dev", device } }); }
                         return; }
     if(op == "gen")
     {

@@ -3658,7 +3658,10 @@ void MP::Process()
         if(cg > 0 || png > 600) { if(syncMs < 100) syncMs = 100; }
         if(cg > 60 || png > 1200) { if(syncMs < 150) syncMs = 150; }
     }
-    if(now - s_nLastSync >= syncMs) SendLocalSync(ped, now);
+    // 3.22: a few ms of random jitter per sync, so 100 phones never fall into step and hit the
+    // server in the same millisecond (each phone drifts to its own phase)
+    static uint64_t s_nSyncJitter = 0;
+    if(now - s_nLastSync >= syncMs + s_nSyncJitter) { SendLocalSync(ped, now); s_nSyncJitter = (uint64_t)(rand() % 9); }
     FlushShots();             // 2.17: this frame's bullets / rockets
     SendVehState(ped, now);   // 2.17: my car's look and state
     AvatarSweep(now);         // 2.32: leftover avatars never become bots

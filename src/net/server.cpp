@@ -13,6 +13,13 @@
 #include <strings.h>
 #include <stdlib.h>
 #include <chrono>
+#include <vector>
+#include <algorithm>
+#include <errno.h>
+#if defined(__linux__) || defined(__ANDROID__)
+  #define MP_MMSG 1          // 3.22: recvmmsg / sendmmsg (Linux 3.0+, Android API 21+)
+  #include <sys/uio.h>
+#endif
 
 #ifdef _WIN32
   #pragma comment(lib, "ws2_32.lib")
@@ -25,6 +32,55 @@
   #include <sys/time.h>
   #define CLOSESOCK close
   #define INVALID_SOCKET (-1)
+#endif
+
+#ifdef MP_MMSG
+// 3.22: everything the network thread sends while it handles one batch of received packets is
+// queued and leaves in a few sendmmsg() calls instead of one sendto() per packet. With 100 players
+// one sync fans out to 99 phones: ~100x fewer system calls, the thread is back at the socket at
+// once and nothing waits in the receive queue (that wait was the ping spike with a full server).
+namespace {
+struct OutQ
+{
+    bool on = false; int sock = -1;
+    std::vector<uint8_t> buf; std::vector<sockaddr_in> to; std::vector<uint32_t> off, len;
+    void Flush()
+    {
+        size_t n = to.size(), done = 0;
+        if(!n) return;
+        std::vector<mmsghdr> m(n); std::vector<iovec> io(n);
+        for(size_t i = 0; i < n; ++i)
+        {
+            io[i].iov_base = buf.data() + off[i]; io[i].iov_len = len[i];
+            memset(&m[i], 0, sizeof(m[i]));
+            m[i].msg_hdr.msg_name = &to[i]; m[i].msg_hdr.msg_namelen = sizeof(sockaddr_in);
+            m[i].msg_hdr.msg_iov = &io[i]; m[i].msg_hdr.msg_iovlen = 1;
+        }
+        int tries = 0;
+        while(done < n && tries < 64)
+        {
+            int r = sendmmsg(sock, m.data() + done, (unsigned)std::min<size_t>(n - done, 1024), 0);
+            if(r > 0) { done += (size_t)r; continue; }
+            if(r < 0 && errno == EINTR) continue;
+            ++tries;
+            if(r < 0 && errno != EAGAIN && errno != ENOBUFS) ++done;   // a bad address: skip that one packet
+        }
+        buf.clear(); to.clear(); off.clear(); len.clear();
+    }
+    void Put(const sockaddr_in& a, const void* d, int l)
+    {
+        off.push_back((uint32_t)buf.size()); len.push_back((uint32_t)l); to.push_back(a);
+        buf.insert(buf.end(), (const uint8_t*)d, (const uint8_t*)d + l);
+        if(to.size() >= 512 || buf.size() >= 512 * 1024) Flush();
+    }
+};
+thread_local OutQ t_Out;
+struct OutBatch   // queue the sends of this scope, send them all at the end
+{
+    explicit OutBatch(int s) { t_Out.on = true; t_Out.sock = s; }
+    ~OutBatch() { t_Out.Flush(); t_Out.on = false; }
+};
+}
 #endif
 
 uint64_t MP_NowMs()
@@ -67,7 +123,7 @@ bool MPServer::Start(uint16_t port, const char* serverName, MPServerLogFn log, i
 
     int yes = 1;
     setsockopt(m_Sock, SOL_SOCKET, SO_REUSEADDR, (const char*)&yes, sizeof(yes));
-    int sb = MP_SOCK_BUF;   // 100 players: don't drop bursts
+    int sb = MP_SERVER_SOCK_BUF;   // 100 players: don't drop bursts (3.22: 8 MB, was 512 KB)
     setsockopt(m_Sock, SOL_SOCKET, SO_RCVBUF, (const char*)&sb, sizeof(sb));
     setsockopt(m_Sock, SOL_SOCKET, SO_SNDBUF, (const char*)&sb, sizeof(sb));
 
@@ -163,6 +219,9 @@ int MPServer::FindSlot(const sockaddr_in& a)
 
 void MPServer::SendRaw(const sockaddr_in& a, const void* data, int len)
 {
+#ifdef MP_MMSG
+    if(t_Out.on && t_Out.sock == (int)m_Sock && len > 0) { t_Out.Put(a, data, len); return; }
+#endif
     sendto(m_Sock, (const char*)data, len, 0, (const sockaddr*)&a, sizeof(a));
 }
 
@@ -197,7 +256,8 @@ void MPServer::RelaySync(int slot, const void* pkt, int len, bool important)
             float dx = s.pos[0] - r.pos[0], dy = s.pos[1] - r.pos[1];
             float d2 = dx * dx + dy * dy;
             uint64_t every;
-            if(d2 <= 60.0f * 60.0f)        every = crowd > 24 ? 66 : 0;   // close: every sync (max 15 Hz in a crowd)
+            if(d2 <= 30.0f * 30.0f)        every = crowd > 24 ? 66 : 0;   // close: every sync (max 15 Hz in a crowd)
+            else if(d2 <= 60.0f * 60.0f)   every = crowd > 48 ? 150 : (crowd > 24 ? 66 : 0);   // 3.22: 50+ players packed together: 30-60 m at ~7 Hz
             else if(d2 <= 150.0f * 150.0f) every = 200;
             else if(d2 <= MP_SYNC_NEAR_M * MP_SYNC_NEAR_M) every = 500;
             else                           every = MP_SYNC_FAR_MS > 2000 ? MP_SYNC_FAR_MS : 2000;
@@ -480,23 +540,65 @@ void MPServer::Loop()
 #endif
     uint8_t buf[1024];
     uint64_t lastCheck = MP_NowMs();
+#ifdef MP_MMSG
+    // 3.22: up to 64 packets per system call, handled under ONE lock, the replies sent together
+    enum { RB = 64 };
+    static thread_local uint8_t rbuf[RB][1024];
+    sockaddr_in rfrom[RB]; iovec rio[RB]; mmsghdr rmsg[RB];
+    bool mmsgOk = true;
+#endif
     while(m_bRunning)
     {
-        sockaddr_in from; socklen_t fl = sizeof(from);
-        int r = (int)recvfrom(m_Sock, (char*)buf, sizeof(buf), 0, (sockaddr*)&from, &fl);
-        if(r > 0)
+#ifdef MP_MMSG
+        if(mmsgOk)
         {
-            std::lock_guard<std::mutex> lk(m_Mutex);
-            Handle(from, buf, r);
+            for(int i = 0; i < RB; ++i)
+            {
+                rio[i].iov_base = rbuf[i]; rio[i].iov_len = sizeof(rbuf[i]);
+                memset(&rmsg[i], 0, sizeof(rmsg[i]));
+                rmsg[i].msg_hdr.msg_name = &rfrom[i]; rmsg[i].msg_hdr.msg_namelen = sizeof(sockaddr_in);
+                rmsg[i].msg_hdr.msg_iov = &rio[i]; rmsg[i].msg_hdr.msg_iovlen = 1;
+            }
+            int n = recvmmsg(m_Sock, rmsg, RB, MSG_WAITFORONE, nullptr);
+            if(n < 0 && errno == ENOSYS) mmsgOk = false;   // very old kernel: one packet at a time
+            if(n > 0)
+            {
+                std::lock_guard<std::mutex> lk(m_Mutex);
+                OutBatch ob((int)m_Sock);
+                for(int i = 0; i < n; ++i)
+                    if(rmsg[i].msg_len > 0 && rmsg[i].msg_hdr.msg_namelen >= sizeof(sockaddr_in))
+                        Handle(rfrom[i], rbuf[i], (int)rmsg[i].msg_len);
+            }
+        }
+        else
+#endif
+        {
+            sockaddr_in from; socklen_t fl = sizeof(from);
+            int r = (int)recvfrom(m_Sock, (char*)buf, sizeof(buf), 0, (sockaddr*)&from, &fl);
+            if(r > 0)
+            {
+                std::lock_guard<std::mutex> lk(m_Mutex);
+                Handle(from, buf, r);
+            }
         }
 
         uint64_t now = MP_NowMs();
         static thread_local uint64_t lastBcw = 0;
-        if(now - lastBcw >= 100) { lastBcw = now; std::lock_guard<std::mutex> lk(m_Mutex); BcwTick(now); }   // 3.04: 10 Hz referee
+        if(now - lastBcw >= 100)
+        {
+            lastBcw = now; std::lock_guard<std::mutex> lk(m_Mutex);
+#ifdef MP_MMSG
+            OutBatch ob((int)m_Sock);
+#endif
+            BcwTick(now);
+        }   // 3.04: 10 Hz referee
         if(now - lastCheck > 1000)
         {
             lastCheck = now;
             std::lock_guard<std::mutex> lk(m_Mutex);
+#ifdef MP_MMSG
+            OutBatch ob((int)m_Sock);
+#endif
             for(int i = 0; i < MP_MAX_PLAYERS; ++i)
                 if(m_Slots[i].used && now - m_Slots[i].lastSeen > MP_TIMEOUT_MS) Drop(i, LEAVE_TIMEOUT);
             static thread_local uint32_t chalTick = 0;
