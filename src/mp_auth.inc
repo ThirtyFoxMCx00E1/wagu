@@ -29,18 +29,30 @@ static AuthField* s_pAfEditing = nullptr;
 static const char* kAuthGenders[3] = { "Male", "Female", "Other" };
 
 static void AuthAccountPath(char* out, size_t n) { snprintf(out, n, "%s/account.txt", s_szDataDir); }
-static std::string AuthLastUser()
+// account.txt: user=NAME and (3.22) login=TOKEN - a "remember me" token from the login bot (180 days,
+// works only together with this phone's auth_device.txt). It is NOT in the mod files, so updating the
+// mod (new libMP*.so or the full zip) keeps it: the game logs in by itself, no new /gen, no new account.
+static std::string s_szAuthSavedTok;
+static std::string AuthAccountValue(const char* key)
 {
     char p[512]; AuthAccountPath(p, sizeof(p));
-    std::string u;
+    std::string u; const size_t kl = strlen(key);
     if(FILE* f = fopen(p, "r"))
     {
-        char line[96];
+        char line[160];
         while(fgets(line, sizeof(line), f))
-            if(!strncmp(line, "user=", 5)) { u = line + 5; while(!u.empty() && (u.back() == '\n' || u.back() == '\r' || u.back() == ' ')) u.pop_back(); }
+            if(!strncmp(line, key, kl) && line[kl] == '=') { u = line + kl + 1; while(!u.empty() && (u.back() == '\n' || u.back() == '\r' || u.back() == ' ')) u.pop_back(); }
         fclose(f);
     }
     return u;
+}
+static std::string AuthLastUser() { return AuthAccountValue("user"); }
+static std::string AuthSavedToken()
+{
+    std::string t = AuthAccountValue("login");
+    if(t.size() != 32) return "";
+    for(char ch : t) if(!((ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f'))) return "";
+    return t;
 }
 // 3.21.8: a random id for this phone (no account data in it). The bot remembers a /gen for it for
 // 24 hours, so closing / restarting the game after verifying goes straight to Create your account.
@@ -67,7 +79,16 @@ static std::string AuthDeviceId()
 static void AuthSaveUser(const std::string& u)
 {
     char p[512]; AuthAccountPath(p, sizeof(p));
-    if(FILE* f = fopen(p, "w")) { fprintf(f, "# MP login: the last account on this phone (no password is kept)\nuser=%s\n", u.c_str()); fclose(f); }
+    const std::string& tok = s_Auth.Session();
+    const bool keep = tok.size() == 32;
+    if(FILE* f = fopen(p, "w"))
+    {
+        fprintf(f, "# MP login: the account on this phone (no password is kept). Keep this file when you update the mod:\n"
+                   "# the game logs you in by itself. Delete it (or log out) to use another account.\nuser=%s\n", u.c_str());
+        if(keep) fprintf(f, "login=%s\n", tok.c_str());
+        fclose(f);
+    }
+    s_szAuthSavedTok = keep ? tok : "";
 }
 
 // left the server / lost it: the screen goes, the game session login stays (reconnect = no screen)
@@ -94,6 +115,7 @@ static void AuthOnPacket(const uint8_t* d, int len)
         s_bAuthTicket = false; s_nAuthDoneAt = 0;
         const std::string last = AuthLastUser();
         if(s_Auth.device.empty()) s_Auth.device = AuthDeviceId();
+        if(!s_Auth.LoggedIn()) { std::string t = AuthSavedToken(); if(!t.empty()) { s_Auth.RestoreSession(t); s_szAuthSavedTok = t; } }
         s_Auth.Begin(c.chal, c.server, !last.empty(), last.c_str());
         if(!s_AfUser.buf[0] && !last.empty()) MP_CopyStr(s_AfUser.buf, last.c_str(), sizeof(s_AfUser.buf));
         SrvAuthPut(client.GetServerName(), client.GetPort(), true);   // a phone that takes it over keeps it on
@@ -121,6 +143,12 @@ static void AuthFrame(uint64_t now)
 {
     if(client.GetState() == NET_DISCONNECTED) { if(s_bAuthReq) AuthReset(); }
     if(s_Auth.state != AuthClient::IDLE || s_Auth.statsPending) s_Auth.Tick(now);
+    if(!s_szAuthSavedTok.empty() && !s_Auth.LoggedIn())
+    {   // 3.22: the bot said the saved login ended (180 days unused / account gone): forget it, keep the name
+        s_szAuthSavedTok.clear();
+        const std::string last = AuthLastUser();
+        if(!last.empty()) AuthSaveUser(last);
+    }
     if(!s_bAuthReq) return;
     std::string p; uint8_t sig[64];
     if(s_Auth.TakeTicket(p, sig)) { s_AuthTicket = p; memcpy(s_AuthSig, sig, 64); s_bAuthTicket = true; s_nAuthTicketAt = 0; }
@@ -276,12 +304,20 @@ static void RenderAuth()
 {
     if(!AuthScreenUp() || !Game::IsReady()) return;
     const ImVec2 ds = ImGui::GetIO().DisplaySize;
-    if(s_Auth.state == AuthClient::LINKING && s_Auth.err.empty())
+    const bool autoLogin = s_Auth.LoggedIn() && (s_Auth.state == AuthClient::LINKING || s_Auth.state == AuthClient::TICKET ||
+                           (s_Auth.state == AuthClient::WAIT_SERVER && !s_Auth.createdNow));
+    if((s_Auth.state == AuthClient::LINKING || autoLogin) && s_Auth.err.empty())
     {   // 3.21.7: the login screen opens only once the login server is connected; until then a small line
+        // 3.22: a saved login (account.txt) never opens the pop-up at all: "Logging in as NAME..."
         static const char* dots[4] = { "", ".", "..", "..." };
-        char b[64]; snprintf(b, sizeof(b), "Connecting to the login server%s", dots[(MP_NowMs() / 400) % 4]);
+        std::string who = s_Auth.prefillUser; if(who.empty()) who = "your account";
+        char base[96];
+        if(autoLogin) snprintf(base, sizeof(base), "Logging in as %s", who.c_str());
+        else snprintf(base, sizeof(base), "Connecting to the login server");
+        char b[112]; snprintf(b, sizeof(b), "%s%s", base, dots[(MP_NowMs() / 400) % 4]);
+        char full[112]; snprintf(full, sizeof(full), "%s...", base);
         ImDrawList* fg = ImGui::GetForegroundDrawList(); ImFont* f = UI::Font(); const float fs = UI::S(28);
-        ImVec2 ts = f->CalcTextSizeA(fs, FLT_MAX, 0, "Connecting to the login server...");
+        ImVec2 ts = f->CalcTextSizeA(fs, FLT_MAX, 0, full);
         ImVec2 a0((ds.x - ts.x) * 0.5f - UI::S(18), UI::S(14)), a1((ds.x + ts.x) * 0.5f + UI::S(18), UI::S(14) + ts.y + UI::S(16));
         fg->AddRectFilled(a0, a1, IM_COL32(0, 0, 0, 170), UI::S(8));
         fg->AddText(f, fs, ImVec2(a0.x + UI::S(18), a0.y + UI::S(8)), IM_COL32(255, 255, 255, 230), b);

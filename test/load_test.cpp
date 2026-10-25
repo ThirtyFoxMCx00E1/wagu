@@ -9,6 +9,7 @@
 #include <chrono>
 #include <vector>
 #include <memory>
+#include <algorithm>
 #include "net/client.h"
 #include "net/server.h"
 
@@ -39,6 +40,7 @@ int main(int argc, char** argv)
 {
     int n = argc > 1 ? atoi(argv[1]) : 100;
     int secs = argc > 2 ? atoi(argv[2]) : 6;
+    bool packed = argc > 3 && !strcmp(argv[3], "packed");   // 3.22: all players in one spot (worst case)
     MPServer srv; srv.SetPersistent(true);
     if(!srv.Start(19222, "Load Test", [](const char*){}, MP_MAX_PLAYERS)) { printf("server failed\n"); return 1; }
     std::vector<std::unique_ptr<MPClient>> cl(n); std::vector<Ev> ev(n);
@@ -52,12 +54,17 @@ int main(int argc, char** argv)
             for(int i = 0; i < n; ++i) if(cl[i]->GetState() == NET_CONNECTED) {
                 PktSync p; memset(&p, 0, sizeof(p)); p.type = PKT_SYNC; p.seq = seq; p.d.health = 100;
                 float x = i < n / 2 ? 2495.0f + i : -2500.0f + i * 60.0f, y = i < n / 2 ? -1686.0f : 500.0f * (i % 7);
+                if(packed) { x = 2480.0f + (i % 10) * 4.0f; y = -1700.0f + (i / 10) * 4.0f; }
                 p.d.pos[0] = x; p.d.pos[1] = y; p.d.pos[2] = 13.5f;
                 cl[i]->Send(&p, sizeof(p));
             }
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(2));
     }
+    std::vector<int> pings;   // 3.22: ping at the end (server -> client -> server round trip)
+    for(int i = 0; i < n; ++i) if(cl[i]->GetState() == NET_CONNECTED && cl[i]->GetPing() >= 0) pings.push_back(cl[i]->GetPing());
+    if(!pings.empty()) { std::sort(pings.begin(), pings.end()); long sum = 0; for(int x : pings) sum += x;
+        printf("ping ms: avg %ld  median %d  p95 %d  max %d\n", sum / (long)pings.size(), pings[pings.size() / 2], pings[pings.size() * 95 / 100], pings.back()); }
     int conn = 0, rej = 0; long near = 0, far = 0;
     for(int i = 0; i < n; ++i) { conn += ev[i].ok; rej += ev[i].rejected; (i < n / 2 ? near : far) += ev[i].syncs; }
     printf("server players=%d  connected=%d/%d rejected=%d\n", srv.GetPlayerCount(), conn, n, rej);

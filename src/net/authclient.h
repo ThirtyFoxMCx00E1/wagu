@@ -35,6 +35,8 @@ public:
     void RequestStats();                // /stats: answer in Stats()
     bool LoggedIn() const { return !m_Sess.empty(); }
     void ForgetSession() { m_Sess.clear(); }
+    const std::string& Session() const { return m_Sess; }                 // 3.22: saved in account.txt
+    void RestoreSession(const std::string& s) { if(m_Sess.empty()) m_Sess = s; }   // 3.22: auto login after a restart / mod update
 
     State       state = IDLE;
     char        code[MP_AUTH_CODE_LEN + 1] = "";
