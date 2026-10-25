@@ -128,12 +128,12 @@ All four use the same `mp.env` (same `mp` / `web` / bridge / admin passwords); o
 | | Minimum | Recommended |
 |---|---|---|
 | CPU | 2 vCPU (small tests) | **4 vCPU** (HiveMQ CE system requirement) |
-| RAM | 2 GB | **10 GB for the JVM** (`-Xms5g -Xmx10g`, 3.25) + ~2 GB JVM overhead + 2 GB for the OS = 14 GB+ (16 GB machine ideal); 10-14 GB machines get the 8 GB heap |
+| RAM | 2 GB | **10 GB for the JVM** (`-Xms5g -Xmx10g`, 3.25) + ~2 GB JVM overhead + 2 GB for the OS = 14 GB+ (16 GB machine ideal); 10-14 GB machines get the 8 GB heap; 24 GB machines get 12 GB, 32 GB machines 16 GB |
 | Disk | 10 GB SSD | SSD, 900+ IOPS |
 | OS | Ubuntu 22.04 / 24.04 or Debian 12, x86_64 or arm64 | |
 | Network | public IPv4, open ports below | |
 
-Java heap is automatic (3.25): `-Xms5g -Xmx10g` with 14 GB RAM or more, `-Xms4g -Xmx8g` with 10 GB+, `-Xms2g -Xmx4g` with 6 GB+, about 60 % of RAM below that (giving Java all the RAM leaves nothing for Linux and gets HiveMQ killed). Override with `JVM_XMS=5g` / `JVM_XMX=10g` in `/etc/mp-hivemq/mp.env`. `sudo ./update.sh` picks the new heap up by itself. More heap = room for many more phones and no garbage-collection stalls under load; the ping itself depends on the internet line and how close the machine is to the players.
+Java heap is automatic (3.25): `-Xms8g -Xmx16g` with 26 GB RAM or more (32 GB machine), `-Xms6g -Xmx12g` with 20 GB+ (24 GB machine), `-Xms5g -Xmx10g` with 14 GB+ (16 GB machine), `-Xms4g -Xmx8g` with 10 GB+, `-Xms2g -Xmx4g` with 6 GB+, about 60 % of RAM below that (giving Java all the RAM leaves nothing for Linux and gets HiveMQ killed). Override with `JVM_XMS=5g` / `JVM_XMX=10g` in `/etc/mp-hivemq/mp.env`. `sudo ./update.sh` picks the new heap up by itself. More heap = room for many more phones and no garbage-collection stalls under load; the ping itself depends on the internet line and how close the machine is to the players.
 
 **HiveMQ CE from our fork (3.25):** `install.sh` / `update.sh` install HiveMQ CE built from [ThirtyFoxMCx00E1/hivemq-community-edition](https://github.com/ThirtyFoxMCx00E1/hivemq-community-edition) (Apache 2.0). Its `MP build` workflow builds `hivemq-ce-<version>.zip` on every change and publishes it as the release `mp-<version>` (with a `.sha256`, checked on install). If that release is missing, the official HiveMQ CE release is used. Force the official one with `HIVEMQ_SOURCE=official` in `/etc/mp-hivemq/mp.env`. The official 2026.5 zip is first taken from the prebuilt copy in the [wagu v3.25 release](https://github.com/ThirtyFoxMCx00E1/wagu/releases/tag/v3.25) (`hivemq-ce-2026.5.zip`, same file as HiveMQ's, sha256 `fd005e53...7dec5` checked), then from github.com/hivemq.
 

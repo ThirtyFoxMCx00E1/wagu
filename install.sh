@@ -100,7 +100,7 @@ MAX_PLAYERS=100
 # run MpBridge here (only on ONE server of the whole network)
 RUN_BRIDGE=0
 
-# Java heap. Empty = automatic: -Xms5g -Xmx10g with 14 GB RAM or more, -Xms4g -Xmx8g with 10 GB+ (3.25), -Xms2g -Xmx4g with 6 GB+, ~60 % of RAM below that.
+# Java heap. Empty = automatic: -Xmx16g with 26 GB+ RAM, -Xmx12g with 20 GB+, -Xms5g -Xmx10g with 14 GB RAM or more, -Xms4g -Xmx8g with 10 GB+ (3.25), -Xms2g -Xmx4g with 6 GB+, ~60 % of RAM below that.
 # HiveMQ CE source: fork (default, our build) or official
 HIVEMQ_SOURCE=fork
 JVM_XMS=
@@ -285,12 +285,15 @@ PY
 chown -R mp:mp "$BASE"
 chmod 600 "$HQ/conf/config.xml"
 
-# Java heap: 3.25: 10 GB (-Xms5g -Xmx10g) when the machine has 14 GB+ RAM, 8 GB (-Xms4g -Xmx8g) with
+# Java heap: 3.25: 16 GB (-Xms8g -Xmx16g) with 26 GB+ RAM, 12 GB (-Xms6g -Xmx12g) with 20 GB+,
+# 10 GB (-Xms5g -Xmx10g) when the machine has 14 GB+ RAM, 8 GB (-Xms4g -Xmx8g) with
 # 10 GB+, 4 GB (-Xms2g -Xmx4g) with 6 GB+, else ~60 % of RAM. The JVM needs ~1.5-2 GB on top of the heap
 # (metaspace, threads, direct buffers) and Linux + the mp_server processes need ~2 GB more, so a 10 GB
 # heap wants 14 GB of RAM. More heap = more queued messages / connections; it does NOT lower the ping.
 if [ -z "${JVM_XMX:-}" ]; then
-    if   [ "$RAM_MB" -ge 14000 ]; then JVM_XMS=5g; JVM_XMX=10g
+    if   [ "$RAM_MB" -ge 26000 ]; then JVM_XMS=8g; JVM_XMX=16g   # 3.25: 32 GB machines
+    elif [ "$RAM_MB" -ge 20000 ]; then JVM_XMS=6g; JVM_XMX=12g   # 3.25: 24 GB machines
+    elif [ "$RAM_MB" -ge 14000 ]; then JVM_XMS=5g; JVM_XMX=10g   # 16 GB machines
     elif [ "$RAM_MB" -ge 10000 ]; then JVM_XMS=4g; JVM_XMX=8g
     elif [ "$RAM_MB" -ge 6000 ];  then JVM_XMS=2g; JVM_XMX=4g
     else x=$(( RAM_MB * 60 / 100 )); JVM_XMX="${x}m"; JVM_XMS="$(( x < 2048 ? x : 2048 ))m"; fi
