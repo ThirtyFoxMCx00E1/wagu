@@ -75,7 +75,7 @@ void AuthClient::NewCode()
     AuthCrypto::RandomCode(code);    // a fresh random code every time
     codeAt = 0;
     char rid[12]; snprintf(rid, sizeof(rid), "%d", ++m_nRid); m_GenRid = rid;
-    Send({ { "op", "gen" }, { "code", code }, { "rid", rid } });
+    Send({ { "op", "gen" }, { "code", code }, { "rid", rid }, { "dev", device } });
 }
 
 void AuthClient::Signup(const char* u, const char* p, const char* g, int age)
@@ -142,9 +142,11 @@ void AuthClient::OnAnswer(std::map<std::string, std::string>& a)
         return;
     }
     if(op == "verified")
-    {
-        if(state != CODE) return;
-        m_VToken = a["vtoken"]; discordName = a["dname"];
+    {   // 3.21.8: also right after linking (verified, then the game was restarted) and on the Login screen
+        if(state == LINKING) { m_bLinked = true; err.clear(); }
+        else if(state != CODE && state != LOGIN) return;
+        if(a["vtoken"].empty() || a["vtoken"] == m_VToken) return;   // the same push again
+        m_VToken = a["vtoken"]; discordName = a["dname"]; err.clear();
         if(a["has"] == "1") { prefillUser = a["user"]; info = "Discord verified (" + discordName + "). You already have the account " + a["user"] + ": log in."; Set(LOGIN); }
         else { info = "Discord verified: " + discordName; Set(SIGNUP); }
         return;
@@ -183,7 +185,7 @@ void AuthClient::Tick(uint64_t now)
     switch(state)
     {
         case LINKING:
-            if(Online::AuthLinkUp() && now - m_nLastHello > 2500) { m_nLastHello = now; Send({ { "op", "hello" }, { "rid", "h" } }); }
+            if(Online::AuthLinkUp() && now - m_nLastHello > 2500) { m_nLastHello = now; Send({ { "op", "hello" }, { "rid", "h" }, { "dev", device } }); }
             // 3.21.7: the broker answers but the bot doesn't -> the bot is down, not the phone's internet
             if(Online::AuthLinkUp() && now - stateAt > 12000) err = "The MP login bot is offline right now (not your internet). It comes back by itself - live status: thirtyfoxmcx00e1.github.io/wagu/railway.html";
             else if(now - stateAt > 25000) err = "Can't reach the login server. Check your internet.";

@@ -42,6 +42,28 @@ static std::string AuthLastUser()
     }
     return u;
 }
+// 3.21.8: a random id for this phone (no account data in it). The bot remembers a /gen for it for
+// 24 hours, so closing / restarting the game after verifying goes straight to Create your account.
+static std::string AuthDeviceId()
+{
+    char p[512]; snprintf(p, sizeof(p), "%s/auth_device.txt", s_szDataDir);
+    std::string id;
+    if(FILE* f = fopen(p, "r"))
+    {
+        char line[96];
+        while(fgets(line, sizeof(line), f))
+            if(!strncmp(line, "dev=", 4)) { id = line + 4; while(!id.empty() && (id.back() == '\n' || id.back() == '\r' || id.back() == ' ')) id.pop_back(); }
+        fclose(f);
+    }
+    bool good = id.size() == 32;
+    for(char ch : id) if(!((ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f'))) good = false;
+    if(good) return id;
+    uint8_t r[16]; char h[33];
+    if(!AuthCrypto::Random(r, sizeof(r))) return "";
+    AuthCrypto::Hex(r, sizeof(r), h); id = h;
+    if(FILE* f = fopen(p, "w")) { fprintf(f, "# MP login: random id of this phone (keeps a Discord /gen across a game restart)\ndev=%s\n", h); fclose(f); }
+    return id;
+}
 static void AuthSaveUser(const std::string& u)
 {
     char p[512]; AuthAccountPath(p, sizeof(p));
@@ -71,6 +93,7 @@ static void AuthOnPacket(const uint8_t* d, int len)
         MP_CopyStr(s_szAuthChal, c.chal, sizeof(s_szAuthChal));
         s_bAuthTicket = false; s_nAuthDoneAt = 0;
         const std::string last = AuthLastUser();
+        if(s_Auth.device.empty()) s_Auth.device = AuthDeviceId();
         s_Auth.Begin(c.chal, c.server, !last.empty(), last.c_str());
         if(!s_AfUser.buf[0] && !last.empty()) MP_CopyStr(s_AfUser.buf, last.c_str(), sizeof(s_AfUser.buf));
         SrvAuthPut(client.GetServerName(), client.GetPort(), true);   // a phone that takes it over keeps it on
@@ -124,9 +147,17 @@ static bool AuthHoldsJoin(uint64_t now)
     if(s_Auth.state != AuthClient::DONE) return true;
     return s_Auth.createdNow && now - s_nAuthDoneAt < 2600;   // "Account created successfully" first
 }
+// 3.21.8: the login pop-up waits for "Connected successfully!" (the Connecting.... / resources feed done
+// and the black join screen slid away); the login itself already runs in the background
+static bool AuthJoinSettled()
+{
+    if(s_nFeedStep >= 0 || s_nFeedRes >= 0) return false;
+    return s_nJoinPhase == JP_NONE || s_nJoinPhase >= JP_WAIT;
+}
 static bool AuthScreenUp()
 {
     if(!s_bAuthReq) return false;
+    if(!AuthJoinSettled()) return false;
     if(s_Auth.state == AuthClient::IDLE) return false;
     if(s_Auth.state == AuthClient::DONE) return s_Auth.createdNow && MP_NowMs() - s_nAuthDoneAt < 2600;
     return true;

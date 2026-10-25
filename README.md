@@ -46,6 +46,10 @@ It builds `mp_server` on the phone and runs it 24/7 in the internet lobby (free 
 
 ## Changelog
 
+- **3.21.9**: login after "Connected successfully!", no spawn protection text, verified phones remembered.
+  - **Login pop-up:** opens only after "Connected successfully!" (the Connecting.... / resources lines are done and the black join screen slid away). The login server is reached in the background meanwhile.
+  - **Spawn protection:** still protects you for 5 seconds after a spawn, but the "SPAWN PROTECTION 5" countdown text is gone (also in Brief Case War). Nothing from the safe zones shows on the join / login screens.
+  - **Verified, then restarted the game:** the bot remembers a `/gen` for this phone for 24 hours (a random phone id in `auth_device.txt`, no account data), so the game goes straight to **Create your account** instead of a new code. It also survives a bot restart.
 - **3.21.8**: cleaner login screen.
   - **Login screen:** the SAFE ZONE / SPAWN PROTECTION text (and the Brief Case War match bar) no longer shows on top of the login pop-up and its animated background.
   - **Verification:** the Code authentication / Login pop-up opens only after the login server is connected. Until then a small "Connecting to the login server..." line shows at the top (the pop-up still opens with the error if it can't connect).
