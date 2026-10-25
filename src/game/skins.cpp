@@ -82,6 +82,7 @@ void Game::InitSkins(void* h)
     if(f) aml->Hook(f, (void*)&HookRequestSpecialModel, (void**)&RequestSpecialModel_orig);
     logger->Info("Skins: special character tracking %s", (f && RequestSpecialModel_orig) ? "on" : "off");
     InitClothes(h);
+    InitMapObjects(h);   // 3.23.2
 }
 
 static const SpecialChar* SpecialBySkin(int skin)

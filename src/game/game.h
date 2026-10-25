@@ -310,7 +310,9 @@ namespace Game
     void  DeleteWorldObject(int obj);
     bool  WorldObjectExists(int obj);
     void  MoveWorldObject(int obj, const Vec3& p, float spinDeg);
-    int   CreateMapObject(int model, const Vec3& p, float rx, float ry, float rz);   // 3.23: solid map object (0 = loading)
+    int   CreateMapObject(int model, const Vec3& p, float rx, float ry, float rz);   // 3.23: solid map object (0 = loading, -1 = no room)
+    void  InitMapObjects(void* gameHandle);   // 3.23.2: object pool reading
+    int   FreeObjectSlots();                  // 3.23.2: free slots in the game's object pool (-1 = unknown)
     void  AttachObjectToChar(int obj, int ped, const Vec3& off);
     void  ClearWanted();
     void  SetMaxWanted(int stars);

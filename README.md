@@ -46,6 +46,11 @@ It builds `mp_server` on the phone and runs it 24/7 in the internet lobby (free 
 
 ## Changelog
 
+- **3.23.2**: fixed the game closing (no crash log) after logging in to MW3.
+  - 3.23 made all 162 MW3 map objects right after login, 99 of them at the LS Docks lobby, and kept their 26 models loaded for good. On phones with many mods this could run the game out of memory or fill the object pool, and Android closed it with no crash log.
+  - Now the objects stream by distance like an SA-MP streamer: only the ones within 220 m of you exist (removed past 280 m), at most 3 new ones a frame, none in the lobby, and the game's object pool always keeps 60 free slots.
+  - The game thread now has its own signal stack, so a crash writes a crash log instead of closing silently.
+  - The MP log now records each MW3 step (join, lobby, team tapped, deploy, map objects), so if the game still closes, the last line shows where.
 - **3.23.1**: the MW3 server is 24/7 like Brief Case War.
   - When the VPS copy is down, the first player who taps Call Of Duty: Modern Warfare 3 keeps it running on their phone (open, no password, login on, cheats and CheatMenu off, 64 players, MW3 gamemode only). Everybody else joins that phone, nobody has to wait.
   - When the VPS copy is back, players move to it automatically, like Brief Case War.
