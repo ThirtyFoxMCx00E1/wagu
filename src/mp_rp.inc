@@ -1099,7 +1099,8 @@ static void RpDrawHud(ImDrawList* dl, float now, uint64_t nowMs)
     if(m.newbieS)
     {
         // 3.25: on the left (it covered the sprint button on the right), black 60 %, no outline
-        float w = UI::S(300), h = UI::S(64), x0 = UI::S(14), y0 = ds.y * 0.40f;
+        // 3.25.1: a bit lower (47 % of the height, was 40 %): it touched the checkmark / chat lines above it
+        float w = UI::S(300), h = UI::S(64), x0 = UI::S(14), y0 = ds.y * 0.47f;
         dl->AddRectFilled(ImVec2(x0, y0), ImVec2(x0 + w, y0 + h), IM_COL32(0, 0, 0, 153), UI::S(10));
         RpText(dl, UI::S(20), ImVec2(x0 + UI::S(12), y0 + UI::S(6)), IM_COL32_WHITE, "YOU ARE A NEW CITIZEN");
         snprintf(t, sizeof(t), "%02d:%02d:%02d left  -  /n for help", m.newbieS / 3600, (m.newbieS / 60) % 60, m.newbieS % 60);
@@ -1200,6 +1201,7 @@ static void RenderRpPhone(float now);   // mp_rp_phone.inc
 static void RenderRp()
 {
     if(!s_Rp.engaged) return;
+    if(FloatMenu::IsModal()) return;   // 3.25.1: the full-screen MP launcher is open: no Mega Vil HUD / phone / banner over it
     float now = (float)(MP_NowMs() % 100000000ULL);
     uint64_t nowMs = MP_NowMs();
     if(s_Rp.view == 1) { RpDrawLobby(now); return; }

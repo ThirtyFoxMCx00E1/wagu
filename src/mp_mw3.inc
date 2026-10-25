@@ -923,6 +923,7 @@ static bool Mw3ListTeam(int id, const char** tag, uint32_t* rgba)
 static void RenderMw3()
 {
     if(!s_Mw3.engaged) return;
+    if(FloatMenu::IsModal()) return;   // 3.25.1: the full-screen MP launcher is open: no MW3 HUD / lobby / respawn button over it
     float now = (float)(MP_NowMs() % 100000000ULL);
     uint64_t nowMs = MP_NowMs();
     if(Game::IsReady() && !Game::IsPaused()) Mw3DrawWorld(ImGui::GetBackgroundDrawList(), now);
