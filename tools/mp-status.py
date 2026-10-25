@@ -65,7 +65,7 @@ def sh(cmd):
         return False, [str(x)]
 
 class Autopilot:
-    SERVICES = ("hivemq", "mp-server", "mp-bcw", "mp-mw3", "mp-legacy", "mp-bridge", "mp-console")
+    SERVICES = ("hivemq", "mp-server", "mp-bcw", "mp-mw3", "mp-rp", "mp-legacy", "mp-bridge", "mp-console")
     UPDATE_CMD = "curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/update.sh | sudo bash"
     WAGU_PROTO = "https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/src/net/protocol.h"
     def __init__(self, base, auto_update=True):
@@ -153,7 +153,7 @@ def main():
                       "slots": int(e.get("MAX_PLAYERS", "100") or 100), "ver": "3.23.5", "autopilot": bool(pilot),
                       "mod": pilot.installed() if pilot else "", "latest": pilot.latest if pilot else "",
                       "autoupdate": bool(pilot and pilot.auto_update), "updating": active("mp-autoupdate"),
-                      "bcw": active("mp-bcw"), "mw3": active("mp-mw3")}
+                      "bcw": active("mp-bcw"), "mw3": active("mp-mw3"), "rp": active("mp-rp")}
                 publish(k, topic, json.dumps(st, separators=(",", ":")))
                 k.sendall(b"\xc0\x00")   # ping
                 time.sleep(10)

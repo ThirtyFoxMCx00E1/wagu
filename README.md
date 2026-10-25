@@ -57,7 +57,7 @@ Without a VPS it also runs on an Android phone in Termux: `curl -fsSL https://ra
 The autopilot (mp-status) checks GitHub every 10 minutes. When the mod or this kit has a new version it runs
 `curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/update.sh | sudo bash` by itself
 (unit `mp-autoupdate`, log: `journalctl -u mp-autoupdate`). `MP_AUTOUPDATE=0` in `/etc/mp-hivemq/mp.env` turns it off.
-It also restarts mp-bcw, mp-mw3 and mp-legacy when they stop. Servers older than this need the command run once by hand.
+It also restarts mp-bcw, mp-mw3, mp-rp and mp-legacy when they stop. Servers older than this need the command run once by hand.
 
 ## MP 3.21: update the 24/7 servers (important)
 
@@ -68,9 +68,9 @@ curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/update
 ```
 
 - **Why the old servers never updated:** `install.sh` copied the new `mp_server` over the running one. Linux refuses that ("Text file busy"), and `set -e` stopped the whole update, so the regions kept an old `mp_server`. That old server refuses SENJI's new admin key (`administrator.txt`), and phones kept becoming the host of the default server. Fixed: the binary is now copied to `mp_server.new` and renamed, and the kit in `/opt/mp/kit` is a real git clone (the old copy had no `.git`, so `git pull` in menu 7 failed too).
-- **`update.sh`** downloads the newest kit, re-runs `install.sh` with your saved `/etc/mp-hivemq/mp.env` and restarts `mp-server`, `mp-bcw`, `mp-mw3` and `mp-legacy`.
+- **`update.sh`** downloads the newest kit, re-runs `install.sh` with your saved `/etc/mp-hivemq/mp.env` and restarts `mp-server`, `mp-bcw`, `mp-mw3`, `mp-rp` and `mp-legacy`.
 - New in `mp_server` 3.21: hospital safe zones + 5 s spawn protection checked on the server (`--no-safezones` to turn off), race queue (14 players, or 45 s with 2+, or 60 s alone, 20 s GO), and phones on MP 3.21 move to the 24/7 copy by themselves, so a phone host leaving no longer "restarts" the server.
-- **Ping (~400 ms):** that is the internet relay through the broker. Direct UDP (about the real distance ping) needs the server's UDP port reachable: open `1922/udp` (and `1930/udp` for Brief Case War, `1931/udp` for MW3) in the VPS firewall, or forward them on the router when the server runs at home. A VPN (Amnezia, OpenVPN) adds one more hop, it doesn't lower the ping; a VPS in each region does.
+- **Ping (~400 ms):** that is the internet relay through the broker. Direct UDP (about the real distance ping) needs the server's UDP port reachable: open `1922/udp` (and `1930/udp` for Brief Case War, `1931/udp` for MW3, `1932/udp` for Mega Vil Futuristic) in the VPS firewall, or forward them on the router when the server runs at home. A VPN (Amnezia, OpenVPN) adds one more hop, it doesn't lower the ping; a VPS in each region does.
 
 ## MP 3.03: update the 24/7 servers
 
@@ -294,6 +294,13 @@ Isang VPS bawat rehiyon (Asia, Europe, NA, Oceania). Sa una: `sudo ./install.sh 
 - logs: `journalctl -u mp-mw3 -f`  |  restart: `systemctl restart mp-mw3` (console option 5 restarts it too)
 - stats + zone owners: `/opt/mp/server/mw3_stats.txt` (saved every minute and on stop)
 - turn it off: `RUN_MW3=0 ./install.sh`
+
+`install.sh` also installs **`mp-rp.service`** (3.25): the region's 24/7 featured **"Mega Vil Futuristic"** Roleplay server on **UDP 1932** (250 players, Roleplay RP only - no teams, no other gamemodes; money + bank, 20 jobs, shops, 48 houses, pets, the in-game phone, city events every 15 min, lottery, 100+ RP commands; peaceful - only on-duty police / military can hurt; login on, cheats off, MP 3.25+ only). It is pinned in the in-game Internet list with a sky blue banner. The Broker bot stays on it 24/7; when this VPS is down the Broker standby phones (ranks 1-100) host it.
+
+- logs: `journalctl -u mp-rp -f`  |  restart: `systemctl restart mp-rp` (console option 5 restarts it too)
+- citizens (money, bank, job, house, pets, phone number): `/opt/mp/server/rp_citizens.txt` (saved every minute and on stop)
+- 250 players is heavy: give it its own core, and keep at least 1 GB RAM free for it
+- turn it off: `RUN_RP=0 ./install.sh`
 - don't want it: `RUN_BCW=0 ./install.sh`
 
 ## MP 3.11: lower ping + voice chat
@@ -301,8 +308,8 @@ Isang VPS bawat rehiyon (Asia, Europe, NA, Oceania). Sa una: `sudo ./install.sh 
 Rebuild `mp_server` on every region (console menu **7) update**), then re-run `install.sh` (or copy `systemd/hivemq.service` + `config/99-mp-network.conf` and restart). New in 3.11:
 
 - **Direct UDP (the big ping drop).** 3.11 phones ask the region's broker machine over UDP (`PKT_QUERY` to `<broker host>:1922` / `:1930`). If the 24/7 server answers, they play straight over UDP instead of through MQTT: one hop, no TCP stalls, no batching. **The UDP ports must be reachable from the internet:**
-  - cloud server: open **UDP 1922, 1930 and 1931** in the provider's firewall / security group (ufw is already done by `install.sh`)
-  - home server (e.g. `*.duckdns.org` on a home connection): on the router, **port-forward UDP 1922, 1930 and 1931** to the machine running `mp_server`, the same way TCP 1883/8883 are forwarded
+  - cloud server: open **UDP 1922, 1930, 1931 and 1932** in the provider's firewall / security group (ufw is already done by `install.sh`)
+  - home server (e.g. `*.duckdns.org` on a home connection): on the router, **port-forward UDP 1922, 1930, 1931 and 1932** to the machine running `mp_server`, the same way TCP 1883/8883 are forwarded
   - check from outside: `printf '\x0e\x00\x00\x00\x00' | nc -u -w2 <host> 1922 | head -c 40` should print the server name
   If the ports are closed nothing breaks: phones keep using the relay (and its ping).
 - **Voice chat relay.** The server forwards voice (`PKT_VOICE`, Opus frames) only to 3.11 phones within 40 m of the talker, max 60 frames/s per player, nothing for admin-muted players.
