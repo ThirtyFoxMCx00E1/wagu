@@ -25,6 +25,7 @@ struct AuthField { char buf[40]; int max; bool secret; bool numeric; const char*
 static AuthField s_AfUser = { "", 21, false, false, "User" };
 static AuthField s_AfPass = { "", 33, true,  false, "Password" };
 static AuthField s_AfAge  = { "", 3,  false, true,  "Age" };
+static const int AUTH_AGE_MIN = 10, AUTH_AGE_MAX = 24;   // allowed sign-up ages (keep the hint text below in step)
 static int       s_nAfGender = 0;            // 0 Male, 1 Female, 2 Other
 static AuthField* s_pAfEditing = nullptr;
 static const char* kAuthGenders[3] = { "Male", "Female", "Other" };
@@ -448,13 +449,15 @@ static void RenderAuth()
                 P.y += rowH + UI::S(12);
             }
             P.Field(s_AfAge);
-            P.Text("User 3-20 letters / numbers / _   Password 6-32   Age 10-99", L.dim, UI::S(24));
+            P.Text("User 3-20 letters / numbers / _   Password 6-32   Age 10-24", L.dim, UI::S(24));
             if(!s_Auth.err.empty()) P.Text(s_Auth.err.c_str(), L.err, UI::S(26));
             P.y = P.p0.y + h - P.pad - bh;
             if(P.Button("Create", P.p0.x + P.pad, halfW, bh, true))
             {
                 AuthTakeField(s_AfUser); AuthTakeField(s_AfPass); AuthTakeField(s_AfAge);
-                s_Auth.Signup(s_AfUser.buf, s_AfPass.buf, kAuthGenders[s_nAfGender], atoi(s_AfAge.buf));
+                const int age = atoi(s_AfAge.buf);
+                if(age < AUTH_AGE_MIN || age > AUTH_AGE_MAX) s_Auth.err = "Age must be 10-24.";
+                else s_Auth.Signup(s_AfUser.buf, s_AfPass.buf, kAuthGenders[s_nAfGender], age);
             }
             if(P.Button("Leave server", P.p0.x + P.pad + halfW + gap, halfW, bh, false)) { ImGui::End(); ImGui::PopStyleColor(); ImGui::PopStyleVar(2); LeaveServer("Left the server."); return; }
             break;
