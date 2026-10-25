@@ -13,22 +13,23 @@
 // phones refuse servers older than that too (they would let old phones in).
 // 3.10: build 31000. MP_MIN_BUILD stays 30406 and the lobby stays thirtyfox/mp5/: 3.04.6 (no cheats)
 // and 3.10 phones play together on the same servers; only 3.04.5 and older (mp4) stay shut out.
-#define MP_BUILD           32400   // 3.24
+#define MP_BUILD           32500   // 3.25
 #define MP_MIN_BUILD       30406
 #define MP_AUTH_MIN_BUILD  32106   // 3.21.6: servers with the login system refuse older phones (they could not log in)
-#define MP_VERSION_STR     "3.24"
+#define MP_VERSION_STR     "3.25"
 #define MP_VOICE_BUILD     31100   // 3.11: phones from this build on get voice packets
 #define MP_DOWNLOAD_URL    "thirtyfoxmcx00e1.github.io/wagu"
 #define MP_DEFAULT_HOST    "127.0.0.1"
 #define MP_DEFAULT_PORT    1922
 #define MP_DEFAULT_SERVER_NAME "MP LAN Server"   // default hosted server; one per Wi-Fi/hotspot
-#define MP_MAX_PLAYERS     100    // hard cap; each server picks its own limit (1..100)
+#define MP_MAX_PLAYERS     250    // 3.25: hard cap (slot ids 0..249); only Mega Vil Futuristic goes past 100
+#define MP_STD_MAX_PLAYERS 100    // 3.25: every other server (default, custom, phone hosted) stays 1..100
 #define MP_MAX_SERVERS     99     // custom servers in the list (+ the default server = 100)
 #define MP_NAME_LEN        24
 #define MP_CHAT_LEN        128
 #define MP_INVALID_ID      0xFF
 #define MP_TIMEOUT_MS      30000   // 2.21: was 10 s; 3.23.5: 30 s (the public relay broker can stall for 20 s; no more random timeouts)
-#define MP_BOT_ID          (MP_MAX_PLAYERS - 1)   // 3.23.5: the 24/7 bot on the featured servers (never a real player's slot)
+#define MP_BOT_ID          99     // 3.25: fixed (was MP_MAX_PLAYERS - 1 = 99): older phones still know it   // 3.23.5: the 24/7 bot on the featured servers (never a real player's slot)
 #define MP_BOT_NAME        "Broker"
 #define MP_SYNC_RATE_MS    50     // 20 Hz on-foot / in-car sync (lower with many players, 2.11)
 #define MP_SYNC_NEAR_M     350.0f // server forwards every sync between players closer than this
@@ -109,6 +110,12 @@ enum ePacket : uint8_t
     PKT_MW3_EVENT,      // S->C          3.23: MW3 badges, rewards, captures, event / duel spawns
     PKT_MW3_CMD,        // C->S          3.23: MW3 team / class / spawn / arena / duel / event commands
     PKT_MW3_CARD,       // S<->C         3.24: MW3 signed stats backup (the phone keeps it, any host restores it)
+    PKT_RP_ME,          // S->C          3.25: Mega Vil Futuristic: my money, bank, job, needs, house, phone...
+    PKT_RP_PLAYERS,     // S->C          3.25: job / level / phone number of every player (pages of rows)
+    PKT_RP_STATE,       // S->C          3.25: city event, lottery, houses for sale
+    PKT_RP_EVENT,       // S->C          3.25: SMS, calls, banners, job targets, heal / repair / jail...
+    PKT_RP_CMD,         // C->S          3.25: every RP command (/pay /shop /job /call /me ...)
+    PKT_RP_CARD,        // S<->C         3.25: signed citizen backup (money survives a host change)
 };
 
 enum eRegion : uint8_t { REGION_ASIA = 0, REGION_EUROPE, REGION_NA, REGION_OCEANIA, REGION_COUNT };
@@ -547,7 +554,7 @@ struct PktBcwState
     uint8_t  leader[2];      // leader id per team (MP_INVALID_ID = none yet)
     BcwCase  cases[2];       // [0] = Gustav briefcase (at Gustav base), [1] = Schelapz briefcase
     uint8_t  votes[BCW_MAP_COUNT_WIRE];
-    uint8_t  team[MP_MAX_PLAYERS];   // eBcwTeam per player id
+    uint8_t  team[MP_STD_MAX_PLAYERS];   // eBcwTeam per player id (3.25: wire size stays 100)
 };
 enum eBcwCmd : uint8_t { BCWC_TEAM = 1, BCWC_VOTE = 2, BCWC_LEAVE_TEAM = 3 };
 struct PktBcwCmd    { uint8_t type; uint8_t cmd; uint8_t arg; };
@@ -578,7 +585,7 @@ struct PktClothes
 // Until the login is done the player is connected but nobody sees them and nothing they send
 // (position, chat, shots...) reaches anybody.
 enum eAuthOp : uint8_t { AUTH_CHALLENGE = 1, AUTH_TICKET = 2, AUTH_RESULT = 3 };
-enum eAuthStyle : uint8_t { AUTH_STYLE_NORMAL = 0, AUTH_STYLE_BCW = 1, AUTH_STYLE_MW3 = 2 };   // 3.23: MW3 = green
+enum eAuthStyle : uint8_t { AUTH_STYLE_NORMAL = 0, AUTH_STYLE_BCW = 1, AUTH_STYLE_MW3 = 2, AUTH_STYLE_RP = 3 };   // 3.23: MW3 = green; 3.25: Mega Vil Futuristic = sky blue
 struct PktAuthChal   { uint8_t type; uint8_t op; uint8_t style; uint8_t pad; char chal[33]; char server[32]; };
 struct PktAuthTicket { uint8_t type; uint8_t op; uint16_t plen; uint8_t sig[64]; };   // + plen bytes of ticket text
 struct PktAuthResult { uint8_t type; uint8_t op; uint8_t ok; uint8_t pad; char user[24]; char msg[96]; };
@@ -631,6 +638,75 @@ struct PktMw3Cmd     { uint8_t type, cmd, arg, arg2; };
 // card (t = when the stats last changed, Unix seconds) wins over an older line in that host's file.
 #define MW3_CARD_VER 1
 struct PktMw3Card    { uint8_t type, ver, team, cls; uint32_t t; char key[32]; int32_t score, xp, cash; uint16_t kills, deaths, caps, best; uint8_t mac[16]; };
+// ---- 3.25: Mega Vil Futuristic (24/7 Roleplay featured server, see net/rp.h) ----
+#define RP_VEH_SLOTS   6
+#define RP_ROWS_WIRE   100
+#define RP_HOUSES_WIRE 48
+struct PktRpMe
+{
+    uint8_t  type, job, duty, level;
+    uint8_t  hunger, thirst, house, pet;       // house / pet: 255 = none
+    uint8_t  cuffed, wanted, jobOn, nveh;       // jobOn: a job task is running (target below)
+    uint16_t jailS, newbieS;                    // seconds left in jail / as a new citizen
+    int32_t  cash, bank, xp, number;            // number = my phone number
+    uint32_t playMin;                           // minutes played on Mega Vil
+    uint16_t paydayS, tasks;                    // seconds to the next payday, job tasks done
+    float    target[3];                         // job task / call target
+    uint16_t veh[RP_VEH_SLOTS];                 // vehicles I own (model ids)
+    uint32_t pets;                              // pets I own (bit per pet)
+    uint32_t items;                             // licences / items (bits, see eRpItem)
+    uint16_t skin, lotto;                       // my clothes, my lottery number (0 = none)
+};
+struct RpRow          { uint8_t id, job, flags, level; int32_t number; };   // flags: 1 duty, 2 cuffed, 4 wanted, 8 new citizen, 16 in a call
+struct PktRpPlayers   { uint8_t type; uint8_t n; uint8_t page; uint8_t pages; RpRow rows[RP_ROWS_WIRE]; };
+struct PktRpState
+{
+    uint8_t  type, evKind, evState, weather;
+    uint16_t evLeftS, nextEvS;
+    float    evPos[3];
+    int32_t  lottoPot;
+    uint8_t  houseOwned[RP_HOUSES_WIRE];        // 1 = sold
+    char     evText[48];
+};
+enum eRpEv : uint8_t
+{
+    RPV_TEXT = 1,       // banner (val = colour), text
+    RPV_SMS,            // who = sender, val = their number, text
+    RPV_RING,           // who = caller, val = their number (incoming call)
+    RPV_CALL_ON,        // who = partner (call connected)
+    RPV_CALL_OFF,       // call ended, text = why
+    RPV_TARGET,         // job / call target (pos in fval), a = kind
+    RPV_PAY,            // val = money in (+) / out (-), text = what for (the phone fixes its money)
+    RPV_HEAL,           // a = health, b = armour
+    RPV_REPAIR,         // fix my car
+    RPV_JAIL,           // val = seconds, go to jail (0 = released)
+    RPV_CUFF,           // a = 1 cuffed / 0 free
+    RPV_SKIN,           // val = skin
+    RPV_WEAPON,         // a = weapon, val = ammo (police / military loadout, shop)
+    RPV_VEHICLE,        // val = model: spawn my vehicle now
+    RPV_JETPACK,        // the jetpack you bought
+    RPV_FEED,           // Vil Feed post: who, text
+    RPV_NEWS,           // city news / event, text
+    RPV_TELE,           // go to fval (spawn at home, events)
+    RPV_DISARM,         // new citizens / civilians: no weapons out
+    RPV_ITEM,           // a = item used (food...), text
+};
+struct PktRpEvent     { uint8_t type, ev, a, b, who; uint8_t pad[3]; int32_t val; float fval[3]; char text[120]; };
+struct PktRpCmd       { uint8_t type, cmd, a, b; int32_t val; float pos[3]; char text[100]; };
+// signed citizen backup (HMAC-SHA256, first 16 bytes), like the MW3 card
+#define RP_CARD_VER 1
+struct PktRpCard
+{
+    uint8_t  type, ver, job, level;
+    uint32_t t;
+    char     key[32];
+    int32_t  cash, bank, xp, number;
+    uint32_t playMin, pets, items;
+    uint16_t veh[RP_VEH_SLOTS];
+    uint16_t skin, tasks;
+    uint8_t  house, pet, hunger, thirst;
+    uint8_t  mac[16];
+};
 #pragma pack(pop)
 
 // 3.11: voice chat. One Opus frame (48 kHz mono, 20 ms) per packet, sent the moment it is

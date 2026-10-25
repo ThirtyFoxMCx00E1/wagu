@@ -246,6 +246,7 @@ static bool HandleCommand(const char* text)
     while(*arg == ' ') ++arg;
     if(GatesCommand(cmd, arg)) return true;   // 3.04.2: /gatepos, /gates
     if(Mw3Command(cmd, arg)) return true;   // 3.23: MW3 commands (others blocked)
+    if(RpCommand(cmd, arg)) return true;    // 3.25: Mega Vil Futuristic RP commands (others blocked)
     if(AuthCommand(cmd)) return true;       // 3.21.6: /stats  /char (also on Brief Case War)
     if(BcwBlockCommand(cmd)) return true;   // 3.04: Brief Case War: no gamemodes / cheats / teleports
     if(GamesCommand(cmd, arg)) return true;
@@ -980,6 +981,7 @@ static void Render219(void*)
     RenderSamp();              // 3.01
     RenderBcw();               // 3.04: Brief Case War
     RenderMw3();               // 3.23: Modern Warfare 3
+    RenderRp();                // 3.25: Mega Vil Futuristic
     RenderSafeZones();         // 3.21: hospital safe zones
     RenderMarkers();           // 3.21: red checkpoint beams
     RenderGates();             // 3.04.2: gate fade (over everything)
