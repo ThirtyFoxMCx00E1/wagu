@@ -67,7 +67,7 @@ void MPServer::BcwSendState(int slot)
     for(int i = 0; i < MP_MAX_PLAYERS; ++i)
     {
         if(!m_Slots[i].used) continue;
-        p.team[i] = m_Bcw[i].team;
+        if(i < MP_STD_MAX_PLAYERS) p.team[i] = m_Bcw[i].team;
         if((m_nBcwState == BCW_VOTE || m_nBcwState == BCW_RESULTS) && m_Bcw[i].vote) { int v = m_Bcw[i].vote - 1; if(v >= 0 && v < BCW_MAP_COUNT && p.votes[v] < 255) ++p.votes[v]; }
     }
     if(slot >= 0) SendTo(slot, &p, sizeof(p)); else Broadcast(&p, sizeof(p));

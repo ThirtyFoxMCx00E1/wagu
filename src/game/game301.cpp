@@ -58,3 +58,23 @@ void Game::EnterArea(int area)
     SetCharArea(ped, area);
     if(IsCharInAnyCar(ped)) SetCarArea(GetCarCharIsIn(ped), area);
 }
+
+// 3.25: Mega Vil Futuristic - people you talk to stop, turn to you and look at you; mechanics fix cars
+DEFOPCODE(0639, TASK_TURN_CHAR_TO_FACE_CHAR_325, ii);
+DEFOPCODE(05BF, TASK_LOOK_AT_CHAR_325, iii);
+DEFOPCODE(0A30, FIX_CAR_325, i);
+void Game::TaskFaceChar(int ped, int target)
+{
+    if(ped <= 0 || target <= 0 || !PedPtr(ped) || !PedPtr(target)) return;
+    CALLSCM(TASK_TURN_CHAR_TO_FACE_CHAR_325, ped, target);
+}
+void Game::TaskLookAtChar(int ped, int target, int ms)
+{
+    if(ped <= 0 || target <= 0 || !PedPtr(ped) || !PedPtr(target)) return;
+    CALLSCM(TASK_LOOK_AT_CHAR_325, ped, target, ms);
+}
+void Game::FixCar(int car)
+{
+    if(car <= 0) return;
+    CALLSCM(FIX_CAR_325, car);
+}

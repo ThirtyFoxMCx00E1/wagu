@@ -95,7 +95,7 @@ static inline bool SameAddr(const sockaddr_in& a, const sockaddr_in& b)
     return a.sin_addr.s_addr == b.sin_addr.s_addr && a.sin_port == b.sin_port;
 }
 
-MPServer::MPServer() : m_Sock(INVALID_SOCKET), m_bRunning(false), m_bPersistent(false), m_nPort(0), m_fnLog(nullptr), m_nMaxPlayers(MP_MAX_PLAYERS), m_nRegion(REGION_ASIA)
+MPServer::MPServer() : m_Sock(INVALID_SOCKET), m_bRunning(false), m_bPersistent(false), m_nPort(0), m_fnLog(nullptr), m_nMaxPlayers(MP_STD_MAX_PLAYERS), m_nRegion(REGION_ASIA)
 {
     memset(m_Slots, 0, sizeof(m_Slots));
     memset(m_Pickups, 0, sizeof(m_Pickups));
@@ -160,6 +160,14 @@ bool MPServer::Start(uint16_t port, const char* serverName, MPServerLogFn log, i
     LoadTurf();                               // 3.01
     BcwReset();                               // 3.04
     Mw3Reset();                               // 3.23
+    RpReset();                                // 3.25
+    if(IsRpServer())
+    {   // 3.25: Mega Vil Futuristic - roleplay only, 250 players, no cheats, no other gamemodes
+        m_nMaxPlayers = MP_RP_MAX_PLAYERS;
+        m_bTurfWars = false; m_bSafeZones = false;
+        m_nBasePerms = PERM_NO_CHEATS; m_nPerms = PERM_NO_CHEATS;
+        RpLoad();
+    }
     if(IsMw3Server())
     {
         m_nMaxPlayers = MP_MW3_MAX_PLAYERS;
@@ -186,6 +194,7 @@ void MPServer::Stop()
         // tell everyone right away (instead of a 10 s timeout) so a new host takes over
         std::lock_guard<std::mutex> lk(m_Mutex);
         if(IsMw3Server()) Mw3Save();   // 3.23
+        if(IsRpServer()) RpSave();     // 3.25
         PktReject rj; rj.type = PKT_REJECT; rj.reason = REJECT_SHUTDOWN;
         for(int k = 0; k < 2; ++k) Broadcast(&rj, sizeof(rj));
     }
@@ -393,7 +402,7 @@ void MPServer::SetAdminHash(const char* h)
 // Not on Brief Case War servers (own base protection: BcwOnDamage).
 bool MPServer::SafeZoneBlocks(int from, int to) const
 {
-    if(!m_bSafeZones || IsBcwServer() || IsMw3Server()) return false;
+    if(!m_bSafeZones || IsBcwServer() || IsMw3Server() || IsRpServer()) return false;
     if(to < 0 || to >= MP_MAX_PLAYERS || !m_Slots[to].used) return false;
     const Slot& t = m_Slots[to];
     if(t.spawnProtUntil && MP_NowMs() < t.spawnProtUntil) return true;
@@ -409,7 +418,7 @@ bool MPServer::IsDefaultServer() const { return !strcasecmp(m_szName, MP_DEFAULT
 void MPServer::SetPermsLocked(uint8_t perms)
 {
     if(IsDefaultServer()) perms &= ~PERM_CHEAT_MENU;   // 3.00: never a cheat menu on the default server
-    if(IsBcwServer() || IsMw3Server()) { perms &= ~(PERM_CHEAT_MENU | PERM_MISSION_PAIR); perms |= PERM_NO_CHEATS; }   // 3.04 / 3.23 MW3: Brief Case War: no CheatMenu, MP + CLEO menu cheats off
+    if(IsBcwServer() || IsMw3Server() || IsRpServer()) { perms &= ~(PERM_CHEAT_MENU | PERM_MISSION_PAIR); perms |= PERM_NO_CHEATS; }   // 3.04 / 3.23 MW3: Brief Case War: no CheatMenu, MP + CLEO menu cheats off
     if(m_nPerms == perms) return;
     m_nPerms = perms;
     if(!(perms & PERM_MISSION_PAIR))
@@ -425,7 +434,7 @@ void MPServer::MakePerms(PktPerms& p, uint8_t perms) const
     p.type = PKT_PERMS; p.perms = perms | PERM_V219;
     p.modesMagic = MP_MODES_MAGIC; p.modes = GetModes();
 }
-uint16_t MPServer::GetModes() const { if(IsBcwServer() || IsMw3Server()) return 0; return IsDefaultServer() ? (uint16_t)GM_ALL : (uint16_t)(m_nModes & GM_ALL); }   // 3.04: Brief Case War runs only its own gamemode
+uint16_t MPServer::GetModes() const { if(IsBcwServer() || IsMw3Server() || IsRpServer()) return 0; return IsDefaultServer() ? (uint16_t)GM_ALL : (uint16_t)(m_nModes & GM_ALL); }   // 3.04: Brief Case War runs only its own gamemode
 void MPServer::SetModes(uint16_t modes)
 {
     std::lock_guard<std::mutex> lk(m_Mutex);
@@ -463,7 +472,7 @@ void MPServer::AuthBegin(int slot)
         AuthCrypto::Hex(r, 16, s.chal);
     }
     PktAuthChal c; memset(&c, 0, sizeof(c));
-    c.type = PKT_AUTH; c.op = AUTH_CHALLENGE; c.style = IsBcwServer() ? AUTH_STYLE_BCW : (IsMw3Server() ? AUTH_STYLE_MW3 : AUTH_STYLE_NORMAL);
+    c.type = PKT_AUTH; c.op = AUTH_CHALLENGE; c.style = IsBcwServer() ? AUTH_STYLE_BCW : (IsMw3Server() ? AUTH_STYLE_MW3 : (IsRpServer() ? AUTH_STYLE_RP : AUTH_STYLE_NORMAL));
     memcpy(c.chal, s.chal, sizeof(c.chal));
     MP_CopyStr(c.server, m_szName, sizeof(c.server));
     SendTo(slot, &c, sizeof(c));
@@ -511,6 +520,7 @@ void MPServer::AuthHandle(int slot, const uint8_t* data, int len)
     Log("%s (id %d) logged in", s.name, slot);   // the account name stays private (not in the public log)
     AnnounceJoin(slot);
     Mw3OnAuthed(slot);   // 3.23: load the MW3 stats of this account
+    RpOnAuthed(slot);    // 3.25: load the citizen (money, job, house...)
     s.spawnProtUntil = now + MP_SPAWN_PROTECT_MS;
 }
 
@@ -531,6 +541,7 @@ void MPServer::Drop(int slot, uint8_t reason)
     m_Slots[slot].used = false;
     BcwOnLeave(slot);   // 3.04
     Mw3OnLeave(slot);   // 3.23
+    RpOnLeave(slot);    // 3.25
     PktPlayerLeave p; p.type = PKT_PLAYER_LEAVE; p.id = (uint8_t)slot; p.reason = reason;
     Broadcast(&p, sizeof(p));
 
@@ -604,6 +615,7 @@ void MPServer::Loop()
 #endif
             BcwTick(now);
             Mw3Tick(now);   // 3.23
+            RpTick(now);    // 3.25
         }   // 3.04: 10 Hz referee
         if(now - lastCheck > 1000)
         {
@@ -694,7 +706,7 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             {   // 3.04.6: old MP versions (no build / too old) are refused and tracked - they allowed cheats
                 uint32_t build = 0;
                 if(len >= (int)sizeof(PktJoin5)) memcpy(&build, data + offsetof(PktJoin5, build), sizeof(build));
-                if(build < m_nMinBuild || (AuthOn() && build < MP_AUTH_MIN_BUILD) || (IsMw3Server() && build < MW3_MIN_BUILD))   // 3.23: MW3 needs 3.23   // 3.21.6: older phones can't log in
+                if(build < m_nMinBuild || (AuthOn() && build < MP_AUTH_MIN_BUILD) || (IsMw3Server() && build < MW3_MIN_BUILD) || (IsRpServer() && build < MP_RP_BUILD))   // 3.23: MW3 needs 3.23   // 3.21.6: older phones can't log in
                 {
                     TrackOutdated(from, data, len, build);
                     PktServerMsg m; memset(&m, 0, sizeof(m)); m.type = PKT_SERVER_MSG; m.color = 0xFF5050FF;
@@ -848,6 +860,7 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             SendJoinExtras(slot, fresh);   // 3.01: turf, teams, welcome dialog, banner textdraw
             BcwOnJoin(slot, fresh);        // 3.04: Brief Case War state
             Mw3OnJoin(slot, fresh);        // 3.23: MW3 state
+            RpOnJoin(slot, fresh);         // 3.25: Mega Vil Futuristic
             if(!s.authed) AuthBegin(slot);              // 3.21.6: log in first (the others see you after that)
             else if(fresh) AnnounceJoin(slot);
             break;
@@ -895,6 +908,7 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             {   // 3.21: no explosion (rocket, grenade, car bomb, satchel...) is shared inside a hospital safe zone
                 float ep[3]; memcpy(ep, e.pos, sizeof(ep));
                 if(m_bSafeZones && !IsBcwServer() && MP_InSafeZone(ep[0], ep[1], ep[2])) return;
+                if(IsRpServer() && (!RpCanHurt(slot) || RpInGreen(ep[0], ep[1]))) return;   // 3.25: a peaceful city
             }
             e.id = (uint8_t)slot;
             if(m_Slots[slot].status)   // 2.19: on a mission: only the mission-sync partner shares it
@@ -918,6 +932,7 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             {   // 3.21: no fire inside a hospital safe zone
                 float fp[3]; memcpy(fp, f.pos, sizeof(fp));
                 if(m_bSafeZones && !IsBcwServer() && MP_InSafeZone(fp[0], fp[1], fp[2])) return;
+                if(IsRpServer() && (!RpCanHurt(slot) || RpInGreen(fp[0], fp[1]))) return;   // 3.25
             }
             f.id = (uint8_t)slot;
             if(m_Slots[slot].status)   // 2.19: partner only
@@ -1016,10 +1031,12 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             h->id = (uint8_t)slot; h->type = PKT_VOICE;
             int n = (int)sizeof(PktVoiceHdr) + h->len;
             const float r2 = MP_VOICE_RANGE * MP_VOICE_RANGE;
+            const int callee = IsRpServer() ? RpCallPartner(slot) : -1;   // 3.25: a phone call reaches anywhere
             for(int i = 0; i < MP_MAX_PLAYERS; ++i)
             {
                 const Slot& o = m_Slots[i];
                 if(i == slot || !o.used || o.build < MP_VOICE_BUILD) continue;
+                if(i == callee) { SendTo(i, out, n); continue; }
                 if(s.hasPos && o.hasPos)
                 {
                     float dx = s.pos[0] - o.pos[0], dy = s.pos[1] - o.pos[1], dz = s.pos[2] - o.pos[2];
@@ -1099,6 +1116,13 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             p.id = (uint8_t)slot;
             p.text[MP_CHAT_LEN - 1] = 0;
             Log("[chat] %s: %s", m_Slots[slot].name, p.text);
+            if(IsRpServer())
+            {   // 3.25: roleplay: people hear you only when they are close ("Name says: ...")
+                PktRpCmd rc; memset(&rc, 0, sizeof(rc)); rc.type = PKT_RP_CMD; rc.cmd = RPC_CHAT; rc.a = RPH_SAY;
+                MP_CopyStr(rc.text, p.text, sizeof(rc.text));
+                RpHandleCmd(slot, rc);
+                break;
+            }
             Broadcast(&p, sizeof(p));
             break;
         }
@@ -1128,6 +1152,7 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             p.victim = (uint8_t)slot;
             if(p.killer >= MP_MAX_PLAYERS || !m_Slots[p.killer].used) p.killer = MP_INVALID_ID;
             BcwOnDeath(slot, p.killer == MP_INVALID_ID ? -1 : p.killer);   // 3.04
+            RpOnDeath(slot, p.killer == MP_INVALID_ID ? -1 : p.killer);    // 3.25
             Mw3OnDeath(slot, p.killer == MP_INVALID_ID ? -1 : p.killer, p.weapon);   // 3.23
             Broadcast(&p, sizeof(p));
             break;
@@ -1143,7 +1168,7 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             if(p.target < MP_MAX_PLAYERS && p.target != slot && m_Slots[p.target].used && !m_Slots[p.target].paused
                && !SafeZoneBlocks(slot, p.target)   // 3.21: hospital safe zones + 5 s spawn protection
                && ((!m_Slots[p.target].status && !m_Slots[slot].status) || IsPartner(slot, p.target))
-               && BcwOnDamage(slot, p.target, p.amount) && Mw3OnDamage(slot, p.target, p.amount)) SendTo(p.target, &p, sizeof(p));   // 3.04: no friendly fire in Brief Case War
+               && BcwOnDamage(slot, p.target, p.amount) && Mw3OnDamage(slot, p.target, p.amount) && RpOnDamage(slot, p.target, p.amount)) SendTo(p.target, &p, sizeof(p));   // 3.04: no friendly fire in Brief Case War
             break;
         }
 
@@ -1152,6 +1177,20 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             if(slot < 0 || len < (int)sizeof(PktMw3Card)) return;
             PktMw3Card c; memcpy(&c, data, sizeof(c));
             Mw3OnCard(slot, c);
+            break;
+        }
+        case PKT_RP_CARD:   // 3.25: the phone's citizen backup
+        {
+            if(slot < 0 || len < (int)sizeof(PktRpCard)) return;
+            PktRpCard c; memcpy(&c, data, sizeof(c));
+            RpOnCard(slot, c);
+            break;
+        }
+        case PKT_RP_CMD:    // 3.25
+        {
+            if(slot < 0 || len < (int)sizeof(PktRpCmd)) return;
+            PktRpCmd c; memcpy(&c, data, sizeof(c)); c.text[sizeof(c.text) - 1] = 0;
+            RpHandleCmd(slot, c);
             break;
         }
         case PKT_MW3_CMD:   // 3.23
@@ -1703,6 +1742,7 @@ void MPServer::RaceQueueTick(uint64_t now, bool changed)
 
 #include "server_bcw.inc"   // 3.04: Brief Case War
 #include "server_mw3.inc"   // 3.23: Call Of Duty: Modern Warfare 3
+#include "server_rp.inc"    // 3.25: Mega Vil Futuristic (Roleplay)
 
 // 3.04.6: an old MP version tried to join: log it once per phone every 10 minutes (console + the
 // --outdated-log file of the 24/7 server) and count it

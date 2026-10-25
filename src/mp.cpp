@@ -150,7 +150,7 @@ bool MP::IsConnected() { return client.GetState() == NET_CONNECTED; }
 bool MP::IsHosting() { return s_Server.IsRunning(); }
 // 3.23.5: the default server, Brief Case War and MW3 are hosted by the bot "Broker": the game never
 // shows a player as their host, even when this phone runs the copy (VPS down)
-static bool FeaturedName(const char* n, int port) { return n && n[0] && (MP_IsBcwServerName(n) || MP_IsMw3ServerName(n) || (port == MP_DEFAULT_PORT && !strcasecmp(n, MP_DEFAULT_SERVER_NAME))); }
+static bool FeaturedName(const char* n, int port) { return n && n[0] && (MP_IsBcwServerName(n) || MP_IsMw3ServerName(n) || MP_IsRpServerName(n) || (port == MP_DEFAULT_PORT && !strcasecmp(n, MP_DEFAULT_SERVER_NAME))); }
 bool MP::IsBotHosted()
 {
     if(s_Server.IsRunning() && s_Server.HasBot()) return true;
@@ -473,6 +473,17 @@ static void RenderMw3();
 static int Mw3ScoreOf(int id, int fallback);
 static bool Mw3ListTeam(int id, const char** tag, uint32_t* rgba);
 static int  Mw3RadarZones(Game::RadarZone* out, int maxOut);
+// 3.25: Mega Vil Futuristic (mp_rp.inc)
+static bool s_bRpJoin = false;   // the join in progress is Mega Vil
+static bool RpOnServer();
+static bool RpHidden();
+static void RpProcess(int ped, uint64_t now);
+static void RpOnPacket(const uint8_t* d, int len);
+static bool RpCommand(const char* cmd, const char* arg);
+static bool RpJoinTakeover(int ped);
+static void RpJoinCam(Vec3& pos, Vec3& look);
+static void RenderRp();
+static int  RpRadarZones(Game::RadarZone* out, int maxOut);
 static bool Mw3Decorate(int id, const char* name, uint32_t& color, char* out, size_t n);
 static void ProcessGates(int ped, uint64_t now);
 static void RenderGates();
@@ -1098,6 +1109,7 @@ static void ProcessVoice()
             g = VoiceDistanceGain(sqrtf(dx * dx + dy * dy + dz * dz));
         }
         else g = 0.0f;   // no position yet: don't play someone we can't place
+        if(i == MP::RpCallPartner() && !VoiceMutedId(i)) g = 1.0f;   // 3.25: a phone call on Mega Vil: anywhere in the city
         Voice::SetGain(i, g);
     }
 }
@@ -2117,7 +2129,7 @@ public:
         s_bPermsSeen = true;
         // 3.10: remember this custom server's Cheat Menu permission, so if this phone ever hosts it
         // (the host left / nobody runs it yet) it keeps the permission its creator chose
-        if(!MP::IsOnDefault() && !MP_IsBcwServerName(client.GetServerName()) && !MP_IsMw3ServerName(client.GetServerName()) && client.GetServerName()[0])
+        if(!MP::IsOnDefault() && !MP_IsBcwServerName(client.GetServerName()) && !MP_IsMw3ServerName(client.GetServerName()) && !MP_IsRpServerName(client.GetServerName()) && client.GetServerName()[0])
             SrvCmPut(client.GetServerName(), client.GetPort(), (m.perms & PERM_CHEAT_MENU) != 0);
         GamemodesChanged(m.modesMagic == MP_MODES_MAGIC ? m.modes : 0);   // 3.02   // 3.00: allowed -> you just play; not allowed -> Process() refuses at once
         if(nc1 && !nc0) SysMsg(COL_YELLOW, "*** The host disabled cheats on this server (MP cheats + CLEO menu).");
@@ -2273,6 +2285,7 @@ public:
     void OnTextDraw(const PktTextDraw& t) override { SampOnTextDraw(t); }
     void OnAuth(const uint8_t* d, int len) override { AuthOnPacket(d, len); }   // 3.21.6: login system
     void OnMw3(const uint8_t* d, int len) override { Mw3OnPacket(d, len); }   // 3.23
+    void OnRp(const uint8_t* d, int len) override { RpOnPacket(d, len); }     // 3.25
     void OnBcw(const uint8_t* d, int len) override { BcwOnPacket(d, len); }   // 3.04   // 2.25: the dialog opens; PKT_REJECT follows
     void OnJack(const PktJack& j) override   // 2.19: somebody pulls me out of my car
     {
@@ -2469,7 +2482,7 @@ static void SendLocalSync(int ped, uint64_t now)
         }
         if(Game::IsLocalOnJetpack()) e.x2flags |= X2_JETPACK;
     }
-    if(s_Cheat.invisible || JoinFlowActive() || BcwHidden() || Mw3Hidden()) e.x2flags |= X2_INVISIBLE;   // 3.04: Brief Case War lobby / respawn wait
+    if(s_Cheat.invisible || JoinFlowActive() || BcwHidden() || Mw3Hidden() || RpHidden()) e.x2flags |= X2_INVISIBLE;   // 3.04: Brief Case War lobby / respawn wait
     if(!(d.flags & SYNC_IN_CAR) && d.weapon >= 22 && d.weapon <= 38 && (Game::IsPedAimingGun(ped) || (d.flags & SYNC_SHOOTING)))
     {
         // the real point the player aims at (was: 25 m straight ahead of the body)
@@ -3702,6 +3715,7 @@ void MP::Process()
     JoinFlowProcess(ped, now);   // 2.19: join screen, connection camera, spawn picker
     BcwProcess(ped, now);        // 3.04: Brief Case War
     Mw3Process(ped, now);        // 3.23: Modern Warfare 3
+    RpProcess(ped, now);         // 3.25: Mega Vil Futuristic
     ProcessGates(ped, now);      // 3.04.2: Area 69 gates
     ProcessClothes(now);         // 3.10: clothing sync
     ProcessVoice();              // 3.11: voice chat
@@ -3830,6 +3844,8 @@ static bool JoinHudOff() { return s_bJoinHudOff; }
 #include "mp_world.inc"  // 3.01: 3D labels, map icons, actors, gang zones + turf wars, class selection
 #include "mp_bcw.inc"    // 3.04: Brief Case War
 #include "mp_mw3.inc"    // 3.23: Call Of Duty: Modern Warfare 3
+#include "mp_rp.inc"     // 3.25: Mega Vil Futuristic (Roleplay)
+#include "mp_rp_phone.inc"   // 3.25: the RP phone
 #include "mp_gates.inc"  // 3.04.2: gates that never open (Area 69): fade out, through, fade in
 #include "mp_safezone.inc"  // 3.21: hospital safe zones + 5 s spawn protection
 #include "mp_markers.inc"   // 3.21: SA-MP style red checkpoint beams for races, derbies, DM, jobs
@@ -3844,7 +3860,7 @@ static CheatGateInfo s_CheatGate = {};
 // its permissions (PKT_PERMS, right after the welcome) whether Cheat Menu is allowed - see Process().
 static bool CheatMenuBlocks(const char* serverName, bool isDefault)
 {
-    if(!(isDefault || MP_IsBcwServerName(serverName) || MP_IsMw3ServerName(serverName)) || !ModScan::Recheck()) return false;   // 3.04: Brief Case War refuses cheat menus too
+    if(!(isDefault || MP_IsBcwServerName(serverName) || MP_IsMw3ServerName(serverName) || MP_IsRpServerName(serverName)) || !ModScan::Recheck()) return false;   // 3.04: Brief Case War refuses cheat menus too
     JoinOverlayCancel();
     StopFeed();
     s_CheatGate.show = true;
@@ -4000,7 +4016,7 @@ static int SrvCmGet(const char* name, int port)   // -1 = unknown, 0 = not allow
 }
 static void SrvCmPut(const char* name, int port, bool allow)
 {
-    if(!name || !*name || MP::IsDefaultServer(name, port) || MP_IsBcwServerName(name) || MP_IsMw3ServerName(name)) return;
+    if(!name || !*name || MP::IsDefaultServer(name, port) || MP_IsBcwServerName(name) || MP_IsMw3ServerName(name) || MP_IsRpServerName(name)) return;
     if(SrvCmGet(name, port) == (allow ? 1 : 0)) return;
     char k[16]; SrvModesKey(name, port, k, sizeof(k)); k[0] = 'C'; k[1] = 'M';
     ConfigEntry* e = ::cfg->Bind(k, allow ? 1 : 0, "MPServerCheatMenu"); e->SetInt(allow ? 1 : 0); delete e;
@@ -4015,7 +4031,7 @@ static int SrvAuthGet(const char* name, int port)   // -1 = unknown, 0 = off, 1 
 }
 static void SrvAuthPut(const char* name, int port, bool on)
 {
-    if(!name || !*name || MP::IsDefaultServer(name, port) || MP_IsBcwServerName(name) || MP_IsMw3ServerName(name)) return;
+    if(!name || !*name || MP::IsDefaultServer(name, port) || MP_IsBcwServerName(name) || MP_IsMw3ServerName(name) || MP_IsRpServerName(name)) return;
     if(SrvAuthGet(name, port) == (on ? 1 : 0)) return;
     char k[16]; SrvModesKey(name, port, k, sizeof(k)); k[0] = 'A'; k[1] = 'U';
     ConfigEntry* e = ::cfg->Bind(k, on ? 1 : 0, "MPServerAuth"); e->SetInt(on ? 1 : 0); delete e;
@@ -4044,11 +4060,12 @@ static bool StartLocalServer(const char* name, int port)
     s_Server.SetPersistent(true);
     // 3.04: Brief Case War: open, 20 players, its own gamemode only
     // 3.23.1: MW3 the same way: the VPS copy wins when it is up, otherwise this phone keeps it 24/7
-    const bool bcw = MP_IsBcwServerName(name) || MP_IsMw3ServerName(name) || port == MP_MW3_PORT;
+    const bool bcw = MP_IsBcwServerName(name) || MP_IsMw3ServerName(name) || port == MP_MW3_PORT || MP_IsRpServerName(name) || port == MP_RP_PORT;   // 3.25: Mega Vil too
     s_Server.SetPassword(MP::IsDefaultServer(name, port) || bcw ? "" : s_szJoinPw);   // 2.19
     // 2.29: the default server always has the full 100 slots (0/100), wherever it runs
-    int maxp = MP::IsDefaultServer(name, port) ? MP_MAX_PLAYERS : settings.maxPlayers;
-    if(MP_IsMw3ServerName(name)) maxp = MP_MW3_MAX_PLAYERS;        // 3.24: a phone copy listed itself as x/100
+    int maxp = MP::IsDefaultServer(name, port) ? MP_STD_MAX_PLAYERS : settings.maxPlayers;
+    if(MP_IsRpServerName(name) || port == MP_RP_PORT) maxp = MP_RP_MAX_PLAYERS;   // 3.25: 250
+    else if(MP_IsMw3ServerName(name)) maxp = MP_MW3_MAX_PLAYERS;        // 3.24: a phone copy listed itself as x/100
     else if(MP_IsBcwServerName(name)) maxp = MP_BCW_MAX_PLAYERS;
     if(!s_Server.Start((uint16_t)port, name, ServerLog, maxp, settings.region))
     {
@@ -4059,6 +4076,7 @@ static bool StartLocalServer(const char* name, int port)
     MP_CopyStr(settings.hostedName, name, sizeof(settings.hostedName));
     settings.hostedPort = port;
     if(s_Server.IsMw3Server()) { char mp_[512]; snprintf(mp_, sizeof(mp_), "%s/mw3_stats.txt", s_szDataDir); s_Server.SetMw3File(mp_); }   // 3.23.1
+    if(s_Server.IsRpServer()) { char rp_[512]; snprintf(rp_, sizeof(rp_), "%s/rp_citizens.txt", s_szDataDir); s_Server.SetRpFile(rp_); }   // 3.25
     {   // 3.03: the gamemodes of this server
         const bool creating = s_bCreatingNew; s_bCreatingNew = false;
         int known = SrvModesGet(name, port);
@@ -4125,6 +4143,7 @@ void MP::ToggleConnect()
     s_bConnectingDefault = true;
     s_bBcwJoin = false;       // 3.04
     s_bMw3Join = false;       // 3.23
+    s_bRpJoin = false;        // 3.25
     s_bQuietRejoin = false;   // 2.27: a join you start yourself shows the normal feed
     s_szJoinPw[0] = 0;   // the default server is open
     JoinOverlayStart();  // 2.19: black slide + connection camera
@@ -4158,6 +4177,7 @@ void MP::JoinServer(const char* host, int port, const char* name)
     s_bConnectingDefault = IsDefaultServer(name, port);
     s_bBcwJoin = MP_IsBcwServerName(name);   // 3.04
     s_bMw3Join = MP_IsMw3ServerName(name);   // 3.23
+    s_bRpJoin = MP_IsRpServerName(name);     // 3.25
     s_bQuietRejoin = false;   // 2.27
     s_szJoinPw[0] = 0;   // 2.19: the saved password of that custom server
     for(int i = 0; i < ServerList::Count(); ++i)
@@ -4185,7 +4205,7 @@ void MP::SetHostLan(bool on, bool autoConnect)
         // 2.19.6: hosting used to fail silently. With the default name + port, "Host" found the
         // default server online and just joined it; a custom name on port 1922 was refused.
         // Now the name / port are fixed up so you always get your own server.
-        if(!settings.serverName[0] || !strcasecmp(settings.serverName, MP_DEFAULT_SERVER_NAME) || MP_IsBcwServerName(settings.serverName) || MP_IsMw3ServerName(settings.serverName))   // 3.04: Brief Case War is private
+        if(!settings.serverName[0] || !strcasecmp(settings.serverName, MP_DEFAULT_SERVER_NAME) || MP_IsBcwServerName(settings.serverName) || MP_IsMw3ServerName(settings.serverName) || MP_IsRpServerName(settings.serverName))   // 3.04: Brief Case War is private
         {
             char nm[64]; snprintf(nm, sizeof(nm), "%s's server", settings.name[0] ? settings.name : "Player");
             MP_CopyStr(settings.serverName, nm, sizeof(settings.serverName));
@@ -4459,24 +4479,24 @@ int MP::BrokerStandbyRank()
 bool MP::IsBrokerStandbyHost() { return s_bStandbyHost && s_Server.IsRunning(); }
 static void ProcessBrokerStandby(uint64_t now)
 {
-    static uint64_t lastCheck = 0, onlineSince = 0, missing[3] = { 0, 0, 0 };
+    static uint64_t lastCheck = 0, onlineSince = 0, missing[4] = { 0, 0, 0, 0 };
     if(now - lastCheck < 1000) return;
     lastCheck = now;
     if(s_bStandbyHost && !s_Server.IsRunning()) s_bStandbyHost = false;
-    if(!Online::IsConnected()) { onlineSince = 0; missing[0] = missing[1] = missing[2] = 0; return; }
+    if(!Online::IsConnected()) { onlineSince = 0; missing[0] = missing[1] = missing[2] = missing[3] = 0; return; }
     if(!onlineSince) onlineSince = now;
     if(now - onlineSince < 20000) return;   // the lobby needs a moment before "not listed" means anything
-    static const char* names[3] = { MP_MW3_SERVER_NAME, MP_BCW_SERVER_NAME, MP_DEFAULT_SERVER_NAME };
-    static const int   ports[3] = { MP_MW3_PORT, MP_BCW_PORT, MP_DEFAULT_PORT };
+    static const char* names[4] = { MP_MW3_SERVER_NAME, MP_BCW_SERVER_NAME, MP_DEFAULT_SERVER_NAME, MP_RP_SERVER_NAME };   // 3.25: + Mega Vil
+    static const int   ports[4] = { MP_MW3_PORT, MP_BCW_PORT, MP_DEFAULT_PORT, MP_RP_PORT };
     std::vector<LanServer> live = Online::Snapshot();
-    bool listed[3] = { false, false, false }, dedi[3] = { false, false, false };
+    bool listed[4] = { false, false, false, false }, dedi[4] = { false, false, false, false };
     for(auto& sv : live)
-        for(int k = 0; k < 3; ++k)
-            if((k == 0 && MP_IsMw3ServerName(sv.name)) || (k == 1 && MP_IsBcwServerName(sv.name)) || (k == 2 && MP::IsDefaultServer(sv.name, sv.port)))
+        for(int k = 0; k < 4; ++k)
+            if((k == 0 && MP_IsMw3ServerName(sv.name)) || (k == 1 && MP_IsBcwServerName(sv.name)) || (k == 2 && MP::IsDefaultServer(sv.name, sv.port)) || (k == 3 && MP_IsRpServerName(sv.name)))
             { listed[k] = true; if(sv.dedicated) dedi[k] = true; }
     if(s_bStandbyHost)
     {   // the 24/7 machine is back and nobody is on our copy: hand it back quietly
-        for(int k = 0; k < 3; ++k)
+        for(int k = 0; k < 4; ++k)
             if(s_Server.GetPort() == ports[k] && dedi[k] && s_Server.GetPlayerCount() == 0)
             {
                 logger->Info("Broker standby: the 24/7 host of %s is back, standby copy closed", names[k]);
@@ -4484,10 +4504,10 @@ static void ProcessBrokerStandby(uint64_t now)
             }
         return;
     }
-    for(int k = 0; k < 3; ++k) { if(listed[k]) missing[k] = 0; else if(!missing[k]) missing[k] = now; }
+    for(int k = 0; k < 4; ++k) { if(listed[k]) missing[k] = 0; else if(!missing[k]) missing[k] = now; }
     if(!settings.brokerStandby || s_Server.IsRunning() || client.GetState() != NET_DISCONNECTED || IsBusy() || JoinFlowActive()) return;
     uint64_t wait = 20000ull + (uint64_t)(MP::BrokerStandbyRank() - 1) * 2000ull;
-    for(int k = 0; k < 3; ++k)
+    for(int k = 0; k < 4; ++k)
     {
         if(!missing[k] || now - missing[k] < wait) continue;
         bool hostLan = settings.hostLan; int hostedPort = settings.hostedPort;
@@ -4584,7 +4604,7 @@ static void ProcessLan(uint64_t now)
     // phone host leaving later can't "restart" the server for everybody
     {
         static uint64_t lastDed = 0;
-        if(now - lastDed > 10000 && client.GetState() == NET_CONNECTED && !IsHosting() && !s_bOnDedicated && !InEvent() && !BcwOnServer() && !Mw3OnServer())
+        if(now - lastDed > 10000 && client.GetState() == NET_CONNECTED && !IsHosting() && !s_bOnDedicated && !InEvent() && !BcwOnServer() && !Mw3OnServer() && !RpOnServer())
         {
             lastDed = now;
             const char* nm = client.GetServerName()[0] ? client.GetServerName() : (s_bConnectingDefault ? MP_DEFAULT_SERVER_NAME : "");
@@ -4737,7 +4757,7 @@ static void LoadConfig()
     if(settings.team < 0 || settings.team >= 8) settings.team = 0;
     settings.regionPicked    = ::cfg->GetBool("RegionPicked", false, "MP");
     settings.nameColor       = (uint32_t)::cfg->GetInt("NameColor", 0, "MP");
-    settings.maxPlayers      = ::cfg->GetInt("MaxPlayers", MP_MAX_PLAYERS, "MP");
+    settings.maxPlayers      = ::cfg->GetInt("MaxPlayers", MP_STD_MAX_PLAYERS, "MP");
     settings.hostModes       = ::cfg->GetInt("HostGamemodes", 0, "MP") & GM_ALL;   // 3.02: none until the host turns them on
     settings.serverIcon      = ::cfg->GetInt("ServerIcon", 0, "MP");   // 2.24
     ::cfg->GetString(settings.serverLang, sizeof(settings.serverLang), "ServerLang", "English", "MP");   // 2.25
@@ -4758,7 +4778,7 @@ static void LoadConfig()
     ::cfg->GetString(settings.serverPassword, sizeof(settings.serverPassword), "ServerPassword", "", "MP");   // 2.19
     ::cfg->GetString(settings.hostedPassword, sizeof(settings.hostedPassword), "HostedPassword", "", "MP");
     if(settings.region < 0 || settings.region >= REGION_COUNT) settings.region = REGION_ASIA;
-    if(settings.maxPlayers < 1 || settings.maxPlayers > MP_MAX_PLAYERS) settings.maxPlayers = MP_MAX_PLAYERS;
+    if(settings.maxPlayers < 1 || settings.maxPlayers > MP_STD_MAX_PLAYERS) settings.maxPlayers = MP_STD_MAX_PLAYERS;
     if(settings.port <= 0 || settings.port > 65535) settings.port = MP_DEFAULT_PORT;
     if(settings.nametagSize < 0.4f || settings.nametagSize > 3.0f) settings.nametagSize = 1.0f;
 }
@@ -5408,7 +5428,7 @@ static void SectionAddServer(void*)
     ServerIconPicker();   // 2.24 (shown in the list when you host)
     ImGui::TextUnformatted("Max players");
     ImGui::SetNextItemWidth(-FLT_MIN);
-    if(ImGui::SliderInt("##maxpl", &settings.maxPlayers, 1, MP_MAX_PLAYERS, "%d players"))
+    if(ImGui::SliderInt("##maxpl", &settings.maxPlayers, 1, MP_STD_MAX_PLAYERS, "%d players"))
         s_Server.SetMaxPlayers(settings.maxPlayers);
     if(ImGui::IsItemDeactivatedAfterEdit()) SaveConfig();
     PermissionSwitches("add");   // 2.37: once (was on Hosted + here)
@@ -5432,6 +5452,8 @@ static void SectionAddServer(void*)
             SysMsg(COL_YELLOW, "Brief Case War is a private gamemode server - it is always in the Internet list, just tap it.");
         else if(MP_IsMw3ServerName(s_szNewName) || port == MP_MW3_PORT)
             SysMsg(COL_YELLOW, "Modern Warfare 3 is a 24/7 featured server - it is always in the Internet list, just tap it.");
+        else if(MP_IsRpServerName(s_szNewName) || port == MP_RP_PORT)   // 3.25
+            SysMsg(COL_YELLOW, "Mega Vil Futuristic is a 24/7 featured Roleplay server - it is always in the Internet list, just tap it.");
         else if(port == MP_DEFAULT_PORT && !IsDefaultServer(s_szNewName[0] ? s_szNewName : settings.serverName, port))
             SysMsg(COL_RED, "Port %d is for the default server. Use %d or higher for a custom server.", MP_DEFAULT_PORT, MP_DEFAULT_PORT + 1);
         else
@@ -5452,6 +5474,8 @@ static void SectionAddServer(void*)
             SysMsg(COL_YELLOW, "Brief Case War is a private gamemode server - it is always in the Internet list, just tap it.");
         else if(MP_IsMw3ServerName(s_szNewName) || atoi(s_szNewPort) == MP_MW3_PORT)   // 3.23
             SysMsg(COL_YELLOW, "Modern Warfare 3 is a 24/7 featured server - it is always in the Internet list, just tap it.");
+        else if(MP_IsRpServerName(s_szNewName) || atoi(s_szNewPort) == MP_RP_PORT)   // 3.25
+            SysMsg(COL_YELLOW, "Mega Vil Futuristic is a 24/7 featured Roleplay server - it is always in the Internet list, just tap it.");
         else if(IsDefaultServer(s_szNewName, atoi(s_szNewPort)) || IsLocalHost(s_szNewHost))
             SysMsg(COL_YELLOW, "That is the default server - it is always on top, just tap Connect.");
         else if(atoi(s_szNewPort) == MP_DEFAULT_PORT)

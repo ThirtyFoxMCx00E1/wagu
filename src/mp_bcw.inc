@@ -43,7 +43,7 @@ static bool BcwOnServer()
     return client.GetState() == NET_CONNECTED && MP_IsBcwServerName(client.GetServerName()[0] ? client.GetServerName() : s_szCurServer);
 }
 static int  BcwCurMap()      { int m = s_Bcw.haveState ? s_Bcw.st.map : 0; return m < 0 || m >= BCW_MAP_COUNT ? 0 : m; }
-static uint8_t BcwTeamOf(int id) { return (s_Bcw.haveState && id >= 0 && id < MP_MAX_PLAYERS) ? s_Bcw.st.team[id] : 0; }
+static uint8_t BcwTeamOf(int id) { return (s_Bcw.haveState && id >= 0 && id < MP_STD_MAX_PLAYERS) ? s_Bcw.st.team[id] : 0; }
 static uint8_t BcwMyTeam() { return BcwTeamOf(myId); }
 static bool BcwSameTeam(int a, int b) { if(Mw3OnServer()) return Mw3SameTeam(a, b); if(!BcwOnServer()) return false; uint8_t x = BcwTeamOf(a); return x && x == BcwTeamOf(b); }
 static bool BcwHidden()   { return s_Bcw.engaged && (s_Bcw.view == 1 || (s_Bcw.view == 3 && s_Bcw.held)); }

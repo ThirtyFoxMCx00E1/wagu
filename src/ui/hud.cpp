@@ -457,15 +457,15 @@ static void DrawNameTags(ImDrawList* dl)
         if(p.invisible) continue;                               // 2.19 /invisible
         if(p.tagBlocked && !MP_WallhackOn()) continue;          // 2.19: wall in between
         char bn[64]; uint32_t bc = MP::BcwDecorate(i, p.name, p.color, bn, sizeof(bn));   // 3.04: [GTV] / [SLZ] team tag + colour
-        char sb[64]; bool hasSub = MP::Mw3SubTag(i, sb, sizeof(sb));   // 3.23
+        char sb[64]; bool hasSub = MP::Mw3SubTag(i, sb, sizeof(sb)) || MP::RpSubTag(i, sb, sizeof(sb));   // 3.23 / 3.25
         DrawNameTag(dl, p.drawPos, bn, bc, p.sync.health, p.sync.armour, ref, p.paused, MP::VoiceSpeaking(i), hasSub ? sb : nullptr);
     }
-    if(MP::settings.showOwnTag && MP::myDrawValid && !MP::BcwOwnTagHidden() && !MP::Mw3OwnTagHidden())   // 3.10: never on the Brief Case War connection / respawn screen
+    if(MP::settings.showOwnTag && MP::myDrawValid && !MP::BcwOwnTagHidden() && !MP::Mw3OwnTagHidden() && !MP::RpOwnTagHidden())   // 3.10: never on the Brief Case War connection / respawn screen
     {
         const char* nm = (MP::myId < MP_MAX_PLAYERS && MP::players[MP::myId].active) ? MP::players[MP::myId].name : MP::settings.name;
         if(MP::IsLocalAdmin()) nm = "[ADMIN] SENJI";   // 2.37: admin.txt + name SENJI: my own tag always has the RGB rank
         char bn[64]; uint32_t bc = MP::BcwDecorate(MP::myId, nm, MP::myColor, bn, sizeof(bn));   // 3.04
-        char sb[64]; bool hasSub = MP::Mw3SubTag(MP::myId, sb, sizeof(sb));
+        char sb[64]; bool hasSub = MP::Mw3SubTag(MP::myId, sb, sizeof(sb)) || MP::RpSubTag(MP::myId, sb, sizeof(sb));
         DrawNameTag(dl, MP::myDrawPos, bn, bc, MP::myHealth, MP::myArmour, ref, false, MP::MeTalking(), hasSub ? sb : nullptr);
     }
 }

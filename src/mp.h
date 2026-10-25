@@ -269,6 +269,11 @@ namespace MP
     bool IsBrokerStandbyHost();   // 3.24: hosting an offline featured server in the background
     bool Mw3OwnTagHidden();
     bool Mw3SubTag(int id, char* out, size_t n);   // "Rank - Class" over the name
+    void JoinRp();             // 3.25: Mega Vil Futuristic 24/7 Roleplay (join it, or leave it when you are on it)
+    bool IsOnRp();
+    bool RpOwnTagHidden();
+    bool RpSubTag(int id, char* out, size_t n);    // "Job - Lv N" over the name
+    int  RpCallPartner();      // the player you are on the phone with (-1 = none)
     void JoinBcw();            // join it (or leave it when you are on it)
     bool IsOnBcw();
     bool BcwOwnTagHidden();    // 3.10: your ped is parked hidden (connection screen - e.g. Gustav's base view - or respawn wait)

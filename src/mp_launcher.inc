@@ -183,7 +183,7 @@ static void OnBanName(const char* t, void*) { MP_CopyStr(s_szBanName, t ? t : ""
 // ---- server rows -----------------------------------------------------------------------------
 struct LRow
 {
-    int  kind;            // 0 default, 1 live (internet / Wi-Fi), 2 saved (favourite), 3 Brief Case War (3.04), 4 MW3 (3.23)
+    int  kind;            // 0 default, 1 live (internet / Wi-Fi), 2 saved (favourite), 3 Brief Case War (3.04), 4 MW3 (3.23), 5 Mega Vil Futuristic (3.25)
     char name[40];
     int  players, maxp, ping, region, icon;
     bool locked, live, on, mine, internet;
@@ -218,7 +218,7 @@ static void LBuildRows(int tab, const std::vector<LanServer>& nearby, std::vecto
         if(r.on && IsConnected())  { r.players = OnlineCount(); r.maxp = OnlineMax(); r.ping = MP::DisplayPing(); r.live = true; }
         else if(IsHostingDefault()) { r.players = s_Server.GetPlayerCount(); r.maxp = s_Server.GetMaxPlayers(); r.ping = 0; r.live = true; r.mine = true; }
         else if(found >= 0)        { r.players = nearby[found].players; r.maxp = nearby[found].maxPlayers; r.ping = nearby[found].ping; r.live = true; r.internet = nearby[found].token != 0; }
-        else                       { r.players = 0; r.maxp = MP_MAX_PLAYERS; r.live = true; }   // 2.29: always there, 0/100 - Join starts it
+        else                       { r.players = 0; r.maxp = MP_STD_MAX_PLAYERS; r.live = true; }   // 2.29: always there, 0/100 - Join starts it
         MP_CopyStr(r.lang, (found >= 0 && nearby[found].lang[0]) ? nearby[found].lang : "All", sizeof(r.lang));
         if(LMatch(r.name)) rows.push_back(r);
         {   // 3.04: Brief Case War - pinned under the default server, always there (0/20) like it
@@ -253,11 +253,28 @@ static void LBuildRows(int tab, const std::vector<LanServer>& nearby, std::vecto
             MP_CopyStr(w.lang, "All", sizeof(w.lang));
             if(LMatch(w.name) || LMatch("mw3") || LMatch("modern warfare")) rows.push_back(w);
         }
+        {   // 3.25: Mega Vil Futuristic - 24/7 featured Roleplay, pinned under MW3 (VPS, or the Broker standby phones)
+            LRow w; memset(&w, 0, sizeof(w));
+            w.kind = 5; MP_CopyStr(w.name, MP_RP_SERVER_NAME, sizeof(w.name)); w.port = MP_RP_PORT;
+            w.region = -1; w.icon = 0; w.saved = -1; w.live = true;
+            w.on = MP::IsOnRp();
+            int bf = -1;
+            for(int i = 0; i < (int)nearby.size(); ++i)
+                if(MP_IsRpServerName(nearby[i].name) && (bf < 0 || (nearby[i].dedicated && !nearby[bf].dedicated))) bf = i;
+            bool hosting = s_Server.IsRunning() && s_Server.IsRpServer();
+            if(w.on && IsConnected())  { w.players = OnlineCount(); w.maxp = OnlineMax(); w.ping = MP::DisplayPing(); }
+            else if(hosting)           { w.players = s_Server.GetPlayerCount(); w.maxp = MP_RP_MAX_PLAYERS; w.ping = 0; w.mine = true; }
+            else if(bf >= 0)           { w.players = nearby[bf].players; w.maxp = nearby[bf].maxPlayers; w.ping = nearby[bf].ping; w.internet = nearby[bf].token != 0; }
+            else                       { w.players = 0; w.maxp = MP_RP_MAX_PLAYERS; w.ping = -1; }
+            MP_CopyStr(w.lang, "All", sizeof(w.lang));
+            if(LMatch(w.name) || LMatch("roleplay") || LMatch("rp") || LMatch("mega vil")) rows.push_back(w);
+        }
         for(auto& sv : nearby)
         {
             if(IsDefaultServer(sv.name, sv.port)) continue;
             if(MP_IsBcwServerName(sv.name)) continue;   // 3.04: the pinned row
             if(MP_IsMw3ServerName(sv.name)) continue;   // 3.23: the pinned row
+            if(MP_IsRpServerName(sv.name)) continue;    // 3.25: the pinned row
             LRow q; memset(&q, 0, sizeof(q));
             q.kind = 1; MP_CopyStr(q.name, sv.name, sizeof(q.name)); MP_CopyStr(q.ip, sv.ip, sizeof(q.ip)); q.port = sv.port;
             q.players = sv.players; q.maxp = sv.maxPlayers; q.ping = sv.ping; q.region = sv.region; q.icon = sv.icon;
@@ -296,7 +313,7 @@ static void LBuildRows(int tab, const std::vector<LanServer>& nearby, std::vecto
     if(s_nSortCol >= 0 && rows.size() > 1)
     {
         size_t from = 0;   // the default server + Brief Case War stay on top
-        while(tab == LT_INTERNET && from < rows.size() && (rows[from].kind == 0 || rows[from].kind == 3 || rows[from].kind == 4)) ++from;
+        while(tab == LT_INTERNET && from < rows.size() && (rows[from].kind == 0 || rows[from].kind == 3 || rows[from].kind == 4 || rows[from].kind == 5)) ++from;
         auto key = [](const LRow& r, int c) -> int { return c == 1 ? r.players : (c == 2 ? (r.ping < 0 ? 99999 : r.ping) : (c == 3 ? r.region : 0)); };
         std::stable_sort(rows.begin() + from, rows.end(), [&](const LRow& a, const LRow& b)
         {
@@ -325,6 +342,7 @@ static void LJoin(const LRow& r)
     if(r.kind == 0) { if(IsOnDefault()) MP::ToggleConnect(); else { LeaveServer(nullptr); MP::ToggleConnect(); } return; }
     if(r.kind == 3) { if(!MP::IsOnBcw()) LeaveServer(nullptr); MP::JoinBcw(); return; }   // 3.04
     if(r.kind == 4) { if(!MP::IsOnMw3()) LeaveServer(nullptr); MP::JoinMw3(); return; }   // 3.23
+    if(r.kind == 5) { if(!MP::IsOnRp()) LeaveServer(nullptr); MP::JoinRp(); return; }     // 3.25
     if(r.on) { LeaveServer("Left the server."); return; }
     if(r.kind == 1) MP::JoinServer(r.ip, r.port, r.name);
     else if(ServerEntry* e = ServerList::Get(r.saved)) MP::JoinServer(e->host, e->port, e->name);
@@ -412,6 +430,21 @@ static void LTable(std::vector<LRow>& rows, float w, float h)
                 dl->PopClipRect();
             }
         }
+        if(r.kind == 5)
+        {   // 3.25: Mega Vil Futuristic banner: sky blue highlight + sky blue outline + the RP icon faded on the right
+            float pulse = 0.75f + 0.25f * sinf(MP_NowMs() * 0.004f);
+            dl->AddRectFilledMultiColor(a, ImVec2(a.x + W, a.y + rowH), IM_COL32(56, 189, 248, (int)(150 * pulse)), IM_COL32(12, 74, 110, 70), IM_COL32(12, 74, 110, 70), IM_COL32(56, 189, 248, (int)(150 * pulse)));
+            dl->AddRect(a, ImVec2(a.x + W, a.y + rowH), IM_COL32(56, 189, 248, 255), UI::S(6), 0, UI::S(sel ? 4 : 2.5f));
+            ImVec2 buv(1, 1);
+            if(void* bt = HUD::Texture("rp_icon.png", &buv))
+            {
+                float bs = rowH * 1.25f;
+                ImVec2 ba(a.x + W - bs - UI::S(10), a.y + rowH * 0.5f - bs * 0.5f);
+                dl->PushClipRect(a, ImVec2(a.x + W, a.y + rowH), true);
+                dl->AddImage((ImTextureID)bt, ba, ImVec2(ba.x + bs, ba.y + bs), ImVec2(0, 0), buv, IM_COL32(255, 255, 255, 70));
+                dl->PopClipRect();
+            }
+        }
         if(sel) dl->AddRectFilled(a, ImVec2(a.x + W, a.y + rowH), IM_COL32(255, 255, 255, 30), UI::S(6));
         else if(ImGui::IsItemActive()) dl->AddRectFilled(a, ImVec2(a.x + W, a.y + rowH), IM_COL32(255, 255, 255, 16), UI::S(6));
         dl->AddLine(ImVec2(a.x, a.y + rowH), ImVec2(a.x + W, a.y + rowH), IM_COL32(255, 255, 255, 14));
@@ -424,18 +457,18 @@ static void LTable(std::vector<LRow>& rows, float w, float h)
         float ty = a.y + (rowH - ImGui::GetTextLineHeight()) * 0.5f;
         LPadlock(dl, ImVec2(a.x + cLock + UI::S(18), a.y + rowH * 0.5f - UI::S(4)), UI::S(24), r.locked, r.locked ? IM_COL32(240, 200, 60, 255) : IM_COL32(70, 200, 110, 255));
         ImVec2 uv(1, 1);
-        void* rtex = r.kind == 3 ? HUD::Texture("bcw_icon.png", &uv) : (r.kind == 4 ? HUD::Texture("mw3_icon.png", &uv) : nullptr);   // 3.04: Brief Case War icon (briefcase)
+        void* rtex = r.kind == 3 ? HUD::Texture("bcw_icon.png", &uv) : (r.kind == 4 ? HUD::Texture("mw3_icon.png", &uv) : (r.kind == 5 ? HUD::Texture("rp_icon.png", &uv) : nullptr));   // 3.04: Brief Case War icon (briefcase)
         if(void* tex = rtex ? rtex : HUD::ServerIcon(r.icon, &uv))
         {
             float is = rowH - UI::S(18);
             ImVec2 ia(a.x + cIcon, a.y + UI::S(9));
             dl->AddImageRounded((ImTextureID)tex, ia, ImVec2(ia.x + is, ia.y + is), ImVec2(0, 0), uv, IM_COL32_WHITE, UI::S(8));
         }
-        ImU32 nameCol = r.kind == 3 ? IM_COL32(255, 235, 235, 255) : r.kind == 4 ? IM_COL32(230, 255, 235, 255) : ((r.live || sel) ? IM_COL32_WHITE : IM_COL32(175, 175, 175, 255));
+        ImU32 nameCol = r.kind == 3 ? IM_COL32(255, 235, 235, 255) : r.kind == 4 ? IM_COL32(230, 255, 235, 255) : r.kind == 5 ? IM_COL32(224, 242, 254, 255) : ((r.live || sel) ? IM_COL32_WHITE : IM_COL32(175, 175, 175, 255));
         dl->PushClipRect(ImVec2(a.x + cName, a.y), ImVec2(a.x + cPl - UI::S(12), a.y + rowH), true);
         float nx = a.x + cName;
         if(r.on) { dl->AddCircleFilled(ImVec2(nx + UI::S(8), a.y + rowH * 0.5f), UI::S(7), IM_COL32(70, 200, 110, 255)); nx += UI::S(26); }
-        char nm[80]; snprintf(nm, sizeof(nm), "%s%s", r.name, r.kind == 0 ? "  (default)" : (r.kind == 3 ? "  (gamemode)" : r.kind == 4 ? "  (24/7)" : (r.mine ? "  (yours)" : "")));
+        char nm[80]; snprintf(nm, sizeof(nm), "%s%s", r.name, r.kind == 0 ? "  (default)" : (r.kind == 3 ? "  (gamemode)" : r.kind == 4 ? "  (24/7)" : r.kind == 5 ? "  (Roleplay 24/7)" : (r.mine ? "  (yours)" : "")));
         dl->AddText(ImVec2(nx, ty), nameCol, nm);
         dl->PopClipRect();
         char b[48];
@@ -449,6 +482,7 @@ static void LTable(std::vector<LRow>& rows, float w, float h)
             char md[48]; snprintf(md, sizeof(md), "Freeroam %s%s", r.region >= 0 && r.region < REGION_COUNT ? g_MPRegionNames[r.region] : "(all)", (r.kind == 1 && !r.internet) ? " (LAN)" : "");
             if(r.kind == 3) snprintf(md, sizeof(md), "Brief Case War");   // 3.04
             if(r.kind == 4) snprintf(md, sizeof(md), "MW3 Team DM");      // 3.23
+            if(r.kind == 5) snprintf(md, sizeof(md), MP_RP_GAMEMODE);     // 3.25: Roleplay RP
             dl->AddText(ImVec2(a.x + cMode, ty), r.live ? IM_COL32_WHITE : dim, md);
         }
         dl->PopClipRect();
@@ -537,7 +571,17 @@ static void LRightPanel(const LRow* r, float w, float h)
             { "weather",   "server synced" },
             { "icon",      ic },
         };
-        if(r->kind == 4)
+        if(r->kind == 5)
+        {   // 3.25
+            const char* rp[][2] = {
+                { "address",   "24/7 featured (always on, VPS + Broker)" }, { "gamemode", "Roleplay RP (only)" }, { "port", pt },
+                { "players",   pl }, { "city", "Mega Vil (Los Santos of the future)" }, { "jobs", "20 jobs, payday every 30 min" },
+                { "phone",     "calls, SMS, bank, GPS, shop, games..." }, { "rules", "peaceful: only police / military on duty" },
+                { "cheats",    "off (MP + CLEO menu)" }, { "login", "required" }, { "version", "MP 3.25" },
+            };
+            for(auto& kv : rp) { ImVec2 p = ImGui::GetCursorScreenPos(); LTwoCol(dl, p, W, rh, kv[0], kv[1], false); ImGui::Dummy(ImVec2(W, rh)); }
+        }
+        else if(r->kind == 4)
         {   // 3.23
             const char* mw[][2] = {
                 { "address",   "24/7 featured (always on, VPS)" }, { "gamemode", "Call Of Duty: Modern Warfare 3" }, { "port", pt },

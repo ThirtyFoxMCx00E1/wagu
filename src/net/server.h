@@ -9,6 +9,7 @@
 #include "turf.h"
 #include "bcw.h"
 #include "mw3.h"   // 3.23
+#include "rp.h"    // 3.25: Mega Vil Futuristic
 #include <string>
 #include <map>
 
@@ -29,7 +30,7 @@ public:
     MPServer();
     ~MPServer();
 
-    bool Start(uint16_t port, const char* serverName, MPServerLogFn log = nullptr, int maxPlayers = MP_MAX_PLAYERS, int region = REGION_ASIA);
+    bool Start(uint16_t port, const char* serverName, MPServerLogFn log = nullptr, int maxPlayers = MP_STD_MAX_PLAYERS, int region = REGION_ASIA);
     void Stop();
     bool IsRunning() const { return m_bRunning; }
     int  GetPlayerCount();
@@ -42,7 +43,7 @@ public:
     bool IsPersistent() const { return m_bPersistent; }
 
     // Player limit 1..100. Lowering it never kicks anyone; it only blocks new joins.
-    void SetMaxPlayers(int n) { m_nMaxPlayers = n < 1 ? 1 : (n > MP_MAX_PLAYERS ? MP_MAX_PLAYERS : n); if(IsBcwServer()) m_nMaxPlayers = MP_BCW_MAX_PLAYERS; else if(IsMw3Server()) m_nMaxPlayers = MP_MW3_MAX_PLAYERS; else if(IsDefaultServer()) m_nMaxPlayers = MP_MAX_PLAYERS; }   // 3.04: Brief Case War = 20; 3.10: the default server is always 100
+    void SetMaxPlayers(int n) { m_nMaxPlayers = n < 1 ? 1 : (n > MP_STD_MAX_PLAYERS ? MP_STD_MAX_PLAYERS : n); if(IsBcwServer()) m_nMaxPlayers = MP_BCW_MAX_PLAYERS; else if(IsMw3Server()) m_nMaxPlayers = MP_MW3_MAX_PLAYERS; else if(IsRpServer()) m_nMaxPlayers = MP_RP_MAX_PLAYERS; else if(IsDefaultServer()) m_nMaxPlayers = MP_STD_MAX_PLAYERS; }   // 3.04: Brief Case War = 20; 3.10: the default server is always 100; 3.25: Mega Vil Futuristic = 250
     int  GetMaxPlayers() const { return m_nMaxPlayers; }
     void SetRegion(int r) { m_nRegion = (r >= 0 && r < REGION_COUNT) ? r : REGION_ASIA; }
     int  GetRegion() const { return m_nRegion; }
@@ -62,13 +63,15 @@ public:
     bool IsBcwServer() const;                   // 3.04: the name is MP_BCW_SERVER_NAME (Brief Case War)
     bool IsMw3Server() const;                   // 3.23: Call Of Duty: Modern Warfare 3
     void SetMw3File(const char* path);          // 3.23: MW3 stats + zone owners (default mw3_stats.txt)
+    bool IsRpServer() const;                    // 3.25: Mega Vil Futuristic (Roleplay)
+    void SetRpFile(const char* path);           // 3.25: citizens (money, bank, job, house...) + house owners (default rp_citizens.txt)
     // 3.21.6: login system (Discord verification + account). Always on for the default server and
     // Brief Case War; custom servers: SetAuth(true) (Add server -> Authentication system, --auth)
     void SetAuth(bool on) { m_bAuthCustom = on; }
     // 3.23.5: the 3 featured servers (default 100, Brief Case War 20, MW3 64) always have the bot
     // "Broker" in them (id MP_BOT_ID): 1/100, 1/20, 1/64 with nobody else, on the VPS or a phone copy
-    bool HasBot() const { return IsDefaultServer() || IsBcwServer() || IsMw3Server(); }
-    bool AuthOn() const { return IsDefaultServer() || IsBcwServer() || IsMw3Server() || m_bAuthCustom; }
+    bool HasBot() const { return IsDefaultServer() || IsBcwServer() || IsMw3Server() || IsRpServer(); }
+    bool AuthOn() const { return IsDefaultServer() || IsBcwServer() || IsMw3Server() || IsRpServer() || m_bAuthCustom; }
     bool AccountOf(int id, char* out, size_t n);   // the logged in account of player id (false = none)
     // 3.04.6: refuse + track old MP versions
     void SetMinBuild(uint32_t b) { m_nMinBuild = b; }
@@ -283,6 +286,69 @@ private:
     void Mw3Spawned(int slot);
     int  Mw3EvAlive(int side) const;
     uint16_t m_nMw3EvSideKills[2] = { 0, 0 };
+    // ---- 3.25: Mega Vil Futuristic (server_rp.inc) ----
+    struct RpSrvPlayer
+    {
+        bool     loaded, spawned, duty, cuffed;
+        uint8_t  job, level, hunger, thirst, house, pet, wanted, nveh;
+        int32_t  cash, bank, xp, number;
+        uint32_t playMin, pets, items, statT, cardT;
+        uint16_t veh[RP_VEH_SLOTS], skin, tasks, lotto;
+        uint16_t jailS;
+        uint64_t minuteAt, needAt, paydayAt, cardWaitAt, lastChat, lastBuy, lastVeh, lastSms, lastEmoteAsk, lastFest;
+        // job task
+        bool     jobOn; float target[3]; uint64_t taskAt; float taskDist;
+        // phone call
+        uint8_t  callWith, ringFrom; uint64_t ringAt;
+        // shared emote / any request
+        uint8_t  askFrom; uint8_t askEmote; uint64_t askAt;
+        int32_t  fineAsk; uint8_t fineFrom;
+        int32_t  lastCash, lastBank; uint8_t lastJob, lastHunger, lastThirst; uint16_t lastJail;
+    };
+    struct RpSaved
+    {
+        int32_t cash = 0, bank = 0, xp = 0, number = 0; uint8_t job = 0, house = 255, pet = 255, hunger = 100, thirst = 100, nveh = 0;
+        uint32_t playMin = 0, pets = 0, items = 0, t = 0; uint16_t veh[RP_VEH_SLOTS] = {}, skin = 0, tasks = 0;
+    };
+    RpSrvPlayer  m_Rp[MP_MAX_PLAYERS];
+    std::map<std::string, RpSaved> m_RpSaved;
+    std::string  m_RpHouseOwner[RP_HOUSES_WIRE];
+    char         m_szRpFile[256] = "rp_citizens.txt";
+    uint64_t     m_nRpLastSend = 0, m_nRpLastPlayers = 0, m_nRpLastSave = 0, m_nRpNextEvent = 0, m_nRpEvEnd = 0;
+    uint8_t      m_nRpEvKind = 0, m_nRpEvState = 0, m_nRpEvNext = 1;
+    float        m_fRpEvPos[3] = { 0, 0, 0 };
+    int32_t      m_nRpLottoPot = 25000;
+    bool         m_bRpDirty = false;
+    void RpReset();
+    void RpLoad();
+    void RpSave();
+    const char* RpKey(int slot, char* buf, size_t n);
+    void RpStore(int slot);
+    void RpSendMe(int slot);
+    void RpSendPlayers(int slot);
+    void RpSendState(int slot);
+    void RpSendCard(int slot);
+    void RpOnCard(int slot, const PktRpCard& c);
+    void RpEv(int slot, uint8_t ev, uint8_t a, uint8_t b, uint8_t who, int32_t val, const float* f = nullptr, const char* text = nullptr);
+    void RpMsg(int slot, uint32_t rgba, const char* fmt, ...);
+    void RpNear(int slot, float range, uint32_t rgba, const char* text, bool fade = true);
+    void RpAll(uint32_t rgba, const char* fmt, ...);
+    bool RpPay(int slot, int32_t amount, const char* why);   // false = not enough cash (amount < 0)
+    void RpXp(int slot, int xp);
+    void RpTick(uint64_t now);
+    void RpEventTick(uint64_t now);
+    void RpNextTask(int slot);
+    void RpHandleCmd(int slot, const PktRpCmd& c);
+    bool RpOnDamage(int from, int target, float amount);
+    bool RpCanHurt(int from) const;
+    void RpOnDeath(int victim, int killer);
+    void RpOnLeave(int slot);
+    void RpOnJoin(int slot, bool fresh);
+    void RpOnAuthed(int slot);
+    void RpEndCall(int slot, const char* why);
+    int  RpFindNumber(int32_t number) const;
+    int  RpTarget(int slot, int id, float range, const char* what);
+    int  RpCallPartner(int slot) const { return (slot >= 0 && slot < MP_MAX_PLAYERS && m_Rp[slot].callWith < MP_MAX_PLAYERS) ? m_Rp[slot].callWith : -1; }
     void Log(const char* fmt, ...);
     void FillWorld(PktWorld& w);
 

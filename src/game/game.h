@@ -234,6 +234,9 @@ namespace Game
     bool  SetLocalModel(int model);                   // class selection: 0 = CJ (rebuilds his clothes)
     int   LocalModel();
     bool  PlayAnimLoop(int ped, const char* anim, const char* file);   // actors (idle animations), false = file not loaded yet
+    void  TaskFaceChar(int ped, int target);          // 3.25: turn to face someone (people you talk to)
+    void  TaskLookAtChar(int ped, int target, int ms);   // 3.25: head follows someone
+    void  FixCar(int car);                            // 3.25: full repair (mechanic job)
     void  EnterArea(int area);                        // interior / stadium area for me + my car (0 = outside)
 
     // ---- 2.18: NPC sync ----------------------------------------------------------------------
