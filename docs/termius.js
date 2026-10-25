@@ -329,17 +329,18 @@
     print('<span class="g">mp@lobby:~$</span> ' + esc(line));
     if (!line) return;
     var parts = line.split(/\s+/), c = parts[0].toLowerCase().replace(/^\//, '');
+    if (c === 'curl' && /update\.sh/.test(line)) { var bj = arguments[1]; return CMDS.update(bj && bj.region != null ? REG[bj.region].toLowerCase() : ''); }
     if (c === 'ping') { lastPingAt = Date.now(); p('m', 'measuring…'); return measure().then(function () { CMDS.status(); }); }
     if (CMDS[c]) return CMDS[c](parts[1]); else p('r', c + ': command not found');
   }
 
   // ---------------------------------------------------------------- 2.22: MP Bot planner
-  var boot = ['status', 'regions', 'servers', 'broker', 'update'], rot = ['status', 'servers', 'autopilot', 'status', 'servers', 'broker', 'update'], ri = 0, cycles = 0;
+  var boot = ['status', 'regions', 'servers', 'broker', UPD], rot = ['status', 'servers', 'autopilot', 'status', 'servers', 'broker', 'update'], ri = 0, cycles = 0;
   function next() {
     if (boot.length) return { cmd: boot.shift(), why: 'start-up check' };
     if (changed.length) { var i = changed.shift(); return { cmd: 'diagnose ' + REG[i].toLowerCase(), why: REG[i] + ' changed: ' + lastSig[i] }; }
     if (botLog.length > botSeen) return { cmd: 'autopilot', why: 'new report from a region autopilot' };
-    for (var u = 0; u < 4; u++) { var bh = behind(u); if (bh && updAsked[u] !== bh) { updAsked[u] = bh; return { cmd: 'update ' + REG[u].toLowerCase(), why: REG[u] + ': ' + bh }; } }
+    for (var u = 0; u < 4; u++) { var bh = behind(u); if (bh && updAsked[u] !== bh) { updAsked[u] = bh; return { cmd: UPD, region: u, why: REG[u] + ': ' + bh + ' - typing the update command' }; } }
     if (serversChanged) { serversChanged = false; return { cmd: 'servers', why: 'server list changed' }; }
     if (Date.now() - lastPingAt > 90000) return { cmd: 'ping', why: 'ping every 90 s', wait: 7000 };
     if (++cycles % 9 === 0) return { cmd: 'clear', why: 'keeping the screen short', wait: 600 };
