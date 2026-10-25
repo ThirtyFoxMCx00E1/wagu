@@ -615,6 +615,7 @@ static void RenderRpPhone(float nowF)
         ImGui::Dummy(ImVec2(1, UI::S(10)));
         const int cols = 4; float gap = UI::S(10), isz = (w - gap * (cols - 1)) / cols;
         ImDrawList* cd = ImGui::GetWindowDrawList();
+        ImVec2 auv(1, 1); void* apps = HUD::Texture("rp_apps.png", &auv);
         for(int i = 1; i < RPA_COUNT; ++i)
         {
             int k = i - 1; if(k % cols) ImGui::SameLine(0, gap);
@@ -623,9 +624,20 @@ static void RenderRpPhone(float nowF)
             bool hit = ImGui::InvisibleButton("##app", ImVec2(isz, isz + UI::S(22)));
             bool held = ImGui::IsItemActive();
             float ic = isz * 0.78f; ImVec2 ia(p.x + (isz - ic) * 0.5f, p.y), ib(ia.x + ic, ia.y + ic);
-            cd->AddRectFilled(ia, ib, RpCol(g_RpApps[i].col, held ? 0.7f : 1.0f), ic * 0.26f);
-            cd->AddRectFilledMultiColor(ia, ImVec2(ib.x, ia.y + ic * 0.45f), IM_COL32(255, 255, 255, 60), IM_COL32(255, 255, 255, 60), IM_COL32(255, 255, 255, 0), IM_COL32(255, 255, 255, 0));
-            float gfs = ic * 0.52f; UI::OutlinedText(cd, gfs, ImVec2((ia.x + ib.x - RpTextW(gfs, g_RpApps[i].glyph)) * 0.5f, ia.y + ic * 0.2f), IM_COL32_WHITE, g_RpApps[i].glyph);
+            if(apps)
+            {
+                // 3.25: drawn app icons from the rp_apps.png atlas (6 x 3 cells of 84 px, icon 80 px inside)
+                int cell = i - 1, c = cell % 6, r = cell / 6;
+                float u0 = (c * 84 + 2) / 504.0f * auv.x, v0 = (r * 84 + 2) / 252.0f * auv.y;
+                float u1 = (c * 84 + 82) / 504.0f * auv.x, v1 = (r * 84 + 82) / 252.0f * auv.y;
+                cd->AddImage((ImTextureID)apps, ia, ib, ImVec2(u0, v0), ImVec2(u1, v1), held ? IM_COL32(200, 200, 200, 255) : IM_COL32_WHITE);
+            }
+            else
+            {
+                cd->AddRectFilled(ia, ib, RpCol(g_RpApps[i].col, held ? 0.7f : 1.0f), ic * 0.26f);
+                cd->AddRectFilledMultiColor(ia, ImVec2(ib.x, ia.y + ic * 0.45f), IM_COL32(255, 255, 255, 60), IM_COL32(255, 255, 255, 60), IM_COL32(255, 255, 255, 0), IM_COL32(255, 255, 255, 0));
+                float gfs = ic * 0.52f; UI::OutlinedText(cd, gfs, ImVec2((ia.x + ib.x - RpTextW(gfs, g_RpApps[i].glyph)) * 0.5f, ia.y + ic * 0.2f), IM_COL32_WHITE, g_RpApps[i].glyph);
+            }
             float lfs = UI::S(14); const char* nm = g_RpApps[i].name; UI::OutlinedText(cd, lfs, ImVec2(p.x + (isz - RpTextW(lfs, nm)) * 0.5f, ib.y + UI::S(3)), IM_COL32_WHITE, nm);
             if(i == RPA_SMS && s_Rp.unreadSms) cd->AddCircleFilled(ImVec2(ib.x - UI::S(4), ia.y + UI::S(4)), UI::S(9), IM_COL32(239, 68, 68, 255));
             if(hit) { s_Rp.app = i; s_Rp.appSub = 0; if(i == RPA_SMS) { s_Rp.unreadSms = 0; s_Rp.smsThread = 0; } if(i == RPA_SHOP) s_nRpShopCat = -1; if(i == RPA_911) RpKb("911 - what happened?", RPKB_911, false); if(i == RPA_TAXI) RpKb("Taxi - where to? (optional)", RPKB_TAXI, false); }

@@ -983,7 +983,7 @@ static bool RpCommand(const char* cmd, const char* arg)
 
 // ================================ drawing =====================================================
 static ImU32 RpCol(uint32_t rgba, float a) { return UI::FromRGBA(rgba, a < 0 ? 0 : (a > 1 ? 1 : a)); }
-static void RpGlowRect(ImDrawList* dl, ImVec2 a, ImVec2 b, float r, float now, float alpha = 1.0f, uint32_t col = RP_SKY)
+[[maybe_unused]] static void RpGlowRect(ImDrawList* dl, ImVec2 a, ImVec2 b, float r, float now, float alpha = 1.0f, uint32_t col = RP_SKY)
 {
     float pulse = 0.6f + 0.4f * sinf(now * 0.004f);
     for(int i = 3; i >= 1; --i) { float g = UI::S(3.0f * i); dl->AddRect(ImVec2(a.x - g, a.y - g), ImVec2(b.x + g, b.y + g), RpCol(col, 0.10f * pulse * alpha * (4 - i)), r + g, 0, UI::S(3)); }
@@ -993,7 +993,7 @@ static void RpText(ImDrawList* dl, float fs, ImVec2 p, ImU32 c, const char* t) {
 static float RpTextW(float fs, const char* t) { return UI::Font()->CalcTextSizeA(fs, FLT_MAX, 0, t).x; }
 
 // the title at the top (screenshot 1). Drawn like the GTA SA titles: Pricedown, thick black outline and a
-// drop shadow, "Mega Vil" in sky blue, "Futuristic" in white, a small ROLEPLAY ribbon, the badge on the left.
+// drop shadow, "Mega Vil" in sky blue, "Futuristic" in white, a small ROLEPLAY ribbon (no badge).
 // (falls back to the normal font when pricedown.ttf isn't on the phone)
 static void RpGtaText(ImDrawList* dl, ImFont* f, float fs, ImVec2 p, ImU32 fill, const char* t, float th)
 {
@@ -1010,10 +1010,7 @@ static void RpDrawLogo(ImDrawList* dl, float cx, float y, float scale, float now
     float w1 = f->CalcTextSizeA(fs1, FLT_MAX, 0, t1).x, w2 = f->CalcTextSizeA(fs2, FLT_MAX, 0, t2).x;
     float gap = UI::S(10) * scale, tw = w1 + gap + w2;
     float bs = fs1 * 1.25f;
-    ImVec2 uv(1, 1);
-    void* tex = HUD::Texture("rp_icon.png", &uv);
-    float x = cx - (tw + (tex ? bs + gap : 0)) * 0.5f;
-    if(tex) { dl->AddImage((ImTextureID)tex, ImVec2(x, y), ImVec2(x + bs, y + bs), ImVec2(0, 0), uv); x += bs + gap; }
+    float x = cx - tw * 0.5f;   // 3.25: title only, no badge next to it (the badge stays in the server list)
     float ty = y + (bs - fs1) * 0.5f - UI::S(4) * scale;
     RpGtaText(dl, f, fs1, ImVec2(x, ty), RpCol(0x7DD3FCFF, 1), t1, th);
     RpGtaText(dl, f, fs2, ImVec2(x + w1 + gap, ty + (fs1 - fs2) * 0.78f), IM_COL32(255, 255, 255, 255), t2, th * 0.85f);
@@ -1048,10 +1045,10 @@ static void RpDrawHud(ImDrawList* dl, float now, uint64_t nowMs)
     RpDrawLogo(dl, ds.x * 0.5f, UI::S(10), 1.0f, now);
     // ---- right info panel (TIME / ID / NAME / JOB / CASH / BANK) ----
     {
-        float w = UI::S(330), x1 = ds.x - UI::S(14), x0 = x1 - w, y0 = UI::S(118), rh = UI::S(27);
+        // 3.25: under the game's clock / money / weapon / health / wanted stars (it covered them before),
+        // no background and no outline - only the text (it has its own black text outline)
+        float w = UI::S(330), x1 = ds.x - UI::S(14), x0 = x1 - w, y0 = UI::S(228), rh = UI::S(27);
         const int rows = 6; float y1 = y0 + rows * rh + UI::S(16);
-        dl->AddRectFilled(ImVec2(x0, y0), ImVec2(x1, y1), IM_COL32(4, 12, 24, 170), UI::S(12));
-        RpGlowRect(dl, ImVec2(x0, y0), ImVec2(x1, y1), UI::S(12), now, 0.8f);
         int hh, mm; Game::GetTimeOfDay(hh, mm);
         time_t tt = time(nullptr); struct tm* lt = localtime(&tt); char clock[32]; strftime(clock, sizeof(clock), "%H:%M  %d/%m", lt);
         const char* keys[rows] = { "TIME", "ID", "NAME", "JOB", "CASH", "BANK" };
@@ -1098,12 +1095,12 @@ static void RpDrawHud(ImDrawList* dl, float now, uint64_t nowMs)
         RpStatCircle(dl, ImVec2(cx + gap * 3, cy), r, m.thirst / 100.0f, 0x67E8F9FF, "W", "THIRST");
         RpStatCircle(dl, ImVec2(cx + gap * 4, cy), r, s_Rp.stamina / 100.0f, 0xFDE047FF, "S", "STAMINA");
     }
-    // ---- NEW CITIZEN box (sky blue) ----
+    // ---- NEW CITIZEN box ----
     if(m.newbieS)
     {
-        float w = UI::S(300), h = UI::S(64), x0 = ds.x - w - UI::S(14), y0 = ds.y - h - UI::S(150);
-        dl->AddRectFilled(ImVec2(x0, y0), ImVec2(x0 + w, y0 + h), RpCol(0x0284C7FF, 0.85f), UI::S(10));
-        RpGlowRect(dl, ImVec2(x0, y0), ImVec2(x0 + w, y0 + h), UI::S(10), now, 1.0f, 0xE0F2FEFF);
+        // 3.25: on the left (it covered the sprint button on the right), black 60 %, no outline
+        float w = UI::S(300), h = UI::S(64), x0 = UI::S(14), y0 = ds.y * 0.40f;
+        dl->AddRectFilled(ImVec2(x0, y0), ImVec2(x0 + w, y0 + h), IM_COL32(0, 0, 0, 153), UI::S(10));
         RpText(dl, UI::S(20), ImVec2(x0 + UI::S(12), y0 + UI::S(6)), IM_COL32_WHITE, "YOU ARE A NEW CITIZEN");
         snprintf(t, sizeof(t), "%02d:%02d:%02d left  -  /n for help", m.newbieS / 3600, (m.newbieS / 60) % 60, m.newbieS % 60);
         RpText(dl, UI::S(18), ImVec2(x0 + UI::S(12), y0 + UI::S(34)), RpCol(0xE0F2FEFF, 1), t);
@@ -1112,10 +1109,9 @@ static void RpDrawHud(ImDrawList* dl, float now, uint64_t nowMs)
     Vec3 me{}; bool haveMe = ped > 0 && Game::GetCharPos(ped, me);
     if(haveMe && RpInGreen(me.x, me.y))
     {
-        const char* g = "YOU ARE IN A GREENZONE"; float fs = UI::S(20), w = RpTextW(fs, g) + UI::S(28);
-        float x0 = UI::S(14), y0 = ds.y * 0.42f;
-        dl->AddRectFilled(ImVec2(x0, y0), ImVec2(x0 + w, y0 + UI::S(36)), RpCol(0x15803DFF, 0.85f), UI::S(8));
-        RpText(dl, fs, ImVec2(x0 + UI::S(14), y0 + UI::S(7)), IM_COL32_WHITE, g);
+        // 3.25: centred at the bottom, just above the status circles, text only (no background)
+        const char* g = "YOU ARE IN A GREENZONE"; float fs = UI::S(22), w = RpTextW(fs, g);
+        RpText(dl, fs, ImVec2((ds.x - w) * 0.5f, ds.y - UI::S(70) - UI::S(25) - UI::S(48)), RpCol(0x4ADE80FF, 1), g);
     }
     // ---- status lines: job / wanted / jail / cuffed / event ----
     float ly = UI::S(118);
