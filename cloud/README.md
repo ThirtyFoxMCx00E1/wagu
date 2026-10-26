@@ -26,6 +26,8 @@ curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/cloud/
 
 It installs Incus (bridge `incusbr0`, btrfs pool), a Python venv in `/opt/mp-cloud`, the `mp-cloud` systemd service on port 9000 and the firewall rules. Data lives in `/var/lib/mp-cloud` (SQLite + the Oracle key, mode 0600). Update: run the installer again.
 
+Or from your phone, no SSH app needed: add the repo secrets `VPS_HOST` (server IP) and `VPS_SSH_KEY` (private key; optional `VPS_USER`, default `ubuntu`, and `VPS_PORT`) in Settings -> Secrets and variables -> Actions, then Actions -> **MP Cloud install** -> Run workflow.
+
 Open `http://<server-ip>:9000`. **The first account becomes the admin.**
 
 ## Connect Oracle (once, admin)
