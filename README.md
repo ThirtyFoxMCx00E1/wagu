@@ -39,6 +39,42 @@ All four regions (one VPS each):
 
 From Termux on a phone: `pkg install -y openssh && ssh root@YOUR_VPS_IP "curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-setup.sh | bash -s europe"`. Point the DuckDNS name at the VPS first and open the ports (see Cloud firewall).
 
+## MP Oracle: free Oracle server by itself
+
+[`oracle/mp_oracle.py`](oracle/mp_oracle.py) is our own Oracle Cloud Always Free claimer, built from
+[oracle-freetier-instance-creation](https://github.com/ThirtyFoxMCx00E1/oracle-freetier-instance-creation),
+[oracle-cloud-free-arm-instance](https://github.com/ThirtyFoxMCx00E1/oracle-cloud-free-arm-instance) and
+[oci-claimer](https://github.com/ThirtyFoxMCx00E1/oci-claimer), plus the MP setup. It:
+
+1. checks the Oracle login and shows the home region and the free A1 left
+2. makes the network once (`mp-vcn`, gateway, public subnet) with every MP port open: TCP 22 80 1883 8000 8883 8884 7681, UDP 1922 1930 1931 1932
+3. asks for the free Ampere A1 server (2 OCPU / 12 GB, Ubuntu 24.04 arm64, public IP) and keeps asking on "Out of host capacity" in every availability domain
+4. the server installs itself on first boot: DuckDNS, iptables ports, then `vps-setup.sh <region>` (HiveMQ + Java 21 + Mega Vil 24/7)
+5. points `mpsamp` / `eusamp` / `nasamp` / `ocsamp.duckdns.org` at the new IP and tells Discord
+
+### From the phone (GitHub Actions, no computer)
+
+1. Make the Oracle account at [oracle.com/cloud/free](https://www.oracle.com/cloud/free/). The home region is the only free region and can't be changed: Singapore (Asia), Frankfurt (Europe), Ashburn (NA) or Sydney (Oceania).
+2. Oracle: Profile -> API keys -> Add API key -> download the private key -> Add. Copy the config it shows.
+3. This repo: Settings -> Secrets and variables -> Actions -> New repository secret:
+   `OCI_USER`, `OCI_TENANCY`, `OCI_FINGERPRINT`, `OCI_REGION` (from that config) and `OCI_KEY` (the whole .pem text).
+   Optional: `DUCKDNS_TOKEN`, `DISCORD_WEBHOOK`, `SSH_PUBLIC_KEY`. Variables tab: `MP_REGION` = `asia` / `europe` / `na` / `oceania`.
+4. Actions -> MP Oracle claim -> Run workflow. It tries for 50 minutes every hour until Oracle has room, then the server sets itself up in about 15 minutes. The run summary shows the IP.
+
+### From a Linux box or Termux
+
+```bash
+pip install oci
+python3 oracle/mp_oracle.py check                 # login + home region + free A1 left
+python3 oracle/mp_oracle.py claim --region europe # keeps trying until it gets the server
+python3 oracle/mp_oracle.py status                # the mp-* servers and their IPs
+```
+
+Login from `~/.oci/config` or the same `OCI_*` environment values. `--dry-run` shows what it would make.
+
+Rules from Oracle: free servers only in the home region, 2 OCPU + 12 GB of A1 in total, one account per person.
+So one account covers one MP region. For the other regions use the owner's own account (a team member there) or a paid VPS with `vps-setup.sh`.
+
 ## Debian 12 (own PC or VPS)
 
 Debian 12 works the same as Ubuntu and is a much smaller download. Our copy of the official installer is in the [Derbian release](https://github.com/ThirtyFoxMCx00E1/HiveMQ/releases/tag/Derbian):
@@ -312,6 +348,7 @@ config/rbac-config.xml       File RBAC extension settings (hashed passwords)
 config/99-mp-network.conf    sysctl: BBR, fq, bigger socket buffers, low-latency TCP
 systemd/*.service            hivemq, mp-server, mp-bridge, mp-status, mp-console
 cloud-init/user-data.yaml    paste-in VM setup from a phone (no computer, no SSH)
+oracle/mp_oracle.py          MP Oracle: claims the Oracle Always Free A1 server and installs it (+ .github/workflows/oracle-claim.yml)
 bridge/MpBridge.java         server-list bridge between regions (Java 21, no dependencies)
 tools/                       status.sh, make-regions.sh, hash-password.sh, mp-console.sh (menu), mp-status.py (beacon + autopilot)
 ```
@@ -321,6 +358,8 @@ Why Community Edition: the HiveMQ Enterprise download without a license is an ev
 ## Tagalog
 
 Walang Ubuntu? Puwede ang Debian 12 (677 MB lang): i-download ang ISO sa [Derbian release](https://github.com/ThirtyFoxMCx00E1/HiveMQ/releases/tag/Derbian), i-install (SSH server + standard system utilities lang), tapos bilang root: `wget -qO- https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-setup.sh | bash -s europe` (o `asia` / `na` / `oceania`).
+
+MP Oracle: ilagay ang Oracle API key sa repo Secrets (OCI_USER, OCI_TENANCY, OCI_FINGERPRINT, OCI_REGION, OCI_KEY), tapos Actions -> MP Oracle claim -> Run. Paulit-ulit itong susubok hanggang may libreng server, tapos kusa nang mag-iinstall.
 
 Walang computer? Gumawa ng VM sa browser ng phone, i-paste ang `cloud-init/user-data.yaml` (palitan ang REGION at DuckDNS), hintayin ang 10 minuto, tapos buksan ang Termius page ng website.
 
