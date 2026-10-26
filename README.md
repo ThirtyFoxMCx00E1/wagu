@@ -46,6 +46,10 @@ It builds `mp_server` on the phone and runs it 24/7 in the internet lobby (free 
 
 ## Changelog
 
+- **3.31**: The bag now uses the **PLAYER INFO + INVENTORY layout from the screenshot**, and the **ATM is in the Mega Vil style** (same real ATM layout).
+  - Bag (inventory) in the layout of the screenshot: PLAYER INFO on the left (cyan title bar, your name, the body figure with 6 % boxes joined by lines, HEALTH and ARMOUR bars, a full-width red CLOSE button) and INVENTORY on the right (cyan title bar, weight in Kg top right, a 5 x 3 grid of square cells with the name and amount in each, the picked cell dark blue, and AMOUNT / USE / GIVE / DROP along the bottom). All text in English.
+  - ATM: same real ATM layout (screen with 4 + 4 side keys, keypad, card reader, receipt, cash slot, EXIT), now drawn like the other Mega Vil Futuristic UI: dark glass, sky blue edges and glow lines, rounded keys. CANCEL / CLEAR / ENTER keep their red / yellow / green as coloured edges.
+  - Plays with 3.30 and the other supported versions (no server change; real drops still need a 3.30+ server).
 - **3.30**: New **bag layout** (Citizen + Backpack), a **real ATM machine screen**, **English food names**, **real dropped items** you can pick up, and the NPC talk outline / position fix.
   - Bag (inventory) in a new two-panel layout: CITIZEN on the left (body figure tinted by your condition, health / armour / food / water) and BACKPACK on the right (weight meter, 5 x 3 rounded tiles over the 16 slots with scroll, amount stepper - n +, USE / GIVE / DROP, round red X to close).
   - ATM: the screen is now a real ATM machine - steel body, blue MEGA BANK topper, blue screen with side keys (Withdrawal, Deposit, Investments, Transfer, fast cash), a 1-9 / 00 / 0 keypad with red CANCEL, yellow CLEAR and green ENTER, card reader, receipt slot and a cash slot that lights up after a withdrawal. No more green UI.

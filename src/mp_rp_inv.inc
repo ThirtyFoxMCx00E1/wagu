@@ -1,8 +1,8 @@
 // MP 3.26 - Mega Vil Futuristic: PANEL, status + bag (inventory), documents and the "Received"
 // toasts (included by mp.cpp after mp_rp_phone.inc). Own layout, sky blue on dark glass:
 //   - PANEL: a radial wheel of 5 segments (Vehicle, Documents, Status, Bag, Phone) around a close button
-//   - BAG (3.30): CITIZEN (body condition figure + chips, 4 vitals) next to BACKPACK (weight meter,
-//     5 x 3 tile grid over the 16 slots, amount stepper, USE / GIVE / DROP pills, round X close)
+//   - BAG (3.31): PLAYER INFO (body figure with 6 % boxes, health / armour, red CLOSE) next to
+//     INVENTORY (weight, 5 x 3 grid over the 16 slots, AMOUNT / USE / GIVE / DROP)
 //   - DOCUMENTS: a Mega Vil citizen ID card (photo, fields, licence pills, barcode), SHOW ID / CLOSE
 //   - "Received" toasts stacked on the right ("+10 Iced Tea - Added to your bag"); each stays 15 s,
 //     its time line running out, then fades + slides off in 20 ticks (1 tick = 50 ms)
@@ -294,62 +294,48 @@ static void RpDrawPanel(uint64_t nowMs)
     }
 }
 
-// ---- BAG (3.30): our own two-panel layout, centred on the screen
-//   - left  "CITIZEN": round badge + name, a body figure whose parts are tinted by their condition,
-//     6 condition chips joined to the body by thin lines, and 4 vitals (health, armour, food, water)
-//   - right "BACKPACK": weight meter, a 5 x 3 grid of rounded tiles over the 16 slots (drag the grid
-//     for the last row), the picked item's line, an amount stepper (- n +) and USE / GIVE / DROP pills,
-//     and a round X in the corner to close
-static const ImU32 kInvAcc = IM_COL32(56, 189, 248, 255), kInvAccDn = IM_COL32(14, 140, 200, 255), kInvInk = IM_COL32(6, 22, 38, 255);
-static const ImU32 kInvGlass = IM_COL32(11, 17, 30, 234), kInvTile = IM_COL32(26, 36, 56, 236), kInvTileSel = IM_COL32(18, 58, 92, 250);
-static const ImU32 kInvRed = IM_COL32(239, 68, 68, 255), kInvDim = IM_COL32(148, 166, 190, 255);
-enum { RPIB_FILL = 0, RPIB_LINE, RPIB_RED };
-static bool RpInvBtn(const char* id, ImVec2 a, ImVec2 sz, int style, const char* label, bool enabled = true, float rr = -1)
+// ---- BAG (3.31): the "PLAYER INFO" + "INVENTORY" layout from the screenshot, in English
+//   - left  PLAYER INFO: cyan title bar, your name, the body figure with 6 "100%" boxes joined to the
+//     body parts by lines (3 left, 3 right), HEALTH and ARMOUR bars, a full-width red CLOSE button
+//   - right INVENTORY: cyan title bar, the weight "0.5 / 50.0 Kg" top right, a 5 x 3 grid of square
+//     grey cells (16 slots, drag / wheel for the last one), name top-left + amount under it in a cell,
+//     the picked cell dark blue, and 4 cyan buttons along the bottom: AMOUNT, USE, GIVE, DROP
+static const ImU32 kInvCyan = IM_COL32(86, 204, 232, 255), kInvCyanDn = IM_COL32(44, 150, 186, 255), kInvInk = IM_COL32(12, 22, 30, 255);
+static const ImU32 kInvGlass = IM_COL32(24, 26, 30, 228), kInvCell = IM_COL32(58, 60, 66, 225), kInvCellSel = IM_COL32(24, 38, 72, 245);
+static const ImU32 kInvRed = IM_COL32(222, 72, 72, 255), kInvRedDn = IM_COL32(170, 40, 40, 255), kInvDim = IM_COL32(190, 196, 204, 255);
+// a flat square button: cyan (or red) with dark (or white) text
+static bool RpInvFlat(const char* id, ImVec2 a, ImVec2 sz, bool red, const char* label, bool enabled = true)
 {
     ImGui::SetCursorScreenPos(a);
     bool r = ImGui::InvisibleButton(id, sz), down = ImGui::IsItemActive() && enabled;
     ImDrawList* dl = ImGui::GetWindowDrawList();
     ImVec2 b(a.x + sz.x, a.y + sz.y);
-    if(rr < 0) rr = sz.y * 0.5f;
-    const float al = enabled ? 1.0f : 0.40f;
-    ImU32 tc;
-    if(style == RPIB_FILL) { dl->AddRectFilled(a, b, RpCol(down ? 0x0E8CC8FF : 0x38BDF8FF, al), rr); tc = RpCol(0x061626FF, al); }
-    else
-    {
-        uint32_t c = style == RPIB_RED ? 0xEF4444FF : 0x38BDF8FF;
-        dl->AddRectFilled(a, b, down ? RpCol(c, 0.30f) : IM_COL32(16, 26, 44, (int)(230 * al)), rr);
-        dl->AddRect(a, b, RpCol(c, al), rr, 0, UI::S(2));
-        tc = RpCol(style == RPIB_RED ? 0xFCA5A5FF : 0xE0F2FEFF, al);
-    }
-    RpCenterIn(dl, UI::S(17), a, b, tc, label);
+    ImU32 c = red ? (down ? kInvRedDn : kInvRed) : (down ? kInvCyanDn : kInvCyan);
+    if(!enabled) c = (c & 0x00FFFFFF) | (110u << 24);
+    dl->AddRectFilled(a, b, c, UI::S(2));
+    RpCenterIn(dl, UI::S(16), a, b, red ? IM_COL32_WHITE : (enabled ? kInvInk : IM_COL32(12, 22, 30, 150)), label);
     if(r && enabled) RpClick(RPS_CLICK);
     return r && enabled;
 }
-// a panel: rounded dark glass, a faint accent edge, a round glyph + title + subtitle, a line under it
-static void RpInvPanel(ImDrawList* dl, ImVec2 a, ImVec2 b, int glyph, const char* title, const char* sub, float k)
+// a panel: dark see-through box with a cyan title bar on top
+static void RpInvBox(ImDrawList* dl, ImVec2 a, ImVec2 b, const char* title, float k)
 {
-    dl->AddRectFilled(a, b, (kInvGlass & 0x00FFFFFF) | ((ImU32)(234 * k) << 24), UI::S(18));
-    dl->AddRect(a, b, RpCol(0x38BDF8FF, 0.30f * k), UI::S(18), 0, UI::S(1.5f));
-    ImVec2 gc(a.x + UI::S(36), a.y + UI::S(32));
-    dl->AddCircleFilled(gc, UI::S(19), RpCol(0x38BDF8FF, 0.18f), 28);
-    dl->AddCircle(gc, UI::S(19), kInvAcc, 28, UI::S(2));
-    RpPanelGlyph(dl, glyph, gc, UI::S(22), IM_COL32(224, 242, 254, 255));
-    RpPlainText(dl, UI::S(20), ImVec2(a.x + UI::S(66), a.y + UI::S(11)), IM_COL32_WHITE, title);
-    RpPlainText(dl, UI::S(13), ImVec2(a.x + UI::S(67), a.y + UI::S(36)), kInvDim, sub);
-    dl->AddRectFilledMultiColor(ImVec2(a.x + UI::S(16), a.y + UI::S(62)), ImVec2(b.x - UI::S(16), a.y + UI::S(64)),
-                                kInvAcc, IM_COL32(56, 189, 248, 0), IM_COL32(56, 189, 248, 0), kInvAcc);
+    dl->AddRectFilled(a, b, (kInvGlass & 0x00FFFFFF) | ((ImU32)(228 * k) << 24));
+    ImVec2 hb(b.x, a.y + UI::S(34));
+    dl->AddRectFilled(a, hb, kInvCyan);
+    RpCenterIn(dl, UI::S(16), a, hb, kInvInk, title);
 }
-// the body figure: every part tinted by its condition (ice white -> amber -> red), with a dark edge
+// the body figure: every part tinted by its condition (white -> amber -> red), with a dark edge
 static ImU32 RpInvPartCol(float q)
 {
-    if(q > 0.75f) return IM_COL32(186, 230, 253, 255);
+    if(q > 0.75f) return IM_COL32(236, 240, 244, 255);
     if(q > 0.40f) return IM_COL32(251, 191, 36, 255);
-    return IM_COL32(248, 96, 96, 255);
+    return IM_COL32(240, 90, 90, 255);
 }
 static void RpInvFigure(ImDrawList* dl, float cx, float top, float s)
 {
     const float* p = s_Inv.part;   // head, torso, left arm, right arm, left leg, right leg
-    const ImU32 edge = IM_COL32(2, 8, 18, 200);
+    const ImU32 edge = IM_COL32(8, 10, 14, 210);
     const float arm = UI::S(15) * s, leg = UI::S(20) * s, e = UI::S(4) * s;
     auto Limb = [&](ImVec2 a, ImVec2 m, ImVec2 b, float th, ImU32 c)
     {
@@ -359,8 +345,7 @@ static void RpInvFigure(ImDrawList* dl, float cx, float top, float s)
         dl->AddCircleFilled(m, th * 0.5f, c, 12); dl->AddCircleFilled(b, th * 0.5f, c, 12);
     };
     auto P = [&](float x, float y) { return ImVec2(cx + UI::S(x) * s, top + UI::S(y) * s); };
-    // a soft floor shadow, legs, arms, then the torso and the head on top
-    dl->AddRectFilled(P(-46, 250), P(46, 262), IM_COL32(56, 189, 248, 40), UI::S(6) * s);
+    dl->AddRectFilled(P(-40, 250), P(40, 258), IM_COL32(0, 0, 0, 70), UI::S(4) * s);
     Limb(P(-15, 140), P(-18, 194), P(-20, 246), leg, RpInvPartCol(p[4] / 100.0f));
     Limb(P( 15, 140), P( 18, 194), P( 20, 246), leg, RpInvPartCol(p[5] / 100.0f));
     Limb(P(-40,  60), P(-52, 110), P(-56, 156), arm, RpInvPartCol(p[2] / 100.0f));
@@ -373,17 +358,17 @@ static void RpInvFigure(ImDrawList* dl, float cx, float top, float s)
     dl->AddCircleFilled(P(0, 20), UI::S(22) * s, edge, 28);
     dl->AddCircleFilled(P(0, 20), UI::S(19) * s, RpInvPartCol(p[0] / 100.0f), 28);
 }
-// a vital: label + value on one line, a rounded bar under it
-static void RpInvVital(ImDrawList* dl, ImVec2 a, float w, const char* label, float v, ImU32 col)
+// HEALTH / ARMOUR: label on the left, value on the right, a flat bar under it
+static void RpInvStat(ImDrawList* dl, ImVec2 a, float w, const char* label, float v, ImU32 col)
 {
     char t[16]; snprintf(t, sizeof(t), "%d", (int)(v + 0.5f));
-    RpPlainText(dl, UI::S(13), a, kInvDim, label);
+    RpPlainText(dl, UI::S(14), a, IM_COL32_WHITE, label);
     float tw = RpTextW(UI::S(14), t);
-    RpPlainText(dl, UI::S(14), ImVec2(a.x + w - tw, a.y - UI::S(1)), IM_COL32_WHITE, t);
-    ImVec2 ba(a.x, a.y + UI::S(21)), bb(a.x + w, a.y + UI::S(30));
-    dl->AddRectFilled(ba, bb, IM_COL32(34, 46, 68, 255), UI::S(5));
+    RpPlainText(dl, UI::S(14), ImVec2(a.x + w - tw, a.y), IM_COL32_WHITE, t);
+    ImVec2 ba(a.x, a.y + UI::S(20)), bb(a.x + w - tw - UI::S(10), a.y + UI::S(28));
+    dl->AddRectFilled(ba, bb, IM_COL32(70, 72, 78, 230));
     float q = v / 100.0f; if(q > 1) q = 1; if(q < 0) q = 0;
-    if(q > 0.02f) dl->AddRectFilled(ba, ImVec2(ba.x + (bb.x - ba.x) * q, bb.y), col, UI::S(5));
+    if(q > 0.005f) dl->AddRectFilled(ba, ImVec2(ba.x + (bb.x - ba.x) * q, bb.y), col);
 }
 static void RpDrawInvWindow(uint64_t nowMs)
 {
@@ -391,185 +376,132 @@ static void RpDrawInvWindow(uint64_t nowMs)
     ImGuiIO& io = ImGui::GetIO();
     const PktRpInv& inv = s_Inv.inv;
     float k = (nowMs - s_Inv.winAt) / 160.0f; if(k > 1) k = 1;
-    // sizes: the backpack sets the height, the citizen panel sits on its left
     const int COLS = 5, VROWS = 3;
-    const float rw = UI::S(660), lw = UI::S(420), gapP = UI::S(20), pad = UI::S(18), gap = UI::S(10);
-    const float tw = (rw - pad * 2 - gap * (COLS - 1)) / COLS, th = tw * 0.86f;
-    const float viewH = th * VROWS + gap * (VROWS - 1);
-    const float top0 = UI::S(64) + UI::S(52);   // header + weight meter
-    const float H = top0 + viewH + UI::S(48) + UI::S(54) + pad;
+    const float rw = UI::S(640), lw = UI::S(410), gapP = UI::S(16), pad = UI::S(12), gap = UI::S(8);
+    const float cw = (rw - pad * 2 - gap * (COLS - 1)) / COLS, ch = cw;   // square cells
+    const float viewH = ch * VROWS + gap * (VROWS - 1);
+    const float head = UI::S(34), top0 = head + UI::S(40);   // title bar + the weight line
+    const float bh = UI::S(46);
+    const float H = top0 + viewH + UI::S(18) + bh + pad;
     const float totalW = lw + gapP + rw;
-    float x0 = (ds.x - totalW) * 0.5f, y0 = (ds.y - H) * 0.5f + (1.0f - k) * UI::S(30);
+    float x0 = (ds.x - totalW) * 0.5f, y0 = (ds.y - H) * 0.5f - UI::S(30) + (1.0f - k) * UI::S(24);
     if(y0 < UI::S(8)) y0 = UI::S(8);
     ImVec2 la(x0, y0), lb(x0 + lw, y0 + H), ra(lb.x + gapP, y0), rb(ra.x + rw, y0 + H);
     BcwBeginOverlay("##RpInv", ImVec2(0, 0), ds, 0.0f);
     ImDrawList* dl = ImGui::GetWindowDrawList();
     const ImU32 white = IM_COL32_WHITE;
     char t[96];
-    // ---------------- CITIZEN ----------------
-    snprintf(t, sizeof(t), "%s  -  ID %d", settings.name, myId);
-    RpInvPanel(dl, la, lb, 2, "CITIZEN", t, k);
+    // ---------------- PLAYER INFO ----------------
+    RpInvBox(dl, la, lb, "PLAYER INFO", k);
     {
-        const float vy0 = lb.y - pad - UI::S(84) - UI::S(30);   // where the vitals start (with room)
-        float fs = (vy0 - (la.y + UI::S(84))) / UI::S(268); if(fs > 1.25f) fs = 1.25f; if(fs < 0.7f) fs = 0.7f;
-        const float cx = (la.x + lb.x) * 0.5f, top = la.y + UI::S(84) + (vy0 - (la.y + UI::S(84)) - UI::S(268) * fs) * 0.5f;
+        snprintf(t, sizeof(t), "%s (ID %d)", settings.name, myId);
+        dl->PushClipRect(ImVec2(la.x + pad, la.y + head), ImVec2(lb.x - pad, la.y + head + UI::S(30)), true);
+        RpPlainText(dl, UI::S(14), ImVec2(la.x + pad, la.y + head + UI::S(7)), kInvDim, t);
+        dl->PopClipRect();
+        const float closeY = lb.y - pad - bh, statY = closeY - UI::S(84);
+        const float figTop0 = la.y + head + UI::S(36), figH = statY - UI::S(10) - figTop0;
+        float fs = figH / UI::S(262); if(fs > 1.0f) fs = 1.0f; if(fs < 0.6f) fs = 0.6f;
+        const float cx = (la.x + lb.x) * 0.5f, top = figTop0 + (figH - UI::S(262) * fs) * 0.5f;
         RpInvFigure(dl, cx, top, fs);
-        // 6 chips: head / left arm / left leg on the left, torso / right arm / right leg on the right
-        struct Tag { int part; bool right; float ty; float ax, ay; };
+        // 6 "100%" boxes: 3 left (head, left arm, left leg), 3 right (torso, right arm, right leg)
+        struct Tag { int part; bool right; float y; float ax, ay; };
         static const Tag kTags[6] = {
-            { 0, false,   4, -18,  20 }, { 2, false,  92, -50, 108 }, { 4, false, 180, -18, 196 },
-            { 1, true,    4,  30,  78 }, { 3, true,   92,  50, 108 }, { 5, true,  180,  18, 196 } };
-        const float bw = UI::S(114), bh = UI::S(32);
+            { 0, false,  30, -14,  30 }, { 2, false, 120, -54, 120 }, { 4, false, 214, -19, 214 },
+            { 1, true,   30,  36,  70 }, { 3, true,  120,  54, 120 }, { 5, true,  214,  19, 214 } };
+        const float tbw = UI::S(70), tbh = UI::S(26);
         for(const Tag& g : kTags)
         {
             float q = s_Inv.part[g.part];
-            float bx = g.right ? lb.x - pad - bw : la.x + pad, by = top + UI::S(g.ty) * fs;
-            ImVec2 ba(bx, by), bb(bx + bw, by + bh);
-            ImU32 qc = RpCol(RpCondCol(q / 100.0f), 1);
-            dl->AddRectFilled(ba, bb, IM_COL32(20, 30, 50, 245), bh * 0.5f);
-            dl->AddRect(ba, bb, RpCol(RpCondCol(q / 100.0f), 0.55f), bh * 0.5f, 0, UI::S(1.5f));
-            dl->AddCircleFilled(ImVec2(ba.x + UI::S(14), (ba.y + bb.y) * 0.5f), UI::S(4.5f), qc, 12);
-            RpPlainText(dl, UI::S(12), ImVec2(ba.x + UI::S(24), ba.y + UI::S(8)), kInvDim, kRpParts[g.part]);
+            float yy = top + UI::S(g.y) * fs;
+            float bx = g.right ? lb.x - pad - tbw : la.x + pad;
+            ImVec2 ba(bx, yy - tbh * 0.5f), bb(bx + tbw, yy + tbh * 0.5f);
+            ImVec2 to(cx + UI::S(g.ax) * fs, top + UI::S(g.ay) * fs), from(g.right ? ba.x : bb.x, yy);
+            dl->AddLine(from, ImVec2(to.x, yy), IM_COL32(230, 232, 236, 200), UI::S(1.5f));
+            if(fabsf(to.y - yy) > 1) dl->AddLine(ImVec2(to.x, yy), to, IM_COL32(230, 232, 236, 200), UI::S(1.5f));
+            dl->AddRectFilled(ba, bb, IM_COL32(14, 15, 18, 235));
+            dl->AddRect(ba, bb, IM_COL32(255, 255, 255, 40), 0, 0, UI::S(1));
             snprintf(t, sizeof(t), "%d%%", (int)(q + 0.5f));
-            float pw = RpTextW(UI::S(14), t);
-            RpPlainText(dl, UI::S(14), ImVec2(bb.x - UI::S(12) - pw, ba.y + UI::S(7)), white, t);
-            // a thin line from the chip to the body part
-            ImVec2 from(g.right ? ba.x : bb.x, (ba.y + bb.y) * 0.5f), to(cx + UI::S(g.ax) * fs, top + UI::S(g.ay) * fs);
-            dl->AddLine(from, to, IM_COL32(186, 230, 253, 120), UI::S(1.5f));
-            dl->AddCircle(to, UI::S(4), kInvAcc, 12, UI::S(1.5f));
+            RpCenterIn(dl, UI::S(14), ba, bb, q > 75 ? white : RpCol(RpCondCol(q / 100.0f), 1), t);
         }
-        // 4 vitals in 2 x 2
         int ped = Game::LocalPed();
         float hp = ped > 0 ? (float)Game::GetCharHealth(ped) : 0, ar = ped > 0 ? (float)Game::GetCharArmour(ped) : 0;
-        const PktRpMe& m = s_Rp.me;
-        const float vw = (lw - pad * 3) * 0.5f, vy = lb.y - pad - UI::S(84);
-        dl->AddLine(ImVec2(la.x + pad, vy - UI::S(14)), ImVec2(lb.x - pad, vy - UI::S(14)), IM_COL32(255, 255, 255, 26), UI::S(1));
-        RpInvVital(dl, ImVec2(la.x + pad, vy), vw, "HEALTH", hp, kInvRed);
-        RpInvVital(dl, ImVec2(la.x + pad * 2 + vw, vy), vw, "ARMOUR", ar, IM_COL32(203, 213, 225, 255));
-        RpInvVital(dl, ImVec2(la.x + pad, vy + UI::S(46)), vw, "FOOD", s_Rp.haveMe ? m.hunger : 0, IM_COL32(251, 146, 60, 255));
-        RpInvVital(dl, ImVec2(la.x + pad * 2 + vw, vy + UI::S(46)), vw, "WATER", s_Rp.haveMe ? m.thirst : 0, kInvAcc);
+        RpInvStat(dl, ImVec2(la.x + pad, statY), lw - pad * 2, "HEALTH", hp, kInvRed);
+        RpInvStat(dl, ImVec2(la.x + pad, statY + UI::S(40)), lw - pad * 2, "ARMOUR", ar, IM_COL32(220, 224, 230, 255));
+        if(RpInvFlat("##ivclose", ImVec2(la.x + pad, closeY), ImVec2(lw - pad * 2, bh), true, "CLOSE")) s_Inv.win = RPW_NONE;
     }
-    // ---------------- BACKPACK ----------------
-    int used = 0; if(s_Inv.have) for(int i = 0; i < RP_INV_SLOTS; ++i) if(inv.slot[i].id && inv.slot[i].id < RPX_COUNT) ++used;
-    snprintf(t, sizeof(t), "%d of %d slots used", used, RP_INV_SLOTS);
-    RpInvPanel(dl, ra, rb, 3, "BACKPACK", t, k);
-    // close: a round X in the corner
-    {
-        ImVec2 xc(rb.x - UI::S(34), ra.y + UI::S(32));
-        ImGui::SetCursorScreenPos(ImVec2(xc.x - UI::S(24), xc.y - UI::S(24)));
-        bool r = ImGui::InvisibleButton("##ivx", ImVec2(UI::S(48), UI::S(48)));
-        bool dn = ImGui::IsItemActive();
-        dl->AddCircleFilled(xc, UI::S(19), dn ? kInvRed : IM_COL32(40, 20, 28, 240), 28);
-        dl->AddCircle(xc, UI::S(19), kInvRed, 28, UI::S(2));
-        const float q = UI::S(7);
-        dl->AddLine(ImVec2(xc.x - q, xc.y - q), ImVec2(xc.x + q, xc.y + q), white, UI::S(2.5f));
-        dl->AddLine(ImVec2(xc.x + q, xc.y - q), ImVec2(xc.x - q, xc.y + q), white, UI::S(2.5f));
-        if(r) { RpClick(RPS_CLICK); s_Inv.win = RPW_NONE; }
-    }
+    // ---------------- INVENTORY ----------------
+    RpInvBox(dl, ra, rb, "INVENTORY", k);
     bool have = s_Inv.sel >= 0 && s_Inv.sel < RP_INV_SLOTS && s_Inv.have && inv.slot[s_Inv.sel].id && inv.slot[s_Inv.sel].id < RPX_COUNT;
-    {   // weight meter
+    {   // the weight, top right
         int w = s_Inv.have ? inv.weight : 0, mw = s_Inv.have && inv.maxWeight ? inv.maxWeight : RP_INV_MAX_W;
-        float y = ra.y + UI::S(76);
-        RpPlainText(dl, UI::S(13), ImVec2(ra.x + pad, y), kInvDim, "WEIGHT");
-        snprintf(t, sizeof(t), "%d.%d / %d.%d kg", w / 10, w % 10, mw / 10, mw % 10);
-        bool heavy = w * 10 >= mw * 9;
+        snprintf(t, sizeof(t), "%d.%d / %d.%d Kg", w / 10, w % 10, mw / 10, mw % 10);
         float ww = RpTextW(UI::S(14), t);
-        RpPlainText(dl, UI::S(14), ImVec2(rb.x - pad - ww, y - UI::S(1)), heavy ? kInvRed : white, t);
-        ImVec2 ma(ra.x + pad + UI::S(70), y + UI::S(5)), mb(rb.x - pad - ww - UI::S(14), y + UI::S(13));
-        dl->AddRectFilled(ma, mb, IM_COL32(34, 46, 68, 255), UI::S(4));
-        float q = mw > 0 ? (float)w / mw : 0; if(q > 1) q = 1;
-        if(q > 0.01f) dl->AddRectFilled(ma, ImVec2(ma.x + (mb.x - ma.x) * q, mb.y), heavy ? kInvRed : kInvAcc, UI::S(4));
+        RpPlainText(dl, UI::S(14), ImVec2(rb.x - pad - ww, ra.y + head + UI::S(11)), w * 10 >= mw * 9 ? kInvRed : white, t);
+        if(have)
+        {
+            const RpInvDef& d = g_RpInv[inv.slot[s_Inv.sel].id];
+            char desc[64]; RpItemDesc(d, desc, sizeof(desc));
+            snprintf(t, sizeof(t), "%s - %s", d.name, desc);
+            dl->PushClipRect(ImVec2(ra.x + pad, ra.y + head), ImVec2(rb.x - pad - ww - UI::S(12), ra.y + top0), true);
+            RpPlainText(dl, UI::S(14), ImVec2(ra.x + pad, ra.y + head + UI::S(11)), kInvDim, t);
+            dl->PopClipRect();
+        }
     }
-    // the grid: a 5 x 3 window over the 16 slots; drag it (or the wheel) for the last row
     ImVec2 va(ra.x + pad, ra.y + top0), vb(rb.x - pad, va.y + viewH);
     const int rows = (RP_INV_SLOTS + COLS - 1) / COLS;
-    const float contentH = rows * th + (rows - 1) * gap, maxS = contentH > viewH ? contentH - viewH : 0;
+    const float contentH = rows * ch + (rows - 1) * gap, maxS = contentH > viewH ? contentH - viewH : 0;
     ImGui::SetCursorScreenPos(va);
     bool gridTap = ImGui::InvisibleButton("##ivgrid", ImVec2(vb.x - va.x, vb.y - va.y));
     if(ImGui::IsItemActive() && ImGui::IsMouseDragging(0, UI::S(6))) s_Inv.scroll -= io.MouseDelta.y;
-    if(ImGui::IsItemHovered() && io.MouseWheel != 0) s_Inv.scroll -= io.MouseWheel * (th + gap);
+    if(ImGui::IsItemHovered() && io.MouseWheel != 0) s_Inv.scroll -= io.MouseWheel * (ch + gap);
     if(s_Inv.scroll < 0) s_Inv.scroll = 0;
     if(s_Inv.scroll > maxS) s_Inv.scroll = maxS;
     if(gridTap && io.MouseDragMaxDistanceSqr[0] < UI::S(12) * UI::S(12))
     {
         float lx = io.MousePos.x - va.x, ly = io.MousePos.y - va.y + s_Inv.scroll;
-        int c = (int)(lx / (tw + gap)), r = (int)(ly / (th + gap)), i = r * COLS + c;
-        bool onTile = lx >= 0 && ly >= 0 && c < COLS && lx - c * (tw + gap) <= tw && ly - r * (th + gap) <= th;
-        if(onTile && i < RP_INV_SLOTS && s_Inv.have && inv.slot[i].id && inv.slot[i].id < RPX_COUNT)
+        int c = (int)(lx / (cw + gap)), r = (int)(ly / (ch + gap)), i = r * COLS + c;
+        bool onCell = lx >= 0 && ly >= 0 && c < COLS && lx - c * (cw + gap) <= cw && ly - r * (ch + gap) <= ch;
+        if(onCell && i < RP_INV_SLOTS && s_Inv.have && inv.slot[i].id && inv.slot[i].id < RPX_COUNT)
         { RpClick(RPS_CLICK); if(s_Inv.sel != i) { s_Inv.sel = i; s_Inv.amount = 1; } else s_Inv.sel = -1; }
     }
-    dl->PushClipRect(ImVec2(va.x - UI::S(3), va.y), ImVec2(vb.x + UI::S(3), vb.y), true);
+    dl->PushClipRect(va, ImVec2(vb.x + UI::S(8), vb.y), true);
     for(int i = 0; i < rows * COLS; ++i)
     {
         int c = i % COLS, r = i / COLS;
-        ImVec2 ca(va.x + c * (tw + gap), va.y + r * (th + gap) - s_Inv.scroll), cb(ca.x + tw, ca.y + th);
+        ImVec2 ca(va.x + c * (cw + gap), va.y + r * (ch + gap) - s_Inv.scroll), cb(ca.x + cw, ca.y + ch);
         if(cb.y < va.y || ca.y > vb.y) continue;
-        if(i >= RP_INV_SLOTS) { dl->AddRect(ca, cb, IM_COL32(255, 255, 255, 18), UI::S(12), 0, UI::S(1.5f)); continue; }   // no slot here
+        if(i >= RP_INV_SLOTS) { dl->AddRectFilled(ca, cb, IM_COL32(58, 60, 66, 90)); continue; }
         bool full = s_Inv.have && inv.slot[i].id && inv.slot[i].id < RPX_COUNT, sel = s_Inv.sel == i;
-        dl->AddRectFilled(ca, cb, sel ? kInvTileSel : kInvTile, UI::S(12));
-        if(sel) dl->AddRect(ca, cb, kInvAcc, UI::S(12), 0, UI::S(3));
-        else dl->AddRect(ca, cb, IM_COL32(255, 255, 255, 16), UI::S(12), 0, UI::S(1.5f));
+        dl->AddRectFilled(ca, cb, sel ? kInvCellSel : kInvCell);
+        if(sel) dl->AddRect(ca, cb, IM_COL32(120, 150, 220, 200), 0, 0, UI::S(2));
         if(!full) continue;
         const RpInvSlot& sl = inv.slot[i];
-        RpItemIcon(dl, sl.id, ImVec2((ca.x + cb.x) * 0.5f, ca.y + th * 0.44f), th * 0.50f);
-        // the count in a small pill top-right, the name along the bottom
-        snprintf(t, sizeof(t), "%u", sl.count);
-        float cw2 = RpTextW(UI::S(13), t) + UI::S(14);
-        ImVec2 pa(cb.x - cw2 - UI::S(6), ca.y + UI::S(6)), pb(cb.x - UI::S(6), ca.y + UI::S(26));
-        dl->AddRectFilled(pa, pb, sel ? kInvAcc : IM_COL32(56, 189, 248, 70), UI::S(10));
-        RpCenterIn(dl, UI::S(13), pa, pb, sel ? kInvInk : white, t);
-        dl->PushClipRect(ImVec2(ca.x + UI::S(6), ca.y), ImVec2(cb.x - UI::S(6), cb.y), true);
-        float nw = RpTextW(UI::S(13), g_RpInv[sl.id].name);
-        RpPlainText(dl, UI::S(13), ImVec2(nw < tw - UI::S(12) ? (ca.x + cb.x - nw) * 0.5f : ca.x + UI::S(6), cb.y - UI::S(22)), IM_COL32(224, 242, 254, 255), g_RpInv[sl.id].name);
+        dl->PushClipRect(ca, cb, true);
+        RpPlainText(dl, UI::S(13), ImVec2(ca.x + UI::S(6), ca.y + UI::S(4)), white, g_RpInv[sl.id].name);
+        snprintf(t, sizeof(t), "x%u", sl.count);
+        RpPlainText(dl, UI::S(13), ImVec2(ca.x + UI::S(6), ca.y + UI::S(21)), kInvDim, t);
         dl->PopClipRect();
+        RpItemIcon(dl, sl.id, ImVec2((ca.x + cb.x) * 0.5f, ca.y + ch * 0.62f), ch * 0.46f);
     }
     dl->PopClipRect();
     if(maxS > 0)
-    {   // a thin scroll bar right of the grid
-        float bx = vb.x + UI::S(6), bh2 = viewH * viewH / contentH, by = va.y + (viewH - bh2) * (s_Inv.scroll / maxS);
-        dl->AddRectFilled(ImVec2(bx, va.y), ImVec2(bx + UI::S(4), vb.y), IM_COL32(255, 255, 255, 26), UI::S(2));
-        dl->AddRectFilled(ImVec2(bx, by), ImVec2(bx + UI::S(4), by + bh2), kInvAcc, UI::S(2));
+    {
+        float bx = vb.x + UI::S(3), bh2 = viewH * viewH / contentH, by = va.y + (viewH - bh2) * (s_Inv.scroll / maxS);
+        dl->AddRectFilled(ImVec2(bx, by), ImVec2(bx + UI::S(4), by + bh2), kInvCyan);
     }
     if(!s_Inv.have) RpCenterIn(dl, UI::S(18), va, vb, IM_COL32(230, 230, 230, 220), "Opening the bag...");
-    // the picked item's line
-    {
-        float y = vb.y + UI::S(13);
-        if(have)
-        {
-            const RpInvDef& d = g_RpInv[inv.slot[s_Inv.sel].id];
-            char desc[64]; RpItemDesc(d, desc, sizeof(desc));
-            dl->PushClipRect(ImVec2(ra.x + pad, y - UI::S(4)), ImVec2(rb.x - pad, y + UI::S(30)), true);
-            RpPlainText(dl, UI::S(16), ImVec2(ra.x + pad, y), white, d.name);
-            RpPlainText(dl, UI::S(15), ImVec2(ra.x + pad + RpTextW(UI::S(16), d.name) + UI::S(14), y + UI::S(1)), kInvAcc, desc);
-            dl->PopClipRect();
-        }
-        else RpPlainText(dl, UI::S(15), ImVec2(ra.x + pad, y), kInvDim, "Tap an item to pick it.");
-    }
-    // amount stepper (- n +) and the USE / GIVE / DROP pills
-    {
-        const float bh = UI::S(50), bg = UI::S(10), by = rb.y - pad - bh;
-        const float sw = UI::S(178), pw = (rw - pad * 2 - sw - bg * 3) / 3.0f;
+    {   // AMOUNT / USE / GIVE / DROP
+        const float by = rb.y - pad - bh, bg = UI::S(14), bw = (rw - pad * 2 - bg * 3) / 4.0f;
         float x = ra.x + pad;
-        int mx = have ? inv.slot[s_Inv.sel].count : 1;
-        dl->AddRectFilled(ImVec2(x, by), ImVec2(x + sw, by + bh), IM_COL32(16, 26, 44, 240), bh * 0.5f);
-        dl->AddRect(ImVec2(x, by), ImVec2(x + sw, by + bh), IM_COL32(56, 189, 248, 110), bh * 0.5f, 0, UI::S(1.5f));
-        if(RpInvBtn("##ivm", ImVec2(x + UI::S(4), by + UI::S(4)), ImVec2(bh - UI::S(8), bh - UI::S(8)), RPIB_LINE, "-", have && s_Inv.amount > 1)) --s_Inv.amount;
-        if(RpInvBtn("##ivp", ImVec2(x + sw - bh + UI::S(4), by + UI::S(4)), ImVec2(bh - UI::S(8), bh - UI::S(8)), RPIB_LINE, "+", have && s_Inv.amount < mx)) ++s_Inv.amount;
-        {   // the number in the middle: tap it to type
-            ImVec2 na(x + bh, by), nsz(sw - bh * 2, bh);
-            ImGui::SetCursorScreenPos(na);
-            if(ImGui::InvisibleButton("##iva", nsz) && have)
-            { RpClick(RPS_CLICK); char init[8]; snprintf(init, sizeof(init), "%d", s_Inv.amount); VKeyboard::Open("Amount", init, 2, RpInvKbSubmit, (void*)(intptr_t)RPKI_AMOUNT, true); }
-            snprintf(t, sizeof(t), "%d", have ? s_Inv.amount : 0);
-            RpCenterIn(dl, UI::S(19), ImVec2(na.x, na.y - UI::S(6)), ImVec2(na.x + nsz.x, na.y + nsz.y - UI::S(6)), have ? white : kInvDim, t);
-            RpCenterIn(dl, UI::S(11), ImVec2(na.x, na.y + UI::S(26)), ImVec2(na.x + nsz.x, na.y + nsz.y), kInvDim, "AMOUNT");
-        }
-        x += sw + bg;
-        if(RpInvBtn("##ivu", ImVec2(x, by), ImVec2(pw, bh), RPIB_FILL, "USE", have)) RpInvUse();
-        x += pw + bg;
-        if(RpInvBtn("##ivg", ImVec2(x, by), ImVec2(pw, bh), RPIB_LINE, "GIVE", have)) RpInvGive();
-        x += pw + bg;
-        if(RpInvBtn("##ivd", ImVec2(x, by), ImVec2(pw, bh), RPIB_RED, "DROP", have)) RpInvDrop();
+        if(have && s_Inv.amount > 1) snprintf(t, sizeof(t), "AMOUNT: %d", s_Inv.amount); else snprintf(t, sizeof(t), "AMOUNT");
+        if(RpInvFlat("##iva", ImVec2(x, by), ImVec2(bw, bh), false, t, have))
+        { char init[8]; snprintf(init, sizeof(init), "%d", s_Inv.amount); VKeyboard::Open("Amount", init, 2, RpInvKbSubmit, (void*)(intptr_t)RPKI_AMOUNT, true); }
+        x += bw + bg;
+        if(RpInvFlat("##ivu", ImVec2(x, by), ImVec2(bw, bh), false, "USE", have)) RpInvUse();
+        x += bw + bg;
+        if(RpInvFlat("##ivg", ImVec2(x, by), ImVec2(bw, bh), false, "GIVE", have)) RpInvGive();
+        x += bw + bg;
+        if(RpInvFlat("##ivd", ImVec2(x, by), ImVec2(bw, bh), false, "DROP", have)) RpInvDrop();
     }
     ImVec2 mp = io.MousePos;
     bool inside = (mp.x >= la.x && mp.x <= lb.x && mp.y >= la.y && mp.y <= lb.y) || (mp.x >= ra.x && mp.x <= rb.x + UI::S(12) && mp.y >= ra.y && mp.y <= rb.y);
