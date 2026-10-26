@@ -36,7 +36,7 @@ struct RpClientState
     // job / call / event target
     bool        tgtOn = false; Vec3 tgt{}; int tgtCp = 0, tgtBlip = 0; uint32_t tgtCol = RP_SKY; char tgtText[96] = "";
     Vec3        callPos{}; int callBlip = 0; uint64_t callAt = 0; char callText[48] = "";
-    int         gpsBlip = 0; char gpsName[48] = "";
+    int         gpsBlip = 0; char gpsName[48] = ""; Vec3 gpsPos{};
     // phone
     bool        phone = false; int app = 0; int appSub = 0; int appSel = -1; float phoneAnim = 0;
     int         ringFrom = -1; bool ringOut = false; int32_t ringNum = 0; char ringName[32] = ""; uint64_t ringAt = 0;
@@ -47,9 +47,13 @@ struct RpClientState
     int         petObj = 0, petModel = 0; float petSpin = 0;
     // people in the street
     int         talkPed = 0, talkStage = 0, talkTopic = 0; uint64_t talkAt = 0, lastPedScan = 0; Vec3 talkPos{};
+    // 3.27: people you just talked to / dismissed are left alone for a while (no instant re-prompt)
+    int         talkDone[8]{}; uint64_t talkDoneAt[8]{}; int talkDoneN = 0; uint64_t talkCoolUntil = 0;
+    // 3.27: the Google-style radar replaces the game's one
+    bool        radarHidden = false; uint64_t lastRadarHide = 0;
     char        sub[160] = ""; char subWho[32] = ""; uint64_t subAt = 0; int subMs = 0;
     // emotes
-    int         emote = -1; Vec3 emotePos{}; uint64_t emoteAt = 0;
+    int         emote = -1; Vec3 emotePos{}; uint64_t emoteAt = 0; int emoteMs = 0; bool emoteTalk = false;   // 3.27: own timer, talk wave
     int         askEmote = -1, askFrom = -1; uint64_t askAt = 0;
     // status
     float       stamina = 100.0f; uint64_t lastStam = 0;
@@ -215,7 +219,7 @@ static void RpSetInterior(int area) { if(s_Rp.interior == area) return; Game::En
 static void RpSetGps(const Vec3& p, const char* name)
 {
     if(s_Rp.gpsBlip) Game::RemoveBlip(s_Rp.gpsBlip);
-    s_Rp.gpsBlip = Game::AddCoordBlip(p, RP_SKY, 2);
+    s_Rp.gpsBlip = Game::AddCoordBlip(p, RP_SKY, 2); s_Rp.gpsPos = p;
     MP_CopyStr(s_Rp.gpsName, name ? name : "", sizeof(s_Rp.gpsName));
     SysMsg(RP_SKY, "[GPS] Route set: %s.", s_Rp.gpsName);
 }
@@ -251,29 +255,37 @@ static void RpPetUpdate(int ped, float dt)
 }
 
 // ---- emotes -------------------------------------------------------------------------------------
-static void RpPlayEmote(int i)
+// 3.27: msOverride > 0 = stop after that long even for a looping anim (the talk greeting)
+static void RpPlayEmote(int i, int msOverride = 0)
 {
     int ped = Game::LocalPed(); if(ped <= 0 || i < 0 || i >= RP_EMOTE_COUNT) return;
     if(Game::IsCharInAnyCar(ped)) { SysMsg(COL_RED, "Get out of the vehicle first."); return; }
     if(s_Rp.haveMe && s_Rp.me.cuffed) return;
     if(Game::PlayAnimLoop(ped, g_RpEmotes[i].anim, g_RpEmotes[i].file))
     {
-        s_Rp.emote = i; s_Rp.emoteAt = MP_NowMs(); Game::GetCharPos(ped, s_Rp.emotePos);
+        s_Rp.emote = i; s_Rp.emoteAt = MP_NowMs(); s_Rp.emoteMs = msOverride > 0 ? msOverride : g_RpEmotes[i].ms;
+        s_Rp.emoteTalk = false; Game::GetCharPos(ped, s_Rp.emotePos);
     }
 }
 static void RpStopEmote()
 {
     int ped = Game::LocalPed();
     if(s_Rp.emote >= 0 && ped > 0) Game::ClearTasksNow(ped);
-    s_Rp.emote = -1;
+    s_Rp.emote = -1; s_Rp.emoteTalk = false;
 }
+// 3.27: an emote always ends - its timer, walking off, or pushing the stick / Stop button.
+// (Before, a looping emote only ended after moving 1.5 m, which the looping anim itself blocks:
+//  the Talk greeting started the endless "wave" loop and you were stuck waving / dancing.)
 static void RpEmoteTick(int ped, uint64_t now)
 {
     if(s_Rp.emote < 0 || ped <= 0) return;
-    const RpEmote& E = g_RpEmotes[s_Rp.emote];
     Vec3 p; Game::GetCharPos(ped, p);
     float dx = p.x - s_Rp.emotePos.x, dy = p.y - s_Rp.emotePos.y;
-    if(dx * dx + dy * dy > 1.5f * 1.5f || (E.ms && now - s_Rp.emoteAt > E.ms)) { if(E.ms) Game::ClearTasksNow(ped); s_Rp.emote = -1; }
+    int sx = 0, sy = 0; Game::GetStick(sx, sy);
+    bool stick = now - s_Rp.emoteAt > 600 && (sx * sx + sy * sy > 60 * 60);
+    bool timed = s_Rp.emoteMs > 0 && now - s_Rp.emoteAt > (uint64_t)s_Rp.emoteMs;
+    bool gone = Game::IsCharInAnyCar(ped) || Game::IsCharDead(ped);
+    if(dx * dx + dy * dy > 1.5f * 1.5f || timed || stick || gone) { if(!gone) Game::ClearTasksNow(ped); s_Rp.emote = -1; s_Rp.emoteTalk = false; }
 }
 
 // ---- people in the street ----------------------------------------------------------------------
@@ -309,9 +321,22 @@ static const RpTalkTopic kRpTopics[] =
 #define RP_TOPICS ((int)(sizeof(kRpTopics) / sizeof(kRpTopics[0])))
 static const char* const kRpBye[] = { "Take care out there!", "See you around, citizen.", "Stay safe in the neon.", "Bye! Watch out for drones." };
 
+// 3.27: remember who we just talked to - the scan below leaves them alone for 90 s, everybody for 6 s
+static void RpTalkForget(int h)
+{
+    if(h <= 0) return;
+    int at = s_Rp.talkDoneN++ % 8; s_Rp.talkDone[at] = h; s_Rp.talkDoneAt[at] = MP_NowMs();
+    s_Rp.talkCoolUntil = MP_NowMs() + 6000;
+}
+static bool RpTalkRecent(int h, uint64_t now)
+{
+    for(int i = 0; i < 8; ++i) if(s_Rp.talkDone[i] == h && now - s_Rp.talkDoneAt[i] < 90000) return true;
+    return false;
+}
 static void RpTalkRelease()
 {
-    if(s_Rp.talkPed > 0) { Game::FreezeChar(s_Rp.talkPed, false); Game::ClearTasksNow(s_Rp.talkPed); }
+    if(s_Rp.talkPed > 0) { Game::FreezeChar(s_Rp.talkPed, false); Game::ClearTasksNow(s_Rp.talkPed); RpTalkForget(s_Rp.talkPed); }
+    if(s_Rp.emoteTalk) RpStopEmote();   // the greeting wave ends with the talk
     s_Rp.talkPed = 0; s_Rp.talkStage = 0;
 }
 static bool RpSkipNotAmbient(int h) { return h == Game::LocalPed(); }
@@ -330,6 +355,7 @@ static void RpPedTick(int ped, uint64_t now)
     }
     if(Game::IsCharInAnyCar(ped) || now - s_Rp.lastPedScan < 350) return;
     s_Rp.lastPedScan = now;
+    if(now < s_Rp.talkCoolUntil || s_Rp.emote >= 0) return;   // 3.27: not right after a talk, not while you emote
     Game::NpcPedInfo list[8];
     int n = Game::ListAmbientPeds(list, 8, me, 3.2f, RpSkipNotAmbient);
     int best = -1; float bd = 99;
@@ -337,7 +363,7 @@ static void RpPedTick(int ped, uint64_t now)
     {
         if(list[i].dead || list[i].handle == ped) continue;
         bool isPlayer = false; for(int k = 0; k < MP_MAX_PLAYERS; ++k) if(players[k].active && players[k].ped == list[i].handle) { isPlayer = true; break; }
-        if(isPlayer) continue;
+        if(isPlayer || RpTalkRecent(list[i].handle, now)) continue;
         float dx = list[i].pos.x - me.x, dy = list[i].pos.y - me.y, d = sqrtf(dx * dx + dy * dy);
         if(d < bd) { bd = d; best = i; }
     }
@@ -354,11 +380,17 @@ static void RpTalkChoose(int topic)
     if(topic < 0)
     {   // Nevermind / Goodbye
         if(s_Rp.talkStage >= 2) RpSubtitle("Citizen", 2500, "%s", kRpBye[rand() % 4]);
-        if(s_Rp.talkPed > 0) { Game::FreezeChar(s_Rp.talkPed, false); Game::ClearTasksNow(s_Rp.talkPed); }
-        s_Rp.talkStage = s_Rp.talkStage >= 2 ? 3 : 0; if(!s_Rp.talkStage) s_Rp.talkPed = 0;
+        if(s_Rp.emoteTalk) RpStopEmote();
+        if(s_Rp.talkStage >= 2) { if(s_Rp.talkPed > 0) { Game::FreezeChar(s_Rp.talkPed, false); Game::ClearTasksNow(s_Rp.talkPed); } s_Rp.talkStage = 3; }
+        else RpTalkRelease();   // Nevermind: let them go and don't ask about them again right away
         return;
     }
-    if(topic == 100) { s_Rp.talkStage = 2; RpSubtitle("Citizen", 4500, "%s", kRpGreet[rand() % 8]); if(ped > 0) RpPlayEmote(RpFindEmote("wave")); return; }
+    if(topic == 100)
+    {   // 3.27: a short wave (2.5 s, ends by itself) instead of the endless wave loop
+        s_Rp.talkStage = 2; RpSubtitle("Citizen", 4500, "%s", kRpGreet[rand() % 8]);
+        if(ped > 0 && s_Rp.emote < 0) { int w = RpFindEmote("wave2"); if(w < 0) w = RpFindEmote("wave"); RpPlayEmote(w, 2500); if(s_Rp.emote >= 0) s_Rp.emoteTalk = true; }
+        return;
+    }
     const RpTalkTopic& T = kRpTopics[topic];
     RpSubtitle("Citizen", 6000, "%s", T.lines[rand() % 4]);
     if(topic == 1)
@@ -368,6 +400,90 @@ static void RpTalkChoose(int topic)
     }
     s_Rp.talkStage = 2;
 }
+// ---- 3.27: Google-style radar (bottom left, square), replaces the game's radar -------------------
+static bool RpRadarOn() { return settings.radarStyle != 0 && s_Rp.view == 2 && s_Rp.haveMe && s_Rp.interior == 0; }
+static void RpRadarTick(uint64_t now)
+{
+    bool want = RpRadarOn() && !Game::IsPaused();
+    if(want && (!s_Rp.radarHidden || now - s_Rp.lastRadarHide > 1000)) { Game::ShowRadar(false); s_Rp.radarHidden = true; s_Rp.lastRadarHide = now; }
+    else if(!want && s_Rp.radarHidden && !Game::IsPaused()) { if(s_Rp.view == 2) Game::ShowRadar(true); s_Rp.radarHidden = false; }
+}
+static const char* RpPlaceGlyph(uint8_t k)
+{
+    switch(k)
+    {
+        case RPK_SPAWN: return "";   case RPK_JOBS: return "J";  case RPK_BANK: return "$";  case RPK_SHOP: return "S";
+        case RPK_FOOD: return "F";   case RPK_CLOTHES: return "C"; case RPK_CARS: return "V"; case RPK_TECH: return "T";
+        case RPK_GUNS: return "G";   case RPK_HOSPITAL: return "H"; case RPK_POLICE: return "P"; case RPK_ATM: return "$";
+        case RPK_PETS: return "D";   case RPK_ARMY: return "A";  case RPK_AIRPORT: return "A";
+        default: return "";
+    }
+}
+static uint32_t RpPlacePinCol(uint8_t k)
+{
+    switch(k)
+    {
+        case RPK_SPAWN: return 0x22C55EFF;  case RPK_JOBS: return 0x0EA5E9FF; case RPK_BANK: case RPK_ATM: return 0x16A34AFF;
+        case RPK_SHOP: case RPK_FOOD: return 0xF97316FF; case RPK_CLOTHES: return 0xEC4899FF; case RPK_CARS: return 0x6366F1FF;
+        case RPK_TECH: return 0x8B5CF6FF;   case RPK_GUNS: return 0x78716CFF; case RPK_HOSPITAL: return 0xEF4444FF;
+        case RPK_POLICE: return 0x2563EBFF; case RPK_PETS: return 0xA16207FF; case RPK_ARMY: return 0x4D7C0FFF;
+        case RPK_AIRPORT: return 0x0284C7FF; default: return 0x64748BFF;
+    }
+}
+static float s_RpRadarRange = 200.0f;
+static void RpDrawRadar(uint64_t nowMs)
+{
+    if(!RpRadarOn() || Game::IsPaused()) return;
+    int ped = Game::LocalPed(); Vec3 me; if(ped <= 0 || !Game::GetCharPos(ped, me)) return;
+    ImVec2 ds = ImGui::GetIO().DisplaySize;
+    const float size = ds.y * 0.24f;
+    const ImVec2 p0(ds.x * 0.012f, ds.y * 0.915f - size);
+    SaRadarView v{};
+    v.meX = me.x; v.meY = me.y; v.meZ = me.z; v.meHeading = Game::GetCharHeading(ped); v.mode = settings.radarStyle;
+    Vec3 cp, cl; if(Game::GetCameraPos(cp, cl)) { v.camFx = cl.x - cp.x; v.camFy = cl.y - cp.y; }
+    // zoom out with the speed (on foot ~200 m, fast car ~380 m), eased
+    float sp = 0.0f;
+    if(Game::IsCharInAnyCar(ped)) { int car = Game::GetCarCharIsIn(ped); Vec3 mv; if(car > 0 && Game::GetMoveSpeed(car, true, mv)) sp = sqrtf(mv.x * mv.x + mv.y * mv.y); }
+    float want = 200.0f + SarClamp(sp, 0, 45) * 4.0f;
+    s_RpRadarRange += (want - s_RpRadarRange) * 0.04f;
+    v.range = s_RpRadarRange;
+    SaPin pins[96]; int n = 0;
+    for(int i = 0; i < RP_PLACE_COUNT && n < 70; ++i)
+    {
+        const RpPlace& pl = g_RpPlaces[i];
+        float dx = pl.x - me.x, dy = pl.y - me.y; if(dx * dx + dy * dy > 900.0f * 900.0f) continue;
+        SaPin& q = pins[n++]; q.x = pl.x; q.y = pl.y; q.z = pl.z; q.rgba = RpPlacePinCol(pl.kind); q.style = 0;
+        MP_CopyStr(q.glyph, RpPlaceGlyph(pl.kind), sizeof(q.glyph));
+    }
+    if(s_Rp.haveMe && s_Rp.me.house < RP_HOUSE_COUNT && n < 96)
+    {
+        const RpHouse& h = g_RpHouses[s_Rp.me.house];
+        SaPin& q = pins[n++]; q.x = h.x; q.y = h.y; q.z = h.z; q.rgba = 0xDC2626FF; q.style = 0; MP_CopyStr(q.glyph, "H", sizeof(q.glyph));   // my house
+    }
+    for(int i = 0; i < MP_MAX_PLAYERS && n < 92; ++i)
+    {
+        if(i == myId || !players[i].active || players[i].ped <= 0) continue;
+        Vec3 pp; if(!Game::GetCharPos(players[i].ped, pp)) continue;
+        SaPin& q = pins[n++]; q.x = pp.x; q.y = pp.y; q.z = pp.z; q.rgba = (players[i].color & 0xFFFFFF00) | 0xFF; q.style = 1; q.glyph[0] = 0;
+    }
+    if(s_Rp.callBlip && n < 96) { SaPin& q = pins[n++]; q.x = s_Rp.callPos.x; q.y = s_Rp.callPos.y; q.z = s_Rp.callPos.z; q.rgba = 0xEF4444FF; q.style = 2; MP_CopyStr(q.glyph, "!", sizeof(q.glyph)); }
+    if(s_Rp.gpsBlip && n < 96)  { SaPin& q = pins[n++]; q.x = s_Rp.gpsPos.x;  q.y = s_Rp.gpsPos.y;  q.z = s_Rp.gpsPos.z;  q.rgba = RP_SKY;     q.style = 2; q.glyph[0] = 0; }
+    if(s_Rp.tgtOn && n < 96)    { SaPin& q = pins[n++]; q.x = s_Rp.tgt.x;     q.y = s_Rp.tgt.y;     q.z = s_Rp.tgt.z;     q.rgba = s_Rp.tgtCol | 0xFF; q.style = 2; q.glyph[0] = 0; }
+    SaArea areas[24]; int na = 0;
+    for(const RpZone& z : g_RpGreen) { if(na >= 24) break; areas[na++] = { z.x - z.r, z.y - z.r, z.x + z.r, z.y + z.r, 0x22C55E38 }; }
+    ImDrawList* dl = ImGui::GetBackgroundDrawList();
+    SaRadarDraw(dl, p0, size, v, pins, n, areas, na, (float)(nowMs % 100000) / 1000.0f);
+    SaRadarDrawChip(dl, p0, size, v.mode);
+    // tap the chip: 2D <-> 3D (a tiny window so the tap does not reach the game)
+    ImVec2 a, b; SaRadarChipRect(p0, size, a, b);
+    ImGui::SetNextWindowPos(a); ImGui::SetNextWindowSize(ImVec2(b.x - a.x, b.y - a.y));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+    ImGui::Begin("##RpRadarChip", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoFocusOnAppearing);
+    if(ImGui::InvisibleButton("##rrchip", ImVec2(b.x - a.x, b.y - a.y))) { settings.radarStyle = settings.radarStyle == 2 ? 1 : 2; MP::SaveConfig(); }
+    ImGui::End();
+    ImGui::PopStyleVar();
+}
+
 static void RpDrawTalk(float now)
 {
     ImVec2 ds = ImGui::GetIO().DisplaySize;
@@ -384,6 +500,14 @@ static void RpDrawTalk(float now)
         fg->AddText(UI::Font(), fs, p, IM_COL32(255, 255, 255, 255), t, nullptr, wrap);
         // the "Citizen:" part in sky blue
         if(s_Rp.subWho[0]) { char w[40]; snprintf(w, sizeof(w), "%s:", s_Rp.subWho); fg->AddText(UI::Font(), fs, p, UI::FromRGBA(RP_SKY), w); }
+    }
+    // 3.27: a way out of every emote, always on screen while one plays
+    if(s_Rp.emote >= 0 && s_Rp.view == 2 && !s_Rp.phone && !s_Rp.emoteTalk)
+    {
+        const float sw = UI::S(260), sh = UI::S(58);
+        BcwBeginOverlay("##RpEmoteStop", ImVec2(ds.x * 0.5f - sw * 0.5f - UI::S(18), ds.y * 0.60f), ImVec2(sw + UI::S(36), sh + UI::S(28)), 0.0f);
+        if(BcwTeamButton("STOP EMOTE##rpes", 0xDC2626FF, ImVec2(sw, sh), false, false)) RpStopEmote();
+        BcwEndOverlay();
     }
     if(!s_Rp.talkPed || s_Rp.talkStage == 0 || s_Rp.talkStage == 3) return;
     // 3D marker over the person
@@ -489,6 +613,7 @@ static void RpShutdown()
     if(!s_Rp.engaged) { s_bRpJoin = false; return; }
     RpTalkRelease();
     RpClearBlips();
+    if(s_Rp.radarHidden && Game::IsReady()) { Game::ShowRadar(true); s_Rp.radarHidden = false; }   // 3.27
     if(s_Rp.petObj) Game::DeleteWorldObject(s_Rp.petObj);
     int ped = Game::LocalPed();
     if(ped > 0 && Game::IsReady())
@@ -773,6 +898,7 @@ static void RpProcess(int ped, uint64_t now)
     if(now - s_Rp.lastMoney > 1000) { s_Rp.lastMoney = now; RpSyncMoney(); }
     RpEmoteTick(ped, now);
     RpPedTick(ped, now);
+    RpRadarTick(now);   // 3.27
     RpPetUpdate(ped, dt);
 }
 
@@ -1226,6 +1352,7 @@ static void RenderRp()
     if(MP::AuthScreenShown()) return;
     if(Game::IsReady() && !Game::IsPaused()) RpDrawWorld(ImGui::GetBackgroundDrawList(), now);
     if(s_Rp.haveMe && !Game::IsPaused()) RpDrawHud(ImGui::GetForegroundDrawList(), now, nowMs);
+    RpDrawRadar(nowMs);   // 3.27
     if(!Game::IsPaused())
     {
         RpDrawTalk(now);

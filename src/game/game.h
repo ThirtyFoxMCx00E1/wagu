@@ -251,6 +251,7 @@ namespace Game
     bool  GetCameraPos(Vec3& pos, Vec3& look);
     void  SetPlayerControl(bool on);
     void  ShowGameHud(bool on);                        // HUD + radar
+    void  ShowRadar(bool on);                          // 3.27: radar only
     void  SetCharVisible(int ped, bool on);
     void  FreezeChar(int ped, bool on);
     void  FreezeCar(int car, bool on);
