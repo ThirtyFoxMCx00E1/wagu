@@ -9,21 +9,38 @@ unsigned int g_VertexBufferSize = 5000;
 ImVec4 g_ScissorRect;
 
 // ---- 3.28: batched indexed draw --------------------------------------------------------------------
+// 3.28.1: the game's RwIm2DRenderIndexedPrimitive takes 16-bit indices (its symbol is ...P14RwOpenGLVertexiPti:
+// "unsigned short*"), even though RW/rwlpcore.h types RwImVertexIndex as RwUInt32. 3.28 re-based the indices
+// into a RwImVertexIndex (32-bit) buffer, so the game read every index as two wrong ones and the whole UI
+// came out as stretched triangles. The scratch indices are uint16_t now, and every batch of the frame gets
+// its own part of the buffer (nothing is overwritten while the game may still read it).
 static const int kRwBatchIdx = 3 * 1024;          // 1024 triangles per call
-static RwImVertexIndex g_BatchIdx[kRwBatchIdx];
+static uint16_t* g_BatchIdx = nullptr; static int g_BatchCap = 0, g_BatchUsed = 0;
+static void RwImBatchFrame(int totalIdx)
+{
+    if(g_BatchCap < totalIdx)
+    {
+        delete[] g_BatchIdx; g_BatchCap = totalIdx + 6000;
+        g_BatchIdx = new uint16_t[g_BatchCap];
+    }
+    g_BatchUsed = 0;
+}
 static void RwImDrawBatched(RwIm2DVertex* base, int nVtx, const ImDrawIdx* idx, int nIdx)
 {
-    if(nVtx <= 0 || nIdx <= 0) return;
+    static_assert(sizeof(ImDrawIdx) == 2, "the game takes 16-bit indices");
+    if(nVtx <= 0 || nIdx <= 0 || !g_BatchIdx) return;
     for(int at = 0; at < nIdx; at += kRwBatchIdx)
     {
         int n = nIdx - at; if(n > kRwBatchIdx) n = kRwBatchIdx;
         n -= n % 3;
         if(n <= 0) break;
+        if(g_BatchUsed + n > g_BatchCap) return;
         unsigned lo = 0xFFFFFFFFu, hi = 0;
         for(int i = 0; i < n; ++i) { unsigned v = idx[at + i]; if(v < lo) lo = v; if(v > hi) hi = v; }
         if(hi >= (unsigned)nVtx) continue;            // a broken index: skip this batch instead of reading past the buffer
-        for(int i = 0; i < n; ++i) g_BatchIdx[i] = (RwImVertexIndex)(idx[at + i] - lo);
-        RwIm2DRenderIndexedPrimitive(rwPRIMTYPETRILIST, base + lo, (RwInt32)(hi - lo + 1), g_BatchIdx, n);
+        uint16_t* dst = g_BatchIdx + g_BatchUsed; g_BatchUsed += n;
+        for(int i = 0; i < n; ++i) dst[i] = (uint16_t)(idx[at + i] - lo);
+        RwIm2DRenderIndexedPrimitive(rwPRIMTYPETRILIST, base + lo, (RwInt32)(hi - lo + 1), (RwImVertexIndex*)dst, n);
     }
 }
 
@@ -42,6 +59,7 @@ void ImGui_ImplRenderWare_RenderDrawData(ImDrawData* draw_data)
         logger->Info("Vertex buffer reallocated. Size: %d", g_VertexBufferSize);
     }
 
+    RwImBatchFrame(draw_data->TotalIdxCount);
     RwIm2DVertex* vtx_dst = g_pVB;
     int vtx_offset = 0;
 
