@@ -175,6 +175,14 @@
       print('  it runs: <span class="g">' + esc(U) + '</span>');
       p('m', '  the VPS autopilot also runs it by itself within 10 min of a new release' + (release && release.tag_name ? ' (latest ' + release.tag_name + ')' : ''));
     },
+    'vps-setup': function () {   // 3.28.2: all four regions
+      var S = 'curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-setup.sh | bash -s ';
+      p('m', 'a new 24/7 VPS (HiveMQ + bridge + servers) from this phone over SSH - one VPS per region:');
+      [['asia', 'mpsamp'], ['europe', 'eusamp'], ['na', 'nasamp'], ['oceania', 'ocsamp']].forEach(function (r) {
+        print('  <span class="g">' + esc('pkg install -y openssh && ssh root@YOUR_VPS_IP "' + S + r[0] + '"') + '</span> <span class="m">' + r[1] + '.duckdns.org</span>');
+      });
+      p('m', '  first point the DuckDNS name at the VPS IP and open TCP 1883 8883 8884 + UDP 1932');
+    },
     'clear': function () { out.innerHTML = ''; }
   };
   // what the bot types -> which command runs
@@ -184,7 +192,7 @@
     'cat ~/mp-server/server.conf': 'cat-conf',
     'cat $MP_DATA/broker.txt': 'cat-broker',
     'cat $MP_DATA/regions.txt': 'cat-regions',
-    'mp-server status': 'status', 'mp-server list': 'list', 'mp-server log': 'log', 'mp-server doctor': 'doctor', 'mp-server vps-update': 'vps-update', 'curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/update.sh | sudo bash': 'vps-update',
+    'mp-server status': 'status', 'mp-server list': 'list', 'mp-server log': 'log', 'mp-server doctor': 'doctor', 'mp-server vps-update': 'vps-update', 'mp-server vps-setup': 'vps-setup', 'curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/update.sh | sudo bash': 'vps-update',
     'ping -c 2 $BROKERS': 'ping', 'gh release view --repo ThirtyFoxMCx00E1/wagu': 'release', 'clear': 'clear'
   };
   function run(line) {
