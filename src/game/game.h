@@ -64,9 +64,10 @@ namespace Game
     int   ModelForClothes(const PktClothes& c, int& specialSlot);   // 0 = can't now
     bool  ClothesLoadPending();   // 3.21: an outfit model is still streaming in
     bool  ClothesCanBuild(const PktClothes& c);  // a slot has this outfit already / is free now
+    bool  SpecialSkinPending(int skin);       // 3.32: that story character is streaming into a slot
     int   CreateRemoteClothedCJ(const PktClothes& c, const Vec3& pos);   // 0 = can't (use CreateRemotePed)
     void  DeleteChar(int ped);
-    void  GiveAndSelectWeapon(int ped, int weapon);
+    bool  GiveAndSelectWeapon(int ped, int weapon);   // 3.32: false = weapon model still streaming in (call again)
     void  TaskGoTo(int ped, const Vec3& p, int moveState);
     void  TaskStandStill(int ped);
     void  TaskShootAt(int ped, const Vec3& p, int timeMs);
@@ -75,7 +76,7 @@ namespace Game
     void  TaskDie(int ped);
 
     // Cars
-    int   CreateCar(int model, const Vec3& pos);
+    int   CreateCar(int model, const Vec3& pos, bool now = false);   // 3.32: now=false -> 0 while the model streams in
     void  DeleteCar(int car);
     bool  GetCarPos(int car, Vec3& out);
     void  SetCarPos(int car, const Vec3& centre, float baseOffset);
@@ -92,7 +93,9 @@ namespace Game
 
     // World
     void  Teleport(int ped, const Vec3& footPos, float heading);
-    bool  LoadModel(int model);
+    bool  LoadModel(int model);               // 3.32: NON-blocking (REQUEST_MODEL, the game streams it in); true = loaded now
+    bool  LoadModelNow(int model);            // 3.32: blocking (LOAD_ALL_MODELS_NOW) - only for your own one-off actions
+    int   ModelStatus(int model);             // 3.32: 1 loaded, 0 streaming in, -1 unknown / gave up (10 s)
     bool  IsKnownModel(int model);            // 2.24: exists in this game (safe to REQUEST_MODEL)
     bool  IsKnownCarModel(int model);         // 2.24: 400-611 and exists
     void  GetTimeOfDay(int& hour, int& minute);

@@ -1140,6 +1140,12 @@ static void ProcessClothes(uint64_t now)
 static void SpawnAvatar(RemotePlayer& p, const Vec3& at)
 {
     p.ped = 0;
+    // 3.32: freeze when people join - everybody on the server (or a whole new player list after you
+    // join) was created in the same frame: CREATE_CHAR + clothes build + blip for each. One new avatar
+    // every 60 ms now (10 players = 0.6 s, no hitch); the others wait their turn on the next frames.
+    static uint64_t s_nLastSpawn = 0;
+    uint64_t nowSp = MP_NowMs();
+    if(nowSp - s_nLastSpawn < 60) return;
     p.pedClothes = p.clothesHash;
     if(p.clothesHash)   // 3.10: their CJ with their clothes (0 = no free slot right now -> avatar skin, retried)
     {
@@ -1147,7 +1153,8 @@ static void SpawnAvatar(RemotePlayer& p, const Vec3& at)
         if(!p.ped) p.clothesRetryAt = MP_NowMs() + (Game::ClothesLoadPending() ? 1500 : 5000);   // pedClothes stays = the outfit we tried (3.21: 1.5 s while csplay streams in)
     }
     if(!p.ped) p.ped = Game::CreateRemotePed(p.skin, at);
-    if(!p.ped) return;
+    if(!p.ped) return;   // 3.32: model still streaming in -> tried again next frame
+    s_nLastSpawn = nowSp;
     AvatarTrack(s_AvatarPeds, s_nAvatarPeds, 256, p.ped);   // 2.32
     p.pedSkin = p.skin;
     // measure the centre-to-feet offset used by SET_CHAR_COORDINATES
@@ -1563,7 +1570,7 @@ static void UpdateRemote(int id, int localPed, uint64_t now)
     }
 
     // --- weapon ----------------------------------------------------------------------------
-    if(s.weapon != p.weapon) { Game::GiveAndSelectWeapon(p.ped, s.weapon); p.weapon = s.weapon; }
+    if(s.weapon != p.weapon) { if(Game::GiveAndSelectWeapon(p.ped, s.weapon)) p.weapon = s.weapon; }   // 3.32: false = still streaming
 
     // --- 2.15: passenger in another player's car (or in ours) -------------------------------
     if((s.flags & SYNC_IN_CAR) && !(s.flags & SYNC_DRIVER) && p.hasVeh)
@@ -3539,7 +3546,7 @@ static void NpcUpdateCopies(int lp, uint64_t now)
             if(Game::NpcDamagedByMe(c.ped, false, lp, myCar)) NpcSendHit(c.owner, 0, c.uid, 1000 - hp);
             Game::SetCharHealth(c.ped, 1000);
         }
-        if(c.weapon != c.weaponApplied) { if(c.weapon > 0 && c.weapon < 47) Game::GiveAndSelectWeapon(c.ped, c.weapon); c.weaponApplied = c.weapon; }
+        if(c.weapon != c.weaponApplied) { if(c.weapon > 0 && c.weapon < 47 && !Game::GiveAndSelectWeapon(c.ped, c.weapon)) {} else c.weaponApplied = c.weapon; }
         if(c.duck != c.duckApplied && now - c.lastTask > 300) { Game::TaskDuck(c.ped, c.duck); c.duckApplied = c.duck; }
         Vec3 cur; if(!Game::GetCharPos(c.ped, cur)) continue;
         Vec3 d = { want.x - cur.x, want.y - cur.y, 0.0f };

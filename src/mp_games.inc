@@ -98,7 +98,7 @@ static int SpawnVehicleForMe(int model, bool announce)
     if(old > 0) { if(Game::GetDriverOfCar(old) <= 0) Game::DeleteCar(old); else Game::ReleaseCar(old); }
     float r = h * 0.0174533f;
     Vec3 at = { me.x - sinf(r) * 1.0f + cosf(r) * side, me.y + cosf(r) * 1.0f + sinf(r) * side, me.z + 0.6f };
-    int car = Game::CreateCar(model, at);
+    int car = Game::CreateCar(model, at, true);   // 3.32: your own /spawn: load it right now
     if(car <= 0) { SysMsg(COL_RED, "Could not spawn that vehicle here."); return 0; }
     Game::SetCarHeading(car, h);
     Game::WarpIntoCar(ped, car);
