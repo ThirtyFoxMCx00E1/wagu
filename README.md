@@ -20,6 +20,16 @@ The mod (2.20+) downloads [regions.txt](https://thirtyfoxmcx00e1.github.io/wagu/
 Game traffic stays inside one region (no bridging), so ping is only phone -> nearest broker.
 
 
+## One command (3.28.2)
+
+On a new VPS (Ubuntu 22.04 / 24.04 or Debian 12), as root - installs everything for Asia on `mpsamp.duckdns.org` with the bridge, uses the passwords from the public regions.txt (phones connect with no change) and starts the 24/7 servers, Mega Vil Futuristic included:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-setup.sh | sudo bash
+```
+
+Another region: `curl -fsSL .../vps-setup.sh | sudo REGION=Europe DOMAIN=eusamp.duckdns.org BRIDGE=0 bash`. From Termux on a phone: `pkg install -y openssh && ssh root@YOUR_VPS_IP "curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-setup.sh | bash"`. Point the DuckDNS name at the VPS first and open the ports (see Cloud firewall).
+
 ## MP 3.21.7: MP Railway - the Discord bot 24/7 on our own server
 
 Railway.app stopped taking new accounts, so the MP login bot ([discordpy-bot](https://github.com/ThirtyFoxMCx00E1/discordpy-bot): `/gen`, `/stats`, `/char`) now runs on **MP Railway**, our own small Railway that is part of this kit. Without a running bot Discord doesn't show `/gen` and nobody can log in on 3.21.6+ servers.
