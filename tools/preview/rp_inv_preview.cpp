@@ -143,11 +143,11 @@ int main(int argc, char** argv)
     s_Rp.me.number = 5512340; s_Rp.me.job = 0; s_Rp.me.level = 3; s_Rp.me.house = 255; s_Rp.me.playMin = 135; s_Rp.me.items = RPIT_DRIVING;
     // the "Received" cards: 2 fresh (3 s old), 1 fading out (15.4 s old)
     s_Inv.got[0] = { RPX_ESTEH, 10, g_Now - 3000 }; s_Inv.got[1] = { RPX_NASIGORENG, 10, g_Now - 3000 }; s_Inv.nGot = 2;
-    if(mode == 1) { s_Inv.got[2] = { RPX_PHONE, 1, g_Now - 15500 }; s_Inv.nGot = 3; }
-    if(mode == 0) { s_Inv.panel = true; s_Inv.panelAt = 0; }
+    if(mode == 1) { s_Inv.got[0].at = g_Now - 15500; s_Inv.got[2] = { RPX_PHONE, 1, g_Now - 1500 }; s_Inv.nGot = 3; }
+    if(mode == 0) { s_Inv.panel = true; s_Inv.panelAt = 0; io.MousePos = ImVec2(W * 0.5f + UI::S(150), H * 0.5f + UI::S(110)); }
     if(mode == 1) { s_Inv.win = RPW_INV; s_Inv.winAt = 0; }
     if(mode == 2) { s_Inv.win = RPW_DOCS; s_Inv.winAt = 0; }
-    io.MousePos = ImVec2(-1, -1);
+    if(mode != 0) io.MousePos = ImVec2(-1, -1);
     for(int f = 0; f < 2; ++f) { io.DeltaTime = 1 / 30.f; ImGui::NewFrame(); RenderRpInv(); ImGui::Render(); }
     Raster(ImGui::GetDrawData());
     FILE* o = fopen(out, "wb"); fprintf(o, "P6 %d %d 255\n", W, H);
