@@ -55,6 +55,22 @@ void MPServer::RpLoad()
         line[strcspn(line, "\r\n")] = 0;
         if(line[0] == 'H' && line[1] == ' ') { int idx = atoi(line + 2); const char* k = strchr(line + 2, '|'); if(k && idx >= 0 && idx < RP_HOUSE_COUNT) m_RpHouseOwner[idx] = k + 1; continue; }
         if(line[0] == 'P' && line[1] == ' ') { m_nRpLottoPot = atoi(line + 2); continue; }
+        if(line[0] == 'M' && line[1] == ' ')
+        {   // 3.29: M bond|stocks|coin (market prices)
+            char* q = line + 2;
+            for(int k = 0; k < RPN_COUNT && q && *q; ++k) { float v = strtof(q, &q); if(v >= 50.0f && v <= 60000.0f) m_fRpMarket[k] = v; if(*q == '|') ++q; else break; }
+            continue;
+        }
+        if(line[0] == 'X' && line[1] == ' ')
+        {   // 3.29: X key|units0|units1|units2|spouseKey|spouse name
+            char* p = line + 2; char* bar = strchr(p, '|'); if(!bar) continue; *bar = 0;
+            auto it = m_RpSaved.find(p); if(it == m_RpSaved.end()) continue;
+            char* q = bar + 1;
+            for(int k = 0; k < RPN_COUNT; ++k) { long long u = strtoll(q, &q, 10); it->second.invU[k] = u > 0 ? u : 0; if(*q == '|') ++q; }
+            char* b2 = strchr(q, '|');
+            if(b2) { *b2 = 0; it->second.spouseKey = q; it->second.spouse = b2 + 1; }
+            continue;
+        }
         if(line[0] == 'I' && line[1] == ' ')
         {   // 3.26: I key|id:count,id:count,... (the bag, after the C line of that citizen)
             char* p = line + 2; char* bar = strchr(p, '|'); if(!bar) continue; *bar = 0;
@@ -95,6 +111,7 @@ void MPServer::RpSave()
     FILE* f = fopen(tmp.c_str(), "w"); if(!f) return;
     fprintf(f, "# Mega Vil Futuristic citizens (MP %s). C key|cash|bank|xp|number|job|house|pet|hunger|thirst|min|pets|items|skin|tasks|t|vehicles\n", MP_VERSION_STR);
     fprintf(f, "P %d\n", m_nRpLottoPot);
+    fprintf(f, "M %.3f|%.3f|%.3f\n", m_fRpMarket[0], m_fRpMarket[1], m_fRpMarket[2]);   // 3.29
     for(auto& kv : m_RpSaved)
     {
         const RpSaved& r = kv.second;
@@ -109,6 +126,8 @@ void MPServer::RpSave()
             for(int i = 0; i < RP_INV_SLOTS; ++i) fprintf(f, i ? ",%u:%u" : "%u:%u", r.inv[i].id, r.inv[i].id ? r.inv[i].count : 0);
             fputc('\n', f);
         }
+        if(r.invU[0] || r.invU[1] || r.invU[2] || !r.spouseKey.empty())   // 3.29
+            fprintf(f, "X %s|%lld|%lld|%lld|%s|%s\n", kv.first.c_str(), (long long)r.invU[0], (long long)r.invU[1], (long long)r.invU[2], r.spouseKey.c_str(), r.spouse.c_str());
     }
     for(int h = 0; h < RP_HOUSE_COUNT; ++h) if(!m_RpHouseOwner[h].empty()) fprintf(f, "H %d|%s\n", h, m_RpHouseOwner[h].c_str());
     fclose(f);
@@ -125,6 +144,7 @@ void MPServer::RpStore(int slot)
     r.hunger = m.hunger; r.thirst = m.thirst; r.playMin = m.playMin; r.pets = m.pets; r.items = m.items; r.skin = m.skin; r.tasks = m.tasks;
     r.nveh = m.nveh; memcpy(r.veh, m.veh, sizeof(r.veh)); r.t = m.statT;
     memcpy(r.inv, m.inv, sizeof(r.inv));   // 3.26
+    memcpy(r.invU, m.invU, sizeof(r.invU)); r.spouseKey = m.spouseKey; r.spouse = m.spouse;   // 3.29
 }
 
 // ---- signed citizen card (HMAC-SHA256 with the MW3 card key, other payload) -------------------
@@ -272,6 +292,8 @@ void MPServer::RpSendMe(int slot)
     p.paydayS = (uint16_t)(m.paydayAt > now ? (m.paydayAt - now) / 1000 : 0); p.tasks = m.tasks;
     memcpy(p.target, m.target, sizeof(p.target)); memcpy(p.veh, m.veh, sizeof(p.veh));
     p.pets = m.pets; p.items = m.items; p.skin = m.skin; p.lotto = m.lotto;
+    for(int k = 0; k < RPN_COUNT; ++k) { long long w = (long long)(m.invU[k] * (double)m_fRpMarket[k] / 1000.0); p.invest[k] = (int32_t)(w > 2000000000LL ? 2000000000LL : w); }   // 3.29
+    p.belt = m.belt; p.married = m.spouseKey[0] ? 1 : 0; MP_CopyStr(p.spouse, m.spouse, sizeof(p.spouse));
     SendTo(slot, &p, sizeof(p));
 }
 // 3.26: the bag
@@ -326,6 +348,7 @@ void MPServer::RpSendState(int slot)
     memcpy(p.evPos, m_fRpEvPos, sizeof(p.evPos)); p.lottoPot = m_nRpLottoPot;
     for(int h = 0; h < RP_HOUSE_COUNT; ++h) p.houseOwned[h] = m_RpHouseOwner[h].empty() ? 0 : 1;
     if(m_nRpEvKind) MP_CopyStr(p.evText, g_RpEventNames[m_nRpEvKind], sizeof(p.evText));
+    for(int k = 0; k < RPN_COUNT; ++k) { p.market[k] = (uint16_t)(m_fRpMarket[k] > 65000.0f ? 65000 : (int)m_fRpMarket[k]); p.marketChg[k] = m_nRpMarketChg[k]; }   // 3.29
     if(slot >= 0) SendTo(slot, &p, sizeof(p)); else Broadcast(&p, sizeof(p));
 }
 
@@ -372,6 +395,7 @@ void MPServer::RpOnAuthed(int slot)
         m.hunger = r.hunger; m.thirst = r.thirst; m.playMin = r.playMin; m.pets = r.pets; m.items = r.items; m.skin = r.skin; m.tasks = r.tasks;
         m.nveh = r.nveh; memcpy(m.veh, r.veh, sizeof(m.veh)); m.statT = r.t;
         memcpy(m.inv, r.inv, sizeof(m.inv));   // 3.26
+        memcpy(m.invU, r.invU, sizeof(m.invU)); MP_CopyStr(m.spouseKey, r.spouseKey.c_str(), sizeof(m.spouseKey)); MP_CopyStr(m.spouse, r.spouse.c_str(), sizeof(m.spouse));   // 3.29
         if(m.house < RP_HOUSE_COUNT && m_RpHouseOwner[m.house] != key) m.house = 255;
         if(m.hunger < 25) m.hunger = 25; if(m.thirst < 25) m.thirst = 25;   // you ate while you were away
     }
@@ -510,6 +534,24 @@ void MPServer::RpTick(uint64_t now)
     static uint64_t s_Last1s = 0;
     if(now - s_Last1s < 1000) return;
     s_Last1s = now;
+    // 3.29: the market moves every RP_MARKET_S seconds (one market for the whole city)
+    if(!m_nRpMarketAt) m_nRpMarketAt = now + RP_MARKET_S * 1000ull;
+    if(now >= m_nRpMarketAt)
+    {
+        m_nRpMarketAt = now + RP_MARKET_S * 1000ull;
+        for(int k = 0; k < RPN_COUNT; ++k)
+        {
+            const RpPlanDef& d = g_RpPlans[k];
+            int mv = d.lo + (d.hi > d.lo ? rand() % (d.hi - d.lo + 1) : 0);
+            if(m_fRpMarket[k] < 400.0f && mv < 0) mv = -mv / 2;           // a crash bounces back
+            if(m_fRpMarket[k] > 20000.0f && mv > 0) mv = -mv;             // a bubble pops
+            m_fRpMarket[k] *= 1.0f + mv / 1000.0f; m_nRpMarketChg[k] = (int16_t)mv;
+        }
+        m_bRpDirty = true; RpSendState(-1);
+        for(int i = 0; i < MP_MAX_PLAYERS; ++i)
+            if(m_Slots[i].used && m_Rp[i].loaded && (m_Rp[i].invU[1] || m_Rp[i].invU[2]))
+            { RpMsg(i, RP_SKY, "[MARKET] Stocks %+.1f%%  VilCoin %+.1f%%  Bond %+.1f%%  - /invest to see yours", m_nRpMarketChg[1] / 10.0f, m_nRpMarketChg[2] / 10.0f, m_nRpMarketChg[0] / 10.0f); RpSendMe(i); }
+    }
     for(int i = 0; i < MP_MAX_PLAYERS; ++i)
     {
         if(!m_Slots[i].used || !m_Rp[i].loaded) continue;
@@ -1121,7 +1163,108 @@ void MPServer::RpHandleCmd(int slot, const PktRpCmd& c)
             if(f < MP_MAX_PLAYERS && m_Slots[f].used) { RpPay(f, amt / 4, "Ticket paid"); RpMsg(f, RP_GREEN, "[MVPD] %s paid the ticket.", nm); }
             RpMsg(slot, RP_GREEN, "[MVPD] Ticket paid (%s).", RpMoney(amt, mb, sizeof(mb))); m.wanted = 0; RpSendMe(slot);
         }
+        else if(c.a == 2)
+        {   // 3.29: /accept marry
+            int f = (int)m.proposeFrom - 1; m.proposeFrom = 0;
+            if(f < 0 || f >= MP_MAX_PLAYERS || !m_Slots[f].used || !m_Rp[f].loaded || now - m.proposeAt > 30000) { RpMsg(slot, RP_RED, "Nobody proposed to you."); break; }
+            if(RpTarget(slot, f, 5.0f, "Marry") < 0) break;
+            if(m.spouseKey[0] || m_Rp[f].spouseKey[0]) { RpMsg(slot, RP_RED, "One of you is already married."); break; }
+            if(!RpPay(f, -500, "Wedding")) { RpMsg(slot, RP_RED, "%s can't pay the $500 wedding.", m_Slots[f].name); break; }
+            char k1[40], k2[40]; const char* a1 = RpKey(slot, k1, sizeof(k1)); const char* a2 = RpKey(f, k2, sizeof(k2)); if(!a1 || !a2) break;
+            MP_CopyStr(m.spouseKey, a2, sizeof(m.spouseKey)); MP_CopyStr(m.spouse, m_Slots[f].name, sizeof(m.spouse));
+            MP_CopyStr(m_Rp[f].spouseKey, a1, sizeof(m_Rp[f].spouseKey)); MP_CopyStr(m_Rp[f].spouse, nm, sizeof(m_Rp[f].spouse));
+            RpAll(RP_SKY, "[WEDDING] %s and %s just got married. Congratulations.", m_Slots[f].name, nm);
+            m_bRpDirty = true; RpSendMe(slot); RpSendMe(f);
+        }
         break;
+    // -------- 3.29: from Diverse Roleplay: investments, marriage, seatbelt, pawn shop ----------
+    case RPC_INVEST_INFO:
+    {
+        RpMsg(slot, RP_SKY, "______ MEGA VIL MARKET (moves every 5 min) ______");
+        for(int k = 0; k < RPN_COUNT; ++k)
+        {
+            long long w = (long long)(m.invU[k] * (double)m_fRpMarket[k] / 1000.0);
+            RpMsg(slot, RP_WHITE, "%d. %s - price %.0f (%+.1f%%) - %s - yours: $%lld", k + 1, g_RpPlans[k].name, m_fRpMarket[k], m_nRpMarketChg[k] / 10.0f, g_RpPlans[k].risk, w);
+        }
+        RpMsg(slot, RP_SKY, "/invest [1-3] [amount] buys from your bank  ·  /sellinvest [1-3] [amount or all]  ·  or the ATM screen");
+        break;
+    }
+    case RPC_INVEST:
+    {
+        if(now - m.lastInvest < 800) break; m.lastInvest = now;
+        int k = c.a; if(k >= RPN_COUNT) { RpMsg(slot, RP_RED, "Plan 1-3 (/invest)."); break; }
+        if(m.jailS) { RpMsg(slot, RP_RED, "Not from jail."); break; }
+        float price = m_fRpMarket[k] < 1.0f ? 1.0f : m_fRpMarket[k];
+        if(c.b == 0)
+        {   // buy with bank money
+            int32_t amt = c.val; if(amt < 100) { RpMsg(slot, RP_RED, "At least $100."); break; }
+            if(amt > m.bank) { RpMsg(slot, RP_RED, "Not enough in the bank ($%d). /deposit at an ATM first.", m.bank); break; }
+            m.bank -= amt; m.invU[k] += (int64_t)((double)amt * 1000.0 / price);
+            RpMsg(slot, RP_GREEN, "[INVEST] You put %s into %s (price %.0f).", RpMoney(amt, mb, sizeof(mb)), g_RpPlans[k].name, price);
+        }
+        else
+        {   // sell back to the bank (fee)
+            if(!m.invU[k]) { RpMsg(slot, RP_RED, "You have nothing in %s.", g_RpPlans[k].name); break; }
+            double worth = m.invU[k] * (double)price / 1000.0, want = c.val > 0 ? (double)c.val : worth;
+            if(want > worth) want = worth;
+            int64_t units = want >= worth ? m.invU[k] : (int64_t)(want * 1000.0 / price);
+            int32_t fee = (int32_t)(want * g_RpPlans[k].feePct / 100.0), got = (int32_t)want - fee;
+            m.invU[k] -= units; if(m.invU[k] < 0) m.invU[k] = 0; m.bank += got;
+            RpMsg(slot, RP_GREEN, "[INVEST] Sold %s for %s (fee $%d) - to your bank.", g_RpPlans[k].name, RpMoney(got, mb, sizeof(mb)), fee);
+        }
+        m_bRpDirty = true; RpSendMe(slot);
+        break;
+    }
+    case RPC_PROPOSE:
+    {
+        if(m.spouseKey[0]) { RpMsg(slot, RP_RED, "You are married to %s. /divorce first.", m.spouse); break; }
+        int t = RpTarget(slot, c.b, 4.0f, "Propose"); if(t < 0) break;
+        if(m_Rp[t].spouseKey[0]) { RpMsg(slot, RP_RED, "%s is already married.", m_Slots[t].name); break; }
+        if(m.cash < 500) { RpMsg(slot, RP_RED, "The wedding costs $500 cash."); break; }
+        m_Rp[t].proposeFrom = (uint8_t)(slot + 1); m_Rp[t].proposeAt = now;
+        snprintf(line, sizeof(line), "* %s gets down on one knee in front of %s and holds out a ring.", nm, m_Slots[t].name); RpNear(slot, RP_TALK_RANGE, RP_ME_COL, line, false);
+        RpMsg(t, RP_SKY, "%s asks you to marry them. /accept marry (30 s).", nm);
+        break;
+    }
+    case RPC_DIVORCE:
+    {
+        if(!m.spouseKey[0]) { RpMsg(slot, RP_RED, "You are not married."); break; }
+        if(!RpPay(slot, -1000, "Divorce")) { RpMsg(slot, RP_RED, "A divorce costs $1,000 cash."); break; }
+        std::string sk = m.spouseKey; char ex[24]; MP_CopyStr(ex, m.spouse, sizeof(ex));
+        m.spouseKey[0] = 0; m.spouse[0] = 0;
+        char kb2[40];
+        for(int i = 0; i < MP_MAX_PLAYERS; ++i)
+            if(m_Slots[i].used && m_Rp[i].loaded) { const char* k2 = RpKey(i, kb2, sizeof(kb2)); if(k2 && sk == k2) { m_Rp[i].spouseKey[0] = 0; m_Rp[i].spouse[0] = 0; RpMsg(i, RP_YELLOW, "[CITY HALL] %s divorced you.", nm); RpSendMe(i); } }
+        auto it = m_RpSaved.find(sk); if(it != m_RpSaved.end()) { it->second.spouseKey.clear(); it->second.spouse.clear(); }
+        RpMsg(slot, RP_YELLOW, "[CITY HALL] You and %s are divorced ($1,000).", ex);
+        m_bRpDirty = true; RpSendMe(slot);
+        break;
+    }
+    case RPC_BELT:
+        m.belt = !m.belt;
+        snprintf(line, sizeof(line), "* %s %s their seatbelt.", nm, m.belt ? "buckles" : "unbuckles"); RpNear(slot, RP_TALK_RANGE, RP_ME_COL, line, false);
+        RpSendMe(slot);
+        break;
+    case RPC_CHECK_BELT:
+    {
+        int t = RpTarget(slot, c.b, 6.0f, "Check seatbelt"); if(t < 0) break;
+        snprintf(line, sizeof(line), "* %s looks through the window at %s's seatbelt.", nm, m_Slots[t].name); RpNear(slot, RP_TALK_RANGE, RP_ME_COL, line, false);
+        RpMsg(slot, m_Rp[t].belt ? RP_GREEN : RP_RED, "%s is %s a seatbelt.%s", m_Slots[t].name, m_Rp[t].belt ? "wearing" : "NOT wearing", m_Rp[t].belt || !(m.job == RPJ_POLICE && m.duty) ? "" : " /fine them ($150).");
+        break;
+    }
+    case RPC_PAWN:
+    {
+        const Slot& sp = m_Slots[slot];
+        if(!sp.hasPos || (RpPlaceNear(sp.pos, RPK_SHOP, 12.0f) < 0 && RpPlaceNear(sp.pos, RPK_TECH, 12.0f) < 0)) { RpMsg(slot, RP_RED, "Go to a 24/7 or a tech shop to pawn things (GPS app)."); break; }
+        int bs = c.a; if(bs >= RP_INV_SLOTS || !m.inv[bs].id || m.inv[bs].id >= RPX_COUNT) { RpMsg(slot, RP_RED, "/pawn [bag slot 1-%d] [amount]", RP_INV_SLOTS); break; }
+        int id = m.inv[bs].id, per = g_RpPawn[id]; if(per <= 0) { RpMsg(slot, RP_RED, "The pawn shop doesn't want that."); break; }
+        int n = c.val < 1 ? 1 : c.val; if(n > m.inv[bs].count) n = m.inv[bs].count;
+        m.inv[bs].count -= n; if(!m.inv[bs].count) m.inv[bs].id = 0;
+        RpPay(slot, per * n, "Pawn shop");
+        RpMsg(slot, RP_GREEN, "[PAWN] %dx %s sold for $%d.", n, g_RpInv[id].name, per * n);
+        m_bRpDirty = true; RpSendInv(slot); RpSendMe(slot);
+        break;
+    }
     // -------- 3.26: the bag ---------------------------------------------------------------------
     case RPC_INV_REQ:
         RpSendInv(slot);

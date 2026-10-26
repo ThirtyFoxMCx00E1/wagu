@@ -607,6 +607,7 @@ static void RenderRpPhone(float nowF)
     ImDrawList* dl = ImGui::GetWindowDrawList();
     const float bez = UI::S(12), rad = UI::S(42);
     ImVec2 a(x, y), b(x + W, y + H), sa(x + bez, y + bez), sb(x + W - bez, y + H - bez);
+    { ImVec2 m = ImGui::GetIO().MousePos; if(ImGui::IsMouseClicked(0) && m.x >= a.x && m.x <= b.x && m.y >= a.y && m.y <= b.y) RpClick(RPS_PHONE); }   // 3.29: click2.mp3
     dl->AddRectFilled(a, b, IM_COL32(10, 10, 14, 255), rad);
     dl->AddRect(a, b, RpCol(RP_SKY, 0.9f), rad, 0, UI::S(2.5f));
     int th = s_nRpTheme & 3;

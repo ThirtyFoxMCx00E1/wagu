@@ -114,6 +114,8 @@ namespace
     Voice s_Fx;          // "connected" and other one-shot sounds
     Voice s_Hit[3];      // hit sound, round robin (a minigun's hits overlap)
     int   s_nNextHit = 0;
+    Voice s_Ui[2];       // 3.29: click.mp3 / click2.mp3 / click3.mp3
+    int   s_nNextUi = 0;
 }
 
 bool Sound::PlayFile(const char* path, float volume)
@@ -234,3 +236,13 @@ bool Sound::MusicPlaying() { return s_Music.state == 3 && s_Music.want; }
 
 void* Sound::EngineItf() { return EnsureEngine() ? (void*)g_EngineItf : nullptr; }   // 3.11
 void* Sound::OutputMix() { return EnsureEngine() ? (void*)g_Mix : nullptr; }
+
+// 3.29: UI clicks - a missing file is decoded (tried) once and then just stays silent
+bool Sound::PlayUi(const char* path, float volume)
+{
+    if(!path || !*path || !EnsureEngine()) return false;
+    const Pcm* p = Decode(path);
+    if(!p) return false;
+    Voice& v = s_Ui[s_nNextUi]; s_nNextUi = (s_nNextUi + 1) % 2;
+    return PlayOn(v, *p, volume);
+}

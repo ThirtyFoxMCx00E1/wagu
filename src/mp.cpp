@@ -641,6 +641,7 @@ static void UpdateLocalStory(uint64_t now)
     s_bLocalScene = cut && !realCut;
     if(!mission && cut) realCut = true;   // off-mission scenes: own world as before
     cut = realCut;
+    if(sep && MP::IsOnRp()) sep = false;   // 3.29: Mega Vil: a story script never takes the day + weather from the server
     bool connected = client.GetState() == NET_CONNECTED && myId != MP_INVALID_ID;
     if(sep && !s_bLocalSeparate && connected && now - s_nSeparateNoticeMs > 60000)
     {
@@ -2017,6 +2018,7 @@ static void SrvCmPut(const char* name, int port, bool allow);   // 3.10
 static bool s_bRunCheatMenu = false;  // 3.10: Cheat Menu permission of the server running on this phone (kept per server)
 static void SampOnChat(int id, const char* text);
 static bool IsSampActor(int h);
+static bool RpIsInfoPed(int h);   // mp_rp_life.inc
 static void ProcessSamp(int ped, uint64_t now);
 class Events : public INetEvents
 {
@@ -2980,6 +2982,7 @@ static bool NpcNeverShare(int h)
     for(auto& c : s_NpcPed) if(c.used && c.ped == h) return true;
     for(auto& c : s_NpcCar) if(c.used && (c.car == h || c.driver == h)) return true;
     if(IsSampActor(h)) return true;   // 3.01: actors are made on every phone, never shared
+    if(RpIsInfoPed(h)) return true;   // 3.29: the plaza info people too
     if(IsAvatarMade(h)) return true;   // 2.32: any avatar MP ever made (also an old / leftover one)
     return false;
 }
@@ -3641,6 +3644,7 @@ void MP::Process()
     ProcessLan(now);
     ProcessFeed(now);
     UpdateLocalStory(now);
+    Progress::SetHold(MP::IsOnRp());   // 3.29: no save loads / swaps on Mega Vil (day + weather are the server's)
     Progress::Process(now, settings.fullProgressDefault, client.GetState() == NET_CONNECTED && MP::IsOnDefault(),
                       client.GetState() == NET_CONNECTED && !MP::IsOnDefault(),
                       Game::IsReady() && !paused && !s_bLocalSeparate && s_nFeedStep < 0);
@@ -3849,6 +3853,7 @@ static bool JoinHudOff() { return s_bJoinHudOff; }
 #include "mp_rp.inc"     // 3.25: Mega Vil Futuristic (Roleplay)
 #include "mp_rp_phone.inc"   // 3.25: the RP phone
 #include "mp_rp_inv.inc"     // 3.26: PANEL, player info + bag, documents, "Received" cards
+#include "mp_rp_life.inc"    // 3.29: ATM machines + screen, plaza info people, welcome, invest / marry / seatbelt / pawn
 #include "mp_gates.inc"  // 3.04.2: gates that never open (Area 69): fade out, through, fade in
 #include "mp_safezone.inc"  // 3.21: hospital safe zones + 5 s spawn protection
 #include "mp_markers.inc"   // 3.21: SA-MP style red checkpoint beams for races, derbies, DM, jobs

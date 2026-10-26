@@ -13,10 +13,10 @@
 // phones refuse servers older than that too (they would let old phones in).
 // 3.10: build 31000. MP_MIN_BUILD stays 30406 and the lobby stays thirtyfox/mp5/: 3.04.6 (no cheats)
 // and 3.10 phones play together on the same servers; only 3.04.5 and older (mp4) stay shut out.
-#define MP_BUILD 32802   // 3.28.2
+#define MP_BUILD 32900   // 3.29
 #define MP_MIN_BUILD       30406
 #define MP_AUTH_MIN_BUILD  32106   // 3.21.6: servers with the login system refuse older phones (they could not log in)
-#define MP_VERSION_STR     "3.28.2"
+#define MP_VERSION_STR     "3.29"
 #define MP_VOICE_BUILD     31100   // 3.11: phones from this build on get voice packets
 #define MP_DOWNLOAD_URL    "thirtyfoxmcx00e1.github.io/wagu"
 #define MP_DEFAULT_HOST    "127.0.0.1"
@@ -657,6 +657,10 @@ struct PktRpMe
     uint32_t pets;                              // pets I own (bit per pet)
     uint32_t items;                             // licences / items (bits, see eRpItem)
     uint16_t skin, lotto;                       // my clothes, my lottery number (0 = none)
+    // 3.29 (older servers send less: the client zero-fills)
+    int32_t  invest[3];                         // what my investments are worth now ($), per plan (eRpPlan)
+    uint8_t  belt, married, pad29[2];           // seatbelt on, married
+    char     spouse[24];                        // husband / wife (name)
 };
 struct RpRow          { uint8_t id, job, flags, level; int32_t number; };   // flags: 1 duty, 2 cuffed, 4 wanted, 8 new citizen, 16 in a call
 struct PktRpPlayers   { uint8_t type; uint8_t n; uint8_t page; uint8_t pages; RpRow rows[RP_ROWS_WIRE]; };
@@ -668,6 +672,8 @@ struct PktRpState
     int32_t  lottoPot;
     uint8_t  houseOwned[RP_HOUSES_WIRE];        // 1 = sold
     char     evText[48];
+    uint16_t market[3];                         // 3.29: price index per plan (1000 = start)
+    int16_t  marketChg[3];                      // 3.29: last move in 0.1 %
 };
 enum eRpEv : uint8_t
 {
@@ -695,7 +701,7 @@ enum eRpEv : uint8_t
 };
 struct PktRpEvent     { uint8_t type, ev, a, b, who; uint8_t pad[3]; int32_t val; float fval[3]; char text[120]; };
 struct PktRpCmd       { uint8_t type, cmd, a, b; int32_t val; float pos[3]; char text[100]; };
-#define RP_INV_SLOTS   15   // 3.26: the bag, 5 x 3 (net/rp.h)
+#define RP_INV_SLOTS   16   // 3.29: the bag, 4 x 4 (3.26 - 3.28: 15)
 struct RpInvSlot      { uint8_t id; uint8_t pad; uint16_t count; };
 struct PktRpInv       { uint8_t type, n, pad0, pad1; uint16_t weight, maxWeight; RpInvSlot slot[RP_INV_SLOTS]; };   // 3.26
 // signed citizen backup (HMAC-SHA256, first 16 bytes), like the MW3 card

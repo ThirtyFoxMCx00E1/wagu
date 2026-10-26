@@ -75,7 +75,7 @@ static const RpPlace g_RpPlaces[] =
     { "ATM Pershing",                   1497.00f, -1749.00f, 15.45f, RPK_ATM },
     { "ATM Idlewood",                   1928.70f, -1767.00f, 13.55f, RPK_ATM },
     { "ATM Market",                     1155.60f, -1453.30f, 15.80f, RPK_ATM },
-    { "ATM Ganton",                     2233.00f, -1730.00f, 13.55f, RPK_ATM },
+    { "ATM Ganton",                     2225.60f, -1721.40f, 13.55f, RPK_ATM },   // 3.29: was on the road (2233, -1730); now on the walk by the gym door
     { "ATM Rodeo",                       494.00f, -1517.00f, 20.10f, RPK_ATM },
     { "DMV (licences)",                 1838.35f, -1443.88f, 13.57f, RPK_OTHER },
     { "Realty Listings",                1742.99f, -1456.21f, 13.52f, RPK_OTHER },
@@ -378,7 +378,20 @@ enum eRpCmd : uint8_t
     RPC_HEAL, RPC_REPAIR, RPC_LOTTO, RPC_EAT_DONE, RPC_911, RPC_TAXI_CALL, RPC_SHARED_EMOTE, RPC_ACCEPT, RPC_STATS, RPC_RESPAWN,
     RPC_COINFLIP, RPC_DICE, RPC_EVENT_JOIN, RPC_PROXY, RPC_GIVE_ITEM, RPC_DEFEND, RPC_FRISK, RPC_JETPACK, RPC_SKIN_SET,
     RPC_INV_REQ, RPC_INV_USE, RPC_INV_GIVE, RPC_INV_DROP,   // 3.26: the bag (a = bag slot, b = player id, val = amount)
+    // 3.29 (Diverse Roleplay features): a = plan, b = 0 buy / 1 sell, val = $ (sell: 0 = all)
+    RPC_INVEST, RPC_PROPOSE, RPC_DIVORCE, RPC_BELT, RPC_CHECK_BELT, RPC_PAWN, RPC_INVEST_INFO,
 };
+// 3.29: investments - one city market, prices move every RP_MARKET_S seconds
+enum eRpPlan : uint8_t { RPN_BOND = 0, RPN_STOCKS, RPN_COIN, RPN_COUNT };
+#define RP_MARKET_S 300
+struct RpPlanDef { const char* name; const char* risk; int16_t lo, hi; uint8_t feePct; };   // per tick move in 0.1 %
+static const RpPlanDef g_RpPlans[RPN_COUNT] =
+{
+    { "Mega Vil Bond",     "safe: +0.2% every 5 min",        2,   2, 0 },
+    { "Holo-Tech Stocks",  "medium: -3% .. +4% every 5 min", -30, 40, 2 },
+    { "VilCoin (crypto)",  "high: -9% .. +11% every 5 min",  -90, 110, 3 },
+};
+
 // chat kinds for RPC_CHAT / RPC_PROXY (a)
 enum eRpChat : uint8_t { RPH_SAY = 0, RPH_ME, RPH_DO, RPH_AME, RPH_TRY, RPH_B, RPH_OOC, RPH_SHOUT, RPH_LOW, RPH_WHISPER, RPH_NEWBIE, RPH_MEGAPHONE, RPH_RADIO, RPH_DEPT, RPH_GOV };
 
@@ -419,6 +432,8 @@ static const RpInvDef g_RpInv[RPX_COUNT] =
     { "Repair Kit",    14, 25, RPU_REPAIR,   0,   0 },
     { "Smartphone",    15,  2, RPU_PHONE,    0,   0 },
 };
+// 3.29: /pawn - what a pawn shop (24/7, tech shop) pays for one of each bag item
+static const int16_t g_RpPawn[RPX_COUNT] = { 0, 0, 3, 6, 2, 5, 4, 3, 7, 12, 1, 3, 5, 3, 60, 90, 150 };
 // the starter backpack (screenshot: 10x Es Teh + 10x Nasi Goreng, and a smartphone)
 struct RpInvPack { uint8_t id; uint16_t count; };
 static const RpInvPack g_RpStarter[] = { { RPX_ESTEH, 10 }, { RPX_NASIGORENG, 10 }, { RPX_PHONE, 1 } };
