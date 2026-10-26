@@ -227,7 +227,22 @@
     if (be.updating) return 'updating now ' + be.mod + ' -> ' + want;
     return want && be.mod !== want ? 'on ' + be.mod + ', latest ' + want : '';
   }
+  // 3.28.2: one command installs a new 24/7 VPS (HiveMQ + bridge + Mega Vil), from SSH or from Termux
+  var SETUP = 'curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-setup.sh | sudo bash';
+  var setupAsked = {};
+  function copyBtn(t) { return ' <a href="#" onclick="navigator.clipboard&&navigator.clipboard.writeText(' + esc(JSON.stringify(t)).replace(/"/g, '&quot;') + ');this.textContent=\'copied\';return false">copy</a>'; }
   var CMDS = {
+    setup: function (a) {
+      if (!a) { REG.forEach(function (r) { CMDS.setup(r.toLowerCase()); }); return; }
+      var i = Math.max(0, regionArg(a)), r = REG[i] || 'Asia';
+      var cmd = SETUP + ' -s ' + r.toLowerCase();
+      p('a', r + ' 24/7 server (HiveMQ + bridge + Mega Vil Futuristic) - on the VPS as root:');
+      print('  <span class="g">' + esc(cmd) + '</span>' + copyBtn(cmd));
+      var tx = 'pkg install -y openssh && ssh root@YOUR_VPS_IP "' + cmd.replace('sudo ', '') + '"';
+      p('m', '  from Termux on a phone (replace YOUR_VPS_IP):');
+      print('  <span class="g">' + esc(tx) + '</span>' + copyBtn(tx));
+      p('m', '  first: duckdns.org -> point ' + ['mpsamp', 'eusamp', 'nasamp', 'ocsamp'][i] + ' at the VPS IP · open TCP 1883 8883 8884 + UDP 1932');
+    },
     update: function (a) {
       var list = a ? [regionArg(a)] : REG.map(function (_, i) { return i; }).filter(function (i) { return beacon[i]; });
       if (!list.length) list = [Math.max(0, bestRegion())];
@@ -246,7 +261,7 @@
       p('a', 'MP Termius 2.22 - commands the bot uses');
       [['status', 'health of every region (broker, 24/7 server, bridge, uptime)'], ['servers', 'live server list (all regions)'],
        ['ping', 'measure ping to every region now'], ['regions', 'what regions.txt contains (no passwords shown)'],
-       ['console [region]', 'open the server terminal of a region (login admin)'], ['ssh [region]', 'SSH command / Termius link for a region'],
+       ['console [region]', 'open the server terminal of a region (login admin)'], ['ssh [region]', 'SSH command / Termius link for a region'], ['setup [region]', 'one command: a new 24/7 VPS (HiveMQ + bridge + Mega Vil), SSH or Termux'],
        ['broker', 'connection details for the mod / MQTT apps'], ['diagnose [region]', 'what is wrong with a region + what its autopilot did'], ['autopilot', 'new actions of the server autopilots'], ['update [region]', 'is the VPS on the newest version + the update command'], ['clear', 'clear the screen']].forEach(function (c) {
         print('  <span class="g">' + esc(c[0]) + '</span>' + ' '.repeat(Math.max(1, 18 - c[0].length)) + '<span class="m">' + esc(c[1]) + '</span>');
       });
@@ -329,6 +344,7 @@
     print('<span class="g">mp@lobby:~$</span> ' + esc(line));
     if (!line) return;
     var parts = line.split(/\s+/), c = parts[0].toLowerCase().replace(/^\//, '');
+    if (c === 'curl' && /vps-setup\.sh/.test(line)) { var sj = arguments[1]; return CMDS.setup(sj && sj.region != null ? REG[sj.region].toLowerCase() : ''); }
     if (c === 'curl' && /update\.sh/.test(line)) { var bj = arguments[1]; return CMDS.update(bj && bj.region != null ? REG[bj.region].toLowerCase() : ''); }
     if (c === 'ping') { lastPingAt = Date.now(); p('m', 'measuring…'); return measure().then(function () { CMDS.status(); }); }
     if (CMDS[c]) return CMDS[c](parts[1]); else p('r', c + ': command not found');
@@ -341,6 +357,8 @@
     if (changed.length) { var i = changed.shift(); return { cmd: 'diagnose ' + REG[i].toLowerCase(), why: REG[i] + ' changed: ' + lastSig[i] }; }
     if (botLog.length > botSeen) return { cmd: 'autopilot', why: 'new report from a region autopilot' };
     for (var u = 0; u < 4; u++) { var bh = behind(u); if (bh && updAsked[u] !== bh) { updAsked[u] = bh; return { cmd: UPD, region: u, why: REG[u] + ': ' + bh + ' - typing the update command' }; } }
+    // 3.28.2: any region offline and no beacon: the bot types the one-command VPS setup
+    for (var sv = 0; sv < 4; sv++) if (ping[sv] === -1 && !beacon[sv] && !setupAsked[sv]) { setupAsked[sv] = 1; return { cmd: SETUP + ' -s ' + REG[sv].toLowerCase(), region: sv, why: REG[sv] + ' broker offline - typing the 24/7 VPS setup command' }; }
     if (serversChanged) { serversChanged = false; return { cmd: 'servers', why: 'server list changed' }; }
     if (Date.now() - lastPingAt > 90000) return { cmd: 'ping', why: 'ping every 90 s', wait: 7000 };
     if (++cycles % 9 === 0) return { cmd: 'clear', why: 'keeping the screen short', wait: 600 };
