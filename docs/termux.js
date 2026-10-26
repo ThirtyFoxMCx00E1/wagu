@@ -199,6 +199,8 @@
   };
   function run(line) {
     print('<span class="g">~ $</span> ' + esc(line));
+    var deb = window.MPDebian && MPDebian.match(line);
+    if (deb) { MPDebian.lines(deb).forEach(function (l) { p(l[0], l[1]); }); return; }   // 3.31
     var c = ALIAS[line];
     if (!c || !CMDS[c]) { p('r', line.split(' ')[0] + ': command not found'); return; }
     return CMDS[c]();
@@ -210,6 +212,7 @@
   var rot = ['mp-server status', 'mp-server list', 'mp-server log', 'mp-server status', 'mp-server log'], ri = 0, cycles = 0, lastRel = Date.now();
   function next() {
     if (boot.length) return { cmd: boot.shift(), why: 'start-up check' };
+    var dj = window.MPDebian && MPDebian.tick(); if (dj) return dj;   // 3.31: the Debian one-line setup
     prune();
     if (phoneChanged) { phoneChanged = false; return phoneSeen ? { cmd: 'mp-server status', why: '24/7 phone server came back' } : { cmd: 'mp-server doctor', why: '24/7 phone server left the lobby' }; }
     if (events.length - evSeen >= 3) return { cmd: 'mp-server log', why: (events.length - evSeen) + ' new lobby events' };

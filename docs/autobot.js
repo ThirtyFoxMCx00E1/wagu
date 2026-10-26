@@ -46,6 +46,40 @@
     return { stop: function () { running = false; }, busy: function () { return busy; } };
   };
 
+  // 3.31: the Debian 12 one-line 24/7 VPS setup. Every console bot (Termius, Termux, Railway) types it
+  // at start-up and again every few checks, going round the regions: asia, europe, na, oceania.
+  window.MPDebian = (function () {
+    var URL = 'https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-setup.sh';
+    var REG = ['asia', 'europe', 'na', 'oceania'];
+    var INFO = { europe: ['Europe', 'eusamp', 'Frankfurt'], na: ['NA', 'nasamp', 'Virginia / Ohio'], oceania: ['Oceania', 'ocsamp', 'Sydney'], asia: ['Asia', 'mpsamp', 'Singapore / Manila'] };
+    var n = 0, ri = 0;
+    function cmd(r) { return 'wget -qO- ' + URL + ' | bash -s ' + r; }
+    return {
+      cmd: cmd,
+      // the region of a typed Debian setup line, or null
+      match: function (line) { var m = /^wget -qO- \S*vps-setup\.sh \| bash -s (\w+)\s*$/.exec(String(line || '').trim()); return m && INFO[m[1].toLowerCase()] ? m[1].toLowerCase() : null; },
+      // what the command does: [class, text] lines for the page's p()
+      lines: function (r) {
+        var i = INFO[r] || INFO.europe;
+        return [
+          ['a', 'Debian 12 / Ubuntu: a new 24/7 ' + i[0] + ' server (HiveMQ + Java 21 + Mega Vil Futuristic) - on the machine as root (su -):'],
+          ['g', '  ' + cmd(r)],
+          ['m', '  installs curl, git, Java 21, HiveMQ and the 24/7 servers, and uses the passwords from regions.txt (phones connect with no change)'],
+          ['m', '  first: duckdns.org -> point ' + i[1] + ' at the machine\'s IP · open TCP 1883 8883 8884 + UDP 1922 1932'],
+          ['m', '  Debian 12 installer (677 MB): github.com/ThirtyFoxMCx00E1/HiveMQ/releases/tag/Derbian - on a VPS pick Debian 12 in the image list'],
+          ['m', '  low ping for ' + i[0] + ' players: put this machine in or near ' + i[2]]
+        ];
+      },
+      // planner: a job on the first check after start-up, then every 8 checks
+      tick: function () {
+        n++;
+        if (n !== 1 && n % 8 !== 0) return null;
+        var r = REG[ri++ % REG.length];
+        return { cmd: cmd(r), why: 'Debian 12 one-line setup for ' + INFO[r][0] };
+      }
+    };
+  })();
+
   // keep the log glued to the bottom unless the reader scrolled up
   window.MPAutoScroll = function (out) {
     var stick = true;
