@@ -30,6 +30,8 @@ static bool RpLifeCommand(const char* cmd, const char* arg);   // mp_rp_life.inc
 static void RpLifeProcess(int ped, uint64_t now, bool engaged);
 static void RpInfoDraw(ImDrawList* dl);
 static void RpDrawAtm(uint64_t nowMs);
+static void RpDrawDrops(uint64_t nowMs);              // 3.30
+static void RpDropsOnPacket(const uint8_t* d, int len);   // 3.30
 static void MpUiClick() { RpClick(RPS_CLICK); }
 // 3.29: an outlined button - no background, white outline, white text with a shadow (NPC talk menu)
 static bool RpOutlineButton(const char* label, ImVec2 size)
@@ -47,9 +49,39 @@ static bool RpOutlineButton(const char* label, ImVec2 size)
     ImVec2 p(a.x + (size.x - ts.x) * 0.5f, a.y + (size.y - ts.y) * 0.5f);
     dl->AddText(UI::Font(), fs, ImVec2(p.x + UI::S(2), p.y + UI::S(2)), IM_COL32(0, 0, 0, 200), label, end);
     dl->AddText(UI::Font(), fs, p, IM_COL32_WHITE, label, end);
-    ImGui::Dummy(ImVec2(0, UI::S(12)));
     if(r) RpClick(RPS_CLICK);
     return r;
+}
+// 3.30: the column for the outlined talk / ATM / pick-up buttons - right of centre, but always
+// left of the PANEL button (it sat under Nevermind / Goodbye before), and every button gets its
+// own spot inside a window with room around it, so the outline is never cut at the bottom
+static float RpSideColX(float bw)
+{
+    ImVec2 ds = ImGui::GetIO().DisplaySize;
+    float panelLeft = ds.x - UI::S(560) - UI::S(48) - UI::S(36);   // RpDrawPanelButton: centre ds.x - 560, 96 wide
+    float x = ds.x * 0.58f;
+    if(x + bw > panelLeft) x = panelLeft - bw;
+    if(x < ds.x * 0.36f) x = ds.x * 0.36f;
+    return x;
+}
+static int RpOutlineColumn(const char* id, const char* const* labels, int n, float bw, float bh, float gap, float cy, float fontScale = 1.0f)
+{
+    const float total = n * bh + (n - 1) * gap, m = UI::S(20);
+    float x = RpSideColX(bw), y = cy - total * 0.5f;
+    ImVec2 ds = ImGui::GetIO().DisplaySize;
+    if(y < UI::S(80)) y = UI::S(80);
+    if(y + total > ds.y - UI::S(150)) y = ds.y - UI::S(150) - total;
+    BcwBeginOverlay(id, ImVec2(x - m, y - m), ImVec2(bw + m * 2, total + m * 2), 0.0f);
+    if(fontScale != 1.0f) ImGui::SetWindowFontScale(fontScale);
+    int hit = -1;
+    for(int i = 0; i < n; ++i)
+    {
+        ImGui::SetCursorScreenPos(ImVec2(x, y + i * (bh + gap)));
+        if(RpOutlineButton(labels[i], ImVec2(bw, bh))) hit = i;
+    }
+    if(fontScale != 1.0f) ImGui::SetWindowFontScale(1.0f);
+    BcwEndOverlay();
+    return hit;
 }
 static const Vec3 kRpLobbyCam  = { 1463.4f, -1673.4f, 20.5f };   // 3.29: low over Mega Vil Plaza, facing the info people
 static const Vec3 kRpLobbyLook = { 1481.6f, -1692.0f, 15.2f };
@@ -548,25 +580,20 @@ static void RpDrawTalk(float now)
     // 3D marker over the person
     Vec3 pp; if(Game::GetCharPos(s_Rp.talkPed, pp)) BcwLabel3D(ImGui::GetBackgroundDrawList(), { pp.x, pp.y, pp.z + 1.25f }, s_Rp.talkStage == 1 ? "[ ! ]" : "...", RP_SKY, 34.0f, 6.0f);
     // 3.29: Talk / Nevermind / topics - no background, white outline, one button per line, a bit right of centre
-    const float bw = UI::S(330), bh = UI::S(62), gap = UI::S(12);
-    const float tx = ds.x * 0.62f;
+    const float bw = UI::S(330), gap = UI::S(14);
     if(s_Rp.talkStage == 1)
     {
-        float h = bh * 2 + gap;
-        BcwBeginOverlay("##RpTalk", ImVec2(tx, ds.y * 0.5f - h * 0.5f), ImVec2(bw + UI::S(36), h + UI::S(28)), 0.0f);
-        if(RpOutlineButton("Talk##rpt", ImVec2(bw, bh))) RpTalkChoose(100);
-        if(RpOutlineButton("Nevermind##rpn", ImVec2(bw, bh))) RpTalkChoose(-1);
-        BcwEndOverlay();
+        static const char* const kL[2] = { "Talk##rpt", "Nevermind##rpn" };
+        int h = RpOutlineColumn("##RpTalk", kL, 2, bw, UI::S(62), gap, ds.y * 0.42f);
+        if(h == 0) RpTalkChoose(100); else if(h == 1) RpTalkChoose(-1);
     }
     else if(s_Rp.talkStage == 2)
     {
-        int rows = RP_TOPICS + 1; float h = rows * (UI::S(56) + gap) + UI::S(20);
-        BcwBeginOverlay("##RpTalk2", ImVec2(tx, ds.y * 0.5f - h * 0.5f), ImVec2(bw + UI::S(36), h + UI::S(10)), 0.0f);
-        ImGui::SetWindowFontScale(0.85f);
-        for(int i = 0; i < RP_TOPICS; ++i) { char l[64]; snprintf(l, sizeof(l), "%s##tp%d", kRpTopics[i].option, i); if(RpOutlineButton(l, ImVec2(bw, UI::S(56)))) RpTalkChoose(i); }
-        if(RpOutlineButton("Goodbye##tpb", ImVec2(bw, UI::S(56)))) RpTalkChoose(-1);
-        ImGui::SetWindowFontScale(1.0f);
-        BcwEndOverlay();
+        static char lb[RP_TOPICS + 1][64]; const char* L[RP_TOPICS + 1];
+        for(int i = 0; i < RP_TOPICS; ++i) { snprintf(lb[i], sizeof(lb[i]), "%s##tp%d", kRpTopics[i].option, i); L[i] = lb[i]; }
+        snprintf(lb[RP_TOPICS], sizeof(lb[RP_TOPICS]), "Goodbye##tpb"); L[RP_TOPICS] = lb[RP_TOPICS];
+        int h = RpOutlineColumn("##RpTalk2", L, RP_TOPICS + 1, bw, UI::S(54), UI::S(10), ds.y * 0.40f, 0.85f);
+        if(h >= 0 && h < RP_TOPICS) RpTalkChoose(h); else if(h == RP_TOPICS) RpTalkChoose(-1);
     }
     (void)now;
 }
@@ -720,6 +747,9 @@ static void RpOnPacket(const uint8_t* d, int len)
     }
     case PKT_RP_INV:
         RpInvOnPacket(d, len);
+        break;
+    case PKT_RP_DROPS:   // 3.30: things on the ground
+        RpDropsOnPacket(d, len);
         break;
     case PKT_RP_CARD:
     {
@@ -1416,6 +1446,7 @@ static void RenderRp()
         RenderRpPhone(now);
         RenderRpInv();     // 3.26: PANEL, player info + bag, documents, "Received" cards
         RpDrawAtm(nowMs);  // 3.29: the ATM screen
+        RpDrawDrops(nowMs);   // 3.30: items on the ground
     }
     if(s_Rp.bannerAt && nowMs - s_Rp.bannerAt < 3500)
     {

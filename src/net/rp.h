@@ -317,7 +317,7 @@ static const RpShopItem g_RpShop[] =
     { RPS_GUNS, RPI_WEAPON, "M4 (duty)",           6000, 31, 300 },{ RPS_GUNS, RPI_WEAPON, "Sniper (duty)",      9000, 34, 30 },
     { RPS_GUNS, RPI_ARMOUR, "Body armour (duty)",  1000, 100, 0 },
     // 3.26: appended (the phone sends the index, so new rows only go at the end)
-    { RPS_FOOD, RPI_FOOD,   "Es Teh (iced tea)",   15,   0,  45 }, { RPS_FOOD, RPI_FOOD,   "Nasi Goreng",         40,  50,   0 },
+    { RPS_FOOD, RPI_FOOD,   "Iced Tea",            15,   0,  45 }, { RPS_FOOD, RPI_FOOD,   "Fried Rice",          40,  50,   0 },
 };
 #define RP_SHOP_COUNT ((int)(sizeof(g_RpShop) / sizeof(g_RpShop[0])))
 inline bool RpWeaponIsHarmless(int w) { return w == 0 || w == 14 || w == 15 || w == 43 || w == 46 || w == 10 || w == 11 || w == 12 || w == 13; }
@@ -380,6 +380,7 @@ enum eRpCmd : uint8_t
     RPC_INV_REQ, RPC_INV_USE, RPC_INV_GIVE, RPC_INV_DROP,   // 3.26: the bag (a = bag slot, b = player id, val = amount)
     // 3.29 (Diverse Roleplay features): a = plan, b = 0 buy / 1 sell, val = $ (sell: 0 = all)
     RPC_INVEST, RPC_PROPOSE, RPC_DIVORCE, RPC_BELT, RPC_CHECK_BELT, RPC_PAWN, RPC_INVEST_INFO,
+    RPC_INV_PICKUP,   // 3.30: pick up a dropped item (val = drop uid)
 };
 // 3.29: investments - one city market, prices move every RP_MARKET_S seconds
 enum eRpPlan : uint8_t { RPN_BOND = 0, RPN_STOCKS, RPN_COIN, RPN_COUNT };
@@ -416,8 +417,8 @@ static const RpInvDef g_RpInv[RPX_COUNT] =
 {
     { "-",              0,  0, RPU_NONE,     0,   0 },
     { "Backpack",       0,  5, RPU_STARTER,  0,   0 },   // the starter pack: open it = the things inside
-    { "Es Teh",         1,  3, RPU_DRINK,    0,  45 },
-    { "Nasi Goreng",    2,  4, RPU_FOOD,    50,   0 },
+    { "Iced Tea",       1,  3, RPU_DRINK,    0,  45 },
+    { "Fried Rice",     2,  4, RPU_FOOD,    50,   0 },
     { "Water",          3,  5, RPU_DRINK,    0,  40 },
     { "Burger",         4,  3, RPU_FOOD,    30,   0 },
     { "Pizza Slice",    5,  2, RPU_FOOD,    40,   0 },
@@ -432,9 +433,31 @@ static const RpInvDef g_RpInv[RPX_COUNT] =
     { "Repair Kit",    14, 25, RPU_REPAIR,   0,   0 },
     { "Smartphone",    15,  2, RPU_PHONE,    0,   0 },
 };
+// 3.30: the world object for a dropped item (GTA SA models: a real phone, burger, pizza, can...)
+#define RP_DROP_RANGE   2.2f       // walk this close to pick a drop up (m)
+#define RP_DROP_LIFE_S  900        // a drop stays on the ground 15 minutes
+static const uint16_t g_RpDropModel[RPX_COUNT] = {
+    1210,   // -
+    3026,   // backpack: para_pack
+    2601,   // iced tea: a can (CJ_JUICE_CAN)
+    2814,   // fried rice: takeaway box
+    2601,   // water
+    2703,   // burger (CJ_BURG_1)
+    2702,   // pizza slice (CJ_PIZZA_1)
+    2814,   // hot dog
+    2814,   // fried chicken
+    2814,   // sushi box
+    2702,   // doughnut
+    2601,   // sprunk
+    2601,   // energy drink
+    2601,   // coffee
+    1240,   // medkit: the health heart
+    1271,   // repair kit: a box
+    330,    // smartphone: the real cellphone model
+};
 // 3.29: /pawn - what a pawn shop (24/7, tech shop) pays for one of each bag item
 static const int16_t g_RpPawn[RPX_COUNT] = { 0, 0, 3, 6, 2, 5, 4, 3, 7, 12, 1, 3, 5, 3, 60, 90, 150 };
-// the starter backpack (screenshot: 10x Es Teh + 10x Nasi Goreng, and a smartphone)
+// the starter backpack (10x Iced Tea + 10x Fried Rice, and a smartphone; 3.30: English names)
 struct RpInvPack { uint8_t id; uint16_t count; };
 static const RpInvPack g_RpStarter[] = { { RPX_ESTEH, 10 }, { RPX_NASIGORENG, 10 }, { RPX_PHONE, 1 } };
 // a shop row that goes into the bag instead of being used on the spot (RPX_NONE = used right away)
@@ -445,7 +468,7 @@ inline uint8_t RpInvForShop(const char* name)
         { "Burger", RPX_BURGER }, { "Pizza slice", RPX_PIZZA }, { "Hot dog", RPX_HOTDOG }, { "Fried chicken", RPX_CHICKEN },
         { "Synth sushi box", RPX_SUSHI }, { "Doughnut", RPX_DONUT }, { "Water bottle", RPX_WATER }, { "Sprunk soda", RPX_SODA },
         { "Neon energy drink", RPX_ENERGY }, { "Coffee", RPX_COFFEE }, { "Medkit (+60 health)", RPX_MEDKIT }, { "Car repair kit", RPX_REPAIRKIT },
-        { "Es Teh (iced tea)", RPX_ESTEH }, { "Nasi Goreng", RPX_NASIGORENG },
+        { "Iced Tea", RPX_ESTEH }, { "Fried Rice", RPX_NASIGORENG },
     };
     if(!name) return RPX_NONE;
     for(const auto& e : k) if(!strcmp(e.n, name)) return e.id;

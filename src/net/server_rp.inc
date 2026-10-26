@@ -27,6 +27,7 @@ void MPServer::SetRpFile(const char* path)
 void MPServer::RpReset()
 {
     memset(m_Rp, 0, sizeof(m_Rp));
+    memset(m_RpDrops, 0, sizeof(m_RpDrops));   // 3.30
     for(int i = 0; i < MP_MAX_PLAYERS; ++i) { m_Rp[i].callWith = m_Rp[i].ringFrom = m_Rp[i].askFrom = m_Rp[i].fineFrom = MP_INVALID_ID; m_Rp[i].house = m_Rp[i].pet = 255; }
     m_nRpLastSend = m_nRpLastPlayers = m_nRpLastSave = 0;
     m_nRpNextEvent = MP_NowMs() + 4 * 60 * 1000; m_nRpEvEnd = 0; m_nRpEvKind = RPEV_NONE; m_nRpEvState = 0;
@@ -305,6 +306,23 @@ void MPServer::RpSendInv(int slot)
     memcpy(p.slot, m.inv, sizeof(p.slot));
     SendTo(slot, &p, sizeof(p));
 }
+// 3.30: items on the ground, to one citizen or to everyone (-1)
+void MPServer::RpSendDrops(int slot)
+{
+    PktRpDrops p; memset(&p, 0, sizeof(p));
+    p.type = PKT_RP_DROPS;
+    uint64_t now = MP_NowMs();
+    for(int i = 0; i < RP_DROPS_MAX; ++i)
+    {
+        const RpSrvDrop& d = m_RpDrops[i]; if(!d.id) continue;
+        RpDropRow& r = p.row[p.n++];
+        r.uid = d.uid; r.id = d.id; r.count = d.count; r.ttlS = (uint16_t)(d.until > now ? (d.until - now) / 1000 : 0);
+        memcpy(r.pos, d.pos, sizeof(r.pos));
+    }
+    int len = (int)(offsetof(PktRpDrops, row) + p.n * sizeof(RpDropRow));
+    if(slot >= 0) { if(m_Rp[slot].loaded) SendTo(slot, &p, len); return; }
+    for(int i = 0; i < MP_MAX_PLAYERS; ++i) if(m_Rp[i].loaded) SendTo(i, &p, len);
+}
 int MPServer::RpInvGive(int slot, uint8_t id, int n, const char* why)
 {
     RpSrvPlayer& m = m_Rp[slot]; if(!m.loaded || !id || id >= RPX_COUNT || n <= 0) return 0;
@@ -418,6 +436,7 @@ void MPServer::RpOnAuthed(int slot)
     }
     RpSendMe(slot);
     RpSendInv(slot);
+    RpSendDrops(slot);   // 3.30
     RpSendCard(slot);
     RpSendPlayers(-1);
 }
@@ -534,6 +553,11 @@ void MPServer::RpTick(uint64_t now)
     static uint64_t s_Last1s = 0;
     if(now - s_Last1s < 1000) return;
     s_Last1s = now;
+    {   // 3.30: dropped items fade away after RP_DROP_LIFE_S
+        bool gone = false;
+        for(int i = 0; i < RP_DROPS_MAX; ++i) if(m_RpDrops[i].id && now >= m_RpDrops[i].until) { memset(&m_RpDrops[i], 0, sizeof(m_RpDrops[i])); gone = true; }
+        if(gone) RpSendDrops(-1);
+    }
     // 3.29: the market moves every RP_MARKET_S seconds (one market for the whole city)
     if(!m_nRpMarketAt) m_nRpMarketAt = now + RP_MARKET_S * 1000ull;
     if(now >= m_nRpMarketAt)
@@ -1347,10 +1371,46 @@ void MPServer::RpHandleCmd(int slot, const PktRpCmd& c)
         if(now - m.lastInv < 350) break; m.lastInv = now;
         int bs = c.a; if(bs >= RP_INV_SLOTS || !m.inv[bs].id || m.inv[bs].id >= RPX_COUNT) { RpSendInv(slot); break; }
         const uint8_t id = m.inv[bs].id; int n = RpInvTake(m.inv, bs, c.val < 1 ? 1 : c.val);
-        RpMsg(slot, RP_OOC_COL, "[BAG] You dropped %dx %s.", n, g_RpInv[id].name);
-        snprintf(line, sizeof(line), "* %s drops %dx %s.", nm, n, g_RpInv[id].name); RpNear(slot, RP_TALK_RANGE, RP_ME_COL, line, false);
+        // 3.30: the item lands on the ground as a real object (everyone sees it, anyone can pick it up)
+        const Slot& sp = m_Slots[slot];
+        bool onGround = false;
+        if(sp.hasPos && n > 0)
+        {
+            int at = -1; uint64_t oldest = ~0ull;
+            for(int i = 0; i < RP_DROPS_MAX; ++i) { if(!m_RpDrops[i].id) { at = i; break; } if(m_RpDrops[i].until < oldest) { oldest = m_RpDrops[i].until; at = i; } }
+            RpSrvDrop& d = m_RpDrops[at];
+            d.uid = ++m_nRpDropUid; if(!d.uid) d.uid = ++m_nRpDropUid;
+            d.id = id; d.count = (uint16_t)n; d.until = now + RP_DROP_LIFE_S * 1000ull;
+            float ang = (float)(d.uid * 137 % 360) * 0.0174533f;   // a little in front / around the feet
+            d.pos[0] = sp.pos[0] + cosf(ang) * 0.7f; d.pos[1] = sp.pos[1] + sinf(ang) * 0.7f; d.pos[2] = sp.pos[2];
+            onGround = true;
+            RpSendDrops(-1);
+        }
+        RpMsg(slot, RP_OOC_COL, onGround ? "[BAG] You dropped %dx %s on the ground (walk to it to pick it up)." : "[BAG] You dropped %dx %s.", n, g_RpInv[id].name);
+        snprintf(line, sizeof(line), "* %s drops %dx %s on the ground.", nm, n, g_RpInv[id].name); RpNear(slot, RP_TALK_RANGE, RP_ME_COL, line, false);
         m.statT = (uint32_t)time(nullptr); m_bRpDirty = true;
         RpSendInv(slot);
+        break;
+    }
+    case RPC_INV_PICKUP:   // 3.30
+    {
+        if(now - m.lastInv < 350) break; m.lastInv = now;
+        const Slot& sp = m_Slots[slot];
+        int at = -1; for(int i = 0; i < RP_DROPS_MAX; ++i) if(m_RpDrops[i].id && m_RpDrops[i].uid == (uint16_t)c.val) { at = i; break; }
+        if(at < 0) { RpMsg(slot, RP_RED, "Someone was faster - it's gone."); RpSendDrops(slot); break; }
+        RpSrvDrop& d = m_RpDrops[at];
+        if(sp.hasPos)
+        {
+            float dx = sp.pos[0] - d.pos[0], dy = sp.pos[1] - d.pos[1], dz = sp.pos[2] - d.pos[2];
+            if(dx * dx + dy * dy + dz * dz > (RP_DROP_RANGE + 1.5f) * (RP_DROP_RANGE + 1.5f)) { RpMsg(slot, RP_RED, "Walk closer to pick it up."); break; }
+        }
+        const uint8_t id = d.id;
+        int got = RpInvGive(slot, id, d.count, "Picked up");
+        if(got <= 0) { RpMsg(slot, RP_RED, "[BAG] Your bag is full (or too heavy)."); break; }
+        snprintf(line, sizeof(line), "* %s picks up %dx %s.", nm, got, g_RpInv[id].name); RpNear(slot, RP_TALK_RANGE, RP_ME_COL, line, false);
+        if(got >= d.count) memset(&d, 0, sizeof(d)); else d.count = (uint16_t)(d.count - got);
+        m.statT = (uint32_t)time(nullptr); m_bRpDirty = true;
+        RpSendDrops(-1);
         break;
     }
     case RPC_STATS:
