@@ -272,7 +272,8 @@ static const RpPet g_RpPets[] =
 enum eRpShopCat : uint8_t { RPS_FOOD = 0, RPS_CLOTHES, RPS_CARS, RPS_TECH, RPS_GUNS, RPS_CAT_COUNT };
 static const char* const g_RpShopCats[RPS_CAT_COUNT] = { "Food & Drinks", "Clothes", "Vehicles", "Tech & Pets", "Ammu-Nation" };
 enum eRpShopKind : uint8_t { RPI_FOOD = 0, RPI_MEDKIT, RPI_SKIN, RPI_VEH, RPI_PET, RPI_ITEM, RPI_WEAPON, RPI_ARMOUR, RPI_LOTTO, RPI_REPAIR };
-enum eRpItem : uint32_t { RPIT_JETPACK = 1, RPIT_DRIVING = 2, RPIT_GUNLIC = 4, RPIT_TOOLKIT = 8, RPIT_THEME_NEON = 16, RPIT_THEME_SUNSET = 32, RPIT_THEME_MATRIX = 64, RPIT_RADIO = 128, RPIT_PARACHUTE = 256 };
+enum eRpItem : uint32_t { RPIT_JETPACK = 1, RPIT_DRIVING = 2, RPIT_GUNLIC = 4, RPIT_TOOLKIT = 8, RPIT_THEME_NEON = 16, RPIT_THEME_SUNSET = 32, RPIT_THEME_MATRIX = 64, RPIT_RADIO = 128, RPIT_PARACHUTE = 256,
+                          RPIT_STARTER = 512 };   // 3.26: the starter backpack was handed out (once per citizen)
 struct RpShopItem { uint8_t cat, kind; const char* name; int price; int a, b; };   // FOOD: a hunger, b thirst; SKIN/VEH/PET: a = id; ITEM: a = bit; WEAPON: a = weapon, b = ammo
 static const RpShopItem g_RpShop[] =
 {
@@ -315,6 +316,8 @@ static const RpShopItem g_RpShop[] =
     { RPS_GUNS, RPI_WEAPON, "Shotgun (duty)",      2500, 25, 50 }, { RPS_GUNS, RPI_WEAPON, "MP5 (duty)",         3500, 29, 300 },
     { RPS_GUNS, RPI_WEAPON, "M4 (duty)",           6000, 31, 300 },{ RPS_GUNS, RPI_WEAPON, "Sniper (duty)",      9000, 34, 30 },
     { RPS_GUNS, RPI_ARMOUR, "Body armour (duty)",  1000, 100, 0 },
+    // 3.26: appended (the phone sends the index, so new rows only go at the end)
+    { RPS_FOOD, RPI_FOOD,   "Es Teh (iced tea)",   15,   0,  45 }, { RPS_FOOD, RPI_FOOD,   "Nasi Goreng",         40,  50,   0 },
 };
 #define RP_SHOP_COUNT ((int)(sizeof(g_RpShop) / sizeof(g_RpShop[0])))
 inline bool RpWeaponIsHarmless(int w) { return w == 0 || w == 14 || w == 15 || w == 43 || w == 46 || w == 10 || w == 11 || w == 12 || w == 13; }
@@ -374,6 +377,7 @@ enum eRpCmd : uint8_t
     RPC_SELL_HOUSE, RPC_HOME, RPC_MY_VEH, RPC_SELL_VEH, RPC_PET, RPC_CUFF, RPC_UNCUFF, RPC_ARREST, RPC_FINE, RPC_WANTED,
     RPC_HEAL, RPC_REPAIR, RPC_LOTTO, RPC_EAT_DONE, RPC_911, RPC_TAXI_CALL, RPC_SHARED_EMOTE, RPC_ACCEPT, RPC_STATS, RPC_RESPAWN,
     RPC_COINFLIP, RPC_DICE, RPC_EVENT_JOIN, RPC_PROXY, RPC_GIVE_ITEM, RPC_DEFEND, RPC_FRISK, RPC_JETPACK, RPC_SKIN_SET,
+    RPC_INV_REQ, RPC_INV_USE, RPC_INV_GIVE, RPC_INV_DROP,   // 3.26: the bag (a = bag slot, b = player id, val = amount)
 };
 // chat kinds for RPC_CHAT / RPC_PROXY (a)
 enum eRpChat : uint8_t { RPH_SAY = 0, RPH_ME, RPH_DO, RPH_AME, RPH_TRY, RPH_B, RPH_OOC, RPH_SHOUT, RPH_LOW, RPH_WHISPER, RPH_NEWBIE, RPH_MEGAPHONE, RPH_RADIO, RPH_DEPT, RPH_GOV };
@@ -381,3 +385,84 @@ enum eRpChat : uint8_t { RPH_SAY = 0, RPH_ME, RPH_DO, RPH_AME, RPH_TRY, RPH_B, R
 // ---- city events -------------------------------------------------------------------------------
 enum eRpEventKind : uint8_t { RPEV_NONE = 0, RPEV_DOUBLE_PAY, RPEV_CASH_DROP, RPEV_FESTIVAL, RPEV_LOTTERY, RPEV_HOLO_RUSH, RPEV_COUNT };
 static const char* const g_RpEventNames[RPEV_COUNT] = { "-", "Double Pay Hour", "Holo Cash Drop", "Neon Night Festival", "Mega Lottery Draw", "Holo Tower Rush" };
+
+// ---- 3.26: the bag (inventory) -----------------------------------------------------------------
+// Server authoritative like the money: the phone only asks (RPC_INV_*), the host answers with
+// PKT_RP_INV (the whole bag) and RPV_GOT ("Received 10x" cards). 5 x 3 slots, 50.0 kg.
+// Icons: rp_items.png (4 x 4 cells of 128 px, built into the .so, written into files/MP when missing).
+#define RP_INV_MAX_W   500          // 0.1 kg units: 50.0 kg
+#define RP_INV_STACK   99
+enum eRpInvId : uint8_t
+{
+    RPX_NONE = 0, RPX_BACKPACK, RPX_ESTEH, RPX_NASIGORENG, RPX_WATER, RPX_BURGER, RPX_PIZZA, RPX_HOTDOG, RPX_CHICKEN,
+    RPX_SUSHI, RPX_DONUT, RPX_SODA, RPX_ENERGY, RPX_COFFEE, RPX_MEDKIT, RPX_REPAIRKIT, RPX_PHONE, RPX_COUNT
+};
+enum eRpInvUse : uint8_t { RPU_NONE = 0, RPU_FOOD, RPU_DRINK, RPU_MEDKIT, RPU_REPAIR, RPU_PHONE, RPU_STARTER };
+struct RpInvDef { const char* name; uint8_t icon; uint8_t weight; uint8_t use; uint8_t hunger, thirst; };   // weight in 0.1 kg
+static const RpInvDef g_RpInv[RPX_COUNT] =
+{
+    { "-",              0,  0, RPU_NONE,     0,   0 },
+    { "Backpack",       0,  5, RPU_STARTER,  0,   0 },   // the starter pack: open it = the things inside
+    { "Es Teh",         1,  3, RPU_DRINK,    0,  45 },
+    { "Nasi Goreng",    2,  4, RPU_FOOD,    50,   0 },
+    { "Water",          3,  5, RPU_DRINK,    0,  40 },
+    { "Burger",         4,  3, RPU_FOOD,    30,   0 },
+    { "Pizza Slice",    5,  2, RPU_FOOD,    40,   0 },
+    { "Hot Dog",        6,  2, RPU_FOOD,    20,   0 },
+    { "Fried Chicken",  7,  3, RPU_FOOD,    55,   0 },
+    { "Sushi Box",      8,  4, RPU_FOOD,    80,  10 },
+    { "Doughnut",       9,  1, RPU_FOOD,    12,   0 },
+    { "Sprunk",        10,  4, RPU_DRINK,    0,  50 },
+    { "Energy Drink",  11,  4, RPU_DRINK,    5,  60 },
+    { "Coffee",        12,  3, RPU_DRINK,    0,  35 },
+    { "Medkit",        13, 10, RPU_MEDKIT,  60,   0 },   // hunger field = health
+    { "Repair Kit",    14, 25, RPU_REPAIR,   0,   0 },
+    { "Smartphone",    15,  2, RPU_PHONE,    0,   0 },
+};
+// the starter backpack (screenshot: 10x Es Teh + 10x Nasi Goreng, and a smartphone)
+struct RpInvPack { uint8_t id; uint16_t count; };
+static const RpInvPack g_RpStarter[] = { { RPX_ESTEH, 10 }, { RPX_NASIGORENG, 10 }, { RPX_PHONE, 1 } };
+// a shop row that goes into the bag instead of being used on the spot (RPX_NONE = used right away)
+inline uint8_t RpInvForShop(const char* name)
+{
+    static const struct { const char* n; uint8_t id; } k[] =
+    {
+        { "Burger", RPX_BURGER }, { "Pizza slice", RPX_PIZZA }, { "Hot dog", RPX_HOTDOG }, { "Fried chicken", RPX_CHICKEN },
+        { "Synth sushi box", RPX_SUSHI }, { "Doughnut", RPX_DONUT }, { "Water bottle", RPX_WATER }, { "Sprunk soda", RPX_SODA },
+        { "Neon energy drink", RPX_ENERGY }, { "Coffee", RPX_COFFEE }, { "Medkit (+60 health)", RPX_MEDKIT }, { "Car repair kit", RPX_REPAIRKIT },
+        { "Es Teh (iced tea)", RPX_ESTEH }, { "Nasi Goreng", RPX_NASIGORENG },
+    };
+    if(!name) return RPX_NONE;
+    for(const auto& e : k) if(!strcmp(e.n, name)) return e.id;
+    return RPX_NONE;
+}
+inline int RpInvWeight(const RpInvSlot* s)
+{
+    int w = 0; for(int i = 0; i < RP_INV_SLOTS; ++i) if(s[i].id && s[i].id < RPX_COUNT) w += g_RpInv[s[i].id].weight * s[i].count;
+    return w;
+}
+// how many of `id` still fit (weight + a free / same slot)
+inline int RpInvRoom(const RpInvSlot* s, uint8_t id)
+{
+    if(!id || id >= RPX_COUNT) return 0;
+    int w = g_RpInv[id].weight; int byW = w ? (RP_INV_MAX_W - RpInvWeight(s)) / w : 9999; if(byW < 0) byW = 0;
+    int bySlot = 0;
+    for(int i = 0; i < RP_INV_SLOTS; ++i) { if(s[i].id == id) bySlot += RP_INV_STACK - s[i].count; else if(!s[i].id) bySlot += RP_INV_STACK; }
+    return byW < bySlot ? byW : bySlot;
+}
+// adds up to n, returns how many went in
+inline int RpInvAdd(RpInvSlot* s, uint8_t id, int n)
+{
+    int room = RpInvRoom(s, id); if(n > room) n = room; if(n <= 0) return 0;
+    int left = n;
+    for(int i = 0; i < RP_INV_SLOTS && left; ++i) if(s[i].id == id && s[i].count < RP_INV_STACK) { int k = RP_INV_STACK - s[i].count; if(k > left) k = left; s[i].count = (uint16_t)(s[i].count + k); left -= k; }
+    for(int i = 0; i < RP_INV_SLOTS && left; ++i) if(!s[i].id) { int k = left > RP_INV_STACK ? RP_INV_STACK : left; s[i].id = id; s[i].count = (uint16_t)k; left -= k; }
+    return n - left;
+}
+inline int RpInvTake(RpInvSlot* s, int slot, int n)
+{
+    if(slot < 0 || slot >= RP_INV_SLOTS || !s[slot].id || n <= 0) return 0;
+    if(n > s[slot].count) n = s[slot].count;
+    s[slot].count = (uint16_t)(s[slot].count - n); if(!s[slot].count) s[slot].id = 0;
+    return n;
+}

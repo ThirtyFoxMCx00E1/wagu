@@ -3846,6 +3846,7 @@ static bool JoinHudOff() { return s_bJoinHudOff; }
 #include "mp_mw3.inc"    // 3.23: Call Of Duty: Modern Warfare 3
 #include "mp_rp.inc"     // 3.25: Mega Vil Futuristic (Roleplay)
 #include "mp_rp_phone.inc"   // 3.25: the RP phone
+#include "mp_rp_inv.inc"     // 3.26: PANEL, player info + bag, documents, "Received" cards
 #include "mp_gates.inc"  // 3.04.2: gates that never open (Area 69): fade out, through, fade in
 #include "mp_safezone.inc"  // 3.21: hospital safe zones + 5 s spawn protection
 #include "mp_markers.inc"   // 3.21: SA-MP style red checkpoint beams for races, derbies, DM, jobs

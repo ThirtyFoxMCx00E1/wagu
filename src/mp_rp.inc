@@ -475,9 +475,17 @@ static void RpSpawnNow(int ped)
     else SysMsg(RP_SKY, "[MEGA VIL] You arrived at the Lobby Hub (Mega Vil Plaza). Buy a house and you will always spawn at home.");
     if(s_Rp.haveMe && s_Rp.me.jailS) { RpSetInterior(RP_JAIL_AREA); Game::Teleport(ped, kRpJailCell, 0); }
 }
+// 3.26: the bag / PANEL (mp_rp_inv.inc)
+static void RpInvOnPacket(const uint8_t* d, int len);
+static void RpInvGot(uint8_t id, int n, const char* why);
+static void RpInvReset();
+static void RpPanelToggle();
+static void RpInvShow(int win);
+static void RenderRpInv();
 static void RpShutdown()
 {
     logger->Info("RP: left"); fflush(nullptr);
+    RpInvReset();   // 3.26
     if(!s_Rp.engaged) { s_bRpJoin = false; return; }
     RpTalkRelease();
     RpClearBlips();
@@ -546,6 +554,9 @@ static void RpOnPacket(const uint8_t* d, int len)
         if(had && !old.cuffed && s_Rp.me.cuffed) RpBanner(RP_RED, "YOU ARE CUFFED");
         break;
     }
+    case PKT_RP_INV:
+        RpInvOnPacket(d, len);
+        break;
     case PKT_RP_CARD:
     {
         if(len < (int)sizeof(PktRpCard)) return;
@@ -643,6 +654,9 @@ static void RpOnPacket(const uint8_t* d, int len)
         case RPV_DISARM:
             if(ped > 0) Game::RemoveAllWeapons(ped);
             if(e.a == 1 && s_Rp.haveMe) { int sk = e.val ? e.val : (s_Rp.me.skin ? s_Rp.me.skin : settings.skin); if(sk > 0) Game::SetLocalModel(sk); }
+            break;
+        case RPV_GOT:   // 3.26: "Received 10x" card
+            RpInvGot(e.a, e.val, e.text);
             break;
         case RPV_ITEM:
             if(e.b == 1)
@@ -767,13 +781,14 @@ static void RpShowHelp()
 {
     ShowDialog(9401, 0, "{38BDF8}MEGA VIL FUTURISTIC - Help",
         "{FFFFFF}Roleplay only: be your character. Mega Vil is peaceful - only on-duty police and soldiers may use force.\n"
-        "Open the phone: the phone button (right side) or {38BDF8}/phone{FFFFFF}.\n\n"
+        "Open the phone: the phone button (right side) or {38BDF8}/phone{FFFFFF}.\n"
+        "PANEL (button left of the phone, or {38BDF8}/panel{FFFFFF}): vehicle, documents, player info + bag, phone.\n\n"
         "{38BDF8}Talk:{FFFFFF} normal chat (20 m), /me /do /ame /try /b /s /l /w /o /n /ad /feed /r /d /m /gov\n"
         "{38BDF8}Money:{FFFFFF} /pay /deposit /withdraw /transfer /balance /atm\n"
         "{38BDF8}Jobs:{FFFFFF} /jobs /job /quitjob /work /stopwork /duty /myjob\n"
         "{38BDF8}Phone:{FFFFFF} /call /sms /answer /hangup /number /contacts /911 /taxi\n"
         "{38BDF8}Home:{FFFFFF} /houses /buyhouse /sellhouse /home /setspawn /myhouse\n"
-        "{38BDF8}Shops:{FFFFFF} /shop /food /clothes /cars /tech /ammu /lotto\n"
+        "{38BDF8}Shops:{FFFFFF} /shop /food /clothes /cars /tech /ammu /lotto   {38BDF8}Bag:{FFFFFF} /inv /docs /panel\n"
         "{38BDF8}Garage & pets:{FFFFFF} /garage /v [n] /sellveh [n] /pets /pet [n] /petoff /jetpack\n"
         "{38BDF8}Police:{FFFFFF} /cuff /uncuff /arrest /fine /su /frisk /mdc   {38BDF8}Medic:{FFFFFF} /heal   {38BDF8}Mechanic:{FFFFFF} /repair   {38BDF8}Lawyer:{FFFFFF} /defend\n"
         "{38BDF8}Fun:{FFFFFF} /e [emote] /emotes /e c /dance /accept /flip /dice /games /event /joinevent\n"
@@ -968,6 +983,9 @@ static bool RpCommand(const char* cmd, const char* arg)
     if(IS("gps") || IS("places") || IS("locations") || IS("map")) { int n = atoi(arg); if(n >= 1 && n <= RP_PLACE_COUNT) RpPlacesPick(1, n - 1, nullptr, 0); else RpShowPlaces(); return true; }
     if(IS("greenzones") || IS("greenzone") || IS("safezones")) { SysMsg(RP_GREEN, "[GREENZONE] Lobby Hub (Plaza), City Hall, both hospitals and the Mega Bank: nobody can be hurt there."); return true; }
     if(IS("time")) { int h, m; Game::GetTimeOfDay(h, m); time_t t = time(nullptr); char b[32]; strftime(b, sizeof(b), "%H:%M", localtime(&t)); SysMsg(RP_SKY, "Mega Vil time %02d:%02d - your time %s", h, m, b); return true; }
+    if(IS("panel") || IS("menu2")) { RpPanelToggle(); return true; }   // 3.26
+    if(IS("inv") || IS("inventory") || IS("bag") || IS("i") || IS("items")) { RpInvShow(1); return true; }
+    if(IS("docs") || IS("documents") || IS("idcard") || IS("licenses") || IS("licences")) { RpInvShow(2); return true; }
     if(IS("id")) { if(!*arg) { SysMsg(RP_SKY, "Your id: %d", myId); return true; } for(int i = 0; i < MP_MAX_PLAYERS; ++i) if(players[i].active && strcasestr(players[i].name, arg)) SysMsg(RP_SKY, "%s: id %d, phone %d", players[i].name, i, s_Rp.haveRow[i] ? s_Rp.row[i].number : 0); return true; }
     if(IS("players") || IS("list") || IS("score")) { FloatMenu::OpenPage(FloatMenu::PAGE_PLAYERS); return true; }
     if(IS("rp") || IS("about") || IS("server")) { SysMsg(RP_SKY, "MEGA VIL FUTURISTIC - Roleplay 24/7, %d citizens max. The future awaits.", MP_RP_MAX_PLAYERS); return true; }
@@ -1213,6 +1231,7 @@ static void RenderRp()
         RpDrawTalk(now);
         RpDrawAsk();
         RenderRpPhone(now);
+        RenderRpInv();     // 3.26: PANEL, player info + bag, documents, "Received" cards
     }
     if(s_Rp.bannerAt && nowMs - s_Rp.bannerAt < 3500)
     {

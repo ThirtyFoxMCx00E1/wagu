@@ -1,6 +1,7 @@
 {
-"latest": "3.25",
+"latest": "3.26",
 "supported": [
+"3.26",
 "3.25",
 "3.24",
 "3.23.6",
@@ -34,9 +35,20 @@
 ],
 "versions": [
 {
+"v": "3.26",
+"summary": "Mega Vil Futuristic gets the **PANEL**, **Player Info + Inventory** (the bag), **Documents** and **\"Received\" item cards**, made to match `Screenshots/Screenshot_20261026-084456.png`, `-084503.png` and `-084514.png`.",
+"items": [
+"PANEL (hexagon button left of the phone, or `/panel`): the cyan \"F\" title and the row of five icons VEHICLE / DOCUMENTS / GENERAL / BAG / PHONE (the current one on a dark hexagon) with the sky blue hexagon close button. Vehicle opens the phone garage, Phone opens the phone, General / Bag open Player Info + Inventory, Documents opens your ID.",
+"Player Info + Inventory (`/inv`, `/bag`, `/i`): the left window shows your name, the body figure with the six condition boxes (head, torso, both arms, both legs in %, lowered by the hits you take and slowly healed), HEALTH and ARMOUR bars and the red CLOSE button; the right window is the 5 x 3 bag grid with the weight (`0.5 /50.0Kg`), the selected slot (`1. Backpack`, `1x (0.5)`) and AMOUNT / USE / GIVE / DROP. Item icons come from the new `rp_items.png` (built into the .so too).",
+"The bag is kept by the server: every new citizen gets a Backpack once; opening it shows `ACTION: <name> opens the Backpack and takes out the things inside.` and gives 10x Es Teh, 10x Nasi Goreng and a Phone. Food, drinks, medkits and repair kits bought in the shops go into the bag (Es Teh and Nasi Goreng are in the food shop now). USE eats / drinks only what you need, GIVE hands items to the nearest citizen within 4 m, DROP throws them away. Saved as `I` lines in `rp_citizens.txt`.",
+"\"Received 10x\" cards: bottom right, one per item (same items merge and restart the timer), with the pink time bar; each card stays **15 s** and then fades out over **20 ticks** (1 s) instead of disappearing at once."
+]
+},
+{
 "v": "3.25",
 "summary": "New 24/7 featured server **Mega Vil Futuristic** (Roleplay RP, 250 players), the RP phone, lobby / home spawn, Broker 24/7 on every featured server.",
 "items": [
+"Server list textures like Brief Case War (briefcase) and MW3 (guns): Mega Vil has its badge (`rp_icon.png`) on the left and a glowing phone (`rp_phone.png`) faded on the right of the sky blue row; the phone is also on the RP login screen. Both are built into the .so too and written into the MP folder when missing, so they show even if only the libraries were updated.",
 "Mega Vil Futuristic: a new pinned server like Brief Case War and MW3 (UDP 1932, `mp-rp.service` on the VPS, hosted by the Broker standby phones when the VPS is down). Roleplay RP is the only gamemode on it: no teams, all other gamemodes / race / DM / gates are off. Sky blue everywhere: the launcher row (sky blue highlight + outline + RP icon), the website list, the login / create account / MP auth panels, the HUD and the title + icon at the top.",
 "Spawn: citizens without a house spawn at the **Lobby Hub** (Mega Vil Plaza, sky blue `< SPAWN >`). Once you own a house you always spawn at home (also after the hospital), never at the hub; `/setspawn` inside your house saves the exact point.",
 "Citizens (saved on the server in `rp_citizens.txt`, plus a signed card on the phone so progress survives a host change): cash + bank, level / XP, phone number, job, house, vehicles, pets, items. Payday every 30 minutes played (salary + 0.1 % interest).",
@@ -44,10 +56,14 @@
 "Peaceful: you cannot kill or hurt other players. Only an on-duty Police Officer or Military Soldier can (fists or guns); everyone else's damage to players is blocked. Greenzones (the Plaza, City Hall, both hospitals, the bank) are always safe.",
 "The phone (button on the right, or /phone): status bar, wallpapers (Sky Blue, Neon, Sunset, Matrix), app grid. Contacts, Messages (SMS by phone number), Phone (calls with Answer / Decline - a connected call carries voice chat across the city), Bank (deposit / withdraw at ATMs, transfer anywhere), Jobs, GPS, Shop, Garage, Houses (48), Pets (8 holo pets), Emotes & Dances (from rpemotes), Vil Feed, News & Events, 911, Taxi, Settings, and real Games: Snake, 2048, Sky Hop, Tic-Tac-Toe (high scores saved).",
 "Shops: food & drinks, clothes, vehicles, tech, licensed Ammu-Nation (weapons only there), drone delivery anywhere (+10 %).",
+"RP HUD layout (from the screenshot): the info panel (TIME / ID / NAME / JOB / CASH / BANK) moved under the game's clock, money, weapon and health so it no longer covers them, with no background and no outline (text only); the NEW CITIZEN box moved to the left (it covered the sprint button), black 60 % background, no outline; YOU ARE IN A GREENZONE is centred at the bottom above the status circles, text only; the top title is only the words now (no badge).",
+"MP Launcher region switch: a bar above the Internet server list with **Auto | Asia | Europe | NA | Oceania**, each with its broker ping and number of servers (green dot = the lobby broker in use). Auto = lowest ping region, every region listed. Tap a region = the lobby moves to that region's broker, it becomes your hosting region and only its servers are listed (the featured 24/7 servers and Wi-Fi servers always stay). Saved in the config (`Region`, `LobbyAuto`).",
+"Phone app icons: 17 drawn app icons (Contacts, Messages, Phone, Bank, Jobs, GPS, Shop, Garage, Houses, Pets, Emotes, Vil Feed, Games, News, 911, Taxi, Settings) in `rp_apps.png` (one 504x252 atlas, built into the .so and written into files/MP when missing). The old letter tiles stay as a fallback.",
 "Talk to pedestrians: walk close, they stop and look at you, then **Talk** / **Nevermind**, with custom subtitles.",
 "Needs (hunger, thirst) and stamina circles on the RP HUD, new citizen helper box, greenzone badge, info panel like the screenshots.",
 "City events every 15 minutes: Double Pay Hour, Holo Cash Drop, Neon Night Festival, Mega Lottery Draw, Holo Tower Rush. Mega Lottery (tickets 1-60).",
 "170 RP commands (no cheats): /shop, /phone, /bank, /atm, /jobs, /work, /duty, /gps, /buyhouse, /sellhouse, /setspawn, /myhouse, /myveh, /garage, /pet, /me, /do, /ooc, /b, /s, /w, /pay, /give, /call, /sms, /911, /taxi, /e [emote], /cuff, /ticket, /arrest, /frisk, /repair, /heal, /lotto, /stats, /id, /time, /help ... (`/rphelp` lists them all).",
+"VPS kit: HiveMQ CE now comes from our fork [ThirtyFoxMCx00E1/hivemq-community-edition](https://github.com/ThirtyFoxMCx00E1/hivemq-community-edition) (its `MP build` release `mp-2026.6`, sha256 checked; the official release is the fallback). Java heap: 10 GB (`-Xms5g -Xmx10g`) on 14 GB+ machines, 8 GB on 10-14 GB. More heap = more queued messages and connections, not a lower ping.",
 "Broker bot: stays on Mega Vil 24/7 like on MW3 / BCW, never leaves. Max players on Mega Vil: 250 (the other servers stay at 100)."
 ]
 },

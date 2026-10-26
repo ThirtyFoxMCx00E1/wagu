@@ -13,10 +13,10 @@
 // phones refuse servers older than that too (they would let old phones in).
 // 3.10: build 31000. MP_MIN_BUILD stays 30406 and the lobby stays thirtyfox/mp5/: 3.04.6 (no cheats)
 // and 3.10 phones play together on the same servers; only 3.04.5 and older (mp4) stay shut out.
-#define MP_BUILD           32500   // 3.25
+#define MP_BUILD           32600   // 3.26
 #define MP_MIN_BUILD       30406
 #define MP_AUTH_MIN_BUILD  32106   // 3.21.6: servers with the login system refuse older phones (they could not log in)
-#define MP_VERSION_STR     "3.25"
+#define MP_VERSION_STR     "3.26"
 #define MP_VOICE_BUILD     31100   // 3.11: phones from this build on get voice packets
 #define MP_DOWNLOAD_URL    "thirtyfoxmcx00e1.github.io/wagu"
 #define MP_DEFAULT_HOST    "127.0.0.1"
@@ -116,6 +116,7 @@ enum ePacket : uint8_t
     PKT_RP_EVENT,       // S->C          3.25: SMS, calls, banners, job targets, heal / repair / jail...
     PKT_RP_CMD,         // C->S          3.25: every RP command (/pay /shop /job /call /me ...)
     PKT_RP_CARD,        // S<->C         3.25: signed citizen backup (money survives a host change)
+    PKT_RP_INV,         // S->C          3.26: Mega Vil: my bag (15 slots, weight)
 };
 
 enum eRegion : uint8_t { REGION_ASIA = 0, REGION_EUROPE, REGION_NA, REGION_OCEANIA, REGION_COUNT };
@@ -690,9 +691,13 @@ enum eRpEv : uint8_t
     RPV_TELE,           // go to fval (spawn at home, events)
     RPV_DISARM,         // new citizens / civilians: no weapons out
     RPV_ITEM,           // a = item used (food...), text
+    RPV_GOT,            // 3.26: a = bag item id, val = how many ("Received 10x" card), text = from whom / why
 };
 struct PktRpEvent     { uint8_t type, ev, a, b, who; uint8_t pad[3]; int32_t val; float fval[3]; char text[120]; };
 struct PktRpCmd       { uint8_t type, cmd, a, b; int32_t val; float pos[3]; char text[100]; };
+#define RP_INV_SLOTS   15   // 3.26: the bag, 5 x 3 (net/rp.h)
+struct RpInvSlot      { uint8_t id; uint8_t pad; uint16_t count; };
+struct PktRpInv       { uint8_t type, n, pad0, pad1; uint16_t weight, maxWeight; RpInvSlot slot[RP_INV_SLOTS]; };   // 3.26
 // signed citizen backup (HMAC-SHA256, first 16 bytes), like the MW3 card
 #define RP_CARD_VER 1
 struct PktRpCard
