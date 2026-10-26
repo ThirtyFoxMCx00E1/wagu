@@ -471,6 +471,11 @@ static void RpDrawGotCards(uint64_t nowMs)
     const float cw = UI::S(164), ch = UI::S(168), gap = UI::S(6), bar = UI::S(6);
     const float bottom = ds.y * 0.89f;
     float x = ds.x * 0.58f;
+    if(s_Inv.win == RPW_INV)
+    {   // the bag is open: the cards go right of it, never over the AMOUNT / USE / GIVE / DROP row
+        float invRight = ds.x * 0.5f + UI::S(380 + 21 + 598) * 0.5f + UI::S(12);
+        if(x < invRight) x = invRight;
+    }
     if(x + s_Inv.nGot * (cw + gap) > ds.x - UI::S(12)) x = ds.x - UI::S(12) - s_Inv.nGot * (cw + gap);
     char t[48];
     for(int i = 0; i < s_Inv.nGot; ++i)
@@ -523,7 +528,7 @@ static void RenderRpInv()
     RpDrawGotCards(nowMs);
     if(SampDialogOpen() && !VKeyboard::IsOpen()) return;
     if(s_Rp.phone) { s_Inv.panel = false; s_Inv.win = RPW_NONE; }
-    RpDrawPanelButton();
+    if(s_Inv.win == RPW_NONE) RpDrawPanelButton();   // hidden while the bag / documents are up (it sat on their edge)
     if(VKeyboard::IsOpen()) return;
     if(s_Inv.panel) RpDrawPanel(nowMs);
     else if(s_Inv.win == RPW_INV) RpDrawInvWindow(nowMs);
