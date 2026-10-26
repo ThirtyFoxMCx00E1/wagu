@@ -307,6 +307,8 @@ def cmd_status(o, args):
             found = True
             ip = o.public_ip(i) if i.lifecycle_state == "RUNNING" else None
             say("%s  %s  %s  %s" % (i.display_name, i.lifecycle_state, i.shape, ip or "-"))
+            if ip:   # 3.32: the MP Oracle page shows it
+                github_output(ip=ip, region=i.display_name[len(PREFIX) + 1:], created="false")
     if not found:
         say("no MP server yet: python3 oracle/mp_oracle.py claim")
 

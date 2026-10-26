@@ -20,6 +20,12 @@ The mod (2.20+) downloads [regions.txt](https://thirtyfoxmcx00e1.github.io/wagu/
 Game traffic stays inside one region (no bridging), so ping is only phone -> nearest broker.
 
 
+
+> **Easiest way (3.32):** open the [MP Oracle page](https://thirtyfoxmcx00e1.github.io/wagu/oracle.html), paste a GitHub token
+> (fine-grained, this repo only, Secrets + Variables + Actions = Read and write), the Oracle API key config text and the
+> private key file, pick the MP region and press **Save secrets + run claim**. The page encrypts everything in your browser
+> before it goes to GitHub and shows the server IP when the claim finishes.
+
 ## One command (3.28.2)
 
 On a new VPS (Ubuntu 22.04 / 24.04 or Debian 12), as root - installs everything for a region (Asia on `mpsamp.duckdns.org` by default) with the bridge, uses the passwords from the public regions.txt (phones connect with no change) and starts the 24/7 servers, Mega Vil Futuristic included:

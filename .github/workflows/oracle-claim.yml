@@ -65,7 +65,14 @@ jobs:
           if [ "$CMD" = claim ]; then python3 oracle/mp_oracle.py claim --minutes 50
           else python3 oracle/mp_oracle.py "$CMD"; fi
       - name: Summary
-        if: steps.gate.outputs.go == '1' && steps.mp.outputs.ip != ''
+        if: always() && steps.gate.outputs.go == '1'
         run: |
-          echo "### MP Oracle: ${{ steps.mp.outputs.region }} server ${{ steps.mp.outputs.ip }}" >> "$GITHUB_STEP_SUMMARY"
-          echo "Put this IP in regions.txt / DuckDNS if DUCKDNS_TOKEN is not set. It installs itself in about 15 minutes." >> "$GITHUB_STEP_SUMMARY"
+          IP="${{ steps.mp.outputs.ip }}"; RG="${{ steps.mp.outputs.region }}"
+          if [ -n "$IP" ]; then
+            echo "### MP Oracle: $RG server $IP" >> "$GITHUB_STEP_SUMMARY"
+            echo "Put this IP in regions.txt / DuckDNS if DUCKDNS_TOKEN is not set. It installs itself in about 15 minutes." >> "$GITHUB_STEP_SUMMARY"
+            # 3.32: the MP Oracle page (thirtyfoxmcx00e1.github.io/wagu/oracle.html) reads this annotation
+            echo "::notice title=MP Oracle::$RG server $IP (installs itself in about 15 minutes)"
+          else
+            echo "::notice title=MP Oracle::no server yet (${RG:-region ?}): Oracle out of free capacity or login refused - retried every hour"
+          fi
