@@ -3843,6 +3843,8 @@ static bool JoinHudOff() { return s_bJoinHudOff; }
 #include "mp_games.inc"  // 2.21: /spawn, /w, races, deathmatch, jobs, teleport events, open world (3.01: derbies, live race positions)
 #include "mp_world.inc"  // 3.01: 3D labels, map icons, actors, gang zones + turf wars, class selection
 #include "mp_bcw.inc"    // 3.04: Brief Case War
+#include "mp_radar.inc"   // 3.27: Google-style vector radar (2D / 3D)
+#include "mp_compass.inc" // 3.27: PUBG compass
 #include "mp_mw3.inc"    // 3.23: Call Of Duty: Modern Warfare 3
 #include "mp_rp.inc"     // 3.25: Mega Vil Futuristic (Roleplay)
 #include "mp_rp_phone.inc"   // 3.25: the RP phone
@@ -4689,6 +4691,7 @@ void MP::SaveConfig()
     B("ChatTimestamps", settings.chatTimestamps); B("VoiceChat", settings.voiceChat); F("VoiceVolume", settings.voiceVolume); F("MicGain", settings.micGain); F("VoicePitch", settings.voicePitch);   // 3.11
     B("ChatBubbles", settings.chatBubbles); B("Labels3D", settings.labels3d); B("MapIcons", settings.mapIcons); B("Actors", settings.actors); B("GangZones", settings.gangZones);   // 3.01
     I("Team", settings.team); I("ClassSkin", settings.classSkin);
+    I("RadarStyle", settings.radarStyle); B("PubgCompass", settings.pubgCompass);   // 3.27
     S("ServerPassword", settings.serverPassword); S("HostedPassword", settings.hostedPassword);   // 2.19
     ::cfg->Save();
 }
@@ -4755,6 +4758,9 @@ static void LoadConfig()
     settings.gangZones       = ::cfg->GetBool("GangZones", true, "MP");
     settings.team            = ::cfg->GetInt("Team", 0, "MP");
     settings.classSkin       = ::cfg->GetInt("ClassSkin", -1, "MP");
+    settings.radarStyle      = ::cfg->GetInt("RadarStyle", 2, "MP");   // 3.27
+    if(settings.radarStyle < 0 || settings.radarStyle > 2) settings.radarStyle = 2;
+    settings.pubgCompass     = ::cfg->GetBool("PubgCompass", true, "MP");
     if(settings.team < 0 || settings.team >= 8) settings.team = 0;
     settings.regionPicked    = ::cfg->GetBool("RegionPicked", false, "MP");
     settings.nameColor       = (uint32_t)::cfg->GetInt("NameColor", 0, "MP");
@@ -5767,6 +5773,14 @@ static void SectionDisplay(void*)
     changed |= FloatMenu::ToggleSwitch("Map icons (jobs, races, derbies, DM)", &settings.mapIcons);   // 3.03: a player setting, not a server gamemode
     changed |= FloatMenu::ToggleSwitch("Actors (people at the job starts)", &settings.actors);
     changed |= FloatMenu::ToggleSwitch("Gang zones on the radar + map", &settings.gangZones);
+    {   // 3.27
+        ImGui::TextUnformatted("Mega Vil radar");
+        static const char* kStyles[] = { "Game radar", "Google map 2D", "Google map 3D" };
+        ImGui::SetNextItemWidth(-FLT_MIN);
+        if(settings.radarStyle < 0 || settings.radarStyle > 2) settings.radarStyle = 2;
+        changed |= ImGui::Combo("##radarstyle", &settings.radarStyle, kStyles, 3);
+        changed |= FloatMenu::ToggleSwitch("MW3: PUBG compass on top", &settings.pubgCompass);
+    }
     NpcStatusLine();
     SyncStatusLines();   // 2.19.6
     changed |= ChatPlacementOptions("disp");   // 2.22: scroll down - chat position, chat box background / label

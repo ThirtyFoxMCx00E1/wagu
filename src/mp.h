@@ -21,6 +21,8 @@ struct MPSettings
     bool  chatBubbles       = false;   // 3.01: chat text over the head (SA-MP chat bubble); off until the player turns it on
     bool  showHealthBars    = true;
     bool  showRadarIcons    = true;
+    int   radarStyle        = 2;       // 3.27: Mega Vil radar - 0 game radar, 1 Google 2D, 2 Google 3D
+    bool  pubgCompass       = true;    // 3.27: MW3 - PUBG compass strip on top
     bool  showChat          = true;
     bool  showKillFeed      = true;
     bool  showStatus        = true;

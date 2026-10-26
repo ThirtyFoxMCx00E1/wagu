@@ -767,12 +767,45 @@ static void Mw3DrawHud(ImDrawList* dl, float now, uint64_t nowMs)
         else snprintf(t, sizeof(t), "Next event: %s in %02d:%02d", ek, el / 60, el % 60);
         BcwCenterText(dl, UI::S(22), ds.y - UI::S(36), Mw3Col(MW3_UI_GREEN, 1), t);
     }
+    // 3.27: PUBG compass (top center): teammates + the nearest capture zones
+    const bool compass = settings.pubgCompass && !Game::IsPaused();
+    if(compass)
+    {
+        int ped = Game::LocalPed(); Vec3 me{}, cp, cl;
+        if(ped > 0 && Game::GetCharPos(ped, me) && Game::GetCameraPos(cp, cl))
+        {
+            CompassMark mk[MP_MAX_PLAYERS + 4]; int n = 0;
+            for(int i = 0; i < MP_MAX_PLAYERS && n < MP_MAX_PLAYERS; ++i)
+            {
+                if(i == myId || !players[i].active || players[i].ped <= 0 || !mine || Mw3TeamOf(i) != mine) continue;
+                Vec3 p; if(!Game::GetCharPos(players[i].ped, p)) continue;
+                float dx = p.x - me.x, dy = p.y - me.y, d = sqrtf(dx * dx + dy * dy); if(d < 2.0f || d > 600.0f) continue;
+                mk[n++] = { CompassBearing(dx, dy), Mw3TeamCol(mine), d, 0 };
+            }
+            // two nearest zones: owner colour (white = nobody), only when no arena / duel
+            int zb[2] = { -1, -1 }; float zd[2] = { 1e9f, 1e9f };
+            for(int z = 0; z < MW3_ZONE_COUNT && !s_Mw3.arena; ++z)
+            {
+                float dx = g_Mw3Zones[z].cp[0] - me.x, dy = g_Mw3Zones[z].cp[1] - me.y, d = dx * dx + dy * dy;
+                if(d < zd[0]) { zd[1] = zd[0]; zb[1] = zb[0]; zd[0] = d; zb[0] = z; } else if(d < zd[1]) { zd[1] = d; zb[1] = z; }
+            }
+            for(int k = 0; k < 2; ++k)
+            {
+                if(zb[k] < 0) continue;
+                const Mw3Zone& Z = g_Mw3Zones[zb[k]];
+                float dx = Z.cp[0] - me.x, dy = Z.cp[1] - me.y, d = sqrtf(dx * dx + dy * dy); if(d < 8.0f || d > 1500.0f) continue;
+                uint8_t own = st.zoneOwner[zb[k]];
+                mk[n++] = { CompassBearing(dx, dy), own ? Mw3TeamCol(own) : 0xFFFFFFFF, d, 1 };
+            }
+            PubgCompassDraw(dl, ds.x * 0.5f, UI::S(12), ds.x * 0.30f, CompassBearing(cl.x - cp.x, cl.y - cp.y), mk, n);
+        }
+    }
     // arena / duel tag (top center)
     if(s_Mw3.arena)
     {
         const char* an = s_Mw3.arena <= MW3A_HSDM ? g_Mw3Arenas[s_Mw3.arena].name : (s_Mw3.arena == MW3A_EVENT ? (s_Mw3.evKind < MW3E_KINDS ? g_Mw3EventName[s_Mw3.evKind] : "Event") : "Duel");
         snprintf(t, sizeof(t), "%s%s", an, s_Mw3.arena <= MW3A_HSDM ? "  -  /qdm to leave" : "");
-        BcwCenterText(dl, UI::S(24), UI::S(100), Mw3Col(MW3_UI_GREEN, 1), t);
+        BcwCenterText(dl, UI::S(24), compass ? UI::S(128) : UI::S(100), Mw3Col(MW3_UI_GREEN, 1), t);
     }
     // capture bar (I am capturing)
     for(int z = 0; z < MW3_ZONE_COUNT; ++z)
