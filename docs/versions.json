@@ -1,6 +1,7 @@
 {
-"latest": "3.30",
+"latest": "3.31",
 "supported": [
+"3.31",
 "3.30",
 "3.29",
 "3.28.2",
@@ -40,6 +41,15 @@
 "3.04.6"
 ],
 "versions": [
+{
+"v": "3.31",
+"summary": "The bag now uses the **PLAYER INFO + INVENTORY layout from the screenshot**, and the **ATM is in the Mega Vil style** (same real ATM layout).",
+"items": [
+"Bag (inventory) in the layout of the screenshot: PLAYER INFO on the left (cyan title bar, your name, the body figure with 6 % boxes joined by lines, HEALTH and ARMOUR bars, a full-width red CLOSE button) and INVENTORY on the right (cyan title bar, weight in Kg top right, a 5 x 3 grid of square cells with the name and amount in each, the picked cell dark blue, and AMOUNT / USE / GIVE / DROP along the bottom). All text in English.",
+"ATM: same real ATM layout (screen with 4 + 4 side keys, keypad, card reader, receipt, cash slot, EXIT), now drawn like the other Mega Vil Futuristic UI: dark glass, sky blue edges and glow lines, rounded keys. CANCEL / CLEAR / ENTER keep their red / yellow / green as coloured edges.",
+"Plays with 3.30 and the other supported versions (no server change; real drops still need a 3.30+ server)."
+]
+},
 {
 "v": "3.30",
 "summary": "New **bag layout** (Citizen + Backpack), a **real ATM machine screen**, **English food names**, **real dropped items** you can pick up, and the NPC talk outline / position fix.",
