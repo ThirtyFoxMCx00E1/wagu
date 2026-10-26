@@ -8,6 +8,25 @@ RwIm2DVertex* g_pVB = nullptr; // vertex buffer
 unsigned int g_VertexBufferSize = 5000;
 ImVec4 g_ScissorRect;
 
+// ---- 3.28: batched indexed draw --------------------------------------------------------------------
+static const int kRwBatchIdx = 3 * 1024;          // 1024 triangles per call
+static RwImVertexIndex g_BatchIdx[kRwBatchIdx];
+static void RwImDrawBatched(RwIm2DVertex* base, int nVtx, const ImDrawIdx* idx, int nIdx)
+{
+    if(nVtx <= 0 || nIdx <= 0) return;
+    for(int at = 0; at < nIdx; at += kRwBatchIdx)
+    {
+        int n = nIdx - at; if(n > kRwBatchIdx) n = kRwBatchIdx;
+        n -= n % 3;
+        if(n <= 0) break;
+        unsigned lo = 0xFFFFFFFFu, hi = 0;
+        for(int i = 0; i < n; ++i) { unsigned v = idx[at + i]; if(v < lo) lo = v; if(v > hi) hi = v; }
+        if(hi >= (unsigned)nVtx) continue;            // a broken index: skip this batch instead of reading past the buffer
+        for(int i = 0; i < n; ++i) g_BatchIdx[i] = (RwImVertexIndex)(idx[at + i] - lo);
+        RwIm2DRenderIndexedPrimitive(rwPRIMTYPETRILIST, base + lo, (RwInt32)(hi - lo + 1), g_BatchIdx, n);
+    }
+}
+
 void ImGui_ImplRenderWare_RenderDrawData(ImDrawData* draw_data)
 {
     if(!g_pVB || g_VertexBufferSize < draw_data->TotalVtxCount)
@@ -79,9 +98,12 @@ void ImGui_ImplRenderWare_RenderDrawData(ImDrawData* draw_data)
                   RwRenderStateSet(rwRENDERSTATETEXTUREFILTER, (void*)2);
                   RwRenderStateSet(rwRENDERSTATETEXTUREADDRESS, (void*)3);
                   RwRenderStateSet(rwRENDERSTATETEXTURERASTER, (void*)pcmd->TextureId);
-                  RwIm2DRenderIndexedPrimitive(rwPRIMTYPETRILIST, 
-                      &g_pVB[vtx_offset], (RwInt32)cmd_list->VtxBuffer.Size,
-                      (RwImVertexIndex*)idx_buffer, pcmd->ElemCount);
+                  // 3.28: small batches. One call used to hand the game the WHOLE draw list (the 3.27 vector
+                  // radar made that 20 000 - 40 000+ vertices in one call, and past 65 535 the 16-bit indices
+                  // wrapped). The 32-bit game (2.00) froze on that right after the spawn. Now every call gets at
+                  // most kRwBatchIdx indices and only the vertices they use, re-based to 0.
+                  RwImDrawBatched(&g_pVB[vtx_offset + pcmd->VtxOffset],
+                      cmd_list->VtxBuffer.Size - (int)pcmd->VtxOffset, idx_buffer, (int)pcmd->ElemCount);
                   RwRenderStateSet(rwRENDERSTATETEXTURERASTER, (void*)0);
 
                 if(SetScissorRect)
@@ -103,6 +125,7 @@ void ImGui_ImplRenderWare_RenderDrawData(ImDrawData* draw_data)
 bool ImGui_ImplRenderWare_Init()
 {
     ImGuiIO &io = ImGui::GetIO();
+    io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;   // 3.28: big draw lists split at 64 K vertices (VtxOffset is used above)
 
     io.DisplaySize = ImVec2((float)RsGlobal->maximumWidth, (float)RsGlobal->maximumHeight);
 

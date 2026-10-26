@@ -1,6 +1,7 @@
 {
-"latest": "3.27",
+"latest": "3.28",
 "supported": [
+"3.28",
 "3.27",
 "3.26",
 "3.25",
@@ -35,6 +36,19 @@
 "3.04.6"
 ],
 "versions": [
+{
+"v": "3.28",
+"summary": "Fixes the **32-bit freeze right after the spawn** (3.27 radar), and moves the Mega Vil HUD: NEW CITIZEN box above the radar, the city event at the bottom centre, the status circles in the bottom-right corner, a PANEL icon with no background, and no separate phone button.",
+"items": [
+"Fixed: on 32-bit phones (libMP32.so, GTA SA 2.00) the game froze as soon as you spawned in Mega Vil Futuristic with 3.27. The new vector radar sent the whole HUD as one huge draw call (20,000 - 40,000+ vertices; in 3D while driving it went past the 65,535 limit of the 16-bit indices). Now the ImGui renderer draws in small batches of 1,024 triangles with only the vertices each batch uses, and big draw lists are split at 64 K vertices (VtxOffset). 64-bit was luckier, but gets the same fix.",
+"The radar itself is about 5 x lighter: road pieces outside the square are skipped, the road strips are drawn without anti-aliasing (half the vertices), the nearest map cells are drawn first and the roads stop at 16,000 vertices a frame, so it can never grow that big again.",
+"Mega Vil HUD: the **YOU ARE A NEW CITIZEN** box now sits right above the radar (lined up with its left edge).",
+"Mega Vil HUD: the city event (for example **EVENT: Double Pay Hour 9:41 /joinevent**) is shown at the bottom centre of the screen, with the greenzone badge above it, instead of a line in the top-left list.",
+"Mega Vil HUD: the health / armour / hunger / thirst / stamina circles moved from the bottom centre to the bottom-right corner (left of the sprint and fist buttons).",
+"Mega Vil HUD: the PANEL button is only the 4-square icon now (no round background, ring or label) and it took the old phone button's place. The separate phone button is gone - the phone is in PANEL > Phone, `/phone`, and it still pops up by itself on an incoming call. The unread SMS badge is on the PANEL icon.",
+"Plays with 3.27 and the other supported versions. Everyone on 32-bit should update."
+]
+},
 {
 "v": "3.27",
 "summary": "Mega Vil Futuristic gets a **Google-Maps-style radar** (square, bottom left) in **2D** and **3D**, the **stuck emote / NPC talk bug is fixed**, and MW3 gets a **PUBG compass**.",

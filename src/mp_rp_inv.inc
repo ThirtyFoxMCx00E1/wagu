@@ -557,25 +557,39 @@ static void RpDrawGotCards(uint64_t nowMs)
     }
 }
 
-// ---- the PANEL button next to the phone (round, 2 x 2 dots) --------------------------------------
+// ---- the PANEL button (2 x 2 squares) -------------------------------------------------------------
+// 3.28: only the icon - no round background / ring / label - and it took the old phone button's spot.
+// The unread SMS badge moved here (the phone is in the PANEL).
 static void RpDrawPanelButton()
 {
     ImVec2 ds = ImGui::GetIO().DisplaySize;
-    const float s = UI::S(88);
-    ImVec2 c(ds.x - UI::S(560) - UI::S(140), ds.y * 0.60f);
-    BcwBeginOverlay("##RpPanelBtn", ImVec2(c.x - s * 0.5f - UI::S(6), c.y - s * 0.5f - UI::S(6)), ImVec2(s + UI::S(12), s + UI::S(30)), 0.0f);
+    const float s = UI::S(96);
+    ImVec2 c(ds.x - UI::S(560), ds.y * 0.60f);
+    BcwBeginOverlay("##RpPanelBtn", ImVec2(c.x - s * 0.5f - UI::S(6), c.y - s * 0.5f - UI::S(6)), ImVec2(s + UI::S(12), s + UI::S(12)), 0.0f);
     ImGui::SetCursorScreenPos(ImVec2(c.x - s * 0.5f, c.y - s * 0.5f));
     if(ImGui::InvisibleButton("##pnb", ImVec2(s, s))) RpPanelToggle();
     bool down = ImGui::IsItemActive();
     ImDrawList* dl = ImGui::GetWindowDrawList();
-    float r = s * 0.5f * (down ? 0.92f : 1.0f);
-    dl->AddCircleFilled(c, r, s_Inv.panel ? RpCol(kUiSky, 0.95f) : IM_COL32(12, 18, 32, 200), 40);
-    dl->AddCircle(c, r, RpCol(kUiSky, 0.9f), 40, UI::S(2.5f));
-    ImU32 dot = s_Inv.panel ? IM_COL32(8, 20, 34, 255) : IM_COL32_WHITE;
-    const float q = UI::S(9), o = UI::S(11);
-    for(int i = 0; i < 4; ++i) { float x = c.x + ((i % 2) ? o : -o), y = c.y - UI::S(8) + ((i / 2) ? o : -o); dl->AddRectFilled(ImVec2(x - q * 0.5f, y - q * 0.5f), ImVec2(x + q * 0.5f, y + q * 0.5f), dot, UI::S(2)); }
-    float fs = UI::S(12), w = RpTextW(fs, "PANEL");
-    RpPlainText(dl, fs, ImVec2(c.x - w * 0.5f, c.y + UI::S(18)), s_Inv.panel ? IM_COL32(8, 20, 34, 255) : RpCol(kUiSkyHi, 1), "PANEL");
+    const uint64_t nowMs = MP_NowMs();
+    bool ring = s_Rp.ringFrom >= 0 && !s_Rp.ringOut && s_Rp.callWith < 0;
+    ImU32 col = s_Inv.panel ? RpCol(kUiSkyHi, 1) : ((ring && nowMs % 600 < 300) ? IM_COL32(120, 255, 160, 255) : IM_COL32_WHITE);
+    float k = down ? 0.9f : 1.0f;
+    const float q = UI::S(26) * k, o = UI::S(17) * k, sh = UI::S(2.5f);
+    for(int i = 0; i < 4; ++i)
+    {
+        float x = c.x + ((i % 2) ? o : -o), y = c.y + ((i / 2) ? o : -o);
+        // a thin dark outline so the white squares read on any background
+        dl->AddRectFilled(ImVec2(x - q * 0.5f - sh, y - q * 0.5f - sh), ImVec2(x + q * 0.5f + sh, y + q * 0.5f + sh), IM_COL32(0, 0, 0, 150), UI::S(6));
+        dl->AddRectFilled(ImVec2(x - q * 0.5f, y - q * 0.5f), ImVec2(x + q * 0.5f, y + q * 0.5f), col, UI::S(5));
+    }
+    if(s_Rp.unreadSms)
+    {
+        const ImVec2 b(c.x + o + q * 0.5f, c.y - o - q * 0.5f);
+        dl->AddCircleFilled(b, UI::S(14), IM_COL32(239, 68, 68, 255));
+        char n[8]; snprintf(n, sizeof(n), "%d", s_Rp.unreadSms > 9 ? 9 : s_Rp.unreadSms);
+        float w = RpTextW(UI::S(18), n);
+        RpPlainText(dl, UI::S(18), ImVec2(b.x - w * 0.5f, b.y - UI::S(10)), IM_COL32_WHITE, n);
+    }
     BcwEndOverlay();
 }
 

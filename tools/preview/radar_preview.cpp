@@ -114,6 +114,7 @@ int main(int argc, char** argv)
         SaRadarDrawChip(dl, p0, size, mode);
     }
     ImGui::Render();
+    { ImDrawData* dd = ImGui::GetDrawData(); for(int i = 0; i < dd->CmdListsCount; ++i) fprintf(stderr, "list %d: vtx %d idx %d cmds %d\n", i, dd->CmdLists[i]->VtxBuffer.Size, dd->CmdLists[i]->IdxBuffer.Size, dd->CmdLists[i]->CmdBuffer.Size); }
     Raster(ImGui::GetDrawData());
     FILE* o = fopen(out, "wb"); fprintf(o, "P6 %d %d 255\n", W, H);
     for(int i = 0; i < W * H * 3; ++i) { float v = fb[i]; if(v > 1) v = 1; fputc((int)(v * 255), o); }
