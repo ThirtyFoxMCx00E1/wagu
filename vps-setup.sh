@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # MP 3.28.2: one command for a new 24/7 VPS (Ubuntu 22.04 / 24.04, Debian 12), as root:
 #   curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-setup.sh | sudo bash
+# Debian 12 (no sudo / curl yet), as root:  wget -qO- https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-setup.sh | bash -s europe
 # Same as: apt install git + clone + install.sh --region Asia --domain mpsamp.duckdns.org --bridge,
 # then the mod / website passwords from the public regions.txt (so every phone connects with no change),
 # then update.sh. Other regions:  ... | sudo bash -s europe   (or na / oceania; domain eusamp / nasamp / ocsamp.duckdns.org)
@@ -19,7 +20,7 @@ EMAIL="${EMAIL:-mrfoxmanking@gmail.com}"
 BRIDGE="${BRIDGE:-1}"
 say() { printf '\033[1;32m[mp-setup]\033[0m %s\n' "$*"; }
 die() { printf '\033[1;31m[mp-setup]\033[0m %s\n' "$*" >&2; exit 1; }
-[ "$(id -u)" = 0 ] || die "run as root: curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-setup.sh | sudo bash"
+[ "$(id -u)" = 0 ] || die "run as root: curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-setup.sh | sudo bash   (Debian without sudo: su - , then wget -qO- https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-setup.sh | bash)"
 
 say "packages"
 export DEBIAN_FRONTEND=noninteractive

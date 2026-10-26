@@ -8,7 +8,7 @@ KIT_REPO="https://github.com/ThirtyFoxMCx00E1/HiveMQ.git"
 BASE=/opt/mp
 say() { printf '\033[1;32m[mp-update]\033[0m %s\n' "$*"; }
 die() { printf '\033[1;31m[mp-update]\033[0m %s\n' "$*" >&2; exit 1; }
-[ "$(id -u)" = 0 ] || die "run as root: curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/update.sh | sudo bash"
+[ "$(id -u)" = 0 ] || die "run as root: curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/update.sh | sudo bash   (Debian without sudo: su - , then wget -qO- https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/update.sh | bash)"
 command -v git >/dev/null || { apt-get update -qq && apt-get install -y -qq git; }
 
 say "getting the newest kit"

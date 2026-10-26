@@ -39,6 +39,30 @@ All four regions (one VPS each):
 
 From Termux on a phone: `pkg install -y openssh && ssh root@YOUR_VPS_IP "curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-setup.sh | bash -s europe"`. Point the DuckDNS name at the VPS first and open the ports (see Cloud firewall).
 
+## Debian 12 (own PC or VPS)
+
+Debian 12 works the same as Ubuntu and is a much smaller download. Our copy of the official installer is in the [Derbian release](https://github.com/ThirtyFoxMCx00E1/HiveMQ/releases/tag/Derbian):
+
+- [debian-12.15.0-amd64-netinst.iso](https://github.com/ThirtyFoxMCx00E1/HiveMQ/releases/download/Derbian/debian-12.15.0-amd64-netinst.iso) (677 MB, x86_64)
+- sha256 `cd4462c06aa8892e692c0c4b9c17802f38c8ab8690e85cbfb5ccaa5956e9af17` (same as Debian's own [SHA256SUMS](https://cdimage.debian.org/cdimage/archive/latest-oldstable/amd64/iso-cd/SHA256SUMS))
+
+On a VPS you don't need the ISO: pick "Debian 12" in the provider's image list. For your own PC, write the ISO to a USB stick (Rufus or balenaEtcher) and boot from it. The netinst installer downloads the rest while it installs, so keep the PC online.
+
+1. At "Software selection" tick only **SSH server** and **standard system utilities** (no desktop).
+2. Set a root password.
+3. Log in as root (or `su -`). A fresh Debian has no `sudo` and often no `curl`, so use `wget`:
+
+| Region | DuckDNS | On the Debian machine, as root |
+|---|---|---|
+| Asia | mpsamp.duckdns.org | `wget -qO- https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-setup.sh \| bash -s asia` |
+| Europe | eusamp.duckdns.org | `wget -qO- https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-setup.sh \| bash -s europe` |
+| NA | nasamp.duckdns.org | `wget -qO- https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-setup.sh \| bash -s na` |
+| Oceania | ocsamp.duckdns.org | `wget -qO- https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-setup.sh \| bash -s oceania` |
+
+The script installs curl, git, Java 21 and HiveMQ by itself. Updates later: `wget -qO- https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/update.sh | bash` (as root).
+
+Ping depends on where the machine is, not on the system: a Debian PC in the Philippines is still far from Europe, NA and Oceania. For those regions use a VPS in Frankfurt, Virginia / Ohio or Sydney.
+
 ## MP 3.21.7: MP Railway - the Discord bot 24/7 on our own server
 
 Railway.app stopped taking new accounts, so the MP login bot ([discordpy-bot](https://github.com/ThirtyFoxMCx00E1/discordpy-bot): `/gen`, `/stats`, `/char`) now runs on **MP Railway**, our own small Railway that is part of this kit. Without a running bot Discord doesn't show `/gen` and nobody can log in on 3.21.6+ servers.
@@ -295,6 +319,8 @@ tools/                       status.sh, make-regions.sh, hash-password.sh, mp-co
 Why Community Edition: the HiveMQ Enterprise download without a license is an evaluation that allows only 25 connections, too few for a public lobby. CE has no such limit and covers everything the mod uses (MQTT 3.1.1, TLS, WebSocket, retained messages, last will).
 
 ## Tagalog
+
+Walang Ubuntu? Puwede ang Debian 12 (677 MB lang): i-download ang ISO sa [Derbian release](https://github.com/ThirtyFoxMCx00E1/HiveMQ/releases/tag/Derbian), i-install (SSH server + standard system utilities lang), tapos bilang root: `wget -qO- https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-setup.sh | bash -s europe` (o `asia` / `na` / `oceania`).
 
 Walang computer? Gumawa ng VM sa browser ng phone, i-paste ang `cloud-init/user-data.yaml` (palitan ang REGION at DuckDNS), hintayin ang 10 minuto, tapos buksan ang Termius page ng website.
 
