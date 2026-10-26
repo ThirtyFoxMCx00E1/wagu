@@ -304,11 +304,13 @@ private:
         uint8_t  askFrom; uint8_t askEmote; uint64_t askAt;
         int32_t  fineAsk; uint8_t fineFrom;
         int32_t  lastCash, lastBank; uint8_t lastJob, lastHunger, lastThirst; uint16_t lastJail;
+        RpInvSlot inv[RP_INV_SLOTS]; uint64_t lastInv;   // 3.26: the bag
     };
     struct RpSaved
     {
         int32_t cash = 0, bank = 0, xp = 0, number = 0; uint8_t job = 0, house = 255, pet = 255, hunger = 100, thirst = 100, nveh = 0;
         uint32_t playMin = 0, pets = 0, items = 0, t = 0; uint16_t veh[RP_VEH_SLOTS] = {}, skin = 0, tasks = 0;
+        RpInvSlot inv[RP_INV_SLOTS] = {};   // 3.26
     };
     RpSrvPlayer  m_Rp[MP_MAX_PLAYERS];
     std::map<std::string, RpSaved> m_RpSaved;
@@ -325,6 +327,8 @@ private:
     const char* RpKey(int slot, char* buf, size_t n);
     void RpStore(int slot);
     void RpSendMe(int slot);
+    void RpSendInv(int slot);                                        // 3.26: the bag
+    int  RpInvGive(int slot, uint8_t id, int n, const char* why);   // 3.26: into the bag + "Received" card, returns how many fit
     void RpSendPlayers(int slot);
     void RpSendState(int slot);
     void RpSendCard(int slot);

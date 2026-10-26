@@ -55,6 +55,21 @@ void MPServer::RpLoad()
         line[strcspn(line, "\r\n")] = 0;
         if(line[0] == 'H' && line[1] == ' ') { int idx = atoi(line + 2); const char* k = strchr(line + 2, '|'); if(k && idx >= 0 && idx < RP_HOUSE_COUNT) m_RpHouseOwner[idx] = k + 1; continue; }
         if(line[0] == 'P' && line[1] == ' ') { m_nRpLottoPot = atoi(line + 2); continue; }
+        if(line[0] == 'I' && line[1] == ' ')
+        {   // 3.26: I key|id:count,id:count,... (the bag, after the C line of that citizen)
+            char* p = line + 2; char* bar = strchr(p, '|'); if(!bar) continue; *bar = 0;
+            auto it = m_RpSaved.find(p); if(it == m_RpSaved.end()) continue;
+            RpInvSlot* inv = it->second.inv; memset(inv, 0, sizeof(it->second.inv));
+            char* q = bar + 1; int k = 0;
+            while(q && *q && k < RP_INV_SLOTS)
+            {
+                int id = (int)strtol(q, &q, 10); int cnt = 0;
+                if(*q == ':') { ++q; cnt = (int)strtol(q, &q, 10); }
+                if(id > 0 && id < RPX_COUNT && cnt > 0) { inv[k].id = (uint8_t)id; inv[k].count = (uint16_t)(cnt > RP_INV_STACK ? RP_INV_STACK : cnt); }
+                ++k; if(*q == ',') ++q; else break;
+            }
+            continue;
+        }
         if(line[0] != 'C' || line[1] != ' ') continue;
         char* p = line + 2; char* bar = strchr(p, '|'); if(!bar) continue; *bar = 0;
         std::string key = p; RpSaved r;
@@ -87,6 +102,13 @@ void MPServer::RpSave()
                 r.playMin, r.pets, r.items, r.skin, r.tasks, r.t);
         for(int v = 0; v < r.nveh; ++v) fprintf(f, v ? ",%u" : "%u", r.veh[v]);
         fputc('\n', f);
+        bool any = false; for(int i = 0; i < RP_INV_SLOTS; ++i) if(r.inv[i].id) any = true;
+        if(any)
+        {   // 3.26: the bag, slot by slot (0:0 = an empty slot, so the order stays)
+            fprintf(f, "I %s|", kv.first.c_str());
+            for(int i = 0; i < RP_INV_SLOTS; ++i) fprintf(f, i ? ",%u:%u" : "%u:%u", r.inv[i].id, r.inv[i].id ? r.inv[i].count : 0);
+            fputc('\n', f);
+        }
     }
     for(int h = 0; h < RP_HOUSE_COUNT; ++h) if(!m_RpHouseOwner[h].empty()) fprintf(f, "H %d|%s\n", h, m_RpHouseOwner[h].c_str());
     fclose(f);
@@ -102,6 +124,7 @@ void MPServer::RpStore(int slot)
     r.cash = m.cash; r.bank = m.bank; r.xp = m.xp; r.number = m.number; r.job = m.job; r.house = m.house; r.pet = m.pet;
     r.hunger = m.hunger; r.thirst = m.thirst; r.playMin = m.playMin; r.pets = m.pets; r.items = m.items; r.skin = m.skin; r.tasks = m.tasks;
     r.nveh = m.nveh; memcpy(r.veh, m.veh, sizeof(r.veh)); r.t = m.statT;
+    memcpy(r.inv, m.inv, sizeof(r.inv));   // 3.26
 }
 
 // ---- signed citizen card (HMAC-SHA256 with the MW3 card key, other payload) -------------------
@@ -251,6 +274,28 @@ void MPServer::RpSendMe(int slot)
     p.pets = m.pets; p.items = m.items; p.skin = m.skin; p.lotto = m.lotto;
     SendTo(slot, &p, sizeof(p));
 }
+// 3.26: the bag
+void MPServer::RpSendInv(int slot)
+{
+    const RpSrvPlayer& m = m_Rp[slot]; if(!m.loaded) return;
+    PktRpInv p; memset(&p, 0, sizeof(p));
+    p.type = PKT_RP_INV; p.n = RP_INV_SLOTS; p.weight = (uint16_t)RpInvWeight(m.inv); p.maxWeight = RP_INV_MAX_W;
+    memcpy(p.slot, m.inv, sizeof(p.slot));
+    SendTo(slot, &p, sizeof(p));
+}
+int MPServer::RpInvGive(int slot, uint8_t id, int n, const char* why)
+{
+    RpSrvPlayer& m = m_Rp[slot]; if(!m.loaded || !id || id >= RPX_COUNT || n <= 0) return 0;
+    int got = RpInvAdd(m.inv, id, n);
+    if(got > 0)
+    {
+        RpEv(slot, RPV_GOT, id, 0, MP_INVALID_ID, got, nullptr, why ? why : "Received");
+        m_bRpDirty = true;
+        RpSendInv(slot);
+    }
+    if(got < n) RpMsg(slot, RP_RED, "[BAG] Your bag is full (%d.%d / %d.0 kg, %d slots): %d x %s did not fit.", RpInvWeight(m.inv) / 10, RpInvWeight(m.inv) % 10, RP_INV_MAX_W / 10, RP_INV_SLOTS, n - got, g_RpInv[id].name);
+    return got;
+}
 void MPServer::RpSendPlayers(int slot)
 {
     RpRow rows[MP_MAX_PLAYERS]; int n = 0;
@@ -326,6 +371,7 @@ void MPServer::RpOnAuthed(int slot)
         m.cash = r.cash; m.bank = r.bank; m.xp = r.xp; m.number = r.number; m.job = r.job; m.house = r.house; m.pet = r.pet;
         m.hunger = r.hunger; m.thirst = r.thirst; m.playMin = r.playMin; m.pets = r.pets; m.items = r.items; m.skin = r.skin; m.tasks = r.tasks;
         m.nveh = r.nveh; memcpy(m.veh, r.veh, sizeof(m.veh)); m.statT = r.t;
+        memcpy(m.inv, r.inv, sizeof(m.inv));   // 3.26
         if(m.house < RP_HOUSE_COUNT && m_RpHouseOwner[m.house] != key) m.house = 255;
         if(m.hunger < 25) m.hunger = 25; if(m.thirst < 25) m.thirst = 25;   // you ate while you were away
     }
@@ -340,7 +386,14 @@ void MPServer::RpOnAuthed(int slot)
         RpMsg(slot, RP_YELLOW, "Mega Vil is peaceful: only on-duty police and soldiers can use force. /help for everything.");
     }
     else RpMsg(slot, RP_SKY, "[MEGA VIL] Welcome back, %s. Level %d %s - phone %d.", m_Slots[slot].name, m.level, g_RpJobs[m.job].name, m.number);
+    // 3.26: every citizen gets the starter backpack once (new ones, and the ones from before the bag)
+    if(!(m.items & RPIT_STARTER) && RpInvGive(slot, RPX_BACKPACK, 1, "Starter pack"))
+    {
+        m.items |= RPIT_STARTER; m.statT = (uint32_t)time(nullptr); m_bRpDirty = true;
+        RpMsg(slot, RP_YELLOW, "[INFO] You got a Starter Pack Backpack. Open it: PANEL > Bag > select the Backpack > USE (or /inv).");
+    }
     RpSendMe(slot);
+    RpSendInv(slot);
     RpSendCard(slot);
     RpSendPlayers(-1);
 }
@@ -732,10 +785,20 @@ void MPServer::RpHandleCmd(int slot, const PktRpCmd& c)
         if(it.kind == RPI_PET && (m.pets & (1u << it.a))) { RpMsg(slot, RP_RED, "You already have this pet. Pets app to call it."); break; }
         if(it.kind == RPI_VEH && m.nveh >= RP_VEH_SLOTS) { RpMsg(slot, RP_RED, "Your garage is full (%d). Sell one in the Garage app.", RP_VEH_SLOTS); break; }
         if(it.kind == RPI_LOTTO && m.lotto) { RpMsg(slot, RP_RED, "You already have a ticket (number %d).", m.lotto); break; }
+        const uint8_t toBag = RpInvForShop(it.name);   // 3.26: food, drinks, medkits and repair kits go into the bag
+        if(toBag && RpInvRoom(m.inv, toBag) < 1) { RpMsg(slot, RP_RED, "[BAG] Your bag is full - use or drop something first (PANEL > Bag)."); break; }
         int32_t fromBank = 0;
         if(m.cash < price) { if(it.price >= 10000 && m.cash + m.bank >= price) { fromBank = price - (m.cash > 0 ? m.cash : 0); } else { RpMsg(slot, RP_RED, "%s costs %s - not enough money.", it.name, RpMoney(price, mb, sizeof(mb))); break; } }
         if(fromBank) { m.bank -= fromBank; RpPay(slot, -(price - fromBank), it.name); }
         else RpPay(slot, -price, it.name);
+        if(toBag)
+        {
+            RpInvGive(slot, toBag, 1, "Received");
+            RpMsg(slot, RP_GREEN, "[SHOP] You bought %s for %s%s - it is in your bag (PANEL > Bag > USE).", it.name, RpMoney(price, mb, sizeof(mb)), phone ? " (drone delivery +10%)" : "");
+            m.statT = (uint32_t)time(nullptr); m_bRpDirty = true;
+            RpSendMe(slot);
+            break;
+        }
         switch(it.kind)
         {
             case RPI_FOOD:   m.hunger = (uint8_t)std::min(100, m.hunger + it.a); m.thirst = (uint8_t)std::min(100, m.thirst + it.b); RpEv(slot, RPV_ITEM, 0, it.b > it.a ? 2 : 0, MP_INVALID_ID, idx, nullptr, it.name); break;
@@ -1059,6 +1122,94 @@ void MPServer::RpHandleCmd(int slot, const PktRpCmd& c)
             RpMsg(slot, RP_GREEN, "[MVPD] Ticket paid (%s).", RpMoney(amt, mb, sizeof(mb))); m.wanted = 0; RpSendMe(slot);
         }
         break;
+    // -------- 3.26: the bag ---------------------------------------------------------------------
+    case RPC_INV_REQ:
+        RpSendInv(slot);
+        break;
+    case RPC_INV_USE:
+    {
+        if(now - m.lastInv < 350) break; m.lastInv = now;
+        int bs = c.a; if(bs >= RP_INV_SLOTS || !m.inv[bs].id || m.inv[bs].id >= RPX_COUNT) { RpSendInv(slot); break; }
+        const uint8_t id = m.inv[bs].id; const RpInvDef& d = g_RpInv[id];
+        if(m.jailS && d.use != RPU_FOOD && d.use != RPU_DRINK) { RpMsg(slot, RP_RED, "Not from jail."); break; }
+        int n = c.val < 1 ? 1 : c.val; if(n > m.inv[bs].count) n = m.inv[bs].count;
+        switch(d.use)
+        {
+        case RPU_FOOD: case RPU_DRINK:
+        {
+            if(d.use == RPU_FOOD && m.hunger >= 100) { RpMsg(slot, RP_YELLOW, "[BAG] You are not hungry."); break; }
+            if(d.use == RPU_DRINK && m.thirst >= 100) { RpMsg(slot, RP_YELLOW, "[BAG] You are not thirsty."); break; }
+            // only as many as you need (the rest stays in the bag)
+            int need = 1;
+            for(; need < n; ++need)
+            {
+                int h = m.hunger + d.hunger * need, t = m.thirst + d.thirst * need;
+                if((d.hunger == 0 || h >= 100) && (d.thirst == 0 || t >= 100)) break;
+            }
+            n = RpInvTake(m.inv, bs, need);
+            m.hunger = (uint8_t)std::min(100, m.hunger + d.hunger * n); m.thirst = (uint8_t)std::min(100, m.thirst + d.thirst * n);
+            char t[96]; if(n > 1) snprintf(t, sizeof(t), "%dx %s", n, d.name); else snprintf(t, sizeof(t), "%s", d.name);
+            RpEv(slot, RPV_ITEM, 0, d.use == RPU_DRINK ? 2 : 0, MP_INVALID_ID, 0, nullptr, t);
+            snprintf(line, sizeof(line), "* %s %s %s.", nm, d.use == RPU_DRINK ? "drinks" : "eats", t); RpNear(slot, RP_TALK_RANGE, RP_ME_COL, line, false);
+            break;
+        }
+        case RPU_MEDKIT:
+            RpInvTake(m.inv, bs, 1); RpEv(slot, RPV_HEAL, d.hunger, 0, MP_INVALID_ID, 0);
+            snprintf(line, sizeof(line), "* %s opens a medkit and patches up the wounds.", nm); RpNear(slot, RP_TALK_RANGE, RP_ME_COL, line, false);
+            break;
+        case RPU_REPAIR:
+            RpInvTake(m.inv, bs, 1); RpEv(slot, RPV_REPAIR, 0, 0, MP_INVALID_ID, 0);
+            snprintf(line, sizeof(line), "* %s takes out a repair kit and fixes the vehicle.", nm); RpNear(slot, RP_TALK_RANGE, RP_ME_COL, line, false);
+            break;
+        case RPU_PHONE:
+            break;   // the phone opens it by itself
+        case RPU_STARTER:
+        {
+            // room for everything inside first (minus the backpack's own weight)
+            RpInvSlot tmp[RP_INV_SLOTS]; memcpy(tmp, m.inv, sizeof(tmp)); RpInvTake(tmp, bs, 1);
+            bool fits = true; for(const RpInvPack& g : g_RpStarter) if(RpInvAdd(tmp, g.id, g.count) < g.count) fits = false;
+            if(!fits) { int all = 0; for(const RpInvPack& g : g_RpStarter) all += g.count; RpMsg(slot, RP_RED, "[BAG] Make room in your bag first (the Starter Pack has %d things inside).", all); break; }
+            RpInvTake(m.inv, bs, 1);
+            snprintf(line, sizeof(line), "ACTION: %s opens the Backpack and takes out the things inside.", nm); RpNear(slot, RP_TALK_RANGE, RP_ME_COL, line, false);
+            for(const RpInvPack& g : g_RpStarter) RpInvGive(slot, g.id, g.count, "Received");
+            break;
+        }
+        default: RpMsg(slot, RP_OOC_COL, "[BAG] %s can't be used.", d.name); break;
+        }
+        m.statT = (uint32_t)time(nullptr); m_bRpDirty = true;
+        RpSendInv(slot); RpSendMe(slot);
+        break;
+    }
+    case RPC_INV_GIVE:
+    {
+        if(now - m.lastInv < 350) break; m.lastInv = now;
+        int bs = c.a; if(bs >= RP_INV_SLOTS || !m.inv[bs].id || m.inv[bs].id >= RPX_COUNT) { RpSendInv(slot); break; }
+        if(m.cuffed || m.jailS) { RpMsg(slot, RP_RED, "Not now."); break; }
+        int t = RpTarget(slot, c.b, 4.0f, "Give"); if(t < 0) break;
+        const uint8_t id = m.inv[bs].id; int n = c.val < 1 ? 1 : c.val; if(n > m.inv[bs].count) n = m.inv[bs].count;
+        int room = RpInvRoom(m_Rp[t].inv, id); if(room < n) { if(room <= 0) { RpMsg(slot, RP_RED, "[BAG] %s's bag is full.", m_Slots[t].name); break; } n = room; }
+        RpInvTake(m.inv, bs, n);
+        char why[48]; snprintf(why, sizeof(why), "From %s", nm);
+        RpInvGive(t, id, n, why);
+        RpMsg(slot, RP_GREEN, "[BAG] You gave %dx %s to %s.", n, g_RpInv[id].name, m_Slots[t].name);
+        snprintf(line, sizeof(line), "* %s gives %dx %s to %s.", nm, n, g_RpInv[id].name, m_Slots[t].name); RpNear(slot, RP_TALK_RANGE, RP_ME_COL, line, false);
+        RpEv(slot, RPV_ITEM, (uint8_t)RpFindEmote("give"), 1, (uint8_t)t, 0);
+        m.statT = m_Rp[t].statT = (uint32_t)time(nullptr); m_bRpDirty = true;
+        RpSendInv(slot);
+        Log("RP: %s gave %s %dx %s", nm, m_Slots[t].name, n, g_RpInv[id].name);
+        break;
+    }
+    case RPC_INV_DROP:
+    {
+        if(now - m.lastInv < 350) break; m.lastInv = now;
+        int bs = c.a; if(bs >= RP_INV_SLOTS || !m.inv[bs].id || m.inv[bs].id >= RPX_COUNT) { RpSendInv(slot); break; }
+        const uint8_t id = m.inv[bs].id; int n = RpInvTake(m.inv, bs, c.val < 1 ? 1 : c.val);
+        RpMsg(slot, RP_OOC_COL, "[BAG] You dropped %dx %s.", n, g_RpInv[id].name);
+        snprintf(line, sizeof(line), "* %s drops %dx %s.", nm, n, g_RpInv[id].name); RpNear(slot, RP_TALK_RANGE, RP_ME_COL, line, false);
+        m.statT = (uint32_t)time(nullptr); m_bRpDirty = true;
+        RpSendInv(slot);
+        break;
+    }
     case RPC_STATS:
     {
         int into = 0; int need = RpXpForNext(m.xp, &into);
