@@ -1026,13 +1026,13 @@ static void RenderLauncher(void* openPtr)
         dl->AddLine(ImVec2(sepX, wp.y + titleH * 0.22f), ImVec2(sepX, wp.y + titleH * 0.78f), line, UI::S(2));
         float tx = sepX + UI::S(20), ty = wp.y + (titleH - ImGui::GetTextLineHeight()) * 0.5f;
         dl->AddText(ImVec2(tx, ty), IM_COL32_WHITE, "MP Launcher");
-        dl->AddText(ImVec2(tx + ImGui::CalcTextSize("MP Launcher").x + UI::S(16), ty), IM_COL32(150, 150, 150, 255), "v3.24");
+        dl->AddText(ImVec2(tx + ImGui::CalcTextSize("MP Launcher").x + UI::S(16), ty), IM_COL32(150, 150, 150, 255), "v" MP_VERSION_STR);   // 3.31.1: follows the real version
         // 2.30: watermark, right side of the title bar (left of [X]), green at 50% transparency
         {
             const char* wm = "powered by HiveMQ/ThirtyFoxMC";
             ImVec2 wsz = ImGui::CalcTextSize(wm);
             float wx = wp.x + ws.x - titleH - UI::S(6) - UI::S(18) - wsz.x;
-            float minX = tx + ImGui::CalcTextSize("MP Launcher  v3.24").x + UI::S(40);   // never over the name
+            float minX = tx + ImGui::CalcTextSize("MP Launcher  v" MP_VERSION_STR).x + UI::S(40);   // never over the name
             if(wx > minX) dl->AddText(ImVec2(wx, ty), IM_COL32(95, 211, 95, 128), wm);
         }
         ImGui::SetCursorScreenPos(ImVec2(wp.x + ws.x - titleH - UI::S(6), wp.y));
