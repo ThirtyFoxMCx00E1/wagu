@@ -1,6 +1,7 @@
 {
-"latest": "3.28.1",
+"latest": "3.28.2",
 "supported": [
+"3.28.2",
 "3.28.1",
 "3.28",
 "3.27",
@@ -37,6 +38,15 @@
 "3.04.6"
 ],
 "versions": [
+{
+"v": "3.28.2",
+"summary": "No more **\"Connecting to the city...\"** text on Mega Vil, and the game **remembers your login** again (log in once per phone).",
+"items": [
+"Mega Vil: the \"Connecting to the city...\" text is gone. Note: Mega Vil needs the broker / server online - while it is offline the city data cannot arrive.",
+"Login: remember me is back on (AUTH_AUTOLOGIN_AT_START). Log in once on a phone, then the game logs in by itself on every start.",
+"Plays with 3.28.1, 3.28, 3.27 and the other supported versions."
+]
+},
 {
 "v": "3.28.1",
 "summary": "Fixes the **broken / scrambled UI** of 3.28 (every menu, the HUD and the radar came out as stretched triangles).",
