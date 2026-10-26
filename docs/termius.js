@@ -241,6 +241,9 @@
       var tx = 'pkg install -y openssh && ssh root@YOUR_VPS_IP "' + cmd.replace('sudo ', '') + '"';
       p('m', '  from Termux on a phone (replace YOUR_VPS_IP):');
       print('  <span class="g">' + esc(tx) + '</span>' + copyBtn(tx));
+      var deb = 'wget -qO- https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-setup.sh | bash -s ' + r.toLowerCase();
+      p('m', '  Debian 12 (no sudo / curl yet), as root:');
+      print('  <span class="g">' + esc(deb) + '</span>' + copyBtn(deb));
       p('m', '  first: duckdns.org -> point ' + ['mpsamp', 'eusamp', 'nasamp', 'ocsamp'][i] + ' at the VPS IP · open TCP 1883 8883 8884 + UDP 1932');
     },
     update: function (a) {

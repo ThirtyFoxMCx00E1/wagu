@@ -182,6 +182,8 @@
         print('  <span class="g">' + esc('pkg install -y openssh && ssh root@YOUR_VPS_IP "' + S + r[0] + '"') + '</span> <span class="m">' + r[1] + '.duckdns.org</span>');
       });
       p('m', '  first point the DuckDNS name at the VPS IP and open TCP 1883 8883 8884 + UDP 1932');
+      p('m', '  Debian 12 (no sudo / curl): log in as root, then  wget -qO- https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-setup.sh | bash -s europe');
+      p('m', '  Debian 12 installer (677 MB): github.com/ThirtyFoxMCx00E1/HiveMQ/releases/tag/Derbian');
     },
     'clear': function () { out.innerHTML = ''; }
   };

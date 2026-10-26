@@ -355,6 +355,19 @@
      "download_count": 0
     }
    ]
+  },
+  {
+   "tag": "Derbian",
+   "repo": "ThirtyFoxMCx00E1/HiveMQ",
+   "url": "https://github.com/ThirtyFoxMCx00E1/HiveMQ/releases/tag/Derbian",
+   "assets": [
+    {
+     "name": "debian-12.15.0-amd64-netinst.iso",
+     "size": 709885952,
+     "download_count": 0,
+     "sha256": "cd4462c06aa8892e692c0c4b9c17802f38c8ab8690e85cbfb5ccaa5956e9af17"
+    }
+   ]
   }
  ]
 }

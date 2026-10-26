@@ -44,6 +44,16 @@ curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/termux/i
 
 It builds `mp_server` on the phone and runs it 24/7 in the internet lobby (free public brokers, no port forwarding), restarts it after a crash and, with the Termux:Boot app, after a reboot. Commands: `mp-server status | log | config | restart | stop | update`. Keep the phone charging, on Wi-Fi, and set Termux's battery use to Unrestricted.
 
+## 24/7 server on Debian 12 or Ubuntu (VPS or own PC)
+
+The [HiveMQ kit](https://github.com/ThirtyFoxMCx00E1/HiveMQ#debian-12-own-pc-or-vps) runs on Ubuntu 22.04 / 24.04 or Debian 12. The small Debian 12 installer (677 MB, sha256 `cd4462c06aa8892e692c0c4b9c17802f38c8ab8690e85cbfb5ccaa5956e9af17`, same as Debian's) is in the HiveMQ [Derbian release](https://github.com/ThirtyFoxMCx00E1/HiveMQ/releases/tag/Derbian): [debian-12.15.0-amd64-netinst.iso](https://github.com/ThirtyFoxMCx00E1/HiveMQ/releases/download/Derbian/debian-12.15.0-amd64-netinst.iso). Install it with only "SSH server" and "standard system utilities", then as root:
+
+```
+wget -qO- https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-setup.sh | bash -s europe
+```
+
+Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in the provider's image list instead of the ISO. Ping depends on where the machine is, so Europe, NA and Oceania need a VPS in or near those regions (Frankfurt, Virginia / Ohio, Sydney).
+
 ## Changelog
 
 - **3.31**: The bag now uses the **PLAYER INFO + INVENTORY layout from the screenshot**, and the **ATM is in the Mega Vil style** (same real ATM layout).

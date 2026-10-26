@@ -130,6 +130,8 @@
         <h2>Run a region</h2>
         <p>Each region is one Linux server with a HiveMQ broker and the region's 24/7 default server. One command sets it all up: Java 21, HiveMQ Community Edition, logins, firewall, TLS and restart on crash.</p>
         <p><a class="link" href="https://github.com/ThirtyFoxMCx00E1/HiveMQ">HiveMQ server repo and guide</a></p>
+        <p>Works on Ubuntu 22.04 / 24.04 or Debian 12. No Ubuntu? Get the small Debian 12 installer (677 MB): <a class="link" href="https://github.com/ThirtyFoxMCx00E1/HiveMQ/releases/download/Derbian/debian-12.15.0-amd64-netinst.iso">debian-12.15.0-amd64-netinst.iso</a> (<a class="link" href="https://github.com/ThirtyFoxMCx00E1/HiveMQ/releases/tag/Derbian">release</a>, sha256 <code>cd4462c0...5956e9af17</code>, same as Debian's). Install it with only "SSH server" and "standard system utilities", then as root run the Debian line on the right. On a VPS just pick Debian 12 in the image list.</p>
+        <p>Ping depends on where the machine is: for Europe, NA and Oceania use a VPS in Frankfurt, Virginia / Ohio or Sydney.</p>
       </div>
       <pre class="code" aria-label="Install commands"><code>git clone https://github.com/ThirtyFoxMCx00E1/HiveMQ
 cd HiveMQ
@@ -137,7 +139,11 @@ sudo ./install.sh --region Asia \
   --domain asia-you.duckdns.org --email you@mail.com
 
 # on ONE server only: join the server lists
-sudo ./install.sh --region Asia --bridge</code></pre>
+sudo ./install.sh --region Asia --bridge
+
+# Debian 12 (no sudo / curl), as root - one line per region:
+wget -qO- https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-setup.sh \
+  | bash -s europe      # or asia / na / oceania</code></pre>
     </div>
   </section>
 
