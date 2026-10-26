@@ -26,6 +26,10 @@ Game traffic stays inside one region (no bridging), so ping is only phone -> nea
 > private key file, pick the MP region and press **Save secrets + run claim**. The page encrypts everything in your browser
 > before it goes to GitHub and shows the server IP when the claim finishes.
 
+> **MP Cloud (your own Oracle-style console):** [cloud/](cloud/README.md) - one install command gives a free-tier
+> website where friends sign up and make servers on that machine or in your Oracle account (capacity retry across all
+> availability domains), with one-click MP servers, Coolify and Dokploy, plus a REST API.
+
 ## One command (3.28.2)
 
 On a new VPS (Ubuntu 22.04 / 24.04 or Debian 12), as root - installs everything for a region (Asia on `mpsamp.duckdns.org` by default) with the bridge, uses the passwords from the public regions.txt (phones connect with no change) and starts the 24/7 servers, Mega Vil Futuristic included:
