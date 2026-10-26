@@ -102,12 +102,24 @@ static void SarSetup(SarProj& P, const SaRadarView& v, ImVec2 p0, float size)
 
 // ---- drawing helpers ---------------------------------------------------------------------------
 // one road link: 2D = a thick line, 3D = a trapezoid that narrows with the distance (near-plane clipped)
+// 3.28: a segment fully outside the radar square (the current clip rect) is not sent to the draw list
+static inline bool SarOffFrame(ImDrawList* dl, ImVec2 s0, ImVec2 s1, float w)
+{
+    const ImVec4& c = dl->_CmdHeader.ClipRect;
+    if(w > 400.0f) w = 400.0f;
+    return (s0.x < c.x - w && s1.x < c.x - w) || (s0.x > c.z + w && s1.x > c.z + w) ||
+           (s0.y < c.y - w && s1.y < c.y - w) || (s0.y > c.w + w && s1.y > c.w + w);
+}
+// 3.28: the most vertices the roads may add in one frame (both passes). 3.27 had no limit and made
+// 20 000 - 40 000+ vertices (3D, in a car), which froze the 32-bit game right after the spawn.
+static const int kSarRoadVtxBudget = 16000;
 static void SarRoad(ImDrawList* dl, const SarProj& P, const float a[3], const float b[3], float widthM, float minPx, ImU32 col)
 {
     if(P.mode != 2)
     {
         ImVec2 s0, s1; P.Project(a[0], a[1], a[2], s0); P.Project(b[0], b[1], b[2], s1);
         float w = widthM * P.scale; if(w < minPx) w = minPx;
+        if(SarOffFrame(dl, s0, s1, w)) return;
         dl->AddLine(s0, s1, col, w);
         return;
     }
@@ -118,6 +130,7 @@ static void SarRoad(ImDrawList* dl, const SarProj& P, const float a[3], const fl
     if(d0 < P.nearD) { float t = (P.nearD - d0) / (d1 - d0); c0x += (c1x - c0x) * t; c0y += (c1y - c0y) * t; d0 = P.nearD; }
     else if(d1 < P.nearD) { float t = (P.nearD - d1) / (d0 - d1); c1x += (c0x - c1x) * t; c1y += (c0y - c1y) * t; d1 = P.nearD; }
     ImVec2 s0 = P.FromCam(c0x, c0y, d0), s1 = P.FromCam(c1x, c1y, d1);
+    if(SarOffFrame(dl, s0, s1, widthM * P.F / (d0 < d1 ? d0 : d1))) return;   // 3.28: outside the square: nothing to draw
     float dx = s1.x - s0.x, dy = s1.y - s0.y, l = sqrtf(dx * dx + dy * dy);
     if(l < 0.25f) return;
     float nx = -dy / l, ny = dx / l;
@@ -283,12 +296,29 @@ static void SaRadarDraw(ImDrawList* dl, ImVec2 p0, float size, const SaRadarView
     int c0x = (int)((qx - reach - 90 + 3000) / SAMAP_CELL), c1x = (int)((qx + reach + 90 + 3000) / SAMAP_CELL);
     int c0y = (int)((qy - reach - 90 + 3000) / SAMAP_CELL), c1y = (int)((qy + reach + 90 + 3000) / SAMAP_CELL);
     c0x = c0x < 0 ? 0 : c0x; c0y = c0y < 0 ? 0 : c0y; c1x = c1x >= SAMAP_GRID ? SAMAP_GRID - 1 : c1x; c1y = c1y >= SAMAP_GRID ? SAMAP_GRID - 1 : c1y;
+    // 3.28: nearest cells first, so a frame that hits the vertex budget only loses the far edge;
+    // no anti-aliasing on the road strips (half the vertices; they are thin and get a casing anyway)
+    int cells[64]; float cellD[64]; int nCells = 0;
+    {
+        float qcx = (qx + 3000) / SAMAP_CELL - 0.5f, qcy = (qy + 3000) / SAMAP_CELL - 0.5f;
+        for(int cy = c0y; cy <= c1y; ++cy) for(int cx = c0x; cx <= c1x && nCells < 64; ++cx)
+        {
+            float d = (cx - qcx) * (cx - qcx) + (cy - qcy) * (cy - qcy);
+            int j = nCells++;
+            while(j > 0 && cellD[j - 1] > d) { cells[j] = cells[j - 1]; cellD[j] = cellD[j - 1]; --j; }
+            cells[j] = cy * SAMAP_GRID + cx; cellD[j] = d;
+        }
+    }
+    const ImDrawListFlags oldFlags = dl->Flags;
+    dl->Flags &= ~(ImDrawListFlags_AntiAliasedLines | ImDrawListFlags_AntiAliasedFill | ImDrawListFlags_AntiAliasedLinesUseTex);
+    const int vtxStart = dl->VtxBuffer.Size;
     for(int pass = 0; pass < 2; ++pass)
     {
-        for(int cy = c0y; cy <= c1y; ++cy) for(int cx = c0x; cx <= c1x; ++cx)
+        const int vtxCap = vtxStart + (pass == 0 ? kSarRoadVtxBudget / 2 : kSarRoadVtxBudget);
+        for(int ci = 0; ci < nCells && dl->VtxBuffer.Size < vtxCap; ++ci)
         {
-            int c = cy * SAMAP_GRID + cx;
-            for(int k = kSaMapCellStart[c]; k < kSaMapCellStart[c + 1]; ++k)
+            int c = cells[ci];
+            for(int k = kSaMapCellStart[c]; k < kSaMapCellStart[c + 1] && dl->VtxBuffer.Size < vtxCap; ++k)
             {
                 int e = kSaMapCellEdge[k];
                 const int16_t* na = &kSaMapNode[kSaMapEdge[e * 2] * 3];
@@ -302,6 +332,7 @@ static void SaRadarDraw(ImDrawList* dl, ImVec2 p0, float size, const SaRadarView
             }
         }
     }
+    dl->Flags = oldFlags;
 
     // district names (biggest first, no overlaps)
     {

@@ -8,7 +8,7 @@
 //     not even after the hospital
 //   - the RP HUD (from the screenshots): MEGA VIL FUTURISTIC ROLEPLAY logo on top, info panel
 //     (time / id / name / job / cash / bank), status circles (health / armour / hunger / thirst /
-//     stamina %), NEW CITIZEN countdown box, GREENZONE badge, voice, phone button
+//     stamina %), NEW CITIZEN countdown box, GREENZONE badge, voice (3.28: no phone button - PANEL > Phone)
 //   - job shifts (vehicle, uniform, checkpoints), city events, houses, pets (holo drones), emotes
 //   - people in the street: walk up to someone, they stop and look at you; Talk / Nevermind, then
 //     custom subtitles and answers
@@ -907,8 +907,8 @@ static void RpShowHelp()
 {
     ShowDialog(9401, 0, "{38BDF8}MEGA VIL FUTURISTIC - Help",
         "{FFFFFF}Roleplay only: be your character. Mega Vil is peaceful - only on-duty police and soldiers may use force.\n"
-        "Open the phone: the phone button (right side) or {38BDF8}/phone{FFFFFF}.\n"
-        "PANEL (button left of the phone, or {38BDF8}/panel{FFFFFF}): vehicle, documents, player info + bag, phone.\n\n"
+        "Open the phone: PANEL > Phone or {38BDF8}/phone{FFFFFF}.\n"
+        "PANEL (the 4-square icon on the right, or {38BDF8}/panel{FFFFFF}): vehicle, documents, player info + bag, phone.\n\n"
         "{38BDF8}Talk:{FFFFFF} normal chat (20 m), /me /do /ame /try /b /s /l /w /o /n /ad /feed /r /d /m /gov\n"
         "{38BDF8}Money:{FFFFFF} /pay /deposit /withdraw /transfer /balance /atm\n"
         "{38BDF8}Jobs:{FFFFFF} /jobs /job /quitjob /work /stopwork /duty /myjob\n"
@@ -1230,8 +1230,10 @@ static void RpDrawHud(ImDrawList* dl, float now, uint64_t nowMs)
             if(i != myId && MP::VoiceSpeaking(i)) { snprintf(t, sizeof(t), "> %s [%d]", RpName(i), i); RpText(dl, UI::S(16), ImVec2(x0 + UI::S(6), vy + UI::S(22) * (1 + shown)), IM_COL32_WHITE, t); ++shown; }
     }
     // ---- bottom status row ----
+    // 3.28: in the bottom-right corner (was centred at the bottom), left of the game's sprint / fist buttons
     {
-        float r = UI::S(25), gap = UI::S(70), cx = ds.x * 0.5f - gap * 2.0f, cy = ds.y - UI::S(70);
+        float r = UI::S(25), gap = UI::S(70), cy = ds.y - UI::S(70);
+        float cx = ds.x - ds.x * 0.11f - r - gap * 4.0f;
         int hp = ped > 0 ? Game::GetCharHealth(ped) : 0, ar = ped > 0 ? Game::GetCharArmour(ped) : 0;
         RpStatCircle(dl, ImVec2(cx, cy), r, hp / 100.0f, 0xF87171FF, "+", "HEALTH");
         RpStatCircle(dl, ImVec2(cx + gap, cy), r, ar / 100.0f, 0x93C5FDFF, "A", "ARMOUR");
@@ -1239,12 +1241,23 @@ static void RpDrawHud(ImDrawList* dl, float now, uint64_t nowMs)
         RpStatCircle(dl, ImVec2(cx + gap * 3, cy), r, m.thirst / 100.0f, 0x67E8F9FF, "W", "THIRST");
         RpStatCircle(dl, ImVec2(cx + gap * 4, cy), r, s_Rp.stamina / 100.0f, 0xFDE047FF, "S", "STAMINA");
     }
+    // ---- city event: centred at the bottom (the action centre), text only ----
+    // 3.28: was a line in the top-left list under the chat
+    float evY = ds.y - UI::S(96);
+    if(s_Rp.haveState && s_Rp.st.evKind)
+    {
+        snprintf(t, sizeof(t), "EVENT: %s  %d:%02d  /joinevent", g_RpEventNames[s_Rp.st.evKind % RPEV_COUNT], s_Rp.st.evLeftS / 60, s_Rp.st.evLeftS % 60);
+        float fs = UI::S(22), w = RpTextW(fs, t);
+        RpText(dl, fs, ImVec2((ds.x - w) * 0.5f, evY), RpCol(RP_SKY, 1), t);
+        evY -= UI::S(34);
+    }
     // ---- NEW CITIZEN box ----
     if(m.newbieS)
     {
         // 3.25: on the left (it covered the sprint button on the right), black 60 %, no outline
         // 3.25.1: a bit lower (47 % of the height, was 40 %): it touched the checkmark / chat lines above it
-        float w = UI::S(300), h = UI::S(64), x0 = UI::S(14), y0 = ds.y * 0.47f;
+        // 3.28: right above the radar (its top is at 67.5 % of the height), lined up with its left edge
+        float w = UI::S(300), h = UI::S(64), x0 = ds.x * 0.012f, y0 = ds.y * (0.915f - 0.24f) - h - UI::S(12);
         dl->AddRectFilled(ImVec2(x0, y0), ImVec2(x0 + w, y0 + h), IM_COL32(0, 0, 0, 153), UI::S(10));
         RpText(dl, UI::S(20), ImVec2(x0 + UI::S(12), y0 + UI::S(6)), IM_COL32_WHITE, "YOU ARE A NEW CITIZEN");
         snprintf(t, sizeof(t), "%02d:%02d:%02d left  -  /n for help", m.newbieS / 3600, (m.newbieS / 60) % 60, m.newbieS % 60);
@@ -1254,9 +1267,9 @@ static void RpDrawHud(ImDrawList* dl, float now, uint64_t nowMs)
     Vec3 me{}; bool haveMe = ped > 0 && Game::GetCharPos(ped, me);
     if(haveMe && RpInGreen(me.x, me.y))
     {
-        // 3.25: centred at the bottom, just above the status circles, text only (no background)
+        // 3.25: centred at the bottom, text only (no background); 3.28: above the event line
         const char* g = "YOU ARE IN A GREENZONE"; float fs = UI::S(22), w = RpTextW(fs, g);
-        RpText(dl, fs, ImVec2((ds.x - w) * 0.5f, ds.y - UI::S(70) - UI::S(25) - UI::S(48)), RpCol(0x4ADE80FF, 1), g);
+        RpText(dl, fs, ImVec2((ds.x - w) * 0.5f, evY), RpCol(0x4ADE80FF, 1), g);
     }
     // ---- status lines: job / wanted / jail / cuffed / event ----
     float ly = UI::S(118);
@@ -1269,7 +1282,6 @@ static void RpDrawHud(ImDrawList* dl, float now, uint64_t nowMs)
         float d = haveMe ? sqrtf((me.x - s_Rp.tgt.x) * (me.x - s_Rp.tgt.x) + (me.y - s_Rp.tgt.y) * (me.y - s_Rp.tgt.y)) : 0;
         snprintf(t, sizeof(t), "%s: marker %d m  |  tasks %u", g_RpJobs[m.job].name, (int)d, m.tasks); Line(g_RpJobs[m.job].col, t);
     }
-    if(s_Rp.haveState && s_Rp.st.evKind) { snprintf(t, sizeof(t), "EVENT: %s  %d:%02d  /joinevent", g_RpEventNames[s_Rp.st.evKind % RPEV_COUNT], s_Rp.st.evLeftS / 60, s_Rp.st.evLeftS % 60); Line(RP_SKY, t); }
     if(s_Rp.gpsName[0]) { snprintf(t, sizeof(t), "GPS: %s", s_Rp.gpsName); Line(0xBAE6FDFF, t); }
     if(s_Rp.callWith >= 0) { int s = (int)((nowMs - s_Rp.callStart) / 1000); snprintf(t, sizeof(t), "ON CALL: %s  %d:%02d  /h", s_Rp.callName, s / 60, s % 60); Line(RP_GREEN, t); }
     (void)mb;

@@ -549,7 +549,7 @@ static void RpDrawCallScreen(float w, float h)
     else if(outgoing || s_Rp.callWith >= 0) { if(RpPBtn("End call##ce", w, UI::S(64), 0xDC2626FF)) RpSend(RPC_HANGUP); }
     else { RpPText(0x94A3B8FF, "Call ended."); if(RpPBtn("Close##cc", w, UI::S(52), 0x334155FF)) s_Rp.app = RPA_HOME; }
 }
-static void RpDrawPhoneButton()
+[[maybe_unused]] static void RpDrawPhoneButton()
 {
     ImVec2 ds = ImGui::GetIO().DisplaySize;
     // 3.25.1: only the phone icon - no circle / ring behind it - big, and OUTSIDE the game's button column.
@@ -591,7 +591,7 @@ static void RpDrawPhoneButton()
 static void RenderRpPhone(float nowF)
 {
     if(s_Rp.view != 2) return;
-    RpDrawPhoneButton();
+    // 3.28: no separate phone button any more - the phone opens from PANEL > Phone, /phone, or by itself on a call
     if(s_Rp.app == RPA_CALL && s_Rp.ringFrom < 0 && s_Rp.callWith < 0 && s_Rp.phone && MP_NowMs() - s_Rp.ringAt > 4000) s_Rp.app = RPA_HOME;
     if(!s_Rp.phone || SampDialogOpen()) return;
     ImVec2 ds = ImGui::GetIO().DisplaySize;
