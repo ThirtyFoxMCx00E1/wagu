@@ -334,6 +334,9 @@ private:
     void RpStore(int slot);
     void RpSendMe(int slot);
     void RpSendInv(int slot);                                        // 3.26: the bag
+    void RpSendDrops(int slot);                                      // 3.30: items on the ground (-1 = everyone)
+    struct RpSrvDrop { uint16_t uid; uint8_t id; uint16_t count; float pos[3]; uint64_t until; };
+    RpSrvDrop    m_RpDrops[RP_DROPS_MAX] = {}; uint16_t m_nRpDropUid = 0;
     int  RpInvGive(int slot, uint8_t id, int n, const char* why);   // 3.26: into the bag + "Received" card, returns how many fit
     void RpSendPlayers(int slot);
     void RpSendState(int slot);

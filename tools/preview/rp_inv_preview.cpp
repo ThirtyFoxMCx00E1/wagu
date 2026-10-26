@@ -42,7 +42,9 @@ namespace HUD { static void* Texture(const char*, ImVec2* uv) { *uv = ImVec2(1, 
 struct { bool active; int ped; } players[MP_MAX_PLAYERS];
 static int myId = 7;
 struct { char name[32]; } settings = { "Senji_Macase" };
-struct { int view = 2; bool phone = false, haveMe = true; int ringFrom = -1, callWith = -1; PktRpMe me{}; } s_Rp;
+struct { int view = 2; bool phone = false, haveMe = true, ringOut = false; int ringFrom = -1, callWith = -1, unreadSms = 0; PktRpMe me{}; } s_Rp;
+enum { RPS_CLICK = 0, RPS_PHONE, RPS_CARD };
+static void RpClick(int) {}
 static bool RpOnServer() { return true; }
 static void RpSend(uint8_t, uint8_t = 0, uint8_t = 0, int = 0, const char* = nullptr) {}
 enum { RPA_HOME = 0, RPA_GARAGE = 1 };
@@ -140,7 +142,7 @@ int main(int argc, char** argv)
     int wsum = 0; for(int i = 0; i < 5; ++i) { s_Inv.inv.slot[i].id = ids[i]; s_Inv.inv.slot[i].count = cnt[i]; wsum += g_RpInv[ids[i]].weight * cnt[i]; }
     s_Inv.inv.weight = wsum; s_Inv.sel = 0;
     s_Inv.part[1] = 72; s_Inv.part[4] = 88; s_Inv.lastHp = 86;
-    s_Rp.me.number = 5512340; s_Rp.me.job = 0; s_Rp.me.level = 3; s_Rp.me.house = 255; s_Rp.me.playMin = 135; s_Rp.me.items = RPIT_DRIVING;
+    s_Rp.me.number = 5512340; s_Rp.me.job = 0; s_Rp.me.level = 3; s_Rp.me.house = 255; s_Rp.me.playMin = 135; s_Rp.me.items = RPIT_DRIVING; s_Rp.me.hunger = 64; s_Rp.me.thirst = 45;
     // the "Received" cards: 2 fresh (3 s old), 1 fading out (15.4 s old)
     s_Inv.got[0] = { RPX_ESTEH, 10, g_Now - 3000 }; s_Inv.got[1] = { RPX_NASIGORENG, 10, g_Now - 3000 }; s_Inv.nGot = 2;
     if(mode == 1) { s_Inv.got[0].at = g_Now - 15500; s_Inv.got[2] = { RPX_PHONE, 1, g_Now - 1500 }; s_Inv.nGot = 3; }

@@ -46,6 +46,13 @@ It builds `mp_server` on the phone and runs it 24/7 in the internet lobby (free 
 
 ## Changelog
 
+- **3.30**: New **bag layout** (Citizen + Backpack), a **real ATM machine screen**, **English food names**, **real dropped items** you can pick up, and the NPC talk outline / position fix.
+  - Bag (inventory) in a new two-panel layout: CITIZEN on the left (body figure tinted by your condition, health / armour / food / water) and BACKPACK on the right (weight meter, 5 x 3 rounded tiles over the 16 slots with scroll, amount stepper - n +, USE / GIVE / DROP, round red X to close).
+  - ATM: the screen is now a real ATM machine - steel body, blue MEGA BANK topper, blue screen with side keys (Withdrawal, Deposit, Investments, Transfer, fast cash), a 1-9 / 00 / 0 keypad with red CANCEL, yellow CLEAR and green ENTER, card reader, receipt slot and a cash slot that lights up after a withdrawal. No more green UI.
+  - Food names in English: Es Teh is now Iced Tea and Nasi Goreng is now Fried Rice (shop, bag and pawn).
+  - Real drops: dropping an item (phone, burger, pizza, can, takeaway, medkit, repair kit, backpack...) puts the real object at your feet for everyone, spinning with a 3D label. Walk up and tap Pick up. Drops vanish after 15 minutes.
+  - NPC talk: Talk / Nevermind and the topics have their full white outline again (it was cut off at the bottom) and the column sits left of the PANEL icon instead of over it. The Use ATM button uses the same column.
+  - Plays with 3.29 servers and clients (real drops need a 3.30 server: run update.sh on the VPS).
 - **3.29**: New **bag layout**, **real ATM machines + ATM screen**, **investments**, marriage / seatbelt / pawn, plaza **info people**, click sounds and a welcome message on Mega Vil.
   - Bag (inventory) in the new layout from the screenshot: a see-through 4 x 4 grid left of you (16 slots, was 15), your name in a red tag, weight in kg, and the actions in a column right of you: Amount, Use, Give, Drop, Close.
   - Sounds: click.mp3 for UI buttons, click2.mp3 for phone taps, click3.mp3 for a "Received" item card. Paste the 3 files into the MP folder (see PASTE_CLICK_MP3_HERE.txt). A missing file is just silent.

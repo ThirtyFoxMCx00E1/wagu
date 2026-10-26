@@ -58,17 +58,7 @@ static void RpAtmStream(uint64_t now, int ped)
 }
 
 // ---- the ATM screen --------------------------------------------------------------------------
-static struct { bool open = false; int tab = 0; uint64_t at = 0; int place = -1; } s_Atm;
-enum { RPKB_ATM_DEP = 200, RPKB_ATM_WD, RPKB_ATM_INV0, RPKB_ATM_INV1, RPKB_ATM_INV2, RPKB_ATM_SELL0, RPKB_ATM_SELL1, RPKB_ATM_SELL2 };
-static void RpAtmKb(const char* t, void* data)
-{
-    int mode = (int)(intptr_t)data, v = t ? atoi(t) : 0;
-    if(v <= 0) return;
-    if(mode == RPKB_ATM_DEP) RpSend(RPC_DEPOSIT, 0, 0, v);
-    else if(mode == RPKB_ATM_WD) RpSend(RPC_WITHDRAW, 0, 0, v);
-    else if(mode >= RPKB_ATM_INV0 && mode <= RPKB_ATM_INV2) RpSend(RPC_INVEST, (uint8_t)(mode - RPKB_ATM_INV0), 0, v);
-    else if(mode >= RPKB_ATM_SELL0 && mode <= RPKB_ATM_SELL2) RpSend(RPC_INVEST, (uint8_t)(mode - RPKB_ATM_SELL0), 1, v);
-}
+#include "mp_rp_atm.inc"   // 3.30: the ATM screen looks like a real ATM (steel, blue screen, side keys, keypad)
 // nearest ATM / bank you stand at (ATM: 2.6 m, bank: 7 m), -1 = none
 static int RpAtmHere(int ped)
 {
@@ -84,7 +74,7 @@ static int RpAtmHere(int ped)
     }
     return best;
 }
-static void RpAtmOpen(int place) { s_Atm.open = true; s_Atm.tab = 0; s_Atm.at = MP_NowMs(); s_Atm.place = place; RpClick(RPS_CLICK); }
+static void RpAtmOpen(int place) { s_Atm.open = true; s_Atm.tab = ATS_MAIN; s_Atm.at = MP_NowMs(); s_Atm.place = place; s_Atm.entry[0] = 0; s_Atm.msgAt = 0; RpClick(RPS_CLICK); }
 
 static void RpDrawAtm(uint64_t nowMs)
 {
@@ -94,104 +84,104 @@ static void RpDrawAtm(uint64_t nowMs)
     if(!s_Atm.open)
     {   // walk up to an ATM: an outlined "ATM" button right of centre
         if(here < 0 || RpInvOpen() || s_Rp.phone || s_Rp.talkStage) return;
-        BcwBeginOverlay("##RpAtmBtn", ImVec2(ds.x * 0.62f, ds.y * 0.42f), ImVec2(UI::S(300), UI::S(90)), 0.0f);
         char l[64]; snprintf(l, sizeof(l), "%s##atmb", g_RpPlaces[here].kind == RPK_BANK ? "Mega Bank" : "Use ATM");
-        if(RpOutlineButton(l, ImVec2(UI::S(260), UI::S(62)))) RpAtmOpen(here);
-        BcwEndOverlay();
+        const char* L[1] = { l };
+        if(RpOutlineColumn("##RpAtmBtn", L, 1, UI::S(280), UI::S(62), 0, ds.y * 0.42f) == 0) RpAtmOpen(here);
         return;
     }
     if(here < 0) { s_Atm.open = false; return; }   // walked away
-    const PktRpMe& m = s_Rp.me;
-    const float W = UI::S(760), H = UI::S(560);
-    float k = (nowMs - s_Atm.at) / 160.0f; if(k > 1) k = 1;
-    ImVec2 a((ds.x - W) * 0.5f, (ds.y - H) * 0.5f + (1.0f - k) * UI::S(30)), b(a.x + W, a.y + H);
-    BcwBeginOverlay("##RpAtm", ImVec2(0, 0), ds, 0.0f);
-    ImDrawList* dl = ImGui::GetWindowDrawList();
-    const ImU32 white = IM_COL32_WHITE, green = IM_COL32(74, 222, 128, 255);
-    char t[128];
-    dl->AddRectFilled(a, b, IM_COL32(6, 16, 12, 242), UI::S(18));
-    dl->AddRect(a, b, IM_COL32(22, 163, 74, 255), UI::S(18), 0, UI::S(3));
-    dl->AddRectFilled(a, ImVec2(b.x, a.y + UI::S(70)), IM_COL32(22, 163, 74, 255), UI::S(18), ImDrawFlags_RoundCornersTop);
-    RpPlainText(dl, UI::S(28), ImVec2(a.x + UI::S(24), a.y + UI::S(10)), white, "MEGA BANK");
-    RpPlainText(dl, UI::S(14), ImVec2(a.x + UI::S(26), a.y + UI::S(44)), IM_COL32(220, 252, 231, 255), g_RpPlaces[s_Atm.place >= 0 ? s_Atm.place : here].name);
-    char mb1[24], mb2[24];
-    snprintf(mb1, sizeof(mb1), "$%d", m.cash); snprintf(mb2, sizeof(mb2), "$%d", m.bank);
-    snprintf(t, sizeof(t), "CASH %s    BANK %s", mb1, mb2);
-    float tw = RpTextW(UI::S(19), t); RpPlainText(dl, UI::S(19), ImVec2(b.x - UI::S(24) - tw, a.y + UI::S(24)), white, t);
-    // tabs
-    static const char* const kTabs[3] = { "CASH", "INVEST", "TRANSFER" };
-    float tbw = (W - UI::S(48) - UI::S(24)) / 3.0f;
-    for(int i = 0; i < 3; ++i)
+    RpDrawAtmMachine(nowMs, g_RpPlaces[s_Atm.place >= 0 ? s_Atm.place : here].name);
+}
+
+// ---- 3.30: dropped items on the ground ----------------------------------------------------------
+// The host keeps the list (PKT_RP_DROPS); every phone puts a real object on the ground for each
+// row (a real cellphone for the smartphone, a burger, a pizza slice, a can...), spinning slowly
+// like a pickup, with its name over it. Walk close: "Pick up ..." (outlined, right of centre).
+static struct { int n = 0; RpDropRow row[RP_DROPS_MAX]; } s_Drops;
+struct RpDropObj { uint16_t uid; int obj; int model; uint64_t since; Vec3 p; };
+static RpDropObj s_DropObj[RP_DROPS_MAX];
+static uint64_t s_nDropPickAt = 0;
+static void RpDropsOnPacket(const uint8_t* d, int len)
+{
+    const int head = (int)offsetof(PktRpDrops, row);
+    if(len < head) return;
+    int n = d[1]; if(n > RP_DROPS_MAX) n = RP_DROPS_MAX;
+    if(len < head + n * (int)sizeof(RpDropRow)) n = (len - head) / (int)sizeof(RpDropRow);
+    memcpy(s_Drops.row, d + head, n * sizeof(RpDropRow));
+    s_Drops.n = n;
+}
+static const RpDropRow* RpDropFind(uint16_t uid)
+{
+    for(int i = 0; i < s_Drops.n; ++i) if(s_Drops.row[i].uid == uid) return &s_Drops.row[i];
+    return nullptr;
+}
+static void RpDropsClear()
+{
+    for(auto& o : s_DropObj) { if(o.obj > 0 && Game::WorldObjectExists(o.obj)) Game::DeleteWorldObject(o.obj); o = RpDropObj{}; }
+}
+static void RpDropsStream(uint64_t now, int ped)
+{
+    if(!Game::IsReady() || Game::IsPaused() || ped <= 0) return;
+    Vec3 me; Game::GetCharPos(ped, me);
+    if(!(me.x == me.x)) return;
+    // gone or far: remove the object
+    for(auto& o : s_DropObj)
     {
-        char id[16]; snprintf(id, sizeof(id), "##atmt%d", i);
-        if(RpUiButton(id, ImVec2(a.x + UI::S(24) + i * (tbw + UI::S(12)), a.y + UI::S(86)), ImVec2(tbw, UI::S(46)),
-                      s_Atm.tab == i ? IM_COL32(22, 163, 74, 255) : IM_COL32(20, 40, 30, 255), 0, kTabs[i], white)) s_Atm.tab = i;
+        if(!o.uid) continue;
+        const RpDropRow* r = RpDropFind(o.uid);
+        float dx = o.p.x - me.x, dy = o.p.y - me.y;
+        if(!r || dx * dx + dy * dy > 160.0f * 160.0f || (o.obj > 0 && !Game::WorldObjectExists(o.obj)))
+        { if(o.obj > 0 && Game::WorldObjectExists(o.obj)) Game::DeleteWorldObject(o.obj); o = RpDropObj{}; }
     }
-    float y = a.y + UI::S(150), x0 = a.x + UI::S(24), cw = W - UI::S(48);
-    if(s_Atm.tab == 0)
+    // new and near: make one per tick
+    for(int i = 0; i < s_Drops.n; ++i)
     {
-        static const int kAmt[5] = { 100, 500, 1000, 5000, 0 };
-        float bw = (cw - UI::S(4 * 10)) / 5.0f;
-        RpPlainText(dl, UI::S(18), ImVec2(x0, y), green, "WITHDRAW (bank -> cash)");
-        for(int i = 0; i < 5; ++i)
-        {
-            char id[16], lb[24]; snprintf(id, sizeof(id), "##aw%d", i);
-            if(kAmt[i]) snprintf(lb, sizeof(lb), "$%d", kAmt[i]); else snprintf(lb, sizeof(lb), "Other");
-            if(RpUiButton(id, ImVec2(x0 + i * (bw + UI::S(10)), y + UI::S(30)), ImVec2(bw, UI::S(56)), IM_COL32(20, 40, 30, 255), IM_COL32(22, 163, 74, 255), lb, white))
-            { if(kAmt[i]) RpSend(RPC_WITHDRAW, 0, 0, kAmt[i]); else VKeyboard::Open("Withdraw amount", "", 9, RpAtmKb, (void*)(intptr_t)RPKB_ATM_WD, true); }
-        }
-        y += UI::S(110);
-        RpPlainText(dl, UI::S(18), ImVec2(x0, y), green, "DEPOSIT (cash -> bank)");
-        for(int i = 0; i < 5; ++i)
-        {
-            char id[16], lb[24]; snprintf(id, sizeof(id), "##ad%d", i);
-            int v = kAmt[i];
-            if(i == 4) snprintf(lb, sizeof(lb), "All cash"); else snprintf(lb, sizeof(lb), "$%d", v);
-            if(RpUiButton(id, ImVec2(x0 + i * (bw + UI::S(10)), y + UI::S(30)), ImVec2(bw, UI::S(56)), IM_COL32(20, 40, 30, 255), IM_COL32(22, 163, 74, 255), lb, white))
-            { if(i == 4) { if(m.cash > 0) RpSend(RPC_DEPOSIT, 0, 0, m.cash); } else RpSend(RPC_DEPOSIT, 0, 0, v); }
-        }
-        y += UI::S(110);
-        if(RpUiButton("##adk", ImVec2(x0, y), ImVec2(cw, UI::S(52)), 0, IM_COL32(22, 163, 74, 255), "Deposit another amount", white))
-            VKeyboard::Open("Deposit amount", "", 9, RpAtmKb, (void*)(intptr_t)RPKB_ATM_DEP, true);
+        const RpDropRow& r = s_Drops.row[i];
+        float dx = r.pos[0] - me.x, dy = r.pos[1] - me.y;
+        if(dx * dx + dy * dy > 120.0f * 120.0f || !r.id || r.id >= RPX_COUNT) continue;
+        RpDropObj* o = nullptr; RpDropObj* freeO = nullptr;
+        for(auto& q : s_DropObj) { if(q.uid == r.uid) { o = &q; break; } if(!q.uid && !freeO) freeO = &q; }
+        if(o && o->obj > 0) continue;
+        if(!o) { if(!freeO) break; o = freeO; o->uid = r.uid; o->obj = 0; o->model = g_RpDropModel[r.id]; o->since = now;
+                 float gz = Game::GroundZ(r.pos[0], r.pos[1], r.pos[2] + 1.0f);
+                 o->p = { r.pos[0], r.pos[1], (gz > -100.0f && fabsf(gz - r.pos[2]) < 3.0f ? gz : r.pos[2] - 0.95f) + 0.15f }; }
+        int h = Game::CreateWorldObject(o->model, o->p);
+        if(h > 0) o->obj = h;
+        else if(now - o->since > 4000 && o->model != 1210) { o->model = 1210; o->since = now; }   // the model never loaded: a briefcase
+        break;
     }
-    else if(s_Atm.tab == 1)
+    // spin + bob like a pickup
+    float spin = (float)(now % 4000) * 0.09f;
+    for(auto& o : s_DropObj)
+        if(o.obj > 0) { Vec3 p = o.p; p.z += 0.06f * sinf((float)(now % 2000) * 0.00314f); Game::MoveWorldObject(o.obj, p, spin); }
+}
+// names over the drops, and the pick-up button when you are close
+static void RpDrawDrops(uint64_t nowMs)
+{
+    if(!s_Drops.n) return;
+    int ped = Game::LocalPed(); if(ped <= 0) return;
+    Vec3 me; Game::GetCharPos(ped, me);
+    ImDrawList* bg = ImGui::GetBackgroundDrawList();
+    int best = -1; float bd = RP_DROP_RANGE * RP_DROP_RANGE;
+    char t[64];
+    for(int i = 0; i < s_Drops.n; ++i)
     {
-        RpPlainText(dl, UI::S(15), ImVec2(x0, y - UI::S(6)), IM_COL32(187, 247, 208, 255), "One market for the whole city. Prices move every 5 minutes. Buying uses your bank money.");
-        y += UI::S(22);
-        for(int i = 0; i < RPN_COUNT; ++i)
-        {
-            ImVec2 ra(x0, y), rb(x0 + cw, y + UI::S(96));
-            dl->AddRectFilled(ra, rb, IM_COL32(16, 32, 24, 255), UI::S(12));
-            int price = s_Rp.haveState ? s_Rp.st.market[i] : 0; int chg = s_Rp.haveState ? s_Rp.st.marketChg[i] : 0;
-            RpPlainText(dl, UI::S(19), ImVec2(ra.x + UI::S(14), ra.y + UI::S(8)), white, g_RpPlans[i].name);
-            snprintf(t, sizeof(t), "price %d  (%+.1f%%)   %s", price, chg / 10.0f, g_RpPlans[i].risk);
-            RpPlainText(dl, UI::S(14), ImVec2(ra.x + UI::S(14), ra.y + UI::S(36)), chg >= 0 ? green : IM_COL32(248, 113, 113, 255), t);
-            snprintf(t, sizeof(t), "yours: $%d", m.invest[i]);
-            RpPlainText(dl, UI::S(17), ImVec2(ra.x + UI::S(14), ra.y + UI::S(62)), IM_COL32(253, 230, 138, 255), t);
-            float bx = rb.x - UI::S(14) - UI::S(130) * 3 - UI::S(16);
-            char id[16];
-            snprintf(id, sizeof(id), "##ib5%d", i);
-            if(RpUiButton(id, ImVec2(bx, ra.y + UI::S(24)), ImVec2(UI::S(130), UI::S(48)), IM_COL32(22, 163, 74, 255), 0, "Buy $500", white)) RpSend(RPC_INVEST, (uint8_t)i, 0, 500);
-            snprintf(id, sizeof(id), "##ibk%d", i);
-            if(RpUiButton(id, ImVec2(bx + UI::S(138), ra.y + UI::S(24)), ImVec2(UI::S(130), UI::S(48)), 0, IM_COL32(22, 163, 74, 255), "Buy ...", white))
-                VKeyboard::Open("Invest amount", "", 9, RpAtmKb, (void*)(intptr_t)(RPKB_ATM_INV0 + i), true);
-            snprintf(id, sizeof(id), "##isa%d", i);
-            if(RpUiButton(id, ImVec2(bx + UI::S(276), ra.y + UI::S(24)), ImVec2(UI::S(130), UI::S(48)), 0, IM_COL32(248, 113, 113, 255), "Sell all", white)) RpSend(RPC_INVEST, (uint8_t)i, 1, 0);
-            y += UI::S(106);
-        }
+        const RpDropRow& r = s_Drops.row[i]; if(!r.id || r.id >= RPX_COUNT) continue;
+        const RpDropObj* o = nullptr; for(const auto& q : s_DropObj) if(q.uid == r.uid) { o = &q; break; }
+        Vec3 p = o && o->obj > 0 ? o->p : Vec3{ r.pos[0], r.pos[1], r.pos[2] - 0.9f };
+        float dx = p.x - me.x, dy = p.y - me.y, dz = p.z - me.z, d2 = dx * dx + dy * dy;
+        if(d2 > 22.0f * 22.0f) continue;
+        snprintf(t, sizeof(t), r.count > 1 ? "%s x%u" : "%s", g_RpInv[r.id].name, r.count);
+        BcwLabel3D(bg, { p.x, p.y, p.z + 0.55f }, t, RP_SKY, 26.0f, 8.0f);
+        if(d2 < bd && fabsf(dz) < 2.5f) { bd = d2; best = i; }
     }
-    else
-    {
-        RpPlainText(dl, UI::S(17), ImVec2(x0, y), white, "Send bank money to a phone number (works anywhere: /transfer [number] [amount]).");
-        y += UI::S(40);
-        if(RpUiButton("##atr", ImVec2(x0, y), ImVec2(cw, UI::S(60)), IM_COL32(22, 163, 74, 255), 0, "Transfer to a phone number", white))
-            VKeyboard::Open("Phone number", "", 9, RpKbSubmit, (void*)(intptr_t)RPKB_TR_NUM, true);
-        y += UI::S(80);
-        snprintf(t, sizeof(t), "Your number: %d   Next payday in %d:%02d", m.number, m.paydayS / 60, m.paydayS % 60);
-        RpPlainText(dl, UI::S(17), ImVec2(x0, y), IM_COL32(187, 247, 208, 255), t);
-    }
-    if(RpUiButton("##atx", ImVec2(b.x - UI::S(24) - UI::S(180), b.y - UI::S(24) - UI::S(52)), ImVec2(UI::S(180), UI::S(52)), IM_COL32(127, 29, 29, 255), 0, "Close", white)) s_Atm.open = false;
-    BcwEndOverlay();
+    if(best < 0 || Game::IsCharInAnyCar(ped) || RpInvOpen() || s_Rp.phone || s_Rp.talkStage || s_Atm.open) return;
+    const RpDropRow& r = s_Drops.row[best];
+    snprintf(t, sizeof(t), "Pick up %s##dpk", g_RpInv[r.id].name);
+    const char* L[1] = { t };
+    ImVec2 ds = ImGui::GetIO().DisplaySize;
+    if(RpOutlineColumn("##RpDropBtn", L, 1, UI::S(330), UI::S(62), 0, ds.y * 0.30f) == 0 && nowMs - s_nDropPickAt > 600)
+    { s_nDropPickAt = nowMs; RpSend(RPC_INV_PICKUP, 0, 0, r.uid); }
 }
 
 // ---- info people at the plaza ------------------------------------------------------------------
@@ -322,8 +312,8 @@ static bool RpLifeCommand(const char* cmd, const char* arg)
 static void RpLifeProcess(int ped, uint64_t now, bool engaged)
 {
     static bool s_Welcomed = false;
-    if(!engaged) { if(s_Welcomed) { RpAtmClear(); RpInfoUpdate(false, now); s_Atm.open = false; } s_Welcomed = false; return; }
+    if(!engaged) { if(s_Welcomed) { RpAtmClear(); RpDropsClear(); RpInfoUpdate(false, now); s_Atm.open = false; } s_Welcomed = false; return; }
     if(!s_Welcomed) { s_Welcomed = true; RpWelcome(); }
     RpInfoUpdate(Game::GetCharArea(ped > 0 ? ped : Game::LocalPed()) == 0 || s_Rp.view == 1, now);
-    if(s_Rp.view == 2) RpAtmStream(now, ped); else RpAtmClear();
+    if(s_Rp.view == 2) { RpAtmStream(now, ped); RpDropsStream(now, ped); } else { RpAtmClear(); RpDropsClear(); }
 }
