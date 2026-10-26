@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MP Oracle - claim the free 24/7 region server</title>
+<meta name="description" content="MP Oracle: paste your Oracle API key config once, the page saves it as encrypted HiveMQ repo secrets and runs the MP Oracle claim workflow. The server installs HiveMQ + the 24/7 servers by itself.">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src https://api.github.com; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#000000">
+<link rel="stylesheet" href="termux.css">
+<link rel="stylesheet" href="oracle.css?v=3.32">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23000'/%3E%3Ctext x='16' y='22' font-family='monospace' font-size='15' font-weight='700' text-anchor='middle' fill='%23ef6b5b'%3EO%3C/text%3E%3C/svg%3E">
+</head>
+<body>
+<header class="bar">
+  <a class="brand" href="./">MP <span class="ora">Oracle</span></a>
+  <span id="live" class="live"><span class="dot"></span><span id="live-t">not signed in</span></span>
+  <a class="other" href="termius.html">Termius</a>
+  <a class="other2" href="termux.html">Termux</a>
+</header>
+
+<main class="ora-main">
+  <p class="lead">One page for the whole Oracle part. Your key never leaves this browser unencrypted: it is sealed with the
+    HiveMQ repo's public key (the same libsodium sealed box GitHub uses) and only GitHub Actions can open it.</p>
+
+  <section class="card">
+    <h2><span class="n">1</span> GitHub token</h2>
+    <p class="m">Make a <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">fine-grained token</a>:
+      Repository access = only <code>HiveMQ</code>; permissions: <b>Secrets</b>, <b>Variables</b> and <b>Actions</b> = Read and write.</p>
+    <label for="tok">Token</label>
+    <input id="tok" type="password" autocomplete="off" spellcheck="false" placeholder="github_pat_...">
+    <div class="row">
+      <label class="chk"><input id="remember" type="checkbox"> keep it for this tab only</label>
+      <input id="repo" type="text" value="ThirtyFoxMCx00E1/HiveMQ" spellcheck="false" aria-label="Repository">
+    </div>
+    <button id="b-login" class="btn">Check token</button>
+    <p id="s-login" class="st" role="status"></p>
+  </section>
+
+  <section class="card">
+    <h2><span class="n">2</span> Oracle API key</h2>
+    <p class="m">Oracle Cloud: Profile &rarr; <b>API keys</b> &rarr; <b>Add API key</b> &rarr; Download private key, then copy the config text it shows.</p>
+    <label for="cfg">Config text</label>
+    <textarea id="cfg" rows="7" spellcheck="false" placeholder="[DEFAULT]&#10;user=ocid1.user.oc1..aaaa...&#10;fingerprint=12:34:...&#10;tenancy=ocid1.tenancy.oc1..aaaa...&#10;region=ap-singapore-1&#10;key_file=&lt;path to your private keyfile&gt;"></textarea>
+    <div id="parsed" class="parsed" aria-live="polite"></div>
+    <label for="keyf">Private key (.pem)</label>
+    <input id="keyf" type="file" accept=".pem,.key,.txt,text/plain">
+    <textarea id="key" rows="4" spellcheck="false" placeholder="or paste it: -----BEGIN PRIVATE KEY----- ..."></textarea>
+    <p id="s-key" class="st"></p>
+  </section>
+
+  <section class="card">
+    <h2><span class="n">3</span> MP region</h2>
+    <p class="m">Free Oracle servers only exist in the account's <b>home region</b>, so one Oracle account = one low-ping MP region.</p>
+    <div class="regions" role="radiogroup" aria-label="MP region">
+      <label><input type="radio" name="rg" value="asia"><span>Asia<small>ap-singapore-1 &middot; mpsamp</small></span></label>
+      <label><input type="radio" name="rg" value="europe"><span>Europe<small>eu-frankfurt-1 &middot; eusamp</small></span></label>
+      <label><input type="radio" name="rg" value="na"><span>North America<small>us-ashburn-1 &middot; nasamp</small></span></label>
+      <label><input type="radio" name="rg" value="oceania"><span>Oceania<small>ap-sydney-1 &middot; ocsamp</small></span></label>
+    </div>
+    <p id="s-region" class="st"></p>
+    <details>
+      <summary>Optional: DuckDNS + Discord</summary>
+      <label for="duck">DUCKDNS_TOKEN</label>
+      <input id="duck" type="password" autocomplete="off" spellcheck="false">
+      <label for="disc">DISCORD_WEBHOOK</label>
+      <input id="disc" type="password" autocomplete="off" spellcheck="false">
+      <label for="ssh">SSH_PUBLIC_KEY</label>
+      <input id="ssh" type="text" autocomplete="off" spellcheck="false" placeholder="ssh-ed25519 AAAA... (for Termius)">
+    </details>
+  </section>
+
+  <section class="card">
+    <h2><span class="n">4</span> Save and claim</h2>
+    <div class="row">
+      <button id="b-save" class="btn">Save secrets + run claim</button>
+      <button id="b-check" class="btn ghost">Run check only</button>
+      <button id="b-status" class="btn ghost">Status</button>
+    </div>
+    <div id="log" class="out log" role="log" aria-live="polite"></div>
+  </section>
+
+  <p class="foot">Same thing by hand: HiveMQ &rarr; Settings &rarr; Secrets and variables &rarr; Actions. The workflow
+    (<a href="https://github.com/ThirtyFoxMCx00E1/HiveMQ/actions/workflows/oracle-claim.yml" target="_blank" rel="noopener">MP Oracle claim</a>)
+    retries every hour until Oracle has free A1 capacity, then the server installs itself in about 15 minutes.
+    &middot; <a href="./">Website</a> &middot; <a href="regions.txt">regions.txt</a></p>
+</main>
+<script src="vendor/mp-seal-1.0.min.js"></script>
+<script src="oracle.js?v=3.32"></script>
+</body>
+</html>

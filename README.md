@@ -56,6 +56,14 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **3.32**: Fixes the **freeze when people join** a server and the **crash in CStreaming::GetNextFileOnCd** (SIGSEGV with ZyZ Limit Adjuster), plus the new **MP Oracle** page.
+  - Other players' skins, clothes, cars, weapons, pickups and projectiles now stream in the background (REQUEST_MODEL) instead of LOAD_ALL_MODELS_NOW, which stopped the whole game for every player that joined and crashed inside ZyZ Limit Adjuster's streaming hook.
+  - Story-character skins (Sweet, Cesar, ...) load into their slot in the background too; the avatar appears as soon as the model is in.
+  - New players appear one every 60 ms instead of all in the same frame (a full server joining no longer hitches).
+  - Your own skin change, /spawn and game loadouts still load right away.
+  - The mod list in crash logs now says 3.32 (it said 3.04.6 / 3.21.6).
+  - Website: MP Oracle page (oracle.html) - paste the Oracle API key config once, it saves the encrypted HiveMQ secrets and runs MP Oracle claim, then shows the server IP.
+  - Plays with 3.31 and the other supported versions (no server change).
 - **3.31**: The bag now uses the **PLAYER INFO + INVENTORY layout from the screenshot**, and the **ATM is in the Mega Vil style** (same real ATM layout).
   - Bag (inventory) in the layout of the screenshot: PLAYER INFO on the left (cyan title bar, your name, the body figure with 6 % boxes joined by lines, HEALTH and ARMOUR bars, a full-width red CLOSE button) and INVENTORY on the right (cyan title bar, weight in Kg top right, a 5 x 3 grid of square cells with the name and amount in each, the picked cell dark blue, and AMOUNT / USE / GIVE / DROP along the bottom). All text in English.
   - ATM: same real ATM layout (screen with 4 + 4 side keys, keypad, card reader, receipt, cash slot, EXIT), now drawn like the other Mega Vil Futuristic UI: dark glass, sky blue edges and glow lines, rounded keys. CANCEL / CLEAR / ENTER keep their red / yellow / green as coloured edges.
