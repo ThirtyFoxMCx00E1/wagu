@@ -13,10 +13,10 @@
 // phones refuse servers older than that too (they would let old phones in).
 // 3.10: build 31000. MP_MIN_BUILD stays 30406 and the lobby stays thirtyfox/mp5/: 3.04.6 (no cheats)
 // and 3.10 phones play together on the same servers; only 3.04.5 and older (mp4) stay shut out.
-#define MP_BUILD 33100   // 3.31
+#define MP_BUILD 33200   // 3.32
 #define MP_MIN_BUILD       30406
 #define MP_AUTH_MIN_BUILD  32106   // 3.21.6: servers with the login system refuse older phones (they could not log in)
-#define MP_VERSION_STR     "3.31"
+#define MP_VERSION_STR     "3.32"
 #define MP_VOICE_BUILD     31100   // 3.11: phones from this build on get voice packets
 #define MP_DOWNLOAD_URL    "thirtyfoxmcx00e1.github.io/wagu"
 #define MP_DEFAULT_HOST    "127.0.0.1"

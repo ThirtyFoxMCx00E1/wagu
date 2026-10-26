@@ -322,7 +322,41 @@ bool Game::IsKnownModel(int model)
 }
 bool Game::IsKnownCarModel(int model) { return model >= 400 && model <= 611 && IsKnownModel(model); }
 
-bool Game::LoadModel(int model)
+// 3.32: crash log SIGSEGV in CStreaming::GetNextFileOnCd <- libZyZlimitadjuster64 <- CStreaming::
+// RequestModelStream <- LoadAllRequestedModels <- LOAD_ALL_MODELS_NOW <- Game::ModelForClothes /
+// CreateRemotePed, and the freeze on the host when people join. LOAD_ALL_MODELS_NOW makes the game read
+// every queued file from disk right now, inside our frame: one stall per joining player (their skin,
+// car, weapon...), and with ZyZ Limit Adjuster's streaming hooks it can run off the end of the request
+// list (X0 = -1). Everything that comes from the network now only REQUEST_MODELs; the game's own
+// streamer loads it over the next frames and the caller simply tries again (avatars retry every frame).
+static struct { int model; uint64_t at, again; } s_ModelReq[64];
+static int ModelReqSlot(int model, bool add)
+{
+    int freeIdx = -1, oldest = 0;
+    for(int i = 0; i < 64; ++i)
+    {
+        if(s_ModelReq[i].model == model && s_ModelReq[i].at) return i;
+        if(!s_ModelReq[i].at && freeIdx < 0) freeIdx = i;
+        if(s_ModelReq[i].at < s_ModelReq[oldest].at) oldest = i;
+    }
+    if(!add) return -1;
+    int i = freeIdx >= 0 ? freeIdx : oldest;
+    s_ModelReq[i].model = model; s_ModelReq[i].at = s_ModelReq[i].again = MP_NowMs();
+    return i;
+}
+int Game::ModelStatus(int model)
+{
+    if(!IsKnownModel(model)) return -1;
+    if(CALLSCM(HAS_MODEL_LOADED, model)) { int i = ModelReqSlot(model, false); if(i >= 0) s_ModelReq[i].at = 0; return 1; }
+    int i = ModelReqSlot(model, false);
+    if(i < 0) { ModelReqSlot(model, true); CALLSCM(REQUEST_MODEL, model); return 0; }
+    uint64_t now = MP_NowMs();
+    if(now - s_ModelReq[i].at > 10000) { s_ModelReq[i].at = 0; return -1; }   // 10 s and still not in: give up (caller falls back)
+    if(now - s_ModelReq[i].again > 1000) { s_ModelReq[i].again = now; CALLSCM(REQUEST_MODEL, model); }   // ask again 1x a second (a mod may have dropped it)
+    return 0;
+}
+bool Game::LoadModel(int model) { return ModelStatus(model) == 1; }
+bool Game::LoadModelNow(int model)
 {
     if(!IsKnownModel(model)) return false;   // 2.24
     if(!CALLSCM(HAS_MODEL_LOADED, model))
@@ -376,14 +410,19 @@ int Game::CreateRemotePed(int model, const Vec3& p0)
                 return (int)ped;
             }
         }
+        if(SpecialSkinPending(model)) return 0;   // 3.32: streaming in, the avatar is retried next frame
         model = 106;   // no free slot right now / not in this game's files
     }
     if(!IsSafePedModel(model)) model = 106;
-    if(!LoadModel(model))
+    int st = ModelStatus(model);   // 3.32: non-blocking; 0 = still streaming in -> no ped this frame, retried next frame
+    if(st == 0) return 0;
+    if(st < 0)
     {
         if(model > 0 && model < 320) s_BadModel[model] = 1;
         model = 106;
-        if(!LoadModel(model)) { model = 105; if(!LoadModel(model)) return 0; }   // fallback: Grove Street Families member
+        st = ModelStatus(model);
+        if(st < 0) { model = 105; st = ModelStatus(model); }   // fallback: Grove Street Families member
+        if(st != 1) return 0;
     }
     uint32_t ped = 0;
     CALLSCM(CREATE_CHAR, 24 /* PEDTYPE_MISSION1 */, model, p.x, p.y, p.z - 1.0f, &ped);
@@ -424,16 +463,17 @@ int Game::CreateRemoteClothedCJ(const PktClothes& c, const Vec3& p0)
 
 void Game::DeleteChar(int ped) { if(ped > 0) CALLSCM(DELETE_CHAR, ped); }
 
-void Game::GiveAndSelectWeapon(int ped, int weapon)
+bool Game::GiveAndSelectWeapon(int ped, int weapon)
 {
-    if(ped <= 0 || !PedPtr(ped)) return;   // 2.19.1: never on a ped that is gone (crash in CPed::GiveWeapon)
+    if(ped <= 0 || !PedPtr(ped)) return true;   // 2.19.1: never on a ped that is gone (crash in CPed::GiveWeapon)
     if(weapon < 0 || weapon > 46) return;   // 2.19.1: only real weapon ids
     // 2.26: crash in CPed::GiveWeapon (libGTASA + 0x49F61E). 19-21 are empty weapon slots in SA
     // (no weapon info); 44/45 goggles and 46 parachute need player data, which another
     // player's avatar (a normal ped) doesn't have. A weapon whose model isn't loaded (weapon
     // mods / replaced .dff, streaming full) is never given either.
-    if(weapon >= 19 && weapon <= 21) return;
-    if(weapon >= 44 && ped != LocalPed()) weapon = 0;
+    if(weapon >= 19 && weapon <= 21) return true;
+    bool local = ped == LocalPed();
+    if(weapon >= 44 && !local) weapon = 0;
     static uint8_t s_BadWeapon[47] = {0};
     if(weapon > 0)
     {
@@ -442,11 +482,19 @@ void Game::GiveAndSelectWeapon(int ped, int weapon)
         {
             uint32_t model = 0;
             CALLSCM(GET_WEAPONTYPE_MODEL, weapon, &model);
-            if((int)model <= 0 || !LoadModel((int)model) || !PedPtr(ped)) { ++s_BadWeapon[weapon]; return; }
+            if((int)model <= 0) { ++s_BadWeapon[weapon]; return true; }
+            if(local) { if(!LoadModelNow((int)model) || !PedPtr(ped)) { ++s_BadWeapon[weapon]; return true; } }
+            else
+            {   // 3.32: another player's weapon streams in the background (no LOAD_ALL_MODELS_NOW mid-frame)
+                int st = ModelStatus((int)model);
+                if(st == 0) return false;
+                if(st < 0 || !PedPtr(ped)) { ++s_BadWeapon[weapon]; return true; }
+            }
             CALLSCM(GIVE_WEAPON_TO_CHAR, ped, weapon, 9999);
         }
     }
     CALLSCM(SET_CURRENT_CHAR_WEAPON, ped, weapon);
+    return true;
 }
 
 // 3.21: safe zones - put the weapon away (the weapon stays in the inventory) / no drive-by
@@ -468,10 +516,10 @@ void Game::TaskAimAt(int ped, const Vec3& p0, int t) { Vec3 p = p0; if(!MP_World
 void Game::TaskDuck(int ped, bool d) { CALLSCM(TASK_TOGGLE_DUCK, ped, d ? 1 : 0); }
 void Game::TaskDie(int ped) { CALLSCM(TASK_DIE, ped); }
 
-int Game::CreateCar(int model, const Vec3& p0)
+int Game::CreateCar(int model, const Vec3& p0, bool now)
 {
     Vec3 p = p0; if(!MP_WorldPos(p)) return 0;   // 2.33
-    if(model < 400 || model > 611 || !LoadModel(model)) return 0;
+    if(model < 400 || model > 611 || !(now ? LoadModelNow(model) : LoadModel(model))) return 0;
     uint32_t car = 0;
     CALLSCM(CREATE_CAR, model, p.x, p.y, p.z, &car);
     CALLSCM(MARK_MODEL_AS_NO_LONGER_NEEDED, model);

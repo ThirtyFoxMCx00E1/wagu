@@ -34,7 +34,7 @@ bool Game::SetLocalModel(int model)
 {
     int ped = LocalPed(); if(ped <= 0) return false;
     if(model != 0 && !IsSafePedModel(model)) return false;
-    if(model != 0 && !LoadModel(model)) return false;
+    if(model != 0 && !LoadModelNow(model)) return false;   // your own skin change: one model, blocking is fine
     if(IsCharInAnyCar(ped)) return false;   // the game swaps the model only on foot
     CALLSCM(SET_PLAYER_MODEL, 0, model);
     if(model == 0) CALLSCM(BUILD_PLAYER_MODEL, 0);   // CJ: put his clothes back on

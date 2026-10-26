@@ -34,7 +34,6 @@ uint64_t MP_NowMs();   // 3.21 (net/server.cpp)
 DEFOPCODE(023C, LOAD_SPECIAL_CHARACTER, is);
 DEFOPCODE(023D, HAS_SPECIAL_CHARACTER_LOADED, i);
 DEFOPCODE(0665, GET_CHAR_MODEL, iv);
-DEFOPCODE(038B, LOAD_ALL_MODELS_NOW_SK, );
 
 struct SpecialChar { int skin; const char* name; const char* label; };
 static const SpecialChar kSpecials[] =
@@ -142,7 +141,21 @@ static int LoadSpecial(const SpecialChar* sc, int& slotOut)
     {
         int s = kMpSlots[k];
         if(!strcasecmp(s_SlotName[s], sc->name) && CALLSCM(HAS_SPECIAL_CHARACTER_LOADED, s))
-        { slotOut = s; s_SlotUse[s] = ++s_nUseTick; return 289 + s; }
+        { s_SlotLoadAt[s] = 0; slotOut = s; s_SlotUse[s] = ++s_nUseTick; return 289 + s; }
+    }
+    // 3.32: already streaming in for us (no LOAD_ALL_MODELS_NOW any more - see Game::LoadModel)
+    uint64_t nowMs = MP_NowMs();
+    for(int k = 0; k < MP_SLOT_COUNT; ++k)
+    {
+        int s = kMpSlots[k];
+        if(!s_SlotLoadAt[s] || !s_SlotOurs[s] || strcasecmp(s_SlotName[s], sc->name)) continue;
+        if(nowMs - s_SlotLoadAt[s] > 20000)
+        {
+            s_SlotLoadAt[s] = 0; s_SlotName[s][0] = 0; s_SlotOurs[s] = false;
+            logger->Info("Skins: couldn't load special character '%s'", sc->name);
+            s_BadSpecial[idx] = true;
+        }
+        return 0;   // still loading: the avatar is retried next frame
     }
     // a free slot: never loaded, or ours with no avatar on it any more; oldest first
     int best = -1;
@@ -152,23 +165,29 @@ static int LoadSpecial(const SpecialChar* sc, int& slotOut)
         bool foreign = s_SlotName[s][0] && !s_SlotOurs[s];   // a mission put someone there
         if(foreign && CALLSCM(HAS_SPECIAL_CHARACTER_LOADED, s)) continue;
         if(SlotLivePeds(s) > 0) continue;
+        if(s_SlotLoadAt[s]) continue;   // 3.32: another skin / outfit is streaming into this slot
         if(best < 0 || s_SlotUse[s] < s_SlotUse[best]) best = s;
     }
     if(best < 0) return 0;
     CALLSCM(LOAD_SPECIAL_CHARACTER, best, sc->name);
-    CALLSCM(LOAD_ALL_MODELS_NOW_SK);
     strncpy(s_SlotName[best], sc->name, sizeof(s_SlotName[best]) - 1);
     s_SlotOurs[best] = true;
     s_SlotOutfit[best] = 0;
     s_SlotUse[best] = ++s_nUseTick;
-    if(!CALLSCM(HAS_SPECIAL_CHARACTER_LOADED, best))
+    s_SlotLoadAt[best] = nowMs ? nowMs : 1;
+    return 0;   // 3.32: streams in over the next frames; the first loop above returns it once loaded
+}
+
+bool Game::SpecialSkinPending(int skin)
+{
+    const SpecialChar* sc = SpecialBySkin(skin);
+    if(!sc) return false;
+    for(int k = 0; k < MP_SLOT_COUNT; ++k)
     {
-        logger->Info("Skins: couldn't load special character '%s'", sc->name);
-        s_BadSpecial[idx] = true;
-        return 0;
+        int s = kMpSlots[k];
+        if(s_SlotLoadAt[s] && s_SlotOurs[s] && !strcasecmp(s_SlotName[s], sc->name)) return true;
     }
-    slotOut = best;
-    return 289 + best;
+    return false;
 }
 
 // called by CreateRemotePed: real model for a network skin (special characters loaded here)
@@ -333,6 +352,7 @@ int Game::ModelForClothes(const PktClothes& c0, int& slotOut)
         bool foreign = s_SlotName[s][0] && !s_SlotOurs[s];
         if(foreign && CALLSCM(HAS_SPECIAL_CHARACTER_LOADED, s)) continue;
         if(SlotLivePeds(s) > 0) continue;   // never rebuild a model under a live ped
+        if(s_SlotLoadAt[s] && strcasecmp(s_SlotName[s], "csplay")) continue;   // 3.32: a special skin is streaming in here
         if(best < 0 || s_SlotUse[s] < s_SlotUse[best]) best = s;
     }
     // 3.21: crash log CBaseModelInfo::SetColModel (this = NULL) <- CStreaming::LoadAllRequestedModels
@@ -345,7 +365,8 @@ int Game::ModelForClothes(const PktClothes& c0, int& slotOut)
     {
         int s = kMpSlots[k];
         if(!s_SlotLoadAt[s]) continue;
-        if(!s_SlotOurs[s] || strcasecmp(s_SlotName[s], "csplay") || SlotLivePeds(s) > 0) { s_SlotLoadAt[s] = 0; continue; }
+        if(s_SlotOurs[s] && strcasecmp(s_SlotName[s], "csplay")) continue;   // 3.32: a special skin's load, not ours
+        if(!s_SlotOurs[s] || SlotLivePeds(s) > 0) { s_SlotLoadAt[s] = 0; continue; }
         best = s; break;   // already streaming csplay for us: use that slot
     }
     if(best < 0) return 0;
