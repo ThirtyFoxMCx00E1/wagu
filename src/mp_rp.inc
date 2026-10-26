@@ -1326,7 +1326,7 @@ static void RpDrawLobby(float now)
     ImDrawList* bg = ImGui::GetBackgroundDrawList();
     RpDrawLogo(bg, ds.x * 0.5f, ds.y * 0.08f, 1.7f, now);
     char t[128];
-    if(!s_Rp.haveMe) { BcwCenterText(bg, UI::S(28), ds.y * 0.45f, RpCol(RP_SKY, 1), "Connecting to the city..."); return; }
+    if(!s_Rp.haveMe) return;   // 3.28.2: no "Connecting to the city..." text while the citizen data loads
     if(RpHasHome()) { snprintf(t, sizeof(t), "Going home: %s", g_RpHouses[s_Rp.me.house].addr); BcwCenterText(bg, UI::S(28), ds.y * 0.45f, RpCol(RP_SKY, 1), t); return; }
     BcwCenterText(bg, UI::S(30), ds.y * 0.40f, IM_COL32_WHITE, "LOBBY HUB  -  MEGA VIL PLAZA");
     snprintf(t, sizeof(t), "Level %d  |  Cash $%d  |  Bank $%d  |  Phone %d", s_Rp.me.level, s_Rp.me.cash, s_Rp.me.bank, s_Rp.me.number);

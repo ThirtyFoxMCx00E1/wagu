@@ -36,7 +36,7 @@ static void AuthAccountPath(char* out, size_t n) { snprintf(out, n, "%s/account.
 // after a game restart (you type the password), so no token is kept; an old login= line is removed the next
 // time the game connects. Set AUTH_AUTOLOGIN_AT_START to true to bring the 3.22 auto login back.
 // (A reconnect inside the same game session still needs no screen: its session lives in memory.)
-static const bool AUTH_AUTOLOGIN_AT_START = false;
+static const bool AUTH_AUTOLOGIN_AT_START = true;    // 3.28.2: back on - log in once per phone, then the game logs in by itself (Mega Vil: no login screen every start)
 static std::string s_szAuthSavedTok;
 static std::string AuthAccountValue(const char* key)
 {

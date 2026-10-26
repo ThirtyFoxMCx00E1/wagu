@@ -46,6 +46,10 @@ It builds `mp_server` on the phone and runs it 24/7 in the internet lobby (free 
 
 ## Changelog
 
+- **3.28.2**: No more **"Connecting to the city..."** text on Mega Vil, and the game **remembers your login** again (log in once per phone).
+  - Mega Vil: the "Connecting to the city..." text is gone. Note: Mega Vil needs the broker / server online - while it is offline the city data cannot arrive.
+  - Login: remember me is back on (AUTH_AUTOLOGIN_AT_START). Log in once on a phone, then the game logs in by itself on every start.
+  - Plays with 3.28.1, 3.28, 3.27 and the other supported versions.
 - **3.28.1**: Fixes the **broken / scrambled UI** of 3.28 (every menu, the HUD and the radar came out as stretched triangles).
   - Fixed: in 3.28 the whole MP UI (HUD, radar, menus, text) was drawn as stretched, glitching triangles. The new batched drawing passed 32-bit indices to the game, but the game's `RwIm2DRenderIndexedPrimitive` reads 16-bit ones (its symbol ends in `Pti`, an `unsigned short*`), so every index was read as two wrong ones. The batches use 16-bit indices now, and each batch keeps its own indices until the frame is drawn. Checked with a test that replays 200 random draw lists the way the game reads them: every triangle matches.
   - The 32-bit freeze fix and the Mega Vil HUD changes of 3.28 stay. Everyone on 3.28 should update - 3.28.1 plays with 3.28, 3.27 and the other supported versions.
