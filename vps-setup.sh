@@ -3,12 +3,18 @@
 #   curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-setup.sh | sudo bash
 # Same as: apt install git + clone + install.sh --region Asia --domain mpsamp.duckdns.org --bridge,
 # then the mod / website passwords from the public regions.txt (so every phone connects with no change),
-# then update.sh. Change the region / domain:  ... | sudo REGION=Europe DOMAIN=eusamp.duckdns.org bash
+# then update.sh. Other regions:  ... | sudo bash -s europe   (or na / oceania; domain eusamp / nasamp / ocsamp.duckdns.org)
 # Point the DuckDNS name at this VPS's IP first (duckdns.org -> update ip), and open the ports
 # (TCP 1883 8883 8884, UDP 1932 + the other server ports in the README).
 set -euo pipefail
-REGION="${REGION:-Asia}"
-DOMAIN="${DOMAIN:-mpsamp.duckdns.org}"
+# region: first argument (curl ... | sudo bash -s europe) or REGION=; asia (default) europe na oceania
+REGION="${1:-${REGION:-Asia}}"
+case "$(printf '%s' "$REGION" | tr 'A-Z' 'a-z')" in
+  asia|as) REGION=Asia; D=mpsamp;; europe|eu) REGION=Europe; D=eusamp;;
+  na|us|"north america") REGION=NA; D=nasamp;; oceania|oc|au) REGION=Oceania; D=ocsamp;;
+  *) printf 'region must be asia, europe, na or oceania (got %s)\n' "$REGION" >&2; exit 1;;
+esac
+DOMAIN="${DOMAIN:-$D.duckdns.org}"
 EMAIL="${EMAIL:-mrfoxmanking@gmail.com}"
 BRIDGE="${BRIDGE:-1}"
 say() { printf '\033[1;32m[mp-setup]\033[0m %s\n' "$*"; }

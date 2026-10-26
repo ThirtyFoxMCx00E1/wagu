@@ -22,13 +22,22 @@ Game traffic stays inside one region (no bridging), so ping is only phone -> nea
 
 ## One command (3.28.2)
 
-On a new VPS (Ubuntu 22.04 / 24.04 or Debian 12), as root - installs everything for Asia on `mpsamp.duckdns.org` with the bridge, uses the passwords from the public regions.txt (phones connect with no change) and starts the 24/7 servers, Mega Vil Futuristic included:
+On a new VPS (Ubuntu 22.04 / 24.04 or Debian 12), as root - installs everything for a region (Asia on `mpsamp.duckdns.org` by default) with the bridge, uses the passwords from the public regions.txt (phones connect with no change) and starts the 24/7 servers, Mega Vil Futuristic included:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-setup.sh | sudo bash
 ```
 
-Another region: `curl -fsSL .../vps-setup.sh | sudo REGION=Europe DOMAIN=eusamp.duckdns.org BRIDGE=0 bash`. From Termux on a phone: `pkg install -y openssh && ssh root@YOUR_VPS_IP "curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-setup.sh | bash"`. Point the DuckDNS name at the VPS first and open the ports (see Cloud firewall).
+All four regions (one VPS each):
+
+| Region | DuckDNS | On the VPS |
+|---|---|---|
+| Asia | mpsamp.duckdns.org | `curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-setup.sh \| sudo bash -s asia` |
+| Europe | eusamp.duckdns.org | `curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-setup.sh \| sudo bash -s europe` |
+| NA | nasamp.duckdns.org | `curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-setup.sh \| sudo bash -s na` |
+| Oceania | ocsamp.duckdns.org | `curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-setup.sh \| sudo bash -s oceania` |
+
+From Termux on a phone: `pkg install -y openssh && ssh root@YOUR_VPS_IP "curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-setup.sh | bash -s europe"`. Point the DuckDNS name at the VPS first and open the ports (see Cloud firewall).
 
 ## MP 3.21.7: MP Railway - the Discord bot 24/7 on our own server
 
