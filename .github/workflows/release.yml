@@ -1,0 +1,32 @@
+name: Publish release
+# 3.32: makes the GitHub release from the files already committed in bin/ and release/
+# (Actions > Publish release > Run workflow, version = 3.32). Notes = that version's README changelog.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version (e.g. 3.32)"
+        required: true
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          V: ${{ inputs.version }}
+        run: |
+          set -e
+          for f in bin/libMP64.so bin/libMP32.so release/MP-$V-client.zip release/MP-$V-full.zip release/HiveMQ-kit-$V.zip; do test -f "$f"; done
+          python3 - <<'PY' > notes.md
+          import os
+          v = os.environ["V"]; r = open("README.md", encoding="utf-8").read()
+          a = r.index("- **%s**" % v); b = r.find("\n- **", a + 5)
+          print(r[a:b if b > 0 else None])
+          PY
+          gh release delete "v$V" -y --cleanup-tag 2>/dev/null || true
+          gh release create "v$V" -t "MP Multiplayer $V" -F notes.md --latest \
+            bin/libMP64.so bin/libMP32.so release/MP-$V-client.zip release/MP-$V-full.zip release/HiveMQ-kit-$V.zip
