@@ -6,6 +6,7 @@
 #include "game.h"
 #include "scripting.h"
 #include "net/protocol.h"
+uint64_t MP_NowMs();   // net/server.cpp (3.32: model streaming timers)
 #include "../../imgui/RW/RenderWare.h"
 
 extern RsGlobalType* RsGlobal;
