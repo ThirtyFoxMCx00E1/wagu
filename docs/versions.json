@@ -1,6 +1,7 @@
 {
-"latest": "3.31",
+"latest": "3.32",
 "supported": [
+"3.32",
 "3.31",
 "3.30",
 "3.29",
@@ -41,6 +42,19 @@
 "3.04.6"
 ],
 "versions": [
+{
+"v": "3.32",
+"summary": "Fixes the **freeze when people join** a server and the **crash in CStreaming::GetNextFileOnCd** (SIGSEGV with ZyZ Limit Adjuster), plus the new **MP Oracle** page.",
+"items": [
+"Other players' skins, clothes, cars, weapons, pickups and projectiles now stream in the background (REQUEST_MODEL) instead of LOAD_ALL_MODELS_NOW, which stopped the whole game for every player that joined and crashed inside ZyZ Limit Adjuster's streaming hook.",
+"Story-character skins (Sweet, Cesar, ...) load into their slot in the background too; the avatar appears as soon as the model is in.",
+"New players appear one every 60 ms instead of all in the same frame (a full server joining no longer hitches).",
+"Your own skin change, /spawn and game loadouts still load right away.",
+"The mod list in crash logs now says 3.32 (it said 3.04.6 / 3.21.6).",
+"Website: MP Oracle page (oracle.html) - paste the Oracle API key config once, it saves the encrypted HiveMQ secrets and runs MP Oracle claim, then shows the server IP.",
+"Plays with 3.31 and the other supported versions (no server change)."
+]
+},
 {
 "v": "3.31",
 "summary": "The bag now uses the **PLAYER INFO + INVENTORY layout from the screenshot**, and the **ATM is in the Mega Vil style** (same real ATM layout).",
