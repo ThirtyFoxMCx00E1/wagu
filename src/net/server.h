@@ -305,12 +305,17 @@ private:
         int32_t  fineAsk; uint8_t fineFrom;
         int32_t  lastCash, lastBank; uint8_t lastJob, lastHunger, lastThirst; uint16_t lastJail;
         RpInvSlot inv[RP_INV_SLOTS]; uint64_t lastInv;   // 3.26: the bag
+        // 3.29: investments (units: worth = units * price / 1000), marriage, seatbelt
+        int64_t  invU[RPN_COUNT]; uint64_t lastInvest;
+        bool     belt; uint8_t proposeFrom; uint64_t proposeAt;   // proposeFrom = slot + 1
+        char     spouse[24], spouseKey[40];
     };
     struct RpSaved
     {
         int32_t cash = 0, bank = 0, xp = 0, number = 0; uint8_t job = 0, house = 255, pet = 255, hunger = 100, thirst = 100, nveh = 0;
         uint32_t playMin = 0, pets = 0, items = 0, t = 0; uint16_t veh[RP_VEH_SLOTS] = {}, skin = 0, tasks = 0;
         RpInvSlot inv[RP_INV_SLOTS] = {};   // 3.26
+        int64_t invU[RPN_COUNT] = {}; std::string spouse, spouseKey;   // 3.29
     };
     RpSrvPlayer  m_Rp[MP_MAX_PLAYERS];
     std::map<std::string, RpSaved> m_RpSaved;
@@ -320,6 +325,7 @@ private:
     uint8_t      m_nRpEvKind = 0, m_nRpEvState = 0, m_nRpEvNext = 1;
     float        m_fRpEvPos[3] = { 0, 0, 0 };
     int32_t      m_nRpLottoPot = 25000;
+    float        m_fRpMarket[RPN_COUNT] = { 1000.0f, 1000.0f, 1000.0f }; int16_t m_nRpMarketChg[RPN_COUNT] = {}; uint64_t m_nRpMarketAt = 0;   // 3.29
     bool         m_bRpDirty = false;
     void RpReset();
     void RpLoad();

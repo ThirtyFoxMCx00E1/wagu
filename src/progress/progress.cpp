@@ -238,8 +238,17 @@ static int LoadDone(uint64_t now, bool canLoad)
     return 0;
 }
 
+static bool s_bHold = false;
+void Progress::SetHold(bool hold) { s_bHold = hold; }
 void Progress::Process(uint64_t now, bool enabled, bool onDefault, bool connectedElsewhere, bool canLoad)
 {
+    if(s_bHold && (s_Phase == PH_IDLE || s_Phase == PH_WAIT || s_Phase == PH_ACTIVE))
+    {   // 3.29: on Mega Vil no save is loaded or swapped (the server's day + weather would jump)
+        if(s_Phase == PH_WAIT) s_Phase = PH_IDLE;
+        if(s_Phase == PH_ACTIVE) s_nOffDefaultAt = 0;
+        snprintf(s_szStatus, sizeof(s_szStatus), "Blocked on Mega Vil Futuristic (the server sets day + weather)");
+        return;
+    }
     switch(s_Phase)
     {
         case PH_IDLE:

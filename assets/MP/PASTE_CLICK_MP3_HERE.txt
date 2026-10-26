@@ -1,0 +1,8 @@
+MP 3.29 - paste your 3 click sounds into this folder (assets/MP, on the phone: the MP folder next to sound_010.mp3):
+
+  click.mp3   - every UI button (panel, bag, talk menu, team buttons)
+  click2.mp3  - phone taps (Mega Vil Futuristic roleplay phone)
+  click3.mp3  - a "Received" item card (Mega Vil Futuristic roleplay)
+
+Names must be exactly these (lower case, .mp3). Keep them short (under 1 second).
+A missing file is just silent - nothing breaks.

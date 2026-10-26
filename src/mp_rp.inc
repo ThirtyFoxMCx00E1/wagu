@@ -16,8 +16,43 @@
 
 static const uint32_t RP_UI_SKY  = RP_SKY;
 static const uint32_t RP_UI_DARK = 0x07111FFF;
-static const Vec3 kRpLobbyCam  = { 1424.0f, -1625.0f, 62.0f };   // over the Lobby Hub (Pershing Square)
-static const Vec3 kRpLobbyLook = { 1479.6f, -1690.0f, 18.0f };
+// 3.29: click sounds from the MP folder (assets/MP; see PASTE_CLICK_MP3_HERE.txt):
+//   click.mp3 = UI buttons, click2.mp3 = phone taps, click3.mp3 = a "Received" item card
+enum { RPS_CLICK = 0, RPS_PHONE, RPS_CARD };
+static void RpClick(int which)
+{
+    static const char* const kFile[3] = { "click.mp3", "click2.mp3", "click3.mp3" };
+    if(which < 0 || which > 2 || !s_szDataDir[0]) return;
+    char snd[512]; snprintf(snd, sizeof(snd), "%s/%s", s_szDataDir, kFile[which]);
+    Sound::PlayUi(snd, 1.0f);
+}
+static bool RpLifeCommand(const char* cmd, const char* arg);   // mp_rp_life.inc
+static void RpLifeProcess(int ped, uint64_t now, bool engaged);
+static void RpInfoDraw(ImDrawList* dl);
+static void RpDrawAtm(uint64_t nowMs);
+static void MpUiClick() { RpClick(RPS_CLICK); }
+// 3.29: an outlined button - no background, white outline, white text with a shadow (NPC talk menu)
+static bool RpOutlineButton(const char* label, ImVec2 size)
+{
+    ImVec2 a = ImGui::GetCursorScreenPos();
+    bool r = ImGui::InvisibleButton(label, size), down = ImGui::IsItemActive();
+    ImDrawList* dl = ImGui::GetWindowDrawList();
+    ImVec2 b(a.x + size.x, a.y + size.y); float rr = UI::S(14);
+    if(down) dl->AddRectFilled(a, b, IM_COL32(255, 255, 255, 60), rr);
+    dl->AddRect(a, b, IM_COL32(0, 0, 0, 110), rr, 0, UI::S(5));      // soft dark edge so it reads on bright sky
+    dl->AddRect(a, b, IM_COL32_WHITE, rr, 0, UI::S(2.5f));
+    const char* end = strstr(label, "##");
+    float fs = UI::S(26) * (ImGui::GetFont() && ImGui::GetFont()->FontSize > 0 ? ImGui::GetFontSize() / ImGui::GetFont()->FontSize : 1.0f);
+    ImVec2 ts = UI::Font()->CalcTextSizeA(fs, FLT_MAX, 0, label, end);
+    ImVec2 p(a.x + (size.x - ts.x) * 0.5f, a.y + (size.y - ts.y) * 0.5f);
+    dl->AddText(UI::Font(), fs, ImVec2(p.x + UI::S(2), p.y + UI::S(2)), IM_COL32(0, 0, 0, 200), label, end);
+    dl->AddText(UI::Font(), fs, p, IM_COL32_WHITE, label, end);
+    ImGui::Dummy(ImVec2(0, UI::S(12)));
+    if(r) RpClick(RPS_CLICK);
+    return r;
+}
+static const Vec3 kRpLobbyCam  = { 1463.4f, -1673.4f, 20.5f };   // 3.29: low over Mega Vil Plaza, facing the info people
+static const Vec3 kRpLobbyLook = { 1481.6f, -1692.0f, 15.2f };
 static const Vec3 kRpJailCell  = { 264.0f, 77.6f, 1001.04f };    // LSPD cells (interior 6)
 #define RP_JAIL_AREA 6
 
@@ -512,22 +547,24 @@ static void RpDrawTalk(float now)
     if(!s_Rp.talkPed || s_Rp.talkStage == 0 || s_Rp.talkStage == 3) return;
     // 3D marker over the person
     Vec3 pp; if(Game::GetCharPos(s_Rp.talkPed, pp)) BcwLabel3D(ImGui::GetBackgroundDrawList(), { pp.x, pp.y, pp.z + 1.25f }, s_Rp.talkStage == 1 ? "[ ! ]" : "...", RP_SKY, 34.0f, 6.0f);
-    const float bw = UI::S(330), bh = UI::S(66), gap = UI::S(12);
+    // 3.29: Talk / Nevermind / topics - no background, white outline, one button per line, a bit right of centre
+    const float bw = UI::S(330), bh = UI::S(62), gap = UI::S(12);
+    const float tx = ds.x * 0.62f;
     if(s_Rp.talkStage == 1)
     {
-        BcwBeginOverlay("##RpTalk", ImVec2(ds.x * 0.5f - bw - gap * 0.5f - UI::S(18), ds.y * 0.80f), ImVec2(bw * 2 + gap + UI::S(36), bh + UI::S(28)), 0.0f);
-        if(BcwTeamButton("Talk##rpt", RP_SKY, ImVec2(bw, bh), true, false)) RpTalkChoose(100);
-        ImGui::SameLine(0, gap);
-        if(BcwTeamButton("Nevermind##rpn", 0x0C4A6EFF, ImVec2(bw, bh), false, false)) RpTalkChoose(-1);
+        float h = bh * 2 + gap;
+        BcwBeginOverlay("##RpTalk", ImVec2(tx, ds.y * 0.5f - h * 0.5f), ImVec2(bw + UI::S(36), h + UI::S(28)), 0.0f);
+        if(RpOutlineButton("Talk##rpt", ImVec2(bw, bh))) RpTalkChoose(100);
+        if(RpOutlineButton("Nevermind##rpn", ImVec2(bw, bh))) RpTalkChoose(-1);
         BcwEndOverlay();
     }
     else if(s_Rp.talkStage == 2)
     {
         int rows = RP_TOPICS + 1; float h = rows * (UI::S(56) + gap) + UI::S(20);
-        BcwBeginOverlay("##RpTalk2", ImVec2(ds.x - bw - UI::S(60), ds.y * 0.5f - h * 0.5f), ImVec2(bw + UI::S(36), h + UI::S(10)), 0.0f);
+        BcwBeginOverlay("##RpTalk2", ImVec2(tx, ds.y * 0.5f - h * 0.5f), ImVec2(bw + UI::S(36), h + UI::S(10)), 0.0f);
         ImGui::SetWindowFontScale(0.85f);
-        for(int i = 0; i < RP_TOPICS; ++i) { char l[64]; snprintf(l, sizeof(l), "%s##tp%d", kRpTopics[i].option, i); if(BcwTeamButton(l, RP_SKY, ImVec2(bw, UI::S(56)), false, false)) RpTalkChoose(i); }
-        if(BcwTeamButton("Goodbye##tpb", 0x0C4A6EFF, ImVec2(bw, UI::S(56)), false, false)) RpTalkChoose(-1);
+        for(int i = 0; i < RP_TOPICS; ++i) { char l[64]; snprintf(l, sizeof(l), "%s##tp%d", kRpTopics[i].option, i); if(RpOutlineButton(l, ImVec2(bw, UI::S(56)))) RpTalkChoose(i); }
+        if(RpOutlineButton("Goodbye##tpb", ImVec2(bw, UI::S(56)))) RpTalkChoose(-1);
         ImGui::SetWindowFontScale(1.0f);
         BcwEndOverlay();
     }
@@ -651,8 +688,9 @@ static void RpOnPacket(const uint8_t* d, int len)
     switch(d[0])
     {
     case PKT_RP_STATE:
-        if(len < (int)sizeof(PktRpState)) return;
-        memcpy(&s_Rp.st, d, sizeof(PktRpState)); s_Rp.haveState = true; s_Rp.st.evText[sizeof(s_Rp.st.evText) - 1] = 0;
+        if(len < (int)offsetof(PktRpState, market)) return;   // 3.29: a 3.28 server sends no market
+        memset(&s_Rp.st, 0, sizeof(PktRpState));
+        memcpy(&s_Rp.st, d, len < (int)sizeof(PktRpState) ? len : sizeof(PktRpState)); s_Rp.haveState = true; s_Rp.st.evText[sizeof(s_Rp.st.evText) - 1] = 0;
         break;
     case PKT_RP_PLAYERS:
     {
@@ -668,10 +706,11 @@ static void RpOnPacket(const uint8_t* d, int len)
     }
     case PKT_RP_ME:
     {
-        if(len < (int)sizeof(PktRpMe)) return;
+        if(len < (int)offsetof(PktRpMe, invest)) return;   // 3.29: a 3.28 server sends the shorter one
         if(!s_Rp.haveMe) RpCardsSend();
         PktRpMe old = s_Rp.me; bool had = s_Rp.haveMe;
-        memcpy(&s_Rp.me, d, sizeof(PktRpMe)); s_Rp.haveMe = true;
+        memset(&s_Rp.me, 0, sizeof(PktRpMe));
+        memcpy(&s_Rp.me, d, len < (int)sizeof(PktRpMe) ? len : sizeof(PktRpMe)); s_Rp.me.spouse[sizeof(s_Rp.me.spouse) - 1] = 0; s_Rp.haveMe = true;
         s_nMyScore = s_Rp.me.level;
         RpSyncMoney();
         if(s_Rp.me.jobOn && !s_Rp.tgtOn && (s_Rp.me.target[0] != 0.0f || s_Rp.me.target[1] != 0.0f)) RpSetTarget(s_Rp.me.target, g_RpJobs[s_Rp.me.job].col, g_RpJobs[s_Rp.me.job].name);
@@ -819,6 +858,7 @@ static void RpProcess(int ped, uint64_t now)
     if(!RpOnServer())
     {
         if(s_Rp.engaged) RpShutdown();
+        RpLifeProcess(ped, now, false);   // 3.29
         return;
     }
     if(!s_Rp.engaged)
@@ -828,6 +868,7 @@ static void RpProcess(int ped, uint64_t now)
         RpEnterLobby(ped);
     }
     RpNoWanted(now);
+    RpLifeProcess(ped, now, true);   // 3.29: ATM machines, plaza info people, welcome
     static uint64_t s_Last = 0; float dt = s_Last ? (now - s_Last) / 1000.0f : 0.0f; if(dt > 0.25f) dt = 0.25f; s_Last = now;
     if(ped <= 0) return;
     if(s_Rp.view == 1)
@@ -971,6 +1012,7 @@ static bool RpCommand(const char* cmd, const char* arg)
     const uint64_t now = MP_NowMs();
     int id = -1; const char* rest = "";
     #define IS(x) (!strcmp(cmd, x))
+    if(RpLifeCommand(cmd, arg)) return true;   // 3.29: mp_rp_life.inc
     // ---- talking ----
     if(IS("me"))    { RpChat(RPH_ME, arg); return true; }
     if(IS("do"))    { RpChat(RPH_DO, arg); return true; }
@@ -1093,6 +1135,7 @@ static bool RpCommand(const char* cmd, const char* arg)
     if(IS("accept"))
     {
         if(!strncasecmp(arg, "fine", 4) || !strncasecmp(arg, "ticket", 6)) { RpSend(RPC_ACCEPT, 1); return true; }
+        if(!strncasecmp(arg, "marry", 5) || !strncasecmp(arg, "propos", 6) || !strncasecmp(arg, "wedding", 7)) { RpSend(RPC_ACCEPT, 2); return true; }
         RpSend(RPC_ACCEPT, 0); s_Rp.askFrom = -1; return true;
     }
     if(IS("flip") || IS("coinflip") || IS("coin")) { RpSend(RPC_COINFLIP); return true; }
@@ -1289,6 +1332,7 @@ static void RpDrawHud(ImDrawList* dl, float now, uint64_t nowMs)
 static void RpDrawWorld(ImDrawList* dl, float now)
 {
     if(s_Rp.view != 2) return;
+    RpInfoDraw(dl);   // 3.29: plaza info people
     char t[96];
     for(int i = 0; i < RP_PLACE_COUNT; ++i)
     {
@@ -1328,9 +1372,9 @@ static void RpDrawLobby(float now)
     char t[128];
     if(!s_Rp.haveMe) return;   // 3.28.2: no "Connecting to the city..." text while the citizen data loads
     if(RpHasHome()) { snprintf(t, sizeof(t), "Going home: %s", g_RpHouses[s_Rp.me.house].addr); BcwCenterText(bg, UI::S(28), ds.y * 0.45f, RpCol(RP_SKY, 1), t); return; }
-    BcwCenterText(bg, UI::S(30), ds.y * 0.40f, IM_COL32_WHITE, "LOBBY HUB  -  MEGA VIL PLAZA");
+    BcwCenterText(bg, UI::S(30), ds.y * 0.215f, IM_COL32_WHITE, "LOBBY HUB  -  MEGA VIL PLAZA");
     snprintf(t, sizeof(t), "Level %d  |  Cash $%d  |  Bank $%d  |  Phone %d", s_Rp.me.level, s_Rp.me.cash, s_Rp.me.bank, s_Rp.me.number);
-    BcwCenterText(bg, UI::S(22), ds.y * 0.40f + UI::S(44), RpCol(0xBAE6FDFF, 1), t);
+    BcwCenterText(bg, UI::S(22), ds.y * 0.215f + UI::S(44), RpCol(0xBAE6FDFF, 1), t);
     const float bw = UI::S(420), bh = UI::S(84);
     BcwBeginOverlay("##RpSpawn", ImVec2(ds.x * 0.5f - bw * 0.5f - UI::S(18), ds.y * 0.72f), ImVec2(bw + UI::S(36), bh + UI::S(28)), 0.0f);
     ImGui::SetWindowFontScale(1.1f);
@@ -1360,7 +1404,7 @@ static void RenderRp()
     if(FloatMenu::IsModal()) return;   // 3.25.1: the full-screen MP launcher is open: no Mega Vil HUD / phone / banner over it
     float now = (float)(MP_NowMs() % 100000000ULL);
     uint64_t nowMs = MP_NowMs();
-    if(s_Rp.view == 1) { RpDrawLobby(now); return; }
+    if(s_Rp.view == 1) { if(Game::IsReady()) RpInfoDraw(ImGui::GetBackgroundDrawList()); RpDrawLobby(now); return; }
     if(MP::AuthScreenShown()) return;
     if(Game::IsReady() && !Game::IsPaused()) RpDrawWorld(ImGui::GetBackgroundDrawList(), now);
     if(s_Rp.haveMe && !Game::IsPaused()) RpDrawHud(ImGui::GetForegroundDrawList(), now, nowMs);
@@ -1371,6 +1415,7 @@ static void RenderRp()
         RpDrawAsk();
         RenderRpPhone(now);
         RenderRpInv();     // 3.26: PANEL, player info + bag, documents, "Received" cards
+        RpDrawAtm(nowMs);  // 3.29: the ATM screen
     }
     if(s_Rp.bannerAt && nowMs - s_Rp.bannerAt < 3500)
     {

@@ -1,6 +1,7 @@
 {
-"latest": "3.28.2",
+"latest": "3.29",
 "supported": [
+"3.29",
 "3.28.2",
 "3.28.1",
 "3.28",
@@ -38,6 +39,23 @@
 "3.04.6"
 ],
 "versions": [
+{
+"v": "3.29",
+"summary": "New **bag layout**, **real ATM machines + ATM screen**, **investments**, marriage / seatbelt / pawn, plaza **info people**, click sounds and a welcome message on Mega Vil.",
+"items": [
+"Bag (inventory) in the new layout from the screenshot: a see-through 4 x 4 grid left of you (16 slots, was 15), your name in a red tag, weight in kg, and the actions in a column right of you: Amount, Use, Give, Drop, Close.",
+"Sounds: click.mp3 for UI buttons, click2.mp3 for phone taps, click3.mp3 for a \"Received\" item card. Paste the 3 files into the MP folder (see PASTE_CLICK_MP3_HERE.txt). A missing file is just silent.",
+"ATMs: every ATM is a real ATM machine now (GTA model 2942), not just a ring. Walk into the ring and tap Use ATM: an ATM screen with cash / bank, withdraw and deposit buttons, transfer, and investments. /atm opens it at an ATM.",
+"Ganton ATM moved off the road onto the walk by the gym door.",
+"Invest: one city market with 3 plans - Mega Vil Bond (safe), Holo-Tech Stocks (medium), VilCoin (high risk). Prices move every 5 minutes for everyone. /market, /invest [1-3] [amount], /sellinvest [1-3] [amount or all], or the ATM screen.",
+"From Diverse Roleplay: /propose [id] + /accept marry ($500 wedding), /divorce ($1,000), /seatbelt and /checkseatbelt [id] (police can /fine), /pawn [bag slot] [amount] at a 24/7 or tech shop, /rules.",
+"Lobby: 6 info people stand in Mega Vil Plaza with floating text about the server, rules, jobs, money and invest, phone and panel, and life commands. The lobby camera now looks at them.",
+"A welcome message in the chat when you join Mega Vil Futuristic.",
+"NPC talk: Talk and Nevermind (and the topics) are one per line, a bit right of centre, with no background and a white outline.",
+"Mega Vil: no save is loaded or swapped (no 100% save, no switching back to GTASAsf) and story missions/cutscenes don't take the clock, so the server's day and weather never jump.",
+"Plays with 3.28.2 servers and clients (the new parts need a 3.29 server: run update.sh on the VPS)."
+]
+},
 {
 "v": "3.28.2",
 "summary": "No more **\"Connecting to the city...\"** text on Mega Vil, and the game **remembers your login** again (log in once per phone).",

@@ -909,6 +909,7 @@ static void BcwBeginOverlay(const char* id, ImVec2 pos, ImVec2 size, float bgAlp
     ImGui::Begin(id, nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 }
 static void BcwEndOverlay() { ImGui::End(); ImGui::PopStyleVar(2); ImGui::PopStyleColor(); }
+static void MpUiClick();   // mp_rp.inc
 static bool BcwTeamButton(const char* label, uint32_t rgba, ImVec2 size, bool selected, bool disabled)
 {
     ImVec4 c = ImGui::ColorConvertU32ToFloat4(UI::FromRGBA(rgba));
@@ -923,6 +924,7 @@ static bool BcwTeamButton(const char* label, uint32_t rgba, ImVec2 size, bool se
     bool r = ImGui::Button(label, size);
     if(disabled) ImGui::EndDisabled();
     ImGui::PopStyleColor(5); ImGui::PopStyleVar(2);
+    if(r) MpUiClick();   // 3.29: click.mp3
     return r;
 }
 
