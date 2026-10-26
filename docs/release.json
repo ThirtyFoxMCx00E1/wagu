@@ -6,22 +6,22 @@
  "assets": [
   {
    "name": "bin/libMP32.so",
-   "size": 3833168,
+   "size": 3836784,
    "download_count": 0
   },
   {
    "name": "bin/libMP64.so",
-   "size": 4736352,
+   "size": 4739680,
    "download_count": 0
   },
   {
    "name": "release/MP-3.26-full.zip",
-   "size": 16551777,
+   "size": 16555726,
    "download_count": 0
   },
   {
    "name": "release/MP-3.26-client.zip",
-   "size": 14802021,
+   "size": 14805972,
    "download_count": 0
   },
   {
