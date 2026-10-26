@@ -192,6 +192,8 @@
   };
   function run(line) {
     print('<span class="b">mp@railway:~$</span> ' + esc(line));
+    var deb = window.MPDebian && MPDebian.match(line);
+    if (deb) { MPDebian.lines(deb).forEach(function (l) { p(l[0], l[1]); }); return; }   // 3.31
     var c = ALIAS[line];
     if (!c || !CMDS[c]) { p('r', line.split(' ')[0] + ': command not found'); return; }
     return CMDS[c]();
@@ -202,6 +204,7 @@
   var rot = ['mp-railway status', 'mp-railway logs --tail 20', 'mp-railway status', 'mp-railway commands'], ri = 0, cycles = 0;
   function next() {
     if (boot.length) return { cmd: boot.shift(), why: 'start-up check' };
+    var dj = window.MPDebian && MPDebian.tick(); if (dj) return dj;   // 3.31: the Debian one-line setup
     if (changed) { changed = false; return online() ? { cmd: 'mp-railway status', why: 'the bot came online' } : { cmd: 'mp-railway doctor', why: 'the bot went offline' }; }
     if (events.length - evSeen >= 2) return { cmd: 'mp-railway logs --tail 20', why: (events.length - evSeen) + ' new events' };
     if (Date.now() - lastPing > 120000) return { cmd: 'ping -c 1 $BROKERS', why: 'broker ping every 2 min', wait: 7000 };

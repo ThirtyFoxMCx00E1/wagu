@@ -347,6 +347,7 @@
     print('<span class="g">mp@lobby:~$</span> ' + esc(line));
     if (!line) return;
     var parts = line.split(/\s+/), c = parts[0].toLowerCase().replace(/^\//, '');
+    if (c === 'wget' && window.MPDebian && MPDebian.match(line)) { MPDebian.lines(MPDebian.match(line)).forEach(function (l) { p(l[0], l[1]); }); return; }
     if (c === 'curl' && /vps-setup\.sh/.test(line)) { var sj = arguments[1]; return CMDS.setup(sj && sj.region != null ? REG[sj.region].toLowerCase() : ''); }
     if (c === 'curl' && /update\.sh/.test(line)) { var bj = arguments[1]; return CMDS.update(bj && bj.region != null ? REG[bj.region].toLowerCase() : ''); }
     if (c === 'ping') { lastPingAt = Date.now(); p('m', 'measuring…'); return measure().then(function () { CMDS.status(); }); }
@@ -357,11 +358,12 @@
   var boot = ['status', 'regions', 'servers', 'broker', UPD], rot = ['status', 'servers', 'autopilot', 'status', 'servers', 'broker', 'update'], ri = 0, cycles = 0;
   function next() {
     if (boot.length) return { cmd: boot.shift(), why: 'start-up check' };
+    var dj = window.MPDebian && MPDebian.tick(); if (dj) return dj;   // 3.31: the Debian one-line setup
     if (changed.length) { var i = changed.shift(); return { cmd: 'diagnose ' + REG[i].toLowerCase(), why: REG[i] + ' changed: ' + lastSig[i] }; }
     if (botLog.length > botSeen) return { cmd: 'autopilot', why: 'new report from a region autopilot' };
     for (var u = 0; u < 4; u++) { var bh = behind(u); if (bh && updAsked[u] !== bh) { updAsked[u] = bh; return { cmd: UPD, region: u, why: REG[u] + ': ' + bh + ' - typing the update command' }; } }
     // 3.28.2: any region offline and no beacon: the bot types the one-command VPS setup
-    for (var sv = 0; sv < 4; sv++) if (ping[sv] === -1 && !beacon[sv] && !setupAsked[sv]) { setupAsked[sv] = 1; return { cmd: SETUP + ' -s ' + REG[sv].toLowerCase(), region: sv, why: REG[sv] + ' broker offline - typing the 24/7 VPS setup command' }; }
+    for (var sv = 0; sv < 4; sv++) if (ping[sv] === -1 && !beacon[sv] && !setupAsked[sv]) { setupAsked[sv] = 1; return { cmd: window.MPDebian ? MPDebian.cmd(REG[sv].toLowerCase()) : SETUP + ' -s ' + REG[sv].toLowerCase(), region: sv, why: REG[sv] + ' broker offline - typing the 24/7 VPS setup command' }; }
     if (serversChanged) { serversChanged = false; return { cmd: 'servers', why: 'server list changed' }; }
     if (Date.now() - lastPingAt > 90000) return { cmd: 'ping', why: 'ping every 90 s', wait: 7000 };
     if (++cycles % 9 === 0) return { cmd: 'clear', why: 'keeping the screen short', wait: 600 };
