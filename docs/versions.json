@@ -1,6 +1,7 @@
 {
-"latest": "3.32",
+"latest": "3.33",
 "supported": [
+"3.33",
 "3.32",
 "3.31",
 "3.30",
@@ -42,6 +43,20 @@
 "3.04.6"
 ],
 "versions": [
+{
+"v": "3.33",
+"summary": "The 4 main servers run **only on the 24/7 server** (no Broker bot, no phone host), **lower ping** when people join and on the VPS connection, the **login screen shows after a game restart**, and a **crash guard** for the save load.",
+"items": [
+"**No Broker bot:** the \"Broker\" player is gone from MP LAN Server (default), Brief Case War, Modern Warfare 3 and Mega Vil Futuristic. An empty server shows 0 players, and the lists / HUD say \"24/7 server\" where they said \"Broker\".",
+"**Nobody becomes the host of these 4 servers:** the first player to join is just a player, and the 100-rank Broker standby (phones that took the servers over when the VPS was down) is switched off. Only the region's 24/7 server runs them, and the server console on the website (Termius / Termux / Oracle / Railway pages) controls them. While one restarts, the phone says so and reconnects by itself (it retries for about a minute and a half); if the server stays down it says \"offline right now\" instead of starting a server on your phone.",
+"**Always online (24/7 server):** the 4 servers restart 2 s after a crash and never give up, a keep-alive check every minute starts a stopped or stuck one again, and the web console has a new menu **s)** to see, read the log of, start, stop and restart each server (a server you stop stays stopped until you start it). Run the update on the VPS (console **7) update**).",
+"**Ping goes high when someone joins - fixed:** the 24/7 server answers a ping at once (it waited in the send queue behind the join traffic, so everybody's ping jumped when a player joined), the relay no longer stretches its batching to 50-80 ms on our own brokers while a crowd joins (20-30 ms at most with 32+ players), and the broker's per-player limit is 4 MB/s (was 512 KB/s: a busy relay host hit it and the packets queued up).",
+"**VPS connection stuck at 200 ms+ - fixed:** that is the slow relay, which phones fall back to when the server's UDP port is closed. The setup only opened UDP 1922, so Brief Case War, MW3 and Mega Vil never got the direct connection. All four UDP ports (1922, 1930, 1931, 1932) are now opened by the cloud-init, the installer (ufw) and the closing message, and the status check lists them. Direct UDP is about the real distance ping (100 ms is normal for far regions).",
+"**Login screen after a restart:** closing / restarting the game and joining a server always opens the login screen now (your user name is filled in, you type the password). 3.28.2 - 3.32 kept a login token on the phone and logged in silently, so no screen appeared; the old token is removed from `account.txt` by itself. A reconnect inside the same game session (the server restarting, a lost connection) still needs no screen.",
+"**Crash logs:** the log with `CStreaming::GetNextFileOnCd` (SIGSEGV with ZyZ Limit Adjuster, MP 3.04.6) was already fixed in 3.32 (models stream in the background). The other two (realme, MP 3.32, 69 mods) crashed inside the game's own save loading after a restart (`DoGameRestart` > `CGame::InitialiseWhenRestarting` > `CGenericGameStorage::GenericLoad`, in `CPopulation::ConvertToDummyObject` and in `CFileLoader::LoadObjectInstance` > `CDummyObject`) with Project2DFX, DynamicSeason, CLEOPlus and a limit adjuster hooked into that code. MP now notices when the game crashed during a save load it asked for (the 100% progress save on the default server): the next 3 game starts do not load it again (your own progress is used, with a chat message) and then it tries again, so a clash with another mod can no longer crash the game every time you join. If it keeps crashing, switch \"100% progress on the default server\" off in the menu or remove Project2DFX / limit adjusters one by one.",
+"Plays with 3.32 and the other supported versions. The new server parts need a 3.33 server (run the update on the VPS); phones on 3.32 or older can still host the 4 servers until they update."
+]
+},
 {
 "v": "3.32",
 "summary": "Fixes the **freeze when people join** a server and the **crash in CStreaming::GetNextFileOnCd** (SIGSEGV with ZyZ Limit Adjuster), plus the new **MP Oracle** page.",

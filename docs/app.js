@@ -176,12 +176,15 @@
   });
 
   // ---- latest release ----
+  function zipUrl(v) { return 'https://github.com/ThirtyFoxMCx00E1/wagu/raw/main/release/MP-' + v + '-full.zip'; }
   fetch('https://api.github.com/repos/ThirtyFoxMCx00E1/wagu/releases/latest', { headers: { Accept: 'application/vnd.github+json' } })
     .then(function (r) { return r.ok ? r.json() : null; })
     .then(function (j) {
       if (!j || !/^v?\d/i.test(j.tag_name || '')) return;
-      $('st-version').textContent = String(j.tag_name).replace(/^v/i, '').slice(0, 12);
-      if (j.html_url && /^https:\/\/github\.com\//.test(j.html_url)) $('dl-btn').href = j.html_url;
+      var ver = String(j.tag_name).replace(/^v/i, '').slice(0, 12);
+      $('st-version').textContent = ver;
+      // the button downloads the zip itself: visitors never land on a GitHub repo / release page
+      if (/^\d+(\.\d+){1,3}$/.test(ver)) $('dl-btn').href = zipUrl(ver);
     }).catch(function () {});
 
   // ---- start ----
@@ -214,7 +217,7 @@
         var rest = full.length > short.length ? '<p>' + md(full) + '</p>' : '';
         var items = rest + (v.items.length ? '<ul>' + v.items.map(function (x) { return '<li>' + md(x) + '</li>'; }).join('') + '</ul>' : '');
         var dl = ok
-          ? '<p class="vdl"><a class="btn btn-main" href="https://github.com/ThirtyFoxMCx00E1/wagu/releases/tag/v' + esc(v.v) + '">Download MP ' + esc(v.v) + '</a></p>'
+          ? '<p class="vdl"><a class="btn btn-main" href="' + esc(zipUrl(v.v)) + '">Download MP ' + esc(v.v) + '</a></p>'
           : '<p class="vnodl">No download: this version is shut out of every server. Download MP ' + esc(latest) + ' instead.</p>';
         return '<details class="vcard' + (top ? ' latest' : '') + (i >= SHOW ? ' vmore' : '') + '"' + (top ? ' open' : '') + (i >= SHOW ? ' hidden' : '') + '><summary><span class="vnum">' + esc(v.v) + '</span>' +
           '<span class="vsum">' + md(short) + '</span>' +
