@@ -263,7 +263,7 @@ static void LBuildRows(int tab, const std::vector<LanServer>& nearby, std::vecto
             MP_CopyStr(w.lang, "All", sizeof(w.lang));
             if(LMatch(w.name) || LMatch("mw3") || LMatch("modern warfare")) rows.push_back(w);
         }
-        {   // 3.25: Mega Vil Futuristic - 24/7 featured Roleplay, pinned under MW3 (VPS, or the Broker standby phones)
+        {   // 3.25: Mega Vil Futuristic - 24/7 featured Roleplay, pinned under MW3 (3.33: the 24/7 server only)
             LRow w; memset(&w, 0, sizeof(w));
             w.kind = 5; MP_CopyStr(w.name, MP_RP_SERVER_NAME, sizeof(w.name)); w.port = MP_RP_PORT;
             w.region = -1; w.icon = 0; w.saved = -1; w.live = true;
@@ -690,7 +690,7 @@ static void LRightPanel(const LRow* r, float w, float h)
         if(r->kind == 5)
         {   // 3.25
             const char* rp[][2] = {
-                { "address",   "24/7 featured (always on, VPS + Broker)" }, { "gamemode", "Roleplay RP (only)" }, { "port", pt },
+                { "address",   "24/7 featured (always on, 24/7 server)" }, { "gamemode", "Roleplay RP (only)" }, { "port", pt },
                 { "players",   pl }, { "city", "Mega Vil (Los Santos of the future)" }, { "jobs", "20 jobs, payday every 30 min" },
                 { "phone",     "calls, SMS, bank, GPS, shop, games..." }, { "rules", "peaceful: only police / military on duty" },
                 { "cheats",    "off (MP + CLEO menu)" }, { "login", "required" }, { "version", "MP 3.25" },

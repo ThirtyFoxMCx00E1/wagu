@@ -128,6 +128,7 @@ static uint64_t               s_nTakeoverAt = 0;
 static bool                   s_bOnDedicated = false;
 static uint64_t               s_nDedicatedSeenAt = 0;
 static int                    s_nDedicatedRetries = 0;
+static int                    s_nFeaturedTries = 0;   // 3.33: searches for an offline 24/7 featured server in a row (a phone never hosts it)
 static int                    s_nLostPort = MP_DEFAULT_PORT;
 static bool                   s_bConnectingDefault = false;  // current connection is the default server
 static char                   s_szJobName[32] = "";          // server the running job is about
@@ -148,8 +149,9 @@ using namespace MP;
 const char* MP::DataDir() { return s_szDataDir; }
 bool MP::IsConnected() { return client.GetState() == NET_CONNECTED; }
 bool MP::IsHosting() { return s_Server.IsRunning(); }
-// 3.23.5: the default server, Brief Case War and MW3 are hosted by the bot "Broker": the game never
-// shows a player as their host, even when this phone runs the copy (VPS down)
+// 3.33: the 4 featured servers (default, Brief Case War, MW3, Mega Vil Futuristic) are run ONLY by the 24/7 machine
+// (the VPS, started and watched from the website consoles). No bot player, and no phone ever hosts them: not the
+// first player to join, not a "standby", not a takeover when the host drops. (3.23.5 - 3.32: a phone could.)
 static bool FeaturedName(const char* n, int port) { return n && n[0] && (MP_IsBcwServerName(n) || MP_IsMw3ServerName(n) || MP_IsRpServerName(n) || (port == MP_DEFAULT_PORT && !strcasecmp(n, MP_DEFAULT_SERVER_NAME))); }
 bool MP::IsBotHosted()
 {
@@ -4065,6 +4067,14 @@ static void SrvModesPut(const char* name, int port, uint16_t modes)
 // (HostLAN / HostedName / HostedPort) so it comes back the next time the game starts.
 static bool StartLocalServer(const char* name, int port)
 {
+    // 3.33: the 4 featured servers are hosted by the 24/7 VPS only. Every way a phone could start one (first player
+    // to join, standby, takeover, duplicate merge, "host again at the next start") ends here.
+    if(FeaturedName(name, port))
+    {
+        logger->Info("Host: \"%s\" is run by the 24/7 server only - this phone does not start it", name ? name : "");
+        if(settings.hostLan && !strcasecmp(settings.hostedName, name)) { settings.hostLan = false; SaveConfig(); }   // an old saved "host it again at the next start"
+        return false;
+    }
     if(s_Server.IsRunning())
     {
         if(port == s_Server.GetPort() && !strcasecmp(name, s_Server.GetName())) return true;
@@ -4122,6 +4132,7 @@ static bool StartLocalServer(const char* name, int port)
 
 static void JoinFound(const LanServer& sv, bool connect)
 {
+    s_nFeaturedTries = 0;   // 3.33
     if(sv.dedicated) { s_nDedicatedSeenAt = MP_NowMs(); s_nDedicatedRetries = 0; }
     if(!sv.token) { MP_CopyStr(settings.host, sv.ip, sizeof(settings.host)); SaveConfig(); }  // relay IPs change every session
     s_bConnectingDefault = IsDefaultServer(sv.name, sv.port);
@@ -4156,6 +4167,7 @@ void MP::ToggleConnect()
     s_bHasNetwork = true;
     if(IsBusy()) { SysMsg(COL_YELLOW, "Please wait..."); return; }
     s_bConnectingDefault = true;
+    s_nFeaturedTries = 0;     // 3.33
     s_bBcwJoin = false;       // 3.04
     s_bMw3Join = false;       // 3.23
     s_bRpJoin = false;        // 3.25
@@ -4189,6 +4201,7 @@ void MP::JoinServer(const char* host, int port, const char* name)
     if(IsBusy()) { SysMsg(COL_YELLOW, "Please wait..."); return; }
     LeaveServer(nullptr);
     if(!name || !*name) name = host;
+    s_nFeaturedTries = 0;   // 3.33
     s_bConnectingDefault = IsDefaultServer(name, port);
     s_bBcwJoin = MP_IsBcwServerName(name);   // 3.04
     s_bMw3Join = MP_IsMw3ServerName(name);   // 3.23
@@ -4259,8 +4272,8 @@ static bool DupFallBack()
     if(!s_nDupBackUntil || MP_NowMs() > s_nDupBackUntil || !s_szDupBackName[0]) { s_nDupBackUntil = 0; return false; }
     s_nDupBackUntil = 0;
     char nm[64]; MP_CopyStr(nm, s_szDupBackName, sizeof(nm));
-    if(FeaturedName(nm, s_nDupBackPort)) SysMsg(COL_YELLOW, "Reconnecting to \"%s\" (host: " MP_BOT_NAME ")...", nm);
-    else SysMsg(COL_YELLOW, "The other copy of \"%s\" did not answer - you host it again.", nm);
+    if(FeaturedName(nm, s_nDupBackPort)) return false;   // 3.33: a phone never hosts a featured server (the 24/7 one answers again by itself)
+    SysMsg(COL_YELLOW, "The other copy of \"%s\" did not answer - you host it again.", nm);
     if(StartLocalServer(nm, s_nDupBackPort)) { s_bConnectingDefault = IsDefaultServer(nm, s_nDupBackPort); s_bQuietRejoin = true; DoConnect("127.0.0.1", s_nDupBackPort); return true; }
     return false;
 }
@@ -4292,8 +4305,8 @@ static bool OnLostServer()
         }
     }
     s_bTakeoverPending = true;
-    s_nTakeoverAt = MP_NowMs() + 500 + (uint64_t)(rank > 20 ? 20 : rank) * 2500;
-    if(FeaturedName(s_szLostServerName, s_nLostPort)) SysMsg(COL_YELLOW, "Reconnecting to \"%s\" (host: " MP_BOT_NAME ")...", s_szLostServerName);   // 3.23.5
+    s_nTakeoverAt = MP_NowMs() + (FeaturedName(s_szLostServerName, s_nLostPort) ? 2000 : 500 + (uint64_t)(rank > 20 ? 20 : rank) * 2500);   // 3.33: nobody has to wait for a turn to host a featured server
+    if(FeaturedName(s_szLostServerName, s_nLostPort)) SysMsg(COL_YELLOW, "\"%s\": the " MP_HOST_LABEL " is restarting - reconnecting by itself...", s_szLostServerName);   // 3.33
     else if(!others) SysMsg(COL_YELLOW, "Connection to \"%s\" lost - you host it now (nobody else was on it)...", s_szLostServerName);
     else SysMsg(COL_YELLOW, "The host left - moving to the new host...");
     s_bQuietRejoin = true;   // 2.27: same server on another phone, you keep playing where you are
@@ -4314,6 +4327,27 @@ static int FindExact(const std::vector<LanServer>& list, const char* name, int p
     return (best >= 0 && !strcasecmp(list[best].name, name)) ? best : -1;
 }
 
+// 3.33: a featured server (default, Brief Case War, MW3, Mega Vil Futuristic) that is not in the list is not
+// "free to host": its 24/7 machine is restarting or updating. Phones used to start their own copy (the first
+// player became the host, and the server restarted for everybody when that phone left). Now we look again for
+// about a minute and a half (every search waits for the lobby), then tell the player. Returns after scheduling
+// the next search or giving up.
+#define FEATURED_WAIT_TRIES 14
+static void FeaturedOffline(int job, const char* name0, int port)
+{
+    char name[64]; MP_CopyStr(name, name0 ? name0 : "", sizeof(name));
+    char host[sizeof(s_szJobHost)]; MP_CopyStr(host, s_szJobHost, sizeof(host));   // StartJob copies into s_szJobHost: never from itself
+    if(s_nFeaturedTries < FEATURED_WAIT_TRIES && LAN::HasNetwork())
+    {
+        if(!s_nFeaturedTries) SysMsg(COL_YELLOW, "\"%s\" is not online yet - the " MP_HOST_LABEL " may be restarting. Looking again...", name);
+        ++s_nFeaturedTries;
+        if(job == JOB_TAKEOVER) { s_bTakeoverPending = true; s_nTakeoverAt = MP_NowMs() + 4000; return; }
+        if(StartJob(job, true, name, port, host)) return;
+    }
+    s_nFeaturedTries = 0; s_bTakeoverPending = false; StopFeed();
+    SysMsg(COL_RED, "\"%s\" is offline right now. It is run by the " MP_HOST_LABEL " only (no phone hosts it) and comes back by itself - tap Join again in a minute.", name);
+}
+
 static void FinishJob(int job, std::vector<LanServer>& list)
 {
     const bool connect = s_bJobAutoConnect;
@@ -4332,6 +4366,7 @@ static void FinishJob(int job, std::vector<LanServer>& list)
                 JoinFound(sv, connect);
                 return;
             }
+            if(FeaturedName(name, port)) { s_bHostJobCreate = false; SysMsg(COL_YELLOW, "\"%s\" is run by the " MP_HOST_LABEL " only. Pick another name to host your own server.", name); return; }   // 3.33
             s_bCreatingNew = s_bHostJobCreate; s_bHostJobCreate = false;   // 3.03: Host button = create it (switches, if it is new)
             if(StartLocalServer(name, port))
             {
@@ -4361,8 +4396,9 @@ static void FinishJob(int job, std::vector<LanServer>& list)
                 StartJob(JOB_CONNECT, true, nm, port);
                 return;
             }
-            // nobody runs it yet: this phone hosts it, so the default server is always online
-            if(StartLocalServer(name, port)) { s_bConnectingDefault = true; DoConnect("127.0.0.1", port); }
+            // 3.33: not in the list = the 24/7 server is restarting. A phone never hosts the default server any more
+            // (3.32 and older: the first player to join became the host).
+            FeaturedOffline(JOB_CONNECT, name, port);
             return;
         }
         case JOB_JOIN:      // custom server
@@ -4390,6 +4426,7 @@ static void FinishJob(int job, std::vector<LanServer>& list)
                 SysMsg(COL_RED, "\"%s\" isn't online and uses port %d (reserved for the default server). Edit it to port %d or higher.", name, MP_DEFAULT_PORT, MP_DEFAULT_PORT + 1);
                 return;
             }
+            if(FeaturedName(name, port)) { FeaturedOffline(JOB_JOIN, name, port); return; }   // 3.33: Brief Case War / MW3 / Mega Vil: the 24/7 server only
             if(StartLocalServer(name, port)) { s_bConnectingDefault = false; DoConnect("127.0.0.1", port); }
             return;
         }
@@ -4408,6 +4445,7 @@ static void FinishJob(int job, std::vector<LanServer>& list)
                 s_nTakeoverAt = MP_NowMs() + 4000;
                 return;
             }
+            if(FeaturedName(s_szLostServerName, s_nLostPort)) { FeaturedOffline(JOB_TAKEOVER, s_szLostServerName, s_nLostPort); return; }   // 3.33: wait for the 24/7 server, never host it
             if(StartLocalServer(s_szLostServerName, s_nLostPort))
             {
                 s_bConnectingDefault = IsDefaultServer(s_szLostServerName, s_nLostPort);
@@ -4468,7 +4506,10 @@ static void FinishJob(int job, std::vector<LanServer>& list)
     }
 }
 
-// ---- 3.24: Broker standby pool (100 backup hosts) ----------------------------------------------
+// ---- 3.24: Broker standby pool (100 backup hosts) - SWITCHED OFF in 3.33 ----------------------
+// 3.33: the 4 featured servers are run by the 24/7 machine only (started and watched from the website
+// consoles). Phones no longer stand by to host them: ProcessBrokerStandby below returns at once, and
+// StartLocalServer refuses a featured name anyway. The rank / flags stay so the API in mp.h is unchanged.
 // The featured servers (Modern Warfare 3, Brief Case War, MP LAN Server) live on the 24/7 machine.
 // When it is down, a featured server used to exist only while somebody's phone had joined it, so
 // the next player found "no Broker" and had to wait / host it themselves. Now every phone that has
@@ -4494,6 +4535,8 @@ int MP::BrokerStandbyRank()
 bool MP::IsBrokerStandbyHost() { return s_bStandbyHost && s_Server.IsRunning(); }
 static void ProcessBrokerStandby(uint64_t now)
 {
+    if(s_bStandbyHost && s_Server.IsRunning() && FeaturedName(s_Server.GetName(), s_Server.GetPort())) { s_Server.Stop(); s_bStandbyHost = false; }   // 3.33: a copy left from an old config
+    if(true) return;   // 3.33: no standby hosting (see above)
     static uint64_t lastCheck = 0, onlineSince = 0, missing[4] = { 0, 0, 0, 0 };
     if(now - lastCheck < 1000) return;
     lastCheck = now;
@@ -4728,7 +4771,7 @@ static void LoadConfig()
     settings.showChat        = ::cfg->GetBool("ShowChat", true, "MP");
     settings.showKillFeed    = ::cfg->GetBool("ShowKillFeed", true, "MP");
     settings.syncAnims       = ::cfg->GetBool("SyncAnims", true, "MP");
-    settings.brokerStandby   = ::cfg->GetBool("BrokerStandby", true, "MP");
+    settings.brokerStandby   = false;   // 3.33: no Broker standby (the 24/7 machine runs the featured servers); the old saved switch is ignored
     settings.syncEnv         = ::cfg->GetBool("SyncEnv", true, "MP");
     settings.syncNpcs        = ::cfg->GetBool("SyncNPCs", true, "MP");
     settings.allowMissionPair = ::cfg->GetBool("AllowMissionPair", true, "MP");
@@ -5160,7 +5203,7 @@ static void DefaultServerCard(const std::vector<LanServer>& nearby)
         if(IsDefaultServer(nearby[i].name, nearby[i].port)) { found = i; break; }
     if(!s_bHasNetwork)                       { snprintf(info, sizeof(info), "Offline: turn on Wi-Fi or mobile data"); col = kRedTxt; }
     else if(IsOnDefault() && IsConnected())  snprintf(info, sizeof(info), "Connected  |  %d/%d  |  %d ms", OnlineCount(), OnlineMax(), MP::DisplayPing());
-    else if(IsHostingDefault())              snprintf(info, sizeof(info), "Online  |  host: " MP_BOT_NAME " (24/7)  |  %d/%d", s_Server.GetPlayerCount(), s_Server.GetMaxPlayers());
+    else if(IsHostingDefault())              snprintf(info, sizeof(info), "Online  |  " MP_HOST_LABEL "  |  %d/%d", s_Server.GetPlayerCount(), s_Server.GetMaxPlayers());
     else if(found >= 0)                      snprintf(info, sizeof(info), "Online at %s  |  %d/%d  |  %d ms", nearby[found].token ? "internet" : nearby[found].ip, nearby[found].players, nearby[found].maxPlayers, nearby[found].ping);
     else                                     snprintf(info, sizeof(info), "Always online  |  tap Connect");
 
@@ -5330,7 +5373,7 @@ static void SectionServers(void*)
         ImVec4 col = kGreenTxt;
         // 2.16: a custom server's IP / host is never shown (only its name)
         if(on && IsConnected())  snprintf(info, sizeof(info), "IP hidden  |  connected  |  %d/%d  |  %d ms", OnlineCount(), OnlineMax(), MP::DisplayPing());
-        else if(mine)            snprintf(info, sizeof(info), s_Server.HasBot() ? "online  |  host: " MP_BOT_NAME " (24/7)  |  %d/%d" : "IP hidden  |  online (you host it)  |  %d/%d", s_Server.GetPlayerCount(), s_Server.GetMaxPlayers());
+        else if(mine)            snprintf(info, sizeof(info), FeaturedName(s_Server.GetName(), s_Server.GetPort()) ? "online  |  " MP_HOST_LABEL "  |  %d/%d" : "IP hidden  |  online (you host it)  |  %d/%d", s_Server.GetPlayerCount(), s_Server.GetMaxPlayers());
         else if(e->online)       snprintf(info, sizeof(info), "IP hidden  |  online %d/%d  |  %d ms", e->players, e->maxPlayers, e->ping);
         else if(lan)             snprintf(info, sizeof(info), "IP hidden  |  online %s %d/%d  |  %d ms", lan->token ? "(internet)" : "on Wi-Fi", lan->players, lan->maxPlayers, lan->ping);
         else if(!s_bHasNetwork)  { snprintf(info, sizeof(info), "IP hidden  |  you are offline (Wi-Fi/data off)"); col = kRedTxt; }
@@ -5513,8 +5556,8 @@ static void SectionAddServer(void*)
     if(disabled) ImGui::EndDisabled();
 
     // the server this phone hosts (was the "Host this server on my phone" switch)
-    if(hosting && s_Server.HasBot())
-        ImGui::TextColored(kGreenTxt, "\"%s\" is hosted by " MP_BOT_NAME " (24/7 bot), %d/%d online", s_Server.GetName(), s_Server.GetPlayerCount(), s_Server.GetMaxPlayers());   // 3.23.5
+    if(hosting && FeaturedName(s_Server.GetName(), s_Server.GetPort()))
+        ImGui::TextColored(kGreenTxt, "\"%s\" is run by the " MP_HOST_LABEL ", %d/%d online", s_Server.GetName(), s_Server.GetPlayerCount(), s_Server.GetMaxPlayers());   // 3.23.5
     else if(hosting)
     {
         ImGui::TextColored(kGreenTxt, "Hosting \"%s\"  (IP hidden, %d/%d online)", s_Server.GetName(), s_Server.GetPlayerCount(), s_Server.GetMaxPlayers());
@@ -5774,10 +5817,7 @@ static void SectionDisplay(void*)
     changed |= FloatMenu::ToggleSwitch("Sync player animations", &settings.syncAnims);
     changed |= FloatMenu::ToggleSwitch("Sync explosions, fire, weapons", &settings.syncEnv);
     changed |= FloatMenu::ToggleSwitch("Sync NPCs (people + traffic)", &settings.syncNpcs);
-    {   // 3.24
-        char lb[96]; snprintf(lb, sizeof(lb), "Broker standby #%d/100 (host offline featured servers)", MP::BrokerStandbyRank());
-        changed |= FloatMenu::ToggleSwitch(lb, &settings.brokerStandby);
-    }
+    ImGui::TextDisabled("Default, Brief Case War, MW3 and Mega Vil run on the 24/7 server only (no phone hosts them).");   // 3.33: was the Broker standby switch
     changed |= FloatMenu::ToggleSwitch("Open world (cities, shops, food, gyms, garages)", &settings.unlockWorld);   // 2.21
     changed |= FloatMenu::ToggleSwitch("Girlfriend houses (optional)", &settings.girlfriends);
     changed |= FloatMenu::ToggleSwitch("[Race] / [DM] / [Job] tips in the chat", &settings.eventTips);

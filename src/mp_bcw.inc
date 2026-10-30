@@ -1269,7 +1269,7 @@ static void RenderBcw()
     }
 }
 
-// launcher / menu entry: join the 24/7 Brief Case War (or host it on this phone if nobody does)
+// launcher / menu entry: join the 24/7 Brief Case War (3.33: run by the 24/7 server only, a phone never hosts it)
 void MP::JoinBcw()
 {
     if(BcwOnServer()) { LeaveServer("Left Brief Case War."); return; }
