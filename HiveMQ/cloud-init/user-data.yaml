@@ -1,0 +1,38 @@
+#cloud-config
+# MP Multiplayer region server, no computer needed.
+# Paste this whole file into the "cloud-init / user data / startup script" box when you create the
+# VM from your phone's browser (Oracle Cloud Always Free Ampere A1, Google Cloud e2, AWS, Hetzner,
+# DigitalOcean ... Ubuntu 22.04/24.04). Change the 4 values below first, nothing else.
+# About 10 minutes after the VM boots, the broker, the 24/7 server, the status beacon and the web
+# console are running. Your website's Termius page shows the region as online.
+write_files:
+  - path: /root/mp-setup.env
+    permissions: "0600"
+    content: |
+      REGION=Asia                 # Asia, Europe, NA or Oceania
+      DUCKDNS_DOMAIN=             # e.g. asia-yourname  (free at duckdns.org, leave empty for no TLS)
+      DUCKDNS_TOKEN=              # your duckdns.org token
+      EMAIL=                      # for Let's Encrypt (optional)
+runcmd:
+  - |
+    set -e
+    . /root/mp-setup.env
+    apt-get update -qq && apt-get install -y -qq git curl
+    DOMAIN_ARG=""
+    if [ -n "$DUCKDNS_DOMAIN" ] && [ -n "$DUCKDNS_TOKEN" ]; then
+      # point the free domain at this VM now and keep it updated every 5 minutes
+      echo "*/5 * * * * root curl -fsS 'https://www.duckdns.org/update?domains=$DUCKDNS_DOMAIN&token=$DUCKDNS_TOKEN&ip=' >/dev/null" > /etc/cron.d/duckdns
+      curl -fsS "https://www.duckdns.org/update?domains=$DUCKDNS_DOMAIN&token=$DUCKDNS_TOKEN&ip=" || true
+      sleep 60
+      DOMAIN_ARG="--domain $DUCKDNS_DOMAIN.duckdns.org ${EMAIL:+--email $EMAIL}"
+    fi
+    # Oracle / some images ship iptables rules that block everything but SSH: open the MP ports
+    if command -v iptables >/dev/null; then
+      for p in 80 1883 8000 8883 8884 7681; do iptables -I INPUT -p tcp --dport $p -j ACCEPT || true; done
+      # game servers: MP LAN Server 1922, Brief Case War 1930, Modern Warfare 3 1931, Mega Vil Futuristic 1932
+      for p in 1922 1930 1931 1932; do iptables -I INPUT -p udp --dport $p -j ACCEPT || true; done
+      command -v netfilter-persistent >/dev/null && netfilter-persistent save || true
+    fi
+    git clone --depth 1 https://github.com/ThirtyFoxMCx00E1/HiveMQ.git /root/HiveMQ
+    cd /root/HiveMQ && ./install.sh --region "$REGION" $DOMAIN_ARG > /root/mp-install.log 2>&1
+    /root/HiveMQ/tools/make-regions.sh > /root/regions.txt || true

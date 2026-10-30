@@ -1,0 +1,21 @@
+# MpBridge: joins the server lists of all regional brokers (run on ONE server only)
+[Unit]
+Description=MP Multiplayer lobby bridge
+After=hivemq.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=mp
+Group=mp
+WorkingDirectory=@@BASE@@/bridge
+ExecStart=@@JAVA_HOME@@/bin/java -Xms32m -Xmx128m -XX:+UseSerialGC @@BASE@@/bridge/MpBridge.java @@ETC@@/bridge.conf
+Restart=always
+RestartSec=5
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=full
+ProtectHome=yes
+
+[Install]
+WantedBy=multi-user.target

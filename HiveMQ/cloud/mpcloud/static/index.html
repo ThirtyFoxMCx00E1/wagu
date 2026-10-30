@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MP Cloud</title>
+<meta name="description" content="MP Cloud: your own Always Free cloud console - servers, MP servers, API keys.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23c74634'/%3E%3Cpath d='M8 21a5 5 0 0 1 1-9.9A7 7 0 0 1 22.5 12 4.5 4.5 0 0 1 24 21z' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/static/app.css?v=1.0.1">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="top" id="top" hidden>
+  <button class="menu-btn" id="menu-btn" aria-label="Menu" aria-expanded="false">
+    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+  <a class="logo" href="#/home" aria-label="MP Cloud home">
+    <svg viewBox="0 0 32 32" width="26" height="26" aria-hidden="true"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M8 21a5 5 0 0 1 1-9.9A7 7 0 0 1 22.5 12 4.5 4.5 0 0 1 24 21z" fill="#fff"/></svg>
+    <span>MP <b>Cloud</b></span>
+  </a>
+  <span class="region" id="region" title="Region"></span>
+  <span class="grow"></span>
+  <span class="who" id="who"></span>
+  <button class="btn ghost sm" id="logout">Sign out</button>
+</header>
+
+<nav class="side" id="side" hidden aria-label="Console">
+  <a href="#/home" data-nav="home">Home</a>
+  <p class="sect">Compute</p>
+  <a href="#/instances" data-nav="instances">Instances</a>
+  <a href="#/instances/new" data-nav="new">Create instance</a>
+  <p class="sect">Identity &amp; Security</p>
+  <a href="#/keys" data-nav="keys">API keys</a>
+  <a href="#/account" data-nav="account">My profile</a>
+  <a href="#/audit" data-nav="audit">Audit</a>
+  <p class="sect admin-only" hidden>Administration</p>
+  <a href="#/admin" data-nav="admin" class="admin-only" hidden>Tenancy &amp; quotas</a>
+  <a href="/api/docs" target="_blank" rel="noopener" class="ext">REST API docs</a>
+</nav>
+
+<main id="main" tabindex="-1"></main>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="/static/app.js?v=1.0.1"></script>
+</body>
+</html>

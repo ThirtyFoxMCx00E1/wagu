@@ -1,0 +1,23 @@
+# 3.04.6: "UPDATE MP TO <version>" notice server. Runs in the OLD lobby (thirtyfox/mp4/), the only
+# thing MP 3.04.5 and older can still see on this broker. Every join is refused with the download
+# link and written to outdated_clients.log (name, version range, phone id, IP).
+[Unit]
+Description=MP Multiplayer old-version notice (@@REGION@@)
+After=hivemq.service network-online.target
+Wants=hivemq.service network-online.target
+
+[Service]
+Type=simple
+User=mp
+Group=mp
+WorkingDirectory=@@BASE@@/server
+ExecStart=@@BASE@@/server/mp_server 1931 --legacy-notice 100 @@REGION@@ --broker-file @@BASE@@/server/broker-legacy.txt --outdated-log @@BASE@@/server/outdated_clients.log
+Restart=always
+RestartSec=15
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=full
+ProtectHome=yes
+
+[Install]
+WantedBy=multi-user.target

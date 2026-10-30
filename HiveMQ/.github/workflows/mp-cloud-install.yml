@@ -1,0 +1,74 @@
+name: MP Cloud install
+
+# Installs (or updates) MP Cloud on your own server over SSH.
+# Repo secrets (Settings -> Secrets and variables -> Actions):
+#   VPS_HOST     server IP or DuckDNS name
+#   VPS_SSH_KEY  private SSH key that can log in (the whole file, BEGIN ... END)
+#   VPS_USER     optional, default ubuntu (Oracle Ubuntu = ubuntu, Debian = debian or root)
+#   VPS_PORT     optional, default 22
+on:
+  workflow_dispatch:
+    inputs:
+      domain:
+        description: "Optional domain for HTTPS (e.g. mycloud.duckdns.org). Empty = http://IP:9000"
+        required: false
+        default: ""
+      incus:
+        description: "Local servers with Incus (off = Oracle-only console)"
+        type: boolean
+        default: true
+
+concurrency: mp-cloud-install
+
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Check secrets
+        env:
+          HOST: ${{ secrets.VPS_HOST }}
+          KEY: ${{ secrets.VPS_SSH_KEY }}
+        run: |
+          [ -n "$HOST" ] || { echo "::error title=MP Cloud::Add the repo secret VPS_HOST (server IP)"; exit 1; }
+          [ -n "$KEY" ]  || { echo "::error title=MP Cloud::Add the repo secret VPS_SSH_KEY (private SSH key)"; exit 1; }
+
+      - name: Install on the server
+        env:
+          HOST: ${{ secrets.VPS_HOST }}
+          KEY: ${{ secrets.VPS_SSH_KEY }}
+          SUSER: ${{ secrets.VPS_USER }}
+          SPORT: ${{ secrets.VPS_PORT }}
+          DOMAIN: ${{ inputs.domain }}
+          INCUS: ${{ inputs.incus }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$KEY" | tr -d '\r' > ~/.ssh/id && chmod 600 ~/.ssh/id
+          U="${SUSER:-ubuntu}"; P="${SPORT:-22}"
+          ARGS=""
+          if [ -n "$DOMAIN" ]; then
+            case "$DOMAIN" in *[!A-Za-z0-9.-]*) echo "::error::bad domain"; exit 1;; esac
+            ARGS="--domain $DOMAIN"
+          fi
+          [ "$INCUS" = "true" ] || ARGS="$ARGS --no-incus"
+          SSH="ssh -i ~/.ssh/id -p $P -o StrictHostKeyChecking=accept-new -o ServerAliveInterval=30 -o ConnectTimeout=20 $U@$HOST"
+          $SSH 'echo "logged in as $(whoami) on $(hostname) - $(. /etc/os-release; echo $PRETTY_NAME), $(nproc) cores, $(free -g | awk "/Mem/{print \$2}") GB"'
+          $SSH "curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/cloud/install.sh | sudo bash -s -- $ARGS" 2>&1 | tee install.log
+          sleep 3
+          $SSH 'systemctl is-active mp-cloud && curl -fsS http://127.0.0.1:9000/api/v1/public' | tee status.txt
+
+      - name: Summary
+        if: always()
+        env:
+          HOST: ${{ secrets.VPS_HOST }}
+          DOMAIN: ${{ inputs.domain }}
+        run: |
+          if [ -f status.txt ] && grep -q '"version"' status.txt; then
+            if [ -n "$DOMAIN" ]; then URL="https://$DOMAIN"; else URL="http://$HOST:9000"; fi
+            echo "::notice title=MP Cloud::Running at $URL - open it and create the first account (it becomes the admin)."
+            echo "MP Cloud is running at $URL" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::error title=MP Cloud::Install did not finish - see the log of the step above."
+            [ -f install.log ] && tail -40 install.log >> "$GITHUB_STEP_SUMMARY" || true
+          fi

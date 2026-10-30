@@ -1,0 +1,28 @@
+# 3.23: the region's 24/7 "Call Of Duty: Modern Warfare 3" featured server (installed by install.sh)
+# Pinned in the Internet list with a green banner, 64 players, 8 teams, 34 capture zones, DM arenas,
+# duels, events, hourly tournament. Login on, cheats off, CheatMenu refused. Only this VPS hosts it
+# (phones never become host). Stats + zone owners: mw3_stats.txt (saved every minute and on stop).
+[Unit]
+Description=MP Multiplayer Modern Warfare 3 (@@REGION@@)
+After=hivemq.service network-online.target
+Wants=hivemq.service network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=mp
+Group=mp
+WorkingDirectory=@@BASE@@/server
+ExecStart=@@BASE@@/server/mp_server 1931 "Call Of Duty: Modern Warfare 3" 64 @@REGION@@ --persistent --broker-file @@BASE@@/server/broker.txt --mw3-file @@BASE@@/server/mw3_stats.txt
+Restart=always
+# 3.33: back within 2 s after a crash, and never give up (the 4 servers stay online 24/7)
+RestartSec=2
+LimitNOFILE=65536
+Nice=-5
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=full
+ProtectHome=yes
+
+[Install]
+WantedBy=multi-user.target
