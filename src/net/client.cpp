@@ -1,5 +1,6 @@
 #include "client.h"
 #include "server.h" // MP_NowMs
+#include "admin.h" // 3.35: MP_IsReservedName
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netdb.h>
@@ -129,6 +130,7 @@ void MPClient::SendJoin()
     MP_CopyStr(j2.password, m_szPassword, sizeof(j2.password));   // 2.19
     MP_CopyStr(j3.uid, m_szUid, sizeof(j3.uid));
     MP_CopyStr(j4.adminKey, m_szAdminKey, sizeof(j4.adminKey));
+    if(m_szModKey[0] && !MP_IsReservedName(m_szName)) snprintf(j4.adminKey, sizeof(j4.adminKey), "MOD:%s", m_szModKey);   // 3.35
     j5.build = MP_BUILD;
     Send(&j5, sizeof(j5));
     m_nLastJoinSend = MP_NowMs();

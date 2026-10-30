@@ -25,6 +25,9 @@ struct MPSettings
     bool  pubgCompass       = true;    // 3.27: MW3 - PUBG compass strip on top
     bool  showChat          = true;
     bool  showKillFeed      = true;
+    bool  showNameTags      = true;    // 3.35: player list > Settings: other players' name tags
+    bool  showDmgInd        = true;    // 3.35: damage numbers over the name tags (when the server has them)
+    bool  globalChat        = true;    // 3.35: Mega Vil: show (( [OOC] )) global chat
     bool  showStatus        = true;
     float chatX             = 0.22f;   // relative position (mobile radar sits top-left)
     float chatY             = 0.02f;
@@ -240,6 +243,7 @@ namespace MP
     bool IsOnDefault();
     bool CheatMenuAllowed();   // 3.00: on a custom server whose host turned Cheat Menu on
     bool IsLocalAdmin();     // 2.37: this phone has a valid admin.txt and the name SENJI
+    bool IsLocalMod();       // 3.35: connected with "[MOD] name" (moderator.txt)
     bool IsDefaultAdmin();   // 2.37: I am [ADMIN] SENJI on the default server (the server gave me the tag)
     bool AddResource(const char* name);  // ": server_example" -> listed in the chat on join (90 built in, +32)
     int  ResourceCount();             // connected/connecting to the default server

@@ -411,6 +411,12 @@ void MPServer::SetPerms(uint8_t perms)
     SetPermsLocked(perms);
 }
 
+void MPServer::SetModFile(const char* path)
+{
+    std::lock_guard<std::mutex> lk(m_Mutex);
+    MP_CopyStr(m_szModFile, path ? path : "", sizeof(m_szModFile));
+}
+
 void MPServer::SetAdminHash(const char* h)
 {
     std::lock_guard<std::mutex> lk(m_Mutex);
@@ -764,7 +770,7 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
                 }
             }
             // 2.37: the name SENJI is reserved - only the phone with the admin key may use it
-            bool isAdmin = false;
+            bool isAdmin = false, isMod = false;
             if(slot < 0)
             {
                 char jn[MP_NAME_LEN]; MP_CopyStr(jn, j->name, MP_NAME_LEN);
@@ -781,6 +787,13 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
                     for(int i = 0; i < MP_MAX_PLAYERS; ++i)   // already on (another phone / ghost slot)? the new one wins
                         if(m_Slots[i].used && m_Slots[i].admin) Drop(i, LEAVE_TIMEOUT);
                     isAdmin = true;
+                }
+                else if(len >= (int)sizeof(PktJoin4))   // 3.35: moderator key "MOD:<key>"
+                {
+                    char key[MP_ADMIN_KEY_LEN + 1] = {0};
+                    memcpy(key, ((const PktJoin4*)data)->adminKey, MP_ADMIN_KEY_LEN);
+                    char bare[MP_NAME_LEN]; MP_CopyStr(bare, jn, sizeof(bare)); MP_StripAdminTag(bare);
+                    if(!strncmp(key, MP_MOD_PREFIX, 4) && MP_ModKeyOk(m_szModFile, bare, key + 4)) isMod = true;
                 }
             }
             bool fresh = false;
@@ -809,6 +822,8 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
                 if(!s.name[0]) MP_CopyStr(s.name, "Player", MP_NAME_LEN);
                 s.admin = isAdmin;
                 s.authed = !AuthOn();   // 3.21.6
+                s.mod = isMod && !isAdmin;
+                if(s.mod) { char tmp[MP_NAME_LEN]; snprintf(tmp, sizeof(tmp), MP_MOD_TAG "%.17s", s.name); MP_CopyStr(s.name, tmp, MP_NAME_LEN); Log("%s is a moderator (moderator.txt)", s.name); }
                 if(isAdmin) MP_CopyStr(s.name, MP_ADMIN_TAG MP_ADMIN_NAME, MP_NAME_LEN);   // 2.37: the rank shows on every server (admin powers: default server only)
                 // make the name unique
                 if(bot && !strcasecmp(s.name, MP_BOT_NAME)) { char tmp[MP_NAME_LEN]; snprintf(tmp, sizeof(tmp), "%.18s_%d", s.name, slot); MP_CopyStr(s.name, tmp, MP_NAME_LEN); }   // 3.23.5
@@ -1097,8 +1112,10 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
 
         case PKT_ADMIN_CMD:   // 2.37: only the real SENJI (joined with the admin key) may use these
         {
-            if(slot < 0 || len < (int)sizeof(PktAdminCmd) || !m_Slots[slot].admin) return;
+            if(slot < 0 || len < (int)sizeof(PktAdminCmd) || !(m_Slots[slot].admin || m_Slots[slot].mod)) return;
             PktAdminCmd c = *(const PktAdminCmd*)data;
+            if(!m_Slots[slot].admin && c.cmd == ADMIN_BAN) c.cmd = ADMIN_KICK;   // 3.35: moderators kick, only the admin bans
+            if(!m_Slots[slot].admin && c.cmd != ADMIN_CHEATS && c.target < MP_MAX_PLAYERS && m_Slots[c.target].used && (m_Slots[c.target].admin || m_Slots[c.target].mod)) return;   // no staff vs staff
             c.reason[MP_REASON_LEN - 1] = 0;
             char who[MP_NAME_LEN]; MP_CopyStr(who, m_Slots[slot].name, sizeof(who));
             PktServerMsg m; memset(&m, 0, sizeof(m)); m.type = PKT_SERVER_MSG; m.color = 0xC080FFFF;

@@ -623,6 +623,8 @@ static void PagePlayers(void* openPtr)
         }
         else ImGui::TextDisabled("Tap a player, then Mission sync (up to 16 together). They get Accept / Decline.");
     }
+    if(ImGui::Button("Settings##plset", ImVec2(-1, UI::S(60)))) PSettingsOpen();   // 3.35: SA-MP style player settings
+    PSettingsPopup();
     ImGui::End();
 }
 

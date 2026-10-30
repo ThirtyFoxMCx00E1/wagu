@@ -7,8 +7,8 @@
   var REG = ['Asia', 'Europe', 'NA', 'Oceania'];
   var PUBLIC = ['wss://broker.hivemq.com:8884/mqtt', 'wss://broker.emqx.io:8084/mqtt', 'wss://test.mosquitto.org:8081/'];
   var ROOT = 'thirtyfox/mp5/', FRESH = 15000;
-  var RAW = 'https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/';
-  var API = 'https://api.github.com/repos/ThirtyFoxMCx00E1/wagu/releases/latest';
+  var RAW = 'https://thirtyfoxmcx00e1.github.io/openmp.com/';   // 3.35: openmp.com (no repo links)
+  var API = 'release.json';
   var $ = function (id) { return document.getElementById(id); };
   var out = $('out'), stick = window.MPAutoScroll(out);
   var servers = new Map(), events = [], evSeen = 0, conns = [], brokers = [], regionsTxt = '', installSh = '';
@@ -85,7 +85,7 @@
       p('m', 'This terminal runs in the browser. The MP Bot types every command and presses Enter by itself.');
     },
     'install': function () {
-      return (installSh ? Promise.resolve(installSh) : getText('install.sh').catch(function () { return getText(RAW + 'termux/install.sh'); }).then(function (t) { installSh = t; return t; })).then(function (t) {
+      return (installSh ? Promise.resolve(installSh) : getText('install.sh').catch(function () { return getText(RAW + 'install.sh'); }).then(function (t) { installSh = t; return t; })).then(function (t) {
         var steps = t.split('\n').map(function (l) { var m = l.match(/^\s*say\s+"([^"]+)"/); return m ? m[1] : null; }).filter(Boolean);
         p('m', 'termux/install.sh - what it does on the phone (' + steps.length + ' steps):');
         steps.forEach(function (s) { mp(s.replace(/\$\w+/g, '…')); });
@@ -93,7 +93,7 @@
       }).catch(function (e) { p('r', 'curl: (6) could not fetch install.sh: ' + e.message); });
     },
     'cat-conf': function () {
-      return (installSh ? Promise.resolve(installSh) : getText('install.sh').catch(function () { return getText(RAW + 'termux/install.sh'); }).then(function (t) { installSh = t; return t; })).then(function (t) {
+      return (installSh ? Promise.resolve(installSh) : getText('install.sh').catch(function () { return getText(RAW + 'install.sh'); }).then(function (t) { installSh = t; return t; })).then(function (t) {
         var m = t.match(/cat > "\$CONF" <<'EOF'\n([\s\S]*?)\nEOF/);
         if (!m) { p('r', 'cat: server.conf: template not found'); return; }
         m[1].split('\n').forEach(function (l) { print(/^\s*#/.test(l) ? '<span class="m">' + esc(l) + '</span>' : esc(l)); });
@@ -146,7 +146,7 @@
       }, Promise.resolve());
     },
     'release': function () {
-      var api = function () { return fetch(API, { headers: { Accept: 'application/vnd.github+json' } }).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }); };
+      var api = function () { return fetch(API, { cache: 'no-cache' }).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }); };
       // release.json is written next to this page on every release (works while the repo is private)
       return getText('release.json').then(function (t) { return JSON.parse(t); }).catch(api).then(function (j) {
         release = j;
@@ -156,7 +156,7 @@
           var mb = a.size / 1048576;
           print('  ' + esc(a.name) + ' <span class="m">' + (mb >= 1024 ? (mb / 1024).toFixed(2) + ' GB' : mb.toFixed(1) + ' MB') + '' + (a.download_count ? ' · ' + a.download_count + ' downloads' : '') + '</span>');
         });
-      }).catch(function (e) { p('r', 'gh: ' + e.message + ' (GitHub API limit? tries again later)'); });
+      }).catch(function (e) { p('r', 'release: ' + e.message + ' (tries again later)'); });
     },
     'doctor': function () {
       prune();
@@ -190,12 +190,12 @@
   // what the bot types -> which command runs
   var ALIAS = {
     'termux-info': 'termux-info',
-    'curl -fsSL $MP/termux/install.sh | grep say': 'install',
+    'curl -fsSL $MP/install.sh | grep say': 'install',
     'cat ~/mp-server/server.conf': 'cat-conf',
     'cat $MP_DATA/broker.txt': 'cat-broker',
     'cat $MP_DATA/regions.txt': 'cat-regions',
     'mp-server status': 'status', 'mp-server list': 'list', 'mp-server log': 'log', 'mp-server doctor': 'doctor', 'mp-server vps-update': 'vps-update', 'mp-server vps-setup': 'vps-setup', 'curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/update.sh | sudo bash': 'vps-update',
-    'ping -c 2 $BROKERS': 'ping', 'gh release view --repo ThirtyFoxMCx00E1/wagu': 'release', 'clear': 'clear'
+    'ping -c 2 $BROKERS': 'ping', 'curl -s $MP/release.json': 'release', 'clear': 'clear'
   };
   function run(line) {
     print('<span class="g">~ $</span> ' + esc(line));
@@ -207,7 +207,7 @@
   }
 
   // ------------------------------------------------------------ MP Bot planner
-  var boot = ['termux-info', 'curl -fsSL $MP/termux/install.sh | grep say', 'cat ~/mp-server/server.conf', 'cat $MP_DATA/broker.txt', 'cat $MP_DATA/regions.txt', 'gh release view --repo ThirtyFoxMCx00E1/wagu', 'curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/update.sh | sudo bash', 'mp-server status'];
+  var boot = ['termux-info', 'curl -fsSL $MP/install.sh | grep say', 'cat ~/mp-server/server.conf', 'cat $MP_DATA/broker.txt', 'cat $MP_DATA/regions.txt', 'curl -s $MP/release.json', 'curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/update.sh | sudo bash', 'mp-server status'];
   var relCheck = false, relSeen = '';
   var rot = ['mp-server status', 'mp-server list', 'mp-server log', 'mp-server status', 'mp-server log'], ri = 0, cycles = 0, lastRel = Date.now();
   function next() {
@@ -217,7 +217,7 @@
     if (phoneChanged) { phoneChanged = false; return phoneSeen ? { cmd: 'mp-server status', why: '24/7 phone server came back' } : { cmd: 'mp-server doctor', why: '24/7 phone server left the lobby' }; }
     if (events.length - evSeen >= 3) return { cmd: 'mp-server log', why: (events.length - evSeen) + ' new lobby events' };
     if (Date.now() - lastPing > 90000) return { cmd: 'ping -c 2 $BROKERS', why: 'ping every 90 s', wait: 7000 };
-    if (Date.now() - lastRel > 600000) { lastRel = Date.now(); relCheck = true; return { cmd: 'gh release view --repo ThirtyFoxMCx00E1/wagu', why: 'checking for a new release' }; }
+    if (Date.now() - lastRel > 600000) { lastRel = Date.now(); relCheck = true; return { cmd: 'curl -s $MP/release.json', why: 'checking for a new release' }; }
     if (relCheck && release) { relCheck = false; if (release.tag_name !== relSeen) { relSeen = release.tag_name; return { cmd: 'curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/update.sh | sudo bash', why: 'release ' + release.tag_name + ': typing the VPS update' }; } }
     if (++cycles % 10 === 0) return { cmd: 'clear', why: 'keeping the screen short', wait: 600 };
     if (!phoneSeen && cycles % 4 === 0) return { cmd: 'mp-server doctor', why: '24/7 phone server still not seen' };
@@ -226,7 +226,7 @@
 
   // ------------------------------------------------------------ start
   print('<span class="g">Welcome to Termux!</span>  <span class="m">(MP edition, runs in your browser)</span>');
-  print('<span class="m">Docs:       </span>https://github.com/ThirtyFoxMCx00E1/wagu#24-7-server');
+  print('<span class="m">Docs:       </span>https://thirtyfoxmcx00e1.github.io/openmp.com/#host');
   print('<span class="m">Bot:        </span>MP Bot types and presses Enter by itself - no chat, no typing');
   print('');
   live();

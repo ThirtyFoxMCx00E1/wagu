@@ -1,6 +1,7 @@
 {
-"latest": "3.34",
+"latest": "3.35",
 "supported": [
+"3.35",
 "3.34",
 "3.32",
 "3.31",
@@ -43,6 +44,23 @@
 "3.04.6"
 ],
 "versions": [
+{
+"v": "3.35",
+"summary": "**openmp.com** website with its own downloads, **moderators** (`[MOD]`), player **Settings** dialog, **taxi passengers**, a **welcome board** at the Mega Vil plaza, `/googlemap`, and wardrobe / bag / pause map fixes.",
+"items": [
+"**Website = openmp.com** ([thirtyfoxmcx00e1.github.io/openmp.com](https://thirtyfoxmcx00e1.github.io/openmp.com/)): its own repo, and **Download** gets the files straight from the site (`downloads/MP-client.zip`, `MP-full.zip`, `libMP32.so`, `libMP64.so`, `MP-Voice.apk`, `HiveMQ-kit.zip`) - no links to this repo any more. The Termux installer downloads the server source from the site too. Published with `tools/publish_site.py <version>`. New background pictures: the real GTA SA / Los Santos night wallpapers.",
+"**MP launcher**: the version under the logo always shows the real version (it was stuck at \"v3.24\").",
+"**Moderators**: list them in **`moderator.txt`** next to `mp_server` (`<name> <key>` per line - separate from the admin key). The player puts the same key in `files/MP/moderator.txt` and joins with that name: **`[MOD] name`** with its own flowing cyan / green / gold tag in the name tag, chat and kill feed. Moderators can kick, mute and switch cheats on their server (ban stays admin only; staff can't kick staff). `mp_server --mods <file>` for another path; a phone-hosted server reads `files/MP/moderators_server.txt`.",
+"**Server modes locked**: on a server that is not yours, players can't switch off the server modes any more (sync animations / explosions / NPCs, open world, actors, gang zones) - only the owner, `[ADMIN]` or `[MOD]`.",
+"**Player list > Settings**: SA-MP style dialog (Name | Status, Enable / Disable, Toggle + Close) with your UID, username, Discord and rank, plus Name Tag, Damage Indicator, Kill Feed, Chat Bubble, Voice Chat, Hit Sound, Chat Timestamp, Radar Player Icons - and on Mega Vil also Global Chat (OOC) and Google Map Radar, on MW3 the PUBG compass.",
+"**Mega Vil `/googlemap on|off`**: Google radar + pause map, or the game's own radar (no argument = switch).",
+"**Mega Vil taxi job - real passengers**: a person waits on a street (yellow marker). Stop next to them: they walk to the taxi and get in. Drive to the fare marker and stop: they get out and walk away, you get paid. No passenger = no fare.",
+"**Mega Vil plaza**: a white board in the middle of the pathway - \"Welcome to Mega Vil Futuristic Roleplay Server\" with the basics under it. The floating info pickups moved to both sides of the path.",
+"**Cosmetic wardrobe**: you stand on the Didier Sachs shop floor (no more camera inside the wall or falling ped), fixed camera in front of you; **Save** no longer flies the camera back - it goes straight to the lobby screen.",
+"**Bag (PANEL)**: PLAYER INFO shows your real player (camera on your ped, drag to turn it) instead of the white figure; the white figure only in a car.",
+"**Pause map (Mega Vil)**: the Google map uses the game's real map scale - the blips sit on the right streets (it was drawn too small)."
+]
+},
 {
 "v": "3.34",
 "summary": "**Factions**, the new **Mega Vil HUD**, **cosmetic room**, damage numbers, AFK, fonts / UI scale, louder voice, **hotspot multiplayer**, lower ping with many players in every region, and the **HiveMQ kit merged into this repo**.",

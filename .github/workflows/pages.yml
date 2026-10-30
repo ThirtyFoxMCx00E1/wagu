@@ -22,10 +22,20 @@ jobs:
       - uses: actions/configure-pages@v5
       - name: Check the site
         run: test -f docs/index.html && du -sh docs
+      # 3.35: the website moved to openmp.com (its own repo). This old address keeps the data files
+      # the game and the servers read (regions.txt, broker.txt, versions.json, release.json, ...) and
+      # sends visitors of the pages to the new site.
+      - name: Old address -> openmp.com
+        run: |
+          mkdir -p _site && cp -r docs/. _site/
+          for f in _site/*.html; do
+            n=$(basename "$f")
+            printf '<!doctype html><meta charset="utf-8"><title>openmp.com</title><meta http-equiv="refresh" content="0;url=https://thirtyfoxmcx00e1.github.io/openmp.com/%s"><link rel="canonical" href="https://thirtyfoxmcx00e1.github.io/openmp.com/%s"><p>Moved to <a href="https://thirtyfoxmcx00e1.github.io/openmp.com/%s">openmp.com</a></p>\n' "$n" "$n" "$n" > "$f"
+          done
       - uses: actions/upload-pages-artifact@v4
         with:
           name: github-pages
-          path: docs
+          path: _site
           retention-days: 1
   deploy:
     needs: build

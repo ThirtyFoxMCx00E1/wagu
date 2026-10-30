@@ -24,6 +24,7 @@ struct RpInvClient
     // body condition (head, torso, left arm, right arm, left leg, right leg), from the hits you take
     float    part[6] = { 100, 100, 100, 100, 100, 100 }; int lastHp = -1; uint64_t lastRegen = 0;
     bool     cam = false; float camX = 0;   // 3.34: the camera looks at your real character while the bag is up
+    float    camH = 0; bool froze = false;   // 3.35: the heading the camera was set from; you stand still while it is up
 };
 static RpInvClient s_Inv;
 enum { RPW_NONE = 0, RPW_INV, RPW_DOCS };
@@ -319,9 +320,9 @@ static bool RpInvFlat(const char* id, ImVec2 a, ImVec2 sz, bool red, const char*
     return r && enabled;
 }
 // a panel: dark see-through box with a cyan title bar on top
-static void RpInvBox(ImDrawList* dl, ImVec2 a, ImVec2 b, const char* title, float k)
+static void RpInvBox(ImDrawList* dl, ImVec2 a, ImVec2 b, const char* title, float k, int alpha = 153)
 {
-    dl->AddRectFilled(a, b, (kInvGlass & 0x00FFFFFF) | ((ImU32)(153 * k) << 24));
+    dl->AddRectFilled(a, b, (kInvGlass & 0x00FFFFFF) | ((ImU32)(alpha * k) << 24));
     ImVec2 hb(b.x, a.y + UI::S(34));
     dl->AddRectFilled(a, hb, kInvCyan);
     RpCenterIn(dl, UI::S(16), a, hb, kInvInk, title);
@@ -393,7 +394,7 @@ static void RpDrawInvWindow(uint64_t nowMs)
     const ImU32 white = IM_COL32_WHITE;
     char t[96];
     // ---------------- PLAYER INFO ----------------
-    RpInvBox(dl, la, lb, "PLAYER INFO", k);
+    RpInvBox(dl, la, lb, "PLAYER INFO", k, s_Inv.cam ? 60 : 102);   // 3.35: see your real character through it
     {
         snprintf(t, sizeof(t), "%s (ID %d)", settings.name, myId);
         dl->PushClipRect(ImVec2(la.x + pad, la.y + head), ImVec2(lb.x - pad, la.y + head + UI::S(30)), true);
@@ -420,7 +421,19 @@ static void RpDrawInvWindow(uint64_t nowMs)
                 }
             }
         }
-        if(!real) RpInvFigure(dl, cx, top, fs);
+        if(!real && !s_Inv.cam) RpInvFigure(dl, cx, top, fs);   // 3.35: only in a car (no camera on you); never over the real one
+        if(s_Inv.cam)
+        {   // 3.35: drag inside the box to turn your character round (inspect)
+            ImGui::SetCursorScreenPos(ImVec2(la.x + pad + UI::S(74), figTop0));
+            ImGui::InvisibleButton("##ivturn", ImVec2(lw - pad * 2 - UI::S(148), figH > 10 ? figH : 10));
+            if(ImGui::IsItemActive())
+            {
+                int pp = Game::LocalPed();
+                if(pp > 0) Game::SetCharHeading(pp, Game::GetCharHeading(pp) - ImGui::GetIO().MouseDelta.x * 0.6f);
+            }
+            const char* hint = "drag to turn"; float hw = RpTextW(UI::S(12), hint);
+            RpPlainText(dl, UI::S(12), ImVec2(cx - hw * 0.5f, statY - UI::S(24)), kInvDim, hint);
+        }
         // 6 "100%" boxes: 3 left (head, left arm, left leg), 3 right (torso, right arm, right leg)
         struct Tag { int part; bool right; float y; float ax, ay; };
         static const Tag kTags[6] = {
@@ -689,7 +702,7 @@ static void RpDrawPanelButton()
 static void RenderRpInv()
 {
     const uint64_t nowMs = MP_NowMs();
-    if(s_Rp.view != 2) { s_Inv.panel = false; s_Inv.win = RPW_NONE; if(s_Inv.cam) { Game::RestoreCamera(); s_Inv.cam = false; } return; }
+    if(s_Rp.view != 2) { s_Inv.panel = false; s_Inv.win = RPW_NONE; if(s_Inv.cam) { Game::RestoreCamera(); s_Inv.cam = false; } s_Inv.froze = false; return; }
     RpInvBodyTick(Game::LocalPed(), nowMs);
     if(!s_Inv.have && nowMs - s_Inv.askedAt > 10000 && s_Rp.haveMe) { s_Inv.askedAt = nowMs; RpSend(RPC_INV_REQ); }
     RpDrawGotCards(nowMs);
@@ -705,13 +718,19 @@ static void RenderRpInv()
             const float totalW = UI::S(410) + UI::S(16) + UI::S(640);
             float px = (ds.x - totalW) * 0.5f + UI::S(205) - ds.x * 0.5f;   // where the box centre is, from the screen centre
             float side = -px / (ds.x * 0.5f) * 2.0f;   // metres at 2.8 m (about 70 deg wide)
-            float h = Game::GetCharHeading(pp) * 0.0174533f, fx = -sinf(h), fy = cosf(h);
+            if(!s_Inv.cam) s_Inv.camH = Game::GetCharHeading(pp);   // 3.35: turning him (drag) does not move the camera
+            float h = s_Inv.camH * 0.0174533f, fx = -sinf(h), fy = cosf(h);
             float cfx = -fx, cfy = -fy, crx = cfy, cry = -cfx;   // the camera faces you; its right
             Vec3 look{ pc.x + crx * side, pc.y + cry * side, pc.z + 0.15f };
             Vec3 cp{ look.x + fx * 2.8f, look.y + fy * 2.8f, pc.z + 0.45f };
-            if(!s_Inv.cam) { Game::SetFixedCamera(cp, look); s_Inv.cam = true; }
+            Game::SetFixedCamera(cp, look); s_Inv.cam = true;   // 3.35: every frame (other code may move the camera)
+            if(!s_Inv.froze) { Game::FreezeChar(pp, true); s_Inv.froze = true; }
         }
-        else if(s_Inv.cam) { Game::RestoreCamera(); s_Inv.cam = false; }
+        else if(s_Inv.cam)
+        {
+            Game::RestoreCamera(); s_Inv.cam = false;
+            if(s_Inv.froze) { if(pp > 0) Game::FreezeChar(pp, false); s_Inv.froze = false; }
+        }
     }
     if(s_Inv.win == RPW_NONE) RpDrawPanelButton();   // hidden while the bag / documents are up (it sat on their edge)
     if(VKeyboard::IsOpen()) return;

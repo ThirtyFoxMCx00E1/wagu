@@ -46,11 +46,39 @@ inline bool MP_IsReservedName(const char* name)
 // a name that pretends to be staff ("[ADMIN] Bob") -> strip the tag
 inline void MP_StripAdminTag(char* name)
 {
-    while(name && !strncasecmp(name, "[ADMIN]", 7))
+    for(bool again = true; name && again; )
     {
-        memmove(name, name + 7, strlen(name + 7) + 1);
+        again = false;
+        int n = !strncasecmp(name, "[ADMIN]", 7) ? 7 : !strncasecmp(name, "[MOD]", 5) ? 5 : 0;   // 3.35: [MOD] too
+        if(!n) break;
+        memmove(name, name + n, strlen(name + n) + 1);
         while(*name == ' ') memmove(name, name + 1, strlen(name));
+        again = true;
     }
+}
+
+// 3.35: moderators. The server owner lists them in moderator.txt (next to mp_server, NOT admin.txt):
+//   <name> <key>        one per line, # = comment, the key at least 8 characters
+// The player puts the same key in files/MP/moderator.txt on the phone and joins with that name ->
+// "[MOD] name" + kick / mute / cheats switch on that server. The phone sends "MOD:<key>" in the
+// join packet's admin key field (only when the name is not the reserved admin name).
+#define MP_MOD_TAG    "[MOD] "
+#define MP_MOD_PREFIX "MOD:"
+inline bool MP_ModKeyOk(const char* file, const char* name, const char* key)
+{
+    if(!file || !*file || !name || !*name || !key || strlen(key) < 8) return false;
+    FILE* f = fopen(file, "r"); if(!f) return false;
+    char line[400]; bool ok = false;
+    while(!ok && fgets(line, sizeof(line), f))
+    {
+        char* p = line; while(*p == ' ' || *p == '\t') ++p;
+        if(*p == '#' || !*p) continue;
+        char n[64] = {0}, k[MP_ADMIN_KEY_LEN + 1] = {0};
+        if(sscanf(p, "%63s %128s", n, k) != 2) continue;
+        if(!strcasecmp(n, name) && !strcmp(k, key)) ok = true;
+    }
+    fclose(f);
+    return ok;
 }
 
 inline void MP_AdminKeyHash(const char* key, char out[65])

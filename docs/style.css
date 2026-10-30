@@ -245,3 +245,13 @@ tbody tr:not(.skel):not(.empty):hover td{background:#313136}
 
 /* 3.35: real GTA SA wallpapers (main: night city, art: Grove Street) */
 @media (max-width:760px){body{background-attachment:scroll}}
+/* 3.35: openmp.com download boxes */
+.dlgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:.75rem;margin:1rem 0}
+.dlbox{display:flex;flex-direction:column;gap:.3rem;padding:1rem 1.1rem;border:1px solid var(--line2);border-radius:var(--r);background:rgba(32,32,36,.85);color:#e4e4e7;text-decoration:none;transition:border-color .15s,transform .15s}
+.dlbox strong{color:#fff;font-size:1.05rem}
+.dlbox span{font-size:.9rem;color:#a1a1aa}
+.dlbox:hover,.dlbox:focus-visible{border-color:var(--amber);transform:translateY(-2px)}
+.dlbox.main{border-color:var(--amber);background:rgba(240,164,60,.14)}
+.dlbox.main strong{color:var(--amber)}
+.note code,.steps code{overflow-wrap:anywhere;word-break:break-word}
+.vbody,.vsum{overflow-wrap:anywhere}

@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>MP Multiplayer for GTA SA Mobile</title>
+<title>openmp.com - MP Multiplayer for GTA SA Mobile</title>
 <meta name="description" content="Free multiplayer mod for GTA San Andreas on Android. Live server list, regional servers in Asia, Europe, North America and Oceania, online 24/7.">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://api.fontshare.com; font-src https://cdn.fontshare.com; connect-src 'self' wss: https://api.github.com; img-src 'self' data:; worker-src blob:; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://api.fontshare.com; font-src https://cdn.fontshare.com; connect-src 'self' wss:; img-src 'self' data:; worker-src blob:; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <link rel="preconnect" href="https://api.fontshare.com">
 <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=clash-display@600,700&f[]=satoshi@400,500,700&display=swap">
@@ -28,10 +28,10 @@
       <div class="Artwork a8"><span class="bg3" data-p="8"></span></div>
       <div class="Artwork a9"><span class="bg1" data-p="9"></span></div>
   </div>
-  <div id="Header"><h1><a href="#"><span class="logo"><b>MP</b> Multiplayer</span><span class="logo-sub">GTA San Andreas Mobile</span></a></h1></div>
+  <div id="Header"><h1><a href="#"><span class="logo">open<b>mp</b>.com</span><span class="logo-sub">MP Multiplayer · GTA San Andreas Mobile</span></a></h1></div>
 </div>
 <div id="Stats">
-  <span><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2 16v-3h2v3h12v-3h2v3a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2zm13-9-1.5 1.5L11 6v7H9V6L6.5 8.5 5 7l5-5 5 5z"/></svg>Current Release: <strong>MP <span id="st-version">3.34</span></strong></span>
+  <span><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2 16v-3h2v3h12v-3h2v3a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2zm13-9-1.5 1.5L11 6v7H9V6L6.5 8.5 5 7l5-5 5 5z"/></svg>Current Release: <strong>MP <span id="st-version">3.35</span></strong></span>
   <span><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7 3a3 3 0 1 1 0 6 3 3 0 0 1 0-6zm7 2a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zM1 16c0-3 2.7-5 6-5s6 2 6 5v1H1v-1zm13-4c2.8 0 5 1.6 5 4v1h-4.5v-1c0-1.5-.5-2.8-1.4-3.9.3 0 .6-.1.9-.1z"/></svg>Players Online: <strong id="st-players">–</strong></span>
   <span><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 3h14v5H3V3zm0 9h14v5H3v-5zm2-7v1h2V5H5zm0 9v1h2v-1H5z"/></svg>Servers Online: <strong id="st-servers">–</strong></span>
 </div>
@@ -43,6 +43,7 @@
     <a href="#news">News</a>
     <a href="#servers">Servers</a>
     <a href="#regions">Regions</a>
+    <a href="#download">Download</a>
     <a href="#install">Install</a>
     <a href="#versions">Versions</a>
     <a href="#host">Host a region</a>
@@ -54,7 +55,7 @@
     <a href="oracle.html">MP Oracle (free 24/7)</a>
     <a href="termux.html">Termux phone server</a>
     <a href="railway.html">MP Railway (Discord bot)</a>
-    <a href="https://github.com/ThirtyFoxMCx00E1/wagu/issues">Report a problem</a>
+    <a href="https://github.com/ThirtyFoxMCx00E1/openmp.com/issues">Report a problem</a>
   </div>
 </nav>
 <main>
@@ -65,8 +66,8 @@
       <h2 class="big">Play San Andreas together. Online, every hour of the day.</h2>
       <p class="lead">MP Multiplayer turns the mobile game into a shared world: other players, cars, passengers, chat and synced story characters. Servers in Asia, Europe, North America and Oceania keep the ping low, and the 4 featured servers stay online 24/7.</p>
       <div class="cta">
-        <a class="btn btn-main" id="dl-btn" href="https://github.com/ThirtyFoxMCx00E1/wagu/releases/tag/v3.34">Download the mod</a>
-        <a class="btn btn-ghost" href="https://github.com/ThirtyFoxMCx00E1/wagu/raw/main/release/MP-Voice.apk" title="For voice chat when your GTA SA app has no microphone permission">MP Voice app (microphone)</a>
+        <a class="btn btn-main" id="dl-btn" href="#download">Download the mod</a>
+        <a class="btn btn-ghost" href="downloads/MP-Voice.apk" title="For voice chat when your GTA SA app has no microphone permission">MP Voice app (microphone)</a>
         <a class="btn btn-ghost" href="termius.html">Server console (Termius)</a>
         <a class="btn btn-ghost" href="oracle.html">Free 24/7 server (MP Oracle)</a>
         <a class="btn btn-ghost" href="termux.html">24/7 phone server (Termux)</a>
@@ -113,12 +114,30 @@
     </div>
   </section>
 
+  <section id="download" class="card">
+    <div class="wrap">
+      <div class="head">
+        <h2>Download MP <span id="dl-ver">3.35</span></h2>
+        <p class="status muted">Straight from this website. Every file is the latest release.</p>
+      </div>
+      <div class="dlgrid">
+        <a class="dlbox main" href="downloads/MP-client.zip"><strong>MP client</strong><span>libMP32.so + libMP64.so + MP folder (zip). Most players want this.</span></a>
+        <a class="dlbox" href="downloads/MP-full.zip"><strong>MP full package</strong><span>Client + server tools + guides (zip)</span></a>
+        <a class="dlbox" href="downloads/libMP64.so"><strong>libMP64.so</strong><span>64-bit phones only</span></a>
+        <a class="dlbox" href="downloads/libMP32.so"><strong>libMP32.so</strong><span>32-bit phones only</span></a>
+        <a class="dlbox" href="downloads/MP-Voice.apk"><strong>MP Voice app</strong><span>Microphone for voice chat (apk)</span></a>
+        <a class="dlbox" href="downloads/HiveMQ-kit.zip"><strong>HiveMQ kit</strong><span>Run a region server (zip)</span></a>
+      </div>
+      <p class="note">Install: put <code>libMP32.so</code> and <code>libMP64.so</code> into the AML <code>mods</code> folder, the <code>MP</code> folder into <code>Android/data/com.rockstargames.gtasa/files</code>.</p>
+    </div>
+  </section>
+
   <section id="install" class="card">
     <div class="wrap">
       <h2>Install</h2>
       <ol class="steps">
         <li><h3>Get the game ready</h3><p>GTA San Andreas for Android (2.00 or newer) with the AML mod loader installed.</p></li>
-        <li><h3>Copy the mod</h3><p>Download the latest release. Put <code>libMP32.so</code> and <code>libMP64.so</code> into the AML <code>mods</code> folder. Optional: <a class="link" href="broker.txt">broker.txt</a> goes into <code>Android/data/com.rockstargames.gtasa/files/MP</code>.</p></li>
+        <li><h3>Copy the mod</h3><p><a class="link" href="#download">Download</a> the latest release. Put <code>libMP32.so</code> and <code>libMP64.so</code> into the AML <code>mods</code> folder. Optional: <a class="link" href="broker.txt">broker.txt</a> goes into <code>Android/data/com.rockstargames.gtasa/files/MP</code>.</p></li>
         <li><h3>Start and pick a name</h3><p>Open the game, tap the MP button, set your player name. The region with the lowest ping is chosen for you.</p></li>
         <li><h3>Play</h3><p>Tap Connect for your region's default server, or host your own with a name and an optional password.</p></li>
       </ol>
@@ -129,7 +148,7 @@
     <div class="wrap">
       <h2>Version history</h2>
       <div class="vwarn" role="note">
-        <strong>MP <span id="v-latest">3.34</span>, 3.32, 3.31, 3.30, 3.29, 3.28.2, 3.28.1, 3.28, 3.27, 3.26, 3.25, 3.24, 3.23.6, 3.23.5, 3.23.4, 3.23.3, 3.23.2, 3.23.1, 3.23, 3.22.1, 3.22, 3.21.9, 3.21.8, 3.21.7, 3.21.6, 3.21.5, 3.21.4, 3.21.3, 3.21.2, 3.21.1, 3.21, 3.11.6, 3.11.5, 3.11.4, 3.11.3, 3.11.2, 3.11.1, 3.11, 3.10 and 3.04.6 can be downloaded and play together.</strong> MP 3.04.5 and older let players use cheats, so every server refuses them, on Wi-Fi and on mobile data.
+        <strong>MP <span id="v-latest">3.35</span>, 3.34, 3.32, 3.31, 3.30, 3.29, 3.28.2, 3.28.1, 3.28, 3.27, 3.26, 3.25, 3.24, 3.23.6, 3.23.5, 3.23.4, 3.23.3, 3.23.2, 3.23.1, 3.23, 3.22.1, 3.22, 3.21.9, 3.21.8, 3.21.7, 3.21.6, 3.21.5, 3.21.4, 3.21.3, 3.21.2, 3.21.1, 3.21, 3.11.6, 3.11.5, 3.11.4, 3.11.3, 3.11.2, 3.11.1, 3.11, 3.10 and 3.04.6 can be downloaded and play together.</strong> MP 3.04.5 and older let players use cheats, so every server refuses them, on Wi-Fi and on mobile data.
       </div>
       <div id="v-list" class="vlist"><p class="status">Loading the version history…</p></div>
     </div>
@@ -140,7 +159,7 @@
       <div>
         <h2>Run a region</h2>
         <p>Each region is one Linux server with a HiveMQ broker and the region's 24/7 default server. One command sets it all up: Java 21, HiveMQ Community Edition, logins, firewall, TLS and restart on crash.</p>
-        <p><a class="link" href="https://github.com/ThirtyFoxMCx00E1/wagu/tree/main/HiveMQ">HiveMQ server (inside the wagu repo) and guide</a></p>
+        <p><a class="link" href="downloads/HiveMQ-kit.zip">HiveMQ server kit (zip)</a> · <a class="link" href="https://github.com/ThirtyFoxMCx00E1/HiveMQ">HiveMQ guide</a></p>
         <p>Works on Ubuntu 22.04 / 24.04 or Debian 12. No Ubuntu? Get the small Debian 12 installer (677 MB): <a class="link" href="https://github.com/ThirtyFoxMCx00E1/HiveMQ/releases/download/Derbian/debian-12.15.0-amd64-netinst.iso">debian-12.15.0-amd64-netinst.iso</a> (<a class="link" href="https://github.com/ThirtyFoxMCx00E1/HiveMQ/releases/tag/Derbian">release</a>, sha256 <code>cd4462c0...5956e9af17</code>, same as Debian's). Install it with only "SSH server" and "standard system utilities", then as root run the Debian line on the right. On a VPS just pick Debian 12 in the image list.</p>
         <p>Ping depends on where the machine is: for Europe, NA and Oceania use a VPS in Frankfurt, Virginia / Ohio or Sydney.</p>
       </div>
@@ -176,8 +195,8 @@ wget -qO- https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-set
 
 <footer class="foot">
   <div class="wrap foot-in">
-    <p>MP Multiplayer by ThirtyFoxMCx00E1. Fan-made mod, not affiliated with Rockstar Games.</p>
-    <p><a href="regions.txt">regions.txt</a> · <a href="broker.txt">broker.txt</a> · <a href="https://github.com/ThirtyFoxMCx00E1/wagu/issues">Report a problem</a></p>
+    <p>openmp.com · MP Multiplayer by ThirtyFoxMCx00E1. Fan-made mod, not affiliated with Rockstar Games.</p>
+    <p><a href="regions.txt">regions.txt</a> · <a href="broker.txt">broker.txt</a> · <a href="https://github.com/ThirtyFoxMCx00E1/openmp.com/issues">Report a problem</a></p>
   </div>
 </footer>
 

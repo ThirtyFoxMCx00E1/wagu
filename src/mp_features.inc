@@ -85,7 +85,7 @@ static void DmgIndAdd(int id, float amount, int weapon)
 // over the name tag (above the name / sub tag / PAUSED line), so nothing overlaps
 void MP::DrawDamageIndicator(ImDrawList* dl, int id, const Vec3& head)
 {
-    if(id < 0 || id >= MP_MAX_PLAYERS) return;
+    if(id < 0 || id >= MP_MAX_PLAYERS || !MP::settings.showDmgInd) return;   // 3.35
     DmgInd& d = s_DmgInd[id];
     if(!d.at) return;
     uint64_t e = MP_NowMs() - d.at;

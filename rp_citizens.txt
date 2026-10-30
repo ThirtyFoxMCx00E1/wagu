@@ -1,0 +1,3 @@
+# Mega Vil Futuristic citizens (MP 3.35). C key|cash|bank|xp|number|job|house|pet|hunger|thirst|min|pets|items|skin|tasks|t|vehicles
+P 25000
+M 1000.000|1000.000|1000.000

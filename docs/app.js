@@ -176,12 +176,13 @@
   });
 
   // ---- latest release ----
-  fetch('https://api.github.com/repos/ThirtyFoxMCx00E1/wagu/releases/latest', { headers: { Accept: 'application/vnd.github+json' } })
+  fetch('release.json', { cache: 'no-cache' })   // 3.35: openmp.com - the release info lives on this site
     .then(function (r) { return r.ok ? r.json() : null; })
     .then(function (j) {
       if (!j || !/^v?\d/i.test(j.tag_name || '')) return;
-      $('st-version').textContent = String(j.tag_name).replace(/^v/i, '').slice(0, 12);
-      if (j.html_url && /^https:\/\/github\.com\//.test(j.html_url)) $('dl-btn').href = j.html_url;
+      var v = String(j.tag_name).replace(/^v/i, '').slice(0, 12);
+      $('st-version').textContent = v;
+      if ($('dl-ver')) $('dl-ver').textContent = v;
     }).catch(function () {});
 
   // ---- start ----
@@ -214,7 +215,8 @@
         var rest = full.length > short.length ? '<p>' + md(full) + '</p>' : '';
         var items = rest + (v.items.length ? '<ul>' + v.items.map(function (x) { return '<li>' + md(x) + '</li>'; }).join('') + '</ul>' : '');
         var dl = ok
-          ? '<p class="vdl"><a class="btn btn-main" href="https://github.com/ThirtyFoxMCx00E1/wagu/releases/tag/v' + esc(v.v) + '">Download MP ' + esc(v.v) + '</a></p>'
+          ? (top ? '<p class="vdl"><a class="btn btn-main" href="downloads/MP-client.zip">Download MP ' + esc(v.v) + '</a></p>'
+                 : '<p class="vnodl">Plays with ' + esc(latest) + '. Only the latest version is downloadable: <a class="link" href="#download">download MP ' + esc(latest) + '</a>.</p>')
           : '<p class="vnodl">No download: this version is shut out of every server. Download MP ' + esc(latest) + ' instead.</p>';
         return '<details class="vcard' + (top ? ' latest' : '') + (i >= SHOW ? ' vmore' : '') + '"' + (top ? ' open' : '') + (i >= SHOW ? ' hidden' : '') + '><summary><span class="vnum">' + esc(v.v) + '</span>' +
           '<span class="vsum">' + md(short) + '</span>' +
