@@ -181,9 +181,9 @@
       [['asia', 'mpsamp'], ['europe', 'eusamp'], ['na', 'nasamp'], ['oceania', 'ocsamp']].forEach(function (r) {
         print('  <span class="g">' + esc('pkg install -y openssh && ssh root@YOUR_VPS_IP "' + S + r[0] + '"') + '</span> <span class="m">' + r[1] + '.duckdns.org</span>');
       });
-      p('m', '  first point the DuckDNS name at the VPS IP and open TCP 1883 8883 8884 + UDP 1922 1930 1931 1932 (a closed UDP port = that server runs on the slow relay, 200 ms+)');
+      p('m', '  first point the DuckDNS name at the VPS IP and open TCP 1883 8883 8884 + UDP 1932');
       p('m', '  Debian 12 (no sudo / curl): log in as root, then  wget -qO- https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-setup.sh | bash -s europe');
-      p('m', '  Debian 12 installer (677 MB): https://github.com/ThirtyFoxMCx00E1/HiveMQ/releases/download/Derbian/debian-12.15.0-amd64-netinst.iso');
+      p('m', '  Debian 12 installer (677 MB): github.com/ThirtyFoxMCx00E1/HiveMQ/releases/tag/Derbian');
     },
     'clear': function () { out.innerHTML = ''; }
   };
@@ -226,6 +226,7 @@
 
   // ------------------------------------------------------------ start
   print('<span class="g">Welcome to Termux!</span>  <span class="m">(MP edition, runs in your browser)</span>');
+  print('<span class="m">Docs:       </span>https://github.com/ThirtyFoxMCx00E1/wagu#24-7-server');
   print('<span class="m">Bot:        </span>MP Bot types and presses Enter by itself - no chat, no typing');
   print('');
   live();

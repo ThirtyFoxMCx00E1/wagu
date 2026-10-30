@@ -31,38 +31,6 @@ static uint64_t s_nPhaseAt = 0, s_nOffDefaultAt = 0, s_nReadyAt = 0;
 static bool     s_bSawNotReady = false, s_bFailed = false;
 static char     s_szStatus[128] = "";
 
-// 3.33: save-load crash guard. Two crash logs (realme RE6054, MP 3.32, 69 mods) died on the game's own thread inside
-// DoGameRestart -> CGame::InitialiseWhenRestarting -> CGenericGameStorage::GenericLoad (CPools::LoadObjectPool ->
-// CPopulation::ConvertToDummyObject -> CEntity::GetBoundCentre, and CFileLoader::LoadObjectInstance -> CDummyObject ->
-// CPlaceable) with Project2DFX, DynamicSeason, CLEOPlus and a limit adjuster hooked into that restart. The game's
-// restart code is not ours to change, but MP is what asks for the 100% save, so it must not ask again and again:
-// loading.txt exists while a load we asked for is running. If it is still there at the next start, the game
-// crashed in that load: 100% progress stays off for this start and the next 2 (your own progress is used) so a
-// mod conflict can't crash the game every time you join the default server.
-#define PROGRESS_SKIP_STARTS 3
-static char     s_szLoadMark[420] = "", s_szSkipFile[420] = "";
-static bool     s_bSkipped = false, s_bSkipMsg = false;
-static void MarkLoadStart()
-{
-    if(!s_szLoadMark[0]) return;
-    FILE* f = fopen(s_szLoadMark, "w");
-    if(f) { fprintf(f, "a save load was requested\n"); fflush(f); fsync(fileno(f)); fclose(f); }
-}
-static void MarkLoadEnd() { if(s_szLoadMark[0]) unlink(s_szLoadMark); }
-static int  ReadSkip()
-{
-    FILE* f = fopen(s_szSkipFile, "r"); if(!f) return 0;
-    int n = 0; if(fscanf(f, "%d", &n) != 1) n = 0;
-    fclose(f);
-    return n < 0 ? 0 : (n > 20 ? 20 : n);
-}
-static void WriteSkip(int n)
-{
-    if(n <= 0) { unlink(s_szSkipFile); return; }
-    FILE* f = fopen(s_szSkipFile, "w");
-    if(f) { fprintf(f, "%d\n", n); fflush(f); fsync(fileno(f)); fclose(f); }
-}
-
 static void Msg(uint32_t col, const char* fmt, ...)
 {
     char b[200]; va_list ap; va_start(ap, fmt); vsnprintf(b, sizeof(b), fmt, ap); va_end(ap);
@@ -175,9 +143,6 @@ void Progress::Init(const char* mpDir, Callback beforeLoad, Callback afterLoad)
     mkdir(s_szBackup, 0777);
     snprintf(s_szState, sizeof(s_szState), "%s/state.txt", s_szDir);
     snprintf(s_szCustom, sizeof(s_szCustom), "%s/100.b", s_szDir);   // optional: your own 100% save
-    snprintf(s_szLoadMark, sizeof(s_szLoadMark), "%s/loading.txt", s_szDir);
-    snprintf(s_szSkipFile, sizeof(s_szSkipFile), "%s/skip.txt", s_szDir);
-    s_bSkipped = false; s_bSkipMsg = false;
     if(LoadState())
     {
         // the game closed while the 100% save was in use: put the player's own saves back first
@@ -185,25 +150,13 @@ void Progress::Init(const char* mpDir, Callback beforeLoad, Callback afterLoad)
         logger->Info("[Progress] restored your own save files after the last session (%s)", ok ? "ok" : "with errors");
         if(ok) { ClearState(); DeleteBackups(); }
     }
-    // 3.33: did the game crash while a save we asked for was loading? Then no load this start (and the next 2)
-    int skip = ReadSkip();
-    if(Exists(s_szLoadMark))
-    {
-        MarkLoadEnd();
-        skip = PROGRESS_SKIP_STARTS;
-        logger->Error("[Progress] the game crashed while a save was loading last time: 100%% progress is off for %d game starts", PROGRESS_SKIP_STARTS);
-    }
-    if(skip > 0) { s_bSkipped = true; s_bFailed = true; WriteSkip(skip - 1); }
     s_Phase = PH_IDLE;
 }
 
 static bool StartLoad(int slot)
 {
     if(s_Before) s_Before();
-    MarkLoadStart();   // 3.33: removed when the load is done (or refused); still there at the next start = the game crashed in it
-    const bool ok = Game::RequestLoadSlot(slot);
-    if(!ok) MarkLoadEnd();
-    return ok;
+    return Game::RequestLoadSlot(slot);
 }
 
 // 2.19.7: a failure used to leave the phase at PH_WAIT, so Enter() ran again every frame -
@@ -300,13 +253,7 @@ void Progress::Process(uint64_t now, bool enabled, bool onDefault, bool connecte
     {
         case PH_IDLE:
             snprintf(s_szStatus, sizeof(s_szStatus), "%s", !enabled ? "Off - your own progress everywhere" :
-                     s_bSkipped ? "Off for a few game starts (the game crashed in a save load)" :
                      s_bFailed ? "Not available on this phone (see chat)" : "Join the default server to play at 100%");
-            if(enabled && onDefault && s_bSkipped && !s_bSkipMsg)
-            {
-                s_bSkipMsg = true;
-                Msg(COL_WARN, "100%% progress is off for now: the game crashed while loading a save last time (another mod can clash with the game's save loading). Your own progress is used; it tries again in a few game starts.");
-            }
             if(enabled && onDefault && !s_bFailed) { s_Phase = PH_WAIT; s_nPhaseAt = now; }
             break;
         case PH_WAIT:      // a few seconds on the server first (feed, teleport), and not mid-mission
@@ -317,7 +264,6 @@ void Progress::Process(uint64_t now, bool enabled, bool onDefault, bool connecte
         {
             snprintf(s_szStatus, sizeof(s_szStatus), "Loading 100%% save...");
             int r = LoadDone(now, canLoad);
-            if(r != 0) { MarkLoadEnd(); if(r > 0) WriteSkip(0); }   // 3.33: the load ran: no crash
             if(r < 0)
             {
                 Msg(COL_WARN, "100%% progress: the save didn't load - using your own progress.");
@@ -351,7 +297,6 @@ void Progress::Process(uint64_t now, bool enabled, bool onDefault, bool connecte
         {
             snprintf(s_szStatus, sizeof(s_szStatus), "Loading your own save...");
             int r = LoadDone(now, canLoad);
-            if(r != 0) MarkLoadEnd();   // 3.33
             if(r < 0) { Msg(COL_WARN, "Load your save (slot %d) from the menu to continue your own story.", s_nOrig + 1); s_Phase = PH_IDLE; }
             else if(r > 0) { Msg(COL_OK, "Your own progress is back (slot %d).", s_nOrig + 1); s_Phase = PH_IDLE; }   // stay at your save point
             break;

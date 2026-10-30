@@ -50,12 +50,13 @@
       <h1>Play San Andreas together.<br>Online, every hour of the day.</h1>
       <p class="lead">MP Multiplayer turns the mobile game into a shared world: other players, cars, passengers, chat and synced story characters. Servers in four regions keep the ping low.</p>
       <div class="cta">
-        <a class="btn btn-main" id="dl-btn" href="https://github.com/ThirtyFoxMCx00E1/wagu/raw/main/release/MP-3.32-full.zip">Download the mod</a>
+        <a class="btn btn-main" id="dl-btn" href="https://github.com/ThirtyFoxMCx00E1/wagu/releases/tag/v3.32">Download the mod</a>
         <a class="btn btn-ghost" href="https://github.com/ThirtyFoxMCx00E1/wagu/raw/main/release/MP-Voice.apk" title="For voice chat when your GTA SA app has no microphone permission">MP Voice app (microphone)</a>
         <a class="btn btn-ghost" href="termius.html">Server console (Termius)</a>
         <a class="btn btn-ghost" href="oracle.html">Free 24/7 server (MP Oracle)</a>
         <a class="btn btn-ghost" href="termux.html">24/7 phone server (Termux)</a>
         <a class="btn btn-ghost" href="railway.html">Discord bot 24/7 (MP Railway)</a>
+        <a class="btn btn-ghost" href="https://github.com/ThirtyFoxMCx00E1/wagu">Source on GitHub</a>
       </div>
       <dl class="stats" aria-live="polite">
         <div><dt>Servers online</dt><dd id="st-servers">–</dd></div>
@@ -119,7 +120,7 @@
     <div class="wrap">
       <h2>Version history</h2>
       <div class="vwarn" role="note">
-        <strong>MP <span id="v-latest">3.33</span>, 3.32, 3.31, 3.30, 3.29, 3.28.2, 3.28.1, 3.28, 3.27, 3.26, 3.25, 3.24, 3.23.6, 3.23.5, 3.23.4, 3.23.3, 3.23.2, 3.23.1, 3.23, 3.22.1, 3.22, 3.21.9, 3.21.8, 3.21.7, 3.21.6, 3.21.5, 3.21.4, 3.21.3, 3.21.2, 3.21.1, 3.21, 3.11.6, 3.11.5, 3.11.4, 3.11.3, 3.11.2, 3.11.1, 3.11, 3.10 and 3.04.6 can be downloaded and play together.</strong> MP 3.04.5 and older let players use cheats, so every server refuses them, on Wi-Fi and on mobile data.
+        <strong>MP <span id="v-latest">3.32</span>, 3.31, 3.30, 3.29, 3.28.2, 3.28.1, 3.28, 3.27, 3.26, 3.25, 3.24, 3.23.6, 3.23.5, 3.23.4, 3.23.3, 3.23.2, 3.23.1, 3.23, 3.22.1, 3.22, 3.21.9, 3.21.8, 3.21.7, 3.21.6, 3.21.5, 3.21.4, 3.21.3, 3.21.2, 3.21.1, 3.21, 3.11.6, 3.11.5, 3.11.4, 3.11.3, 3.11.2, 3.11.1, 3.11, 3.10 and 3.04.6 can be downloaded and play together.</strong> MP 3.04.5 and older let players use cheats, so every server refuses them, on Wi-Fi and on mobile data.
       </div>
       <div id="v-list" class="vlist"><p class="status">Loading the version history…</p></div>
     </div>
@@ -129,12 +130,20 @@
     <div class="wrap two">
       <div>
         <h2>Run a region</h2>
-        <p>Each region is one Linux server with a HiveMQ broker and the region's four 24/7 servers: the default server, Brief Case War, Modern Warfare 3 and Mega Vil Futuristic. They are hosted only by that machine, never by a player's phone, so they stay online around the clock. One command sets it all up: Java 21, HiveMQ Community Edition, logins, firewall, TLS and restart on crash.</p>
-        <p>Works on Ubuntu 22.04 / 24.04 or Debian 12. No Ubuntu? Get the small Debian 12 installer (677 MB): <a class="link" href="https://github.com/ThirtyFoxMCx00E1/HiveMQ/releases/download/Derbian/debian-12.15.0-amd64-netinst.iso">debian-12.15.0-amd64-netinst.iso</a> (sha256 <code>cd4462c0...5956e9af17</code>, same as Debian's). Install it with only "SSH server" and "standard system utilities", then as root run the Debian line on the right. On a VPS just pick Debian 12 in the image list.</p>
+        <p>Each region is one Linux server with a HiveMQ broker and the region's 24/7 default server. One command sets it all up: Java 21, HiveMQ Community Edition, logins, firewall, TLS and restart on crash.</p>
+        <p><a class="link" href="https://github.com/ThirtyFoxMCx00E1/HiveMQ">HiveMQ server repo and guide</a></p>
+        <p>Works on Ubuntu 22.04 / 24.04 or Debian 12. No Ubuntu? Get the small Debian 12 installer (677 MB): <a class="link" href="https://github.com/ThirtyFoxMCx00E1/HiveMQ/releases/download/Derbian/debian-12.15.0-amd64-netinst.iso">debian-12.15.0-amd64-netinst.iso</a> (<a class="link" href="https://github.com/ThirtyFoxMCx00E1/HiveMQ/releases/tag/Derbian">release</a>, sha256 <code>cd4462c0...5956e9af17</code>, same as Debian's). Install it with only "SSH server" and "standard system utilities", then as root run the Debian line on the right. On a VPS just pick Debian 12 in the image list.</p>
         <p>Ping depends on where the machine is: for Europe, NA and Oceania use a VPS in Frankfurt, Virginia / Ohio or Sydney.</p>
-        <p>Open these ports in the cloud provider's firewall too: <code>TCP 1883 8883 8884</code> and <code>UDP 1922 1930 1931 1932</code>. A game port that stays closed makes that server fall back to the relay, which is 200 ms or more instead of the real distance ping.</p>
       </div>
-      <pre class="code" aria-label="Install commands"><code># Debian 12 / Ubuntu, as root - one line per region:
+      <pre class="code" aria-label="Install commands"><code>git clone https://github.com/ThirtyFoxMCx00E1/HiveMQ
+cd HiveMQ
+sudo ./install.sh --region Asia \
+  --domain asia-you.duckdns.org --email you@mail.com
+
+# on ONE server only: join the server lists
+sudo ./install.sh --region Asia --bridge
+
+# Debian 12 (no sudo / curl), as root - one line per region:
 wget -qO- https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-setup.sh \
   | bash -s europe      # or asia / na / oceania</code></pre>
     </div>
@@ -158,7 +167,7 @@ wget -qO- https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-set
 <footer class="foot">
   <div class="wrap foot-in">
     <p>MP Multiplayer by ThirtyFoxMCx00E1. Fan-made mod, not affiliated with Rockstar Games.</p>
-    <p><a href="regions.txt">regions.txt</a> · <a href="broker.txt">broker.txt</a> · <a href="https://discord.gg/tbsDknk34y" target="_blank" rel="noopener">Report a problem on Discord</a></p>
+    <p><a href="regions.txt">regions.txt</a> · <a href="broker.txt">broker.txt</a> · <a href="https://github.com/ThirtyFoxMCx00E1/wagu/issues">Report a problem</a></p>
   </div>
 </footer>
 

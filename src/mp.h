@@ -51,7 +51,7 @@ struct MPSettings
     int   serverIcon        = 0;       // 2.24: icon of the server you host: 0 = default (main_df_icon.png), 1..250 = icon_N.png
     bool  fullProgressDefault = true;  // 100% save while on the default server (2.10)
     bool  syncAnims         = true;    // 2.13: copy other players' animations onto their avatars
-    bool  brokerStandby     = false;   // 3.24: standby Broker pool - SWITCHED OFF in 3.33 (the 24/7 machine runs the featured servers, phones never host them)
+    bool  brokerStandby     = true;    // 3.24: one of the 100 standby Brokers (hosts an offline featured server in the background)
     bool  syncEnv           = true;    // 2.13: explosions, fires, dropped weapons
     bool  syncNpcs          = true;    // 2.18: people + traffic shared with the players around you
     bool  unlockWorld       = true;    // 2.21: all cities, shops, gyms, food, barbers, tattoo, clothes, Ammu-Nation, garages

@@ -1456,7 +1456,7 @@ static void RenderRp()
     }
 }
 
-// launcher / menu entry: join the 24/7 Mega Vil (3.33: run by the 24/7 server only, a phone never hosts it)
+// launcher / menu entry: join the 24/7 Mega Vil (the VPS / Broker bot, or a phone when it is down)
 void MP::JoinRp()
 {
     if(RpOnServer()) { LeaveServer("Left Mega Vil Futuristic."); return; }

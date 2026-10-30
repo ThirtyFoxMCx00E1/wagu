@@ -1212,10 +1212,7 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             if(len < (int)sizeof(PktPing)) return;
             PktPing p = *(const PktPing*)data;
             p.type = PKT_PONG;
-            // 3.33: answer NOW. SendRaw() queues in the batch (sendmmsg) and the batch leaves only after every
-            // packet received with this one was handled - a join in the same batch (welcome + the whole player
-            // list + extras fanned out to everybody) held the pong back and the ping of the whole server jumped.
-            sendto(m_Sock, (const char*)&p, sizeof(p), 0, (const sockaddr*)&from, sizeof(from));
+            SendRaw(from, &p, sizeof(p));
             break;
         }
 
