@@ -13,10 +13,10 @@
 // phones refuse servers older than that too (they would let old phones in).
 // 3.10: build 31000. MP_MIN_BUILD stays 30406 and the lobby stays thirtyfox/mp5/: 3.04.6 (no cheats)
 // and 3.10 phones play together on the same servers; only 3.04.5 and older (mp4) stay shut out.
-#define MP_BUILD 33200   // 3.32
+#define MP_BUILD 33400   // 3.34
 #define MP_MIN_BUILD       30406
 #define MP_AUTH_MIN_BUILD  32106   // 3.21.6: servers with the login system refuse older phones (they could not log in)
-#define MP_VERSION_STR     "3.32"
+#define MP_VERSION_STR     "3.34"
 #define MP_VOICE_BUILD     31100   // 3.11: phones from this build on get voice packets
 #define MP_DOWNLOAD_URL    "thirtyfoxmcx00e1.github.io/wagu"
 #define MP_DEFAULT_HOST    "127.0.0.1"
@@ -33,6 +33,7 @@
 #define MP_BOT_NAME        "Broker"
 #define MP_SYNC_RATE_MS    50     // 20 Hz on-foot / in-car sync (lower with many players, 2.11)
 #define MP_SYNC_NEAR_M     350.0f // server forwards every sync between players closer than this
+#define MP_DL_BUDGET       60     // 3.34: max syncs relayed to one player per 250 ms (240/s) before the far tiers slow down
 #define MP_SYNC_FAR_MS     1000   // ...and 1 sync per second between players farther apart
 #define MP_SOCK_BUF        (512 * 1024)    // UDP socket buffers (game client / server)
 #define MP_SERVER_SOCK_BUF (8 * 1024 * 1024)   // 3.22: the server socket: a burst from 100 phones never overflows (the kernel caps it at net.core.rmem_max)
@@ -118,6 +119,8 @@ enum ePacket : uint8_t
     PKT_RP_CARD,        // S<->C         3.25: signed citizen backup (money survives a host change)
     PKT_RP_INV,         // S->C          3.26: Mega Vil: my bag (15 slots, weight)
     PKT_RP_DROPS,       // S->C          3.30: Mega Vil: items lying on the ground (dropped from bags)
+    PKT_RP_FAC,         // S->C          3.34: Mega Vil: one faction of the list (/faction)
+    PKT_RP_PFAC,        // S->C          3.34: Mega Vil: the faction of every player (nametag / chat / kill feed / radar)
 };
 
 enum eRegion : uint8_t { REGION_ASIA = 0, REGION_EUROPE, REGION_NA, REGION_OCEANIA, REGION_COUNT };
@@ -439,7 +442,7 @@ struct PktPause       { uint8_t type; uint8_t id; uint8_t paused; };
 enum eStatus : uint8_t { STATUS_MISSION = 1, STATUS_CUTSCENE = 2 };
 struct PktStatus      { uint8_t type; uint8_t id; uint8_t state; char mission[8]; };
 // 2.16 server permissions + mission pairs
-enum ePerm : uint8_t { PERM_MISSION_PAIR = 1, PERM_NO_CHEATS = 2, PERM_CHEAT_MENU = 4, PERM_V219 = 0x80 };   // 3.00: CHEAT_MENU = the host allows CheatMenu (libCheatMenu.so / libCheatMenu64.so), custom servers only   // 2.35: NO_CHEATS = the host disabled MP + CLEO menu cheats   // V219: server knows 2.19 packets (jack, player info, partner damage)     // "Mission sync" (2.17 name); hosts toggle it in the MP menu
+enum ePerm : uint8_t { PERM_MISSION_PAIR = 1, PERM_NO_CHEATS = 2, PERM_CHEAT_MENU = 4, PERM_AFK = 8, PERM_DMG_IND = 16, PERM_SHOW_IDS = 32, PERM_V219 = 0x80 };   // 3.34: AFK / damage indicator / ids   // 3.00: CHEAT_MENU = the host allows CheatMenu (libCheatMenu.so / libCheatMenu64.so), custom servers only   // 2.35: NO_CHEATS = the host disabled MP + CLEO menu cheats   // V219: server knows 2.19 packets (jack, player info, partner damage)     // "Mission sync" (2.17 name); hosts toggle it in the MP menu
 // 3.02: + the server's gamemodes (GM_*). modesMagic == MP_MODES_MAGIC when the server sends them;
 // older servers send 2 bytes (= no gamemodes on a custom server). Older phones read 2 bytes.
 enum eGameMode : uint16_t
@@ -702,6 +705,12 @@ enum eRpEv : uint8_t
 };
 struct PktRpEvent     { uint8_t type, ev, a, b, who; uint8_t pad[3]; int32_t val; float fval[3]; char text[120]; };
 struct PktRpCmd       { uint8_t type, cmd, a, b; int32_t val; float pos[3]; char text[100]; };
+// 3.34: factions (max RP_FAC_MAX, $RP_FAC_PRICE to create; members max 25 each)
+#define RP_FAC_MAX     25
+#define RP_FAC_PRICE   25000
+#define RP_FAC_LIMIT   25
+struct PktRpFac       { uint8_t type, idx, count, limit, members, mine, pad0, pad1; uint32_t col; char tag[8]; char title[28]; char desc[96]; char rules[96]; char owner[24]; };
+struct PktRpPFac      { uint8_t type, n; uint8_t fac[MP_MAX_PLAYERS]; };   // 255 = none
 #define RP_INV_SLOTS   16   // 3.29: the bag, 4 x 4 (3.26 - 3.28: 15)
 struct RpInvSlot      { uint8_t id; uint8_t pad; uint16_t count; };
 struct PktRpInv       { uint8_t type, n, pad0, pad1; uint16_t weight, maxWeight; RpInvSlot slot[RP_INV_SLOTS]; };   // 3.26

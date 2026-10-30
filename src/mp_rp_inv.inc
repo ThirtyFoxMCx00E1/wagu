@@ -23,6 +23,7 @@ struct RpInvClient
     RpGotCard got[RP_GOT_MAX]{}; int nGot = 0;
     // body condition (head, torso, left arm, right arm, left leg, right leg), from the hits you take
     float    part[6] = { 100, 100, 100, 100, 100, 100 }; int lastHp = -1; uint64_t lastRegen = 0;
+    bool     cam = false; float camX = 0;   // 3.34: the camera looks at your real character while the bag is up
 };
 static RpInvClient s_Inv;
 enum { RPW_NONE = 0, RPW_INV, RPW_DOCS };
@@ -300,8 +301,8 @@ static void RpDrawPanel(uint64_t nowMs)
 //   - right INVENTORY: cyan title bar, the weight "0.5 / 50.0 Kg" top right, a 5 x 3 grid of square
 //     grey cells (16 slots, drag / wheel for the last one), name top-left + amount under it in a cell,
 //     the picked cell dark blue, and 4 cyan buttons along the bottom: AMOUNT, USE, GIVE, DROP
-static const ImU32 kInvCyan = IM_COL32(86, 204, 232, 255), kInvCyanDn = IM_COL32(44, 150, 186, 255), kInvInk = IM_COL32(12, 22, 30, 255);
-static const ImU32 kInvGlass = IM_COL32(24, 26, 30, 228), kInvCell = IM_COL32(58, 60, 66, 225), kInvCellSel = IM_COL32(24, 38, 72, 245);
+static const ImU32 kInvCyan = IM_COL32(56, 189, 248, 255), kInvCyanDn = IM_COL32(14, 140, 200, 255), kInvInk = IM_COL32(8, 16, 26, 255);   // 3.34: sky blue
+static const ImU32 kInvGlass = IM_COL32(10, 10, 12, 153), kInvCell = IM_COL32(40, 40, 44, 102), kInvCellSel = IM_COL32(56, 189, 248, 110);   // 3.34: info 40 %, slots 60 % see-through, no blue tint
 static const ImU32 kInvRed = IM_COL32(222, 72, 72, 255), kInvRedDn = IM_COL32(170, 40, 40, 255), kInvDim = IM_COL32(190, 196, 204, 255);
 // a flat square button: cyan (or red) with dark (or white) text
 static bool RpInvFlat(const char* id, ImVec2 a, ImVec2 sz, bool red, const char* label, bool enabled = true)
@@ -312,7 +313,7 @@ static bool RpInvFlat(const char* id, ImVec2 a, ImVec2 sz, bool red, const char*
     ImVec2 b(a.x + sz.x, a.y + sz.y);
     ImU32 c = red ? (down ? kInvRedDn : kInvRed) : (down ? kInvCyanDn : kInvCyan);
     if(!enabled) c = (c & 0x00FFFFFF) | (110u << 24);
-    dl->AddRectFilled(a, b, c, UI::S(2));
+    dl->AddRectFilled(a, b, c);
     RpCenterIn(dl, UI::S(16), a, b, red ? IM_COL32_WHITE : (enabled ? kInvInk : IM_COL32(12, 22, 30, 150)), label);
     if(r && enabled) RpClick(RPS_CLICK);
     return r && enabled;
@@ -320,7 +321,7 @@ static bool RpInvFlat(const char* id, ImVec2 a, ImVec2 sz, bool red, const char*
 // a panel: dark see-through box with a cyan title bar on top
 static void RpInvBox(ImDrawList* dl, ImVec2 a, ImVec2 b, const char* title, float k)
 {
-    dl->AddRectFilled(a, b, (kInvGlass & 0x00FFFFFF) | ((ImU32)(228 * k) << 24));
+    dl->AddRectFilled(a, b, (kInvGlass & 0x00FFFFFF) | ((ImU32)(153 * k) << 24));
     ImVec2 hb(b.x, a.y + UI::S(34));
     dl->AddRectFilled(a, hb, kInvCyan);
     RpCenterIn(dl, UI::S(16), a, hb, kInvInk, title);
@@ -402,7 +403,24 @@ static void RpDrawInvWindow(uint64_t nowMs)
         const float figTop0 = la.y + head + UI::S(36), figH = statY - UI::S(10) - figTop0;
         float fs = figH / UI::S(262); if(fs > 1.0f) fs = 1.0f; if(fs < 0.6f) fs = 0.6f;
         const float cx = (la.x + lb.x) * 0.5f, top = figTop0 + (figH - UI::S(262) * fs) * 0.5f;
-        RpInvFigure(dl, cx, top, fs);
+        // 3.34: your real character stands behind this box (the camera looks at you while the bag is up);
+        // the % boxes point at his body parts on screen. RpInvFigure stays as the fallback (no ped).
+        ImVec2 bodyPt[6]; bool real = false;
+        {
+            int pp = Game::LocalPed(); Vec3 pc;
+            if(s_Inv.cam && pp > 0 && Game::GetCharPos(pp, pc))
+            {
+                float h = Game::GetCharHeading(pp) * 0.0174533f, rx = cosf(h), ry = sinf(h);
+                static const float kOff[6][2] = { { 0, 0.68f }, { 0, 0.25f }, { -0.30f, 0.10f }, { 0.30f, 0.10f }, { -0.13f, -0.55f }, { 0.13f, -0.55f } };
+                real = true;
+                for(int q = 0; q < 6 && real; ++q)
+                {
+                    Vec3 w{ pc.x + rx * kOff[q][0], pc.y + ry * kOff[q][0], pc.z + kOff[q][1] }; float sx, sy, dp;
+                    if(Game::WorldToScreen(w, sx, sy, dp) && dp > 0) bodyPt[q] = ImVec2(sx, sy); else real = false;
+                }
+            }
+        }
+        if(!real) RpInvFigure(dl, cx, top, fs);
         // 6 "100%" boxes: 3 left (head, left arm, left leg), 3 right (torso, right arm, right leg)
         struct Tag { int part; bool right; float y; float ax, ay; };
         static const Tag kTags[6] = {
@@ -416,6 +434,7 @@ static void RpDrawInvWindow(uint64_t nowMs)
             float bx = g.right ? lb.x - pad - tbw : la.x + pad;
             ImVec2 ba(bx, yy - tbh * 0.5f), bb(bx + tbw, yy + tbh * 0.5f);
             ImVec2 to(cx + UI::S(g.ax) * fs, top + UI::S(g.ay) * fs), from(g.right ? ba.x : bb.x, yy);
+            if(real) to = bodyPt[g.part];
             dl->AddLine(from, ImVec2(to.x, yy), IM_COL32(230, 232, 236, 200), UI::S(1.5f));
             if(fabsf(to.y - yy) > 1) dl->AddLine(ImVec2(to.x, yy), to, IM_COL32(230, 232, 236, 200), UI::S(1.5f));
             dl->AddRectFilled(ba, bb, IM_COL32(14, 15, 18, 235));
@@ -473,7 +492,8 @@ static void RpDrawInvWindow(uint64_t nowMs)
         if(i >= RP_INV_SLOTS) { dl->AddRectFilled(ca, cb, IM_COL32(58, 60, 66, 90)); continue; }
         bool full = s_Inv.have && inv.slot[i].id && inv.slot[i].id < RPX_COUNT, sel = s_Inv.sel == i;
         dl->AddRectFilled(ca, cb, sel ? kInvCellSel : kInvCell);
-        if(sel) dl->AddRect(ca, cb, IM_COL32(120, 150, 220, 200), 0, 0, UI::S(2));
+        dl->AddRectFilled(ImVec2(ca.x, cb.y - UI::S(3)), cb, sel ? kInvCyan : IM_COL32(245, 130, 32, 150));   // the accent bar of the cards
+        if(sel) dl->AddRect(ca, cb, kInvCyan, 0, 0, UI::S(2));
         if(!full) continue;
         const RpInvSlot& sl = inv.slot[i];
         dl->PushClipRect(ca, cb, true);
@@ -599,34 +619,34 @@ static void RpDrawGotCards(uint64_t nowMs)
     if(!s_Inv.nGot) return;
     ImVec2 ds = ImGui::GetIO().DisplaySize;
     ImDrawList* dl = ImGui::GetForegroundDrawList();
-    const float cw = UI::S(340), ch = UI::S(80), gap = UI::S(10);
+    // 3.34: square boxes like the screenshot - "Received 10x" on top, the item in the middle, its name
+    // under it, an orange bar along the bottom; dark see-through, no round corners. Newest on the right.
+    const float cw = UI::S(150), ch = UI::S(150), gap = UI::S(10);
     const float right = ds.x - UI::S(28), bottom = ds.y * 0.86f;
     char t[48];
     for(int j = 0; j < s_Inv.nGot; ++j)
     {
-        int i = s_Inv.nGot - 1 - j;   // newest at the bottom
+        int i = s_Inv.nGot - 1 - j;
         const RpGotCard& c = s_Inv.got[i];
         uint64_t e = nowMs - c.at;
         float alpha = e < RP_GOT_SHOW_MS ? 1.0f : 1.0f - (float)(e - RP_GOT_SHOW_MS) / RP_GOT_FADE_MS;
         if(alpha <= 0) continue;
         float in = e < 200 ? e / 200.0f : 1.0f;
-        float slide = (1.0f - in) * UI::S(60) + (1.0f - alpha) * UI::S(40);   // in from the right, out to the right
-        ImVec2 a(right - cw + slide, bottom - ch - j * (ch + gap)), b(a.x + cw, a.y + ch);
-        dl->AddRectFilled(a, b, IM_COL32(12, 18, 32, (int)(232 * alpha)), UI::S(18));
-        dl->AddRectFilled(a, ImVec2(a.x + UI::S(7), b.y), RpCol(kUiSky, alpha), UI::S(18), ImDrawFlags_RoundCornersLeft);
-        ImVec2 ic(a.x + UI::S(50), (a.y + b.y) * 0.5f);
-        dl->AddCircleFilled(ic, UI::S(30), IM_COL32(30, 44, 70, (int)(255 * alpha)), 32);
-        RpItemIcon(dl, c.id, ic, UI::S(50), alpha);
-        snprintf(t, sizeof(t), "+%d", c.count);
-        float pw = RpTextW(UI::S(21), t);
-        RpPlainText(dl, UI::S(21), ImVec2(a.x + UI::S(94), a.y + UI::S(13)), RpCol(kUiSkyHi, alpha), t);
-        RpPlainText(dl, UI::S(21), ImVec2(a.x + UI::S(102) + pw, a.y + UI::S(13)), RpCol(0xFFFFFFFF, alpha), g_RpInv[c.id].name);
-        RpPlainText(dl, UI::S(14), ImVec2(a.x + UI::S(94), a.y + UI::S(43)), IM_COL32(148, 170, 196, (int)(255 * alpha)), "Added to your bag");
-        // the time line runs out in 15 s
+        float slide = (1.0f - in) * UI::S(40) + (1.0f - alpha) * UI::S(30);
+        ImVec2 a(right - cw - j * (cw + gap), bottom - ch + slide), b(a.x + cw, a.y + ch);
+        dl->AddRectFilled(a, b, IM_COL32(10, 10, 12, (int)(150 * alpha)));
+        dl->AddRect(a, b, IM_COL32(255, 255, 255, (int)(28 * alpha)), 0, 0, UI::S(1));
+        snprintf(t, sizeof(t), "Received %dx", c.count);
+        RpPlainText(dl, UI::S(15), ImVec2(a.x + UI::S(8), a.y + UI::S(6)), RpCol(0xFFFFFFFF, alpha), t);
+        RpItemIcon(dl, c.id, ImVec2((a.x + b.x) * 0.5f, a.y + ch * 0.50f), ch * 0.42f, alpha);
+        const char* nm = g_RpInv[c.id].name; float nw = RpTextW(UI::S(14), nm);
+        dl->PushClipRect(a, b, true);
+        RpPlainText(dl, UI::S(14), ImVec2((a.x + b.x - nw) * 0.5f, b.y - UI::S(30)), RpCol(0xFFFFFFFF, alpha), nm);
+        dl->PopClipRect();
         float left = e < RP_GOT_SHOW_MS ? 1.0f - (float)e / RP_GOT_SHOW_MS : 0.0f;
-        ImVec2 la(a.x + UI::S(94), b.y - UI::S(12)), lb(b.x - UI::S(18), b.y - UI::S(8));
-        dl->AddRectFilled(la, lb, IM_COL32(40, 52, 74, (int)(255 * alpha)), UI::S(2));
-        if(left > 0) dl->AddRectFilled(la, ImVec2(la.x + (lb.x - la.x) * left, lb.y), RpCol(kUiSky, alpha), UI::S(2));
+        ImVec2 la(a.x, b.y - UI::S(6)), lb(b.x, b.y);
+        dl->AddRectFilled(la, lb, IM_COL32(60, 40, 20, (int)(200 * alpha)));
+        dl->AddRectFilled(la, ImVec2(la.x + (lb.x - la.x) * (0.25f + 0.75f * left), lb.y), IM_COL32(245, 130, 32, (int)(255 * alpha)));
     }
 }
 
@@ -669,12 +689,30 @@ static void RpDrawPanelButton()
 static void RenderRpInv()
 {
     const uint64_t nowMs = MP_NowMs();
-    if(s_Rp.view != 2) { s_Inv.panel = false; s_Inv.win = RPW_NONE; return; }
+    if(s_Rp.view != 2) { s_Inv.panel = false; s_Inv.win = RPW_NONE; if(s_Inv.cam) { Game::RestoreCamera(); s_Inv.cam = false; } return; }
     RpInvBodyTick(Game::LocalPed(), nowMs);
     if(!s_Inv.have && nowMs - s_Inv.askedAt > 10000 && s_Rp.haveMe) { s_Inv.askedAt = nowMs; RpSend(RPC_INV_REQ); }
     RpDrawGotCards(nowMs);
+    RpFacDraw();   // 3.34
     if(SampDialogOpen() && !VKeyboard::IsOpen()) return;
     if(s_Rp.phone) { s_Inv.panel = false; s_Inv.win = RPW_NONE; }
+    {   // 3.34: the bag looks at your real character, standing in the PLAYER INFO box on the left
+        int pp = Game::LocalPed(); Vec3 pc;
+        bool want = s_Inv.win == RPW_INV && pp > 0 && !Game::IsCharInAnyCar(pp) && Game::GetCharPos(pp, pc);
+        if(want)
+        {
+            ImVec2 ds = ImGui::GetIO().DisplaySize;
+            const float totalW = UI::S(410) + UI::S(16) + UI::S(640);
+            float px = (ds.x - totalW) * 0.5f + UI::S(205) - ds.x * 0.5f;   // where the box centre is, from the screen centre
+            float side = -px / (ds.x * 0.5f) * 2.0f;   // metres at 2.8 m (about 70 deg wide)
+            float h = Game::GetCharHeading(pp) * 0.0174533f, fx = -sinf(h), fy = cosf(h);
+            float cfx = -fx, cfy = -fy, crx = cfy, cry = -cfx;   // the camera faces you; its right
+            Vec3 look{ pc.x + crx * side, pc.y + cry * side, pc.z + 0.15f };
+            Vec3 cp{ look.x + fx * 2.8f, look.y + fy * 2.8f, pc.z + 0.45f };
+            if(!s_Inv.cam) { Game::SetFixedCamera(cp, look); s_Inv.cam = true; }
+        }
+        else if(s_Inv.cam) { Game::RestoreCamera(); s_Inv.cam = false; }
+    }
     if(s_Inv.win == RPW_NONE) RpDrawPanelButton();   // hidden while the bag / documents are up (it sat on their edge)
     if(VKeyboard::IsOpen()) return;
     if(s_Inv.panel) RpDrawPanel(nowMs);

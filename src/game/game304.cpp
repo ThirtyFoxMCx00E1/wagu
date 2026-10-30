@@ -6,6 +6,7 @@
 #include <string.h>
 #include <mod/amlmod.h>
 #include <mod/logger.h>
+#include <set>
 
 DEFOPCODE(0247, REQUEST_MODEL_304, i);
 DEFOPCODE(0248, HAS_MODEL_LOADED_304, i);
@@ -20,20 +21,36 @@ DEFOPCODE(0110, CLEAR_WANTED_LEVEL_304, i);
 DEFOPCODE(01F0, SET_MAX_WANTED_LEVEL_304, i);
 DEFOPCODE(0249, MARK_MODEL_AS_NO_LONGER_NEEDED_304, i);
 
+// 3.34: every object MP makes is remembered, so a save load can free them all first. The two
+// crash logs in BugReports/ (CPools::LoadObjectPool / CFileLoader::LoadObjectInstance -> CPlaceable /
+// CEntity::GetBoundCentre on a null object) are the game's object + dummy pools running out while
+// the save loads: MP's ATMs, drops, MW3 props, briefcases were still in the pool.
+static std::set<int> s_MpObjects;
+static void TrackObj(int obj) { if(obj > 0) s_MpObjects.insert(obj); }
+int Game::DeleteAllMpObjects()
+{
+    int n = 0;
+    for(int o : s_MpObjects) if(o > 0 && CALLSCM(DOES_OBJECT_EXIST_304, o)) { CALLSCM(DELETE_OBJECT_304, o); ++n; }
+    s_MpObjects.clear();
+    return n;
+}
 int Game::CreateWorldObject(int model, const Vec3& p)
 {
     if(!IsReady() || model <= 0) return 0;
+    { int fs = FreeObjectSlots(); if(fs >= 0 && fs < 40) return 0; }   // 3.34: keep room for the game + other mods
     if(!(p.x == p.x) || p.x < -3000.0f || p.x > 3000.0f || p.y < -3000.0f || p.y > 3000.0f) return 0;
     if(!CALLSCM(HAS_MODEL_LOADED_304, model)) { CALLSCM(REQUEST_MODEL_304, model); return 0; }   // try again next tick
     uint32_t obj = 0;
     CALLSCM(CREATE_OBJECT_304, model, p.x, p.y, p.z, &obj);
     if(!obj) return 0;
     CALLSCM(SET_OBJECT_COLLISION_304, (int)obj, 0);
+    TrackObj((int)obj);
     return (int)obj;
 }
 void Game::DeleteWorldObject(int obj)
 {
     if(obj > 0 && CALLSCM(DOES_OBJECT_EXIST_304, obj)) CALLSCM(DELETE_OBJECT_304, obj);
+    s_MpObjects.erase(obj);
 }
 bool Game::WorldObjectExists(int obj) { return obj > 0 && CALLSCM(DOES_OBJECT_EXIST_304, obj) != 0; }
 void Game::MoveWorldObject(int obj, const Vec3& p, float spinDeg)
@@ -96,5 +113,6 @@ int Game::CreateMapObject(int model, const Vec3& p, float rx, float ry, float rz
     CALLSCM(SET_OBJECT_COORDINATES_304, (int)obj, p.x, p.y, p.z);   // exact z (no ground snap)
     CALLSCM(SET_OBJECT_ROTATION_304, (int)obj, rx, ry, rz);
     CALLSCM(SET_OBJECT_COLLISION_304, (int)obj, 1);
+    TrackObj((int)obj);
     return (int)obj;
 }

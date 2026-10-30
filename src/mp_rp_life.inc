@@ -230,16 +230,70 @@ static void RpInfoUpdate(bool want, uint64_t now)
         if(!r.animOk) r.animOk = Game::PlayAnimLoop(r.ped, r.anim, r.file);
     }
 }
+// 3.34: no info people any more - every info point is a floating pickup like the ones in Grove
+// Street: a big letter in a ring, spinning sideways (around its own up axis) and bobbing slowly,
+// higher up and further from the camera so it never fills the screen
+static const char* RpInfoGlyph(const RpInfoPed& r)
+{
+    switch(r.title[0]) { case 'W': return "i"; case 'R': return "R"; case 'J': return "J"; case 'M': return "$"; case 'P': return "P"; case 'L': return "L"; }
+    return "J";
+}
+// ImGui 1.89 has no ellipse: a circle with its vertices squeezed in x
+static void RpEllipse(ImDrawList* dl, ImVec2 c, float rx, float ry, ImU32 col, bool filled, float th = 1.0f)
+{
+    if(ry < 0.5f) return;
+    int v0 = dl->VtxBuffer.Size;
+    if(filled) dl->AddCircleFilled(c, ry, col, 32); else dl->AddCircle(c, ry, col, 32, th);
+    const float k = rx / ry;
+    for(int i = v0; i < dl->VtxBuffer.Size; ++i) { ImDrawVert& v = dl->VtxBuffer[i]; v.pos.x = c.x + (v.pos.x - c.x) * k; }
+}
+static void RpSpinPickup(ImDrawList* dl, const Vec3& base, const char* glyph, uint32_t rgba, float t)
+{
+    const float bob = 0.12f * sinf(t * 1.9f);
+    Vec3 c = { base.x, base.y, base.z + bob };
+    ImVec2 sc, top;
+    if(!BcwW2S(c, sc) || !BcwW2S({ c.x, c.y, c.z + 0.55f }, top)) return;
+    float r = sc.y - top.y; if(r < UI::S(8)) r = UI::S(8); if(r > UI::S(70)) r = UI::S(70);
+    float spin = cosf(t * 2.2f);                 // -1..1: the face turning away and back
+    float w = fabsf(spin); if(w < 0.08f) w = 0.08f;
+    const bool back = spin < 0;
+    ImU32 col = BcwCol(rgba, 1.0f), dark = IM_COL32(0, 0, 0, 150), face = back ? BcwCol(rgba, 0.55f) : col;
+    // ground glow
+    ImVec2 g; if(BcwW2S({ base.x, base.y, base.z - 1.15f }, g)) RpEllipse(dl, g, r * 0.9f, r * 0.28f, BcwCol(rgba, 0.22f), true);
+    // the disc (an ellipse = a coin seen from the side)
+    RpEllipse(dl, ImVec2(sc.x + UI::S(2), sc.y + UI::S(3)), r * w, r, dark, true);
+    RpEllipse(dl, sc, r * w, r, IM_COL32(20, 20, 20, 200), true);
+    RpEllipse(dl, sc, r * w, r, face, false, UI::S(4));
+    if(w > 0.25f)
+    {   // the letter, squeezed with the spin
+        float fs = r * 1.25f;
+        ImVec2 ts = UI::Font()->CalcTextSizeA(fs, FLT_MAX, 0, glyph);
+        ImVec2 p(sc.x - ts.x * 0.5f * w, sc.y - ts.y * 0.5f);
+        // squeeze: draw into a temp vertex range, then scale x around the centre
+        int v0 = dl->VtxBuffer.Size;
+        dl->AddText(UI::Font(), fs, ImVec2(sc.x - ts.x * 0.5f + UI::S(2), p.y + UI::S(2)), dark, glyph);
+        dl->AddText(UI::Font(), fs, ImVec2(sc.x - ts.x * 0.5f, p.y), face, glyph);
+        for(int i = v0; i < dl->VtxBuffer.Size; ++i) { ImDrawVert& v = dl->VtxBuffer[i]; v.pos.x = sc.x + (v.pos.x - sc.x) * w * (back ? -1.0f : 1.0f); }
+    }
+}
 static void RpInfoDraw(ImDrawList* dl)
 {
     char t[256];
+    const float now = (float)(MP_NowMs() % 1000000ULL) / 1000.0f;
+    int i = 0;
     for(auto& r : s_RpInfo)
     {
-        Vec3 p = RpInfoPos(r); p.z += 1.25f;
-        if(BcwCamDist(p) > 60.0f) continue;
-        BcwLabel3D(dl, { p.x, p.y, p.z + 0.62f }, r.title, r.col, 32.0f, 22.0f);
+        Vec3 p = RpInfoPos(r);
+        // 3.34: spread out and pushed back from the lobby camera (they were standing right in front of it)
+        float ax = p.x - kRpLobbyCam.x, ay = p.y - kRpLobbyCam.y, al = sqrtf(ax * ax + ay * ay);
+        if(al > 0.1f) { p.x += ax / al * 5.0f; p.y += ay / al * 5.0f; }
+        p.z += 1.9f;
+        ++i;
+        if(BcwCamDist(p) > 70.0f) continue;
+        RpSpinPickup(dl, p, RpInfoGlyph(r), r.col, now + i * 0.7f);
+        BcwLabel3D(dl, { p.x, p.y, p.z + 1.05f }, r.title, r.col, 30.0f, 26.0f);
         snprintf(t, sizeof(t), "%s", r.text);
-        BcwLabel3D(dl, p, t, 0xFFFFFFFF, 24.0f, 22.0f);
+        BcwLabel3D(dl, { p.x, p.y, p.z - 0.95f }, t, 0xFFFFFFFF, 21.0f, 26.0f);
     }
 }
 
@@ -314,6 +368,6 @@ static void RpLifeProcess(int ped, uint64_t now, bool engaged)
     static bool s_Welcomed = false;
     if(!engaged) { if(s_Welcomed) { RpAtmClear(); RpDropsClear(); RpInfoUpdate(false, now); s_Atm.open = false; } s_Welcomed = false; return; }
     if(!s_Welcomed) { s_Welcomed = true; RpWelcome(); }
-    RpInfoUpdate(Game::GetCharArea(ped > 0 ? ped : Game::LocalPed()) == 0 || s_Rp.view == 1, now);
+    RpInfoUpdate(false, now);   // 3.34: no info people (floating pickups instead, RpInfoDraw)
     if(s_Rp.view == 2) { RpAtmStream(now, ped); RpDropsStream(now, ped); } else { RpAtmClear(); RpDropsClear(); }
 }

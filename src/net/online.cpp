@@ -88,6 +88,7 @@ static std::string s_TopicRoot = TOPIC_ROOT_NEW;
 #define FLUSH_MS        25                    // relay batching (fewer broker messages)
 static int  s_nFlushMs = FLUSH_MS;
 static int  s_nCurFlush = FLUSH_MS;
+static bool s_bOwnBroker = false;   // 3.33: connected to one of our regional HiveMQ brokers with no flush / rate set in broker.txt (no message-rate limit)
 static std::atomic<int> s_nCongestMs{0};   // 2.15: extra batching while the uplink is congested     // flush interval of the broker we are connected to
 static int  s_nBrokerOverride = -1;
 // 2.20 regional brokers (own HiveMQ per region, see the HiveMQ repo). Built from broker.txt
@@ -119,6 +120,11 @@ static void BrokerFailed(const Broker& b, uint64_t now)
     e.second = now + wait;
 }
 static void BrokerOk(const Broker& b) { s_BrokerBackoff.erase(BrokerKey(b)); }
+// 3.34: regions.txt "branch = 1" in a [region] block: that broker is a branch - MpBridge copies the
+// game traffic between it and every other region's broker over the VPS backbone. A phone then stays
+// on its own (nearest) region when it joins a server hosted in another one: the slow, jittery part
+// (phone <-> broker over mobile data) stays short, the long hop runs VPS to VPS.
+static std::atomic<bool> s_RegionBranch[REGION_COUNT];
 static bool RegionUp(int r) { return r >= 0 && r < REGION_COUNT && s_RegionPing[r] >= 0; }
 static std::atomic<int> s_nPrefRegion{-1};            // -1 = auto (lowest ping), else REGION_*
 static std::atomic<int> s_nUiRegion{REGION_ASIA};     // region picked in the menu
@@ -952,6 +958,7 @@ static void NetThread()
                     lastGood = bi; stickyFails = 0;
                     // 3.11: our own regional HiveMQ brokers have no message limit: batch for 10 ms, not 25
                     s_nCurFlush = br.flushMs > 0 ? br.flushMs : (br.region >= 0 ? (s_nFlushMs < 10 ? s_nFlushMs : 10) : s_nFlushMs);
+                    s_bOwnBroker = br.flushMs <= 0 && br.region >= 0;   // 3.33
                     mq.blockingSend = false;   // 2.14: from now on the relay never waits for the upload
                     std::string down = TopicDown(s_szCid);
                     mq.Subscribe((TOPIC_ROOT + "l/+").c_str(), 1);
@@ -974,7 +981,7 @@ static void NetThread()
                 ++s_nAttemptFailed;
                 s_nReadySince = 0;
                 { std::lock_guard<std::mutex> lk(s_M); s_szBroker[0] = 0; }
-                s_nCurRegion = -1;
+                s_nCurRegion = -1; s_bOwnBroker = false;
                 nextTry = now + 5000;
                 if(inGame && lastGood >= 0 && stickyFails < 4) { ++stickyFails; nextTry = MP_NowMs() + 600; OLOG("game broker not back yet (%d), retrying", stickyFails); continue; }
                 OLOG("no broker reachable, retrying in 5 s");
@@ -1132,9 +1139,22 @@ static void NetThread()
 
         // ---- flush batches ----
         // 2.11: with many relayed players, batch longer so the host stays under the broker's
-        // message rate (1 MQTT message per player per flush): 25 ms up to 8, 50 ms up to 32, 80 ms beyond
+        // message rate (1 MQTT message per player per flush): 25 ms up to 8, 50 ms up to 32, 80 ms beyond.
+        // 3.33: that rule is only for brokers that limit messages (the free public ones). On our own regional
+        // HiveMQ brokers it made the ping jump every time somebody joined: the 9th relayed player moved the
+        // whole server from a 10 ms to a 50 ms window and the 33rd to 80 ms - that is added in BOTH directions
+        // (+80 ms, then +140 ms round trip). The congestion control below already slows the batches down when
+        // the uplink really is busy, so on our brokers the window stays short and grows only a little:
+        //   24/7 machine (fast uplink): 10 ms up to 32 relayed players, 15 ms up to 64, 20 ms beyond
+        //   a phone host (mobile uplink): 10 ms up to 8, 20 ms up to 32, 30 ms beyond
         int flushMs = s_nCurFlush;
-        if(bridges.size() > 32 && flushMs < 80) flushMs = 80;
+        if(s_bOwnBroker)
+        {
+            const size_t nb = bridges.size();
+            if(s_bHostDedicated) { if(nb > 64 && flushMs < 20) flushMs = 20; else if(nb > 32 && flushMs < 15) flushMs = 15; }
+            else                 { if(nb > 32 && flushMs < 30) flushMs = 30; else if(nb > 8 && flushMs < 20) flushMs = 20; }
+        }
+        else if(bridges.size() > 32 && flushMs < 80) flushMs = 80;
         else if(bridges.size() > 8 && flushMs < 50) flushMs = 50;
         // 2.15 congestion control: when the uplink (or the broker's rate limit) can't keep up,
         // send fewer, bigger messages; slowly go back once it is fine again
@@ -1463,6 +1483,7 @@ struct BrokerCfg
 
 static void ParseBrokerText(const std::string& text, BrokerCfg& pc)
 {
+    for(int r = 0; r < REGION_COUNT; ++r) s_RegionBranch[r] = false;   // 3.34
     Broker cur; cur.tls = true; cur.port = 8883; cur.path = "/mqtt";
     bool portSet = false; int section = -1;   // -1 = private broker, -2 = unknown [section] (ignored)
     auto flush = [&]()
@@ -1516,6 +1537,7 @@ static void ParseBrokerText(const std::string& text, BrokerCfg& pc)
             cur.host = v;
         }
         else if(k == "port") { cur.port = (uint16_t)atoi(v.c_str()); portSet = true; }
+        else if(k == "branch") { if(section >= 0 && section < REGION_COUNT) s_RegionBranch[section] = CfgBool(v); }   // 3.34
         else if(k == "user" || k == "username") cur.user = v;
         else if(k == "pass" || k == "password") cur.pass = v;
         else if(k == "tls" || k == "ssl") cur.tls = CfgBool(v);
@@ -1828,7 +1850,12 @@ static int DesiredRegion(bool hostOn, int hostRegion)
     if(!s_bRegional) return -1;
     if(hostOn && HaveRegion(hostRegion)) return hostRegion;
     int jr; { std::lock_guard<std::mutex> lk(s_M); jr = s_nJoinRegion; }
-    if(jr >= 0 && HaveRegion(jr)) return jr;
+    if(jr >= 0 && HaveRegion(jr))
+    {   // 3.34: both ends are branches -> stay on my nearest region, the bridge carries the game to jr
+        int near = s_nPrefRegion >= 0 && HaveRegion(s_nPrefRegion) ? (int)s_nPrefRegion : AutoRegion();
+        if(near >= 0 && near != jr && near < REGION_COUNT && jr < REGION_COUNT && s_RegionBranch[near] && s_RegionBranch[jr]) return near;
+        return jr;
+    }
     int pr = s_nPrefRegion;
     if(pr >= 0 && HaveRegion(pr)) return pr;
     return AutoRegion();

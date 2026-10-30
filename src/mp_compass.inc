@@ -85,18 +85,6 @@ static void PubgCompassDraw(ImDrawList* dl, float cx, float y, float width, floa
         dl->AddTriangleFilled(ImVec2(x - s - 1, my - s - 1), ImVec2(x + s + 1, my - s - 1), ImVec2(x, my + 2), IM_COL32(0, 0, 0, (int)(140 * a)));
         dl->AddTriangleFilled(ImVec2(x - s, my - s), ImVec2(x + s, my - s), ImVec2(x, my), col);
     }
-    // centre pointer + bearing readout
-    {
-        float py = tickY + tickBig + UI::S(4);
-        float s = UI::S(6);
-        dl->AddTriangleFilled(ImVec2(cx, py), ImVec2(cx - s, py + s * 1.2f), ImVec2(cx + s, py + s * 1.2f), IM_COL32(255, 255, 255, 255));
-        char b[8]; snprintf(b, sizeof(b), "%d", ((int)(bearing + 0.5f)) % 360);
-        float fs = UI::S(19);
-        ImVec2 ts = UI::Font()->CalcTextSizeA(fs, FLT_MAX, 0, b);
-        float bw = ts.x + UI::S(18), by = py + s * 1.2f + UI::S(2);
-        ImVec2 a(cx - bw * 0.5f, by), e(cx + bw * 0.5f, by + ts.y + UI::S(6));
-        dl->AddRectFilled(a, e, IM_COL32(0, 0, 0, 150), UI::S(4));
-        dl->AddRect(a, e, IM_COL32(255, 255, 255, 200), UI::S(4), 0, UI::S(1.5f));
-        dl->AddText(UI::Font(), fs, ImVec2(cx - ts.x * 0.5f, by + UI::S(3)), IM_COL32(255, 255, 255, 255), b);
-    }
+    // 3.34: no centre pointer / bearing number box any more (only the letters, numbers and ticks)
+
 }

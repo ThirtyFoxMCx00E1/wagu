@@ -15,7 +15,7 @@
 // Interfaces where a /24 sweep makes sense (Wi-Fi, hotspot, USB/BT tethering, ethernet).
 static bool IsLanName(const char* n)
 {
-    static const char* const k[] = { "wlan", "swlan", "ap", "softap", "wl", "eth", "en", "rndis", "usb", "bt-pan", "p2p", "br" };
+    static const char* const k[] = { "wlan", "swlan", "ap", "softap", "wl", "eth", "en", "rndis", "usb", "bt-pan", "p2p", "br", "tether", "wigig", "ncm", "ap_br", "wifi" };   // 3.34: + more hotspot names
     for(const char* p : k) if(!strncmp(n, p, strlen(p))) return true;
     return false;
 }
@@ -63,6 +63,8 @@ std::vector<LanIface> LAN::Interfaces()
                 if(b && b != f.ip) f.bcast = b;
             }
             f.cellular = !IsLanName(f.name);
+            // 3.34: hotspot / tethering interfaces with odd names still use a private /24 - treat them as LAN
+            if(f.cellular && ((ip >> 16) == 0xC0A8 || (ip >> 20) == 0xAC1) && f.mask >= 0xFFFFFF00u) f.cellular = false;
             out.push_back(f);
         }
     }
@@ -129,6 +131,11 @@ std::vector<LanServer> LAN::Discover(const std::vector<uint16_t>& ports, int tim
                 if(h != f.ip) SendQuery(sock, h, port, t0);
         }
         if(includeSelf) SendQuery(sock, 0x7F000001u, port, t0);
+        // 3.34: multiplayer over a phone hotspot - the host phone is almost always the gateway
+        static const uint32_t kHotspotGw[] = { 0xC0A82B01u /*192.168.43.1 Android*/, 0xC0A83101u /*192.168.49.1 Wi-Fi Direct*/,
+                                               0xAC140A01u /*172.20.10.1 iPhone*/, 0xC0A82A81u /*192.168.42.129 USB*/, 0xC0A82C01u /*192.168.44.1 BT*/ };
+        for(uint32_t g : kHotspotGw) SendQuery(sock, g, port, t0);
+        for(auto& f : ifs) if(!f.cellular) SendQuery(sock, (f.ip & f.mask) | 1u, port, t0);   // this network's gateway
     }
     for(int k = 0; k < 3; ++k)                           // UDP: ask the exact servers 3 times
         for(auto& t : extra) SendQuery(sock, t.ip, t.port, t0);

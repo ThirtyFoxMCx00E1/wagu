@@ -124,6 +124,9 @@ private:
         uint8_t      lastFlags;
         uint64_t     spawnProtUntil;   // 3.21: 5 s spawn protection after every respawn (and the join)
         uint64_t     lastFwd[MP_MAX_PLAYERS];
+        uint64_t     dlWinAt;     // 3.34: downlink budget - syncs relayed TO this player in the current 250 ms window
+        uint16_t     dlN;
+        float        dlScale;     //        1 = full rates, up to 6 = every far tier 6x slower (0 = not set yet = 1)
         uint8_t      pair;        // 2.31: mission-sync GROUP id (MP_INVALID_ID = none; was the partner id)
         uint8_t      pairReq;     // 2.16: who this player asked for Mission sync
         char         uid[MP_UID_LEN + 1];   // 2.25 (empty for phones older than 2.25)
@@ -304,6 +307,8 @@ private:
         uint8_t  askFrom; uint8_t askEmote; uint64_t askAt;
         int32_t  fineAsk; uint8_t fineFrom;
         int32_t  lastCash, lastBank; uint8_t lastJob, lastHunger, lastThirst; uint16_t lastJail;
+        int32_t  lastXp; uint32_t lastItems; uint16_t lastSkin, lastTasks; uint8_t lastHouse;   // 3.34: the card follows the level too
+        char     fac[8];   // 3.34: faction tag ("" = none)
         RpInvSlot inv[RP_INV_SLOTS]; uint64_t lastInv;   // 3.26: the bag
         // 3.29: investments (units: worth = units * price / 1000), marriage, seatbelt
         int64_t  invU[RPN_COUNT]; uint64_t lastInvest;
@@ -316,7 +321,15 @@ private:
         uint32_t playMin = 0, pets = 0, items = 0, t = 0; uint16_t veh[RP_VEH_SLOTS] = {}, skin = 0, tasks = 0;
         RpInvSlot inv[RP_INV_SLOTS] = {};   // 3.26
         int64_t invU[RPN_COUNT] = {}; std::string spouse, spouseKey;   // 3.29
+        std::string fac;   // 3.34
     };
+    struct RpFaction { std::string tag, title, desc, rules, owner, ownerName; uint32_t col = 0x38BDF8FF; int limit = RP_FAC_LIMIT; };
+    std::vector<RpFaction> m_RpFactions;   // 3.34
+    void RpFacCmd(int slot, const PktRpCmd& c);
+    void RpSendFactions(int slot);   // -1 = everyone
+    void RpSendPFac(int slot);
+    int  RpFacFind(const char* tag) const;
+    int  RpFacMembers(const std::string& tag);
     RpSrvPlayer  m_Rp[MP_MAX_PLAYERS];
     std::map<std::string, RpSaved> m_RpSaved;
     std::string  m_RpHouseOwner[RP_HOUSES_WIRE];

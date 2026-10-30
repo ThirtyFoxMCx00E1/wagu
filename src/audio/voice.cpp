@@ -115,13 +115,21 @@ namespace
 }
 void Voice::SetMonitor(bool on) { s_bMonitor = on; }
 bool Voice::Monitor() { return s_bMonitor; }
-void Voice::SetPitch(float r) { s_fPitch = r < 0.6f ? 0.6f : (r > 1.6f ? 1.6f : r); }
+void Voice::SetPitch(float r) { s_fPitch = r < 0.4f ? 0.4f : (r > 2.2f ? 2.2f : r); }   // 3.34: wider (monster .. crazy)
 float Voice::Pitch() { return s_fPitch.load(); }
 
 const char* Voice::LastError() { return s_szErr; }
 bool Voice::Available() { return s_bOk; }
 
 static inline int16_t Clip(float v) { return v > 32767.f ? 32767 : (v < -32768.f ? -32768 : (int16_t)v); }
+// 3.34: a soft limiter for the loud settings (mic gain up to 8x, volume up to 5x): loud voices get
+// louder without the hard clipping crackle - linear up to 60 %, then it bends smoothly to full scale
+static inline int16_t SoftClip(float v)
+{
+    float x = v * (1.0f / 32767.0f), a = fabsf(x);
+    if(a > 0.6f) { a = 0.6f + 0.4f * tanhf((a - 0.6f) / 0.4f); x = x < 0 ? -a : a; }
+    return (int16_t)(x * 32767.0f);
+}
 
 // ---- playback (audio thread) ----------------------------------------------------------------
 static void MixFrame(int16_t* out)
@@ -161,7 +169,7 @@ static void MixFrame(int16_t* out)
         if(n <= 0 || g <= 0.001f) continue;
         for(int i = 0; i < n && i < V_FRAME; ++i) acc[i] += pcm[i] * g;
     }
-    for(int i = 0; i < V_FRAME; ++i) out[i] = Clip(acc[i]);
+    for(int i = 0; i < V_FRAME; ++i) out[i] = master > 1.0f ? SoftClip(acc[i]) : Clip(acc[i]);   // 3.34
 }
 static void PlayCb(SLAndroidSimpleBufferQueueItf q, void*)
 {
@@ -213,8 +221,8 @@ void Voice::SetOutput(bool on)
     running = on;
 }
 
-void Voice::SetVolume(float v) { s_fVolume = v < 0 ? 0 : (v > 2 ? 2 : v); }
-void Voice::SetMicGain(float g) { s_fMicGain = g < 0.5f ? 0.5f : (g > 3 ? 3 : g); }
+void Voice::SetVolume(float v) { s_fVolume = v < 0 ? 0 : (v > 5 ? 5 : v); }   // 3.34: up to 500 %
+void Voice::SetMicGain(float g) { s_fMicGain = g < 0.25f ? 0.25f : (g > 8 ? 8 : g); }   // 3.34: whisper .. shout (800 %)
 void Voice::SetGain(int id, float g) { if(id >= 0 && id < MP_MAX_PLAYERS) s_fGain[id] = g < 0 ? 0 : g; }
 bool Voice::IsSpeaking(int id) { return id >= 0 && id < MP_MAX_PLAYERS && MP_NowMs() - s_nLastVoice[id].load() < V_SPEAK_MS; }
 
@@ -290,7 +298,7 @@ static void RecCb(SLAndroidSimpleBufferQueueItf q, void*)
     if(s_bMic)
     {
         float g = s_fMicGain.load();
-        if(g != 1.0f) for(int i = 0; i < s_nRecFrame; ++i) b[i] = Clip(b[i] * g);
+        if(g != 1.0f) for(int i = 0; i < s_nRecFrame; ++i) b[i] = g > 1.0f ? SoftClip(b[i] * g) : Clip(b[i] * g);
         float pr = s_fPitch.load();
         if(fabsf(pr - 1.0f) > 0.01f) s_Pitch.Process(b, s_nRecFrame, pr, s_nRecRate);   // 3.11: voice pitch
         std::lock_guard<std::mutex> lk(s_RecM);
@@ -356,7 +364,7 @@ static int16_t           s_HelperPcm[V_FRAME];
 static void HelperFrame(int16_t* b, int n)   // same path as the OpenSL recorder
 {
     float g = s_fMicGain.load();
-    if(g != 1.0f) for(int i = 0; i < n; ++i) b[i] = Clip(b[i] * g);
+    if(g != 1.0f) for(int i = 0; i < n; ++i) b[i] = g > 1.0f ? SoftClip(b[i] * g) : Clip(b[i] * g);
     float pr = s_fPitch.load();
     if(fabsf(pr - 1.0f) > 0.01f) s_Pitch.Process(b, n, pr, V_RATE);
     std::lock_guard<std::mutex> lk(s_RecM);

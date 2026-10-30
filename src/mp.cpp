@@ -519,6 +519,10 @@ static void SendPlayerInfo(uint64_t now);
 static void UpdateTagOcclusion(int id, uint64_t now);
 static void TryJack(int ped, int id, uint64_t now);
 static bool HandleCommand(const char* text);
+static bool FeatOn(uint8_t perm);   // 3.34 (mp_features.inc)
+static bool RpFacDecorate(int id, const char* name, uint32_t& color, char* out, size_t n);   // 3.34 (mp_rp_fac.inc)
+static void DmgIndAdd(int id, float amount, int weapon);
+static void AfkTick(int ped, uint64_t now);
 static void UpdatePassengerCandidate(int ped, uint64_t now);
 static int  s_nMyScoreFwd = 0;
 static int      s_nPassBtnCar = 0;   // 2.19.1: car we walk to via the Passenger button
@@ -610,6 +614,7 @@ const char* MP::MissionTitle(const char* s)
 static bool     s_bPermsSeen = false;   // 3.00: this server already sent its permissions
 static bool     s_bModesSeen = false;           // 3.02
 static uint16_t s_nServerModes = 0;             // 3.02: GM_* of the server we're on (custom servers: 0 until it says)
+static Vec3     s_LastShotEnd = { 0, 0, 0 }; static uint64_t s_nLastShotMs = 0;   // 3.34: damage indicator (where my last bullet hit)
 static uint8_t  s_nServerPerms = 0;              // PERM_* of the server we're on (0 until it tells us)
 static uint8_t  s_nPartner = MP_INVALID_ID;      // 2.31: first member of my mission group (messages); see s_bGroup
 static bool     s_bGroup[MP_MAX_PLAYERS];        // 2.31: Mission sync group members (up to MP_MISSION_GROUP_MAX with me)
@@ -1002,8 +1007,10 @@ static void ClearAllPlayers()
 
 // the game is about to load a save (100% progress on / off): it rebuilds the world, so drop
 // the network avatars first; they come back by themselves once the save is running
+static void MpFreeAllObjects();   // 3.34 (after the server .inc files)
 static void OnBeforeSaveLoad()
 {
+    MpFreeAllObjects();   // 3.34: the save load needs the object + dummy pools (BugReports/ crash logs)
     NpcStop();   // 2.18
     for(int i = 0; i < MP_MAX_PLAYERS; ++i) { ClearMissionMarkers(players[i]); DestroyAvatar(players[i]); }
     ClearEnv(true);    // 2.13: pickups come back after the load
@@ -1482,7 +1489,7 @@ static void UpdateRemote(int id, int localPed, uint64_t now)
         {
             PktDamage d; d.type = PKT_DAMAGE; d.from = myId; d.target = (uint8_t)id;
             d.weapon = (uint8_t)Game::GetCharWeapon(localPed); d.amount = 1000.0f;
-            if(!SafeBlocksHit(id) && RamDamage(localPed, p, d)) { client.Send(&d, sizeof(d)); PredictKill(id, d.amount, d.weapon); PlayHitSound(); }   // 3.21: safe zones
+            if(!SafeBlocksHit(id) && RamDamage(localPed, p, d)) { client.Send(&d, sizeof(d)); PredictKill(id, d.amount, d.weapon); PlayHitSound(); DmgIndAdd(id, d.amount, d.weapon); }   // 3.21: safe zones
         }
         DestroyAvatar(p);
     }
@@ -1540,7 +1547,7 @@ static void UpdateRemote(int id, int localPed, uint64_t now)
             {
                 PktDamage d; d.type = PKT_DAMAGE; d.from = myId; d.target = (uint8_t)id;
                 d.weapon = (uint8_t)Game::GetCharWeapon(localPed); d.amount = dmg;
-                if(!SafeBlocksHit(id) && RamDamage(localPed, p, d)) { client.Send(&d, sizeof(d)); PredictKill(id, d.amount, d.weapon); PlayHitSound(); }   // 3.21: safe zones
+                if(!SafeBlocksHit(id) && RamDamage(localPed, p, d)) { client.Send(&d, sizeof(d)); PredictKill(id, d.amount, d.weapon); PlayHitSound(); DmgIndAdd(id, d.amount, d.weapon); }   // 3.21: safe zones
             }
             else PlayHitSound();   // 3.00: a punch that landed but took (almost) no HP still sounds like a hit
             if(instantKill)
@@ -2378,7 +2385,7 @@ public:
     {
         if(pp.id >= MP_MAX_PLAYERS || pp.id == myId) return;
         RemotePlayer& p = players[pp.id];
-        p.paused = pp.paused != 0;
+        p.paused = pp.paused == 1; p.afk = pp.paused == 2;   // 3.34
         if(p.paused) { p.vel = { 0, 0, 0 }; p.syncTime = MP_NowMs(); } // stand still, no sliding
     }
 };
@@ -2684,6 +2691,7 @@ static ShotEntry s_ShotBuf[MP_SHOT_MAX];
 static int       s_nShotBuf = 0;
 static void OnLocalShot(int kind, int weapon, const Vec3& a, const Vec3& b, float force)
 {
+    s_LastShotEnd = b; s_nLastShotMs = MP_NowMs();   // 3.34
     if(client.GetState() != NET_CONNECTED || myId == MP_INVALID_ID) return;
     if(s_nShotBuf >= MP_SHOT_MAX) return;              // 8 per frame is plenty (shotguns send 1)
     ShotEntry e; memset(&e, 0, sizeof(e));
@@ -2850,9 +2858,22 @@ static void ApplyMissionMarkers(const PktMissionMarkers& m)
 }
 
 // pause-menu map: every player's icon in their colour + the name they set
+// 3.34: while the game is paused the map shows where everybody was when you paused - the icons and
+// names don't keep crawling across the map while you look at it / zoom it
+static Game::MapMarker s_MapFrozen[MP_MAX_MAP_MARKERS];
+static int  s_nMapFrozen = -1;
+static int MapMarkersLive(Game::MapMarker* out, int maxOut);
 static int MapMarkers(Game::MapMarker* out, int maxOut)
 {
-    if(client.GetState() != NET_CONNECTED || !settings.showRadarIcons) return 0;
+    if(client.GetState() != NET_CONNECTED || !settings.showRadarIcons) { s_nMapFrozen = -1; return 0; }
+    if(!Game::IsPaused()) { s_nMapFrozen = -1; return MapMarkersLive(out, maxOut); }
+    if(s_nMapFrozen < 0) s_nMapFrozen = MapMarkersLive(s_MapFrozen, MP_MAX_MAP_MARKERS);
+    int n = s_nMapFrozen < maxOut ? s_nMapFrozen : maxOut;
+    memcpy(out, s_MapFrozen, sizeof(Game::MapMarker) * (n > 0 ? n : 0));
+    return n;
+}
+static int MapMarkersLive(Game::MapMarker* out, int maxOut)
+{
     int n = 0;
     for(int i = 0; i < MP_MAX_PLAYERS && n < maxOut; ++i)
     {
@@ -3731,6 +3752,7 @@ void MP::Process()
     ProcessClothes(now);         // 3.10: clothing sync
     ProcessVoice();              // 3.11: voice chat
     ProcessCheats(ped, now);     // 2.19: chat-command cheats
+    AfkTick(ped, now);           // 3.34
     ProcessSafeZones(ped, now);  // 3.21: hospital safe zones + spawn protection
     ProcessGames(ped, now);      // 2.21: races, deathmatch, jobs, open world
     ProcessSamp(ped, now);       // 3.01: map icons, actors, turf HUD, class skin, team
@@ -3798,7 +3820,9 @@ static void ApplyServerPerms()
     // 2.37: on the default server only [ADMIN] SENJI switches cheats off (from his phone, PKT_ADMIN_CMD) -
     // the phone that happens to host it is not the administrator any more
     s_Server.SetPerms(((def || settings.allowMissionPair) ? PERM_MISSION_PAIR : 0) | (!def && settings.disableCheats ? PERM_NO_CHEATS : 0)
-                      | (!def && s_bRunCheatMenu ? PERM_CHEAT_MENU : 0));   // 3.00 / 3.10: the server's own permission
+                      | (!def && s_bRunCheatMenu ? PERM_CHEAT_MENU : 0)   // 3.00 / 3.10: the server's own permission
+                      | ((def || settings.permAfk) ? PERM_AFK : 0) | ((def || settings.permDmgInd) ? PERM_DMG_IND : 0)
+                      | ((def || settings.permShowIds) ? PERM_SHOW_IDS : 0));   // 3.34
     s_Server.SetModes(def ? (uint16_t)GM_ALL : s_nRunModes);   // 3.03: fixed when the server was created
 }
 
@@ -3860,6 +3884,9 @@ static bool JoinHudOff() { return s_bJoinHudOff; }
 #include "mp_rp.inc"     // 3.25: Mega Vil Futuristic (Roleplay)
 #include "mp_rp_phone.inc"   // 3.25: the RP phone
 #include "mp_rp_inv.inc"     // 3.26: PANEL, player info + bag, documents, "Received" cards
+#include "mp_rp_cos.inc"     // 3.34: lobby wardrobe (cosmetics room)
+#include "mp_rp_fac.inc"     // 3.34: factions
+#include "mp_features.inc"   // 3.34: AFK, damage indicator, player ids
 #include "mp_rp_life.inc"    // 3.29: ATM machines + screen, plaza info people, welcome, invest / marry / seatbelt / pawn
 #include "mp_gates.inc"  // 3.04.2: gates that never open (Area 69): fade out, through, fade in
 #include "mp_safezone.inc"  // 3.21: hospital safe zones + 5 s spawn protection
@@ -4700,6 +4727,8 @@ void MP::SaveConfig()
     I("Region", settings.region); B("LobbyAuto", settings.lobbyAuto); B("RegionPicked", settings.regionPicked); I("NameColor", (int)settings.nameColor); I("MaxPlayers", settings.maxPlayers); I("HostGamemodes", settings.hostModes); I("ServerIcon", settings.serverIcon); S("ServerLang", settings.serverLang); S("DeviceId", settings.deviceId);
     B("FullProgressDefault", settings.fullProgressDefault);
     B("UnlockWorld", settings.unlockWorld); B("Girlfriends", settings.girlfriends); B("EventTips", settings.eventTips);   // 2.21
+    B("PermAfk", settings.permAfk); B("PermDmgInd", settings.permDmgInd); B("PermShowIds", settings.permShowIds); B("NoCamShake", settings.noCamShake);   // 3.34
+    I("UiFont", settings.uiFont); I("UiFontFx", settings.uiFontFx); F("UiFontScale", settings.uiFontScale); F("UiScale", settings.uiScale);
     B("ChatTimestamps", settings.chatTimestamps); B("VoiceChat", settings.voiceChat); F("VoiceVolume", settings.voiceVolume); F("MicGain", settings.micGain); F("VoicePitch", settings.voicePitch);   // 3.11
     B("ChatBubbles", settings.chatBubbles); B("Labels3D", settings.labels3d); B("MapIcons", settings.mapIcons); B("Actors", settings.actors); B("GangZones", settings.gangZones);   // 3.01
     I("Team", settings.team); I("ClassSkin", settings.classSkin);
@@ -4738,6 +4767,16 @@ static void LoadConfig()
     settings.chatBubbles = ::cfg->GetBool("ChatBubbles", false, "MP");   // 3.01: off by default
     settings.chatTimestamps = ::cfg->GetBool("ChatTimestamps", false, "MP");   // 3.11: off until the player turns it on
     settings.voiceChat   = ::cfg->GetBool("VoiceChat", true, "MP");
+    settings.permAfk     = ::cfg->GetBool("PermAfk", true, "MP");       // 3.34
+    settings.permDmgInd  = ::cfg->GetBool("PermDmgInd", true, "MP");
+    settings.permShowIds = ::cfg->GetBool("PermShowIds", true, "MP");
+    settings.noCamShake  = ::cfg->GetBool("NoCamShake", true, "MP");
+    settings.uiFont      = ::cfg->GetInt("UiFont", 0, "MP");
+    settings.uiFontFx    = ::cfg->GetInt("UiFontFx", 1, "MP");
+    settings.uiFontScale = ::cfg->GetFloat("UiFontScale", 1.0f, "MP");
+    settings.uiScale     = ::cfg->GetFloat("UiScale", 1.0f, "MP");
+    UI::SetLook(settings.uiFont, settings.uiFontFx, settings.uiFontScale, settings.uiScale);
+    Game::SetNoCamShake(settings.noCamShake);
     settings.voiceVolume = ::cfg->GetFloat("VoiceVolume", 1.0f, "MP");
     settings.micGain     = ::cfg->GetFloat("MicGain", 1.0f, "MP");
     settings.voicePitch  = ::cfg->GetFloat("VoicePitch", 1.0f, "MP");
@@ -5215,6 +5254,17 @@ static void PermissionSwitches(const char* where)
     ImGui::TextDisabled(settings.allowCheatMenu ? "On: players may use Cheat Menu (libCheatMenu.so / libCheatMenu64.so) on your server."
                                                 : "Off: players with Cheat Menu (libCheatMenu.so / libCheatMenu64.so) can't join.");
     ImGui::TextDisabled("Never on the default server. \"Disable cheats\" (Settings > Cheats) switches it off too.");
+    // 3.34: AFK / damage indicator / player ids (always on on the 4 featured servers)
+    ImGui::Separator();
+    if(FloatMenu::ToggleSwitch("AFK (too long without moving)", &settings.permAfk)) { ApplyServerPerms(); SaveConfig(); }
+    ImGui::TextDisabled(settings.permAfk ? "On: after 3 minutes without moving players get an AFK tag; after 20 minutes their seat is freed."
+                                         : "Off: nobody is marked AFK on your server.");
+    if(FloatMenu::ToggleSwitch("Damage indicator", &settings.permDmgInd)) { ApplyServerPerms(); SaveConfig(); }
+    ImGui::TextDisabled(settings.permDmgInd ? "On: a hit shows \"-25.00\" and \"<shooter> hit the head / torso / arm / leg\" over the name tag (4 s)."
+                                            : "Off: no damage numbers over the name tags.");
+    if(FloatMenu::ToggleSwitch("Player IDs (name tags + player list)", &settings.permShowIds)) { ApplyServerPerms(); SaveConfig(); }
+    ImGui::TextDisabled(settings.permShowIds ? "On: name tags and the player list show \"name (id)\"." : "Off: names only.");
+    ImGui::TextDisabled("/stats and /char work on custom servers that have the Authentication system (login with Discord).");
     if(IsHostingDefault()) ImGui::TextDisabled("(The default server always allows Mission sync.)");
     else if(s_Server.IsRunning()) ImGui::TextColored(kGreenTxt, "Applied to \"%s\" now.", s_Server.GetName());
     else ImGui::TextDisabled("Used for every custom server you create or host.");
@@ -5551,6 +5601,21 @@ static void SectionAddServer(void*)
         }
     }
     ImGui::TextDisabled("Same Wi-Fi / hotspot: type the host's local IP and port, then Connect.");
+    {   // 3.34: hotspot multiplayer - show this phone's own LAN / hotspot address so friends can type it
+        static uint64_t s_IfAt = 0; static char s_IfTxt[160] = "";
+        if(MP_NowMs() - s_IfAt > 3000)
+        {
+            s_IfAt = MP_NowMs(); s_IfTxt[0] = 0;
+            for(auto& f : LAN::Interfaces())
+            {
+                if(f.cellular) continue;
+                char one[48]; snprintf(one, sizeof(one), "%s%u.%u.%u.%u (%s)", s_IfTxt[0] ? ", " : "", f.ip >> 24, (f.ip >> 16) & 255, (f.ip >> 8) & 255, f.ip & 255, f.name);
+                strncat(s_IfTxt, one, sizeof(s_IfTxt) - strlen(s_IfTxt) - 1);
+            }
+        }
+        if(s_IfTxt[0]) ImGui::TextColored(ImVec4(0.22f, 0.74f, 0.97f, 1), "This phone: %s - port %d", s_IfTxt, s_Server.IsRunning() ? (int)s_Server.GetPort() : atoi(s_szLocalPort));
+        else ImGui::TextDisabled("Hotspot: turn on your phone hotspot, host a server, friends join 192.168.43.1.");
+    }
 
     // 3.21.6: Authentication system - players verify with Discord (/gen code), then sign up / log in
     ImGui::Separator();
@@ -5638,15 +5703,15 @@ static void SectionVoice(void*)   // 3.11
     ImGui::TextUnformatted("Voice volume");
     int vv = (int)(settings.voiceVolume * 100 + 0.5f);
     ImGui::SetNextItemWidth(-FLT_MIN);
-    if(ImGui::SliderInt("##vvol", &vv, 0, 200, "%d %%")) { settings.voiceVolume = vv / 100.0f; changed = true; }
+    if(ImGui::SliderInt("##vvol", &vv, 0, 500, "%d %%")) { settings.voiceVolume = vv / 100.0f; changed = true; }
     ImGui::TextUnformatted("Microphone boost");
     int mg = (int)(settings.micGain * 100 + 0.5f);
     ImGui::SetNextItemWidth(-FLT_MIN);
-    if(ImGui::SliderInt("##mgain", &mg, 50, 300, "%d %%")) { settings.micGain = mg / 100.0f; changed = true; }
+    if(ImGui::SliderInt("##mgain", &mg, 25, 800, "%d %%")) { settings.micGain = mg / 100.0f; changed = true; }
     ImGui::TextUnformatted("Voice pitch (how the others hear you)");
     int pc = (int)(settings.voicePitch * 100 + 0.5f);
     ImGui::SetNextItemWidth(-FLT_MIN);
-    if(ImGui::SliderInt("##spitch", &pc, 60, 160, pc == 100 ? "normal" : "%d %%")) { settings.voicePitch = pc / 100.0f; changed = true; }
+    if(ImGui::SliderInt("##spitch", &pc, 40, 220, pc == 100 ? "normal" : "%d %%")) { settings.voicePitch = pc / 100.0f; changed = true; }
     if(MP::IsConnected())
     {
         bool on = Voice::MicOn();
@@ -5714,21 +5779,21 @@ static void RenderVoicePanel(void*)
     ImGui::TextUnformatted("Voice volume (what you hear)");
     int vv = (int)(settings.voiceVolume * 100 + 0.5f);
     ImGui::SetNextItemWidth(-FLT_MIN);
-    if(ImGui::SliderInt("##pvvol", &vv, 0, 200, "%d %%")) { settings.voiceVolume = vv / 100.0f; changed = true; }
+    if(ImGui::SliderInt("##pvvol", &vv, 0, 500, "%d %%")) { settings.voiceVolume = vv / 100.0f; changed = true; }
     ImGui::TextUnformatted("Microphone boost");
     int mg = (int)(settings.micGain * 100 + 0.5f);
     ImGui::SetNextItemWidth(-FLT_MIN);
-    if(ImGui::SliderInt("##pmgain", &mg, 50, 300, "%d %%")) { settings.micGain = mg / 100.0f; changed = true; }
+    if(ImGui::SliderInt("##pmgain", &mg, 25, 800, "%d %%")) { settings.micGain = mg / 100.0f; changed = true; }
     ImGui::TextUnformatted("Voice pitch (how the others hear you)");
     int pc = (int)(settings.voicePitch * 100 + 0.5f);
     ImGui::SetNextItemWidth(-FLT_MIN);
-    if(ImGui::SliderInt("##ppitch", &pc, 60, 160, pc == 100 ? "normal" : "%d %%")) { settings.voicePitch = pc / 100.0f; changed = true; }
+    if(ImGui::SliderInt("##ppitch", &pc, 40, 220, pc == 100 ? "normal" : "%d %%")) { settings.voicePitch = pc / 100.0f; changed = true; }
     {
-        static const struct { const char* n; float v; } kP[] = { { "Deep", 0.80f }, { "Normal", 1.0f }, { "High", 1.25f }, { "Chipmunk", 1.5f } };
-        float q = (bw - ImGui::GetStyle().ItemSpacing.x * 3) / 4;
-        for(int k = 0; k < 4; ++k)
+        static const struct { const char* n; float v; } kP[] = { { "Monster", 0.55f }, { "Deep", 0.80f }, { "Normal", 1.0f }, { "High", 1.25f }, { "Chipmunk", 1.5f }, { "Crazy", 2.0f } };   // 3.34
+        float q = (bw - ImGui::GetStyle().ItemSpacing.x * 2) / 3;
+        for(int k = 0; k < 6; ++k)
         {
-            if(k) ImGui::SameLine();
+            if(k % 3) ImGui::SameLine();
             bool sel = fabsf(settings.voicePitch - kP[k].v) < 0.01f;
             if(sel) ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1, 1, 1, 0.92f)), ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0, 0, 0, 1));
             if(ImGui::Button(kP[k].n, ImVec2(q, UI::S(58)))) { settings.voicePitch = kP[k].v; changed = true; }
@@ -5765,12 +5830,42 @@ static void SectionDisplay(void*)
     ImGui::SetNextItemWidth(-FLT_MIN);
     changed |= ImGui::SliderFloat("##ntdist", &settings.nametagDistance, 10.0f, 150.0f, "%.0f m");
     changed |= FloatMenu::ToggleSwitch("Show my own name tag", &settings.showOwnTag);
+    {   // 3.34: fonts, text effect, font scale, UI scale
+        ImGui::TextUnformatted("Font");
+        ImGui::SetNextItemWidth(-FLT_MIN);
+        if(ImGui::BeginCombo("##uifont", UI::FontName(settings.uiFont)))
+        {
+            for(int f = 0; f < UI_FONT_COUNT; ++f)
+            {
+                char lb[64]; snprintf(lb, sizeof(lb), "%s%s", UI::FontName(f), UI::FontAvailable(f) ? "" : "  (not on this phone)");
+                if(!UI::FontAvailable(f)) ImGui::BeginDisabled();
+                if(ImGui::Selectable(lb, settings.uiFont == f)) { settings.uiFont = f; changed = true; }
+                if(!UI::FontAvailable(f)) ImGui::EndDisabled();
+            }
+            ImGui::EndCombo();
+        }
+        static const char* const kFx[] = { "None", "Outline", "Bold outline", "Shadow" };
+        ImGui::TextUnformatted("Text effect");
+        ImGui::SetNextItemWidth(-FLT_MIN);
+        if(ImGui::BeginCombo("##uifx", kFx[settings.uiFontFx & 3]))
+        {
+            for(int f = 0; f < 4; ++f) if(ImGui::Selectable(kFx[f], settings.uiFontFx == f)) { settings.uiFontFx = f; changed = true; }
+            ImGui::EndCombo();
+        }
+        int fsP = (int)(settings.uiFontScale * 100 + 0.5f), usP = (int)(settings.uiScale * 100 + 0.5f);
+        ImGui::TextUnformatted("Font scale"); ImGui::SetNextItemWidth(-FLT_MIN);
+        if(ImGui::SliderInt("##uifs", &fsP, 60, 160, "%d %%")) { settings.uiFontScale = fsP / 100.0f; changed = true; }
+        ImGui::TextUnformatted("UI scale"); ImGui::SetNextItemWidth(-FLT_MIN);
+        if(ImGui::SliderInt("##uisc", &usP, 60, 150, "%d %%")) { settings.uiScale = usP / 100.0f; changed = true; }
+        if(changed) UI::SetLook(settings.uiFont, settings.uiFontFx, settings.uiFontScale, settings.uiScale);
+        if(FloatMenu::ToggleSwitch("No camera shake", &settings.noCamShake)) { Game::SetNoCamShake(settings.noCamShake); changed = true; }
+    }
     changed |= FloatMenu::ToggleSwitch("Health bars", &settings.showHealthBars);
     changed |= FloatMenu::ToggleSwitch("Player radar icons", &settings.showRadarIcons);
     changed |= FloatMenu::ToggleSwitch("Chat", &settings.showChat);
     changed |= ChatScaleOptions("dispsc");   // 3.04.5
     changed |= FloatMenu::ToggleSwitch("Kill feed", &settings.showKillFeed);
-    changed |= FloatMenu::ToggleSwitch("Connection status", &settings.showStatus);
+    // 3.34: "Connection status" switch removed (the status line is gone)
     changed |= FloatMenu::ToggleSwitch("Sync player animations", &settings.syncAnims);
     changed |= FloatMenu::ToggleSwitch("Sync explosions, fire, weapons", &settings.syncEnv);
     changed |= FloatMenu::ToggleSwitch("Sync NPCs (people + traffic)", &settings.syncNpcs);
@@ -6015,6 +6110,20 @@ static void BubbleChat(void*)
     else if(VKeyboard::IsOpen() && VKeyboard::IsChat()) VKeyboard::Close();
 }
 
+// 3.34: before a save load: every object MP made leaves the game's pools (MW3 props, briefcases,
+// ATMs, drops, the pet), the server code makes them again when it needs them
+static void MpFreeAllObjects()
+{
+    Mw3DeleteObjects();
+    BcwDeleteObjects();
+    RpCosFreeProps();
+    RpAtmClear();
+    RpDropsClear();
+    if(s_Rp.petObj) { Game::DeleteWorldObject(s_Rp.petObj); s_Rp.petObj = 0; s_Rp.petModel = 0; }
+    int n = Game::DeleteAllMpObjects();
+    if(n > 0) logger->Info("[MP] save load: %d more MP objects freed", n);
+}
+
 // ------------------------------------------------------------------------------------------
 #include "mp_launcher.inc"   // 2.25: full-screen server launcher, player management, kick / ban
 
@@ -6025,6 +6134,7 @@ void MP::Init(const char* dataDir)
     Game::SetEnvCallbacks(OnLocalExplosion, OnLocalFire, OnForeignEnv);   // 2.13
     Game::SetShotCallback(OnLocalShot);        // 2.17: every bullet / rocket
     Game::SetMapMarkerProvider(MapMarkers);    // 2.17: players on the pause-menu map
+    Game::SetMenuMapLayer([](int layer, const Game::MapLabel* l, int n) { return HUD::RenderMenuMapLayer(layer, l, n); });   // 3.34
     Progress::Init(s_szDataDir, OnBeforeSaveLoad, OnAfterSaveLoad);
     char bf[512]; snprintf(bf, sizeof(bf), "%s/broker.txt", s_szDataDir);
     Online::Start(bf);   // internet lobby + relay; broker.txt = optional private broker (e.g. HiveMQ Cloud)

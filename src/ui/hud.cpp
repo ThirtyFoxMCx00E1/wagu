@@ -43,8 +43,23 @@ static bool      s_bLogoTried = false;
 static bool      s_bInit = false;
 static float     s_fScale = 1.0f;
 
-float   UI::S(float px) { return px * s_fScale; }
-ImFont* UI::Font()      { return s_pFont ? s_pFont : ImGui::GetFont(); }
+// 3.34: Settings > Display > Font / effect / font scale / UI scale
+static ImFont* s_pFonts[UI_FONT_COUNT] = {};
+static int     s_nFont = 0, s_nFontFx = 1;
+static float   s_fUiScale = 1.0f, s_fFontScale = 1.0f;
+static const char* const kFontNames[UI_FONT_COUNT] = { "Arial (MP)", "Pricedown (GTA)", "Roboto", "Roboto Condensed", "Noto Serif",
+                                                       "Mono", "Coming Soon", "Dancing Script", "Carrois Gothic" };
+const char* UI::FontName(int i) { return i >= 0 && i < UI_FONT_COUNT ? kFontNames[i] : "?"; }
+bool UI::FontAvailable(int i) { return i == 0 || (i > 0 && i < UI_FONT_COUNT && s_pFonts[i]); }
+void UI::SetLook(int font, int effect, float fontScale, float uiScale)
+{
+    s_nFont = font >= 0 && font < UI_FONT_COUNT ? font : 0; s_nFontFx = effect < 0 ? 0 : (effect > 3 ? 3 : effect);
+    s_fFontScale = fontScale < 0.6f ? 0.6f : (fontScale > 1.6f ? 1.6f : fontScale);
+    s_fUiScale = uiScale < 0.6f ? 0.6f : (uiScale > 1.5f ? 1.5f : uiScale);
+    if(s_bInit) { ImGuiIO& io = ImGui::GetIO(); io.FontDefault = UI::Font(); io.FontGlobalScale = s_fFontScale; }
+}
+float   UI::S(float px) { return px * s_fScale * s_fUiScale; }
+ImFont* UI::Font()      { ImFont* f = s_nFont && s_pFonts[s_nFont] ? s_pFonts[s_nFont] : s_pFont; return f ? f : ImGui::GetFont(); }
 ImFont* UI::PricedownFont() { return s_pPricedown; }
 const char* UI::PricedownPath() { return s_szPricedown; }
 
@@ -106,13 +121,43 @@ static ImFont* LoadPricedown(ImFontAtlas* atlas, float size)
 void UI::OutlinedText(ImDrawList* dl, float size, ImVec2 p, ImU32 col, const char* text, float alphaMul)
 {
     ImFont* f = Font();
-    const float o = fmaxf(1.0f, size * 0.06f);
+    size *= s_fFontScale;
     ImU32 black = IM_COL32(0, 0, 0, (int)(255 * alphaMul));
-    dl->AddText(f, size, ImVec2(p.x - o, p.y), black, text);
-    dl->AddText(f, size, ImVec2(p.x + o, p.y), black, text);
-    dl->AddText(f, size, ImVec2(p.x, p.y - o), black, text);
-    dl->AddText(f, size, ImVec2(p.x, p.y + o), black, text);
+    // 3.34 effects: 0 none, 1 outline, 2 bold outline, 3 drop shadow
+    if(s_nFontFx == 3) { float o = fmaxf(1.0f, size * 0.07f); dl->AddText(f, size, ImVec2(p.x + o, p.y + o), black, text); }
+    else if(s_nFontFx >= 1)
+    {
+        const float o = fmaxf(1.0f, size * (s_nFontFx == 2 ? 0.10f : 0.06f));
+        dl->AddText(f, size, ImVec2(p.x - o, p.y), black, text);
+        dl->AddText(f, size, ImVec2(p.x + o, p.y), black, text);
+        dl->AddText(f, size, ImVec2(p.x, p.y - o), black, text);
+        dl->AddText(f, size, ImVec2(p.x, p.y + o), black, text);
+        if(s_nFontFx == 2)
+        {
+            dl->AddText(f, size, ImVec2(p.x - o, p.y - o), black, text); dl->AddText(f, size, ImVec2(p.x + o, p.y + o), black, text);
+            dl->AddText(f, size, ImVec2(p.x + o, p.y - o), black, text); dl->AddText(f, size, ImVec2(p.x - o, p.y + o), black, text);
+        }
+    }
     dl->AddText(f, size, p, col, text);
+}
+// 3.34: the phone's own fonts (Android /system/fonts) for the font list; missing ones stay Arial
+static ImFont* LoadSystemFont(ImFontAtlas* atlas, const char* const* names, float size)
+{
+    for(int i = 0; names[i]; ++i)
+    {
+        char path[256]; snprintf(path, sizeof(path), "/system/fonts/%s", names[i]);
+        FILE* f = fopen(path, "rb"); if(!f) continue;
+        fseek(f, 0, SEEK_END); long len = ftell(f); fseek(f, 0, SEEK_SET);
+        if(len < 1024 || len > 12 * 1024 * 1024) { fclose(f); continue; }
+        unsigned char* buf = (unsigned char*)IM_ALLOC((size_t)len);
+        bool ok = fread(buf, 1, (size_t)len, f) == (size_t)len; fclose(f);
+        if(!ok || !((buf[0] == 0 && buf[1] == 1 && buf[2] == 0 && buf[3] == 0) || !memcmp(buf, "true", 4))) { IM_FREE(buf); continue; }
+        static const ImWchar ranges[] = { 0x0020, 0x00FF, 0 };
+        ImFontConfig fc; fc.FontDataOwnedByAtlas = true; fc.OversampleH = 1; fc.OversampleV = 1;
+        ImFont* font = atlas->AddFontFromMemoryTTF(buf, (int)len, size, &fc, ranges);
+        if(font) { logger->Info("3.34: font %s", path); return font; }
+    }
+    return nullptr;
 }
 
 // 2.37: UI::IsAdminName / UI::NameText (RGB admin rank + flowing name) are in nametext.cpp
@@ -139,11 +184,24 @@ bool HUD::Init()
     // 2.19: coloured emoji glyphs (chat / keyboard)
     UI::EmojiAddGlyphs(io.Fonts, s_pFont, UI::S(34.0f));
     s_pPricedown = LoadPricedown(io.Fonts, UI::S(40.0f));   // 3.00: score bar
+    {   // 3.34: the font list (Settings > Display)
+        s_pFonts[0] = s_pFont; s_pFonts[1] = s_pPricedown;
+        static const char* const k2[] = { "Roboto-Regular.ttf", "Roboto-Medium.ttf", nullptr };
+        static const char* const k3[] = { "RobotoCondensed-Regular.ttf", "RobotoCondensed-Bold.ttf", nullptr };
+        static const char* const k4[] = { "NotoSerif-Regular.ttf", "DroidSerif-Regular.ttf", nullptr };
+        static const char* const k5[] = { "DroidSansMono.ttf", "CutiveMono.ttf", "RobotoMono-Regular.ttf", nullptr };
+        static const char* const k6[] = { "ComingSoon.ttf", nullptr };
+        static const char* const k7[] = { "DancingScript-Regular.ttf", "DancingScript-Bold.ttf", nullptr };
+        static const char* const k8[] = { "CarroisGothicSC-Regular.ttf", nullptr };
+        const char* const* lists[] = { k2, k3, k4, k5, k6, k7, k8 };
+        for(int i = 0; i < 7; ++i) s_pFonts[2 + i] = LoadSystemFont(io.Fonts, lists[i], UI::S(34.0f));
+    }
     io.Fonts->Build();
     UI::EmojiBake(io.Fonts, s_pFont);
 
     FloatMenu::ApplyStyle();
     s_bInit = true;
+    UI::SetLook(s_nFont, s_nFontFx, s_fFontScale, s_fUiScale);   // 3.34
     logger->Info("ImGui initialised (%dx%d)", RsGlobal->maximumWidth, RsGlobal->maximumHeight);
     return true;
 }
@@ -239,13 +297,13 @@ static void EnsureEmbeddedAsset(const char* file, const char* path)
 }
 // 3.04: any other PNG in files/MP by file name (Brief Case War briefcase / lock / banner), max 512x512
 struct NamedTex { char file[48]; RwRaster* r; ImVec2 uv; };
-static NamedTex s_NamedTex[16]; static int s_nNamedTex = 0;
+static NamedTex s_NamedTex[24]; static int s_nNamedTex = 0;
 void* HUD::Texture(const char* file, ImVec2* uv)
 {
     if(!file || !*file) return nullptr;
     for(int i = 0; i < s_nNamedTex; ++i)
         if(!strcmp(s_NamedTex[i].file, file)) { if(uv) *uv = s_NamedTex[i].uv; return (void*)s_NamedTex[i].r; }
-    if(s_nNamedTex >= 16) return nullptr;
+    if(s_nNamedTex >= 24) return nullptr;
     uint32_t fr = (uint32_t)ImGui::GetFrameCount();
     if(s_nIconLoadFrame == fr) return nullptr;   // one file per frame
     s_nIconLoadFrame = fr;
@@ -402,7 +460,7 @@ static void DrawWeaponIcon(ImDrawList* dl, ImVec2 c, float s, uint8_t weapon)
 }
 
 // ---- name tag + health bar --------------------------------------------------------------
-static void DrawNameTag(ImDrawList* dl, const Vec3& head, const char* name, uint32_t rgba, int health, int armour, const Vec3& camRef, bool paused = false, bool talking = false, const char* sub = nullptr)
+static void DrawNameTag(ImDrawList* dl, const Vec3& head, const char* name, uint32_t rgba, int health, int armour, const Vec3& camRef, int paused = 0, bool talking = false, const char* sub = nullptr)
 {
     float dx = head.x - camRef.x, dy = head.y - camRef.y, dz = head.z - camRef.z;
     float dist = sqrtf(dx * dx + dy * dy + dz * dz);
@@ -432,8 +490,9 @@ static void DrawNameTag(ImDrawList* dl, const Vec3& head, const char* name, uint
     if(paused)
     {
         const float pfs = fs * 0.8f;
-        ImVec2 pts = UI::Font()->CalcTextSizeA(pfs, FLT_MAX, 0, "PAUSED");
-        UI::OutlinedText(dl, pfs, ImVec2(sx - pts.x * 0.5f, y - pfs - UI::S(2) * k), IM_COL32(255, 210, 60, 255), "PAUSED");
+        const char* pl = paused == 2 ? "AFK" : "PAUSED";   // 3.34
+        ImVec2 pts = UI::Font()->CalcTextSizeA(pfs, FLT_MAX, 0, pl);
+        UI::OutlinedText(dl, pfs, ImVec2(sx - pts.x * 0.5f, y - pfs - UI::S(2) * k), paused == 2 ? IM_COL32(255, 150, 60, 255) : IM_COL32(255, 210, 60, 255), pl);
     }
     if(talking)   // 3.11: white speaker over the head while this player talks (voice chat)
     {
@@ -473,17 +532,20 @@ static void DrawNameTags(ImDrawList* dl)
         if(p.sync.flags & SYNC_DEAD) continue;
         if(p.invisible) continue;                               // 2.19 /invisible
         if(p.tagBlocked && !MP_WallhackOn()) continue;          // 2.19: wall in between
-        char bn[64]; uint32_t bc = MP::BcwDecorate(i, p.name, p.color, bn, sizeof(bn));   // 3.04: [GTV] / [SLZ] team tag + colour
+        char bn[80]; uint32_t bc = MP::BcwDecorate(i, p.name, p.color, bn, sizeof(bn));   // 3.04: [GTV] / [SLZ] team tag + colour
+        MP::NameTagId(i, bn, sizeof(bn));   // 3.34: name (id)
         char sb[64]; bool hasSub = MP::Mw3SubTag(i, sb, sizeof(sb)) || MP::RpSubTag(i, sb, sizeof(sb));   // 3.23 / 3.25
-        DrawNameTag(dl, p.drawPos, bn, bc, p.sync.health, p.sync.armour, ref, p.paused, MP::VoiceSpeaking(i), hasSub ? sb : nullptr);
+        DrawNameTag(dl, p.drawPos, bn, bc, p.sync.health, p.sync.armour, ref, p.paused ? 1 : (MP::IsAfk(i) ? 2 : 0), MP::VoiceSpeaking(i), hasSub ? sb : nullptr);
+        MP::DrawDamageIndicator(dl, i, p.drawPos);   // 3.34
     }
     if(MP::settings.showOwnTag && MP::myDrawValid && !MP::BcwOwnTagHidden() && !MP::Mw3OwnTagHidden() && !MP::RpOwnTagHidden())   // 3.10: never on the Brief Case War connection / respawn screen
     {
         const char* nm = (MP::myId < MP_MAX_PLAYERS && MP::players[MP::myId].active) ? MP::players[MP::myId].name : MP::settings.name;
         if(MP::IsLocalAdmin()) nm = "[ADMIN] SENJI";   // 2.37: admin.txt + name SENJI: my own tag always has the RGB rank
-        char bn[64]; uint32_t bc = MP::BcwDecorate(MP::myId, nm, MP::myColor, bn, sizeof(bn));   // 3.04
+        char bn[80]; uint32_t bc = MP::BcwDecorate(MP::myId, nm, MP::myColor, bn, sizeof(bn));   // 3.04
+        MP::NameTagId(MP::myId, bn, sizeof(bn));   // 3.34
         char sb[64]; bool hasSub = MP::Mw3SubTag(MP::myId, sb, sizeof(sb)) || MP::RpSubTag(MP::myId, sb, sizeof(sb));
-        DrawNameTag(dl, MP::myDrawPos, bn, bc, MP::myHealth, MP::myArmour, ref, false, MP::MeTalking(), hasSub ? sb : nullptr);
+        DrawNameTag(dl, MP::myDrawPos, bn, bc, MP::myHealth, MP::myArmour, ref, 0, MP::MeTalking(), hasSub ? sb : nullptr);
     }
 }
 
@@ -525,9 +587,28 @@ static void DrawChat(ImDrawList* dl)
     uint64_t now = MP_NowMs();
     ImFont* f = UI::Font();
 
+    // 3.34: chat scroll - with the chat box open, drag up / down over the chat (or the mouse wheel)
+    // to read older lines; it snaps back to the newest when the box closes
+    static float s_fScroll = 0; static bool s_bDrag = false; static float s_fDragY = 0, s_fDragScroll = 0;
+    int skip = 0;
+    if(open)
+    {
+        ImGuiIO& io = ImGui::GetIO();
+        ImVec2 m = io.MousePos;
+        bool inside = m.x >= x - UI::S(10) && m.x <= x + W + UI::S(10) && m.y >= y0 - UI::S(10) && m.y <= y0 + maxRows * rowH + UI::S(10);
+        if(io.MouseClicked[0] && inside) { s_bDrag = true; s_fDragY = m.y; s_fDragScroll = s_fScroll; }
+        if(!io.MouseDown[0]) s_bDrag = false;
+        if(s_bDrag) s_fScroll = s_fDragScroll + (m.y - s_fDragY) / rowH;
+        if(inside && io.MouseWheel != 0) s_fScroll += io.MouseWheel * 3;
+        int maxSkip = (int)MP::chat.size() * 2;
+        if(s_fScroll < 0) s_fScroll = 0; if(s_fScroll > maxSkip) s_fScroll = (float)maxSkip;
+        skip = (int)s_fScroll;
+    }
+    else { s_fScroll = 0; s_bDrag = false; }
     // newest first, split into wrapped rows, until the row budget is used
     std::vector<ChatRow> rows;
-    for(int i = (int)MP::chat.size() - 1; i >= 0 && (int)rows.size() < maxRows; --i)
+    const int budget = maxRows + skip;
+    for(int i = (int)MP::chat.size() - 1; i >= 0 && (int)rows.size() < budget; --i)
     {
         const ChatLine& l = MP::chat[i];
         float alpha = 1.0f;
@@ -553,7 +634,12 @@ static void DrawChat(ImDrawList* dl)
             s = cut; while(s < e && *s == ' ') ++s;
             first = false;
         } while(s < e && mine.size() < 6);
-        for(int k = (int)mine.size() - 1; k >= 0 && (int)rows.size() < maxRows; --k) rows.push_back(mine[k]);
+        for(int k = (int)mine.size() - 1; k >= 0 && (int)rows.size() < budget; --k) rows.push_back(mine[k]);
+    }
+    if(skip > 0)
+    {
+        if(skip > (int)rows.size() - 1) { skip = (int)rows.size() - 1; if(skip < 0) skip = 0; s_fScroll = (float)skip; }
+        rows.erase(rows.begin(), rows.begin() + skip);
     }
     if(rows.empty()) return;
 
@@ -584,6 +670,13 @@ static void DrawChat(ImDrawList* dl)
         else if(!r.first) cx += UI::S(14) * st.chatSize * st.chatScale;   // wrapped rest: small indent
         UI::OutlinedText(dl, fs, ImVec2(cx, y), UI::FromRGBA(r.l->textColor), r.text.c_str(), r.alpha);
         y -= rowH;
+    }
+    if(open && skip > 0)   // 3.34: scrolled up: a hint + a small bar on the right
+    {
+        const char* hint = "scrolled up - drag down for new messages";
+        float hfs = fs * 0.75f;
+        UI::OutlinedText(dl, hfs, ImVec2(x, y0 + h + UI::S(6)), IM_COL32(255, 210, 90, 255), hint);
+        dl->AddRectFilled(ImVec2(x + W + UI::S(2), y0), ImVec2(x + W + UI::S(6), y0 + h), IM_COL32(255, 255, 255, 50));
     }
     MP::chatDrawnH = h;
 }
@@ -700,7 +793,7 @@ void HUD::Render()
             if(MP::settings.showChat) DrawChat(dl);
             if(MP::IsConnected() && !overlay) DrawVoiceList(dl);   // 3.11
             if(MP::settings.showKillFeed && MP::IsConnected()) DrawKillFeed(dl);   // 2.35: not after leaving
-            if(MP::settings.showStatus) DrawStatus(dl);
+            (void)&DrawStatus;   // 3.34: the "MP: Connected to ..." status line is gone (it showed the server, region, players, ping and host)
         }
         DrawLogo(ImGui::GetForegroundDrawList());
         FloatMenu::Render();
@@ -711,6 +804,46 @@ void HUD::Render()
     PublishHitRects();   // 2.22
     ImGui::Render();
     ImGui_ImplRenderWare_RenderDrawData(ImGui::GetDrawData());
+}
+
+// 3.34: pause-menu map layers. The game's map screen does not go through Render2dStuff, so this is
+// its own tiny ImGui frame (only draw lists, no windows - nothing here takes touches).
+bool HUD::RenderMenuMapLayer(int layer, const void* labelsV, int n)
+{
+    if(!s_bInit) return false;
+    ImGuiContext* g = ImGui::GetCurrentContext();
+    if(!g || g->WithinFrameScope) return false;
+    ImGuiIO& io = ImGui::GetIO();
+    io.DisplaySize = ImVec2((float)RsGlobal->maximumWidth, (float)RsGlobal->maximumHeight);
+    ImGui_ImplRenderWare_NewFrame();
+    if(io.DeltaTime <= 0.0f) io.DeltaTime = 1.0f / 60.0f;
+    ImGui::NewFrame();
+    ImDrawList* dl = ImGui::GetBackgroundDrawList();
+    bool drew = false;
+    if(layer == 0) drew = MP::DrawMenuMapBackground(dl);
+    else if(labelsV && n > 0)
+    {   // names: one fixed size (the zoom only moves them), outlined like the HUD name tags
+        const Game::MapLabel* L = (const Game::MapLabel*)labelsV;
+        const float fs = UI::S(15.0f);
+        for(int i = 0; i < n; ++i)
+        {
+            ImVec2 ts = UI::Font()->CalcTextSizeA(fs, FLT_MAX, 0, L[i].name);
+            ImVec2 p(floorf(L[i].sx - ts.x * 0.5f), floorf(L[i].sy - UI::S(13) - ts.y));
+            uint32_t c = L[i].rgba;
+            ImU32 col = IM_COL32((c >> 24) & 0xFF, (c >> 16) & 0xFF, (c >> 8) & 0xFF, 255);
+            for(int k = 0; k < 4; ++k)
+            {
+                const float ox = (k & 1) ? 1.5f : -1.5f, oy = (k & 2) ? 1.5f : -1.5f;
+                dl->AddText(UI::Font(), fs, ImVec2(p.x + ox, p.y + oy), IM_COL32(0, 0, 0, 230), L[i].name);
+            }
+            dl->AddText(UI::Font(), fs, p, col, L[i].name);
+        }
+        drew = true;
+    }
+    ImGui::EndFrame();
+    ImGui::Render();
+    if(drew) ImGui_ImplRenderWare_RenderDrawData(ImGui::GetDrawData());
+    return drew;
 }
 
 // Touch routing: returns true if the touch at (x,y) is over an interactive MP window.

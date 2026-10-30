@@ -156,8 +156,19 @@ static bool SafeRead(const void* addr, void* out, size_t len)
 template<typename T> static inline T At(const void* base, int ofs) { T v; memcpy(&v, (const u8*)base + ofs, sizeof(T)); return v; }
 template<typename T> static inline void Put(void* base, int ofs, T v) { memcpy((u8*)base + ofs, &v, sizeof(T)); }
 
+// 3.34: no camera shake. Players saw the camera shaking (on a server, after leaving one, or with MP
+// alone): explosions of other players' copies, script SHAKE_CAM calls and replayed blasts all go to
+// CCamera::CamShake / CamShakeNoPos. With "No camera shake" (default on) both do nothing.
+static bool s_bNoCamShake = true;
+void Game::SetNoCamShake(bool on) { s_bNoCamShake = on; }
+static void (*CamShake_orig)(void*, float, float, float, float) = nullptr;
+static void HookCamShake(void* cam, float strength, float x, float y, float z) { if(!s_bNoCamShake) CamShake_orig(cam, strength, x, y, z); }
+static void (*CamShakeNoPos_orig)(void*, float) = nullptr;
+static void HookCamShakeNoPos(void* cam, float strength) { if(!s_bNoCamShake) CamShakeNoPos_orig(cam, strength); }
+
 static bool HookExplosion(void* victim, void* creator, int type, Vec3Arg pos, uint32_t time, u8 sound, float shake, u8 vis)
 {
+    if(s_nApplyingRemote || s_bNoCamShake) shake = 0.0f;   // 3.34
     if(!s_nApplyingRemote)
     {
         Vec3 p = { pos.x, pos.y, pos.z };
@@ -221,6 +232,11 @@ bool Game::InitNetState(void* h)
     void* fire = (void*)aml->GetSym(h, "_ZN12CFireManager9StartFireE7CVectorfhP7CEntityjah");
     if(fire) aml->Hook(fire, (void*)&HookStartFire, (void**)&StartFire_orig);
     logger->Info("Env sync: explosions %s, fires %s", AddExplosion_orig ? "on" : "off", StartFire_orig ? "on" : "off");
+    void* cs = (void*)aml->GetSym(h, "_ZN7CCamera8CamShakeEffff");      // 3.34
+    if(cs) aml->Hook(cs, (void*)&HookCamShake, (void**)&CamShake_orig);
+    void* cs2 = (void*)aml->GetSym(h, "_Z13CamShakeNoPosP7CCameraf");
+    if(cs2) aml->Hook(cs2, (void*)&HookCamShakeNoPos, (void**)&CamShakeNoPos_orig);
+    logger->Info("No camera shake: %s / %s", CamShake_orig ? "on" : "-", CamShakeNoPos_orig ? "on" : "-");
     return s_bAnimReady;
 }
 
@@ -1312,6 +1328,26 @@ static Game::MapMarkerProvider s_MapProvider = nullptr;
   #define MM_DRAWMAP_OFS 140
 #endif
 
+static Game::MenuMapLayerFn s_MenuMapLayer = nullptr;   // 3.34
+static bool MapRadarState()
+{
+    float range = 0; CVec2D_ org = { 0, 0 };
+    if(s_pRadarRange) SafeRead(s_pRadarRange, &range, 4);
+    if(s_pRadarOrigin) SafeRead(s_pRadarOrigin, &org, sizeof(org));
+    return s_pRadarRange && range >= 1500.0f && fabsf(org.x) < 1.0f && fabsf(org.y) < 1.0f;
+}
+bool Game::MenuMapWorldToScreen(float x, float y, float& sx, float& sy)
+{
+    if(!TransformRealWorldPointToRadarSpace || !TransformRadarPointToScreenSpace) return false;
+    CVec2D_ world = { x, y }, rad, scr;
+    if(MapRadarState()) TransformRealWorldPointToRadarSpace(rad, world);
+    else { rad.x = world.x / 3000.0f; rad.y = world.y / 3000.0f; }
+    TransformRadarPointToScreenSpace(scr, rad);
+    if(!(scr.x == scr.x) || !(scr.y == scr.y)) return false;
+    sx = scr.x; sy = scr.y; return true;
+}
+void Game::SetMenuMapLayer(MenuMapLayerFn f) { s_MenuMapLayer = f; }
+
 static void DrawMapPlayers()
 {
     if(!s_MapProvider || !TransformRealWorldPointToRadarSpace || !TransformRadarPointToScreenSpace) return;
@@ -1320,10 +1356,9 @@ static void DrawMapPlayers()
     if(n <= 0) return;
     float sw = (float)Game::ScreenWidth(); if(sw < 320) sw = 1280;
     bool canText = FontSetScale && FontSetColor && FontPrintString && FontSetOrientation && FontSetFontStyle;
-    float range = 0; CVec2D_ org = { 0, 0 };
-    if(s_pRadarRange) SafeRead(s_pRadarRange, &range, 4);
-    if(s_pRadarOrigin) SafeRead(s_pRadarOrigin, &org, sizeof(org));
-    const bool mapRadarState = s_pRadarRange && range >= 1500.0f && fabsf(org.x) < 1.0f && fabsf(org.y) < 1.0f;
+    const bool mapRadarState = MapRadarState();
+    // 3.34: names go through MP's own layer (fixed pixel size: the game's font grew / shrank with the map zoom)
+    static Game::MapLabel labels[MP_MAX_MAP_MARKERS]; int nLabels = 0;
     for(int i = 0; i < n; ++i)
     {
         CVec2D_ world = { mk[i].x, mk[i].y }, rad, scr;
@@ -1338,7 +1373,14 @@ static void DrawMapPlayers()
         if(!(scr.x == scr.x) || scr.x < -50 || scr.y < -50 || scr.x > sw * 2 || scr.y > sw * 2) continue;
         uint8_t r = (uint8_t)(mk[i].rgba >> 24), g = (uint8_t)(mk[i].rgba >> 16), b = (uint8_t)(mk[i].rgba >> 8);
         if(ShowRadarTraceWithHeight) ShowRadarTraceWithHeight(scr.x, scr.y, 2, r, g, b, 255, 2 /* RADAR_TRACE_NORMAL */);
-        if(!canText || !mk[i].name[0]) continue;
+        if(!mk[i].name[0]) continue;
+        if(s_MenuMapLayer && nLabels < MP_MAX_MAP_MARKERS)
+        {
+            Game::MapLabel& L = labels[nLabels++];
+            L.sx = scr.x; L.sy = scr.y; L.rgba = mk[i].rgba; memcpy(L.name, mk[i].name, sizeof(L.name)); L.name[sizeof(L.name) - 1] = 0;
+            continue;
+        }
+        if(!canText) continue;
         uint16_t txt[MP_NAME_LEN + 1]; int k = 0;
         for(; k < MP_NAME_LEN && mk[i].name[k]; ++k) { unsigned char c = (unsigned char)mk[i].name[k]; txt[k] = (c >= 32 && c < 127) ? c : '?'; }
         txt[k] = 0;
@@ -1356,6 +1398,7 @@ static void DrawMapPlayers()
         FontPrintString(scr.x, scr.y - 0.032f * sw, txt);
     }
     if(FontRenderBuffer) FontRenderBuffer();
+    if(nLabels > 0 && s_MenuMapLayer) s_MenuMapLayer(1, labels, nLabels);
 }
 
 // ---- 3.00: score bar in the game's Pricedown font (top right) ------------------------------
@@ -1420,6 +1463,7 @@ static bool OnMenuMap()
 // drawn right after the game's own blips, so our icons sit on top
 static void HookDrawBlips(float scale)
 {
+    if(s_MenuMapLayer && OnMenuMap()) s_MenuMapLayer(0, nullptr, 0);   // 3.34: Mega Vil's Google map under the blips
     DrawBlips_orig(scale);
     if(OnMenuMap()) { DrawMapPlayers(); s_LastBlipsMapDraw = NowMs(); }
 }

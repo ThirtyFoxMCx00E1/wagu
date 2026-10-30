@@ -65,6 +65,7 @@ public:
     // Tell the client the game is paused (pause menu). The heartbeat thread also treats
     // "game thread stopped calling Poll for 1.5 s" (app in background) as paused.
     void SetGamePaused(bool p) { m_bGamePaused = p; }
+    void SetAfk(bool a) { m_bAfk = a; }   // 3.34: AFK (no move for a long time): PKT_PAUSE paused = 2
     bool IsPausedOnServer() const { return m_bSentPaused; }
     // viaLocalPort != 0: packets really go to 127.0.0.1:viaLocalPort (online relay proxy);
     // GetHost()/GetPort() still report host:port so the game logic sees the real server.
@@ -103,7 +104,7 @@ private:
     std::atomic<eNetState> m_eState;
     std::mutex  m_SockMutex;
     std::thread m_Heartbeat;
-    std::atomic<bool> m_bHbRun{false}, m_bGamePaused{false}, m_bSentPaused{false};
+    std::atomic<bool> m_bHbRun{false}, m_bGamePaused{false}, m_bSentPaused{false}, m_bAfk{false}, m_bSentAfk{false};
     std::atomic<uint64_t> m_nLastGamePoll{0};
     uint8_t     m_nMyId;
     int         m_nPing;

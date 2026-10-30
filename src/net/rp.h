@@ -269,6 +269,22 @@ static const RpPet g_RpPets[] =
 #define RP_PET_COUNT ((int)(sizeof(g_RpPets) / sizeof(g_RpPets[0])))
 
 // ---- shop catalogue ----------------------------------------------------------------------------
+// 3.34: the free wardrobe in the lobby (Cosmetics room): categories of ped skins anyone may wear.
+// The server takes RPC_SKIN_SET only for a skin in this list (or one bought in the Clothes shop).
+struct RpCosmetic { uint8_t cat; uint16_t skin; const char* name; };
+enum { RPCO_STREET = 0, RPCO_GANG, RPCO_WORK, RPCO_SMART, RPCO_SPORT, RPCO_BEACH, RPCO_CAT_COUNT };
+static const char* const g_RpCosCats[RPCO_CAT_COUNT] = { "STREET", "GANG", "WORK", "SMART", "SPORT", "BEACH" };
+static const RpCosmetic g_RpCos[] = {
+    { RPCO_STREET, 0, "CJ" }, { RPCO_STREET, 7, "Casual" }, { RPCO_STREET, 22, "Hoodie" }, { RPCO_STREET, 29, "Skater" }, { RPCO_STREET, 47, "Street dude" }, { RPCO_STREET, 56, "Street girl" }, { RPCO_STREET, 60, "Young" }, { RPCO_STREET, 101, "Urban" },
+    { RPCO_GANG, 105, "Grove 1" }, { RPCO_GANG, 106, "Grove 2" }, { RPCO_GANG, 107, "Grove 3" }, { RPCO_GANG, 102, "Ballas 1" }, { RPCO_GANG, 103, "Ballas 2" }, { RPCO_GANG, 108, "Vagos" }, { RPCO_GANG, 114, "Aztecas" }, { RPCO_GANG, 117, "Triads" },
+    { RPCO_WORK, 50, "Mechanic" }, { RPCO_WORK, 155, "Pizza" }, { RPCO_WORK, 167, "Cluckin" }, { RPCO_WORK, 260, "Builder" }, { RPCO_WORK, 274, "Medic" }, { RPCO_WORK, 277, "Fireman" }, { RPCO_WORK, 255, "Driver" }, { RPCO_WORK, 171, "Waiter" },
+    { RPCO_SMART, 17, "Suit" }, { RPCO_SMART, 147, "Gentleman" }, { RPCO_SMART, 150, "Office lady" }, { RPCO_SMART, 187, "Business" }, { RPCO_SMART, 93, "Rich girl" }, { RPCO_SMART, 186, "Old money" }, { RPCO_SMART, 240, "Vinewood" }, { RPCO_SMART, 295, "Boss" },
+    { RPCO_SPORT, 41, "Sport girl" }, { RPCO_SPORT, 81, "Runner" }, { RPCO_SPORT, 96, "Jogger" }, { RPCO_SPORT, 80, "Boxer" }, { RPCO_SPORT, 23, "Skate" }, { RPCO_SPORT, 21, "Rapper" }, { RPCO_SPORT, 250, "Cyber" }, { RPCO_SPORT, 100, "Biker" },
+    { RPCO_BEACH, 18, "Beach" }, { RPCO_BEACH, 45, "Trunks" }, { RPCO_BEACH, 97, "Surfer" }, { RPCO_BEACH, 138, "Bikini 1" }, { RPCO_BEACH, 139, "Bikini 2" }, { RPCO_BEACH, 140, "Bikini 3" }, { RPCO_BEACH, 154, "Beach dude" }, { RPCO_BEACH, 251, "Lifeguard" },
+};
+static const int RP_COS_COUNT = (int)(sizeof(g_RpCos) / sizeof(g_RpCos[0]));
+static inline bool RpCosAllowed(int skin) { for(int i = 0; i < RP_COS_COUNT; ++i) if(g_RpCos[i].skin == skin) return true; return false; }
+
 enum eRpShopCat : uint8_t { RPS_FOOD = 0, RPS_CLOTHES, RPS_CARS, RPS_TECH, RPS_GUNS, RPS_CAT_COUNT };
 static const char* const g_RpShopCats[RPS_CAT_COUNT] = { "Food & Drinks", "Clothes", "Vehicles", "Tech & Pets", "Ammu-Nation" };
 enum eRpShopKind : uint8_t { RPI_FOOD = 0, RPI_MEDKIT, RPI_SKIN, RPI_VEH, RPI_PET, RPI_ITEM, RPI_WEAPON, RPI_ARMOUR, RPI_LOTTO, RPI_REPAIR };
@@ -376,7 +392,7 @@ enum eRpCmd : uint8_t
     RPC_STOP_WORK, RPC_ARRIVE, RPC_DUTY, RPC_SMS, RPC_CALL, RPC_ANSWER, RPC_HANGUP, RPC_FEED, RPC_AD, RPC_BUY_HOUSE,
     RPC_SELL_HOUSE, RPC_HOME, RPC_MY_VEH, RPC_SELL_VEH, RPC_PET, RPC_CUFF, RPC_UNCUFF, RPC_ARREST, RPC_FINE, RPC_WANTED,
     RPC_HEAL, RPC_REPAIR, RPC_LOTTO, RPC_EAT_DONE, RPC_911, RPC_TAXI_CALL, RPC_SHARED_EMOTE, RPC_ACCEPT, RPC_STATS, RPC_RESPAWN,
-    RPC_COINFLIP, RPC_DICE, RPC_EVENT_JOIN, RPC_PROXY, RPC_GIVE_ITEM, RPC_DEFEND, RPC_FRISK, RPC_JETPACK, RPC_SKIN_SET,
+    RPC_COINFLIP, RPC_DICE, RPC_EVENT_JOIN, RPC_PROXY, RPC_GIVE_ITEM, RPC_DEFEND, RPC_FRISK, RPC_JETPACK, RPC_SKIN_SET, RPC_FACTION,
     RPC_INV_REQ, RPC_INV_USE, RPC_INV_GIVE, RPC_INV_DROP,   // 3.26: the bag (a = bag slot, b = player id, val = amount)
     // 3.29 (Diverse Roleplay features): a = plan, b = 0 buy / 1 sell, val = $ (sell: 0 = all)
     RPC_INVEST, RPC_PROPOSE, RPC_DIVORCE, RPC_BELT, RPC_CHECK_BELT, RPC_PAWN, RPC_INVEST_INFO,
