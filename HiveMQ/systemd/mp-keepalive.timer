@@ -1,0 +1,11 @@
+# 3.33: every minute: the broker and the 4 featured servers must be online (24/7)
+[Unit]
+Description=MP Multiplayer keep-alive timer
+
+[Timer]
+OnBootSec=60
+OnUnitActiveSec=60
+AccuracySec=5s
+
+[Install]
+WantedBy=timers.target

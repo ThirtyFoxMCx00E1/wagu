@@ -1,0 +1,30 @@
+# 3.25: the region's 24/7 "Mega Vil Futuristic" featured Roleplay server (installed by install.sh)
+# Pinned in the Internet list with a sky blue banner, 250 players, Roleplay RP only (no teams, no other
+# gamemodes): money + bank, 20 jobs, shops, 48 houses (home spawn), pets, the phone, city events,
+# lottery, 100+ RP commands. Peaceful: only on-duty police / military can hurt. 3.33: no Broker bot and no
+# phone hosts it: only this VPS runs Mega Vil, and mp-keepalive keeps it online 24/7.
+# Citizens: rp_citizens.txt (saved every minute and on stop).
+[Unit]
+Description=MP Multiplayer Mega Vil Futuristic Roleplay (@@REGION@@)
+After=hivemq.service network-online.target
+Wants=hivemq.service network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=mp
+Group=mp
+WorkingDirectory=@@BASE@@/server
+ExecStart=@@BASE@@/server/mp_server 1932 "Mega Vil Futuristic" 250 @@REGION@@ --persistent --broker-file @@BASE@@/server/broker.txt --rp-file @@BASE@@/server/rp_citizens.txt
+Restart=always
+# 3.33: back within 2 s after a crash, and never give up (the 4 servers stay online 24/7)
+RestartSec=2
+LimitNOFILE=65536
+Nice=-5
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=full
+ProtectHome=yes
+
+[Install]
+WantedBy=multi-user.target

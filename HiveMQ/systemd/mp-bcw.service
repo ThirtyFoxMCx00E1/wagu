@@ -1,0 +1,27 @@
+# 3.04: the region's 24/7 "Brief Case War" gamemode server (installed by install.sh)
+# Private gamemode: pinned in the Internet list under the default server, 20 players (10 vs 10),
+# a match starts when 20 are queued (change with --bcw-min N). Cheats off, CheatMenu refused.
+[Unit]
+Description=MP Multiplayer Brief Case War (@@REGION@@)
+After=hivemq.service network-online.target
+Wants=hivemq.service network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=mp
+Group=mp
+WorkingDirectory=@@BASE@@/server
+ExecStart=@@BASE@@/server/mp_server 1930 "Brief Case War" 20 @@REGION@@ --persistent --broker-file @@BASE@@/server/broker.txt --bcw-min @@BCWMIN@@
+Restart=always
+# 3.33: back within 2 s after a crash, and never give up (the 4 servers stay online 24/7)
+RestartSec=2
+LimitNOFILE=65536
+Nice=-5
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=full
+ProtectHome=yes
+
+[Install]
+WantedBy=multi-user.target

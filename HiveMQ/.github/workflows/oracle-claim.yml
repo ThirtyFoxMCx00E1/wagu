@@ -1,0 +1,78 @@
+# MP Oracle: claims the Oracle Cloud Always Free Ampere A1 server for one MP region and installs
+# HiveMQ + the 24/7 servers on it (oracle/mp_oracle.py). Runs every hour for 50 minutes until Oracle
+# has free capacity, then every run just sees "mp-<region> already exists" and stops in seconds.
+# Setup (phone browser is fine): repo Settings -> Secrets and variables -> Actions -> New secret:
+#   OCI_USER, OCI_TENANCY, OCI_FINGERPRINT, OCI_REGION, OCI_KEY   (from Oracle: Profile -> API keys)
+#   optional: DUCKDNS_TOKEN, DISCORD_WEBHOOK, SSH_PUBLIC_KEY
+# and the variable MP_REGION = asia / europe / na / oceania (Variables tab). Then Actions -> MP Oracle claim -> Run.
+name: MP Oracle claim
+on:
+  workflow_dispatch:
+    inputs:
+      region:
+        description: "MP region (asia, europe, na, oceania; empty = from the Oracle home region)"
+        required: false
+        default: ""
+      command:
+        description: "check, claim or status"
+        required: false
+        default: "claim"
+  schedule:
+    - cron: "7 * * * *"
+concurrency:
+  group: mp-oracle
+  cancel-in-progress: false
+permissions:
+  contents: read
+jobs:
+  claim:
+    runs-on: ubuntu-latest
+    timeout-minutes: 58
+    env:
+      OCI_USER: ${{ secrets.OCI_USER }}
+      OCI_TENANCY: ${{ secrets.OCI_TENANCY }}
+      OCI_FINGERPRINT: ${{ secrets.OCI_FINGERPRINT }}
+      OCI_REGION: ${{ secrets.OCI_REGION }}
+      OCI_KEY: ${{ secrets.OCI_KEY }}
+      DUCKDNS_TOKEN: ${{ secrets.DUCKDNS_TOKEN }}
+      DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+      SSH_PUBLIC_KEY: ${{ secrets.SSH_PUBLIC_KEY }}
+      MP_REGION: ${{ github.event.inputs.region || vars.MP_REGION }}
+    steps:
+      - name: Login set?
+        id: gate
+        run: |
+          if [ -z "$OCI_USER" ] || [ -z "$OCI_KEY" ] || [ -z "$OCI_TENANCY" ]; then
+            echo "No Oracle login in the repo secrets yet (OCI_USER, OCI_TENANCY, OCI_FINGERPRINT, OCI_REGION, OCI_KEY) - nothing to do."
+            echo "go=0" >> "$GITHUB_OUTPUT"
+          else
+            echo "go=1" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v4
+        if: steps.gate.outputs.go == '1'
+      - uses: actions/setup-python@v5
+        if: steps.gate.outputs.go == '1'
+        with:
+          python-version: "3.12"
+      - name: Oracle SDK
+        if: steps.gate.outputs.go == '1'
+        run: pip install -q oci
+      - name: MP Oracle
+        id: mp
+        if: steps.gate.outputs.go == '1'
+        run: |
+          CMD="${{ github.event.inputs.command || 'claim' }}"
+          if [ "$CMD" = claim ]; then python3 oracle/mp_oracle.py claim --minutes 50
+          else python3 oracle/mp_oracle.py "$CMD"; fi
+      - name: Summary
+        if: always() && steps.gate.outputs.go == '1'
+        run: |
+          IP="${{ steps.mp.outputs.ip }}"; RG="${{ steps.mp.outputs.region }}"
+          if [ -n "$IP" ]; then
+            echo "### MP Oracle: $RG server $IP" >> "$GITHUB_STEP_SUMMARY"
+            echo "Put this IP in regions.txt / DuckDNS if DUCKDNS_TOKEN is not set. It installs itself in about 15 minutes." >> "$GITHUB_STEP_SUMMARY"
+            # 3.32: the MP Oracle page (thirtyfoxmcx00e1.github.io/wagu/oracle.html) reads this annotation
+            echo "::notice title=MP Oracle::$RG server $IP (installs itself in about 15 minutes)"
+          else
+            echo "::notice title=MP Oracle::no server yet (${RG:-region ?}): Oracle out of free capacity or login refused - retried every hour"
+          fi
