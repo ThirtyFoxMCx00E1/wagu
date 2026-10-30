@@ -7,7 +7,7 @@
   var REG = ['Asia', 'Europe', 'NA', 'Oceania'];
   var PUBLIC = ['wss://broker.hivemq.com:8884/mqtt', 'wss://broker.emqx.io:8084/mqtt', 'wss://test.mosquitto.org:8081/'];
   var ROOT = 'thirtyfox/mp5/', FRESH = 15000;
-  var RAW = 'https://thirtyfoxmcx00e1.github.io/openmp.com/';   // 3.35: openmp.com (no repo links)
+  var RAW = 'https://thirtyfoxmcx00e1.github.io/openmp.com/';   // 3.35: openmpsa.com (no repo links)
   var API = 'release.json';
   var $ = function (id) { return document.getElementById(id); };
   var out = $('out'), stick = window.MPAutoScroll(out);

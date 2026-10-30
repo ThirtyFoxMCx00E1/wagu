@@ -176,7 +176,7 @@
   });
 
   // ---- latest release ----
-  fetch('release.json', { cache: 'no-cache' })   // 3.35: openmp.com - the release info lives on this site
+  fetch('release.json', { cache: 'no-cache' })   // 3.35: openmpsa.com - the release info lives on this site
     .then(function (r) { return r.ok ? r.json() : null; })
     .then(function (j) {
       if (!j || !/^v?\d/i.test(j.tag_name || '')) return;
