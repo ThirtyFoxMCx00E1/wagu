@@ -245,7 +245,7 @@ health() {   # app
         l="$(svc_log_new "$1")"
         if grep -q "Slash commands in" <<<"$l"; then
             grep -E "Logged in as|Slash commands in|No slash commands" <<<"$l" | tail -n 4 | sed 's/^.* INFO //; s/^.* WARNING /WARNING /'
-            say "$1: ONLINE - /gen, /stats, /char are in your Discord server"; return 0
+            say "$1: ONLINE - /gen, /statsdc, /chardc are in your Discord server"; return 0
         fi
         grep -qE "Improper token|LoginFailure|401 Unauthorized" <<<"$l" && { HEALTH_FAIL=1; warn "$1: Discord refused the token - sudo mp-railway env set DISCORD_TOKEN (Developer Portal > Bot > Reset Token)"; return 1; }
         grep -q "PrivilegedIntentsRequired" <<<"$l" && { warn "$1: intents error - see mp-railway logs"; return 1; }

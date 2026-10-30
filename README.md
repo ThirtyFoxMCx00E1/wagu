@@ -141,6 +141,16 @@ sudo mp-railway add NAME REPO     host another Python / Node app the same way
 Without a VPS it also runs on an Android phone in Termux: `curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/railway/install.sh | bash` (Termux:Boot starts it after a reboot). Run the bot in **one** place only.
 
 
+## MP 3.34: region branches, 24/7 bot host, lower ping with many players
+
+This kit now also lives inside the main repo: [wagu/HiveMQ](https://github.com/ThirtyFoxMCx00E1/wagu/tree/main/HiveMQ) (same files, kept in sync), so the mod, the website and the servers are never separated.
+
+- **Region branches (game branch):** set `branch = on` in `bridge.conf` on the bridge machine. Every phone stays on the broker of **its own region** (Asia, Europe, NA, Oceania) and the bridge carries the game frames VPS to VPS to the region that hosts the server (`s/` phone to host, `c/` host to phone, `b/` host to all). Each VPS is a branch connected to the main HiveMQ machine with the same MQTT broker setup; players only pay the ping to their nearest VPS plus the fast VPS-to-VPS hop. `install.sh --bridge` writes `branch = on` (default); set `GAME_BRANCH=on` in `/etc/mp-hivemq/mp.env` and `tools/make-regions.sh` adds `branch=1` to that region in `regions.txt`, so 3.34 phones know they can stay on their own region.
+- **No ping climb when 25 / 100 players join:** `mp_server` keeps a per-player send budget (far players are sent less often when the server is full, near players and shots always go first), and the phone measures ping on its own channel so it is not stuck behind game packets.
+- **The 4 servers stay online 24/7 with the bot (1/100):** MP LAN Server, Brief Case War, Modern Warfare 3 and Mega Vil Futuristic always show the bot as a player, even when nobody plays. `mp-keepalive` now also **asks every server like the lobby does** (UDP query) and restarts one that has its port open but does not answer (hung / frozen), so the list never shows it offline.
+- **Console autobot:** the Termius / Termux pages run several bot typers at once (one per lane), each in its own endless loop, so the console never gets stuck on one long command.
+- **Discord bot:** the in-game `/stats` and `/char` are `/statsdc` and `/chardc` in Discord.
+
 ## MP 3.33: the 4 servers run only here, 24/7 - no Broker bot, lower ping
 
 Run the update on every region (Termius console **7) update**, or `curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/update.sh | sudo bash`). New in 3.33:

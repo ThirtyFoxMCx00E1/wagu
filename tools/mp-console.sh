@@ -91,7 +91,7 @@ while true; do
     echo "  9) shell (bash)           0) logout"
     echo "  s) the 4 servers: log / start / stop / restart each one"
     echo "  o) old MP versions refused (name, version, phone id, IP)"
-    echo "  r) MP Railway: Discord bot 24/7 (/gen /stats /char)"
+    echo "  r) MP Railway: Discord bot 24/7 (/gen /statsdc /chardc)"
     line
     read -r -p "  choose: " k || exit 0
     case "$k" in

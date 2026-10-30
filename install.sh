@@ -356,6 +356,8 @@ if [ "${RUN_BRIDGE:-0}" = 1 ]; then
             [ -n "$h" ] && echo "$r = mqtt://bridge:$BRIDGE_PASS@$h:1883"
         done
         echo "expire = 45"
+        # 3.34: game branch (phones stay on the nearest region, the game crosses regions VPS to VPS)
+        echo "branch = ${GAME_BRANCH:-on}"
     } > "$ETC/bridge.conf"
     chown mp:mp "$ETC/bridge.conf"; chmod 600 "$ETC/bridge.conf"
     [ "$(grep -c '= mqtt' "$ETC/bridge.conf")" -ge 2 ] || warn "bridge.conf has fewer than 2 brokers: fill HOST_* in $ENV_FILE and run install.sh again"

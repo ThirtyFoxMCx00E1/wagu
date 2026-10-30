@@ -16,6 +16,22 @@ age() {
     local pid; pid=$(systemctl show -p MainPID --value "$1" 2>/dev/null)
     if [ -n "$pid" ] && [ "$pid" != 0 ]; then ps -o etimes= -p "$pid" 2>/dev/null | tr -d ' '; else echo 0; fi
 }
+# 3.34: a server can be "running" with its port open but hung (no answers = players see it offline /
+# freezing). Ask it like the lobby does (PKT_QUERY = 14) up to 3 times; no PKT_INFO back = restart.
+answers() {   # port -> 0 when the server answers
+    command -v python3 >/dev/null 2>&1 || return 0
+    python3 - "$1" <<'PY'
+import socket, struct, sys, time
+s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM); s.settimeout(1.5)
+for _ in range(3):
+    try:
+        s.sendto(struct.pack("<BI", 14, int(time.time() * 1000) & 0xFFFFFFFF), ("127.0.0.1", int(sys.argv[1])))
+        d, _a = s.recvfrom(2048)
+        if d and d[0] == 15: sys.exit(0)
+    except Exception: pass
+sys.exit(1)
+PY
+}
 check() {   # unit  u|t  port  min-age-seconds
     local u=$1 proto=$2 port=$3 grace=${4:-60} fl
     systemctl is-enabled --quiet "$u" 2>/dev/null || return 0
@@ -30,6 +46,11 @@ check() {   # unit  u|t  port  min-age-seconds
     [ "$proto" = u ] && fl=-lun || fl=-ltn
     if [ -z "$(ss -H $fl "sport = :$port" 2>/dev/null)" ]; then
         log "$u is running but $port is not open - restarting it"
+        systemctl restart "$u" || true
+        return 0
+    fi
+    if [ "$proto" = u ] && ! answers "$port"; then
+        log "$u has $port open but does not answer - restarting it"
         systemctl restart "$u" || true
     fi
 }

@@ -35,6 +35,17 @@ import java.util.concurrent.*;
 public class MpBridge {
     static String topicFilter = "thirtyfox/mp5/l/+,thirtyfox/mp4/l/+";   // 3.04.6: mp5 = MP 3.04.6+, mp4 = the old lobby ("UPDATE MP" notice)
     static long expireMs = 45_000;
+    // 3.34: game branch - "branch = on" in bridge.conf. Phones stay on their nearest region's broker
+    // and this bridge carries the game frames to the region that hosts the server, VPS to VPS:
+    //   s/<tok>/<cid>  phone -> host   : seen on a branch, copied to the host's home broker
+    //   c/<cid>        host  -> phone  : seen on the home broker, copied to that phone's branch
+    //   b/<tok>        host  -> all    : seen on the home broker, copied to every branch with players
+    // Each rule only copies AWAY from where the topic belongs, so a copy never comes back (no echo map).
+    static boolean branch = false;
+    static String gameRoot = "thirtyfox/mp5/";
+    record Peer(Link branch, String tok, long seen) {}
+    static final Map<String, Peer> peers = new ConcurrentHashMap<>();
+    static final java.util.concurrent.atomic.AtomicLong gameFwd = new java.util.concurrent.atomic.AtomicLong();
     static final List<Link> links = new ArrayList<>();
     // token topic -> last state (payload + when a LIVE update was last seen anywhere)
     static final Map<String, Listing> listings = new ConcurrentHashMap<>();
@@ -56,10 +67,13 @@ public class MpBridge {
             String k = l.substring(0, l.indexOf('=')).strip(), v = l.substring(l.indexOf('=') + 1).strip();
             if (k.equalsIgnoreCase("topic")) topicFilter = v;
             else if (k.equalsIgnoreCase("expire")) expireMs = Long.parseLong(v) * 1000L;
+            else if (k.equalsIgnoreCase("branch")) branch = v.equalsIgnoreCase("on") || v.equals("1") || v.equalsIgnoreCase("true") || v.equalsIgnoreCase("yes");
+            else if (k.equalsIgnoreCase("game_root")) gameRoot = v.endsWith("/") ? v : v + "/";
             else links.add(new Link(k, URI.create(v)));
         }
         if (links.size() < 2) { log("bridge.conf needs at least 2 brokers (found " + links.size() + ")"); System.exit(2); }
-        log("MP bridge: " + links.size() + " brokers, topic " + topicFilter + ", expire " + expireMs / 1000 + " s");
+        log("MP bridge: " + links.size() + " brokers, topic " + topicFilter + ", expire " + expireMs / 1000 + " s"
+            + (branch ? ", game branch ON (" + gameRoot + "s|c|b)" : ""));
         for (Link k : links) { Thread t = new Thread(k::runForever, "link-" + k.name); t.setDaemon(true); t.start(); }
         // expire listings of hosts that vanished while a broker or the bridge was down
         for (;;) {
@@ -73,9 +87,47 @@ public class MpBridge {
                     for (Link k : links) k.forward(e.getKey(), new byte[0]);
                 }
             }
+            peers.entrySet().removeIf(e -> now - e.getValue().seen > 90_000);   // 3.34
             StringBuilder sb = new StringBuilder();
             for (Link k : links) sb.append(k.name).append(k.connected ? " up" : " DOWN").append("  ");
-            if (now / 1000 % 300 < 5) log("status: " + sb + "listings " + listings.size());
+            if (now / 1000 % 300 < 5) log("status: " + sb + "listings " + listings.size() + (branch ? ", branch players " + peers.size() + ", game frames " + gameFwd.get() : ""));
+        }
+    }
+
+    // 3.34: the broker a server is hosted on = where its listing arrives LIVE (not a retained copy)
+    static Link homeOf(String tok) {
+        Listing li = listings.get(gameRoot + "l/" + tok);
+        if (li == null) return null;
+        for (Link k : links) if (k.name.equals(li.origin)) return k;
+        return null;
+    }
+    static boolean isGame(String topic) {
+        if (!branch || !topic.startsWith(gameRoot)) return false;
+        String t = topic.substring(gameRoot.length());
+        return t.startsWith("s/") || t.startsWith("c/") || t.startsWith("b/");
+    }
+    static void onGame(Link from, String topic, byte[] payload) {
+        long now = System.currentTimeMillis();
+        String t = topic.substring(gameRoot.length());
+        if (t.startsWith("s/")) {                       // phone -> host
+            int sl = t.indexOf('/', 2);
+            if (sl < 0) return;
+            String tok = t.substring(2, sl), cid = t.substring(sl + 1);
+            Link home = homeOf(tok);
+            if (home == null || home == from) return;   // the phone is on the home broker already
+            Peer old = peers.get(cid);
+            if (old == null || old.branch != from || !old.tok.equals(tok) || now - old.seen > 5000) peers.put(cid, new Peer(from, tok, now));
+            if (home.publishFast(topic, payload)) gameFwd.incrementAndGet();
+        } else if (t.startsWith("c/")) {                // host -> one phone
+            Peer p = peers.get(t.substring(2));
+            if (p == null || p.branch == from || homeOf(p.tok) != from) return;
+            if (p.branch.publishFast(topic, payload)) gameFwd.incrementAndGet();
+        } else {                                        // b/<tok>: host -> all its players
+            String tok = t.substring(2);
+            if (homeOf(tok) != from) return;
+            java.util.Set<Link> done = new java.util.HashSet<>();
+            for (Peer p : peers.values())
+                if (p.tok.equals(tok) && p.branch != from && done.add(p.branch) && p.branch.publishFast(topic, payload)) gameFwd.incrementAndGet();
         }
     }
 
@@ -87,7 +139,9 @@ public class MpBridge {
             Listing old = listings.get(topic);
             // retained copies (sent on subscribe) may be old: they don't count as "alive"
             long live = retained ? (old != null ? old.lastLive : now) : now;
-            listings.put(topic, new Listing(payload, live, from.name));
+            // 3.34: a retained copy keeps the old origin (the game branch needs the real home broker)
+            String origin = retained && old != null ? old.origin : from.name;
+            listings.put(topic, new Listing(payload, live, origin));
         }
         for (Link k : links) if (k != from) k.forward(topic, payload);
     }
@@ -112,6 +166,13 @@ public class MpBridge {
             }
             try { send(publishPacket(topic, payload, true)); }
             catch (IOException e) { log(name + ": send failed: " + e.getMessage()); close(); }
+        }
+
+        // 3.34: game frames - not retained, no echo bookkeeping (see onGame), dropped while down
+        boolean publishFast(String topic, byte[] payload) {
+            if (!connected) return false;
+            try { send(publishPacket(topic, payload, false)); return true; }
+            catch (IOException e) { log(name + ": game send failed: " + e.getMessage()); close(); return false; }
         }
 
         boolean isEcho(String topic, byte[] payload) {
@@ -182,7 +243,8 @@ public class MpBridge {
             byte[] body = readPacket(in, type);
             if ((type[0] >> 4) != 2 || body.length < 2 || body[1] != 0)
                 throw new IOException("broker refused the login (CONNACK " + (body.length >= 2 ? body[1] : -1) + ")");
-            { int sid = 1; for (String f : topicFilter.split(",")) if (!f.trim().isEmpty()) send(subscribePacket(sid++, f.trim())); }
+            { int sid = 1; for (String f : topicFilter.split(",")) if (!f.trim().isEmpty()) send(subscribePacket(sid++, f.trim()));
+              if (branch) for (String g : new String[] { "s/+/+", "c/+", "b/+" }) send(subscribePacket(sid++, gameRoot + g)); }   // 3.34
             connected = true;
             log(name + ": connected to " + host + ":" + port + (tls ? " (TLS)" : ""));
             // keepalive
@@ -204,6 +266,7 @@ public class MpBridge {
                     int off = 2 + tl + (qos > 0 ? 2 : 0);
                     byte[] payload = Arrays.copyOfRange(body, off, body.length);
                     if (qos == 1) send(new byte[] { 0x40, 2, body[2 + tl], body[3 + tl] });   // PUBACK
+                    if (isGame(topic)) { onGame(this, topic, payload); continue; }   // 3.34
                     if (isEcho(topic, payload)) continue;
                     onMessage(this, topic, payload, retained);
                 }
