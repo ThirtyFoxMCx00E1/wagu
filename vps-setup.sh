@@ -6,7 +6,7 @@
 # then the mod / website passwords from the public regions.txt (so every phone connects with no change),
 # then update.sh. Other regions:  ... | sudo bash -s europe   (or na / oceania; domain eusamp / nasamp / ocsamp.duckdns.org)
 # Point the DuckDNS name at this VPS's IP first (duckdns.org -> update ip), and open the ports
-# (TCP 1883 8883 8884, UDP 1932 + the other server ports in the README).
+# (TCP 1883 8883 8884, UDP 1922 1930 1931 1932 - all four game servers).
 set -euo pipefail
 # region: first argument (curl ... | sudo bash -s europe) or REGION=; asia (default) europe na oceania
 REGION="${1:-${REGION:-Asia}}"

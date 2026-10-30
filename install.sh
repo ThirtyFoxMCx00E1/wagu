@@ -107,7 +107,8 @@ JVM_XMS=
 JVM_XMX=
 # limits per broker
 MAX_CONNECTIONS=20000
-BANDWIDTH_PER_CLIENT=524288
+# 3.33: 4 MB/s per client (was 512 KB/s: a busy relay host hit that limit, its packets queued up and every player's ping went to 200 ms+)
+BANDWIDTH_PER_CLIENT=4194304
 EOF
     chmod 600 "$ENV_FILE"
 fi
@@ -123,6 +124,11 @@ CONSOLE_INSECURE=0
 EOF
 # shellcheck disable=SC1090
 . "$ENV_FILE"
+# 3.33: servers installed before 3.33 have the old 512 KB/s limit in mp.env: raise it (ping went high when a relay host got busy)
+if [ "${BANDWIDTH_PER_CLIENT:-524288}" = 524288 ]; then
+    BANDWIDTH_PER_CLIENT=4194304
+    if grep -q '^BANDWIDTH_PER_CLIENT=' "$ENV_FILE"; then sed -i 's|^BANDWIDTH_PER_CLIENT=.*|BANDWIDTH_PER_CLIENT=4194304|' "$ENV_FILE"; else echo 'BANDWIDTH_PER_CLIENT=4194304' >> "$ENV_FILE"; fi
+fi
 # mp.env copied from another region: drop that server's own domain / bridge setting
 if [ -n "$ARG_REGION" ] && [ "${ARG_REGION,,}" != "${REGION,,}" ]; then DOMAIN=; EMAIL=; RUN_BRIDGE=0; fi
 [ -n "$ARG_REGION" ] && REGION="$ARG_REGION"
@@ -275,7 +281,7 @@ fi
 
 # ---------------------------------------------------------------- HiveMQ config
 say "writing HiveMQ config"
-TLS_XML="$TLS_XML" python3 - "$SRC_DIR/config/config.xml.template" "$HQ/conf/config.xml" "${MAX_CONNECTIONS:-20000}" "${BANDWIDTH_PER_CLIENT:-524288}" <<'PY'
+TLS_XML="$TLS_XML" python3 - "$SRC_DIR/config/config.xml.template" "$HQ/conf/config.xml" "${MAX_CONNECTIONS:-20000}" "${BANDWIDTH_PER_CLIENT:-4194304}" <<'PY'
 import os, sys
 src, dst, maxc, bw = sys.argv[1:5]
 tls = os.environ.get("TLS_XML", "")
@@ -359,7 +365,7 @@ chown mp:mp "$ETC" "$ENV_FILE" 2>/dev/null || true
 # ---------------------------------------------------------------- 2.21: web console + status beacon
 TTYD_VER="1.7.7"
 CON="$BASE/console"; mkdir -p "$CON"
-cp "$SRC_DIR/tools/mp-console.sh" "$SRC_DIR/tools/status.sh" "$SRC_DIR/tools/mp-status.py" "$CON/"; chmod 755 "$CON"/*.sh "$CON"/*.py
+cp "$SRC_DIR/tools/mp-console.sh" "$SRC_DIR/tools/status.sh" "$SRC_DIR/tools/mp-status.py" "$SRC_DIR/tools/mp-keepalive.sh" "$CON/"; chmod 755 "$CON"/*.sh "$CON"/*.py
 # keep a copy of this kit for the console's "update" choice
 # 3.21: the kit is a git clone, so "7) update" (git pull) really gets the new version
 if [ "$SRC_DIR" != "$BASE/kit" ]; then
@@ -417,6 +423,9 @@ sed -e "s|@@BASE@@|$BASE|g; s|@@REGION@@|$REGION|" "$SRC_DIR/systemd/mp-mw3.serv
 sed -e "s|@@BASE@@|$BASE|g; s|@@REGION@@|$REGION|" "$SRC_DIR/systemd/mp-rp.service" > /etc/systemd/system/mp-rp.service
 # 3.04.6: "UPDATE MP" notice server in the old lobby (refuses + logs MP 3.04.5 and older)
 sed -e "s|@@BASE@@|$BASE|g; s|@@REGION@@|$REGION|" "$SRC_DIR/systemd/mp-legacy.service" > /etc/systemd/system/mp-legacy.service
+# 3.33: keep-alive: the broker and the 4 featured servers must be online 24/7 (checked every minute)
+sed -e "s|@@BASE@@|$BASE|g" "$SRC_DIR/systemd/mp-keepalive.service" > /etc/systemd/system/mp-keepalive.service
+cp "$SRC_DIR/systemd/mp-keepalive.timer" /etc/systemd/system/mp-keepalive.timer
 systemctl daemon-reload
 systemctl enable --now hivemq >/dev/null
 systemctl restart hivemq
@@ -428,6 +437,7 @@ if [ "${RUN_SERVER:-1}" = 1 ] && [ "${RUN_LEGACY:-1}" = 1 ]; then systemctl enab
 if [ "${RUN_BRIDGE:-0}" = 1 ]; then systemctl enable mp-bridge >/dev/null; systemctl restart mp-bridge; else systemctl disable --now mp-bridge 2>/dev/null || true; fi
 systemctl enable mp-status >/dev/null; systemctl restart mp-status
 if [ "${CONSOLE:-1}" = 1 ]; then systemctl enable mp-console >/dev/null; systemctl restart mp-console; else systemctl disable --now mp-console 2>/dev/null || true; fi
+systemctl enable --now mp-keepalive.timer >/dev/null 2>&1 || true   # 3.33
 
 # ---------------------------------------------------------------- network tuning + firewall
 cp "$SRC_DIR/config/99-mp-network.conf" /etc/sysctl.d/99-mp-network.conf
@@ -453,7 +463,8 @@ echo "    status:  sudo $SRC_DIR/tools/status.sh     menu: sudo $BASE/console/mp
 if [ "${CONSOLE:-1}" = 1 ] && [ -n "${DOMAIN:-}" ]; then echo "    web console (website Termius page): https://$DOMAIN:7681  login ${CONSOLE_USER:-admin} / CONSOLE_PASS in $ENV_FILE"; fi
 echo "    logs:    journalctl -u hivemq -f    |  journalctl -u mp-server -f   |  journalctl -u mp-bcw -f   |  journalctl -u mp-mw3 -f   |  journalctl -u mp-rp -f   |  journalctl -u mp-legacy -f (old versions refused: $SV/outdated_clients.log)   |  journalctl -u mp-bridge -f"
 echo "    logins:  $ENV_FILE  (copy to the other regions; keep BRIDGE_PASS / ADMIN_PASS secret)"
-echo "    open these ports in your cloud provider's firewall too: 1883/tcp 8000/tcp ${DOMAIN:+8883/tcp 8884/tcp 7681/tcp 80/tcp }${SERVER_PORT:-1922}/udp"
+echo "    open these ports in your cloud provider's firewall too: 1883/tcp 8000/tcp ${DOMAIN:+8883/tcp 8884/tcp 7681/tcp 80/tcp }${SERVER_PORT:-1922}/udp 1930/udp 1931/udp 1932/udp"
+echo "    (a closed UDP port makes that server run on the slow relay: ping 200 ms+. All four UDP ports must be open)"
 echo "    then put this server into the website's regions.txt:  sudo $SRC_DIR/tools/make-regions.sh"
 if [ -s /etc/mp-railway/discordpy-bot.env ]; then echo "    Discord bot (MP Railway): sudo mp-railway status   |  sudo mp-railway logs -f"
 else echo "    Discord bot 24/7 on this server (ONE server only): sudo mp-railway setup   (console: r)"; fi

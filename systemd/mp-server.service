@@ -3,6 +3,7 @@
 Description=MP Multiplayer default server (@@REGION@@)
 After=hivemq.service network-online.target
 Wants=hivemq.service network-online.target
+StartLimitIntervalSec=0
 
 [Service]
 Type=simple
@@ -11,8 +12,8 @@ Group=mp
 WorkingDirectory=@@BASE@@/server
 ExecStart=@@BASE@@/server/mp_server @@PORT@@ "@@NAME@@" @@MAX@@ @@REGION@@ --persistent --broker-file @@BASE@@/server/broker.txt
 Restart=always
-# a phone may already host the default server for a moment: try again a bit later
-RestartSec=15
+# 3.33: back within 2 s after a crash, and never give up (the 4 servers stay online 24/7)
+RestartSec=2
 LimitNOFILE=65536
 Nice=-5
 NoNewPrivileges=yes

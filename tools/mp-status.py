@@ -108,6 +108,7 @@ class Autopilot:
         acts = []
         for n in self.SERVICES:
             if not enabled(n) or active(n): continue
+            if os.path.exists("/etc/mp-hivemq/hold/" + n): continue   # 3.33: stopped on purpose from the console (menu s)
             if not self._allowed(n):
                 acts.append(("systemctl restart " + n, "waiting: 3 restarts in 10 min, check journalctl -u " + n, False)); continue
             self.hist[n].append(time.time())

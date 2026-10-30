@@ -1,0 +1,8 @@
+# 3.33: starts a stopped / hung broker or featured server again (run by mp-keepalive.timer every minute)
+[Unit]
+Description=MP Multiplayer keep-alive (broker + the 4 featured servers)
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=@@BASE@@/console/mp-keepalive.sh

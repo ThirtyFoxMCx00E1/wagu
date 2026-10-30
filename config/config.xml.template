@@ -70,7 +70,7 @@
         <max-topic-length>128</max-topic-length>
         <!-- drop sockets that open but never log in (port scanners, floods) -->
         <no-connect-idle-timeout>5000</no-connect-idle-timeout>
-        <!-- per client, bytes/second. A host with 30 players needs ~100-200 KB/s. 0 = unlimited -->
+        <!-- per client, bytes/second. 3.33: default 4 MB/s (was 512 KB/s: a busy relay host hit the limit and every player's ping went up). 0 = unlimited -->
         <incoming-bandwidth-throttling>@@BANDWIDTH@@</incoming-bandwidth-throttling>
     </restrictions>
 

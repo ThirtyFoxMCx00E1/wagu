@@ -29,7 +29,8 @@ runcmd:
     # Oracle / some images ship iptables rules that block everything but SSH: open the MP ports
     if command -v iptables >/dev/null; then
       for p in 80 1883 8000 8883 8884 7681; do iptables -I INPUT -p tcp --dport $p -j ACCEPT || true; done
-      iptables -I INPUT -p udp --dport 1922 -j ACCEPT || true
+      # game servers: MP LAN Server 1922, Brief Case War 1930, Modern Warfare 3 1931, Mega Vil Futuristic 1932
+      for p in 1922 1930 1931 1932; do iptables -I INPUT -p udp --dport $p -j ACCEPT || true; done
       command -v netfilter-persistent >/dev/null && netfilter-persistent save || true
     fi
     git clone --depth 1 https://github.com/ThirtyFoxMCx00E1/HiveMQ.git /root/HiveMQ

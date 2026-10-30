@@ -141,6 +141,16 @@ sudo mp-railway add NAME REPO     host another Python / Node app the same way
 Without a VPS it also runs on an Android phone in Termux: `curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/railway/install.sh | bash` (Termux:Boot starts it after a reboot). Run the bot in **one** place only.
 
 
+## MP 3.33: the 4 servers run only here, 24/7 - no Broker bot, lower ping
+
+Run the update on every region (Termius console **7) update**, or `curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/update.sh | sudo bash`). New in 3.33:
+
+- **The 4 featured servers are hosted by this machine only:** MP LAN Server (UDP 1922), Brief Case War (1930), Modern Warfare 3 (1931), Mega Vil Futuristic (1932). The **Broker bot is gone** (the server shows 0 players when empty) and no phone hosts them any more (the 100-rank Broker standby is off). A player who joins first is just a player, never the host. While a server restarts, 3.33 phones wait and reconnect by themselves.
+- **Always online:** the four units restart 2 s after a crash (`RestartSec=2`, no start limit) and the new **`mp-keepalive.timer`** checks every minute that the broker and the four servers are running and that their port is open, and starts / restarts them when not. Log: `journalctl -t mp-keepalive`.
+- **Console (website Termius / Termux pages):** the new menu **s) the 4 servers** lets you see each server, read its live log, **start, stop or restart** it one by one (or all four). A server you **stop** stays stopped (hold file in `/etc/mp-hivemq/hold`, the keep-alive skips it) until you start / restart it. **5)** and **6)** restart them and clear the holds.
+- **Ping goes high when someone joins - fixed:** the broker limited every client to 512 KB/s (`BANDWIDTH_PER_CLIENT=524288`); a relay host with a few players hit it and the packets queued up. New default **4 MB/s** (`4194304`), and `install.sh` raises an old 512 KB/s value in `mp.env` by itself. `mp_server` now answers a ping at once (it waited in the send queue behind the batch) and the relay batching no longer grows to 50-80 ms on our own brokers.
+- **Ping stuck at 200 ms+:** that is the relay. Direct UDP (about 20-100 ms) needs **all four UDP ports open**: `1922/udp 1930/udp 1931/udp 1932/udp` in the cloud firewall (Oracle Security List, AWS Security Group...). `cloud-init/user-data.yaml` and `install.sh` (ufw + the closing message) now open / list all four (before, only 1922 was opened, so Brief Case War, MW3 and Mega Vil fell back to the slow relay). `tools/status.sh` shows which of them are listening.
+
 ## Auto update (3.23.5)
 
 The autopilot (mp-status) checks GitHub every 10 minutes. When the mod or this kit has a new version it runs
@@ -285,7 +295,10 @@ Put the output in `docs/regions.txt` of the wagu repo and push. Within about 30 
 | 8884/tcp | secure WebSocket, the website (with `--domain`) |
 | 8000/tcp | WebSocket without TLS |
 | 80/tcp | Let's Encrypt renewals (with `--domain`) |
-| 1922/udp | the region's default game server |
+| 1922/udp | the region's default game server (MP LAN Server) |
+| 1930/udp | Brief Case War |
+| 1931/udp | Call Of Duty: Modern Warfare 3 |
+| 1932/udp | Mega Vil Futuristic (a closed UDP port = that server runs on the slow relay, 200 ms+) |
 
 ## No computer: phone-only setup (2.21)
 
@@ -356,11 +369,11 @@ config/config.xml.template   HiveMQ listeners, limits, in-memory persistence
 config/credentials.xml.template  roles mp / web / bridge / superuser and their topic rules
 config/rbac-config.xml       File RBAC extension settings (hashed passwords)
 config/99-mp-network.conf    sysctl: BBR, fq, bigger socket buffers, low-latency TCP
-systemd/*.service            hivemq, mp-server, mp-bridge, mp-status, mp-console
+systemd/*.service            hivemq, mp-server, mp-bcw, mp-mw3, mp-rp, mp-bridge, mp-status, mp-console, mp-keepalive (+ .timer)
 cloud-init/user-data.yaml    paste-in VM setup from a phone (no computer, no SSH)
 oracle/mp_oracle.py          MP Oracle: claims the Oracle Always Free A1 server and installs it (+ .github/workflows/oracle-claim.yml)
 bridge/MpBridge.java         server-list bridge between regions (Java 21, no dependencies)
-tools/                       status.sh, make-regions.sh, hash-password.sh, mp-console.sh (menu), mp-status.py (beacon + autopilot)
+tools/                       status.sh, make-regions.sh, hash-password.sh, mp-console.sh (menu), mp-keepalive.sh (24/7 watchdog), mp-status.py (beacon + autopilot)
 ```
 
 Why Community Edition: the HiveMQ Enterprise download without a license is an evaluation that allows only 25 connections, too few for a public lobby. CE has no such limit and covers everything the mod uses (MQTT 3.1.1, TLS, WebSocket, retained messages, last will).
@@ -391,7 +404,7 @@ Isang VPS bawat rehiyon (Asia, Europe, NA, Oceania). Sa una: `sudo ./install.sh 
 - stats + zone owners: `/opt/mp/server/mw3_stats.txt` (saved every minute and on stop)
 - turn it off: `RUN_MW3=0 ./install.sh`
 
-`install.sh` also installs **`mp-rp.service`** (3.25): the region's 24/7 featured **"Mega Vil Futuristic"** Roleplay server on **UDP 1932** (250 players, Roleplay RP only - no teams, no other gamemodes; money + bank, 20 jobs, shops, 48 houses, pets, the in-game phone, city events every 15 min, lottery, 100+ RP commands; peaceful - only on-duty police / military can hurt; login on, cheats off, MP 3.25+ only). It is pinned in the in-game Internet list with a sky blue banner. The Broker bot stays on it 24/7; when this VPS is down the Broker standby phones (ranks 1-100) host it.
+`install.sh` also installs **`mp-rp.service`** (3.25): the region's 24/7 featured **"Mega Vil Futuristic"** Roleplay server on **UDP 1932** (250 players, Roleplay RP only - no teams, no other gamemodes; money + bank, 20 jobs, shops, 48 houses, pets, the in-game phone, city events every 15 min, lottery, 100+ RP commands; peaceful - only on-duty police / military can hurt; login on, cheats off, MP 3.25+ only). It is pinned in the in-game Internet list with a sky blue banner. 3.33: only this VPS hosts it (no Broker bot, no phone standby) and `mp-keepalive` keeps it online 24/7.
 
 - logs: `journalctl -u mp-rp -f`  |  restart: `systemctl restart mp-rp` (console option 5 restarts it too)
 - citizens (money, bank, job, house, pets, phone number): `/opt/mp/server/rp_citizens.txt` (saved every minute and on stop)
