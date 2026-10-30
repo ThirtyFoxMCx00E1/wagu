@@ -168,7 +168,8 @@ int main(int argc, char** argv)
     {
         if(!strcasecmp(argv[i], "--lang"))  { server.SetLang(argv[i + 1]); Online::SetHostLang(argv[i + 1]); }
         if(!strcasecmp(argv[i], "--admin")) admin = argv[i + 1];
-        if(!strcasecmp(argv[i], "--admin-hash")) server.SetAdminHash(argv[i + 1]);   // 2.37: SHA-256 of "wagu-admin-v1:" + key
+        if(!strcasecmp(argv[i], "--admin-hash")) server.SetAdminHash(argv[i + 1]);
+        if(!strcasecmp(argv[i], "--mods")) server.SetModFile(argv[i + 1]);   // 3.35: moderator list (default ./moderator.txt)   // 2.37: SHA-256 of "wagu-admin-v1:" + key
     }
     {
         const char* bf = "bans.txt";

@@ -729,7 +729,7 @@ static void LRightPanel(const LRow* r, float w, float h)
 // 2.37: [ADMIN] SENJI manages the default server from his phone (the server checks the admin key)
 static void LPagePlayersAdmin()
 {
-    ImGui::Text("Default server   |   Administrator: ");
+    ImGui::Text(MP::IsLocalMod() ? "This server   |   Moderator: " : "Default server   |   Administrator: ");
     ImGui::SameLine(0, 0);
     { ImVec2 p = ImGui::GetCursorScreenPos(); const char* me = players[myId].name; UI::NameText(ImGui::GetWindowDrawList(), ImGui::GetFontSize(), p, IM_COL32_WHITE, me, 1.0f, false);
       ImGui::Dummy(ImVec2(ImGui::GetFont()->CalcTextSizeA(ImGui::GetFontSize(), FLT_MAX, 0, me).x, ImGui::GetTextLineHeight())); }
@@ -788,7 +788,7 @@ static void LPagePlayersAdmin()
 
 static void LPagePlayers()
 {
-    if(MP::IsDefaultAdmin()) { LPagePlayersAdmin(); return; }   // 2.37
+    if(MP::IsDefaultAdmin() || MP::IsLocalMod()) { LPagePlayersAdmin(); return; }   // 3.35: [MOD] kicks / mutes too   // 2.37
     if(MP::IsHostingDefault())
     {
         ImGui::TextUnformatted("Player management");
@@ -1026,13 +1026,13 @@ static void RenderLauncher(void* openPtr)
         dl->AddLine(ImVec2(sepX, wp.y + titleH * 0.22f), ImVec2(sepX, wp.y + titleH * 0.78f), line, UI::S(2));
         float tx = sepX + UI::S(20), ty = wp.y + (titleH - ImGui::GetTextLineHeight()) * 0.5f;
         dl->AddText(ImVec2(tx, ty), IM_COL32_WHITE, "MP Launcher");
-        dl->AddText(ImVec2(tx + ImGui::CalcTextSize("MP Launcher").x + UI::S(16), ty), IM_COL32(150, 150, 150, 255), "v3.24");
+        dl->AddText(ImVec2(tx + ImGui::CalcTextSize("MP Launcher").x + UI::S(16), ty), IM_COL32(150, 150, 150, 255), "v" MP_VERSION_STR);   // 3.35: always the real version
         // 2.30: watermark, right side of the title bar (left of [X]), green at 50% transparency
         {
             const char* wm = "powered by HiveMQ/ThirtyFoxMC";
             ImVec2 wsz = ImGui::CalcTextSize(wm);
             float wx = wp.x + ws.x - titleH - UI::S(6) - UI::S(18) - wsz.x;
-            float minX = tx + ImGui::CalcTextSize("MP Launcher  v3.24").x + UI::S(40);   // never over the name
+            float minX = tx + ImGui::CalcTextSize("MP Launcher  v" MP_VERSION_STR).x + UI::S(40);   // never over the name
             if(wx > minX) dl->AddText(ImVec2(wx, ty), IM_COL32(95, 211, 95, 128), wm);
         }
         ImGui::SetCursorScreenPos(ImVec2(wp.x + ws.x - titleH - UI::S(6), wp.y));

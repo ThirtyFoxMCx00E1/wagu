@@ -276,19 +276,70 @@ static void RpSpinPickup(ImDrawList* dl, const Vec3& base, const char* glyph, ui
         for(int i = v0; i < dl->VtxBuffer.Size; ++i) { ImDrawVert& v = dl->VtxBuffer[i]; v.pos.x = sc.x + (v.pos.x - sc.x) * w * (back ? -1.0f : 1.0f); }
     }
 }
+// 3.35: the plaza pathway (lobby camera -> spawn). A white board stands in the middle of it with the
+// welcome text; the floating info pickups moved to both sides of the path (3 left, 3 right).
+static void RpPathAxes(float& fx, float& fy, float& sx, float& sy)
+{
+    fx = kRpLobbyLook.x - kRpLobbyCam.x; fy = kRpLobbyLook.y - kRpLobbyCam.y;
+    float l = sqrtf(fx * fx + fy * fy); if(l < 0.01f) l = 1; fx /= l; fy /= l;
+    sx = fy; sy = -fx;   // to the right of the path (seen from the camera)
+}
+static void RpWelcomeBoard(ImDrawList* dl)
+{
+    float fx, fy, sx, sy; RpPathAxes(fx, fy, sx, sy);
+    const float dist = 31.0f, halfW = 4.2f, z0 = g_RpPlaces[0].z + 1.0f, z1 = z0 + 3.0f;
+    const Vec3 c = { kRpLobbyCam.x + fx * dist, kRpLobbyCam.y + fy * dist, g_RpPlaces[0].z };
+    if(BcwCamDist(c) > 90.0f) return;
+    Vec3 w[4] = { { c.x - sx * halfW, c.y - sy * halfW, z1 }, { c.x + sx * halfW, c.y + sy * halfW, z1 },
+                  { c.x + sx * halfW, c.y + sy * halfW, z0 }, { c.x - sx * halfW, c.y - sy * halfW, z0 } };
+    ImVec2 q[4]; for(int i = 0; i < 4; ++i) if(!BcwW2S(w[i], q[i])) return;
+    // two black posts down to the ground
+    for(int k = 0; k < 2; ++k)
+    {
+        float o = (k ? 1 : -1) * halfW * 0.8f;
+        ImVec2 a, b;
+        if(BcwW2S({ c.x + sx * o, c.y + sy * o, z0 }, a) && BcwW2S({ c.x + sx * o, c.y + sy * o, c.z }, b))
+            dl->AddLine(a, b, IM_COL32(15, 15, 15, 255), fmaxf(2.0f, (q[1].x - q[0].x) * 0.025f));
+    }
+    // shadow, white board, black frame
+    ImVec2 sh(UI::S(4), UI::S(5));
+    dl->AddQuadFilled(ImVec2(q[0].x + sh.x, q[0].y + sh.y), ImVec2(q[1].x + sh.x, q[1].y + sh.y), ImVec2(q[2].x + sh.x, q[2].y + sh.y), ImVec2(q[3].x + sh.x, q[3].y + sh.y), IM_COL32(0, 0, 0, 110));
+    dl->AddQuadFilled(q[0], q[1], q[2], q[3], IM_COL32(250, 250, 250, 255));
+    const float bw = sqrtf((q[1].x - q[0].x) * (q[1].x - q[0].x) + (q[1].y - q[0].y) * (q[1].y - q[0].y));
+    const float bh = sqrtf((q[3].x - q[0].x) * (q[3].x - q[0].x) + (q[3].y - q[0].y) * (q[3].y - q[0].y));
+    dl->AddQuad(q[0], q[1], q[2], q[3], IM_COL32(0, 0, 0, 255), fmaxf(2.0f, bh * 0.045f));
+    if(bw < UI::S(60)) return;
+    // text: centred, sized to the board
+    const ImVec2 mid((q[0].x + q[1].x + q[2].x + q[3].x) * 0.25f, (q[0].y + q[1].y + q[2].y + q[3].y) * 0.25f);
+    const char* l1 = "Welcome to Mega Vil Futuristic Roleplay Server";
+    const char* l2 = "24/7 roleplay city - stay in character, no DM, no cheats";
+    const char* l3 = "/jobs work  -  /gps places  -  /phone  -  PANEL: bag + documents  -  /rules";
+    ImFont* f = UI::Font();
+    float fs1 = bh * 0.20f; { float tw = f->CalcTextSizeA(fs1, FLT_MAX, 0, l1).x; if(tw > bw * 0.90f) fs1 *= bw * 0.90f / tw; }
+    float fs2 = fs1 * 0.55f; { float tw = f->CalcTextSizeA(fs2, FLT_MAX, 0, l3).x; if(tw > bw * 0.92f) fs2 *= bw * 0.92f / tw; }
+    if(fs1 < 6.0f) return;
+    ImVec2 t1 = f->CalcTextSizeA(fs1, FLT_MAX, 0, l1), t2 = f->CalcTextSizeA(fs2, FLT_MAX, 0, l2), t3 = f->CalcTextSizeA(fs2, FLT_MAX, 0, l3);
+    float y = mid.y - (t1.y + t2.y + t3.y + fs2 * 0.6f) * 0.5f;
+    dl->AddText(f, fs1, ImVec2(mid.x - t1.x * 0.5f, y), IM_COL32(0, 0, 0, 255), l1); y += t1.y + fs2 * 0.6f;
+    dl->AddLine(ImVec2(mid.x - t1.x * 0.35f, y - fs2 * 0.3f), ImVec2(mid.x + t1.x * 0.35f, y - fs2 * 0.3f), IM_COL32(56, 189, 248, 255), fmaxf(1.0f, fs2 * 0.12f));
+    dl->AddText(f, fs2, ImVec2(mid.x - t2.x * 0.5f, y), IM_COL32(40, 40, 40, 255), l2); y += t2.y;
+    dl->AddText(f, fs2, ImVec2(mid.x - t3.x * 0.5f, y), IM_COL32(40, 40, 40, 255), l3);
+}
 static void RpInfoDraw(ImDrawList* dl)
 {
     char t[256];
     const float now = (float)(MP_NowMs() % 1000000ULL) / 1000.0f;
-    int i = 0;
+    RpWelcomeBoard(dl);   // 3.35
+    float fx, fy, sx, sy; RpPathAxes(fx, fy, sx, sy);
+    int i = 0, k = 0;
     for(auto& r : s_RpInfo)
     {
-        Vec3 p = RpInfoPos(r);
-        // 3.34: spread out and pushed back from the lobby camera (they were standing right in front of it)
-        float ax = p.x - kRpLobbyCam.x, ay = p.y - kRpLobbyCam.y, al = sqrtf(ax * ax + ay * ay);
-        if(al > 0.1f) { p.x += ax / al * 5.0f; p.y += ay / al * 5.0f; }
-        p.z += 1.9f;
         ++i;
+        if(i == 1) continue;   // WELCOME is on the board now
+        // 3.35: beside the pathway - even = left, odd = right, rows further away
+        const int side = (k % 2) ? 1 : -1, row = k / 2; ++k;
+        const float d = 19.0f + row * 6.5f, lat = 8.5f + row * 0.8f;
+        Vec3 p = { kRpLobbyCam.x + fx * d + sx * lat * side, kRpLobbyCam.y + fy * d + sy * lat * side, g_RpPlaces[0].z + 1.9f };
         if(BcwCamDist(p) > 70.0f) continue;
         RpSpinPickup(dl, p, RpInfoGlyph(r), r.col, now + i * 0.7f);
         BcwLabel3D(dl, { p.x, p.y, p.z + 1.05f }, r.title, r.col, 30.0f, 26.0f);
@@ -370,4 +421,165 @@ static void RpLifeProcess(int ped, uint64_t now, bool engaged)
     if(!s_Welcomed) { s_Welcomed = true; RpWelcome(); }
     RpInfoUpdate(false, now);   // 3.34: no info people (floating pickups instead, RpInfoDraw)
     if(s_Rp.view == 2) { RpAtmStream(now, ped); RpDropsStream(now, ped); } else { RpAtmClear(); RpDropsClear(); }
+}
+
+// ---- 3.35: taxi job - real passengers ----------------------------------------------------------
+// The server still gives the fare (destination marker + pay on RPC_ARRIVE). Before the ride the
+// phone puts a person (NPC ped) on a street nearby: drive there and stop next to them - they walk to
+// your taxi and get in as a passenger. Drive to the marker and stop: they get out, walk away, you
+// get paid. No passenger in the car = no arrival (the fare can't be done without them).
+enum { TX_IDLE = 0, TX_WAIT, TX_ENTER, TX_RIDE, TX_LEAVE, TX_GONE };
+struct RpTaxi { int phase; int npc; int car; int blip; int cp; Vec3 pick; float dest[3]; uint64_t t, lastTry, lastMsg; };
+static RpTaxi s_Taxi = {};
+static const int kTaxiSkins[] = { 7, 9, 12, 15, 19, 20, 40, 41, 55, 56, 69, 72, 93, 98, 141, 150, 170, 184, 187, 240 };
+
+static void RpTaxiMarkers(bool on)
+{
+    if(s_Taxi.blip) { Game::RemoveBlip(s_Taxi.blip); s_Taxi.blip = 0; }
+    if(s_Taxi.cp) { Game::DeleteRaceCheckpoint(s_Taxi.cp); s_Taxi.cp = 0; }
+    if(on)
+    {
+        s_Taxi.blip = Game::AddCoordBlip(s_Taxi.pick, 0xFACC15FF, 2);
+        s_Taxi.cp = Game::CreateRaceCheckpoint(1, s_Taxi.pick, s_Taxi.pick, 4.0f);
+    }
+}
+static void RpTaxiReset(bool keepDest)
+{
+    RpTaxiMarkers(false);
+    if(s_Taxi.npc) Game::DeleteChar(s_Taxi.npc);
+    float d[3]; memcpy(d, s_Taxi.dest, sizeof(d));
+    s_Taxi = {};
+    if(keepDest) memcpy(s_Taxi.dest, d, sizeof(d));
+}
+static bool RpTaxiActive() { return s_Rp.haveMe && s_Rp.me.job == RPJ_TAXI && s_Rp.me.jobOn && s_Rp.tgtOn; }
+
+// a street point 60..450 m from me and not right at the destination
+static void RpTaxiPickSpot(const Vec3& me)
+{
+    int best = -1; float bestScore = 1e9f;
+    for(int k = 0; k < 24; ++k)
+    {
+        int i = rand() % RP_STREET_COUNT;
+        float dx = g_RpStreet[i][0] - me.x, dy = g_RpStreet[i][1] - me.y, d = sqrtf(dx * dx + dy * dy);
+        float ex = g_RpStreet[i][0] - s_Rp.tgt.x, ey = g_RpStreet[i][1] - s_Rp.tgt.y;
+        if(ex * ex + ey * ey < 120.0f * 120.0f) continue;
+        float score = d < 60.0f ? 1000.0f + (60.0f - d) : d > 450.0f ? d : fabsf(d - 180.0f);
+        if(score < bestScore) { bestScore = score; best = i; }
+    }
+    if(best >= 0) s_Taxi.pick = { g_RpStreet[best][0], g_RpStreet[best][1], g_RpStreet[best][2] };
+    else s_Taxi.pick = { me.x + 40.0f, me.y, me.z };
+    s_Taxi.pick.z = Game::GroundZ(s_Taxi.pick.x, s_Taxi.pick.y, s_Taxi.pick.z + 2.0f);
+}
+
+// called by the arrival check: true = send RPC_ARRIVE now
+static bool RpTaxiArrive(int ped)
+{
+    if(!RpTaxiActive()) return true;
+    if(s_Taxi.phase != TX_RIDE)
+    {
+        if(MP_NowMs() - s_Taxi.lastMsg > 6000) { s_Taxi.lastMsg = MP_NowMs(); SysMsg(COL_YELLOW, "[TAXI] No passenger in your taxi - pick them up first (yellow marker)."); }
+        return false;
+    }
+    int car = Game::GetCarCharIsIn(ped);
+    Vec3 v = {}; if(car) Game::GetMoveSpeed(car, true, v);
+    if(v.x * v.x + v.y * v.y > 3.0f * 3.0f) return false;   // stop the car first
+    Game::TaskLeaveCar(s_Taxi.npc, s_Taxi.car);
+    s_Taxi.phase = TX_LEAVE; s_Taxi.t = MP_NowMs();
+    SysMsg(COL_GREEN, "[TAXI] Passenger: \"Thanks, keep the change.\"");
+    return true;
+}
+
+static void RpTaxiTick(int ped, uint64_t now)
+{
+    // walking away after the ride, then gone
+    if(s_Taxi.phase == TX_LEAVE || s_Taxi.phase == TX_GONE)
+    {
+        if(!s_Taxi.npc || Game::IsCharDead(s_Taxi.npc)) { RpTaxiReset(true); return; }
+        if(s_Taxi.phase == TX_LEAVE && (!Game::IsCharInAnyCar(s_Taxi.npc) || now - s_Taxi.t > 6000))
+        {
+            if(Game::IsCharInAnyCar(s_Taxi.npc)) { Vec3 o; Game::GetCharPos(ped, o); o.x += 2.5f; Game::WarpOutOfCar(s_Taxi.npc, o); }
+            Vec3 p; Game::GetCharPos(s_Taxi.npc, p);
+            float a = (float)(rand() % 628) / 100.0f;
+            Game::TaskGoTo(s_Taxi.npc, { p.x + cosf(a) * 25.0f, p.y + sinf(a) * 25.0f, p.z }, 4);
+            s_Taxi.phase = TX_GONE; s_Taxi.t = now;
+        }
+        if(s_Taxi.phase == TX_GONE && now - s_Taxi.t > 12000) RpTaxiReset(true);
+        return;
+    }
+    if(!RpTaxiActive()) { if(s_Taxi.phase != TX_IDLE) RpTaxiReset(false); memset(s_Taxi.dest, 0, sizeof(s_Taxi.dest)); return; }
+    Vec3 me; Game::GetCharPos(ped, me);
+    // a new fare from the server -> a new passenger somewhere near
+    if(s_Taxi.phase == TX_IDLE)
+    {
+        if(s_Taxi.dest[0] == s_Rp.tgt.x && s_Taxi.dest[1] == s_Rp.tgt.y && now - s_Taxi.lastTry < 30000) return;
+        s_Taxi.dest[0] = s_Rp.tgt.x; s_Taxi.dest[1] = s_Rp.tgt.y; s_Taxi.dest[2] = s_Rp.tgt.z;
+        s_Taxi.lastTry = now;
+        RpTaxiPickSpot(me);
+        s_Taxi.phase = TX_WAIT; s_Taxi.t = now;
+        RpTaxiMarkers(true);
+        SysMsg(COL_YELLOW, "[TAXI] A passenger is waiting (yellow marker). Stop next to them, then drive to the fare marker.");
+        return;
+    }
+    if(s_Taxi.npc && Game::IsCharDead(s_Taxi.npc))
+    {
+        SysMsg(COL_RED, "[TAXI] Your passenger got hurt - a new one is waiting.");
+        RpTaxiReset(false); return;
+    }
+    float px = s_Taxi.pick.x - me.x, py = s_Taxi.pick.y - me.y, dPick = sqrtf(px * px + py * py);
+    if(s_Taxi.phase == TX_WAIT)
+    {
+        if(!s_Taxi.npc && dPick < 140.0f)
+        {
+            int skin = kTaxiSkins[rand() % (int)(sizeof(kTaxiSkins) / sizeof(kTaxiSkins[0]))];
+            if(!Game::ModelReady(skin)) return;
+            float h = atan2f(-px, -py) * 57.2958f;   // looking at the road (towards me)
+            s_Taxi.npc = Game::CreateNpcPed(skin, s_Taxi.pick, h < 0 ? h + 360.0f : h);
+            return;
+        }
+        if(!s_Taxi.npc) return;
+        Vec3 np; Game::GetCharPos(s_Taxi.npc, np);
+        float nx = np.x - me.x, ny = np.y - me.y, dN = sqrtf(nx * nx + ny * ny);
+        if(dN < 25.0f && now - s_Taxi.lastMsg > 1500) Game::TaskLookAtChar(s_Taxi.npc, ped, 1500);
+        int car = Game::GetCarCharIsIn(ped);
+        if(dN < 11.0f && car && Game::GetDriverOfCar(car) == ped)
+        {
+            Vec3 v = {}; Game::GetMoveSpeed(car, true, v);
+            if(v.x * v.x + v.y * v.y < 2.5f * 2.5f)
+            {
+                int seat = Game::FreePassengerSeat(car, 1);
+                if(seat < 0) { if(now - s_Taxi.lastMsg > 5000) { s_Taxi.lastMsg = now; SysMsg(COL_RED, "[TAXI] Your car is full."); } return; }
+                Game::TaskEnterCarAsPassenger(s_Taxi.npc, car, seat);
+                s_Taxi.car = car; s_Taxi.phase = TX_ENTER; s_Taxi.t = now;
+                RpTaxiMarkers(false);
+            }
+        }
+        else if(dN < 11.0f && !car && now - s_Taxi.lastMsg > 6000) { s_Taxi.lastMsg = now; SysMsg(COL_YELLOW, "[TAXI] Passenger: \"Where is your taxi?\" (get in a car)"); }
+        return;
+    }
+    if(s_Taxi.phase == TX_ENTER)
+    {
+        if(Game::IsCharInCar(s_Taxi.npc, s_Taxi.car))
+        {
+            s_Taxi.phase = TX_RIDE; s_Taxi.t = now;
+            SysMsg(COL_GREEN, "[TAXI] Passenger in. Drive to the fare marker and stop there.");
+            return;
+        }
+        Vec3 cp; bool carOk = Game::GetCarPos(s_Taxi.car, cp);
+        float cx = cp.x - me.x, cy = cp.y - me.y;
+        bool driving = Game::GetCarCharIsIn(ped) == s_Taxi.car;
+        if(!carOk || !driving || now - s_Taxi.t > 15000 || cx * cx + cy * cy > 15.0f * 15.0f)
+        {   // drove off / left the car / took too long: they wait where they are
+            if(Game::IsCharInAnyCar(s_Taxi.npc) || Game::IsCharGettingInToACar(s_Taxi.npc))
+            { if(!Game::IsCharInAnyCar(s_Taxi.npc)) Game::ClearTasksNow(s_Taxi.npc); else { s_Taxi.phase = TX_RIDE; return; } }
+            Game::GetCharPos(s_Taxi.npc, s_Taxi.pick);
+            s_Taxi.phase = TX_WAIT; RpTaxiMarkers(true);
+        }
+        return;
+    }
+    if(s_Taxi.phase == TX_RIDE && !Game::IsCharInCar(s_Taxi.npc, s_Taxi.car))
+    {   // the car is gone / they got out: wait there for the taxi again
+        Game::GetCharPos(s_Taxi.npc, s_Taxi.pick);
+        s_Taxi.phase = TX_WAIT; RpTaxiMarkers(true);
+        SysMsg(COL_YELLOW, "[TAXI] Your passenger is out of the car - pick them up again.");
+    }
 }

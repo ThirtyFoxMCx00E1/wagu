@@ -2354,7 +2354,11 @@ public:
         s_fPendingDamage += amount;
         s_nLastDamager = d.from; s_nLastDamageWeapon = d.weapon; s_nLastDamageTime = MP_NowMs();
     }
-    void OnServerMessage(const PktServerMsg& m) override { MP::AddSystemMessage(m.color, m.text); }
+    void OnServerMessage(const PktServerMsg& m) override
+    {
+        if(!settings.globalChat && RpOnServer() && !strncmp(m.text, "(( [OOC]", 8)) return;   // 3.35: player Settings > Global Chat off
+        MP::AddSystemMessage(m.color, m.text);
+    }
     void OnSetColor(const PktSetColor& c) override { ApplyPlayerColor(c.id, c.color); }
     void OnVoice(int id, uint16_t seq, uint8_t flags, const uint8_t* opus, int len) override   // 3.11
     {
@@ -3649,9 +3653,28 @@ static void SyncStatusLines()
 }
 
 static bool JoinHudOff();   // 2.35 (mp_join.inc)
+// 3.35: server modes can't be switched off by players. While you are on a server that is not your
+// own (and you are not [ADMIN] / [MOD] there) these stay on; the switches in Settings are locked.
+static bool ModesLocked()
+{
+    if(client.GetState() != NET_CONNECTED) return false;
+    if(MP::IsLocalAdmin() || MP::IsLocalMod()) return false;
+    if(s_Server.IsRunning() && !MP::IsHostingDefault()) return false;   // your own custom server
+    return true;
+}
+static void EnforceServerModes()
+{
+    if(!ModesLocked()) return;
+    bool* m[] = { &settings.syncAnims, &settings.syncEnv, &settings.syncNpcs, &settings.unlockWorld, &settings.actors, &settings.gangZones };
+    bool fixed = false;
+    for(bool* b : m) if(!*b) { *b = true; fixed = true; }
+    if(fixed) { MP::SaveConfig(); SysMsg(COL_YELLOW, "Server modes stay on here - only the server owner, [ADMIN] or [MOD] can change them."); }
+}
+
 void MP::Process()
 {
     uint64_t now = MP_NowMs();
+    EnforceServerModes();   // 3.35
     {   // 2.18.3: remember where the MP MENU | CHAT buttons were dropped
         float bx, by;
         if(FloatMenu::GetBarPos(&bx, &by))
@@ -3839,6 +3862,8 @@ bool MP::CheatMenuAllowed()
     return (s_nServerPerms & PERM_CHEAT_MENU) && !(s_nServerPerms & PERM_NO_CHEATS);
 }
 bool MP::IsLocalAdmin() { return MP_IsReservedName(settings.name) && HaveAdminKey(); }
+// 3.35: the server gave me "[MOD] name" (moderator.txt)
+bool MP::IsLocalMod() { return client.GetState() == NET_CONNECTED && myId < MP_MAX_PLAYERS && players[myId].active && UI::IsModName(players[myId].name); }
 bool MP::IsDefaultAdmin()
 {
     return client.GetState() == NET_CONNECTED && MP::IsOnDefault() && myId < MP_MAX_PLAYERS && players[myId].active && UI::IsAdminName(players[myId].name);
@@ -3873,6 +3898,8 @@ static char s_szJoinPw[MP_PASSWORD_LEN + 1] = "";   // 2.19: password for the se
 static const ImVec4 kGreenTxt(0.35f, 0.95f, 0.45f, 1), kGreyTxt(0.6f, 0.6f, 0.6f, 1), kRedTxt(1, 0.4f, 0.4f, 1), kYellowTxt(1, 0.85f, 0.2f, 1);
 #include "mp_join.inc"   // 2.19: join overlay, connection camera, spawn picker
 static bool JoinHudOff() { return s_bJoinHudOff; }
+static void PSettingsOpen();    // 3.35: mp_psettings.inc
+static void PSettingsPopup();
 #include "mp_cmds.inc"   // 2.19: chat commands, cheats, player list, chat box, spawn buttons
 #include "mp_samp.inc"   // 3.01: SA-MP dialogs, textdraws, race / derby state of the others
 #include "mp_games.inc"  // 2.21: /spawn, /w, races, deathmatch, jobs, teleport events, open world (3.01: derbies, live race positions)
@@ -4109,6 +4136,7 @@ static bool StartLocalServer(const char* name, int port)
     if(MP_IsRpServerName(name) || port == MP_RP_PORT) maxp = MP_RP_MAX_PLAYERS;   // 3.25: 250
     else if(MP_IsMw3ServerName(name)) maxp = MP_MW3_MAX_PLAYERS;        // 3.24: a phone copy listed itself as x/100
     else if(MP_IsBcwServerName(name)) maxp = MP_BCW_MAX_PLAYERS;
+    { char mf[512]; snprintf(mf, sizeof(mf), "%s/moderators_server.txt", s_szDataDir); s_Server.SetModFile(mf); }   // 3.35: list of your server's moderators
     if(!s_Server.Start((uint16_t)port, name, ServerLog, maxp, settings.region))
     {
         SysMsg(COL_RED, "Could not start the server on port %d", port);
@@ -4732,6 +4760,7 @@ void MP::SaveConfig()
     B("ChatTimestamps", settings.chatTimestamps); B("VoiceChat", settings.voiceChat); F("VoiceVolume", settings.voiceVolume); F("MicGain", settings.micGain); F("VoicePitch", settings.voicePitch);   // 3.11
     B("ChatBubbles", settings.chatBubbles); B("Labels3D", settings.labels3d); B("MapIcons", settings.mapIcons); B("Actors", settings.actors); B("GangZones", settings.gangZones);   // 3.01
     I("Team", settings.team); I("ClassSkin", settings.classSkin);
+    B("ShowNameTags", settings.showNameTags); B("ShowDmgInd", settings.showDmgInd); B("GlobalChat", settings.globalChat);   // 3.35
     I("RadarStyle", settings.radarStyle); B("PubgCompass", settings.pubgCompass);   // 3.27
     S("ServerPassword", settings.serverPassword); S("HostedPassword", settings.hostedPassword);   // 2.19
     ::cfg->Save();
@@ -4809,6 +4838,9 @@ static void LoadConfig()
     settings.gangZones       = ::cfg->GetBool("GangZones", true, "MP");
     settings.team            = ::cfg->GetInt("Team", 0, "MP");
     settings.classSkin       = ::cfg->GetInt("ClassSkin", -1, "MP");
+    settings.showNameTags    = ::cfg->GetBool("ShowNameTags", true, "MP");   // 3.35
+    settings.showDmgInd      = ::cfg->GetBool("ShowDmgInd", true, "MP");
+    settings.globalChat      = ::cfg->GetBool("GlobalChat", true, "MP");
     settings.radarStyle      = ::cfg->GetInt("RadarStyle", 2, "MP");   // 3.27
     if(settings.radarStyle < 0 || settings.radarStyle > 2) settings.radarStyle = 2;
     settings.pubgCompass     = ::cfg->GetBool("PubgCompass", true, "MP");
@@ -4912,6 +4944,23 @@ static void LoadAdminFile()
         }
     }
     client.SetAdminKey(settings.adminKey);
+    {   // 3.35: files/MP/moderator.txt = my moderator key (the server lists "<name> <key>" in its own moderator.txt)
+        char mk[120] = {0}, mp[512]; snprintf(mp, sizeof(mp), "%s/moderator.txt", s_szDataDir);
+        if(FILE* f = fopen(mp, "r"))
+        {
+            char line[200];
+            while(fgets(line, sizeof(line), f))
+            {
+                char* q = line; while(*q == ' ' || *q == '\t') ++q;
+                if(*q == '#' || *q == '\r' || *q == '\n' || !*q) continue;
+                size_t n = strcspn(q, " \t\r\n"); if(n >= sizeof(mk)) n = sizeof(mk) - 1;
+                memcpy(mk, q, n); mk[n] = 0; break;
+            }
+            fclose(f);
+        }
+        client.SetModKey(mk);
+        if(mk[0]) logger->Info("MP: moderator.txt found - join with your moderator name to get [MOD]");
+    }
     if(settings.adminKey[0]) logger->Info("MP: administrator.txt OK (%s, %d key(s)) - you are the administrator (SENJI)", s_szAdminFound, (int)s_AdminKeys.size());
     else logger->Info("MP: no valid administrator.txt (looked in %s and %d other places)", cand[0].c_str(), (int)cand.size() - 1);
 }
@@ -5276,7 +5325,7 @@ static void PermissionSwitches(const char* where)
 static void SectionCheats(void*)
 {
     // 2.37: default server -> only [ADMIN] SENJI; your own custom server -> you (the host)
-    bool admin = MP::IsDefaultAdmin();
+    bool admin = MP::IsDefaultAdmin() || MP::IsLocalMod();   // 3.35: moderators too
     bool host = (s_Server.IsRunning() && !MP::IsHostingDefault()) || admin;
     bool on = (host && !admin) ? settings.disableCheats : MP::CheatsBlocked();
     ImGui::TextUnformatted("Server cheats");
@@ -5866,20 +5915,27 @@ static void SectionDisplay(void*)
     changed |= ChatScaleOptions("dispsc");   // 3.04.5
     changed |= FloatMenu::ToggleSwitch("Kill feed", &settings.showKillFeed);
     // 3.34: "Connection status" switch removed (the status line is gone)
+    const bool lockModes = ModesLocked();   // 3.35
+    if(lockModes) { ImGui::TextColored(kYellowTxt, "Server modes are locked on this server (only the owner, [ADMIN] or [MOD])."); ImGui::BeginDisabled(); }
     changed |= FloatMenu::ToggleSwitch("Sync player animations", &settings.syncAnims);
     changed |= FloatMenu::ToggleSwitch("Sync explosions, fire, weapons", &settings.syncEnv);
     changed |= FloatMenu::ToggleSwitch("Sync NPCs (people + traffic)", &settings.syncNpcs);
+    if(lockModes) ImGui::EndDisabled();
     {   // 3.24
         char lb[96]; snprintf(lb, sizeof(lb), "Broker standby #%d/100 (host offline featured servers)", MP::BrokerStandbyRank());
         changed |= FloatMenu::ToggleSwitch(lb, &settings.brokerStandby);
     }
+    if(lockModes) ImGui::BeginDisabled();
     changed |= FloatMenu::ToggleSwitch("Open world (cities, shops, food, gyms, garages)", &settings.unlockWorld);   // 2.21
+    if(lockModes) ImGui::EndDisabled();
     changed |= FloatMenu::ToggleSwitch("Girlfriend houses (optional)", &settings.girlfriends);
     changed |= FloatMenu::ToggleSwitch("[Race] / [DM] / [Job] tips in the chat", &settings.eventTips);
     changed |= FloatMenu::ToggleSwitch("3D text labels (job / race / derby starts)", &settings.labels3d);
     changed |= FloatMenu::ToggleSwitch("Map icons (jobs, races, derbies, DM)", &settings.mapIcons);   // 3.03: a player setting, not a server gamemode
+    if(lockModes) ImGui::BeginDisabled();
     changed |= FloatMenu::ToggleSwitch("Actors (people at the job starts)", &settings.actors);
     changed |= FloatMenu::ToggleSwitch("Gang zones on the radar + map", &settings.gangZones);
+    if(lockModes) ImGui::EndDisabled();
     {   // 3.27
         ImGui::TextUnformatted("Mega Vil radar");
         static const char* kStyles[] = { "Game radar", "Google map 2D", "Google map 3D" };
@@ -6126,6 +6182,7 @@ static void MpFreeAllObjects()
 
 // ------------------------------------------------------------------------------------------
 #include "mp_launcher.inc"   // 2.25: full-screen server launcher, player management, kick / ban
+#include "mp_psettings.inc"  // 3.35: player list > Settings (SA-MP style dialog)
 
 void MP::Init(const char* dataDir)
 {

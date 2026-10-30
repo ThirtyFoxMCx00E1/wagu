@@ -9,6 +9,8 @@
 #include "ui_common.h"
 
 bool UI::IsAdminName(const char* name) { return name && !strncmp(name, "[ADMIN] SENJI", 13); }
+// 3.35: moderators (moderator.txt on the server) get "[MOD] name"; the tag can sit after a faction / team tag
+bool UI::IsModName(const char* name) { return name && strstr(name, "[MOD] ") != nullptr; }
 
 namespace
 {
@@ -28,6 +30,44 @@ namespace
 
 void UI::NameText(ImDrawList* dl, float size, ImVec2 p, ImU32 col, const char* name, float alphaMul, bool outline, int style)
 {
+    if(!IsAdminName(name) && IsModName(name))
+    {   // 3.35: [MOD] in flowing cyan -> green -> gold with a soft pulse, the name stays in its own colour
+        ImFont* f = outline ? Font() : ImGui::GetFont();
+        const float t = (float)ImGui::GetTime();
+        const float o = fmaxf(1.0f, size * 0.06f);
+        const int a = (int)(255 * alphaMul);
+        const char* tb = strstr(name, "[MOD] "); const char* te = tb + 5;
+        float x = p.x; int idx = 0;
+        for(const char* c = name; *c; ++c, ++idx)
+        {
+            char ch[2] = { *c, 0 };
+            float w = f->CalcTextSizeA(size, FLT_MAX, 0, ch).x;
+            if(*c == ' ') { x += w; continue; }
+            ImU32 fill, edge = IM_COL32(0, 0, 0, a);
+            if(c >= tb && c < te)
+            {
+                static const int kPal[3][3] = { {40, 230, 255}, {60, 255, 120}, {255, 200, 40} };
+                float ph = fmodf(t * 1.3f - idx * 0.45f, 3.0f); if(ph < 0) ph += 3.0f;
+                int i0 = (int)ph, i1 = (i0 + 1) % 3; float k = ph - (float)i0; k = k * k * (3.0f - 2.0f * k);
+                float pulse = 0.85f + 0.15f * sinf(t * 4.0f);
+                int r = (int)((kPal[i0][0] + (kPal[i1][0] - kPal[i0][0]) * k) * pulse);
+                int g = (int)((kPal[i0][1] + (kPal[i1][1] - kPal[i0][1]) * k) * pulse);
+                int b = (int)((kPal[i0][2] + (kPal[i1][2] - kPal[i0][2]) * k) * pulse);
+                fill = IM_COL32(r, g, b, a);
+                // glow under the tag
+                dl->AddText(f, size, ImVec2(x, p.y + o * 1.5f), IM_COL32(r / 3, g / 3, b / 3, a / 2), ch);
+            }
+            else fill = (col & 0x00FFFFFF) | ((ImU32)(((col >> 24) & 0xFF) * alphaMul) << 24);
+            if(outline || (c >= tb && c < te))
+            {
+                dl->AddText(f, size, ImVec2(x - o, p.y), edge, ch); dl->AddText(f, size, ImVec2(x + o, p.y), edge, ch);
+                dl->AddText(f, size, ImVec2(x, p.y - o), edge, ch); dl->AddText(f, size, ImVec2(x, p.y + o), edge, ch);
+            }
+            dl->AddText(f, size, ImVec2(x, p.y), fill, ch);
+            x += w;
+        }
+        return;
+    }
     if(!IsAdminName(name))
     {
         if(outline) OutlinedText(dl, size, p, col, name, alphaMul);

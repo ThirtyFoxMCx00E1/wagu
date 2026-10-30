@@ -29,6 +29,9 @@ static void RpClick(int which)
 static bool RpLifeCommand(const char* cmd, const char* arg);   // mp_rp_life.inc
 static void RpLifeProcess(int ped, uint64_t now, bool engaged);
 static void RpInfoDraw(ImDrawList* dl);
+static bool RpTaxiArrive(int ped);           // 3.35: taxi passengers (mp_rp_life.inc)
+static void RpTaxiTick(int ped, uint64_t now);
+static void RpTaxiReset(bool keepDest);
 static void RpDrawAtm(uint64_t nowMs);
 static void RpDrawDrops(uint64_t nowMs);              // 3.30
 static void RpDropsOnPacket(const uint8_t* d, int len);   // 3.30
@@ -714,6 +717,7 @@ static void RpShutdown()
     RpInvReset();   // 3.26
     RpFacReset();   // 3.34
     RpCosAbort();   // 3.34
+    RpTaxiReset(false);   // 3.35
     if(!s_Rp.engaged) { s_bRpJoin = false; return; }
     RpTalkRelease();
     RpClearBlips();
@@ -1007,11 +1011,12 @@ static void RpProcess(int ped, uint64_t now)
     {
         Vec3 p; Game::GetCharPos(ped, p);
         float dx = p.x - s_Rp.tgt.x, dy = p.y - s_Rp.tgt.y;
-        if(dx * dx + dy * dy < 9.0f * 9.0f) { s_Rp.lastArrive = now; RpSend(RPC_ARRIVE); }
+        if(dx * dx + dy * dy < 9.0f * 9.0f && RpTaxiArrive(ped)) { s_Rp.lastArrive = now; RpSend(RPC_ARRIVE); }   // 3.35: taxi = passenger in
     }
     if(s_Rp.callBlip && now - s_Rp.callAt > 180000) { Game::RemoveBlip(s_Rp.callBlip); s_Rp.callBlip = 0; }
     if(now - s_Rp.lastMoney > 1000) { s_Rp.lastMoney = now; RpSyncMoney(); }
     RpEmoteTick(ped, now);
+    RpTaxiTick(ped, now);   // 3.35
     RpPedTick(ped, now);
     RpRadarTick(now);   // 3.27
     RpPetUpdate(ped, dt);
@@ -1224,6 +1229,19 @@ static bool RpCommand(const char* cmd, const char* arg)
     if(IS("faction") || IS("factions") || IS("fac")) { RpFacOpen(); return true; }   // 3.34
     if(IS("stats") || IS("me2") || IS("profile")) { RpShowStatsLocal(); return true; }
     if(IS("levels") || IS("level")) { int into = 0, need = RpXpForNext(s_Rp.me.xp, &into); SysMsg(RP_SKY, "[LEVEL] You are level %d: %d / %d respect. +1 every 10 min played, +2 every payday, +1 every 3 job tasks.", s_Rp.me.level, into, need); return true; }
+    if(IS("googlemap") || IS("gmap"))   // 3.35: /googlemap on|off - Google radar or the game's own radar
+    {
+        bool on;
+        if(!strncasecmp(arg, "on", 2)) on = true;
+        else if(!strncasecmp(arg, "off", 3)) on = false;
+        else on = settings.radarStyle == 0;   // no argument: switch
+        settings.radarStyle = on ? 2 : 0;
+        MP::SaveConfig();
+        if(!on && s_Rp.radarHidden) { Game::ShowRadar(true); s_Rp.radarHidden = false; }
+        SysMsg(on ? COL_GREEN : COL_YELLOW, on ? "Google map radar ON (pause map too). /googlemap off = the original radar."
+                                              : "Original GTA SA radar ON. /googlemap on = the Google map radar again.");
+        return true;
+    }
     if(IS("gps") || IS("places") || IS("locations") || IS("map")) { int n = atoi(arg); if(n >= 1 && n <= RP_PLACE_COUNT) RpPlacesPick(1, n - 1, nullptr, 0); else RpShowPlaces(); return true; }
     if(IS("greenzones") || IS("greenzone") || IS("safezones")) { SysMsg(RP_GREEN, "[GREENZONE] Lobby Hub (Plaza), City Hall, both hospitals and the Mega Bank: nobody can be hurt there."); return true; }
     if(IS("time")) { int h, m; Game::GetTimeOfDay(h, m); time_t t = time(nullptr); char b[32]; strftime(b, sizeof(b), "%H:%M", localtime(&t)); SysMsg(RP_SKY, "Mega Vil time %02d:%02d - your time %s", h, m, b); return true; }

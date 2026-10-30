@@ -1329,8 +1329,10 @@ static Game::MapMarkerProvider s_MapProvider = nullptr;
 #endif
 
 static Game::MenuMapLayerFn s_MenuMapLayer = nullptr;   // 3.34
+static bool s_InMenuBlips = false;   // 3.35: inside the game's DrawBlips on the pause map: its radar state IS the map's
 static bool MapRadarState()
 {
+    if(s_InMenuBlips) return s_pRadarRange != nullptr;   // 3.35: the map's own range / origin (the +-3000 guess drew the map too small)
     float range = 0; CVec2D_ org = { 0, 0 };
     if(s_pRadarRange) SafeRead(s_pRadarRange, &range, 4);
     if(s_pRadarOrigin) SafeRead(s_pRadarOrigin, &org, sizeof(org));
@@ -1463,9 +1465,12 @@ static bool OnMenuMap()
 // drawn right after the game's own blips, so our icons sit on top
 static void HookDrawBlips(float scale)
 {
-    if(s_MenuMapLayer && OnMenuMap()) s_MenuMapLayer(0, nullptr, 0);   // 3.34: Mega Vil's Google map under the blips
+    const bool onMap = OnMenuMap();
+    s_InMenuBlips = onMap;
+    if(s_MenuMapLayer && onMap) s_MenuMapLayer(0, nullptr, 0);   // 3.34: Mega Vil's Google map under the blips
     DrawBlips_orig(scale);
-    if(OnMenuMap()) { DrawMapPlayers(); s_LastBlipsMapDraw = NowMs(); }
+    if(onMap) { DrawMapPlayers(); s_LastBlipsMapDraw = NowMs(); }
+    s_InMenuBlips = false;
 }
 // fallback: if this game build's map screen doesn't go through DrawBlips, the gang overlay
 // (which the GPS mod also uses) is drawn on the map every frame

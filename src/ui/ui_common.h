@@ -39,6 +39,7 @@ namespace UI
     enum { NAME_TAG = 0, NAME_CHAT = 1, NAME_FEED = 2, NAME_LIST = 3 };   // where the name is drawn (3.00: same admin look in every place)
     void NameText(ImDrawList* dl, float size, ImVec2 pos, ImU32 col, const char* name, float alphaMul = 1.0f, bool outline = true, int style = NAME_TAG);
     bool IsAdminName(const char* name);
+    bool IsModName(const char* name);   // 3.35: "[MOD] name"
     float AdminTagLift(float fontSize); // 3.00: 0 (no dragon to clear the health bar any more)
 
     // 3.11: red X with a dark outline (muted voice / mic off)

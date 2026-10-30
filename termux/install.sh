@@ -1,7 +1,7 @@
 #!/data/data/com.termux/files/usr/bin/bash
 # MP Multiplayer - 24/7 default server on an Android phone (Termux). No cloud server, no card.
 #
-#   curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/termux/install.sh | bash
+#   curl -fsSL https://thirtyfoxmcx00e1.github.io/openmp.com/install.sh | bash
 #
 # Builds mp_server from the Sa-mp source on the phone, then runs it in the background:
 #   - listed in the internet lobby through the free public MQTT brokers (no port forwarding needed)
@@ -10,7 +10,7 @@
 # Afterwards:  mp-server status | log | restart | stop | start | config | update
 set -e
 
-REPO="https://github.com/ThirtyFoxMCx00E1/wagu.git"
+SITE="https://thirtyfoxmcx00e1.github.io/openmp.com"   # 3.35: the server source comes from the website (downloads/mp-server-src.tar.gz)
 HOME_DIR="$HOME/mp-server"
 SRC="$HOME_DIR/src"
 CONF="$HOME_DIR/server.conf"
@@ -24,17 +24,15 @@ die()  { printf '\033[1;31m[mp]\033[0m %s\n' "$*" >&2; exit 1; }
 say "installing packages (git, clang, make)"
 # </dev/null everywhere: with "curl ... | bash" the script itself is on stdin
 pkg update -y -o Dpkg::Options::=--force-confnew </dev/null >/dev/null 2>&1 || true
-pkg install -y -o Dpkg::Options::=--force-confnew git clang make binutils </dev/null >/dev/null 2>&1 \
-    || pkg install -y git clang make binutils </dev/null || die "pkg install failed (check the internet, then run again)"
+pkg install -y -o Dpkg::Options::=--force-confnew curl tar clang make binutils </dev/null >/dev/null 2>&1 \
+    || pkg install -y curl tar clang make binutils </dev/null || die "pkg install failed (check the internet, then run again)"
 
 mkdir -p "$HOME_DIR"
-if [ -d "$SRC/.git" ]; then
-    say "updating source"
-    git -C "$SRC" fetch -q --depth 1 origin main </dev/null && git -C "$SRC" reset -q --hard origin/main
-else
-    say "downloading source"
-    rm -rf "$SRC"; git clone -q --depth 1 "$REPO" "$SRC" </dev/null
-fi
+say "downloading the server source ($SITE)"
+curl -fsSL "$SITE/downloads/mp-server-src.tar.gz" -o "$HOME_DIR/src.tar.gz" </dev/null || die "download failed (check the internet, then run again)"
+rm -rf "$SRC.new"; mkdir -p "$SRC.new"
+tar -xzf "$HOME_DIR/src.tar.gz" -C "$SRC.new" || die "the source download is broken - run again"
+rm -rf "$SRC"; mv "$SRC.new" "$SRC"; rm -f "$HOME_DIR/src.tar.gz"
 
 say "building mp_server (first time takes a few minutes)"
 AR_BIN="$(command -v llvm-ar || command -v ar)"
@@ -111,7 +109,7 @@ case "$1" in
     restart) stop; sleep 1; start ;;
     log) tail -n 40 -f "$D/server.log" ;;
     config) ${EDITOR:-nano} "$D/server.conf" 2>/dev/null || vi "$D/server.conf"; echo "mp-server restart to apply" ;;
-    update) curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/termux/install.sh | bash ;;
+    update) curl -fsSL https://thirtyfoxmcx00e1.github.io/openmp.com/install.sh | bash ;;
     vps-update)
         # 3.23.5: update the 24/7 VPS (HiveMQ kit + mp_server + MW3/BCW) from the phone over SSH.
         # The VPS autopilot also does it by itself within 10 min of a new release.

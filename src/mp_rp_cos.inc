@@ -7,7 +7,9 @@
 // you press Spawn. CANCEL puts your old outfit back.
 
 #define RP_COS_AREA 14
-static const Vec3 kRpCosSpot = { 204.33f, -168.69f, 1000.52f };   // Didier Sachs, inside the door
+static const Vec3 kRpCosSpot = { 204.18f, -163.40f, 1000.523f };   // 3.35: Didier Sachs shop floor (was the door = in the wall)
+// the shop opens to +y from the door (204.3,-168.7): the camera stands further in, looking back at you
+static const float kRpCosCamDist = 3.3f;
 struct RpCosState
 {
     bool     on = false; int phase = 0;   // 0 flying in, 1 browsing, 2 flying out
@@ -20,10 +22,10 @@ static bool RpCosActive() { return s_Cos.on; }
 
 // the props: clothes rails / shirts / shoe shelves round the spot (SA clothes shop models 2371 - 2401)
 struct RpCosProp { int model; float dx, dy, dz, rz; };
-static const RpCosProp kRpCosProps[] = {
-    { 2372, -2.2f,  1.2f, -1.0f,  90 }, { 2372,  2.2f,  1.2f, -1.0f, 270 }, { 2374, -2.2f, -1.0f, -1.0f,  90 },
-    { 2374,  2.2f, -1.0f, -1.0f, 270 }, { 2381, -1.4f,  2.4f, -1.0f,   0 }, { 2389,  1.4f,  2.4f, -1.0f,   0 },
-    { 2394, -2.6f,  0.0f, -1.0f,  90 }, { 2399,  2.6f,  0.0f, -1.0f, 270 }, { 2401,  0.0f,  2.8f, -1.0f,   0 },
+static const RpCosProp kRpCosProps[] = {   // 3.35: on both sides of you, nothing between you and the camera
+    { 2372, -2.0f,  0.4f, -1.0f,  90 }, { 2372,  2.0f,  0.4f, -1.0f, 270 }, { 2374, -2.0f, -1.2f, -1.0f,  90 },
+    { 2374,  2.0f, -1.2f, -1.0f, 270 }, { 2381, -2.4f,  1.8f, -1.0f,  90 }, { 2389,  2.4f,  1.8f, -1.0f, 270 },
+    { 2394, -1.2f, -1.6f, -1.0f,   0 }, { 2399,  1.2f, -1.6f, -1.0f,   0 },
 };
 static void RpCosFreeProps()
 {
@@ -44,29 +46,21 @@ static void RpCosMakeProps()
     s_Cos.objDone = true;
 }
 // the camera: 3.4 m from you towards the open side of the room (a clear line), a little above
-static void RpCosPickCam()
+static void RpCosPickCam()   // 3.35: fixed (the collision is not there yet when the room is picked)
 {
-    float best = 0; int bestA = 0;
-    for(int a = 0; a < 8; ++a)
-    {
-        float r = a * 0.785398f, cx = kRpCosSpot.x + cosf(r) * 3.4f, cy = kRpCosSpot.y + sinf(r) * 3.4f;
-        bool clear = Game::LineOfSightClear({ kRpCosSpot.x, kRpCosSpot.y, kRpCosSpot.z + 0.5f }, { cx, cy, kRpCosSpot.z + 0.6f });
-        float score = clear ? 2.0f : 0.0f;
-        if(score > best) { best = score; bestA = a; }
-    }
-    float r = bestA * 0.785398f;
-    s_Cos.yaw = r;
-    s_Cos.toP = { kRpCosSpot.x + cosf(r) * 3.4f, kRpCosSpot.y + sinf(r) * 3.4f, kRpCosSpot.z + 0.65f };
-    s_Cos.toL = { kRpCosSpot.x, kRpCosSpot.y, kRpCosSpot.z + 0.15f };
+    s_Cos.yaw = 1.570796f;
+    s_Cos.toP = { kRpCosSpot.x, kRpCosSpot.y + kRpCosCamDist, kRpCosSpot.z + 0.55f };
+    s_Cos.toL = { kRpCosSpot.x, kRpCosSpot.y, kRpCosSpot.z + 0.05f };
 }
 static void RpCosPlacePed(int ped)
 {
     if(ped <= 0) return;
     Game::FreezeChar(ped, false);
+    Game::ClearTasksNow(ped);   // 3.35: no falling / jumping anim left over
+    Game::PreloadArea(kRpCosSpot, true);   // the floor collision is in before he stands on it
     Game::PlaceChar(ped, kRpCosSpot);
-    // face the camera
-    float h = atan2f(-(s_Cos.toP.x - kRpCosSpot.x), s_Cos.toP.y - kRpCosSpot.y) * 57.29578f;
-    Game::SetCharHeading(ped, h);
+    Game::SetCharHeading(ped, 0.0f);   // face the camera (+y)
+    Game::ClearTasksNow(ped);
     Game::FreezeChar(ped, true);
     Game::SetCharVisible(ped, true);
 }
@@ -89,6 +83,13 @@ static void RpCosClose(bool save)
         int sk = g_RpCos[s_Cos.sel].skin;
         RpSend(RPC_SKIN_SET, 0, 0, sk); s_Rp.me.skin = (uint16_t)sk;
         SysMsg(RP_SKY, "[MEGA VIL] Outfit saved: %s. Press Spawn.", g_RpCos[s_Cos.sel].name);
+    }
+    if(save)
+    {   // 3.35: SAVE goes straight back to the lobby screen (no camera flight)
+        RpCosFreeProps(); RpSetInterior(0);
+        s_Cos.on = false; RpClick(RPS_CLICK);
+        RpPark(Game::LocalPed());
+        return;
     }
     else if(s_Cos.curSkin != s_Cos.origSkin) s_Cos.wantSkin = s_Cos.origSkin;
     s_Cos.phase = 2; s_Cos.t0 = MP_NowMs();
@@ -136,7 +137,11 @@ static void RpCosTick(int ped, uint64_t now)
         {
             if(Game::SetLocalModel(g_RpCos[s_Cos.sel].skin)) { s_Cos.curSkin = g_RpCos[s_Cos.sel].skin; RpCosPlacePed(Game::LocalPed()); }
         }
-        if(now % 2000 < 40) RpCosPlacePed(Game::LocalPed());
+        if(now % 1000 < 40)
+        {   // 3.35: only when he moved off the spot (fell / was pushed)
+            int lp = Game::LocalPed(); Vec3 q;
+            if(lp > 0 && Game::GetCharPos(lp, q) && (fabsf(q.x - kRpCosSpot.x) + fabsf(q.y - kRpCosSpot.y) + fabsf(q.z - kRpCosSpot.z)) > 0.6f) RpCosPlacePed(lp);
+        }
         Game::SetFixedCamera(s_Cos.toP, s_Cos.toL);
         s_Cos.camP = s_Cos.toP; s_Cos.camL = s_Cos.toL;
     }

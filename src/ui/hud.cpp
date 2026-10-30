@@ -531,6 +531,7 @@ static void DrawNameTags(ImDrawList* dl)
         if(!p.active || i == MP::myId || !p.drawValid || !p.hasSync) continue;
         if(p.sync.flags & SYNC_DEAD) continue;
         if(p.invisible) continue;                               // 2.19 /invisible
+        if(!MP::settings.showNameTags) continue;                // 3.35: player list > Settings > Name Tag
         if(p.tagBlocked && !MP_WallhackOn()) continue;          // 2.19: wall in between
         char bn[80]; uint32_t bc = MP::BcwDecorate(i, p.name, p.color, bn, sizeof(bn));   // 3.04: [GTV] / [SLZ] team tag + colour
         MP::NameTagId(i, bn, sizeof(bn));   // 3.34: name (id)

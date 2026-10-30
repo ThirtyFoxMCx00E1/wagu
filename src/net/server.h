@@ -56,6 +56,7 @@ public:
     void GetLang(char* out, size_t n);
     // 2.16: permissions (PERM_*). Turning mission pairs off ends every pair.
     void SetPerms(uint8_t perms);
+    void SetModFile(const char* path);   // 3.35: moderator list (default ./moderator.txt)
     void SetAdminHash(const char* sha256Hex);   // 2.37: mp_server --admin-hash (default: MP_ADMIN_KEY_HASH)
     bool IsDefaultServer() const;               // 2.37: the name is MP_DEFAULT_SERVER_NAME
     void SetSafeZones(bool on) { m_bSafeZones = on; }   // 3.21: hospital safe zones (default on, --no-safezones)
@@ -132,6 +133,7 @@ private:
         char         uid[MP_UID_LEN + 1];   // 2.25 (empty for phones older than 2.25)
         uint64_t     joinedMs;
         bool         admin;       // 2.37: SENJI with the right admin key ("[ADMIN] SENJI" on the default server)
+        bool         mod;         // 3.35: moderator (moderator.txt) -> "[MOD] name"
         bool         muted;       // 2.37: muted by the admin
         uint8_t      team;        // 3.01: class selection team (TEAM_*), turf wars
         int16_t      classSkin;   // 3.01
@@ -156,6 +158,7 @@ private:
     void SetPermsLocked(uint8_t perms);                                         // 2.37, m_Mutex held
     bool KickLocked(int id, const char* admin, const char* reason, bool ban);   // 2.37, m_Mutex held
     char               m_szAdminHash[65] = {0};
+    char               m_szModFile[256] = "moderator.txt";   // 3.35
     uint8_t            m_nBasePerms = PERM_MISSION_PAIR;   // 2.37: what the owner set; the admin's changes reset when everybody left
     int  FindBan(const char* name, const char* uid);   // m_Mutex held
     void SaveBans();                                   // m_Mutex held

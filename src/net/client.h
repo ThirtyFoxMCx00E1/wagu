@@ -72,6 +72,7 @@ public:
     bool Connect(const char* host, uint16_t port, const char* name, uint16_t skin, uint32_t color = 0, uint16_t viaLocalPort = 0);
     void SetJoinPassword(const char* pw) { MP_CopyStr(m_szPassword, pw ? pw : "", sizeof(m_szPassword)); }   // 2.19: before Connect
     void SetUid(const char* uid) { MP_CopyStr(m_szUid, uid ? uid : "", sizeof(m_szUid)); }   // 2.25: this phone's id
+    void SetModKey(const char* k) { MP_CopyStr(m_szModKey, k ? k : "", sizeof(m_szModKey)); }   // 3.35: moderator.txt
     void SetAdminKey(const char* k) { MP_CopyStr(m_szAdminKey, k ? k : "", sizeof(m_szAdminKey)); }   // 2.37: only for the reserved name SENJI
     // 3.11: direct UDP to a 24/7 server (its public address, found by Online's probe) instead of
     // the MQTT relay: one UDP hop, no TCP, no batching. Call right before Connect(); if the server
@@ -116,6 +117,7 @@ private:
     char        m_szPassword[MP_PASSWORD_LEN + 1] = {0};
     char        m_szUid[MP_UID_LEN + 1] = {0};
     char        m_szAdminKey[128 + 1] = {0};   // 2.37
+    char        m_szModKey[120] = {0};         // 3.35
     uint16_t    m_nPort, m_nSkin;
     uint32_t    m_nColor = 0;
     uint64_t    m_nConnectStart, m_nLastJoinSend, m_nLastPing, m_nLastRecv;
