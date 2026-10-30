@@ -1,6 +1,7 @@
 {
-"latest": "3.35",
+"latest": "3.35.1",
 "supported": [
+"3.35.1",
 "3.35",
 "3.34",
 "3.32",
@@ -44,6 +45,13 @@
 "3.04.6"
 ],
 "versions": [
+{
+"v": "3.35.1",
+"summary": "the **wardrobe** ped lands on the shop floor (no more frozen in the air in the falling pose).",
+"items": [
+"**Cosmetic wardrobe**: he was frozen at the spot before the Didier Sachs floor had loaded, so he hung in mid-air with the fall animation. Now the floor under the spot is found first, he is put just on it and drops onto it, and only when he stands still (or after 2.5 s) the fall animation is cleared and he is frozen standing. New outfits land the same way, and the camera follows his real height."
+]
+},
 {
 "v": "3.35",
 "summary": "**openmp.com** website with its own downloads, **moderators** (`[MOD]`), player **Settings** dialog, **taxi passengers**, a **welcome board** at the Mega Vil plaza, `/googlemap`, and wardrobe / bag / pause map fixes.",
