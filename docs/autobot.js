@@ -65,8 +65,8 @@
           ['a', 'Debian 12 / Ubuntu: a new 24/7 ' + i[0] + ' server (HiveMQ + Java 21 + Mega Vil Futuristic) - on the machine as root (su -):'],
           ['g', '  ' + cmd(r)],
           ['m', '  installs curl, git, Java 21, HiveMQ and the 24/7 servers, and uses the passwords from regions.txt (phones connect with no change)'],
-          ['m', '  first: duckdns.org -> point ' + i[1] + ' at the machine\'s IP · open TCP 1883 8883 8884 + UDP 1922 1930 1931 1932 (a closed UDP port = that server runs on the slow relay, 200 ms+)'],
-          ['m', '  Debian 12 installer (677 MB): https://github.com/ThirtyFoxMCx00E1/HiveMQ/releases/download/Derbian/debian-12.15.0-amd64-netinst.iso - on a VPS pick Debian 12 in the image list'],
+          ['m', '  first: duckdns.org -> point ' + i[1] + ' at the machine\'s IP · open TCP 1883 8883 8884 + UDP 1922 1932'],
+          ['m', '  Debian 12 installer (677 MB): github.com/ThirtyFoxMCx00E1/HiveMQ/releases/tag/Derbian - on a VPS pick Debian 12 in the image list'],
           ['m', '  low ping for ' + i[0] + ' players: put this machine in or near ' + i[2]]
         ];
       },
