@@ -39,12 +39,13 @@ void MPClient::Heartbeat()
         if(m_eState != NET_CONNECTED) { m_bSentPaused = false; continue; }
         uint64_t now = MP_NowMs();
         bool paused = m_bGamePaused || (now - m_nLastGamePoll > 1500);
-        if(paused != m_bSentPaused || (paused && now - lastPause > 3000))
+        bool afk = m_bAfk && !paused;
+        if(paused != m_bSentPaused || afk != m_bSentAfk || ((paused || afk) && now - lastPause > 3000))
         {
-            PktPause p; p.type = PKT_PAUSE; p.id = m_nMyId; p.paused = paused ? 1 : 0;
+            PktPause p; p.type = PKT_PAUSE; p.id = m_nMyId; p.paused = paused ? 1 : (afk ? 2 : 0);
             Send(&p, sizeof(p));
-            if(paused != m_bSentPaused) Send(&p, sizeof(p)); // UDP: state changes twice
-            m_bSentPaused = paused;
+            if(paused != m_bSentPaused || afk != m_bSentAfk) Send(&p, sizeof(p)); // UDP: state changes twice
+            m_bSentPaused = paused; m_bSentAfk = afk;
             lastPause = now;
         }
         if(paused && now - lastPing > 1000)
@@ -246,7 +247,7 @@ void MPClient::Poll(INetEvents* ev)
                 break;
             case PKT_NPC:           { static PktNpc m; if(MP_DecodeNpc(buf, r, m)) ev->OnNpc(m); } break;   // 2.18
             case PKT_MW3_STATE: case PKT_MW3_PLAYERS: case PKT_MW3_ME: case PKT_MW3_EVENT: case PKT_MW3_CARD: ev->OnMw3(buf, r); break;   // 3.24: + CARD   // 3.23
-            case PKT_RP_ME: case PKT_RP_PLAYERS: case PKT_RP_STATE: case PKT_RP_EVENT: case PKT_RP_CARD: case PKT_RP_INV: case PKT_RP_DROPS: ev->OnRp(buf, r); break;   // 3.25: Mega Vil Futuristic
+            case PKT_RP_ME: case PKT_RP_PLAYERS: case PKT_RP_STATE: case PKT_RP_EVENT: case PKT_RP_CARD: case PKT_RP_INV: case PKT_RP_DROPS: case PKT_RP_FAC: case PKT_RP_PFAC: ev->OnRp(buf, r); break;   // 3.25: Mega Vil Futuristic
             case PKT_BCW_STATE: case PKT_BCW_ROLL: case PKT_BCW_SCORE: case PKT_BCW_EVENT: ev->OnBcw(buf, r); break;   // 3.04
             case PKT_AUTH:     ev->OnAuth(buf, r); break;   // 3.21.6: login system
             case PKT_MISSION_NPC:   { static PktNpc m; if(MP_DecodeNpc(buf, r, m)) ev->OnMissionNpc(m); } break;   // 3.02

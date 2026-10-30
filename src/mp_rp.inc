@@ -85,6 +85,10 @@ static int RpOutlineColumn(const char* id, const char* const* labels, int n, flo
 }
 static const Vec3 kRpLobbyCam  = { 1463.4f, -1673.4f, 20.5f };   // 3.29: low over Mega Vil Plaza, facing the info people
 static const Vec3 kRpLobbyLook = { 1481.6f, -1692.0f, 15.2f };
+// 3.34: the wardrobe room (mp_rp_cos.inc)
+// 3.34: factions (mp_rp_fac.inc)
+static void RpFacOnPacket(const uint8_t* d, int len); static void RpFacReset(); static void RpFacOpen(); static void RpFacDraw(); static uint32_t RpFacPinColor(int id);
+static bool RpCosActive(); static void RpCosOpen(); static void RpCosDraw(float now); static void RpCosTick(int ped, uint64_t now); static void RpCosAbort();
 static const Vec3 kRpJailCell  = { 264.0f, 77.6f, 1001.04f };    // LSPD cells (interior 6)
 #define RP_JAIL_AREA 6
 
@@ -531,7 +535,8 @@ static void RpDrawRadar(uint64_t nowMs)
     {
         if(i == myId || !players[i].active || players[i].ped <= 0) continue;
         Vec3 pp; if(!Game::GetCharPos(players[i].ped, pp)) continue;
-        SaPin& q = pins[n++]; q.x = pp.x; q.y = pp.y; q.z = pp.z; q.rgba = (players[i].color & 0xFFFFFF00) | 0xFF; q.style = 1; q.glyph[0] = 0;
+        SaPin& q = pins[n++]; q.x = pp.x; q.y = pp.y; q.z = pp.z; q.rgba = RpFacPinColor(i) | 0xFF; q.style = 1;   // 3.34: faction colour (none: green)
+ q.glyph[0] = 0;
     }
     if(s_Rp.callBlip && n < 96) { SaPin& q = pins[n++]; q.x = s_Rp.callPos.x; q.y = s_Rp.callPos.y; q.z = s_Rp.callPos.z; q.rgba = 0xEF4444FF; q.style = 2; MP_CopyStr(q.glyph, "!", sizeof(q.glyph)); }
     if(s_Rp.gpsBlip && n < 96)  { SaPin& q = pins[n++]; q.x = s_Rp.gpsPos.x;  q.y = s_Rp.gpsPos.y;  q.z = s_Rp.gpsPos.z;  q.rgba = RP_SKY;     q.style = 2; q.glyph[0] = 0; }
@@ -549,6 +554,38 @@ static void RpDrawRadar(uint64_t nowMs)
     if(ImGui::InvisibleButton("##rrchip", ImVec2(b.x - a.x, b.y - a.y))) { settings.radarStyle = settings.radarStyle == 2 ? 1 : 2; MP::SaveConfig(); }
     ImGui::End();
     ImGui::PopStyleVar();
+}
+
+// 3.34: the pause-menu map on Mega Vil is the same Google map (the game's map textures stay for the
+// other servers). Drawn under the game's blips, glued to the map's zoom / pan.
+bool MP::DrawMenuMapBackground(ImDrawList* dl)
+{
+    if(!RpOnServer() || settings.radarStyle == 0 || s_Rp.interior != 0) return false;
+    float ax, ay, bx, by;
+    if(!Game::MenuMapWorldToScreen(-3000.0f, 3000.0f, ax, ay) || !Game::MenuMapWorldToScreen(3000.0f, -3000.0f, bx, by)) return false;
+    const float ppm = (bx - ax) / 6000.0f;                      // screen px per metre
+    if(!(ppm > 0.0005f) || ppm > 200.0f) return false;
+    const ImVec2 ds = ImGui::GetIO().DisplaySize;
+    // a square frame bigger than the screen (no edge visible), centred on the screen centre
+    const float size = (ds.x > ds.y ? ds.x : ds.y) * 1.02f;
+    const ImVec2 p0(ds.x * 0.5f - size * 0.5f, ds.y * 0.5f - size * 0.5f);
+    SaRadarView v{};
+    v.meX = -3000.0f + (ds.x * 0.5f - ax) / ppm;
+    v.meY =  3000.0f - (ds.y * 0.5f - ay) / ppm;
+    v.meZ = 20.0f; v.mode = 1; v.fullMap = true;
+    v.range = size * 0.5f / ppm;
+    SaPin pins[96]; int n = 0;
+    for(int i = 0; i < RP_PLACE_COUNT && n < 80; ++i)
+    {
+        const RpPlace& pl = g_RpPlaces[i];
+        SaPin& q = pins[n++]; q.x = pl.x; q.y = pl.y; q.z = pl.z; q.rgba = RpPlacePinCol(pl.kind); q.style = 0;
+        MP_CopyStr(q.glyph, RpPlaceGlyph(pl.kind), sizeof(q.glyph));
+    }
+    if(s_Rp.gpsBlip && n < 96) { SaPin& q = pins[n++]; q.x = s_Rp.gpsPos.x; q.y = s_Rp.gpsPos.y; q.z = s_Rp.gpsPos.z; q.rgba = RP_SKY; q.style = 2; q.glyph[0] = 0; }
+    SaArea areas[24]; int na = 0;
+    for(const RpZone& z : g_RpGreen) { if(na >= 24) break; areas[na++] = { z.x - z.r, z.y - z.r, z.x + z.r, z.y + z.r, 0x22C55E38 }; }
+    SaRadarDraw(dl, p0, size, v, pins, n, areas, na, (float)(MP_NowMs() % 100000) / 1000.0f);
+    return true;
 }
 
 static void RpDrawTalk(float now)
@@ -641,6 +678,7 @@ static void RpSpawnNow(int ped)
 {
     logger->Info("RP: spawn"); fflush(nullptr);
     if(ped <= 0) return;
+    RpCosAbort();
     Vec3 at = { g_RpPlaces[RP_PLAZA].x, g_RpPlaces[RP_PLAZA].y, g_RpPlaces[RP_PLAZA].z }; float h = 180.0f + (float)(rand() % 40) - 20.0f;
     bool home = RpHomePoint(at, h);
     if(!home) { at.x += (float)(rand() % 9) - 4.0f; at.y += (float)(rand() % 9) - 4.0f; }
@@ -674,6 +712,8 @@ static void RpShutdown()
 {
     logger->Info("RP: left"); fflush(nullptr);
     RpInvReset();   // 3.26
+    RpFacReset();   // 3.34
+    RpCosAbort();   // 3.34
     if(!s_Rp.engaged) { s_bRpJoin = false; return; }
     RpTalkRelease();
     RpClearBlips();
@@ -747,6 +787,9 @@ static void RpOnPacket(const uint8_t* d, int len)
     }
     case PKT_RP_INV:
         RpInvOnPacket(d, len);
+        break;
+    case PKT_RP_FAC: case PKT_RP_PFAC:   // 3.34
+        RpFacOnPacket(d, len);
         break;
     case PKT_RP_DROPS:   // 3.30: things on the ground
         RpDropsOnPacket(d, len);
@@ -904,6 +947,7 @@ static void RpProcess(int ped, uint64_t now)
     if(s_Rp.view == 1)
     {
         RpHudOff(now, false);
+        if(RpCosActive()) { RpCosTick(ped, now); return; }   // 3.34: in the wardrobe room
         if(now % 2000 < 40) { Game::FreezeChar(ped, true); Game::SetCharVisible(ped, false); }
         // a citizen with a house never sees the hub: straight home as soon as the city knows it
         if(s_Rp.haveMe && RpHasHome() && now - s_Rp.connectedAt > 1200) RpSpawnNow(ped);
@@ -1177,6 +1221,7 @@ static bool RpCommand(const char* cmd, const char* arg)
     // ---- info ----
     if(IS("help") || IS("cmds") || IS("commands") || IS("rphelp")) { RpShowHelp(); return true; }
     if(IS("rules")) { RpShowRules(); return true; }
+    if(IS("faction") || IS("factions") || IS("fac")) { RpFacOpen(); return true; }   // 3.34
     if(IS("stats") || IS("me2") || IS("profile")) { RpShowStatsLocal(); return true; }
     if(IS("levels") || IS("level")) { int into = 0, need = RpXpForNext(s_Rp.me.xp, &into); SysMsg(RP_SKY, "[LEVEL] You are level %d: %d / %d respect. +1 every 10 min played, +2 every payday, +1 every 3 job tasks.", s_Rp.me.level, into, need); return true; }
     if(IS("gps") || IS("places") || IS("locations") || IS("map")) { int n = atoi(arg); if(n >= 1 && n <= RP_PLACE_COUNT) RpPlacesPick(1, n - 1, nullptr, 0); else RpShowPlaces(); return true; }
@@ -1239,6 +1284,18 @@ static void RpDrawLogo(ImDrawList* dl, float cx, float y, float scale, float now
     dl->AddText(UI::Font(), fs3, ImVec2(rx, ry + UI::S(2) * scale), RpCol(0x0C3C64FF, 1), t3);
     (void)now;
 }
+// 3.34: the generated icons (rp_hud.png, 4 x 4 cells of 128 px): online, bank, id, job, cash, health,
+// armour, hunger, thirst, stamina, cosmetics, faction. A glyph letter when the file is missing.
+enum { RPH_ONLINE = 0, RPH_BANK, RPH_ID, RPH_JOB, RPH_CASH, RPH_HEALTH, RPH_ARMOUR, RPH_HUNGER, RPH_THIRST, RPH_STAMINA, RPH_COSMETIC, RPH_FACTION };
+static bool RpHudIcon(ImDrawList* dl, int i, ImVec2 c, float sz, ImU32 tint)
+{
+    ImVec2 uv(1, 1);
+    void* tex = HUD::Texture("rp_hud.png", &uv);
+    if(!tex) return false;
+    float u0 = (i % 4) * 0.25f * uv.x, v0 = (i / 4) * 0.25f * uv.y, u1 = u0 + 0.25f * uv.x, v1 = v0 + 0.25f * uv.y;
+    dl->AddImage((ImTextureID)tex, ImVec2(c.x - sz * 0.5f, c.y - sz * 0.5f), ImVec2(c.x + sz * 0.5f, c.y + sz * 0.5f), ImVec2(u0, v0), ImVec2(u1, v1), tint);
+    return true;
+}
 // a round status icon with a ring (health / armour / hunger / thirst / stamina) and the %
 static void RpStatCircle(ImDrawList* dl, ImVec2 c, float r, float k, uint32_t col, const char* glyph, const char* label)
 {
@@ -1246,8 +1303,10 @@ static void RpStatCircle(ImDrawList* dl, ImVec2 c, float r, float k, uint32_t co
     dl->AddCircleFilled(c, r, IM_COL32(8, 18, 32, 200), 32);
     dl->AddCircle(c, r, IM_COL32(255, 255, 255, 40), 32, UI::S(4));
     if(k > 0) { dl->PathArcTo(c, r, -IM_PI * 0.5f, -IM_PI * 0.5f + IM_PI * 2.0f * k, 40); dl->PathStroke(RpCol(col, 1), 0, UI::S(4.5f)); }
-    float fs = r * 0.95f; float w = RpTextW(fs, glyph);
-    RpText(dl, fs, ImVec2(c.x - w * 0.5f, c.y - fs * 0.55f), RpCol(col, 1), glyph);
+    int icon = !strcmp(label, "HEALTH") ? RPH_HEALTH : !strcmp(label, "ARMOUR") ? RPH_ARMOUR : !strcmp(label, "HUNGER") ? RPH_HUNGER :
+               !strcmp(label, "THIRST") ? RPH_THIRST : RPH_STAMINA;
+    if(!RpHudIcon(dl, icon, c, r * 1.25f, RpCol(col, 1)))   // 3.34: generated icons instead of the letters
+    { float fs = r * 0.95f; float w = RpTextW(fs, glyph); RpText(dl, fs, ImVec2(c.x - w * 0.5f, c.y - fs * 0.55f), RpCol(col, 1), glyph); }
     char p[16]; snprintf(p, sizeof(p), "%d%%", (int)(k * 100 + 0.5f));
     float fs2 = UI::S(15); float w2 = RpTextW(fs2, p);
     RpText(dl, fs2, ImVec2(c.x - w2 * 0.5f, c.y + r + UI::S(3)), IM_COL32_WHITE, p);
@@ -1265,25 +1324,34 @@ static void RpDrawHud(ImDrawList* dl, float now, uint64_t nowMs)
         // 3.25: under the game's clock / money / weapon / health / wanted stars (it covered them before),
         // no background and no outline - only the text (it has its own black text outline)
         float w = UI::S(330), x1 = ds.x - UI::S(14), x0 = x1 - w, y0 = UI::S(228), rh = UI::S(27);
-        const int rows = 6; float y1 = y0 + rows * rh + UI::S(16);
-        int hh, mm; Game::GetTimeOfDay(hh, mm);
-        time_t tt = time(nullptr); struct tm* lt = localtime(&tt); char clock[32]; strftime(clock, sizeof(clock), "%H:%M  %d/%m", lt);
-        const char* keys[rows] = { "TIME", "ID", "NAME", "JOB", "CASH", "BANK" };
-        char vals[rows][48];
-        snprintf(vals[0], 48, "%s  (city %02d:%02d)", clock, hh, mm);
-        snprintf(vals[1], 48, "%d  |  Lv %d", myId, m.level);
-        snprintf(vals[2], 48, "%s", settings.name);
-        snprintf(vals[3], 48, "%s%s", g_RpJobs[m.job < RPJ_COUNT ? m.job : 0].name, m.duty ? " (duty)" : "");
-        snprintf(vals[4], 48, "$%d", m.cash);
-        snprintf(vals[5], 48, "$%d", m.bank);
+        // 3.34: the screenshot's list - ONLINE, BANK, ID, JOB, CASH - an icon + the value in a dark
+        // see-through box each, right-aligned, kept above the game's interact buttons on the right
+        (void)rh; (void)w; (void)x0;
+        const int rows = 5; const float bh = UI::S(40), bg = UI::S(6), isz = UI::S(30);
+        y0 = UI::S(212);
+        float y1 = y0 + rows * (bh + bg);
+        int online = 1; for(int i = 0; i < MP_MAX_PLAYERS; ++i) if(i != myId && players[i].active) ++online;
+        char vals[rows][64];
+        snprintf(vals[0], 64, "%d", online);
+        snprintf(vals[1], 64, "$%d", m.bank);
+        snprintf(vals[2], 64, "%d  |  Lv %d", myId, m.level);
+        snprintf(vals[3], 64, "%s%s", g_RpJobs[m.job < RPJ_COUNT ? m.job : 0].name, m.duty ? " (duty)" : "");
+        snprintf(vals[4], 64, "$%d", m.cash);
+        static const int kIc[rows] = { RPH_ONLINE, RPH_BANK, RPH_ID, RPH_JOB, RPH_CASH };
+        static const char* const kGl[rows] = { "P", "B", "#", "J", "$" };
         float fs = UI::S(19);
         for(int i = 0; i < rows; ++i)
         {
-            float y = y0 + UI::S(8) + i * rh;
-            RpText(dl, fs, ImVec2(x0 + UI::S(14), y), RpCol(RP_SKY, 1), keys[i]);
-            RpText(dl, fs, ImVec2(x0 + UI::S(14) + UI::S(70), y), RpCol(RP_SKY, 1), ":");
-            uint32_t vc = i == 4 ? 0x86EFACFF : (i == 5 ? 0x7DD3FCFF : 0xFFFFFFFF);
-            RpText(dl, fs, ImVec2(x0 + UI::S(100), y), RpCol(vc, 1), vals[i]);
+            float tw = RpTextW(fs, vals[i]), bw = tw + isz + UI::S(30);
+            if(bw < UI::S(120)) bw = UI::S(120);
+            float y = y0 + i * (bh + bg);
+            ImVec2 ba(x1 - bw, y), bb(x1, y + bh);
+            dl->AddRectFilled(ba, bb, IM_COL32(10, 10, 12, 140));
+            dl->AddRectFilled(ImVec2(bb.x - UI::S(3), ba.y), bb, RpCol(i == 4 ? 0xF58220FF : RP_SKY, 1));
+            ImVec2 ic(ba.x + UI::S(8) + isz * 0.5f, y + bh * 0.5f);
+            if(!RpHudIcon(dl, kIc[i], ic, isz, IM_COL32_WHITE)) RpText(dl, fs, ImVec2(ic.x - UI::S(6), y + UI::S(9)), RpCol(RP_SKY, 1), kGl[i]);
+            uint32_t vc = i == 4 ? 0x86EFACFF : (i == 1 ? 0x7DD3FCFF : 0xFFFFFFFF);
+            RpText(dl, fs, ImVec2(bb.x - UI::S(12) - tw, y + (bh - fs) * 0.5f), RpCol(vc, 1), vals[i]);
         }
         // payday + money popup
         snprintf(t, sizeof(t), "Payday in %d:%02d", m.paydayS / 60, m.paydayS % 60);
@@ -1392,10 +1460,11 @@ static void RpDrawWorld(ImDrawList* dl, float now)
     }
     if(s_Rp.callBlip) BcwLabel3D(dl, { s_Rp.callPos.x, s_Rp.callPos.y, s_Rp.callPos.z + 2.0f }, s_Rp.callText, RP_YELLOW, 26.0f, 40.0f);
 }
-// the connection screen: Lobby Hub camera + logo + sky blue < SPAWN >
+// the connection screen: Lobby Hub camera + logo + sky blue Spawn + the wardrobe icon button
 static void RpDrawLobby(float now)
 {
     if(MP::AuthScreenShown() || SampDialogOpen()) return;
+    if(RpCosActive()) { RpCosDraw(now); return; }
     ImVec2 ds = ImGui::GetIO().DisplaySize;
     ImDrawList* bg = ImGui::GetBackgroundDrawList();
     RpDrawLogo(bg, ds.x * 0.5f, ds.y * 0.08f, 1.7f, now);
@@ -1405,11 +1474,24 @@ static void RpDrawLobby(float now)
     BcwCenterText(bg, UI::S(30), ds.y * 0.215f, IM_COL32_WHITE, "LOBBY HUB  -  MEGA VIL PLAZA");
     snprintf(t, sizeof(t), "Level %d  |  Cash $%d  |  Bank $%d  |  Phone %d", s_Rp.me.level, s_Rp.me.cash, s_Rp.me.bank, s_Rp.me.number);
     BcwCenterText(bg, UI::S(22), ds.y * 0.215f + UI::S(44), RpCol(0xBAE6FDFF, 1), t);
-    const float bw = UI::S(420), bh = UI::S(84);
-    BcwBeginOverlay("##RpSpawn", ImVec2(ds.x * 0.5f - bw * 0.5f - UI::S(18), ds.y * 0.72f), ImVec2(bw + UI::S(36), bh + UI::S(28)), 0.0f);
+    // 3.34: "Spawn" (no < >) + a second square button with the wardrobe icon
+    const float bw = UI::S(420), bh = UI::S(84), gapB = UI::S(14), tw = bw + gapB + bh;
+    BcwBeginOverlay("##RpSpawn", ImVec2(ds.x * 0.5f - tw * 0.5f - UI::S(18), ds.y * 0.72f), ImVec2(tw + UI::S(36), bh + UI::S(28)), 0.0f);
     ImGui::SetWindowFontScale(1.1f);
-    if(BcwTeamButton("<  SPAWN  >##rps", RP_SKY, ImVec2(bw, bh), true, false)) RpSpawnNow(Game::LocalPed());
+    if(BcwTeamButton("Spawn##rps", RP_SKY, ImVec2(bw, bh), true, false)) RpSpawnNow(Game::LocalPed());
     ImGui::SetWindowFontScale(1.0f);
+    ImGui::SameLine(0, gapB);
+    {
+        ImVec2 a = ImGui::GetCursorScreenPos();
+        bool hit = ImGui::InvisibleButton("##rpcos", ImVec2(bh, bh)), down = ImGui::IsItemActive();
+        ImDrawList* wl = ImGui::GetWindowDrawList();
+        ImVec2 b(a.x + bh, a.y + bh);
+        wl->AddRectFilled(a, b, down ? IM_COL32(14, 140, 200, 230) : IM_COL32(10, 10, 12, 170));
+        wl->AddRect(a, b, RpCol(RP_SKY, 1), 0, 0, UI::S(2.5f));
+        if(!RpHudIcon(wl, RPH_COSMETIC, ImVec2((a.x + b.x) * 0.5f, (a.y + b.y) * 0.5f), bh * 0.62f, IM_COL32_WHITE))
+            RpText(wl, UI::S(30), ImVec2(a.x + bh * 0.33f, a.y + bh * 0.3f), IM_COL32_WHITE, "T");
+        if(hit) RpCosOpen();
+    }
     BcwEndOverlay();
     BcwCenterText(bg, UI::S(20), ds.y * 0.72f + bh + UI::S(40), IM_COL32(220, 220, 220, 255), "Roleplay only - peaceful city - no cheats. Own a house and you always spawn at home.");
 }
@@ -1434,7 +1516,7 @@ static void RenderRp()
     if(FloatMenu::IsModal()) return;   // 3.25.1: the full-screen MP launcher is open: no Mega Vil HUD / phone / banner over it
     float now = (float)(MP_NowMs() % 100000000ULL);
     uint64_t nowMs = MP_NowMs();
-    if(s_Rp.view == 1) { if(Game::IsReady()) RpInfoDraw(ImGui::GetBackgroundDrawList()); RpDrawLobby(now); return; }
+    if(s_Rp.view == 1) { if(Game::IsReady() && !RpCosActive()) RpInfoDraw(ImGui::GetBackgroundDrawList()); RpDrawLobby(now); return; }
     if(MP::AuthScreenShown()) return;
     if(Game::IsReady() && !Game::IsPaused()) RpDrawWorld(ImGui::GetBackgroundDrawList(), now);
     if(s_Rp.haveMe && !Game::IsPaused()) RpDrawHud(ImGui::GetForegroundDrawList(), now, nowMs);

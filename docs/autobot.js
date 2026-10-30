@@ -5,7 +5,31 @@
 (function () {
   'use strict';
   function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  // 3.34: several typers at once. o.lanes = [{ ps: 'bot2@bcw:~$', next() -> job }, ...] adds one more
+  // prompt row per lane under the main one; every lane types and runs its own commands in its own
+  // loop, forever. Nothing piles up: each lane keeps one job at a time, errors never stop a loop,
+  // and the output stays trimmed by the page (print keeps the last 600 lines).
   window.MPBot = function (o) {
+    var bots = [one(o)];
+    (o.lanes || []).forEach(function (l, i) {
+      var row = o.line && o.line.parentNode ? o.line.parentNode : null, line = null;
+      if (row && row.parentNode) {
+        var r2 = row.cloneNode(true);
+        r2.classList.add('lane');
+        Array.prototype.forEach.call(r2.querySelectorAll('[id]'), function (e) { e.id = e.id + '-l' + (i + 1); });
+        var ps = r2.querySelector('.ps'); if (ps && l.ps) ps.textContent = l.ps;
+        line = r2.querySelector('.typed');
+        var after = bots.length > 1 && bots[bots.length - 1].row ? bots[bots.length - 1].row : row;
+        after.parentNode.insertBefore(r2, after.nextSibling);
+        if (line) line.textContent = '';
+        var b = one({ out: o.out, line: line || document.createElement('span'), keyEnter: r2.querySelector('.kenter'), status: null, run: l.run || o.run, next: l.next,
+          typeMs: l.typeMs || (o.typeMs || 38) + 9 * (i + 1), gapMs: l.gapMs || 9000 + 1700 * i, startMs: (o.startMs || 900) + 1300 * (i + 1) });
+        b.row = r2; bots.push(b);
+      }
+    });
+    return { stop: function () { bots.forEach(function (b) { b.stop(); }); }, busy: function () { return bots.some(function (b) { return b.busy(); }); }, lanes: bots.length };
+  };
+  function one(o) {
     var typeMs = o.typeMs || 38, gapMs = o.gapMs || 5200, running = true, busy = false;
     function setStatus(t) { if (o.status) o.status.textContent = t; }
     function typeInto(cmd) {
@@ -42,9 +66,10 @@
         await sleep(document.hidden ? gapMs * 4 : (job.wait || gapMs) + Math.random() * 1500);
       }
     }
-    loop();
+    // 3.34: the loop never dies - an exception restarts it after a short rest
+    (function guard() { loop().catch(function () { busy = false; if (running) setTimeout(guard, 3000); }); })();
     return { stop: function () { running = false; }, busy: function () { return busy; } };
-  };
+  }
 
   // 3.31: the Debian 12 one-line 24/7 VPS setup. Every console bot (Termius, Termux, Railway) types it
   // at start-up and again every few checks, going round the regions: asia, europe, na, oceania.

@@ -54,3 +54,4 @@ iframe{flex:1;width:100%;min-height:420px;border:0;background:#000}
 .upd .s{color:var(--muted);font-size:12px}
 .upd .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .upd code{flex:1;min-width:0;overflow-wrap:anywhere;font-size:12px;background:#100d0b;border:1px solid var(--line);border-radius:7px;padding:7px 9px}
+.prompt.lane{padding:5px 12px;font-size:.92em;border-top:1px dashed var(--line)}.prompt.lane .ps{color:var(--c)}   /* 3.34: extra bot typers */

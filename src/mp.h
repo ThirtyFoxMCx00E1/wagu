@@ -75,6 +75,16 @@ struct MPSettings
     bool  allowCheatMenu    = false;   // 3.00: host permission (custom servers): players may use CheatMenu (libCheatMenu.so / libCheatMenu64.so)
     bool  hitSound          = true;    // 3.00: play sound_010.mp3 when your shot hits a player
     bool  allowMissionPair  = true;
+    // 3.34: custom server permissions (Add server page, scroll down): the 4 featured servers always have them
+    bool  permAfk           = true;    // AFK: not moving for a long time shows AFK (and frees the seat after 20 min)
+    bool  permDmgInd        = true;    // damage indicator over the name tag (-25.00 / "X hit the head")
+    bool  permShowIds       = true;    // player ids in the player list + name tags: "name (1)"
+    // 3.34: Settings > Display
+    int   uiFont            = 0;       // 0..8 (UI::FontName)
+    int   uiFontFx          = 1;       // 0 none, 1 outline, 2 bold outline, 3 shadow
+    float uiFontScale       = 1.0f;    // 0.6..1.6
+    float uiScale           = 1.0f;    // 0.6..1.5
+    bool  noCamShake        = true;    // camera shake (explosions, guns, cars) off
     // 3.11
     bool  chatTimestamps    = false;   // "[18:02:48]" in front of every chat line (Settings > Chat), off until turned on
     bool  voiceChat         = true;    // hear voice chat (the mic is turned on with the mic pill, only while connected)
@@ -110,6 +120,7 @@ struct RemotePlayer
     int       passCar = 0; uint64_t passEnterT = 0, passLeaveT = 0;
     int       weapon = 0;
     bool      ducking = false, deadApplied = false;
+    bool      afk = false;               // 3.34: not moved for a long time (PKT_PAUSE paused = 2)
     bool      paused = false;            // player has their game paused (shown as PAUSED, can't be hurt)
     uint8_t   status = 0;                // STATUS_* : on a mission / in a cutscene (hidden, own story world)
     char      mission[8] = {0};          // mission script name, e.g. "SWEET1"
@@ -197,8 +208,10 @@ struct KillEntry
     bool predicted = false;    // 2.37: my lethal hit, shown at once (confirmed / corrected by PKT_DEATH)
 };
 
+struct ImDrawList;
 namespace MP
 {
+    bool DrawMenuMapBackground(ImDrawList* dl);   // 3.34: Mega Vil's Google map on the pause map (false = nothing drawn)
     const char* MissionTitle(const char* scriptName);   // "SWEET1" -> "Tagging Up Turf"
     extern MPSettings   settings;
     extern RemotePlayer players[MP_MAX_PLAYERS];
@@ -279,6 +292,9 @@ namespace MP
     void JoinBcw();            // join it (or leave it when you are on it)
     bool IsOnBcw();
     bool BcwOwnTagHidden();    // 3.10: your ped is parked hidden (connection screen - e.g. Gustav's base view - or respawn wait)
-    uint32_t BcwDecorate(int id, const char* name, uint32_t color, char* out, size_t n);   // [GTV] / [SLZ] tag + team colour
+    uint32_t BcwDecorate(int id, const char* name, uint32_t color, char* out, size_t n);
+    void DrawDamageIndicator(ImDrawList* dl, int id, const Vec3& head);   // 3.34 (mp_features.inc)
+    void NameTagId(int id, char* name, size_t n);                          // 3.34: "name (id)"
+    bool IsAfk(int id);                                                    // 3.34   // [GTV] / [SLZ] tag + team colour
 }
 bool MP_WallhackOn();   // 2.19 /wallhack

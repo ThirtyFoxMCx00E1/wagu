@@ -9,7 +9,12 @@ namespace UI
     // Scale a 1080p-designed pixel value to the current screen height.
     float S(float px);
     ImFont* Font();
-    ImFont* PricedownFont();   // 3.00: pricedown.ttf found on the phone (else nullptr)
+    ImFont* PricedownFont();
+    // 3.34: Settings > Display: 9 fonts, text effect (0 none, 1 outline, 2 bold outline, 3 shadow), font + UI scale
+    #define UI_FONT_COUNT 9
+    const char* FontName(int i);
+    bool  FontAvailable(int i);
+    void  SetLook(int font, int effect, float fontScale, float uiScale);   // 3.00: pricedown.ttf found on the phone (else nullptr)
     const char* PricedownPath();
 
     // 2.19 TopbarPlus look: white "on" / selected state (black text), dark translucent panels

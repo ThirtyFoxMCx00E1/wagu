@@ -78,6 +78,7 @@ uint32_t MP::BcwDecorate(int id, const char* name, uint32_t color, char* out, si
 {
     if(!name) name = "";
     if(Mw3Decorate(id, name, color, out, n)) return color;   // 3.23: MW3 [TAG] + team colour
+    if(RpFacDecorate(id, name, color, out, n)) return color;   // 3.34: Mega Vil faction [TAG] + colour
     uint8_t t = BcwOnServer() ? BcwTeamOf(id) : 0;
     bool admin = !strncasecmp(name, "[ADMIN]", 7) || (id == myId && MP::IsLocalAdmin());
     if(!t || admin) { snprintf(out, n, "%s", name); return color; }   // admins keep their own tag and colour

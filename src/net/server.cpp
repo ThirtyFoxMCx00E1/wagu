@@ -268,7 +268,21 @@ void MPServer::RelaySync(int slot, const void* pkt, int len, bool important)
     for(int i = 0; i < MP_MAX_PLAYERS; ++i)
     {
         if(i == slot || !m_Slots[i].used) continue;
-        const Slot& r = m_Slots[i];
+        Slot& r = m_Slots[i];
+        // 3.34: downlink budget per receiver. Every phone used to get every nearby sync at 20 Hz, so each
+        // player that joined added 20 more packets/s to EVERYBODY's download (through the broker / mobile
+        // data) - the queue grew and so did everybody's ping (2/100 a bit, 25/100 a lot). Now each player
+        // gets at most MP_DL_BUDGET syncs per 250 ms; when a window goes over, the rates of everything but
+        // the closest players slow down a bit (x1.3 per window, max x6) and come back once it is quiet.
+        if(now - r.dlWinAt >= 250)
+        {
+            float sc = r.dlScale < 1.0f ? 1.0f : r.dlScale;
+            if(r.dlN > MP_DL_BUDGET) sc *= 1.3f;
+            else if(r.dlN < MP_DL_BUDGET * 6 / 10) sc /= 1.15f;
+            r.dlScale = sc < 1.0f ? 1.0f : (sc > 6.0f ? 6.0f : sc);
+            r.dlN = 0; r.dlWinAt = now;
+        }
+        const float scale = r.dlScale < 1.0f ? 1.0f : r.dlScale;
         bool send = important || !r.hasPos || !s.hasPos;
         if(!send)
         {
@@ -280,10 +294,16 @@ void MPServer::RelaySync(int slot, const void* pkt, int len, bool important)
             else if(d2 <= 150.0f * 150.0f) every = 200;
             else if(d2 <= MP_SYNC_NEAR_M * MP_SYNC_NEAR_M) every = 500;
             else                           every = MP_SYNC_FAR_MS > 2000 ? MP_SYNC_FAR_MS : 2000;
+            if(scale > 1.01f)
+            {   // 3.34: busy downlink: the closest 30 m keep at least 10 Hz, the rest slows down with the scale
+                if(d2 <= 30.0f * 30.0f) { uint64_t m = (uint64_t)(MP_SYNC_RATE_MS * (scale < 2.0f ? scale : 2.0f)); if(every < m) every = m; }
+                else every = (uint64_t)((every ? every : MP_SYNC_RATE_MS) * scale);
+            }
             send = now - s.lastFwd[i] >= every;
         }
         if(!send) continue;
         s.lastFwd[i] = now;
+        if(r.dlN < 0xFFFF) ++r.dlN;
         SendRaw(r.addr, pkt, len);
     }
 }
@@ -1006,11 +1026,11 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
         {
             if(slot < 0 || len < (int)sizeof(PktPause)) return;
             PktPause p = *(const PktPause*)data;
-            p.id = (uint8_t)slot; p.paused = p.paused ? 1 : 0;
-            if((bool)p.paused != m_Slots[slot].paused)
+            p.id = (uint8_t)slot; p.paused = p.paused == 2 ? 2 : (p.paused ? 1 : 0);   // 3.34: 2 = AFK
+            if((p.paused == 1) != m_Slots[slot].paused)
             {
-                m_Slots[slot].paused = p.paused;
-                Log("%s %s", m_Slots[slot].name, p.paused ? "paused" : "resumed");
+                m_Slots[slot].paused = p.paused == 1;
+                Log("%s %s", m_Slots[slot].name, p.paused == 1 ? "paused" : "resumed");
             }
             Broadcast(&p, sizeof(p), slot);
             break;
@@ -1212,7 +1232,8 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             if(len < (int)sizeof(PktPing)) return;
             PktPing p = *(const PktPing*)data;
             p.type = PKT_PONG;
-            SendRaw(from, &p, sizeof(p));
+            // 3.33/3.34: answer NOW, not in the sendmmsg batch (a join in the same batch held the pong back)
+            sendto(m_Sock, (const char*)&p, sizeof(p), 0, (const sockaddr*)&from, sizeof(from));
             break;
         }
 

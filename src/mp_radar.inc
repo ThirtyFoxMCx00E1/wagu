@@ -28,6 +28,7 @@ struct SaRadarView
     float camFx, camFy;      // camera forward on the ground (any length)
     float range;             // metres from the centre to the frame edge (2D)
     int   mode;              // 1 = 2D, 2 = 3D
+    bool  fullMap;           // 3.34: pause-menu map - no frame, no "N", no blue dot, every road cell, bigger budget
 };
 
 // ---- colours (Google Maps light) ---------------------------------------------------------------
@@ -225,10 +226,10 @@ static void SaRadarDraw(ImDrawList* dl, ImVec2 p0, float size, const SaRadarView
 {
     SarProj P; SarSetup(P, v, p0, size);
     const ImVec2 p1(p0.x + size, p0.y + size);
-    const float round = UI::S(10), border = UI::S(3.5f);
-    const bool d3 = v.mode == 2;
+    const float round = v.fullMap ? 0.0f : UI::S(10), border = v.fullMap ? 0.0f : UI::S(3.5f);
+    const bool d3 = v.mode == 2 && !v.fullMap;
     // frame shadow + background
-    dl->AddRectFilled(ImVec2(p0.x + UI::S(3), p0.y + UI::S(5)), ImVec2(p1.x + UI::S(3), p1.y + UI::S(5)), IM_COL32(0, 0, 0, 70), round + UI::S(2));
+    if(!v.fullMap) dl->AddRectFilled(ImVec2(p0.x + UI::S(3), p0.y + UI::S(5)), ImVec2(p1.x + UI::S(3), p1.y + UI::S(5)), IM_COL32(0, 0, 0, 70), round + UI::S(2));
     dl->AddRectFilled(p0, p1, d3 ? SAR_LAND3D : SAR_LAND, round);
     dl->PushClipRect(ImVec2(p0.x + border * 0.5f, p0.y + border * 0.5f), ImVec2(p1.x - border * 0.5f, p1.y - border * 0.5f), true);
 
@@ -298,10 +299,12 @@ static void SaRadarDraw(ImDrawList* dl, ImVec2 p0, float size, const SaRadarView
     c0x = c0x < 0 ? 0 : c0x; c0y = c0y < 0 ? 0 : c0y; c1x = c1x >= SAMAP_GRID ? SAMAP_GRID - 1 : c1x; c1y = c1y >= SAMAP_GRID ? SAMAP_GRID - 1 : c1y;
     // 3.28: nearest cells first, so a frame that hits the vertex budget only loses the far edge;
     // no anti-aliasing on the road strips (half the vertices; they are thin and get a casing anyway)
-    int cells[64]; float cellD[64]; int nCells = 0;
+    int cells[SAMAP_GRID * SAMAP_GRID]; float cellD[SAMAP_GRID * SAMAP_GRID]; int nCells = 0;
+    const int cellCap = v.fullMap ? SAMAP_GRID * SAMAP_GRID : 64;   // 3.34: the full map may need every cell
+    const int vtxBudget = v.fullMap ? kSarRoadVtxBudget * 4 : kSarRoadVtxBudget;
     {
         float qcx = (qx + 3000) / SAMAP_CELL - 0.5f, qcy = (qy + 3000) / SAMAP_CELL - 0.5f;
-        for(int cy = c0y; cy <= c1y; ++cy) for(int cx = c0x; cx <= c1x && nCells < 64; ++cx)
+        for(int cy = c0y; cy <= c1y; ++cy) for(int cx = c0x; cx <= c1x && nCells < cellCap; ++cx)
         {
             float d = (cx - qcx) * (cx - qcx) + (cy - qcy) * (cy - qcy);
             int j = nCells++;
@@ -314,7 +317,7 @@ static void SaRadarDraw(ImDrawList* dl, ImVec2 p0, float size, const SaRadarView
     const int vtxStart = dl->VtxBuffer.Size;
     for(int pass = 0; pass < 2; ++pass)
     {
-        const int vtxCap = vtxStart + (pass == 0 ? kSarRoadVtxBudget / 2 : kSarRoadVtxBudget);
+        const int vtxCap = vtxStart + (pass == 0 ? vtxBudget / 2 : vtxBudget);
         for(int ci = 0; ci < nCells && dl->VtxBuffer.Size < vtxCap; ++ci)
         {
             int c = cells[ci];
@@ -421,6 +424,7 @@ static void SaRadarDraw(ImDrawList* dl, ImVec2 p0, float size, const SaRadarView
     }
 
     // you: Google's blue dot + heading beam (2D), a navigation arrow lying on the ground (3D)
+    if(!v.fullMap)   // 3.34: on the pause map the game draws your own arrow
     {
         float h = v.meHeading * 0.0174533f;
         float hx = -sinf(h), hy = cosf(h);            // world forward of the ped
@@ -460,6 +464,7 @@ static void SaRadarDraw(ImDrawList* dl, ImVec2 p0, float size, const SaRadarView
         }
     }
     dl->PopClipRect();
+    if(v.fullMap) return;   // 3.34: the pause map has no frame / "N" chip
 
     // frame
     dl->AddRect(p0, p1, IM_COL32(20, 22, 26, 255), round, 0, border);

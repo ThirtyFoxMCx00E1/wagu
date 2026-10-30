@@ -48,7 +48,7 @@ const char* MPServer::RpKey(int slot, char* buf, size_t n)
 // H index|key
 void MPServer::RpLoad()
 {
-    m_RpSaved.clear(); for(auto& h : m_RpHouseOwner) h.clear();
+    m_RpSaved.clear(); for(auto& h : m_RpHouseOwner) h.clear(); m_RpFactions.clear();
     FILE* f = fopen(m_szRpFile, "r"); if(!f) { Log("RP: no %s yet (a new city)", m_szRpFile); return; }
     char line[512]; int n = 0;
     while(fgets(line, sizeof(line), f))
@@ -56,6 +56,22 @@ void MPServer::RpLoad()
         line[strcspn(line, "\r\n")] = 0;
         if(line[0] == 'H' && line[1] == ' ') { int idx = atoi(line + 2); const char* k = strchr(line + 2, '|'); if(k && idx >= 0 && idx < RP_HOUSE_COUNT) m_RpHouseOwner[idx] = k + 1; continue; }
         if(line[0] == 'P' && line[1] == ' ') { m_nRpLottoPot = atoi(line + 2); continue; }
+        if(line[0] == 'G' && line[1] == ' ')
+        {   // 3.34: G tag|rrggbbaa|limit|ownerKey|ownerName|title|desc|rules
+            char* f[8] = {}; int nf = 0; char* q = line + 2; f[nf++] = q;
+            while(*q && nf < 8) { if(*q == '|') { *q = 0; f[nf++] = q + 1; } ++q; }
+            if(nf < 8 || !f[0][0] || (int)m_RpFactions.size() >= RP_FAC_MAX) continue;
+            RpFaction fc; fc.tag = f[0]; fc.col = (uint32_t)strtoul(f[1], nullptr, 16); fc.limit = atoi(f[2]);
+            if(fc.limit < 2 || fc.limit > RP_FAC_LIMIT) fc.limit = RP_FAC_LIMIT;
+            fc.owner = f[3]; fc.ownerName = f[4]; fc.title = f[5]; fc.desc = f[6]; fc.rules = f[7];
+            m_RpFactions.push_back(fc); continue;
+        }
+        if(line[0] == 'F' && line[1] == ' ')
+        {   // 3.34: F key|TAG (after the C line of that citizen)
+            char* p = line + 2; char* bar = strchr(p, '|'); if(!bar) continue; *bar = 0;
+            auto it = m_RpSaved.find(p); if(it != m_RpSaved.end()) it->second.fac = bar + 1;
+            continue;
+        }
         if(line[0] == 'M' && line[1] == ' ')
         {   // 3.29: M bond|stocks|coin (market prices)
             char* q = line + 2;
@@ -113,6 +129,8 @@ void MPServer::RpSave()
     fprintf(f, "# Mega Vil Futuristic citizens (MP %s). C key|cash|bank|xp|number|job|house|pet|hunger|thirst|min|pets|items|skin|tasks|t|vehicles\n", MP_VERSION_STR);
     fprintf(f, "P %d\n", m_nRpLottoPot);
     fprintf(f, "M %.3f|%.3f|%.3f\n", m_fRpMarket[0], m_fRpMarket[1], m_fRpMarket[2]);   // 3.29
+    for(auto& fc : m_RpFactions)   // 3.34
+        fprintf(f, "G %s|%08X|%d|%s|%s|%s|%s|%s\n", fc.tag.c_str(), fc.col, fc.limit, fc.owner.c_str(), fc.ownerName.c_str(), fc.title.c_str(), fc.desc.c_str(), fc.rules.c_str());
     for(auto& kv : m_RpSaved)
     {
         const RpSaved& r = kv.second;
@@ -127,6 +145,7 @@ void MPServer::RpSave()
             for(int i = 0; i < RP_INV_SLOTS; ++i) fprintf(f, i ? ",%u:%u" : "%u:%u", r.inv[i].id, r.inv[i].id ? r.inv[i].count : 0);
             fputc('\n', f);
         }
+        if(!r.fac.empty()) fprintf(f, "F %s|%s\n", kv.first.c_str(), r.fac.c_str());   // 3.34
         if(r.invU[0] || r.invU[1] || r.invU[2] || !r.spouseKey.empty())   // 3.29
             fprintf(f, "X %s|%lld|%lld|%lld|%s|%s\n", kv.first.c_str(), (long long)r.invU[0], (long long)r.invU[1], (long long)r.invU[2], r.spouseKey.c_str(), r.spouse.c_str());
     }
@@ -146,6 +165,7 @@ void MPServer::RpStore(int slot)
     r.nveh = m.nveh; memcpy(r.veh, m.veh, sizeof(r.veh)); r.t = m.statT;
     memcpy(r.inv, m.inv, sizeof(r.inv));   // 3.26
     memcpy(r.invU, m.invU, sizeof(r.invU)); r.spouseKey = m.spouseKey; r.spouse = m.spouse;   // 3.29
+    r.fac = m.fac;   // 3.34
 }
 
 // ---- signed citizen card (HMAC-SHA256 with the MW3 card key, other payload) -------------------
@@ -170,9 +190,13 @@ void MPServer::RpSendCard(int slot)
 {
     RpSrvPlayer& m = m_Rp[slot]; if(!m.loaded) return;
     char kb[40]; const char* key = RpKey(slot, kb, sizeof(kb)); if(!key) return;
-    if(m.cash != m.lastCash || m.bank != m.lastBank || m.job != m.lastJob)
+    // 3.34: level / XP, items, skin, tasks and the house count too - before only money and the job made a
+    // new citizen card, so a new host (or a host restart) gave people their old level back
+    if(m.cash != m.lastCash || m.bank != m.lastBank || m.job != m.lastJob || m.xp != m.lastXp || m.items != m.lastItems ||
+       m.skin != m.lastSkin || m.tasks != m.lastTasks || m.house != m.lastHouse)
     {
         m.statT = (uint32_t)time(nullptr); m.lastCash = m.cash; m.lastBank = m.bank; m.lastJob = m.job; m_bRpDirty = true;
+        m.lastXp = m.xp; m.lastItems = m.items; m.lastSkin = m.skin; m.lastTasks = m.tasks; m.lastHouse = m.house;
     }
     if(m.statT == m.cardT) return;
     PktRpCard c; memset(&c, 0, sizeof(c));
@@ -207,6 +231,7 @@ void MPServer::RpOnCard(int slot, const PktRpCard& in)
         else { m.bank += g_RpHouses[c.house].price; RpMsg(slot, RP_YELLOW, "[MEGA VIL] Your house was sold while you were away: %d back to your bank.", g_RpHouses[c.house].price); }
     }
     m.statT = m.cardT = c.t; m.lastCash = m.cash; m.lastBank = m.bank; m.lastJob = m.job;
+    m.lastXp = m.xp; m.lastItems = m.items; m.lastSkin = m.skin; m.lastTasks = m.tasks; m.lastHouse = m.house;   // 3.34
     RpStore(slot); m_bRpDirty = true;
     Log("RP: restored %s from their citizen card", c.key);
     RpMsg(slot, RP_SKY, "[MEGA VIL] Welcome back - your money, job and things were restored from your phone.");
@@ -414,13 +439,16 @@ void MPServer::RpOnAuthed(int slot)
         m.nveh = r.nveh; memcpy(m.veh, r.veh, sizeof(m.veh)); m.statT = r.t;
         memcpy(m.inv, r.inv, sizeof(m.inv));   // 3.26
         memcpy(m.invU, r.invU, sizeof(m.invU)); MP_CopyStr(m.spouseKey, r.spouseKey.c_str(), sizeof(m.spouseKey)); MP_CopyStr(m.spouse, r.spouse.c_str(), sizeof(m.spouse));   // 3.29
+        MP_CopyStr(m.fac, r.fac.c_str(), sizeof(m.fac)); if(m.fac[0] && RpFacFind(m.fac) < 0) m.fac[0] = 0;   // 3.34: the faction may be gone
         if(m.house < RP_HOUSE_COUNT && m_RpHouseOwner[m.house] != key) m.house = 255;
         if(m.hunger < 25) m.hunger = 25; if(m.thirst < 25) m.thirst = 25;   // you ate while you were away
     }
     m.level = (uint8_t)RpLevelFromXp(m.xp);
     m.loaded = true; m.minuteAt = now; m.needAt = now; m.paydayAt = now + RP_PAYDAY_S * 1000ull;
     m.lastCash = m.cash; m.lastBank = m.bank; m.lastJob = m.job; m.cardT = 0;
+    m.lastXp = m.xp; m.lastItems = m.items; m.lastSkin = m.skin; m.lastTasks = m.tasks; m.lastHouse = m.house;   // 3.34
     RpStore(slot);
+    RpSendFactions(slot); RpSendPFac(-1);   // 3.34
     if(isNew)
     {
         RpMsg(slot, RP_SKY, "[MEGA VIL] Welcome to Mega Vil Futuristic, new citizen! You got $%d cash and $%d in the bank.", RP_START_CASH, RP_START_BANK);
@@ -645,7 +673,7 @@ void MPServer::RpTick(uint64_t now)
         if((now / 1000 + i) % 5 == 0) RpSendCard(i);
     }
     RpEventTick(now);
-    if(now - m_nRpLastPlayers >= 3000) { m_nRpLastPlayers = now; RpSendPlayers(-1); }
+    if(now - m_nRpLastPlayers >= 3000) { m_nRpLastPlayers = now; RpSendPlayers(-1); RpSendPFac(-1); }   // 3.34: + factions
     if(now - m_nRpLastSend >= 2000) { m_nRpLastSend = now; RpSendState(-1); }
     if(m_bRpDirty && now - m_nRpLastSave >= 30000) { m_nRpLastSave = now; RpSave(); }
 }
@@ -721,7 +749,8 @@ void MPServer::RpHandleCmd(int slot, const PktRpCmd& c)
     if(!s.authed || !m.loaded) { RpMsg(slot, RP_RED, "Log in first (Mega Vil needs an account)."); return; }
     const uint64_t now = MP_NowMs();
     char line[200], mb[24];
-    const char* nm = s.name;
+    char nmTag[48]; const char* nm = s.name;
+    if(m.fac[0]) { snprintf(nmTag, sizeof(nmTag), "[%s] %s", m.fac, s.name); nm = nmTag; }   // 3.34: [SVG] name in the chat
     const bool onDuty = m.duty && RpJobArmed(m.job);
     switch(c.cmd)
     {
@@ -1059,6 +1088,15 @@ void MPServer::RpHandleCmd(int slot, const PktRpCmd& c)
         m.pet = c.a; RpSendMe(slot);
         snprintf(line, sizeof(line), "* %s's %s floats next to them.", nm, g_RpPets[c.a].name); RpNear(slot, RP_TALK_RANGE, RP_ME_COL, line, false);
         break;
+    case RPC_FACTION: RpFacCmd(slot, c); break;   // 3.34
+    case RPC_SKIN_SET:   // 3.34: the lobby wardrobe (free skins) - saved with the citizen, so it stays
+    {
+        int sk = c.val;
+        if(sk < 0 || sk > 311 || !RpCosAllowed(sk)) { RpMsg(slot, RP_RED, "That outfit isn't in the wardrobe."); break; }
+        m.skin = (uint16_t)sk; RpStore(slot); m_bRpDirty = true; RpSendMe(slot);
+        RpMsg(slot, RP_SKY, "Outfit saved.");
+        break;
+    }
     case RPC_JETPACK:
         if(!(m.items & RPIT_JETPACK)) { RpMsg(slot, RP_RED, "You need a jetpack licence (Neo Tech Store / Shop app)."); break; }
         if(now - m.lastVeh < 60000) { RpMsg(slot, RP_RED, "The jetpack is recharging (60 s)."); break; }
@@ -1427,5 +1465,136 @@ void MPServer::RpHandleCmd(int slot, const PktRpCmd& c)
         RpMsg(slot, RP_SKY, "[EVENT] %s - %d s left.", g_RpEventNames[m_nRpEvKind], (int)((m_nRpEvEnd > now ? m_nRpEvEnd - now : 0) / 1000));
         break;
     default: break;
+    }
+}
+
+// ---- 3.34: factions --------------------------------------------------------------------------
+// /faction on the client opens the list (max 25 factions). Join / leave, or create your own for
+// $25000: tag (2-5 letters, shown as [TAG] in name tags, chat and the kill feed), title, colour,
+// player limit (2-25), description and rules. The owner can change the rules or delete it.
+int MPServer::RpFacFind(const char* tag) const
+{
+    if(!tag || !*tag) return -1;
+    for(size_t i = 0; i < m_RpFactions.size(); ++i) if(!strcasecmp(m_RpFactions[i].tag.c_str(), tag)) return (int)i;
+    return -1;
+}
+int MPServer::RpFacMembers(const std::string& tag)
+{
+    int n = 0;
+    for(auto& kv : m_RpSaved) if(!strcasecmp(kv.second.fac.c_str(), tag.c_str())) ++n;
+    for(int i = 0; i < MP_MAX_PLAYERS; ++i)   // online ones may not be stored yet
+    {
+        if(!m_Slots[i].used || !m_Rp[i].loaded || strcasecmp(m_Rp[i].fac, tag.c_str())) continue;
+        char kb[40]; const char* key = RpKey(i, kb, sizeof(kb));
+        auto it = key ? m_RpSaved.find(key) : m_RpSaved.end();
+        if(it == m_RpSaved.end() || strcasecmp(it->second.fac.c_str(), tag.c_str())) ++n;
+    }
+    return n;
+}
+void MPServer::RpSendFactions(int slot)
+{
+    int n = (int)m_RpFactions.size();
+    PktRpFac p; memset(&p, 0, sizeof(p)); p.type = PKT_RP_FAC; p.count = (uint8_t)n;
+    if(!n) { p.idx = 255; if(slot >= 0) SendTo(slot, &p, sizeof(p)); else Broadcast(&p, sizeof(p)); return; }
+    for(int i = 0; i < n; ++i)
+    {
+        const RpFaction& f = m_RpFactions[i];
+        p.idx = (uint8_t)i; p.limit = (uint8_t)f.limit; p.members = (uint8_t)RpFacMembers(f.tag); p.col = f.col;
+        MP_CopyStr(p.tag, f.tag.c_str(), sizeof(p.tag)); MP_CopyStr(p.title, f.title.c_str(), sizeof(p.title));
+        MP_CopyStr(p.desc, f.desc.c_str(), sizeof(p.desc)); MP_CopyStr(p.rules, f.rules.c_str(), sizeof(p.rules));
+        MP_CopyStr(p.owner, f.ownerName.c_str(), sizeof(p.owner));
+        if(slot >= 0)
+        {
+            char kb[40]; const char* key = RpKey(slot, kb, sizeof(kb));
+            p.mine = (uint8_t)((key && f.owner == key) ? 2 : (!strcasecmp(m_Rp[slot].fac, f.tag.c_str()) ? 1 : 0));
+            SendTo(slot, &p, sizeof(p));
+        }
+        else for(int s = 0; s < MP_MAX_PLAYERS; ++s)
+        {
+            if(!m_Slots[s].used || !m_Rp[s].loaded) continue;
+            char kb[40]; const char* key = RpKey(s, kb, sizeof(kb));
+            p.mine = (uint8_t)((key && f.owner == key) ? 2 : (!strcasecmp(m_Rp[s].fac, f.tag.c_str()) ? 1 : 0));
+            SendTo(s, &p, sizeof(p));
+        }
+    }
+}
+void MPServer::RpSendPFac(int slot)
+{
+    PktRpPFac p; memset(&p, 0xFF, sizeof(p)); p.type = PKT_RP_PFAC; p.n = MP_MAX_PLAYERS;
+    for(int i = 0; i < MP_MAX_PLAYERS; ++i)
+        if(m_Slots[i].used && m_Rp[i].loaded && m_Rp[i].fac[0]) { int f = RpFacFind(m_Rp[i].fac); p.fac[i] = (uint8_t)(f >= 0 ? f : 255); }
+    if(slot >= 0) SendTo(slot, &p, sizeof(p)); else Broadcast(&p, sizeof(p));
+}
+static void RpFacClean(std::string& o, const char* in, size_t maxLen)
+{
+    o.clear();
+    for(; in && *in && o.size() < maxLen; ++in) { char ch = *in; if(ch == '|' || ch == '\n' || ch == '\r' || (unsigned char)ch < 32) ch = ' '; o += ch; }
+    while(!o.empty() && o.back() == ' ') o.pop_back();
+}
+void MPServer::RpFacCmd(int slot, const PktRpCmd& c)
+{
+    RpSrvPlayer& m = m_Rp[slot]; if(!m.loaded) return;
+    char kb[40]; const char* key = RpKey(slot, kb, sizeof(kb));
+    char text[101]; memcpy(text, c.text, 100); text[100] = 0;
+    switch(c.a)
+    {
+    case 0: RpSendFactions(slot); break;   // the list
+    case 1:   // join (b = index)
+    {
+        if(c.b >= m_RpFactions.size()) break;
+        RpFaction& f = m_RpFactions[c.b];
+        if(!strcasecmp(m.fac, f.tag.c_str())) { RpMsg(slot, RP_SKY, "You are already in [%s].", f.tag.c_str()); break; }
+        if(RpFacMembers(f.tag) >= f.limit) { RpMsg(slot, RP_RED, "[%s] is full (%d / %d).", f.tag.c_str(), f.limit, f.limit); break; }
+        MP_CopyStr(m.fac, f.tag.c_str(), sizeof(m.fac)); RpStore(slot); m_bRpDirty = true;
+        RpAll(f.col, "%s joined the faction [%s] %s.", m_Slots[slot].name, f.tag.c_str(), f.title.c_str());
+        RpSendFactions(-1); RpSendPFac(-1);
+        break;
+    }
+    case 2:   // leave
+        if(!m.fac[0]) { RpMsg(slot, RP_RED, "You are not in a faction."); break; }
+        RpMsg(slot, RP_SKY, "You left [%s].", m.fac); m.fac[0] = 0; RpStore(slot); m_bRpDirty = true;
+        RpSendFactions(-1); RpSendPFac(-1);
+        break;
+    case 3:   // create: "TAG|Title|RRGGBB|limit|description"
+    {
+        if(!key) { RpMsg(slot, RP_RED, "Log in first."); break; }
+        if((int)m_RpFactions.size() >= RP_FAC_MAX) { RpMsg(slot, RP_RED, "The city has %d factions already (the most).", RP_FAC_MAX); break; }
+        for(auto& f : m_RpFactions) if(f.owner == key) { RpMsg(slot, RP_RED, "You own [%s] already.", f.tag.c_str()); return; }
+        char* fl[5] = {}; int nf = 0; char* q = text; fl[nf++] = q;
+        while(*q && nf < 5) { if(*q == '|') { *q = 0; fl[nf++] = q + 1; } ++q; }
+        if(nf < 5) { RpMsg(slot, RP_RED, "Fill in every field."); break; }
+        std::string tag; for(const char* t = fl[0]; *t && tag.size() < 5; ++t) if(isalnum((unsigned char)*t)) tag += (char)toupper((unsigned char)*t);
+        if(tag.size() < 2) { RpMsg(slot, RP_RED, "The tag needs 2 - 5 letters / digits."); break; }
+        if(RpFacFind(tag.c_str()) >= 0) { RpMsg(slot, RP_RED, "[%s] is taken.", tag.c_str()); break; }
+        if(m.cash < RP_FAC_PRICE) { RpMsg(slot, RP_RED, "A faction costs $%d cash (you have $%d).", RP_FAC_PRICE, m.cash); break; }
+        RpFaction f; f.tag = tag; RpFacClean(f.title, fl[1], 26); if(f.title.empty()) f.title = tag;
+        uint32_t rgb = (uint32_t)strtoul(fl[2], nullptr, 16) & 0xFFFFFF; if(!rgb) rgb = 0x38BDF8;
+        f.col = (rgb << 8) | 0xFF;
+        f.limit = atoi(fl[3]); if(f.limit < 2) f.limit = 2; if(f.limit > RP_FAC_LIMIT) f.limit = RP_FAC_LIMIT;
+        RpFacClean(f.desc, fl[4], 94); f.rules = "Respect the members. No random killing.";
+        f.owner = key; RpFacClean(f.ownerName, m_Slots[slot].name, 22);
+        m.cash -= RP_FAC_PRICE; MP_CopyStr(m.fac, tag.c_str(), sizeof(m.fac));
+        m_RpFactions.push_back(f); RpStore(slot); m_bRpDirty = true; RpSave(); RpSendMe(slot);
+        RpAll(f.col, "%s created the faction [%s] %s.", m_Slots[slot].name, tag.c_str(), f.title.c_str());
+        RpSendFactions(-1); RpSendPFac(-1);
+        break;
+    }
+    case 4:   // owner: rules (text)
+    case 5:   // owner: delete
+    {
+        int fi = -1; for(size_t i = 0; i < m_RpFactions.size(); ++i) if(key && m_RpFactions[i].owner == key) fi = (int)i;
+        if(fi < 0) { RpMsg(slot, RP_RED, "You don't own a faction."); break; }
+        if(c.a == 4) { RpFacClean(m_RpFactions[fi].rules, text, 94); RpMsg(slot, RP_SKY, "Rules saved."); }
+        else
+        {
+            std::string tag = m_RpFactions[fi].tag;
+            for(auto& kv : m_RpSaved) if(!strcasecmp(kv.second.fac.c_str(), tag.c_str())) kv.second.fac.clear();
+            for(int i = 0; i < MP_MAX_PLAYERS; ++i) if(!strcasecmp(m_Rp[i].fac, tag.c_str())) m_Rp[i].fac[0] = 0;
+            m_RpFactions.erase(m_RpFactions.begin() + fi);
+            RpAll(RP_SKY, "The faction [%s] was closed.", tag.c_str());
+        }
+        m_bRpDirty = true; RpSave(); RpSendFactions(-1); RpSendPFac(-1);
+        break;
+    }
     }
 }

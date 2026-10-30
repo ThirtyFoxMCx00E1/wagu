@@ -217,6 +217,13 @@ namespace Game
     struct MapMarker { float x, y, z; uint32_t rgba; char name[24]; };
     typedef int (*MapMarkerProvider)(MapMarker* out, int maxOut);
     void  SetMapMarkerProvider(MapMarkerProvider p);   // pause-menu map: player icons + names
+    // 3.34: extra pause-map layers drawn by MP (ImGui): layer 0 = under the game's blips (Mega Vil's
+    // Google map), layer 1 = over them (player names, always the same size whatever the zoom).
+    // Return false = not drawn (the caller falls back to the game's font for the names).
+    struct MapLabel { float sx, sy; uint32_t rgba; char name[24]; };
+    typedef bool (*MenuMapLayerFn)(int layer, const MapLabel* labels, int n);
+    void  SetMenuMapLayer(MenuMapLayerFn f);
+    bool  MenuMapWorldToScreen(float x, float y, float& sx, float& sy);   // only valid while the pause map is drawn
     // 3.00: top-right score bar drawn by the game itself (CFont, FONT_PRICEDOWN = the HUD money font),
     // segments left -> right, each in its own colour (0xRRGGBBAA)
     struct HudSeg { char text[40]; uint32_t rgba; };
@@ -320,6 +327,8 @@ namespace Game
     int   CreateMapObject(int model, const Vec3& p, float rx, float ry, float rz);   // 3.23: solid map object (0 = loading, -1 = no room)
     void  InitMapObjects(void* gameHandle);   // 3.23.2: object pool reading
     int   FreeObjectSlots();                  // 3.23.2: free slots in the game's object pool (-1 = unknown)
+    void  SetNoCamShake(bool on);             // 3.34: block CCamera::CamShake / CamShakeNoPos (default on)
+    int   DeleteAllMpObjects();               // 3.34: before a save load - every object MP made goes
     void  AttachObjectToChar(int obj, int ped, const Vec3& off);
     void  ClearWanted();
     void  SetMaxWanted(int stars);

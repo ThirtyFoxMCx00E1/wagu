@@ -339,8 +339,23 @@
         print('<span class="c">[' + esc(REG[b.region] || '?') + ' autopilot]</span> ' + new Date(b.t * 1000).toLocaleTimeString() + ' $ ' + esc(b.cmd) + '  <span class="' + (b.ok ? 'g' : 'r') + '">' + esc(b.out || (b.ok ? 'ok' : 'failed')) + '</span>');
       });
     },
-    clear: function () { out.innerHTML = ''; }
+    clear: function () { out.innerHTML = ''; },
+    // 3.34: one featured server (the lanes of the bot watch the 4 of them, 24/7)
+    keepalive: function (a) {
+      prune();
+      var f = FEATURED.filter(function (x) { return x.key === String(a || '').toLowerCase(); })[0];
+      if (!f) { p('m', 'keepalive default|bcw|mw3|rp'); return; }
+      var hit = Array.from(servers.values()).filter(function (s) { return s.port === f.port || f.re.test(s.name || ''); })[0];
+      if (hit) print('<span class="g">online</span>  ' + esc(f.name) + '  <span class="g">' + Math.max(1, hit.players) + '/' + hit.max + '</span> <span class="m">· ' + esc(REG[hit.region] || '?') + ' · bot host in slot 0, 24/7</span>');
+      else print('<span class="y">waiting</span>  ' + esc(f.name) + ' <span class="m">· not in the list this second - mp-keepalive restarts it within 60 s</span>');
+    }
   };
+  var FEATURED = [
+    { key: 'default', name: 'MP LAN Server', port: 1922, re: /mp lan server/i },
+    { key: 'bcw', name: 'Brief Case War', port: 1930, re: /brief ?case/i },
+    { key: 'mw3', name: 'Modern Warfare 3', port: 1931, re: /modern warfare|mw3/i },
+    { key: 'rp', name: 'MeGa vil Futuristic', port: 1932, re: /mega ?vil/i }
+  ];
   CMDS.ls = CMDS.help; CMDS['?'] = CMDS.help; CMDS.cls = CMDS.clear; CMDS.list = CMDS.servers; CMDS.top = CMDS.status; CMDS.uptime = CMDS.status;
   function run(line) {
     line = line.trim();
@@ -385,7 +400,9 @@
       if (!n) connectPublic();
       render();
       return measure();
-    }).then(function () { lastPingAt = Date.now(); MPBot({ out: out, line: $('typed'), keyEnter: $('kenter'), status: $('botst'), run: run, next: next }); });
+    }).then(function () { lastPingAt = Date.now(); MPBot({ out: out, line: $('typed'), keyEnter: $('kenter'), status: $('botst'), run: run, next: next,
+      // 3.34: four more typers, one per featured server, each on its own prompt line
+      lanes: FEATURED.map(function (f) { return { ps: 'bot@' + f.key + ':~$', next: function () { return { cmd: 'keepalive ' + f.key, why: f.name + ' 24/7' }; } }; }) }); });
   setInterval(render, 3000);
   setInterval(measure, 60000);
 })();
