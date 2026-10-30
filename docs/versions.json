@@ -1,6 +1,7 @@
 {
-"latest": "3.32",
+"latest": "3.34",
 "supported": [
+"3.34",
 "3.32",
 "3.31",
 "3.30",
@@ -42,6 +43,27 @@
 "3.04.6"
 ],
 "versions": [
+{
+"v": "3.34",
+"summary": "**Factions**, the new **Mega Vil HUD**, **cosmetic room**, damage numbers, AFK, fonts / UI scale, louder voice, **hotspot multiplayer**, lower ping with many players in every region, and the **HiveMQ kit merged into this repo**.",
+"items": [
+"**Crash fix (BugReports)**: the three `aml_crashlog` files (SIGSEGV while a save loads) came from MP objects (MW3 props, briefcases, ATMs, drops, the pet, cosmetic props) still holding the game's object / dummy pools. They are all freed before the load and made again after it.",
+"**Ping with 25 / 100 players**: the server gives every player a send budget (far players are updated less often when it is full, near players and shots always first), and the phone measures ping on its own lane so it is not stuck behind game packets. **Region branches**: phones in Asia, Europe, North America and Oceania stay on their own region's VPS, and the bridge carries the game VPS to VPS to the main HiveMQ machine (see [HiveMQ/](HiveMQ/README.md)).",
+"**Hotspot multiplayer**: turn on the phone hotspot and host; friends on the hotspot find the server by themselves (the phone also asks the usual hotspot addresses 192.168.43.1, 192.168.49.1, 172.20.10.1, ...). The MP menu shows this phone's Wi-Fi / hotspot address and port.",
+"**24/7 servers with the bot (1/100)**: MP LAN Server, Brief Case War, Modern Warfare 3 and Mega Vil Futuristic keep the bot online even with nobody playing; the VPS watchdog now also restarts a server that is running but does not answer. The Termius / Termux console runs several bot typers at once in endless loops.",
+"**Pause map**: the player markers stay still where the player is and their names keep the same size when you zoom in or out. **Mega Vil** uses the Google-style map on the pause map too.",
+"Removed the `MP: Connected to ... | ping | host` status line, the number under the **MW3 compass** (PUBG-style compass only), and the **camera shake** (also a \"No camera shake\" switch in Settings).",
+"**Mega Vil lobby**: the button is now **Spawn**, next to it a **cosmetic** icon button: the camera flies (eased) into the clothes shop room with new display props, a side bar with outfit categories, SAVE / CANCEL, then back to the lobby. The lobby markers are floating, spinning pickups (like the Grove Street ones) instead of NPCs.",
+"**Mega Vil HUD**: ONLINE / BANK / ID + level / JOB / CASH boxes on the right (new generated icons, under the mobile buttons, no overlap); the 5 status circles use icons instead of text. **Received** items are square boxes with an orange bar instead of notifications. The bag / status panel is square, 60% see-through slots, 40% player info with sky-blue accents, and shows **your real character** (camera on your ped) instead of a picture. Level, XP, items, skin, tasks and house are saved when you leave and come back.",
+"**Factions** (`/faction`): up to 25 factions with tag, title, colour, player limit (max 25), description and rules; creating one costs $25000 cash. Members show as `[TAG] name` in name tags, chat and the kill feed, and their radar / map icon has the faction colour (no faction: green).",
+"**AFK**: after 3 minutes without moving you are AFK (shown on the name tag and player list), after 20 minutes you leave. **Damage indicator**: `-25.00` and `<shooter> hit the head / left torso / ...` above the name tag, fades out after 4 s. **Player ids**: `name (1)` in name tags and the player list. Custom servers get all three as permission switches in the add-server page.",
+"**Chat scroll**: drag or use the mouse wheel on the open chat box.",
+"**Settings > Display**: 9 fonts (Arial, Pricedown, Roboto, Roboto Condensed, Noto Serif, Mono, Coming Soon, Dancing Script, Carrois Gothic), font effects (none, outline, bold outline, shadow), font scale and UI scale.",
+"**Voice chat**: volume up to 500%, mic boost up to 8x with a limiter (loud without crackle), pitch 0.4 - 2.2 with presets Monster, Deep, Normal, High, Chipmunk and Crazy.",
+"`/stats` and `/char` work on all 4 servers (custom servers with Authentication on); in Discord they are `/statsdc` and `/chardc`.",
+"Website: new sa-mp.mp-style dark design with GTA SA artwork, no \"Source on GitHub\" button."
+]
+},
 {
 "v": "3.32",
 "summary": "Fixes the **freeze when people join** a server and the **crash in CStreaming::GetNextFileOnCd** (SIGSEGV with ZyZ Limit Adjuster), plus the new **MP Oracle** page.",
