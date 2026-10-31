@@ -34,6 +34,8 @@ always in the player list as id 99). 3.38 makes sure every phone finds them:
 | Part | What it does |
 |---|---|
 | Public mirror (`PUBLIC_MIRROR=1`, default) | `mp-bridge` now runs on **every** VPS. It lists the region's 4 24/7 servers in the free public lobby (`broker.hivemq.com`) and carries their game frames both ways. Only those servers' upload topics are read there; nothing from the public lobby is copied in. Phones already on a phone copy move to the 24/7 one by themselves within 10 s. |
+| Console one-liner `curl -fsSL https://thirtyfoxmcx00e1.github.io/wagu/install.sh \| bash` | The 4 bot servers 24/7 on a Termux phone or any Linux box (PC, Termius / SSH). `mp-server status` shows all 4; restart forever, start after reboot (Termux:Boot / cron). |
+| Railway (or any Docker host) | Deploy the wagu repo: `Dockerfile` + `railway.json` build `mp_server` and run the 4 bot servers in one container (variable `REGION`, no ports needed, restart ALWAYS). |
 | `server/run_24_7.sh [region]` | The 4 bot servers on any always-on machine (home PC, old Android phone with Termux) without HiveMQ. Each restarts within 2 s. `./run_24_7.sh stop` stops them. |
 
 Check that the bot hosts are online (the `!d` = 24/7):
