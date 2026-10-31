@@ -243,6 +243,8 @@ namespace Game
     int   AddSpriteBlip(const Vec3& p, int sprite);   // short-range radar icon (map icons), RemoveBlip() removes it
     bool  SetLocalModel(int model);                   // class selection: 0 = CJ (rebuilds his clothes)
     int   LocalModel();
+    bool  SetLocalClothes(const char* tex, const char* model, int part);   // 3.37: CJ clothes, null tex = take off
+    void  RebuildPlayer();                            // 3.37: put the new CJ clothes on
     bool  PlayAnimLoop(int ped, const char* anim, const char* file);   // actors (idle animations), false = file not loaded yet
     void  TaskFaceChar(int ped, int target);          // 3.25: turn to face someone (people you talk to)
     void  TaskLookAtChar(int ped, int target, int ms);   // 3.25: head follows someone

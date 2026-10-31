@@ -5,6 +5,7 @@
 // outfits of the picked category are on the right. SAVE sends RPC_SKIN_SET (the server keeps it with
 // your citizen record + card, so it is there after you leave), the camera flies back to the lobby and
 // you press Spawn. CANCEL puts your old outfit back.
+// 3.37: CLOTHES tab = real CJ clothes per body part (net/cjclothes.h), the camera zooms to the part.
 
 #define RP_COS_AREA 14
 static const Vec3 kRpCosSpot = { 204.18f, -163.40f, 1000.523f };   // 3.35: Didier Sachs shop floor (was the door = in the wall)
@@ -18,9 +19,93 @@ struct RpCosState
     int      obj[16] = {}; int nObj = 0; bool objDone = false; float scroll = 0;
     // 3.35.1: landing - he is NOT frozen until he really stands on the shop floor (was frozen mid-fall)
     bool     landed = false; int still = 0; uint64_t placedAt = 0; float floorZ = -1000.0f; int replaced = 0;
+    // 3.37: CLOTHES mode (real CJ clothes on body parts) + the close-up camera
+    int      mode = 0, ccat = 0;              // mode 0 = OUTFITS (skins), 1 = CLOTHES
+    int      cj[18];                          // per body part: catalog index, -1 untouched, -2 off / default
+    bool     cjDirty = false, cjApply = false;
+    int      focus = 0; uint64_t lastTick = 0; bool viewInit = false; Vec3 viewP{}, viewL{};
+    char     tried[48] = {};
+    RpCosState() { for(int i = 0; i < 18; ++i) cj[i] = -1; }
 };
 static RpCosState s_Cos;
 static bool RpCosActive() { return s_Cos.on; }
+
+// ---- 3.37: the CJ outfit (kept on this phone in files/MP/outfit.txt, "part texture" per line) ----
+#include "net/cjclothes.h"
+struct CjOutfit { bool loaded = false, saved = false; int idx[18]; CjOutfit() { for(int i = 0; i < 18; ++i) idx[i] = -1; } };
+static CjOutfit s_CjOut;
+static void CjOutLoad()
+{
+    if(s_CjOut.loaded) return;
+    s_CjOut.loaded = true;
+    char path[512]; snprintf(path, sizeof(path), "%s/outfit.txt", MP::DataDir());
+    FILE* f = fopen(path, "r"); if(!f) return;
+    char line[128];
+    while(fgets(line, sizeof(line), f))
+    {
+        int part = -1; char tex[64] = {};
+        if(sscanf(line, "%d %63s", &part, tex) != 2 || part < 0 || part > 17) continue;
+        if(!strcmp(tex, "-")) { s_CjOut.idx[part] = -2; s_CjOut.saved = true; continue; }
+        for(int i = 0; i < CJ_CLOTH_COUNT; ++i)
+            if(g_CjClothes[i].part == part && !strcasecmp(g_CjClothes[i].tex, tex)) { s_CjOut.idx[part] = i; s_CjOut.saved = true; break; }
+    }
+    fclose(f);
+}
+static void CjOutSave(const int* idx)
+{
+    CjOutLoad();
+    for(int p = 0; p < 18; ++p) if(idx[p] != -1) s_CjOut.idx[p] = idx[p];
+    s_CjOut.saved = true;
+    char path[512]; snprintf(path, sizeof(path), "%s/outfit.txt", MP::DataDir());
+    FILE* f = fopen(path, "w"); if(!f) return;
+    fprintf(f, "# MP CJ outfit (wardrobe): body part + texture\n");
+    for(int p = 0; p < 18; ++p)
+    {
+        if(s_CjOut.idx[p] == -1) continue;
+        if(s_CjOut.idx[p] == -2) fprintf(f, "%d -\n", p); else fprintf(f, "%d %s\n", p, g_CjClothes[s_CjOut.idx[p]].tex);
+    }
+    fclose(f);
+}
+// put one body part on (the default piece / nothing for -2), no rebuild
+static void CjPutPart(int part, int idx)
+{
+    if(idx == -1) return;
+    if(idx >= 0) { Game::SetLocalClothes(g_CjClothes[idx].tex, g_CjClothes[idx].model, part); return; }
+    for(const CjDefault& d : g_CjDefault) if(d.part == part) { Game::SetLocalClothes(d.tex, d.model, part); return; }
+    Game::SetLocalClothes(nullptr, nullptr, part);   // accessory off
+}
+// he must be CJ: puts all the parts of idx on and rebuilds him
+static void CjApplyOutfit(const int* idx)
+{
+    if(Game::LocalModel() != 0 && !Game::SetLocalModel(0)) return;
+    for(int p = 0; p < 18; ++p) CjPutPart(p, idx[p]);
+    Game::RebuildPlayer();
+}
+// Mega Vil spawn: your saved skin, or CJ in your saved clothes
+static void RpApplyMySkin(int fallback)
+{
+    if(!s_Rp.haveMe) return;
+    if(s_Rp.me.skin) { Game::SetLocalModel(s_Rp.me.skin); return; }
+    CjOutLoad();
+    if(s_CjOut.saved) CjApplyOutfit(s_CjOut.idx);
+    else if(fallback > 0) Game::SetLocalModel(fallback);
+}
+// the close-up camera: where to look for each body part
+enum { CJF_FULL, CJF_HEAD, CJF_FACE, CJF_TORSO, CJF_NECK, CJF_WRIST, CJF_LEGS, CJF_FEET, CJF_BODY };
+static const int g_CjCatFocus[CJC_COUNT] = { CJF_TORSO, CJF_HEAD, CJF_LEGS, CJF_HEAD, CJF_FEET, CJF_FACE, CJF_NECK, CJF_WRIST, CJF_BODY };
+static const char* const g_CjFocusName[] = { "", "HEAD", "FACE", "UPPER BODY", "NECK", "WRIST", "LEGS", "SHOES", "OUTFIT" };
+struct CjFocus { float dist, camZ, lookZ, lookX; };   // from his centre (ped faces +y, his left hand is -x)
+static const CjFocus g_CjFocus[] = {
+    { kRpCosCamDist, 0.55f, 0.05f, 0.00f },   // full
+    { 1.00f, 0.78f, 0.66f, 0.00f },          // head (hair / hats)
+    { 0.80f, 0.70f, 0.64f, 0.00f },          // face (glasses)
+    { 1.55f, 0.50f, 0.28f, 0.00f },          // upper body (tops)
+    { 0.95f, 0.55f, 0.42f, 0.00f },          // neck (chains)
+    { 1.10f, 0.20f, 0.02f, -0.30f },         // wrist (watches)
+    { 1.85f, 0.00f, -0.42f, 0.00f },         // legs
+    { 1.25f, -0.35f, -0.82f, 0.00f },        // feet
+    { 2.40f, 0.45f, 0.00f, 0.00f },          // whole outfit
+};
 
 // the props: clothes rails / shirts / shoe shelves round the spot (SA clothes shop models 2371 - 2401)
 struct RpCosProp { int model; float dx, dy, dz, rz; };
@@ -124,6 +209,9 @@ static void RpCosOpen()
     s_Cos.origSkin = s_Rp.me.skin; s_Cos.curSkin = s_Rp.me.skin;
     for(int i = 0; i < RP_COS_COUNT; ++i) if(g_RpCos[i].skin == s_Rp.me.skin) { s_Cos.sel = i; s_Cos.cat = g_RpCos[i].cat; break; }
     s_Cos.fromP = kRpLobbyCam; s_Cos.fromL = kRpLobbyLook;
+    CjOutLoad();
+    for(int p = 0; p < 18; ++p) s_Cos.cj[p] = s_CjOut.idx[p];
+    if(s_Rp.me.skin == 0) s_Cos.mode = 1;   // CJ: open on the clothes
     Game::PreloadArea(kRpCosSpot, true);
     RpCosPickCam();
     RpClick(RPS_CLICK);
@@ -135,7 +223,12 @@ static void RpCosClose(bool save)
     {
         int sk = g_RpCos[s_Cos.sel].skin;
         RpSend(RPC_SKIN_SET, 0, 0, sk); s_Rp.me.skin = (uint16_t)sk;
-        SysMsg(RP_SKY, "[MEGA VIL] Outfit saved: %s. Press Spawn.", g_RpCos[s_Cos.sel].name);
+        if(sk == 0 && (s_Cos.cjDirty || s_Cos.mode == 1))
+        {   // 3.37: CJ in his clothes - the pieces stay on this phone (outfit.txt), the others see them (clothes sync)
+            CjOutSave(s_Cos.cj);
+            SysMsg(RP_SKY, "[MEGA VIL] CJ outfit saved. Press Spawn.");
+        }
+        else SysMsg(RP_SKY, "[MEGA VIL] Outfit saved: %s. Press Spawn.", g_RpCos[s_Cos.sel].name);
     }
     if(save)
     {   // 3.35: SAVE goes straight back to the lobby screen (no camera flight)
@@ -177,6 +270,11 @@ static void RpCosTick(int ped, uint64_t now)
             else
             {
                 if(s_Cos.wantSkin >= 0) { Game::SetLocalModel(s_Cos.wantSkin); ped = Game::LocalPed(); }
+                if(s_Cos.cjDirty && Game::LocalModel() == 0)
+                {   // CANCEL after trying clothes: the saved CJ outfit back (or the default pieces)
+                    int back[18]; for(int p = 0; p < 18; ++p) back[p] = s_Cos.cj[p] == -1 ? -1 : (s_CjOut.idx[p] != -1 ? s_CjOut.idx[p] : -2);
+                    CjApplyOutfit(back); ped = Game::LocalPed();
+                }
                 s_Cos.on = false; RpPark(ped);
                 return;
             }
@@ -197,8 +295,32 @@ static void RpCosTick(int ped, uint64_t now)
                (fabsf(q.x - kRpCosSpot.x) + fabsf(q.y - kRpCosSpot.y) > 1.5f || q.z < s_Cos.floorZ - 1.5f))
             { ++s_Cos.replaced; RpCosPlacePed(lp); }
         }
-        Game::SetFixedCamera(s_Cos.toP, s_Cos.toL);
-        s_Cos.camP = s_Cos.toP; s_Cos.camL = s_Cos.toL;
+        // 3.37: clothes picked -> CJ wears them (switches to CJ first)
+        if(s_Cos.cjApply)
+        {
+            s_Cos.cjApply = false;
+            bool wasCj = Game::LocalModel() == 0;
+            CjApplyOutfit(s_Cos.cj);
+            if(Game::LocalModel() == 0)
+            {
+                s_Cos.curSkin = 0;
+                for(int i = 0; i < RP_COS_COUNT; ++i) if(g_RpCos[i].skin == 0) { s_Cos.sel = i; break; }
+                if(!wasCj) { s_Cos.replaced = 0; RpCosPlacePed(Game::LocalPed()); }
+            }
+        }
+        // 3.37: the camera glides to the body part you dress (a slow sway round him while close)
+        const CjFocus& fc = g_CjFocus[s_Cos.focus];
+        const float cz = s_Cos.toP.z - 0.55f;   // his centre (RpCosSettle sets toP at his real height)
+        float ang = s_Cos.focus ? sinf(now * 0.0006f) * 0.22f : 0.0f;
+        Vec3 tp = { kRpCosSpot.x + fc.lookX + sinf(ang) * fc.dist, kRpCosSpot.y + cosf(ang) * fc.dist, cz + fc.camZ };
+        Vec3 tl = { kRpCosSpot.x + fc.lookX, kRpCosSpot.y, cz + fc.lookZ };
+        if(!s_Cos.viewInit) { s_Cos.viewInit = true; s_Cos.viewP = s_Cos.toP; s_Cos.viewL = s_Cos.toL; s_Cos.lastTick = now; }
+        float dt = (now - s_Cos.lastTick) / 1000.0f; s_Cos.lastTick = now; if(dt > 0.1f) dt = 0.1f;
+        float a = 1.0f - expf(-dt * 4.5f);
+        s_Cos.viewP = { s_Cos.viewP.x + (tp.x - s_Cos.viewP.x) * a, s_Cos.viewP.y + (tp.y - s_Cos.viewP.y) * a, s_Cos.viewP.z + (tp.z - s_Cos.viewP.z) * a };
+        s_Cos.viewL = { s_Cos.viewL.x + (tl.x - s_Cos.viewL.x) * a, s_Cos.viewL.y + (tl.y - s_Cos.viewL.y) * a, s_Cos.viewL.z + (tl.z - s_Cos.viewL.z) * a };
+        Game::SetFixedCamera(s_Cos.viewP, s_Cos.viewL);
+        s_Cos.camP = s_Cos.viewP; s_Cos.camL = s_Cos.viewL;
     }
 }
 // the side bars: categories on the left, the outfits of the category on the right, SAVE / CANCEL
@@ -213,38 +335,128 @@ static void RpCosDraw(float now)
     const ImU32 glass = IM_COL32(10, 10, 12, 153), sky = RpCol(RP_SKY, 1), orange = IM_COL32(245, 130, 32, 255);
     // title
     BcwCenterText(dl, UI::S(30), UI::S(26), IM_COL32_WHITE, "WARDROBE");
-    // left: categories
-    const float lw = UI::S(240), rowH = UI::S(56), gap = UI::S(6), x0 = UI::S(24), y0 = UI::S(90);
-    for(int c = 0; c < RPCO_CAT_COUNT; ++c)
+    ImGuiIO& io = ImGui::GetIO();
+    // 3.37: top of the left bar: OUTFITS (whole skins) | CLOTHES (CJ pieces)
+    const float lw = UI::S(240), gap = UI::S(6), x0 = UI::S(24), y0 = UI::S(90), th = UI::S(48);
+    for(int m = 0; m < 2; ++m)
     {
-        ImVec2 a(x0, y0 + c * (rowH + gap)), b(a.x + lw, a.y + rowH);
+        const float tw = (lw - gap) * 0.5f;
+        ImVec2 a(x0 + m * (tw + gap), y0), b(a.x + tw, a.y + th);
+        ImGui::SetCursorScreenPos(a);
+        if(ImGui::InvisibleButton(m ? "##cosM1" : "##cosM0", ImVec2(tw, th)) && s_Cos.mode != m)
+        { s_Cos.mode = m; s_Cos.scroll = 0; s_Cos.focus = m ? g_CjCatFocus[s_Cos.ccat] : CJF_FULL; RpClick(RPS_CLICK); }
+        bool on = s_Cos.mode == m;
+        dl->AddRectFilled(a, b, on ? orange : glass);
+        RpCenterIn(dl, UI::S(18), a, b, on ? IM_COL32(20, 12, 4, 255) : IM_COL32_WHITE, m ? "CLOTHES" : "OUTFITS");
+    }
+    // left: categories (skin groups or body parts)
+    const int nCat = s_Cos.mode ? CJC_COUNT : RPCO_CAT_COUNT;
+    const float cy0 = y0 + th + UI::S(12), avail = ds.y - UI::S(130) - cy0;
+    float rowH = avail / nCat - gap; if(rowH > UI::S(56)) rowH = UI::S(56); if(rowH < UI::S(30)) rowH = UI::S(30);
+    for(int c = 0; c < nCat; ++c)
+    {
+        ImVec2 a(x0, cy0 + c * (rowH + gap)), b(a.x + lw, a.y + rowH);
         ImGui::SetCursorScreenPos(a);
         char id[16]; snprintf(id, sizeof(id), "##cc%d", c);
-        if(ImGui::InvisibleButton(id, ImVec2(lw, rowH))) { s_Cos.cat = c; s_Cos.scroll = 0; RpClick(RPS_CLICK); }
-        bool on = s_Cos.cat == c;
+        int& cur = s_Cos.mode ? s_Cos.ccat : s_Cos.cat;
+        if(ImGui::InvisibleButton(id, ImVec2(lw, rowH)))
+        {
+            cur = c; s_Cos.scroll = 0; RpClick(RPS_CLICK);
+            s_Cos.focus = s_Cos.mode ? g_CjCatFocus[c] : CJF_FULL;   // the camera goes close to that body part
+        }
+        bool on = cur == c;
         dl->AddRectFilled(a, b, on ? IM_COL32(56, 189, 248, 120) : glass);
         dl->AddRectFilled(a, ImVec2(a.x + UI::S(4), b.y), on ? sky : IM_COL32(255, 255, 255, 40));
-        RpHudIcon(dl, RPH_COSMETIC, ImVec2(a.x + UI::S(32), (a.y + b.y) * 0.5f), UI::S(30), on ? IM_COL32_WHITE : IM_COL32(200, 200, 200, 200));
-        RpPlainText(dl, UI::S(19), ImVec2(a.x + UI::S(60), a.y + (rowH - UI::S(19)) * 0.5f), IM_COL32_WHITE, g_RpCosCats[c]);
+        float ic = rowH * 0.55f; if(ic > UI::S(30)) ic = UI::S(30);
+        RpHudIcon(dl, RPH_COSMETIC, ImVec2(a.x + UI::S(32), (a.y + b.y) * 0.5f), ic, on ? IM_COL32_WHITE : IM_COL32(200, 200, 200, 200));
+        const float fs = rowH < UI::S(44) ? UI::S(16) : UI::S(19);
+        RpPlainText(dl, fs, ImVec2(a.x + UI::S(60), a.y + (rowH - fs) * 0.5f), IM_COL32_WHITE, s_Cos.mode ? g_CjCats[c] : g_RpCosCats[c]);
     }
-    // right: outfits of the category (2 columns of boxes)
+    // right: the boxes of the category (2 columns, drag / wheel to scroll)
     const float rw = UI::S(330), cw = (rw - gap) * 0.5f, chh = UI::S(70), rx = ds.x - rw - UI::S(24);
-    int k = 0;
-    for(int i = 0; i < RP_COS_COUNT; ++i)
+    int list[CJ_CLOTH_COUNT + RP_COS_COUNT + 1]; int n = 0;
+    if(s_Cos.mode)
     {
-        if(g_RpCos[i].cat != s_Cos.cat) continue;
-        ImVec2 a(rx + (k % 2) * (cw + gap), y0 + (k / 2) * (chh + gap)), b(a.x + cw, a.y + chh);
-        ++k;
-        if(b.y > ds.y - UI::S(130)) break;
-        ImGui::SetCursorScreenPos(a);
-        char id[16]; snprintf(id, sizeof(id), "##co%d", i);
-        if(ImGui::InvisibleButton(id, ImVec2(cw, chh))) { s_Cos.sel = i; RpClick(RPS_CLICK); }
-        bool on = s_Cos.sel == i;
+        list[n++] = -2;   // "default" / "none"
+        for(int i = 0; i < CJ_CLOTH_COUNT; ++i) if(g_CjClothes[i].cat == s_Cos.ccat) list[n++] = i;
+    }
+    else for(int i = 0; i < RP_COS_COUNT; ++i) if(g_RpCos[i].cat == s_Cos.cat) list[n++] = i;
+    const ImVec2 va(rx, y0), vb(rx + rw, ds.y - UI::S(130));
+    const int rows = (n + 1) / 2;
+    const float contentH = rows * (chh + gap) - gap, viewH = vb.y - va.y, maxS = contentH > viewH ? contentH - viewH : 0;
+    ImGui::SetCursorScreenPos(va);
+    bool tap = ImGui::InvisibleButton("##cosgrid", ImVec2(rw, viewH));
+    if(ImGui::IsItemActive() && ImGui::IsMouseDragging(0, UI::S(6))) s_Cos.scroll -= io.MouseDelta.y;
+    if(ImGui::IsItemHovered() && io.MouseWheel != 0) s_Cos.scroll -= io.MouseWheel * (chh + gap);
+    if(s_Cos.scroll < 0) s_Cos.scroll = 0;
+    if(s_Cos.scroll > maxS) s_Cos.scroll = maxS;
+    const int part = g_CjCatPart[s_Cos.ccat];
+    if(tap && io.MouseDragMaxDistanceSqr[0] < UI::S(12) * UI::S(12))
+    {
+        float lx = io.MousePos.x - va.x, ly = io.MousePos.y - va.y + s_Cos.scroll;
+        int c = (int)(lx / (cw + gap)), r = (int)(ly / (chh + gap)), k = r * 2 + c;
+        if(lx >= 0 && ly >= 0 && c < 2 && lx - c * (cw + gap) <= cw && ly - r * (chh + gap) <= chh && k < n)
+        {
+            RpClick(RPS_CLICK);
+            if(!s_Cos.mode) { s_Cos.sel = list[k]; s_Cos.focus = CJF_FULL; }
+            else
+            {
+                s_Cos.cj[part] = list[k];
+                if((part == 0 || part == 2) && list[k] >= 0) s_Cos.cj[17] = -2;   // a top / pants: the full outfit off
+                s_Cos.cjDirty = true; s_Cos.cjApply = true;
+                s_Cos.focus = g_CjCatFocus[s_Cos.ccat];   // close-up on what you just put on
+                snprintf(s_Cos.tried, sizeof(s_Cos.tried), "%s", list[k] >= 0 ? g_CjClothes[list[k]].name : (g_CjCatOff[s_Cos.ccat] ? "None" : "Default"));
+            }
+        }
+    }
+    dl->PushClipRect(va, vb, true);
+    for(int k = 0; k < n; ++k)
+    {
+        ImVec2 a(rx + (k % 2) * (cw + gap), y0 + (k / 2) * (chh + gap) - s_Cos.scroll), b(a.x + cw, a.y + chh);
+        if(b.y < va.y || a.y > vb.y) continue;
+        const int i = list[k];
+        bool on; const char* name; char sub[40];
+        if(!s_Cos.mode) { on = s_Cos.sel == i; name = g_RpCos[i].name; snprintf(sub, sizeof(sub), "skin %d", g_RpCos[i].skin); }
+        else
+        {
+            int cur = s_Cos.cj[part];
+            on = cur == i;
+            if(i >= 0) { name = g_CjClothes[i].name; snprintf(sub, sizeof(sub), "%s", g_CjClothes[i].tex); }
+            else { name = g_CjCatOff[s_Cos.ccat] ? "None" : "Default"; snprintf(sub, sizeof(sub), "%s", g_CjCatOff[s_Cos.ccat] ? "take it off" : "CJ's own"); }
+        }
         dl->AddRectFilled(a, b, on ? IM_COL32(56, 189, 248, 110) : IM_COL32(40, 40, 44, 102));
         dl->AddRectFilled(ImVec2(a.x, b.y - UI::S(4)), b, on ? sky : orange);
-        RpPlainText(dl, UI::S(17), ImVec2(a.x + UI::S(10), a.y + UI::S(10)), IM_COL32_WHITE, g_RpCos[i].name);
-        char sk[16]; snprintf(sk, sizeof(sk), "skin %d", g_RpCos[i].skin);
-        RpPlainText(dl, UI::S(13), ImVec2(a.x + UI::S(10), a.y + UI::S(36)), IM_COL32(190, 196, 204, 255), sk);
+        RpPlainText(dl, UI::S(17), ImVec2(a.x + UI::S(10), a.y + UI::S(10)), IM_COL32_WHITE, name);
+        RpPlainText(dl, UI::S(13), ImVec2(a.x + UI::S(10), a.y + UI::S(36)), IM_COL32(190, 196, 204, 255), sub);
+    }
+    dl->PopClipRect();
+    if(maxS > 0)
+    {   // scroll bar
+        float h = viewH * viewH / contentH, y = va.y + (viewH - h) * (s_Cos.scroll / maxS);
+        dl->AddRectFilled(ImVec2(vb.x + UI::S(4), y), ImVec2(vb.x + UI::S(8), y + h), IM_COL32(255, 255, 255, 110), UI::S(2));
+    }
+    // 3.37: close-up look: corner brackets round him, the body part + the piece, FULL VIEW button
+    if(s_Cos.focus != CJF_FULL)
+    {
+        const float cx = ds.x * 0.5f, cyy = ds.y * 0.47f, hw = UI::S(170), hh = UI::S(190), L = UI::S(34), t = UI::S(3);
+        const ImU32 bc = IM_COL32(255, 255, 255, 170);
+        const ImVec2 c4[4] = { ImVec2(cx - hw, cyy - hh), ImVec2(cx + hw, cyy - hh), ImVec2(cx - hw, cyy + hh), ImVec2(cx + hw, cyy + hh) };
+        for(int q = 0; q < 4; ++q)
+        {
+            float sx = (q & 1) ? -1.0f : 1.0f, sy = (q & 2) ? -1.0f : 1.0f;
+            dl->AddLine(c4[q], ImVec2(c4[q].x + sx * L, c4[q].y), bc, t);
+            dl->AddLine(c4[q], ImVec2(c4[q].x, c4[q].y + sy * L), bc, t);
+        }
+        char lab[96];
+        if(s_Cos.tried[0] && s_Cos.mode) snprintf(lab, sizeof(lab), "%s  -  %s", g_CjFocusName[s_Cos.focus], s_Cos.tried);
+        else snprintf(lab, sizeof(lab), "%s", g_CjFocusName[s_Cos.focus]);
+        BcwCenterText(dl, UI::S(18), cyy + hh + UI::S(14), IM_COL32(255, 255, 255, 230), lab);
+        const float fw = UI::S(150), fh = UI::S(40);
+        ImVec2 fa(cx - fw * 0.5f, UI::S(64)), fb(fa.x + fw, fa.y + fh);
+        ImGui::SetCursorScreenPos(fa);
+        if(ImGui::InvisibleButton("##cosFull", ImVec2(fw, fh))) { s_Cos.focus = CJF_FULL; RpClick(RPS_CLICK); }
+        dl->AddRectFilled(fa, fb, glass, UI::S(6)); dl->AddRect(fa, fb, IM_COL32(255, 255, 255, 70), UI::S(6));
+        RpCenterIn(dl, UI::S(16), fa, fb, IM_COL32_WHITE, "FULL VIEW");
     }
     // bottom: SAVE / CANCEL
     const float bw = UI::S(260), bh = UI::S(64), by = ds.y - bh - UI::S(36);

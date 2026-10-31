@@ -12,6 +12,8 @@ DEFOPCODE(0665, GET_CHAR_MODEL_301, iv);
 DEFOPCODE(04ED, REQUEST_ANIMATION, s);
 DEFOPCODE(04EE, HAS_ANIMATION_LOADED, s);
 DEFOPCODE(0605, TASK_PLAY_ANIM_PED, issfbbbbi);
+DEFOPCODE(087B, GIVE_PLAYER_CLOTHES_OUTSIDE_SHOP, issi);
+DEFOPCODE(0784, GIVE_PLAYER_CLOTHES, iiii);
 
 int Game::AddSpriteBlip(const Vec3& p, int sprite)
 {
@@ -39,6 +41,25 @@ bool Game::SetLocalModel(int model)
     CALLSCM(SET_PLAYER_MODEL, 0, model);
     if(model == 0) CALLSCM(BUILD_PLAYER_MODEL, 0);   // CJ: put his clothes back on
     return true;
+}
+
+// 3.37: real CJ clothes (player.img): texture + model name on a body part (0 torso, 1 head/hair, 2 legs,
+// 3 feet, 13 chain, 14 watch, 15 glasses, 16 hat, 17 special). tex = null / "" takes the part off.
+// The player must be CJ (model 0); RebuildPlayer() puts the new clothes on his body.
+bool Game::SetLocalClothes(const char* tex, const char* model, int part)
+{
+    int ped = LocalPed(); if(ped <= 0) return false;
+    if(part < 0 || part > 17) return false;
+    if(LocalModel() != 0) return false;
+    if(!tex || !tex[0] || !model || !model[0]) CALLSCM(GIVE_PLAYER_CLOTHES, 0, 0, 0, part);
+    else CALLSCM(GIVE_PLAYER_CLOTHES_OUTSIDE_SHOP, 0, tex, model, part);
+    return true;
+}
+void Game::RebuildPlayer()
+{
+    int ped = LocalPed(); if(ped <= 0) return;
+    if(IsCharInAnyCar(ped) || LocalModel() != 0) return;
+    CALLSCM(BUILD_PLAYER_MODEL, 0);
 }
 
 bool Game::PlayAnimLoop(int ped, const char* anim, const char* file)

@@ -1,6 +1,7 @@
 {
-"latest": "3.36.1",
+"latest": "3.37",
 "supported": [
+"3.37",
 "3.36.1",
 "3.36",
 "3.35.2",
@@ -48,6 +49,11 @@
 "3.04.6"
 ],
 "versions": [
+{
+"v": "3.37",
+"summary": "**WARDROBE CLOTHES** (Mega Vil lobby > T-shirt button): a new **CLOTHES** tab next to OUTFITS dresses CJ in the real game clothes, piece by piece - **TOPS** (T-shirts, shirts, hoodies, jackets, vests), **HAIR** (32 cuts + beards), **PANTS**, **HATS** (caps, berets, cowboy, helmets, bandanas), **SHOES**, **GLASSES**, **CHAINS**, **WATCHES** and full **OUTFITS** (cop, medic, valet, pimp, racing suit, ski mask...). 287 pieces, scroll with a drag. Tapping a part or a piece **flies the camera close** to that part of the body (head, face, neck, chest, wrist, legs, shoes) with a slow sway and focus corners; **FULL VIEW** zooms back out. SAVE keeps the outfit (files/MP/outfit.txt) and puts it back on every spawn; the other players see your clothes.",
+"items": []
+},
 {
 "v": "3.36.1",
 "summary": "**PLAYER INFO** (PANEL > STATUS and BAG) shows a **man figure texture** instead of the real character (no camera on you, no freezing): every body part is tinted by its condition, with your floating name tag (`[MOD]` name, ID, health + armour) over its head.",

@@ -91,7 +91,7 @@ static const Vec3 kRpLobbyLook = { 1481.6f, -1692.0f, 15.2f };
 // 3.34: the wardrobe room (mp_rp_cos.inc)
 // 3.34: factions (mp_rp_fac.inc)
 static void RpFacOnPacket(const uint8_t* d, int len); static void RpFacReset(); static void RpFacOpen(); static void RpFacDraw(); static uint32_t RpFacPinColor(int id);
-static bool RpCosActive(); static void RpCosOpen(); static void RpCosDraw(float now); static void RpCosTick(int ped, uint64_t now); static void RpCosAbort();
+static bool RpCosActive(); static void RpCosOpen(); static void RpCosDraw(float now); static void RpCosTick(int ped, uint64_t now); static void RpCosAbort(); static void RpApplyMySkin(int fallback = 0);
 static const Vec3 kRpJailCell  = { 264.0f, 77.6f, 1001.04f };    // LSPD cells (interior 6)
 #define RP_JAIL_AREA 6
 
@@ -690,7 +690,7 @@ static void RpSpawnNow(int ped)
     RpSetInterior(0);
     Game::PreloadArea(at, true);
     Game::FreezeChar(ped, false);
-    if(s_Rp.haveMe && s_Rp.me.skin) { Game::SetLocalModel(s_Rp.me.skin); ped = Game::LocalPed(); if(ped <= 0) return; }
+    if(s_Rp.haveMe) { RpApplyMySkin(); ped = Game::LocalPed(); if(ped <= 0) return; }   // 3.37: or CJ in his saved clothes
     Game::SetCharVisible(ped, !s_Cheat.invisible);
     Game::SetCharGodMode(ped, false);
     Game::RestoreCamera();
@@ -894,7 +894,7 @@ static void RpOnPacket(const uint8_t* d, int len)
             break;
         case RPV_DISARM:
             if(ped > 0) Game::RemoveAllWeapons(ped);
-            if(e.a == 1 && s_Rp.haveMe) { int sk = e.val ? e.val : (s_Rp.me.skin ? s_Rp.me.skin : settings.skin); if(sk > 0) Game::SetLocalModel(sk); }
+            if(e.a == 1 && s_Rp.haveMe) { if(e.val) Game::SetLocalModel(e.val); else if(s_Rp.me.skin) Game::SetLocalModel(s_Rp.me.skin); else RpApplyMySkin(settings.skin); }
             break;
         case RPV_GOT:   // 3.26: "Received 10x" card
             RpInvGot(e.a, e.val, e.text);
@@ -962,7 +962,7 @@ static void RpProcess(int ped, uint64_t now)
     else if(s_Rp.wasDead)
     {   // the game put us in the hospital. With a house: wake up at home instead.
         s_Rp.wasDead = false; s_Rp.respawnAt = now; s_Rp.needHome = RpHasHome();
-        if(s_Rp.haveMe && s_Rp.me.skin) Game::SetLocalModel(s_Rp.me.skin);
+        RpApplyMySkin();
         RpSend(RPC_SPAWNED);
     }
     if(s_Rp.needHome && now - s_Rp.respawnAt > 1500)
