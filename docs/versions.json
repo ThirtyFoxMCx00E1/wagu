@@ -1,6 +1,7 @@
 {
-"latest": "3.39.3",
+"latest": "3.40",
 "supported": [
+"3.40",
 "3.39.3",
 "3.39.2",
 "3.39.1",
@@ -53,6 +54,10 @@
 "3.04.6"
 ],
 "versions": [
+{
+"v": "3.40",
+"summary": "**Loading window**: joining any server now shows a \"Please Wait, Loading Server Data...\" window (Liberty Unleashed style) instead of the resource lines in the chat - the step (Server Info, Resources with each name, Player, Vehicle, Weapon Info, World Data) with its own bar + count and a green bar for everything, animated. **189 server resources** (64 new: Home Kit, progress save, needs, rules, settings, BCW, MW3, Mega Vil roleplay parts, voice, sync parts, controller...), so the loading takes a bit longer. After the join the chat says **Welcome to {server name}** on every server."
+},
 {
 "v": "3.39.3",
 "summary": "The hunger + energy HUD is back to the 3.39.1 look (two squares in the bottom-right corner). Everything else from 3.39.2 stays: controller support, /hometp, the info pickups in the Mega Vil lobby."

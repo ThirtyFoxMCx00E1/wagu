@@ -993,6 +993,7 @@ static void Render219(void*)
     RenderGates();             // 3.04.2: gate fade (over everything)
     RenderStats();             // 3.21.6: /stats  /char
     RenderAuth();              // 3.21.6: login screens (over the join view)
+    RenderLoadWindow();        // 3.40: Please Wait, Loading Server Data...
 }
 
 bool MP::JoinScreenActive() { return JoinFlowActive(); }

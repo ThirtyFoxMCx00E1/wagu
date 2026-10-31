@@ -224,7 +224,7 @@ static void ServerLog(const char* msg) { logger->Info("[Server] %s", msg); }
 //   : serverworld_host resources
 //   : server_combat system resources
 // plus 123 more built-in resources (125 total, 2.21: +35). Other mods can still add their own with IMPMenu::AddResource.
-#define MP_BUILTIN_RESOURCES 125
+#define MP_BUILTIN_RESOURCES 189
 #define MP_MAX_RESOURCES     (MP_BUILTIN_RESOURCES + 32)   // 125 built in + 32 from other mods
 static std::vector<std::string> s_Resources =
 {
@@ -354,6 +354,71 @@ static std::vector<std::string> s_Resources =
     "server_npc world mirror",
     "server_seat name tags",
     "server_relay keepalive",
+    // ---- 3.40: 64 more (189 total) ----
+    "server_home kit",
+    "server_house builder",
+    "server_house doors",
+    "server_house keys",
+    "server_furniture objects",
+    "server_progress save",
+    "server_hunger system",
+    "server_energy system",
+    "server_needs hud",
+    "server_rules window",
+    "server_server settings",
+    "server_moderator system",
+    "server_temp kicks",
+    "server_gamemode manager",
+    "server_gamemode vote",
+    "server_brief case war",
+    "server_modern warfare 3",
+    "server_mega vil roleplay",
+    "server_roleplay jobs",
+    "server_roleplay factions",
+    "server_roleplay phone",
+    "server_roleplay inventory",
+    "server_roleplay documents",
+    "server_atm machines",
+    "server_invest system",
+    "server_marriage system",
+    "server_pawn shop",
+    "server_seatbelt system",
+    "server_starter pack",
+    "server_info pickups",
+    "server_gps system",
+    "server_hotel rooms",
+    "server_hotel computer",
+    "server_safe zones",
+    "server_hospital zones",
+    "server_red checkpoints",
+    "server_gate system",
+    "server_mv vehicles",
+    "server_voice chat",
+    "server_voice range",
+    "server_clothes sync",
+    "server_ped aim sync",
+    "server_remote weapons",
+    "server_jetpack sync",
+    "server_parachute sync",
+    "server_swim sync",
+    "server_ladder sync",
+    "server_fight styles",
+    "server_drive by sync",
+    "server_trailer sync",
+    "server_train sync",
+    "server_plane sync",
+    "server_heli sync",
+    "server_boat sync",
+    "server_bike sync",
+    "server_radio stations",
+    "server_pickups",
+    "server_textdraws",
+    "server_3d labels",
+    "server_dialogs",
+    "server_class selection",
+    "server_controller support",
+    "server_loading screen",
+    "server_welcome message",
 };
 
 bool MP::AddResource(const char* name)
@@ -382,10 +447,12 @@ static uint64_t s_nFeedNext = 0;
 #define FEED_DOT_MS    300
 #define FEED_RES_MS    58   // 2.21: 125 resources in about the same time as 90 before
 
-// After "Connecting...." and all 125 resources: message, then teleport + title logo + sound.
+static char s_szCurServer[32] = "";   // name of the server we are connected to
+// After "Connecting...." and all resources (3.40: 189, in the loading window): message, then teleport + title logo + sound.
 static void FinishJoin()
 {
     SysMsg(COL_GREEN, "Connected successfully!");
+    SysMsg(COL_WHITE, "{FFFFFF}Welcome to {38BDF8}%s", s_szCurServer[0] ? s_szCurServer : "the server");   // 3.40: every server
     if(JoinFlowActive()) JoinMarkConnected();   // 2.19: reveal the connection camera, then the spawn picker
     else s_bWantTeleport = true;            // Grove Street, on this game tick
     MP::logoStartMs = MP_NowMs();           // title_logo_connected.png
@@ -397,10 +464,38 @@ static void FinishJoin()
 static void StartFeed() { if(s_nFeedStep < 0) { s_nFeedStep = 0; s_nFeedRes = -1; s_nFeedNext = 0; } }
 static void StopFeed()  { s_nFeedStep = -1; s_nFeedRes = -1; }
 
+// 3.40: the resources are not listed in the chat any more: a "Please Wait, Loading Server Data..."
+// window (like Liberty Unleashed) shows them - the step ("Receiving Resources...", the name of each
+// one) with its own bar + count, and a green bar for everything (e.g. 145/287) under it.
+struct FeedStage { const char* what; int n; int ms; };
+static FeedStage s_FeedStages[6];
+static int s_nFeedStages = 0, s_nFeedTotal = 0;
+static uint64_t s_nFeedDoneAt = 0, s_nFeedShownAt = 0;
+static void FeedBuildStages()
+{
+    const int players = std::max(4, std::min(MP_MAX_PLAYERS, MP::OnlineCount() + 3));
+    const FeedStage st[] = {
+        { "Receiving Server Info...",  6, 70 },
+        { "Receiving Resources...",    (int)s_Resources.size(), 48 },
+        { "Receiving Player Info...",  players, 40 },
+        { "Receiving Vehicle Info...", 40, 28 },
+        { "Receiving Weapon Info...",  13, 45 },
+        { "Receiving World Data...",   24, 35 },
+    };
+    s_nFeedStages = 0; s_nFeedTotal = 0;
+    for(const auto& x : st) { s_FeedStages[s_nFeedStages++] = x; s_nFeedTotal += x.n; }
+}
+static int FeedStageOf(int idx, int& inStage)   // which step item idx is in
+{
+    int base = 0;
+    for(int i = 0; i < s_nFeedStages; ++i) { if(idx < base + s_FeedStages[i].n) { inStage = idx - base; return i; } base += s_FeedStages[i].n; }
+    inStage = s_nFeedStages ? s_FeedStages[s_nFeedStages - 1].n : 0; return s_nFeedStages - 1;
+}
 static void ProcessFeed(uint64_t now)
 {
     if(s_nFeedStep >= 0 && now >= s_nFeedNext)
     {
+        if(!s_nFeedShownAt) s_nFeedShownAt = now;
         if(s_nFeedStep < FEED_DOT_STEPS)
         {
             int dots = s_nFeedStep < 5 ? s_nFeedStep + 1 : s_nFeedStep - 4;
@@ -415,22 +510,111 @@ static void ProcessFeed(uint64_t now)
     }
     if(s_nFeedRes >= 0 && now >= s_nFeedNext)
     {
-        if(s_nFeedRes < (int)s_Resources.size())
+        if(s_nFeedRes == 0) { FeedBuildStages(); s_nFeedDoneAt = 0; if(!s_nFeedShownAt) s_nFeedShownAt = now; }
+        if(client.GetState() != NET_CONNECTED) { StopFeed(); return; }
+        if(s_nFeedRes < s_nFeedTotal)
         {
-            SysMsg(COL_SYSTEM, ": %s resources", s_Resources[s_nFeedRes].c_str());
+            int in; const int st = FeedStageOf(s_nFeedRes, in);
             ++s_nFeedRes;
-            s_nFeedNext = now + FEED_RES_MS;
+            s_nFeedNext = now + s_FeedStages[st].ms;
         }
+        else if(!s_nFeedDoneAt) { s_nFeedDoneAt = now; s_nFeedNext = now + 450; }   // full bars for a moment
         else
         {
-            // all resources listed: now the join is complete
-            s_nFeedRes = -1;
-            if(client.GetState() == NET_CONNECTED) FinishJoin();
+            // everything received: now the join is complete
+            s_nFeedRes = -1; s_nFeedDoneAt = 0; s_nFeedShownAt = 0;
+            FinishJoin();
         }
     }
 }
-
-static char s_szCurServer[32] = "";   // name of the server we are connected to
+// the window (drawn over the join camera, mp_cmds.inc Render219)
+static void RenderLoadWindow()
+{
+    static float s_fShow = 0.0f, s_fA = 0.0f, s_fB = 0.0f;
+    static uint64_t s_last = 0;
+    const uint64_t now = MP_NowMs();
+    const float dt = s_last ? std::min(0.1f, (now - s_last) / 1000.0f) : 0.016f; s_last = now;
+    const bool connecting = s_nFeedStep >= 0, loading = s_nFeedRes >= 0;
+    const bool want = (connecting || loading) && !Game::IsPaused();
+    s_fShow += (want ? 1.0f : -1.0f) * dt * 5.0f; s_fShow = std::max(0.0f, std::min(1.0f, s_fShow));
+    if(s_fShow <= 0.0f) { s_fA = s_fB = 0.0f; return; }
+    ImDrawList* dl = ImGui::GetForegroundDrawList();
+    const ImVec2 ds = ImGui::GetIO().DisplaySize;
+    const float H = ds.y, k = s_fShow;
+    ImFont* f = UI::Font();
+    const float fsT = H * 0.034f, fs = H * 0.030f, fsC = H * 0.027f, pad = H * 0.016f;
+    const float w = std::min(ds.x * 0.9f, H * 0.66f);
+    const float h = fsT * 1.45f + pad * 0.7f + fs * 1.35f + H * 0.026f * 2 + fsC * 1.5f + pad * 0.3f + fsC * 1.35f + pad * 0.5f;
+    const float cx = ds.x * 0.5f, cy = ds.y * 0.53f + (1.0f - k) * H * 0.02f;
+    const ImVec2 a(cx - w * 0.5f, cy - h * 0.5f), b(cx + w * 0.5f, cy + h * 0.5f);
+    auto A = [&](int al) { return (int)(al * k); };
+    // the window: dark see-through, a darker title strip
+    dl->AddRectFilled(a, b, IM_COL32(18, 22, 28, A(225)), H * 0.006f);
+    const float th = fsT * 1.45f;
+    dl->AddRectFilled(a, ImVec2(b.x, a.y + th), IM_COL32(8, 10, 14, A(235)), H * 0.006f, ImDrawFlags_RoundCornersTop);
+    dl->AddRect(a, b, IM_COL32(70, 80, 92, A(200)), H * 0.006f, 0, std::max(1.0f, H * 0.002f));
+    const char* title = "Please Wait, Loading Server Data...";
+    ImVec2 ts = f->CalcTextSizeA(fsT, FLT_MAX, 0, title);
+    dl->AddText(f, fsT, ImVec2(cx - ts.x * 0.5f + 1, a.y + (th - ts.y) * 0.5f + 1), IM_COL32(0, 0, 0, A(255)), title);
+    dl->AddText(f, fsT, ImVec2(cx - ts.x * 0.5f, a.y + (th - ts.y) * 0.5f), IM_COL32(255, 255, 255, A(255)), title);
+    // what is happening now + the two bars
+    char status[160], c1[32], c2[32]; float t1 = 0, t2 = 0; bool busy = false;
+    if(loading && s_nFeedStages > 0)
+    {
+        int in; const int st = FeedStageOf(std::min(s_nFeedRes, s_nFeedTotal - 1), in);
+        const int done = std::min(s_nFeedRes, s_nFeedTotal);
+        const int inDone = s_nFeedRes >= s_nFeedTotal ? s_FeedStages[st].n : in;
+        if(s_nFeedRes >= s_nFeedTotal) snprintf(status, sizeof(status), "Done - joining %s", s_szCurServer[0] ? s_szCurServer : "the server");
+        else if(st == 1 && in < (int)s_Resources.size()) snprintf(status, sizeof(status), "Receiving Resources... %s", s_Resources[in].c_str());
+        else snprintf(status, sizeof(status), "%s", s_FeedStages[st].what);
+        snprintf(c1, sizeof(c1), "%d/%d", inDone, s_FeedStages[st].n);
+        snprintf(c2, sizeof(c2), "%d/%d", done, s_nFeedTotal);
+        t1 = s_FeedStages[st].n ? (float)inDone / s_FeedStages[st].n : 1.0f;
+        t2 = s_nFeedTotal ? (float)done / s_nFeedTotal : 1.0f;
+        if(t1 < s_fA - 0.2f) s_fA = 0.0f;   // a new step starts empty
+    }
+    else
+    {
+        snprintf(status, sizeof(status), "Connecting to %s...", s_szCurServer[0] ? s_szCurServer : "server");
+        snprintf(c1, sizeof(c1), "..."); snprintf(c2, sizeof(c2), "0/0"); busy = true;
+    }
+    s_fA += (t1 - s_fA) * std::min(1.0f, dt * 14.0f); s_fB += (t2 - s_fB) * std::min(1.0f, dt * 10.0f);
+    float y = a.y + th + pad * 0.7f;
+    {   // status line (cut to the window)
+        std::string st = status; const float maxw = w - pad * 2;
+        while(st.size() > 4 && f->CalcTextSizeA(fs, FLT_MAX, 0, st.c_str()).x > maxw) st.erase(st.size() - 4), st += "...";
+        dl->AddText(f, fs, ImVec2(a.x + pad, y), IM_COL32(225, 230, 235, A(255)), st.c_str());
+    }
+    y += fs * 1.35f;
+    const float bh = H * 0.026f, bw = w - pad * 2;
+    auto bar = [&](float yy, float t, ImU32 fill, ImU32 hi, const char* cnt, bool indeterminate)
+    {
+        ImVec2 p0(a.x + pad, yy), p1(a.x + pad + bw, yy + bh);
+        dl->AddRectFilled(p0, p1, IM_COL32(96, 112, 122, A(255)));
+        dl->AddRect(p0, p1, IM_COL32(0, 0, 0, A(255)), 0, 0, std::max(1.0f, H * 0.0025f));
+        const float in = std::max(1.0f, H * 0.003f);
+        if(indeterminate)
+        {   // a block sliding back and forth
+            const float ph = (float)(now % 1600) / 1600.0f, tri = ph < 0.5f ? ph * 2 : 2 - ph * 2;
+            const float sw = bw * 0.25f, x0 = p0.x + in + (bw - in * 2 - sw) * tri;
+            dl->AddRectFilled(ImVec2(x0, p0.y + in), ImVec2(x0 + sw, p1.y - in), fill);
+        }
+        else if(t > 0.001f)
+        {
+            const float x1 = p0.x + in + (bw - in * 2) * std::min(1.0f, t);
+            dl->AddRectFilled(ImVec2(p0.x + in, p0.y + in), ImVec2(x1, p1.y - in), fill);
+            dl->AddRectFilled(ImVec2(p0.x + in, p0.y + in), ImVec2(x1, p0.y + bh * 0.42f), hi);   // glossy top
+            const float ph = (float)(now % 1400) / 1400.0f, sx = p0.x + (x1 - p0.x) * ph;   // moving shine
+            if(x1 - p0.x > bh * 2) dl->AddRectFilledMultiColor(ImVec2(std::max(p0.x + in, sx - bh * 1.5f), p0.y + in), ImVec2(std::min(x1, sx + bh * 1.5f), p1.y - in),
+                IM_COL32(255, 255, 255, 0), IM_COL32(255, 255, 255, A(70)), IM_COL32(255, 255, 255, A(70)), IM_COL32(255, 255, 255, 0));
+        }
+        ImVec2 cs = f->CalcTextSizeA(fsC, FLT_MAX, 0, cnt);
+        dl->AddText(f, fsC, ImVec2(p1.x - cs.x, p1.y + H * 0.006f), IM_COL32(215, 220, 225, A(255)), cnt);
+    };
+    bar(y, s_fA, IM_COL32(172, 188, 196, A(255)), IM_COL32(205, 218, 224, A(255)), c1, busy);
+    y += bh + fsC * 1.5f + pad * 0.3f;
+    bar(y, busy ? 0.0f : s_fB, IM_COL32(34, 177, 52, A(255)), IM_COL32(78, 214, 92, A(255)), c2, false);
+}
 
 // ---- 2.19: chat commands (cheats, local only; /invisible is also told to the others) ----------
 struct Cheats
