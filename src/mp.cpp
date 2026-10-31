@@ -488,6 +488,9 @@ static int  RpRadarZones(Game::RadarZone* out, int maxOut);
 static bool Mw3Decorate(int id, const char* name, uint32_t& color, char* out, size_t n);
 static void ProcessGates(int ped, uint64_t now);
 static void RenderGates();
+static void ProcessHotelPc(int ped, uint64_t now);   // 3.36: hotel rooms + computer (mp_hotelpc.inc)
+static void RenderHotelPc();
+static void HotelPcReset();
 static bool GatesCommand(const char* cmd, const char* arg);
 static bool IsBusy();
 static void LoadAdminFile();
@@ -3773,6 +3776,7 @@ void MP::Process()
     Mw3Process(ped, now);        // 3.23: Modern Warfare 3
     RpProcess(ped, now);         // 3.25: Mega Vil Futuristic
     ProcessGates(ped, now);      // 3.04.2: Area 69 gates
+    ProcessHotelPc(ped, now);    // 3.36: hotel rooms with a computer (eyefind.info vehicle shops)
     ProcessClothes(now);         // 3.10: clothing sync
     ProcessVoice();              // 3.11: voice chat
     ProcessCheats(ped, now);     // 2.19: chat-command cheats
@@ -3916,6 +3920,7 @@ static void PSettingsPopup();
 #include "mp_rp_fac.inc"     // 3.34: factions
 #include "mp_features.inc"   // 3.34: AFK, damage indicator, player ids
 #include "mp_rp_life.inc"    // 3.29: ATM machines + screen, plaza info people, welcome, invest / marry / seatbelt / pawn
+#include "mp_hotelpc.inc"    // 3.36: hotel rooms with a computer (eyefind.info), every server
 #include "mp_gates.inc"  // 3.04.2: gates that never open (Area 69): fade out, through, fade in
 #include "mp_safezone.inc"  // 3.21: hospital safe zones + 5 s spawn protection
 #include "mp_markers.inc"   // 3.21: SA-MP style red checkpoint beams for races, derbies, DM, jobs
@@ -3949,6 +3954,7 @@ static void DoConnect(const char* host, int port)
     }
     MP_CopyStr(s_szLastConnHost, host, sizeof(s_szLastConnHost)); s_nLastConnPort = port;   // 3.11.3: retry with the other admin key
     AuthReset();   // 3.21.6: a new connection = a new login challenge
+    HotelPcReset();   // 3.36
     client.SetLeaveFirst(!s_Auth.LoggedIn());   // 3.22.1: after a game restart the join is always a new one (login screen)
     // internet server: packets go through the online relay (local proxy on 127.77.x.y:port)
     uint16_t via = 0;
@@ -5190,7 +5196,7 @@ static void ServerIconPicker()
     if(def) v = 0;
     if(v != settings.serverIcon) { settings.serverIcon = v; SaveConfig(); }
     if(IsHostingDefault()) ImGui::TextDisabled("The default MP LAN Server always shows the default icon.");
-    ImGui::TextDisabled("Your own pictures: files/MP/icon_1.png ... icon_250.png (max 256x256).");
+    ImGui::TextDisabled("Your own pictures: icon_1.png ... icon_250.png inside files/MP/Icons.jar (or loose in files/MP, max 256x256).");
 }
 
 static bool ServerRow(const char* id, const char* title, const char* info, ImVec4 infoCol,

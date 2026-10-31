@@ -213,11 +213,24 @@ static int NextPow2(int v) { int p = 1; while(p < v) p <<= 1; return p; }
 // the end of the pixel buffer (crash in _rwOpenGLRasterSetImage on Connect, v1.2).
 // So the PNG is copied into the top-left of a transparent power-of-two canvas and drawn
 // with matching UVs.
+static RwRaster* RasterFromPixels(unsigned char* px, int w, int h, int* outW, int* outH);
 static RwRaster* LoadPNGRaster(const char* path, int* outW, int* outH)
 {
     int w, h, n;
     unsigned char* px = stbi_load(path, &w, &h, &n, 4);
     if(!px) return nullptr;
+    return RasterFromPixels(px, w, h, outW, outH);
+}
+// 3.36: the same from a PNG in memory (an entry of Icons.jar / Vehicles.jar)
+static RwRaster* LoadPNGRasterMem(const unsigned char* data, int len, int* outW, int* outH)
+{
+    int w, h, n;
+    unsigned char* px = stbi_load_from_memory(data, len, &w, &h, &n, 4);
+    if(!px) return nullptr;
+    return RasterFromPixels(px, w, h, outW, outH);
+}
+static RwRaster* RasterFromPixels(unsigned char* px, int w, int h, int* outW, int* outH)
+{
     if(w <= 0 || h <= 0 || w > 2048 || h > 2048) { logger->Error("Logo size %dx%d not supported (max 2048)", w, h); stbi_image_free(px); return nullptr; }
     const int pw = NextPow2(w), ph = NextPow2(h);
     const int side = pw > ph ? pw : ph; // square canvas, like the font atlas
@@ -248,6 +261,84 @@ static RwRaster* LoadPNGRaster(const char* path, int* outW, int* outH)
     return r;
 }
 
+// ---- 3.36: .jar (= zip) packs in files/MP: Icons.jar (icon_1.png .. icon_250.png), Vehicles.jar ----
+// Only the central directory is read once (names + offsets); an entry is read on demand.
+// Entries may be stored or deflated (zlib raw inflate, -lz).
+#include <zlib.h>
+#include <string>
+#include <vector>
+#include <unordered_map>
+struct JarEntry { uint32_t off, csize, usize; uint16_t method; };
+struct Jar { bool tried = false, ok = false; std::string path; std::unordered_map<std::string, JarEntry> e; };
+static uint16_t JarU16(const unsigned char* p) { return (uint16_t)(p[0] | (p[1] << 8)); }
+static uint32_t JarU32(const unsigned char* p) { return (uint32_t)p[0] | ((uint32_t)p[1] << 8) | ((uint32_t)p[2] << 16) | ((uint32_t)p[3] << 24); }
+static void JarOpen(Jar& j, const char* file)
+{
+    if(j.tried) return;
+    j.tried = true;
+    char path[512]; snprintf(path, sizeof(path), "%s/%s", MP::DataDir(), file);
+    j.path = path;
+    FILE* f = fopen(path, "rb");
+    if(!f) return;
+    fseek(f, 0, SEEK_END); long n = ftell(f);
+    long tail = n < 65558 ? n : 65558;
+    std::vector<unsigned char> t((size_t)tail);
+    fseek(f, n - tail, SEEK_SET);
+    if(tail <= 22 || fread(t.data(), 1, (size_t)tail, f) != (size_t)tail) { fclose(f); return; }
+    long eocd = -1;
+    for(long i = tail - 22; i >= 0; --i) if(JarU32(&t[(size_t)i]) == 0x06054b50) { eocd = i; break; }
+    if(eocd < 0) { fclose(f); logger->Error("%s: not a zip / jar", path); return; }
+    uint32_t cnt = JarU16(&t[(size_t)eocd + 10]), cdSize = JarU32(&t[(size_t)eocd + 12]), cdOff = JarU32(&t[(size_t)eocd + 16]);
+    std::vector<unsigned char> cd(cdSize);
+    fseek(f, (long)cdOff, SEEK_SET);
+    if(cdSize == 0 || fread(cd.data(), 1, cdSize, f) != cdSize) { fclose(f); return; }
+    fclose(f);
+    size_t p = 0;
+    for(uint32_t i = 0; i < cnt && p + 46 <= cd.size(); ++i)
+    {
+        const unsigned char* h = &cd[p];
+        if(JarU32(h) != 0x02014b50) break;
+        uint16_t nl = JarU16(h + 28), xl = JarU16(h + 30), cl = JarU16(h + 32);
+        if(p + 46 + nl > cd.size()) break;
+        std::string name((const char*)h + 46, nl);
+        size_t sl = name.find_last_of('/'); if(sl != std::string::npos) name = name.substr(sl + 1);   // folders inside the jar are fine
+        JarEntry e{ JarU32(h + 42), JarU32(h + 20), JarU32(h + 24), JarU16(h + 10) };
+        if(!name.empty()) j.e[name] = e;
+        p += 46 + nl + xl + cl;
+    }
+    j.ok = !j.e.empty();
+    logger->Info("3.36: %s - %d entries", path, (int)j.e.size());
+}
+static bool JarRead(Jar& j, const char* name, std::vector<unsigned char>& out)
+{
+    if(!j.ok) return false;
+    auto it = j.e.find(name);
+    if(it == j.e.end()) return false;
+    const JarEntry& e = it->second;
+    if(e.usize > 8u * 1024 * 1024 || e.csize > 8u * 1024 * 1024) return false;
+    FILE* f = fopen(j.path.c_str(), "rb");
+    if(!f) return false;
+    unsigned char lh[30];
+    bool ok = fseek(f, (long)e.off, SEEK_SET) == 0 && fread(lh, 1, 30, f) == 30 && JarU32(lh) == 0x04034b50;
+    std::vector<unsigned char> c;
+    if(ok)
+    {
+        fseek(f, (long)e.off + 30 + JarU16(lh + 26) + JarU16(lh + 28), SEEK_SET);
+        c.resize(e.csize);
+        ok = e.csize == 0 || fread(c.data(), 1, e.csize, f) == e.csize;
+    }
+    fclose(f);
+    if(!ok) return false;
+    if(e.method == 0) { out.swap(c); return true; }
+    if(e.method != 8) return false;
+    out.resize(e.usize);
+    z_stream zs{}; zs.next_in = c.data(); zs.avail_in = (uInt)c.size(); zs.next_out = out.data(); zs.avail_out = (uInt)out.size();
+    if(inflateInit2(&zs, -MAX_WBITS) != Z_OK) return false;
+    int r = inflate(&zs, Z_FINISH); inflateEnd(&zs);
+    return r == Z_STREAM_END;
+}
+static Jar s_IconsJar, s_VehJar;
+
 // 2.24: server icons. files/MP/main_df_icon.png = default icon, files/MP/icon_1.png .. icon_250.png =
 // the icon a host picks in Server > Host. Loaded on first use (one new file per frame, max 256x256).
 struct IconSlot { RwRaster* r = nullptr; ImVec2 uv{1, 1}; bool tried = false; };
@@ -267,7 +358,18 @@ void* HUD::ServerIcon(int id, ImVec2* uv)
         if(id == 0) snprintf(path, sizeof(path), "%s/main_df_icon.png", MP::DataDir());
         else        snprintf(path, sizeof(path), "%s/icon_%d.png", MP::DataDir(), id);
         int w = 0, h = 0, n = 0;
-        if(stbi_info(path, &w, &h, &n) && w > 0 && h > 0 && w <= 256 && h <= 256)
+        // 3.36: icon_N.png comes from files/MP/Icons.jar first, a loose files/MP/icon_N.png still works
+        JarOpen(s_IconsJar, "Icons.jar");
+        std::vector<unsigned char> mem;
+        char ent[32]; if(id == 0) snprintf(ent, sizeof(ent), "main_df_icon.png"); else snprintf(ent, sizeof(ent), "icon_%d.png", id);
+        if(JarRead(s_IconsJar, ent, mem) && stbi_info_from_memory(mem.data(), (int)mem.size(), &w, &h, &n) && w > 0 && h > 0 && w <= 256 && h <= 256)
+        {
+            ImVec2 keep = s_LogoUV;
+            s.r = LoadPNGRasterMem(mem.data(), (int)mem.size(), &w, &h);
+            s.uv = s_LogoUV; s_LogoUV = keep;
+        }
+        if(s.r) {}
+        else if(stbi_info(path, &w, &h, &n) && w > 0 && h > 0 && w <= 256 && h <= 256)
         {
             ImVec2 keep = s_LogoUV;
             s.r = LoadPNGRaster(path, &w, &h);
@@ -321,6 +423,38 @@ void* HUD::Texture(const char* file, ImVec2* uv)
     else logger->Error("%s missing or bigger than 512x512", path);
     if(uv) *uv = t.uv;
     return (void*)t.r;
+}
+
+// 3.36: a vehicle picture (files/MP/Vehicles.jar: Vehicle_400.png .. Vehicle_611.png, 204x125), loaded on
+// first use (one per frame), kept while the hotel computer is open (FreeVehiclePics on close)
+struct VehPic { RwRaster* r = nullptr; ImVec2 uv{1, 1}; bool tried = false; };
+static VehPic s_VehPic[212];
+void* HUD::VehiclePic(int model, ImVec2* uv)
+{
+    if(model < 400 || model > 611) return nullptr;
+    VehPic& v = s_VehPic[model - 400];
+    if(!v.tried)
+    {
+        uint32_t fr = (uint32_t)ImGui::GetFrameCount();
+        if(s_nIconLoadFrame == fr) return nullptr;   // next frame
+        s_nIconLoadFrame = fr;
+        v.tried = true;
+        JarOpen(s_VehJar, "Vehicles.jar");
+        std::vector<unsigned char> mem; char ent[32]; snprintf(ent, sizeof(ent), "Vehicle_%d.png", model);
+        int w = 0, h = 0;
+        if(JarRead(s_VehJar, ent, mem))
+        {
+            ImVec2 keep = s_LogoUV;
+            v.r = LoadPNGRasterMem(mem.data(), (int)mem.size(), &w, &h);
+            v.uv = s_LogoUV; s_LogoUV = keep;
+        }
+    }
+    if(uv) *uv = v.uv;
+    return (void*)v.r;
+}
+void HUD::FreeVehiclePics()
+{
+    for(auto& v : s_VehPic) { if(v.r) RwRasterDestroy(v.r); v = VehPic(); }
 }
 
 void HUD::ReloadTexture(const char* file)

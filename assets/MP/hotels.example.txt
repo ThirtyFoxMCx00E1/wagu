@@ -1,0 +1,3 @@
+# Extra hotels for the hotel room computer (3.36). Rename to hotels.txt (files/MP/hotels.txt).
+# One hotel per line: name x y z  (the door outside). Built in: Jefferson Motel, Four Dragons Casino, Caligula's Palace.
+# My Hotel 1000.0 -1000.0 13.5

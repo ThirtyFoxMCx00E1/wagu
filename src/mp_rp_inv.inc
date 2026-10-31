@@ -27,7 +27,7 @@ struct RpInvClient
     float    camH = 0; bool froze = false;   // 3.35: the heading the camera was set from; you stand still while it is up
 };
 static RpInvClient s_Inv;
-enum { RPW_NONE = 0, RPW_INV, RPW_DOCS };
+enum { RPW_NONE = 0, RPW_INV, RPW_DOCS, RPW_STATUS };   // 3.36: STATUS has its own view
 static const char* const kRpParts[6] = { "HEAD", "TORSO", "L ARM", "R ARM", "L LEG", "R LEG" };
 
 static void RpInvReset() { s_Inv = RpInvClient(); }
@@ -291,7 +291,8 @@ static void RpDrawPanel(uint64_t nowMs)
     {
         case 0: s_Inv.panel = false; RpPhoneOpen(RPA_GARAGE); break;
         case 1: RpInvShow(RPW_DOCS); break;
-        case 2: case 3: RpInvShow(RPW_INV); break;
+        case 2: RpInvShow(RPW_STATUS); break;
+        case 3: RpInvShow(RPW_INV); break;
         case 4: s_Inv.panel = false; RpPhoneOpen(s_Rp.ringFrom >= 0 || s_Rp.callWith >= 0 ? -2 : RPA_HOME); break;
     }
 }
@@ -372,6 +373,72 @@ static void RpInvStat(ImDrawList* dl, ImVec2 a, float w, const char* label, floa
     float q = v / 100.0f; if(q > 1) q = 1; if(q < 0) q = 0;
     if(q > 0.005f) dl->AddRectFilled(ba, ImVec2(ba.x + (bb.x - ba.x) * q, bb.y), col);
 }
+// 3.36: the floating info of the real player (like the name tag over his head): name, ID, health + armour bars
+static void RpMyFloatingTag(ImDrawList* dl, ImVec2 at, float maxW)
+{
+    char t[64];
+    const bool mod = MP::IsLocalMod();
+    snprintf(t, sizeof(t), "%s%s (%d)", mod ? "[MOD] " : "", settings.name, myId);
+    float fsz = UI::S(15), tw = RpTextW(fsz, t); if(tw > maxW) tw = maxW;
+    int ped = Game::LocalPed();
+    float hp = ped > 0 ? (float)Game::GetCharHealth(ped) : 0, ar = ped > 0 ? (float)Game::GetCharArmour(ped) : 0;
+    if(hp > 100) hp = 100; if(ar > 100) ar = 100; if(hp < 0) hp = 0; if(ar < 0) ar = 0;
+    const float bw = UI::S(92), bh = UI::S(7);
+    float y = at.y - UI::S(44);
+    dl->AddRectFilled(ImVec2(at.x - tw * 0.5f - UI::S(6), y - UI::S(2)), ImVec2(at.x + tw * 0.5f + UI::S(6), y + fsz + UI::S(3)), IM_COL32(0, 0, 0, 120), UI::S(4));
+    RpPlainText(dl, fsz, ImVec2(at.x - tw * 0.5f, y), mod ? IM_COL32(255, 196, 64, 255) : IM_COL32_WHITE, t);
+    y += fsz + UI::S(6);
+    ImVec2 a(at.x - bw * 0.5f, y);
+    dl->AddRectFilled(a, ImVec2(a.x + bw, a.y + bh), IM_COL32(0, 0, 0, 200));
+    dl->AddRectFilled(ImVec2(a.x + 1, a.y + 1), ImVec2(a.x + 1 + (bw - 2) * hp / 100.0f, a.y + bh - 1), IM_COL32(200, 40, 40, 255));
+    if(ar > 0)
+    {
+        a.y += bh + UI::S(3);
+        dl->AddRectFilled(a, ImVec2(a.x + bw, a.y + bh), IM_COL32(0, 0, 0, 200));
+        dl->AddRectFilled(ImVec2(a.x + 1, a.y + 1), ImVec2(a.x + 1 + (bw - 2) * ar / 100.0f, a.y + bh - 1), IM_COL32(220, 224, 230, 255));
+    }
+}
+// 3.36: STATUS: who you are and how you are doing (right box of the STATUS view)
+static void RpDrawStatusBox(ImDrawList* dl, ImVec2 ra, ImVec2 rb, float k, float head, float pad)
+{
+    RpInvBox(dl, ra, rb, "STATUS", k);
+    char t[96];
+    const PktRpMe& m = s_Rp.me; const bool hm = s_Rp.haveMe;
+    int ped = Game::LocalPed();
+    struct Row { const char* k; char v[64]; ImU32 c; } rows[12]; int n = 0;
+    auto add = [&](const char* key, ImU32 c, const char* fmt, auto... a) { if(n < 12) { rows[n].k = key; rows[n].c = c; snprintf(rows[n].v, sizeof(rows[n].v), fmt, a...); ++n; } };
+    const ImU32 w = IM_COL32_WHITE;
+    add("NAME", MP::IsLocalMod() ? IM_COL32(255, 196, 64, 255) : w, "%s%s", MP::IsLocalMod() ? "[MOD] " : "", settings.name);
+    add("PLAYER ID", w, "%d", myId);
+    add("HEALTH", w, "%d", ped > 0 ? Game::GetCharHealth(ped) : 0);
+    add("ARMOUR", w, "%d", ped > 0 ? Game::GetCharArmour(ped) : 0);
+    if(hm)
+    {
+        add("LEVEL", w, "%d  (%d XP)", (int)m.level, (int)m.xp);
+        add("JOB", w, "%s%s", m.job < RPJ_COUNT ? g_RpJobs[m.job].name : "-", m.duty ? "  (on duty)" : "");
+        add("CASH", IM_COL32(110, 220, 120, 255), "$%d", (int)m.cash);
+        add("BANK", IM_COL32(110, 220, 120, 255), "$%d", (int)m.bank);
+        add("HUNGER", m.hunger < 25 ? kInvRed : w, "%d%%", (int)m.hunger);
+        add("THIRST", m.thirst < 25 ? kInvRed : w, "%d%%", (int)m.thirst);
+        add("WANTED", m.wanted ? kInvRed : w, "%s", m.wanted ? "YES" : "no");
+        add("PLAYED", w, "%uh %02um", (unsigned)(m.playMin / 60), (unsigned)(m.playMin % 60));
+    }
+    else
+    {
+        add("MONEY", IM_COL32(110, 220, 120, 255), "$%d", Game::GetMoney());
+    }
+    float y = ra.y + head + UI::S(14), rh = UI::S(36);
+    for(int i = 0; i < n; ++i, y += rh)
+    {
+        if(i & 1) dl->AddRectFilled(ImVec2(ra.x + pad, y - UI::S(4)), ImVec2(rb.x - pad, y + rh - UI::S(4)), IM_COL32(255, 255, 255, 14));
+        RpPlainText(dl, UI::S(14), ImVec2(ra.x + pad + UI::S(8), y + UI::S(4)), kInvDim, rows[i].k);
+        float vw = RpTextW(UI::S(16), rows[i].v);
+        RpPlainText(dl, UI::S(16), ImVec2(rb.x - pad - UI::S(8) - vw, y + UI::S(3)), rows[i].c, rows[i].v);
+    }
+    snprintf(t, sizeof(t), "Drag your character on the left to turn him");
+    RpPlainText(dl, UI::S(12), ImVec2(ra.x + pad, rb.y - pad - UI::S(14)), kInvDim, t);
+}
+
 static void RpDrawInvWindow(uint64_t nowMs)
 {
     ImVec2 ds = ImGui::GetIO().DisplaySize;
@@ -421,7 +488,17 @@ static void RpDrawInvWindow(uint64_t nowMs)
                 }
             }
         }
-        if(!real && !s_Inv.cam) RpInvFigure(dl, cx, top, fs);   // 3.35: only in a car (no camera on you); never over the real one
+        if(!real) RpInvFigure(dl, cx, top, fs);   // 3.36: whenever the real one can't be shown (car, camera not ready) - never empty
+        else
+        {   // 3.36: your real floating info (the name tag) above your real head, inside the box
+            int pp = Game::LocalPed(); Vec3 pc; float sx, sy, dp;
+            if(pp > 0 && Game::GetCharPos(pp, pc) && Game::WorldToScreen(Vec3{ pc.x, pc.y, pc.z + 1.05f }, sx, sy, dp) && dp > 0)
+            {
+                dl->PushClipRect(ImVec2(la.x, la.y + head + UI::S(30)), lb, true);
+                RpMyFloatingTag(dl, ImVec2(sx, sy), lw - pad * 2);
+                dl->PopClipRect();
+            }
+        }
         if(s_Inv.cam)
         {   // 3.35: drag inside the box to turn your character round (inspect)
             ImGui::SetCursorScreenPos(ImVec2(la.x + pad + UI::S(74), figTop0));
@@ -460,6 +537,16 @@ static void RpDrawInvWindow(uint64_t nowMs)
         RpInvStat(dl, ImVec2(la.x + pad, statY), lw - pad * 2, "HEALTH", hp, kInvRed);
         RpInvStat(dl, ImVec2(la.x + pad, statY + UI::S(40)), lw - pad * 2, "ARMOUR", ar, IM_COL32(220, 224, 230, 255));
         if(RpInvFlat("##ivclose", ImVec2(la.x + pad, closeY), ImVec2(lw - pad * 2, bh), true, "CLOSE")) s_Inv.win = RPW_NONE;
+    }
+    if(s_Inv.win == RPW_STATUS)
+    {   // ---------------- STATUS (3.36) ----------------
+        RpDrawStatusBox(dl, ra, rb, k, head, pad);
+        ImVec2 mp = io.MousePos;
+        bool inside = (mp.x >= la.x && mp.x <= lb.x && mp.y >= la.y && mp.y <= lb.y) || (mp.x >= ra.x && mp.x <= rb.x && mp.y >= ra.y && mp.y <= rb.y);
+        bool outside = ImGui::IsMouseClicked(0) && !inside && nowMs - s_Inv.winAt > 300;
+        BcwEndOverlay();
+        if(outside) s_Inv.win = RPW_NONE;
+        return;
     }
     // ---------------- INVENTORY ----------------
     RpInvBox(dl, ra, rb, "INVENTORY", k);
@@ -711,7 +798,7 @@ static void RenderRpInv()
     if(s_Rp.phone) { s_Inv.panel = false; s_Inv.win = RPW_NONE; }
     {   // 3.34: the bag looks at your real character, standing in the PLAYER INFO box on the left
         int pp = Game::LocalPed(); Vec3 pc;
-        bool want = s_Inv.win == RPW_INV && pp > 0 && !Game::IsCharInAnyCar(pp) && Game::GetCharPos(pp, pc);
+        bool want = (s_Inv.win == RPW_INV || s_Inv.win == RPW_STATUS) && pp > 0 && !Game::IsCharInAnyCar(pp) && Game::GetCharPos(pp, pc);
         if(want)
         {
             ImVec2 ds = ImGui::GetIO().DisplaySize;
@@ -735,6 +822,6 @@ static void RenderRpInv()
     if(s_Inv.win == RPW_NONE) RpDrawPanelButton();   // hidden while the bag / documents are up (it sat on their edge)
     if(VKeyboard::IsOpen()) return;
     if(s_Inv.panel) RpDrawPanel(nowMs);
-    else if(s_Inv.win == RPW_INV) RpDrawInvWindow(nowMs);
+    else if(s_Inv.win == RPW_INV || s_Inv.win == RPW_STATUS) RpDrawInvWindow(nowMs);
     else if(s_Inv.win == RPW_DOCS) RpDrawDocsWindow(nowMs);
 }
