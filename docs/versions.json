@@ -1,6 +1,7 @@
 {
-"latest": "3.36",
+"latest": "3.36.1",
 "supported": [
+"3.36.1",
 "3.36",
 "3.35.2",
 "3.35.1",
@@ -47,6 +48,11 @@
 "3.04.6"
 ],
 "versions": [
+{
+"v": "3.36.1",
+"summary": "**PLAYER INFO** (PANEL > STATUS and BAG) shows a **man figure texture** instead of the real character (no camera on you, no freezing): every body part is tinted by its condition, with your floating name tag (`[MOD]` name, ID, health + armour) over its head.",
+"items": []
+},
 {
 "v": "3.36",
 "summary": "**hotel rooms with a computer** on every server (Jefferson Motel, Four Dragons, Caligula's + `files/MP/hotels.txt`): walk to the desk, tap the computer button, browse **eyefind.info** (Southern San Andreas Super Autos, Legendary Motorsport, Pedal and Metal, Elitas Travel, Docktease, search) and buy from a scrolling grid of vehicle pictures; **PANEL > STATUS** has its own page with your real character, your floating name tag and your stats; **races wait for players** (never start alone); server icons moved into **`files/MP/Icons.jar`**, vehicle pictures in **`files/MP/Vehicles.jar`**.",

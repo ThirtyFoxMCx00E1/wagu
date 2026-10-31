@@ -1,31 +1,31 @@
 {
- "tag_name": "v3.36",
- "name": "MP Multiplayer 3.36",
+ "tag_name": "v3.36.1",
+ "name": "MP Multiplayer 3.36.1",
  "published_at": "2026-10-31",
- "also_supported": "v3.35.2, v3.35.1, v3.35, v3.34, v3.32, v3.31, v3.30, v3.29, v3.28.2, v3.28.1, v3.28, v3.27, v3.26, v3.25, v3.24, v3.23.6, v3.23.5, v3.23.4, v3.23.3, v3.23.2, v3.23.1, v3.23, v3.22.1, v3.22, v3.21.9, v3.21.8, v3.21.7, v3.21.6, v3.21.5, v3.21.4, v3.21.3, v3.21.2, v3.21.1, v3.21, v3.11.6, v3.11.5, v3.11.4, v3.11.3, v3.11.2, v3.11.1, v3.11, v3.10, v3.04.6",
+ "also_supported": "v3.36, v3.35.2, v3.35.1, v3.35, v3.34, v3.32, v3.31, v3.30, v3.29, v3.28.2, v3.28.1, v3.28, v3.27, v3.26, v3.25, v3.24, v3.23.6, v3.23.5, v3.23.4, v3.23.3, v3.23.2, v3.23.1, v3.23, v3.22.1, v3.22, v3.21.9, v3.21.8, v3.21.7, v3.21.6, v3.21.5, v3.21.4, v3.21.3, v3.21.2, v3.21.1, v3.21, v3.11.6, v3.11.5, v3.11.4, v3.11.3, v3.11.2, v3.11.1, v3.11, v3.10, v3.04.6",
  "assets": [
   {
    "name": "bin/libMP32.so",
-   "size": 4423348,
+   "size": 4447460,
    "download_count": 0
   },
   {
    "name": "bin/libMP64.so",
-   "size": 5299920,
+   "size": 5323816,
    "download_count": 0
   },
   {
-   "name": "release/MP-3.36-full.zip",
-   "size": 20831884,
+   "name": "release/MP-3.36.1-full.zip",
+   "size": 20899870,
    "download_count": 0
   },
   {
-   "name": "release/MP-3.36-client.zip",
-   "size": 19168278,
+   "name": "release/MP-3.36.1-client.zip",
+   "size": 19235902,
    "download_count": 0
   },
   {
-   "name": "release/HiveMQ-kit-3.36.zip",
+   "name": "release/HiveMQ-kit-3.36.1.zip",
    "size": 66237,
    "download_count": 0
   }
