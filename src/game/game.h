@@ -100,6 +100,7 @@ namespace Game
     bool  IsKnownCarModel(int model);         // 2.24: 400-611 and exists
     void  GetTimeOfDay(int& hour, int& minute);
     void  SetTimeOfDay(int hour, int minute);
+    int   GetHour();                        // 3.39: game clock hour (12 if unknown)
     int   GetWeather();                     // current weather id (CWeather::OldWeatherType), 1 if unknown
     void  ForceWeatherNow(int weather);
     void  ReleaseWeather();
@@ -315,6 +316,8 @@ namespace Game
     int   CreateNpcPed(int model, const Vec3& pos, float heading);
     int   CreateNpcCar(int model, int driverModel, const Vec3& pos, float heading, int* driverOut);
     int   GetCarHealth(int car);
+    void  LockCar(int car, bool locked);      // 3.39: /mv lock / unlock (synced to the others by the car sync)
+    bool  CarExists(int car);                 // 3.39
     void  SetCarHealth(int car, int hp);
     void  ExplodeCar(int car);
     bool  IsCarDead(int car);
@@ -327,6 +330,7 @@ namespace Game
     bool  WorldObjectExists(int obj);
     void  MoveWorldObject(int obj, const Vec3& p, float spinDeg);
     int   CreateMapObject(int model, const Vec3& p, float rx, float ry, float rz);   // 3.23: solid map object (0 = loading, -1 = no room)
+    void  PlaceMapObject(int obj, const Vec3& p, float rx, float ry, float rz);   // 3.39: Home Kit editor (move / turn)
     void  InitMapObjects(void* gameHandle);   // 3.23.2: object pool reading
     int   FreeObjectSlots();                  // 3.23.2: free slots in the game's object pool (-1 = unknown)
     void  SetNoCamShake(bool on);             // 3.34: block CCamera::CamShake / CamShakeNoPos (default on)

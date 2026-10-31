@@ -1332,7 +1332,8 @@ static Game::MenuMapLayerFn s_MenuMapLayer = nullptr;   // 3.34
 static bool s_InMenuBlips = false;   // 3.35: inside the game's DrawBlips on the pause map: its radar state IS the map's
 static bool MapRadarState()
 {
-    if(s_InMenuBlips) return s_pRadarRange != nullptr;   // 3.35: the map's own range / origin (the +-3000 guess drew the map too small)
+    if(s_InMenuBlips) return TransformRealWorldPointToRadarSpace != nullptr;   // 3.35: the map's own range / origin (the +-3000 guess drew the map too small)
+                                                                                // 3.39: even when CRadar::m_radarRange is not exported (the Google map was ~0.58x)
     float range = 0; CVec2D_ org = { 0, 0 };
     if(s_pRadarRange) SafeRead(s_pRadarRange, &range, 4);
     if(s_pRadarOrigin) SafeRead(s_pRadarOrigin, &org, sizeof(org));

@@ -21,6 +21,16 @@ Game traffic stays inside one region (no bridging), so ping is only phone -> nea
 
 
 
+## 3.39: Home Kit, rules, server settings, 4:29 kicks
+
+Update the 4 servers with the same one command as 3.38 (the installer pulls the new `mp_server`). New options:
+
+- `--gamemodes` knows 6 more names: `home` (Home Kit houses), `survival`, `cnr` (Cops and Robbers), `ad` (Attack / Defend), `stunt`, `drift`. The default server 1922 gets every new mode by itself; a custom server only gets the modes its owner lists (`--gamemodes all` or e.g. `--gamemodes home,cnr,drift`).
+- `--home-file PATH` - where the houses are saved (default `homes.txt`, Mega Vil `homes_rp.txt`).
+- `--rules "SERVER RULES|No cheating|Be nice|..."` - the RULES window after the login (title first, then up to 10 rules). The default server always shows its own 10 rules.
+- A kick is no longer a ban: everyone reads `[SERVER]: name got kicked by reason` and the player can join again after 4 minutes 29 seconds. `/ban` stays permanent.
+- On the 4 featured servers only the admin and moderators (moderator.txt) can kick, change settings, or host them from a phone; the 24/7 bot hosts them. On a custom server the host owner does it.
+
 ## 3.38: 24/7 bot host on the 4 servers (no more "lost connection" when a player leaves)
 
 "Lost connection to the server" when the first player leaves = that player's **phone was the host**. It

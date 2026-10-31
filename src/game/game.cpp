@@ -467,7 +467,7 @@ void Game::DeleteChar(int ped) { if(ped > 0) CALLSCM(DELETE_CHAR, ped); }
 bool Game::GiveAndSelectWeapon(int ped, int weapon)
 {
     if(ped <= 0 || !PedPtr(ped)) return true;   // 2.19.1: never on a ped that is gone (crash in CPed::GiveWeapon)
-    if(weapon < 0 || weapon > 46) return;   // 2.19.1: only real weapon ids
+    if(weapon < 0 || weapon > 46) return true;   // 2.19.1: only real weapon ids
     // 2.26: crash in CPed::GiveWeapon (libGTASA + 0x49F61E). 19-21 are empty weapon slots in SA
     // (no weapon info); 44/45 goggles and 46 parachute need player data, which another
     // player's avatar (a normal ped) doesn't have. A weapon whose model isn't loaded (weapon
@@ -575,3 +575,5 @@ bool Game::WorldToScreen(const Vec3& w, float& sx, float& sy, float& depth)
 
 int Game::ScreenWidth()  { return RsGlobal ? RsGlobal->maximumWidth : 1280; }
 int Game::ScreenHeight() { return RsGlobal ? RsGlobal->maximumHeight : 720; }
+
+int Game::GetHour() { return m_ClockHours ? (int)*m_ClockHours : 12; }   // 3.39: survival (zombies at night)

@@ -495,6 +495,7 @@ static bool GatesCommand(const char* cmd, const char* arg);
 static bool IsBusy();
 static void LoadAdminFile();
 static bool HaveAdminKey();
+static bool s_bModMaster = false;   // 3.39: moderator.txt holds the MP moderator key
 static void SenjiBlockedMsg();   // 3.11.2
 static std::vector<std::string> s_AdminKeys;   // 3.11.3: every valid key found (old + new admin key)
 static size_t s_nAdminKeyIdx = 0;
@@ -528,6 +529,33 @@ static bool RpFacDecorate(int id, const char* name, uint32_t& color, char* out, 
 static void DmgIndAdd(int id, float amount, int weapon);
 static void AfkTick(int ped, uint64_t now);
 static void UpdatePassengerCandidate(int ped, uint64_t now);
+// 3.39
+static void CnrOnDeath(const PktDeath& d);
+static void HkOnPacket(const uint8_t* d, int len);
+static void HkReset();
+static void RulesOnPacket(const PktRules& m);
+static void RulesReset();
+static void SrvSettingsOnPacket(const PktSrvSettings& m);
+static void SrvSettingsReset();
+static void Modes2OnEvent(const uint8_t* d, int len);
+static void Modes2Reset();
+static void ApplyServerRules();
+static void HkProcess(int ped, uint64_t now);
+static void HkRender();
+static bool HkCommand(const char* cmd, const char* arg);
+static bool Modes2Command(const char* cmd, const char* arg);
+static void Modes2Process(int ped, uint64_t now);
+static void Modes2Render();
+static bool MvCommand(const char* cmd, const char* arg);
+static void MvProcess(uint64_t now);
+static void NeedsProcess(int ped, uint64_t now);
+static bool NeedsCommand(const char* cmd, const char* arg);
+static void NeedsRender();
+static void RulesProcess(uint64_t now);
+static bool RulesCommand(const char* cmd, const char* arg);
+static bool SrvSettingsCommand(const char* cmd, const char* arg);
+static uint64_t s_nKickWaitUntil = 0;   // 3.39: a kick = wait 4:29 before joining again
+static char s_szKickWaitSrv[32] = "";
 static int  s_nMyScoreFwd = 0;
 static int      s_nPassBtnCar = 0;   // 2.19.1: car we walk to via the Passenger button
 static uint64_t s_nPassBtnT = 0;
@@ -1327,19 +1355,40 @@ static int MoveStateFromExt(int st, float speed)
 // every 300 ms for 450 ms: each new task restarted the "raise the gun" motion, so the arm and elbow
 // never came up on other phones. Now it's given once (1.6 s) and again only when the aim point moves
 // (> 1.2 m) or it runs out; mirrored body anims are released first so they don't cover the arms.
+// 3.39: full aim mirror for every gun. The 1.2 m test re-gave the aim task every 250 ms while the other
+// player turned the camera (a far aim point moves metres per degree): every new task starts the
+// "raise the gun" blend again, so on other phones both arms / elbows stayed half down. Now the task
+// is long (8 s) and only given again when the aim DIRECTION really changes (> 9 degrees sideways /
+// > 7 up-down) or it is about to run out; between those the body turns to the aim with the heading.
 static void AvatarAim(RemotePlayer& p, const Vec3& aim, bool fire, uint64_t now)
 {
     if(!p.gunUp) { Game::ReleaseMirroredAnims(p.ped); p.applied.n = 0; p.gunUp = true; p.lastAim = 0; p.lastShoot = 0; }
-    float dx = aim.x - p.lastAimPt[0], dy = aim.y - p.lastAimPt[1], dz = aim.z - p.lastAimPt[2];
-    bool moved = dx * dx + dy * dy + dz * dz > 1.2f * 1.2f;
+    Vec3 me = { aim.x, aim.y, aim.z }; if(!Game::GetCharPos(p.ped, me)) return;
+    auto dirOf = [&](float x, float y, float z, float& yaw, float& pitch)
+    {
+        float dx = x - me.x, dy = y - me.y, dz = z - (me.z + 0.6f);
+        float h = sqrtf(dx * dx + dy * dy); if(h < 0.01f) h = 0.01f;
+        yaw = atan2f(dy, dx) * 57.29578f; pitch = atan2f(dz, h) * 57.29578f;
+    };
+    float yawN, pitN, yawO, pitO;
+    dirOf(aim.x, aim.y, aim.z, yawN, pitN);
+    dirOf(p.lastAimPt[0], p.lastAimPt[1], p.lastAimPt[2], yawO, pitO);
+    float dyaw = fabsf(fmodf(yawN - yawO + 540.0f, 360.0f) - 180.0f), dpit = fabsf(pitN - pitO);
+    const bool turned = dyaw > 9.0f || dpit > 7.0f;
+    // the body follows the aim between task updates (the arms come with it, no restart)
+    {
+        float want = fmodf(yawN - 90.0f + 360.0f, 360.0f), ch = Game::GetCharHeading(p.ped);
+        float hd = fmodf(want - ch + 540.0f, 360.0f) - 180.0f;
+        if(fabsf(hd) > 2.0f && fabsf(hd) < 60.0f) Game::SetCharHeading(p.ped, LerpAngle(ch, want, 0.35f));
+    }
     if(fire)
     {
-        if(now - p.lastShoot > 1100 || (moved && now - p.lastShoot > 250))
+        if(now - p.lastShoot > 1100 || (turned && now - p.lastShoot > 300))
         { Game::TaskShootAt(p.ped, aim, 1500); p.lastShoot = now; p.lastAim = now; p.lastAimPt[0] = aim.x; p.lastAimPt[1] = aim.y; p.lastAimPt[2] = aim.z; }
         return;
     }
-    if(now - p.lastAim > 1200 || (moved && now - p.lastAim > 250))
-    { Game::TaskAimAt(p.ped, aim, 1600); p.lastAim = now; p.lastAimPt[0] = aim.x; p.lastAimPt[1] = aim.y; p.lastAimPt[2] = aim.z; }
+    if(!p.lastAim || now - p.lastAim > 7000 || (turned && now - p.lastAim > 450) || (p.lastShoot && now - p.lastShoot < 1600 && now - p.lastAim > 1400))
+    { Game::TaskAimAt(p.ped, aim, 8000); p.lastAim = now; p.lastShoot = 0; p.lastAimPt[0] = aim.x; p.lastAimPt[1] = aim.y; p.lastAimPt[2] = aim.z; }
 }
 
 // 2.37: ramming a player on foot with a car used to send the avatar's whole 1000 HP pool loss
@@ -1792,7 +1841,7 @@ static void UpdateRemote(int id, int localPed, uint64_t now)
     float legSpeed = (haveMo && p.stale > staleLimit) ? 0.0f : speed;
     // 2.17 aim / shots / crouch
     const bool duckWant  = (s.flags & SYNC_DUCKING) != 0;
-    const bool aimingNow = p.hasX2 && (p.x2flags & X2_AIMING) && p.weapon >= 22 && p.weapon <= 38;
+    const bool aimingNow = p.hasX2 && (p.x2flags & X2_AIMING) && ((p.weapon >= 22 && p.weapon <= 38) || (p.weapon >= 41 && p.weapon <= 43));   // 3.39: + spray can / extinguisher / camera
     const bool bulletSync = now - p.lastShotPkt < 1500 || (p.hasX2 && (p.x2flags & X2_SHOTSYNC) && Game::ShotSyncAvailable());
 
     if(d > 4.0f || fabsf(cur.z - target.z) > 3.0f)
@@ -1914,8 +1963,9 @@ static void UpdateRemote(int id, int localPed, uint64_t now)
     Vec3 aim = MP_LoadVec3(s.aim);
     bool shooting = (s.flags & SYNC_SHOOTING) != 0;
     float heading = haveMo ? mo.heading : s.heading;
-    if(p.gunUp && !(shooting || (aimingNow && ms == 0))) { p.gunUp = false; Game::TaskStandStill(p.ped); p.moveState = -1; }   // 2.32
-    if(shooting || (aimingNow && ms == 0))
+    const bool aimWalk = aimingNow && legSpeed < 3.0f;   // 3.39: aiming while walking / strafing keeps the gun up here too
+    if(p.gunUp && !(shooting || aimWalk)) { p.gunUp = false; Game::TaskStandStill(p.ped); p.moveState = -1; }   // 2.32
+    if(shooting || aimWalk)
     {
         AvatarAim(p, aim, shooting && !bulletSync, now);   // 2.32: arms really come up
         p.moveState = -1;
@@ -1960,7 +2010,7 @@ static void UpdateRemote(int id, int localPed, uint64_t now)
     {
         Vec3 e = { target.x - cur.x, target.y - cur.y, 0 };
         Vec3 step;
-        if(ms > 0 && speed > 0.3f)
+        if(ms > 0 && speed > 0.3f && !p.gunUp)   // 3.39: gun up = no walk anim, pull the position along firmly
         {
             // 2.14: while walking, fix sideways error firmly but leave the direction of travel
             // to the walk animation (pulling it back is what looked like walking in place)
@@ -2044,6 +2094,7 @@ public:
     void OnConnected(const PktWelcome& w) override
     {
         SampReset();   // 3.01
+        HkReset(); RulesReset(); Modes2Reset(); SrvSettingsReset();   // 3.39: a new join: houses / rules / modes come again
         myId = w.yourId; myColor = w.color;
         MP_CopyStr(s_szCurServer, w.serverName, sizeof(s_szCurServer));
         s_bWorldSynced = false;
@@ -2291,6 +2342,7 @@ public:
         }
         if(d.killer == myId && d.victim != myId) ++s_nMyScoreFwd;   // 2.19 scoreboard
         GamesOnDeath(d);   // 2.21
+        CnrOnDeath(d);     // 3.39
     }
     void OnPlayerInfo(const PktPlayerInfo& pi) override   // 2.19
     {
@@ -2298,6 +2350,15 @@ public:
         players[pi.id].ping = pi.ping; players[pi.id].score = pi.score;
     }
     void OnKicked(const PktKicked& k) override { ShowKicked(k); }
+    void OnKickWait(int sec) override   // 3.39: a kick (not a ban): join again after 4:29
+    {
+        s_nKickWaitUntil = sec > 0 ? MP_NowMs() + (uint64_t)sec * 1000ULL : 0;
+        MP_CopyStr(s_szKickWaitSrv, client.GetServerName(), sizeof(s_szKickWaitSrv));
+    }
+    void OnHome(const uint8_t* d, int len) override { HkOnPacket(d, len); }
+    void OnRules(const PktRules& m) override { RulesOnPacket(m); }
+    void OnSrvSettings(const PktSrvSettings& m) override { SrvSettingsOnPacket(m); }
+    void OnGmEvent(const uint8_t* d, int len) override { Modes2OnEvent(d, len); }
     void OnEvent(const PktEvent& e) override { SampOnEvent(e); }          // 3.01
     void OnTeam(const PktTeam& t) override { SampOnTeam(t); }
     void OnTurf(const PktTurf& t) override { SampOnTurf(t); }
@@ -3775,6 +3836,7 @@ void MP::Process()
     BcwProcess(ped, now);        // 3.04: Brief Case War
     Mw3Process(ped, now);        // 3.23: Modern Warfare 3
     RpProcess(ped, now);         // 3.25: Mega Vil Futuristic
+    HkProcess(ped, now); NeedsProcess(ped, now); MvProcess(now); Modes2Process(ped, now); RulesProcess(now);   // 3.39
     ProcessGates(ped, now);      // 3.04.2: Area 69 gates
     ProcessHotelPc(ped, now);    // 3.36: hotel rooms with a computer (eyefind.info vehicle shops)
     ProcessClothes(now);         // 3.10: clothing sync
@@ -3850,7 +3912,8 @@ static void ApplyServerPerms()
     s_Server.SetPerms(((def || settings.allowMissionPair) ? PERM_MISSION_PAIR : 0) | (!def && settings.disableCheats ? PERM_NO_CHEATS : 0)
                       | (!def && s_bRunCheatMenu ? PERM_CHEAT_MENU : 0)   // 3.00 / 3.10: the server's own permission
                       | ((def || settings.permAfk) ? PERM_AFK : 0) | ((def || settings.permDmgInd) ? PERM_DMG_IND : 0)
-                      | ((def || settings.permShowIds) ? PERM_SHOW_IDS : 0));   // 3.34
+                      | ((def || settings.permShowIds) ? PERM_SHOW_IDS : 0)   // 3.34
+                      | ((def || settings.permNeeds) ? PERM_NEEDS : 0));       // 3.39: hunger + energy HUD
     s_Server.SetModes(def ? (uint16_t)GM_ALL : s_nRunModes);   // 3.03: fixed when the server was created
 }
 
@@ -3925,6 +3988,12 @@ static void PSettingsPopup();
 #include "mp_safezone.inc"  // 3.21: hospital safe zones + 5 s spawn protection
 #include "mp_markers.inc"   // 3.21: SA-MP style red checkpoint beams for races, derbies, DM, jobs
 #include "mp_auth.inc"      // 3.21.6: login system (Discord code, sign up, login, /stats)
+#include "mp_home.inc"      // 3.39: Home Kit (/create house, /setup, /buyhouse, /edithouse, /edithouseinteriors)
+#include "mp_needs.inc"     // 3.39: hunger + energy HUD
+#include "mp_mv.inc"        // 3.39: /mv My Vehicles
+#include "mp_rules.inc"     // 3.39: the rules window after the login
+#include "mp_srvset.inc"    // 3.39: server settings / management page
+#include "mp_modes2.inc"    // 3.39: survival, CnR, A/D, stunt, drift
 
 // 2.37: CheatMenu (libCheatMenu.so / libCheatMenu64.so) is not allowed on any server - the default
 // server and every custom server. Detected with aml->HasMod() in ON_ALL_MODS_LOAD (+ a re-check of
@@ -4124,8 +4193,28 @@ static void SrvModesPut(const char* name, int port, uint16_t modes)
 
 // Starts a server on this phone. It keeps running when you disconnect, and it is saved
 // (HostLAN / HostedName / HostedPort) so it comes back the next time the game starts.
+// 3.39: rules of the server I host (custom servers; the default server's clients show the built-in 10)
+static void ApplyServerRules()
+{
+    if(!s_Server.IsRunning()) return;
+    const bool featured = MP::IsDefaultServer(s_Server.GetName(), s_Server.GetPort()) || MP_IsBcwServerName(s_Server.GetName()) || MP_IsMw3ServerName(s_Server.GetName()) || MP_IsRpServerName(s_Server.GetName());
+    const char* lines[10]; for(int i = 0; i < 10; ++i) lines[i] = settings.rules[i];
+    s_Server.SetRules(!featured && settings.rulesOn, settings.rulesTitle[0] ? settings.rulesTitle : "SERVER RULES", lines);
+}
 static bool StartLocalServer(const char* name, int port)
 {
+    // 3.39: the 4 featured servers (default 1922, Brief Case War, MW3, Mega Vil) are hosted by the 24/7 bot.
+    // A phone may only keep them up when it is the administrator's or a moderator's (moderator.txt).
+    {
+        const bool featured = MP::IsDefaultServer(name, port) || MP_IsBcwServerName(name) || MP_IsMw3ServerName(name) || MP_IsRpServerName(name) || port == MP_MW3_PORT || port == MP_RP_PORT;
+        if(featured && !HaveAdminKey() && !s_bModMaster)
+        {
+            static uint64_t s_nSaidAt = 0;
+            if(MP_NowMs() - s_nSaidAt > 30000) { s_nSaidAt = MP_NowMs(); SysMsg(COL_YELLOW, "%s is hosted by the 24/7 bot - waiting for it (only the admin / moderators can host it).", name); }
+            if(settings.hostLan && !strcasecmp(settings.hostedName, name)) { settings.hostLan = false; SaveConfig(); }
+            return false;
+        }
+    }
     if(s_Server.IsRunning())
     {
         if(port == s_Server.GetPort() && !strcasecmp(name, s_Server.GetName())) return true;
@@ -4144,6 +4233,10 @@ static bool StartLocalServer(const char* name, int port)
     else if(MP_IsMw3ServerName(name)) maxp = MP_MW3_MAX_PLAYERS;        // 3.24: a phone copy listed itself as x/100
     else if(MP_IsBcwServerName(name)) maxp = MP_BCW_MAX_PLAYERS;
     { char mf[512]; snprintf(mf, sizeof(mf), "%s/moderators_server.txt", s_szDataDir); s_Server.SetModFile(mf); }   // 3.35: list of your server's moderators
+    {   // 3.39: Home Kit houses (one file per port), the host = the owner (kick / settings on a custom server)
+        char hf[512]; snprintf(hf, sizeof(hf), "%s/homes_%d.txt", s_szDataDir, port); s_Server.SetHomeFile(hf);
+        s_Server.SetOwnerUid(settings.deviceId);
+    }
     if(!s_Server.Start((uint16_t)port, name, ServerLog, maxp, settings.region))
     {
         SysMsg(COL_RED, "Could not start the server on port %d", port);
@@ -4177,6 +4270,7 @@ static bool StartLocalServer(const char* name, int port)
     }
     MP_CopyStr(settings.hostedPassword, MP::IsDefaultServer(name, port) || bcw ? "" : s_szJoinPw, sizeof(settings.hostedPassword));
     ApplyServerPerms();   // 2.16
+    ApplyServerRules();   // 3.39
     settings.hostLan = true;
     SaveConfig();
     return true;
@@ -4762,7 +4856,9 @@ void MP::SaveConfig()
     I("Region", settings.region); B("LobbyAuto", settings.lobbyAuto); B("RegionPicked", settings.regionPicked); I("NameColor", (int)settings.nameColor); I("MaxPlayers", settings.maxPlayers); I("HostGamemodes", settings.hostModes); I("ServerIcon", settings.serverIcon); S("ServerLang", settings.serverLang); S("DeviceId", settings.deviceId);
     B("FullProgressDefault", settings.fullProgressDefault);
     B("UnlockWorld", settings.unlockWorld); B("Girlfriends", settings.girlfriends); B("EventTips", settings.eventTips);   // 2.21
-    B("PermAfk", settings.permAfk); B("PermDmgInd", settings.permDmgInd); B("PermShowIds", settings.permShowIds); B("NoCamShake", settings.noCamShake);   // 3.34
+    B("PermAfk", settings.permAfk); B("PermDmgInd", settings.permDmgInd); B("PermShowIds", settings.permShowIds); B("PermNeeds", settings.permNeeds); B("RulesOn", settings.rulesOn); S("RulesTitle", settings.rulesTitle);
+    for(int i = 0; i < 10; ++i) { char k[16]; snprintf(k, sizeof(k), "Rule%d", i + 1); S(k, settings.rules[i]); }   // 3.39
+    B("NoCamShake", settings.noCamShake);   // 3.34
     I("UiFont", settings.uiFont); I("UiFontFx", settings.uiFontFx); F("UiFontScale", settings.uiFontScale); F("UiScale", settings.uiScale);
     B("ChatTimestamps", settings.chatTimestamps); B("VoiceChat", settings.voiceChat); F("VoiceVolume", settings.voiceVolume); F("MicGain", settings.micGain); F("VoicePitch", settings.voicePitch);   // 3.11
     B("ChatBubbles", settings.chatBubbles); B("Labels3D", settings.labels3d); B("MapIcons", settings.mapIcons); B("Actors", settings.actors); B("GangZones", settings.gangZones);   // 3.01
@@ -4806,6 +4902,10 @@ static void LoadConfig()
     settings.permAfk     = ::cfg->GetBool("PermAfk", true, "MP");       // 3.34
     settings.permDmgInd  = ::cfg->GetBool("PermDmgInd", true, "MP");
     settings.permShowIds = ::cfg->GetBool("PermShowIds", true, "MP");
+    settings.permNeeds   = ::cfg->GetBool("PermNeeds", false, "MP");   // 3.39
+    settings.rulesOn     = ::cfg->GetBool("RulesOn", true, "MP");
+    ::cfg->GetString(settings.rulesTitle, sizeof(settings.rulesTitle), "RulesTitle", "SERVER RULES", "MP");
+    for(int i = 0; i < 10; ++i) { char k[16]; snprintf(k, sizeof(k), "Rule%d", i + 1); ::cfg->GetString(settings.rules[i], sizeof(settings.rules[i]), k, "", "MP"); }
     settings.noCamShake  = ::cfg->GetBool("NoCamShake", true, "MP");
     settings.uiFont      = ::cfg->GetInt("UiFont", 0, "MP");
     settings.uiFontFx    = ::cfg->GetInt("UiFontFx", 1, "MP");
@@ -4952,21 +5052,41 @@ static void LoadAdminFile()
     }
     client.SetAdminKey(settings.adminKey);
     {   // 3.35: files/MP/moderator.txt = my moderator key. 3.35.2: the MP moderator key (MP_MOD_KEY_HASH) gives "[MOD] name" on every server by itself
-        char mk[120] = {0}, mp[512]; snprintf(mp, sizeof(mp), "%s/moderator.txt", s_szDataDir);
-        if(FILE* f = fopen(mp, "r"))
+        // 3.39: any layout works now - "key", "name key", "MOD:key", a BOM, Windows line ends, quotes -
+        // and the same folders as administrator.txt are searched (the MP folder first)
+        char mk[120] = {0}, best[120] = {0};
+        std::vector<std::string> mcand; { char mp[512]; snprintf(mp, sizeof(mp), "%s/moderator.txt", s_szDataDir); mcand.push_back(mp); }
+        for(size_t i = 1; i < cand.size(); ++i) { std::string c = cand[i]; size_t sl = c.find_last_of('/'); if(sl != std::string::npos) mcand.push_back(c.substr(0, sl + 1) + "moderator.txt"); }
+        for(size_t ci = 0; ci < mcand.size() && !best[0]; ++ci)
         {
-            char line[200];
-            while(fgets(line, sizeof(line), f))
+            FILE* f = fopen(mcand[ci].c_str(), "rb"); if(!f) continue;
+            char line[300];
+            while(!best[0] && fgets(line, sizeof(line), f))
             {
-                char* q = line; while(*q == ' ' || *q == '\t') ++q;
+                char* q = line;
+                if((unsigned char)q[0] == 0xEF && (unsigned char)q[1] == 0xBB && (unsigned char)q[2] == 0xBF) q += 3;   // UTF-8 BOM
+                while(*q == ' ' || *q == '\t') ++q;
                 if(*q == '#' || *q == '\r' || *q == '\n' || !*q) continue;
-                size_t n = strcspn(q, " \t\r\n"); if(n >= sizeof(mk)) n = sizeof(mk) - 1;
-                memcpy(mk, q, n); mk[n] = 0; break;
+                char tok[4][120]; int nt = 0;
+                while(*q && nt < 4)
+                {
+                    while(*q == ' ' || *q == '\t' || *q == '"' || *q == '\'' || *q == '=') ++q;
+                    if(!*q || *q == '\r' || *q == '\n') break;
+                    size_t n = strcspn(q, " \t\r\n\"'="); if(n == 0) { ++q; continue; }
+                    if(n >= sizeof(tok[0])) n = sizeof(tok[0]) - 1;
+                    memcpy(tok[nt], q, n); tok[nt][n] = 0; q += n;
+                    char* t = tok[nt]; if(!strncasecmp(t, MP_MOD_PREFIX, 4)) memmove(t, t + 4, strlen(t + 4) + 1);
+                    if(t[0]) ++nt;
+                }
+                for(int k = 0; k < nt; ++k) if(MP_ModMasterOk(tok[k])) { MP_CopyStr(best, tok[k], sizeof(best)); break; }
+                if(!best[0] && !mk[0] && nt > 0) MP_CopyStr(mk, nt >= 2 ? tok[nt - 1] : tok[0], sizeof(mk));   // "name key" -> the key
             }
             fclose(f);
         }
+        if(best[0]) MP_CopyStr(mk, best, sizeof(mk));
+        s_bModMaster = best[0] != 0;
         client.SetModKey(mk);
-        if(mk[0]) logger->Info("MP: moderator.txt found - you join as [MOD] %s", settings.name);
+        if(mk[0]) logger->Info("MP: moderator.txt found (%s) - you join as [MOD] %s", s_bModMaster ? "MP moderator key" : "server list key", settings.name);
     }
     if(settings.adminKey[0]) logger->Info("MP: administrator.txt OK (%s, %d key(s)) - you are the administrator (SENJI)", s_szAdminFound, (int)s_AdminKeys.size());
     else logger->Info("MP: no valid administrator.txt (looked in %s and %d other places)", cand[0].c_str(), (int)cand.size() - 1);
@@ -5320,6 +5440,9 @@ static void PermissionSwitches(const char* where)
                                             : "Off: no damage numbers over the name tags.");
     if(FloatMenu::ToggleSwitch("Player IDs (name tags + player list)", &settings.permShowIds)) { ApplyServerPerms(); SaveConfig(); }
     ImGui::TextDisabled(settings.permShowIds ? "On: name tags and the player list show \"name (id)\"." : "Off: names only.");
+    if(FloatMenu::ToggleSwitch("Hunger + energy HUD", &settings.permNeeds)) { ApplyServerPerms(); SaveConfig(); }   // 3.39
+    ImGui::TextDisabled(settings.permNeeds ? "On: a hunger and energy box (bottom right) - eat with /eat, rest standing still or /sleep in a house."
+                                           : "Off: no hunger / energy (the default server always has it, Mega Vil Futuristic has its own).");
     ImGui::TextDisabled("/stats and /char work on custom servers that have the Authentication system (login with Discord).");
     if(IsHostingDefault()) ImGui::TextDisabled("(The default server always allows Mission sync.)");
     else if(s_Server.IsRunning()) ImGui::TextColored(kGreenTxt, "Applied to \"%s\" now.", s_Server.GetName());
@@ -5609,6 +5732,31 @@ static bool PortTakenHint(char* portBuf, size_t portLen, const char* myName, boo
     return true;
 }
 
+// 3.39: Add server > Rules (custom servers): on/off, a title and 1) - 10). Shown after the login.
+static void OnRulesTitle(const char* t, void*) { MP_CopyStr(settings.rulesTitle, t && *t ? t : "SERVER RULES", sizeof(settings.rulesTitle)); SaveConfig(); ApplyServerRules(); }
+static void OnRuleLine(const char* t, void* d) { int i = (int)(intptr_t)d; if(i < 0 || i >= 10) return; MP_CopyStr(settings.rules[i], t ? t : "", sizeof(settings.rules[i])); SaveConfig(); ApplyServerRules(); }
+static void RulesSection()
+{
+    ImGui::PushID("rules");
+    ImGui::Spacing();
+    ImGui::TextUnformatted("Rules");
+    ImGui::TextDisabled("A RULES window after the login on your server (players read it again with /rules).");
+    if(FloatMenu::ToggleSwitch("Show the rules", &settings.rulesOn)) { SaveConfig(); ApplyServerRules(); }
+    if(settings.rulesOn)
+    {
+        if(!settings.rulesTitle[0]) MP_CopyStr(settings.rulesTitle, "SERVER RULES", sizeof(settings.rulesTitle));
+        FloatMenu::TextField("Title", settings.rulesTitle, "Rules title", (int)sizeof(settings.rulesTitle) - 1, OnRulesTitle);
+        for(int i = 0; i < 10; ++i)
+        {
+            char lbl[16], kb[24]; snprintf(lbl, sizeof(lbl), "%d)", i + 1); snprintf(kb, sizeof(kb), "Rule %d", i + 1);
+            ImGui::PushID(i);
+            FloatMenu::TextField(lbl, settings.rules[i], kb, (int)sizeof(settings.rules[i]) - 1, OnRuleLine, (void*)(intptr_t)i);
+            ImGui::PopID();
+        }
+        ImGui::TextDisabled("Colours work like SA-MP: {FF0000}red {FFFF00}yellow {33CC55}green. Empty lines are skipped.");
+    }
+    ImGui::PopID();
+}
 static void SectionAddServer(void*)
 {
     AddFormPrefill();
@@ -5630,6 +5778,7 @@ static void SectionAddServer(void*)
     if(ImGui::IsItemDeactivatedAfterEdit()) SaveConfig();
     PermissionSwitches("add");   // 2.37: once (was on Hosted + here)
     GamemodeSwitches();          // 3.02
+    RulesSection();              // 3.39
     ImGui::Separator();
 
     bool hasHost = s_szNewHost[0] != 0;

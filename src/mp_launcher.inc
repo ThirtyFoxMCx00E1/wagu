@@ -14,6 +14,7 @@
 
 enum { LT_INTERNET = 0, LT_FAVORITES, LT_HOSTED, LT_ADD, LT_PLAYERS, LT_BANS, LT_SECTIONS };
 static int   s_nLTab = LT_INTERNET;
+static bool  s_bLauncherCloseReq = false;   // 3.39: close the launcher (e.g. Server settings opens a dialog in game)
 static int   s_nLSel = -1;                         // selected row
 static char  s_szLSelKey[48] = "";                 // name|port of the selected row (rows move)
 static char  s_szSearch[32] = "";
@@ -788,7 +789,10 @@ static void LPagePlayersAdmin()
 
 static void LPagePlayers()
 {
-    if(MP::IsDefaultAdmin() || MP::IsLocalMod()) { LPagePlayersAdmin(); return; }   // 3.35: [MOD] kicks / mutes too   // 2.37
+    // 3.39: admin + moderators manage the 4 featured servers only; a custom server is managed by its host owner
+    const bool onFeatured = client.GetState() == NET_CONNECTED && (MP::IsOnDefault() || BcwOnServer() || Mw3OnServer() || RpOnServer());
+    if(client.GetState() == NET_CONNECTED && FloatMenu::BigButton("Server settings (gamemodes / permissions / rules)")) { s_bLauncherCloseReq = true; SrvSettingsShow(); }
+    if((MP::IsDefaultAdmin() || MP::IsLocalMod()) && onFeatured) { LPagePlayersAdmin(); return; }   // 3.35: [MOD] kicks / mutes too   // 2.37
     if(MP::IsHostingDefault())
     {
         ImGui::TextUnformatted("Player management");
@@ -1037,6 +1041,7 @@ static void RenderLauncher(void* openPtr)
         }
         ImGui::SetCursorScreenPos(ImVec2(wp.x + ws.x - titleH - UI::S(6), wp.y));
         if(LToolButton("close", IC_CLOSE, nullptr, titleH)) { *open = false; s_bRegionPick = false; }
+        if(s_bLauncherCloseReq) { s_bLauncherCloseReq = false; *open = false; s_bRegionPick = false; }
         dl->AddLine(ImVec2(wp.x, wp.y + titleH), ImVec2(wp.x + ws.x, wp.y + titleH), line, UI::S(2));
     }
 
@@ -1202,8 +1207,17 @@ static void RenderKickDialog(void*)
         rowf("Administrator:", s_Kick.admin[0] ? s_Kick.admin : "Server");
         rowf("Reason:", s_Kick.reason[0] ? s_Kick.reason : "No reason given");
         ImGui::Separator();
-        ImGui::TextDisabled(s_Kick.banned ? "If you think this is a mistake, ask the administrator (the host) to unban you."
-                                          : "You can join again. Follow the server rules.");
+        if(s_Kick.banned) ImGui::TextDisabled("If you think this is a mistake, ask the administrator (the host) to unban you.");
+        else
+        {
+            const uint64_t nw = MP_NowMs();
+            if(s_nKickWaitUntil > nw)
+            {
+                const int left = (int)((s_nKickWaitUntil - nw + 999) / 1000);
+                ImGui::TextColored(ImVec4(1.0f, 0.85f, 0.2f, 1), "You can join again in %d:%02d.", left / 60, left % 60);
+            }
+            else ImGui::TextDisabled("You can join again now. Follow the server rules.");
+        }
         ImGui::Spacing();
         float bw = UI::S(260);
         ImGui::SetCursorPosX((ImGui::GetWindowWidth() - bw) * 0.5f);

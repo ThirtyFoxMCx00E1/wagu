@@ -6,6 +6,7 @@
 #include <mutex>
 #include <vector>
 #include "protocol.h"
+#include "homekit.h"
 #include "turf.h"
 #include "bcw.h"
 #include "mw3.h"   // 3.23
@@ -66,6 +67,10 @@ public:
     void SetMw3File(const char* path);          // 3.23: MW3 stats + zone owners (default mw3_stats.txt)
     bool IsRpServer() const;                    // 3.25: Mega Vil Futuristic (Roleplay)
     void SetRpFile(const char* path);           // 3.25: citizens (money, bank, job, house...) + house owners (default rp_citizens.txt)
+    void SetHomeFile(const char* path);         // 3.39: Home Kit houses (default homes.txt)
+    void SetRules(bool on, const char* title, const char* const lines[10]);   // 3.39: rules window (custom servers)
+    void SetOwnerUid(const char* uid) { std::lock_guard<std::mutex> lk(m_Mutex); MP_CopyStr(m_szOwnerUid, uid ? uid : "", sizeof(m_szOwnerUid)); }   // 3.39: the host phone = the owner
+    bool HomesOn() const;                       // 3.39: GM_HOME on (always on Mega Vil Futuristic)
     // 3.21.6: login system (Discord verification + account). Always on for the default server and
     // Brief Case War; custom servers: SetAuth(true) (Add server -> Authentication system, --auth)
     void SetAuth(bool on) { m_bAuthCustom = on; }
@@ -150,7 +155,34 @@ private:
         char         chal[33];       // 3.21.6: this connection's random challenge (hex)
         uint64_t     lastAuthTry;
         uint8_t      authFails;
+        bool         owner;          // 3.39: the host phone of this custom server (kick / settings)
+        uint64_t     hkLastCmd;      // 3.39: Home Kit flood guard
+        uint64_t     gmEvAt;         // 3.39: PKT_GM_EVENT rate limit
     };
+    // ---- 3.39: Home Kit (server_home.inc) ----
+    struct HkHome { PktHomeHead h; std::vector<HkObj> obj; };
+    std::vector<HkHome> m_Homes;
+    char     m_szHomeFile[256] = "homes.txt";
+    bool     m_bHomeLoaded = false, m_bHomeDirty = false;
+    uint64_t m_nHomeSaveAt = 0;
+    uint16_t m_nHomeNextId = 1;
+    void HomeLoad(); void HomeSave(); void HomeTick(uint64_t now); void HomeChanged(int idx);
+    int  HomeFind(uint16_t id) const; int HomeByName(const char* name) const;
+    const char* HomeKey(int slot, char* buf, size_t n) const;
+    bool HomeStaff(int slot) const;
+    void HomeSendIndex(int slot); void HomeSend(int slot, int idx);
+    void HomeMsg(int slot, bool ok, uint16_t id, int32_t cash, const char* fmt, ...);
+    void HomeHandleCmd(int slot, const PktHomeCmd& c);
+    // ---- 3.39: rules, live settings, owner, timed kicks ----
+    bool     m_bRulesOn = false;
+    char     m_szRules[11][100] = {};
+    char     m_szOwnerUid[MP_UID_LEN + 1] = {0};
+    struct TempKick { char uid[MP_UID_LEN + 1]; char name[MP_NAME_LEN]; char admin[MP_NAME_LEN]; char reason[MP_REASON_LEN]; uint32_t until; };
+    std::vector<TempKick> m_TempKicks;
+    void SendRules(int slot);
+    bool CanManage(int slot) const;
+    void SendSrvSettings(int slot);
+    void OnSrvSettings(int slot, const PktSrvSettings& p);
     void AuthBegin(int slot);                    // 3.21.6, m_Mutex held
     void AuthHandle(int slot, const uint8_t* data, int len);
     void AnnounceJoin(int slot);                 // 3.21.6: PKT_PLAYER_JOIN to everybody else

@@ -564,17 +564,21 @@ static void RpDrawRadar(uint64_t nowMs)
 bool MP::DrawMenuMapBackground(ImDrawList* dl)
 {
     if(!RpOnServer() || settings.radarStyle == 0 || s_Rp.interior != 0) return false;
-    float ax, ay, bx, by;
-    if(!Game::MenuMapWorldToScreen(-3000.0f, 3000.0f, ax, ay) || !Game::MenuMapWorldToScreen(3000.0f, -3000.0f, bx, by)) return false;
-    const float ppm = (bx - ax) / 6000.0f;                      // screen px per metre
-    if(!(ppm > 0.0005f) || ppm > 200.0f) return false;
+    // 3.39: measured from the map centre with the game's own transform (the same one its blips use),
+    // x and y separately, so the Google map has exactly the size / place of the game's map
+    float cx, cy, ex, ey, nx, ny;
+    if(!Game::MenuMapWorldToScreen(0.0f, 0.0f, cx, cy) || !Game::MenuMapWorldToScreen(1000.0f, 0.0f, ex, ey) || !Game::MenuMapWorldToScreen(0.0f, 1000.0f, nx, ny)) return false;
+    const float ppmX = (ex - cx) / 1000.0f, ppmY = (cy - ny) / 1000.0f;   // screen px per metre
+    if(!(ppmX > 0.0005f) || ppmX > 200.0f || !(ppmY > 0.0005f) || ppmY > 200.0f) return false;
+    const float ppm = 0.5f * (ppmX + ppmY);
     const ImVec2 ds = ImGui::GetIO().DisplaySize;
+    const float ax = cx - 3000.0f * ppmX, ay = cy - 3000.0f * ppmY;      // where (-3000, +3000) is
     // a square frame bigger than the screen (no edge visible), centred on the screen centre
     const float size = (ds.x > ds.y ? ds.x : ds.y) * 1.02f;
     const ImVec2 p0(ds.x * 0.5f - size * 0.5f, ds.y * 0.5f - size * 0.5f);
     SaRadarView v{};
-    v.meX = -3000.0f + (ds.x * 0.5f - ax) / ppm;
-    v.meY =  3000.0f - (ds.y * 0.5f - ay) / ppm;
+    v.meX = -3000.0f + (ds.x * 0.5f - ax) / ppmX;
+    v.meY =  3000.0f - (ds.y * 0.5f - ay) / ppmY;
     v.meZ = 20.0f; v.mode = 1; v.fullMap = true;
     v.range = size * 0.5f / ppm;
     SaPin pins[96]; int n = 0;

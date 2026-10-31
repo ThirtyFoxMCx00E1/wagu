@@ -118,9 +118,11 @@ bool MPClient::Connect(const char* host, uint16_t port, const char* name, uint16
     return true;
 }
 
-void MPClient::SendJoin()
+void MPClient::SendJoin(uint8_t flags)
 {
-    PktJoin5 j5; memset(&j5, 0, sizeof(j5));   // 3.04.6: + build (servers refuse old MP versions)
+    PktJoin6 j6; memset(&j6, 0, sizeof(j6));   // 3.39: + flags (rebind = same session on a new network path)
+    j6.flags = flags;
+    PktJoin5& j5 = j6.j5;                       // 3.04.6: + build (servers refuse old MP versions)
     PktJoin4& j4 = j5.j4;                       // 2.37: + admin key (older servers read only the first part)
     PktJoin3& j3 = j4.j3;                       // 2.25: + phone id
     PktJoin2& j2 = j3.j2;
@@ -132,7 +134,7 @@ void MPClient::SendJoin()
     MP_CopyStr(j4.adminKey, m_szAdminKey, sizeof(j4.adminKey));
     if(m_szModKey[0] && !MP_IsReservedName(m_szName)) snprintf(j4.adminKey, sizeof(j4.adminKey), "MOD:%s", m_szModKey);   // 3.35
     j5.build = MP_BUILD;
-    Send(&j5, sizeof(j5));
+    Send(&j6, sizeof(j6));
     m_nLastJoinSend = MP_NowMs();
 }
 
@@ -187,6 +189,7 @@ void MPClient::Poll(INetEvents* ev)
                     uint32_t sb = 0;
                     if(r >= (int)sizeof(PktWelcome2)) memcpy(&sb, buf + offsetof(PktWelcome2, build), sizeof(sb));
                     if(sb < MP_MIN_BUILD) { Disconnect(true); ev->OnRejected(REJECT_OLD_SERVER); return; }
+                    m_nServerBuild = sb;   // 3.39
                     const PktWelcome* w = (const PktWelcome*)buf;
                     m_nMyId = w->yourId;
                     MP_CopyStr(m_szServerName, w->serverName, sizeof(m_szServerName));
@@ -199,7 +202,13 @@ void MPClient::Poll(INetEvents* ev)
             case PKT_REJECT:
                 if(r >= (int)sizeof(PktReject)) { uint8_t rs = ((PktReject*)buf)->reason; Disconnect(false); ev->OnRejected(rs); return; }
                 break;
-            case PKT_KICKED:       if(r >= (int)sizeof(PktKicked)) { PktKicked k; memcpy(&k, buf, sizeof(k)); k.admin[MP_NAME_LEN - 1] = 0; k.reason[MP_REASON_LEN - 1] = 0; ev->OnKicked(k); } break;   // 2.25
+            case PKT_KICKED:       if(r >= (int)sizeof(PktKicked)) { PktKicked k; memcpy(&k, buf, sizeof(k)); k.admin[MP_NAME_LEN - 1] = 0; k.reason[MP_REASON_LEN - 1] = 0;
+                                       if(r >= (int)sizeof(PktKicked2)) { PktKicked2 k2; memcpy(&k2, buf, sizeof(k2)); ev->OnKickWait(k.banned ? 0 : k2.waitSec); }
+                                       ev->OnKicked(k); } break;   // 2.25   // 3.39: + the wait
+            case PKT_HOME_HEAD: case PKT_HOME_OBJS: case PKT_HOME_INDEX: case PKT_HOME_DEL: case PKT_HOME_MSG: ev->OnHome(buf, r); break;   // 3.39
+            case PKT_RULES:        if(r >= (int)sizeof(PktRules)) { PktRules m; memcpy(&m, buf, sizeof(m)); m.text[sizeof(m.text) - 1] = 0; ev->OnRules(m); } break;
+            case PKT_SRV_SETTINGS: if(r >= (int)sizeof(PktSrvSettings)) { PktSrvSettings m; memcpy(&m, buf, sizeof(m)); ev->OnSrvSettings(m); } break;
+            case PKT_GM_EVENT:     ev->OnGmEvent(buf, r); break;
             case PKT_PLAYER_JOIN:  if(r >= (int)sizeof(PktPlayerJoin))  ev->OnPlayerJoin(*(PktPlayerJoin*)buf);   break;
             // 3.01: SA-MP features (copied out: packed + unaligned)
             case PKT_EVENT:    if(r >= (int)sizeof(PktEvent)) { PktEvent e; memcpy(&e, buf, sizeof(e)); ev->OnEvent(e); } break;
@@ -329,6 +338,24 @@ void MPClient::Poll(INetEvents* ev)
             Send(&p, sizeof(p));
             m_nLastPing = now;
         }
-        if(now - m_nLastRecv > MP_TIMEOUT_MS) { Disconnect(false); ev->OnLostConnection(); }
+        // 3.39: nothing from the server for 5 s (Wi-Fi <-> mobile data switch, NAT mapping gone, a stalled
+        // relay): say "same session" again on the current path, and after 9 s move a direct link to the
+        // relay. The server keeps the slot, the id and the login - no "(Timeout)" for a network hiccup.
+        const uint64_t quiet = now - m_nLastRecv;
+        if(quiet > 5000 && m_nServerBuild >= 33900 && now - m_nLastRebind > 2000)
+        {
+            if(quiet > 9000 && m_bDirect && m_nFallbackVia)
+            {
+                std::lock_guard<std::mutex> lk(m_SockMutex);
+                memset(&m_Server, 0, sizeof(m_Server));
+                m_Server.sin_family = AF_INET;
+                m_Server.sin_addr.s_addr = htonl(0x7F000001u);
+                m_Server.sin_port = htons(m_nFallbackVia);
+                m_bDirect = false; m_bDirectFellBack = true;
+            }
+            SendJoin(MP_JOIN_REBIND);
+            m_nLastRebind = now;
+        }
+        if(quiet > MP_TIMEOUT_MS) { Disconnect(false); ev->OnLostConnection(); }
     }
 }

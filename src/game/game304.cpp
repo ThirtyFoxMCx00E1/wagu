@@ -99,6 +99,13 @@ int Game::FreeObjectSlots()
 // rotation, anywhere on the map. 0 = the model is still loading (call again next tick).
 // 3.23.2: -1 = no room in the object pool; the model is released right after (the object keeps
 // it loaded), so 26 MW3 models are not pinned in memory for good.
+void Game::PlaceMapObject(int obj, const Vec3& p, float rx, float ry, float rz)
+{
+    if(!IsReady() || obj <= 0 || !(p.x == p.x) || p.x < -3500.0f || p.x > 3500.0f || p.y < -3500.0f || p.y > 3500.0f) return;
+    if(!CALLSCM(DOES_OBJECT_EXIST_304, obj)) return;
+    CALLSCM(SET_OBJECT_COORDINATES_304, obj, p.x, p.y, p.z);
+    CALLSCM(SET_OBJECT_ROTATION_304, obj, rx, ry, rz);
+}
 int Game::CreateMapObject(int model, const Vec3& p, float rx, float ry, float rz)
 {
     if(!IsReady() || model <= 0 || model >= 20000) return 0;
