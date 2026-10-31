@@ -21,6 +21,13 @@ Game traffic stays inside one region (no bridging), so ping is only phone -> nea
 
 
 
+## 3.39.1: saved progress, houses after rejoin
+
+- `progress.txt` (next to `homes.txt`, change it with `--progress-file PATH`) keeps every player's place, money, weapons + ammo, health, armour, hunger and energy. Default server: by account (after the login); custom servers: by account or phone. Not used on Brief Case War, MW3 or Mega Vil (they keep their own saves).
+- Houses come back after leaving + rejoining (owner matched by account, phone id or name); `/homedelete <name>` is saved at once.
+- A kicked player who rejoins during the 4:29 wait is refused with the seconds left.
+- The service update (mp-autoupdate, every 10 min) installs this by itself.
+
 ## 3.39: Home Kit, rules, server settings, 4:29 kicks
 
 Update the 4 servers with the same one command as 3.38 (the installer pulls the new `mp_server`). New options:

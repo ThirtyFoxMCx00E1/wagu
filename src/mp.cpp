@@ -1,4 +1,5 @@
 // MP core: networking events, local player sync, remote player avatars, combat, chat, menus.
+#include <dirent.h>
 #include <signal.h>
 #include <mod/amlmod.h>
 #include <mod/logger.h>
@@ -494,6 +495,7 @@ static void HotelPcReset();
 static bool GatesCommand(const char* cmd, const char* arg);
 static bool IsBusy();
 static void LoadAdminFile();
+static void LoadModFile();   // 3.39.1
 static bool HaveAdminKey();
 static bool s_bModMaster = false;   // 3.39: moderator.txt holds the MP moderator key
 static void SenjiBlockedMsg();   // 3.11.2
@@ -554,6 +556,12 @@ static void NeedsRender();
 static void RulesProcess(uint64_t now);
 static bool RulesCommand(const char* cmd, const char* arg);
 static bool SrvSettingsCommand(const char* cmd, const char* arg);
+static void ModCheckProcess(uint64_t now);
+static void ProgProcess(int ped, uint64_t now);
+static void ProgOnPacket(const PktProgress& m);
+static void ProgReset();
+static void ProgSendNow();
+static bool ProgCommand(const char* cmd, const char* arg);
 static uint64_t s_nKickWaitUntil = 0;   // 3.39: a kick = wait 4:29 before joining again
 static char s_szKickWaitSrv[32] = "";
 static int  s_nMyScoreFwd = 0;
@@ -2094,7 +2102,7 @@ public:
     void OnConnected(const PktWelcome& w) override
     {
         SampReset();   // 3.01
-        HkReset(); RulesReset(); Modes2Reset(); SrvSettingsReset();   // 3.39: a new join: houses / rules / modes come again
+        HkReset(); RulesReset(); Modes2Reset(); SrvSettingsReset(); ProgReset();   // 3.39: a new join: houses / rules / modes come again
         myId = w.yourId; myColor = w.color;
         MP_CopyStr(s_szCurServer, w.serverName, sizeof(s_szCurServer));
         s_bWorldSynced = false;
@@ -2359,6 +2367,7 @@ public:
     void OnRules(const PktRules& m) override { RulesOnPacket(m); }
     void OnSrvSettings(const PktSrvSettings& m) override { SrvSettingsOnPacket(m); }
     void OnGmEvent(const uint8_t* d, int len) override { Modes2OnEvent(d, len); }
+    void OnProgress(const PktProgress& m) override { ProgOnPacket(m); }   // 3.39.1
     void OnEvent(const PktEvent& e) override { SampOnEvent(e); }          // 3.01
     void OnTeam(const PktTeam& t) override { SampOnTeam(t); }
     void OnTurf(const PktTurf& t) override { SampOnTurf(t); }
@@ -3836,7 +3845,7 @@ void MP::Process()
     BcwProcess(ped, now);        // 3.04: Brief Case War
     Mw3Process(ped, now);        // 3.23: Modern Warfare 3
     RpProcess(ped, now);         // 3.25: Mega Vil Futuristic
-    HkProcess(ped, now); NeedsProcess(ped, now); MvProcess(now); Modes2Process(ped, now); RulesProcess(now);   // 3.39
+    HkProcess(ped, now); NeedsProcess(ped, now); MvProcess(now); Modes2Process(ped, now); RulesProcess(now); ModCheckProcess(now); ProgProcess(ped, now);   // 3.39
     ProcessGates(ped, now);      // 3.04.2: Area 69 gates
     ProcessHotelPc(ped, now);    // 3.36: hotel rooms with a computer (eyefind.info vehicle shops)
     ProcessClothes(now);         // 3.10: clothing sync
@@ -3993,6 +4002,7 @@ static void PSettingsPopup();
 #include "mp_mv.inc"        // 3.39: /mv My Vehicles
 #include "mp_rules.inc"     // 3.39: the rules window after the login
 #include "mp_srvset.inc"    // 3.39: server settings / management page
+#include "mp_progress.inc"  // 3.39.1: saved progress (place, money, weapons, health, hunger)
 #include "mp_modes2.inc"    // 3.39: survival, CnR, A/D, stunt, drift
 
 // 2.37: CheatMenu (libCheatMenu.so / libCheatMenu64.so) is not allowed on any server - the default
@@ -4015,6 +4025,7 @@ static bool CheatMenuBlocks(const char* serverName, bool isDefault)
 
 static void DoConnect(const char* host, int port)
 {
+    LoadModFile();   // 3.39.1: moderator.txt copied in while the game runs works on the next join
     if(CheatMenuBlocks(s_szJobName[0] ? s_szJobName : host, s_bConnectingDefault)) return;   // 2.37: last line of defence (takeover, auto-rejoin...)
     if(MP_IsReservedName(settings.name))   // 2.37: SENJI without admin.txt is blocked before it even asks the server
     {
@@ -4060,6 +4071,7 @@ static void DoConnect(const char* host, int port)
 static void LeaveServer(const char* msg)
 {
     if(client.GetState() == NET_DISCONNECTED) return;
+    s_Prog.sendAt = 0; ProgSendNow();   // 3.39.1: the last save before leaving (the server keeps it)
     client.Disconnect(true);
     ClearAllPlayers();
     myId = MP_INVALID_ID;
@@ -4235,6 +4247,7 @@ static bool StartLocalServer(const char* name, int port)
     { char mf[512]; snprintf(mf, sizeof(mf), "%s/moderators_server.txt", s_szDataDir); s_Server.SetModFile(mf); }   // 3.35: list of your server's moderators
     {   // 3.39: Home Kit houses (one file per port), the host = the owner (kick / settings on a custom server)
         char hf[512]; snprintf(hf, sizeof(hf), "%s/homes_%d.txt", s_szDataDir, port); s_Server.SetHomeFile(hf);
+        snprintf(hf, sizeof(hf), "%s/progress_%d.txt", s_szDataDir, port); s_Server.SetProgressFile(hf);   // 3.39.1
         s_Server.SetOwnerUid(settings.deviceId);
     }
     if(!s_Server.Start((uint16_t)port, name, ServerLog, maxp, settings.region))
@@ -5025,38 +5038,29 @@ static void AdminCandidates(std::vector<std::string>& v)
     for(auto& p : v) both.push_back(p);
     v.swap(both);
 }
-static void LoadAdminFile()
-{
-    settings.adminKey[0] = 0; s_szAdminFound[0] = 0;
-    std::vector<std::string> cand; AdminCandidates(cand);
-    s_AdminKeys.clear(); s_nAdminKeyIdx = 0;
-    bool inMine = false;
-    for(size_t i = 0; i < cand.size(); ++i)
-    {
-        size_t before = s_AdminKeys.size();
-        ReadAdminKeys(cand[i].c_str(), s_AdminKeys);
-        if(s_AdminKeys.size() == before) continue;
-        if(!s_szAdminFound[0]) MP_CopyStr(s_szAdminFound, cand[i].c_str(), sizeof(s_szAdminFound));
-        if(i == 0) inMine = true;
-    }
-    // 3.21: new key(s) first, old keys (only for servers older than 3.11.6) after them
-    std::stable_sort(s_AdminKeys.begin(), s_AdminKeys.end(), [](const std::string& a, const std::string& b) { return MP_AdminKeyOk(a.c_str()) && !MP_AdminKeyOk(b.c_str()); });
-    if(!s_AdminKeys.empty())
-    {
-        MP_CopyStr(settings.adminKey, s_AdminKeys[0].c_str(), sizeof(settings.adminKey));
-        if(!inMine)   // found somewhere else: keep a copy (all keys) in the MP folder too
-        {
-            char dst[512]; snprintf(dst, sizeof(dst), "%s/administrator.txt", s_szDataDir);
-            if(FILE* o = fopen(dst, "w")) { for(auto& k : s_AdminKeys) fprintf(o, "%s\n", k.c_str()); fclose(o); }
-        }
-    }
-    client.SetAdminKey(settings.adminKey);
-    {   // 3.35: files/MP/moderator.txt = my moderator key. 3.35.2: the MP moderator key (MP_MOD_KEY_HASH) gives "[MOD] name" on every server by itself
+static bool s_bModFileSeen = false; static char s_szModFound[256] = "";
+static void LoadModFile()
+{   // 3.35: files/MP/moderator.txt = my moderator key. 3.35.2: the MP moderator key (MP_MOD_KEY_HASH) gives "[MOD] name" on every server by itself
         // 3.39: any layout works now - "key", "name key", "MOD:key", a BOM, Windows line ends, quotes -
         // and the same folders as administrator.txt are searched (the MP folder first)
         char mk[120] = {0}, best[120] = {0};
-        std::vector<std::string> mcand; { char mp[512]; snprintf(mp, sizeof(mp), "%s/moderator.txt", s_szDataDir); mcand.push_back(mp); }
-        for(size_t i = 1; i < cand.size(); ++i) { std::string c = cand[i]; size_t sl = c.find_last_of('/'); if(sl != std::string::npos) mcand.push_back(c.substr(0, sl + 1) + "moderator.txt"); }
+        std::vector<std::string> dirs, mcand; std::vector<std::string> cand; AdminCandidates(cand);
+        dirs.push_back(s_szDataDir);
+        for(size_t i = 0; i < cand.size(); ++i) { std::string c = cand[i]; size_t sl = c.find_last_of('/'); if(sl != std::string::npos) { std::string d = c.substr(0, sl); if(std::find(dirs.begin(), dirs.end(), d) == dirs.end()) dirs.push_back(d); } }
+        // 3.39.1: any spelling - moderator.txt, Moderator.txt, MODERATOR.TXT, moderator.txt.txt, moderator (no .txt)
+        for(auto& d : dirs)
+        {
+            DIR* dp = opendir(d.c_str()); if(!dp) continue;
+            while(dirent* de = readdir(dp))
+            {
+                const char* n = de->d_name;
+                if(strncasecmp(n, "moderator", 9)) continue;
+                const char* rest = n + 9;
+                if(*rest && strcasecmp(rest, ".txt") && strcasecmp(rest, ".txt.txt") && strcasecmp(rest, ".text")) continue;
+                mcand.push_back(d + "/" + n);
+            }
+            closedir(dp);
+        }
         for(size_t ci = 0; ci < mcand.size() && !best[0]; ++ci)
         {
             FILE* f = fopen(mcand[ci].c_str(), "rb"); if(!f) continue;
@@ -5084,10 +5088,39 @@ static void LoadAdminFile()
             fclose(f);
         }
         if(best[0]) MP_CopyStr(mk, best, sizeof(mk));
+        s_bModFileSeen = !mcand.empty(); MP_CopyStr(s_szModFound, mcand.empty() ? "" : mcand[0].c_str(), sizeof(s_szModFound));
         s_bModMaster = best[0] != 0;
         client.SetModKey(mk);
         if(mk[0]) logger->Info("MP: moderator.txt found (%s) - you join as [MOD] %s", s_bModMaster ? "MP moderator key" : "server list key", settings.name);
     }
+
+static void LoadAdminFile()
+{
+    settings.adminKey[0] = 0; s_szAdminFound[0] = 0;
+    std::vector<std::string> cand; AdminCandidates(cand);
+    s_AdminKeys.clear(); s_nAdminKeyIdx = 0;
+    bool inMine = false;
+    for(size_t i = 0; i < cand.size(); ++i)
+    {
+        size_t before = s_AdminKeys.size();
+        ReadAdminKeys(cand[i].c_str(), s_AdminKeys);
+        if(s_AdminKeys.size() == before) continue;
+        if(!s_szAdminFound[0]) MP_CopyStr(s_szAdminFound, cand[i].c_str(), sizeof(s_szAdminFound));
+        if(i == 0) inMine = true;
+    }
+    // 3.21: new key(s) first, old keys (only for servers older than 3.11.6) after them
+    std::stable_sort(s_AdminKeys.begin(), s_AdminKeys.end(), [](const std::string& a, const std::string& b) { return MP_AdminKeyOk(a.c_str()) && !MP_AdminKeyOk(b.c_str()); });
+    if(!s_AdminKeys.empty())
+    {
+        MP_CopyStr(settings.adminKey, s_AdminKeys[0].c_str(), sizeof(settings.adminKey));
+        if(!inMine)   // found somewhere else: keep a copy (all keys) in the MP folder too
+        {
+            char dst[512]; snprintf(dst, sizeof(dst), "%s/administrator.txt", s_szDataDir);
+            if(FILE* o = fopen(dst, "w")) { for(auto& k : s_AdminKeys) fprintf(o, "%s\n", k.c_str()); fclose(o); }
+        }
+    }
+    client.SetAdminKey(settings.adminKey);
+    LoadModFile();   // 3.39.1
     if(settings.adminKey[0]) logger->Info("MP: administrator.txt OK (%s, %d key(s)) - you are the administrator (SENJI)", s_szAdminFound, (int)s_AdminKeys.size());
     else logger->Info("MP: no valid administrator.txt (looked in %s and %d other places)", cand[0].c_str(), (int)cand.size() - 1);
 }

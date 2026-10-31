@@ -15,16 +15,17 @@ static const char* const kDefaultRules[10] = {
     "{FFFF00}Listen to the {33CC55}admins{FFFF00} and {33CC55}moderators{FFFFFF}: a kick waits {FF9900}4:29{FFFFFF}, a ban is {FF4444}permanent{FFFFFF}.",
     "{33CC55}Have fun{FFFFFF} and play fair.",
 };
-static struct { bool have = false, on = false; char title[48] = ""; char line[10][100] = {}; int count = 0; bool shown = false; uint64_t readyAt = 0; } s_Rules;
+static struct { bool have = false, on = false; char title[48] = ""; char line[10][100] = {}; int count = 0; bool shown = false, open = false; uint64_t readyAt = 0, joinAt = 0; } s_Rules;
 
-static void RulesReset() { s_Rules.have = false; s_Rules.on = false; s_Rules.count = 0; s_Rules.shown = false; s_Rules.readyAt = 0; }
+static void RulesReset() { s_Rules.have = false; s_Rules.on = false; s_Rules.count = 0; s_Rules.shown = false; s_Rules.open = false; s_Rules.readyAt = 0; s_Rules.joinAt = 0; }
 static void RulesOnPacket(const PktRules& m)
 {
     // idx 0 = the title (on = 0: no rules window), 1..10 = the lines
     if(m.idx == 0) { s_Rules.have = true; s_Rules.on = m.on != 0; MP_CopyStr(s_Rules.title, m.text, sizeof(s_Rules.title)); s_Rules.count = std::min((int)m.count, 10); for(auto& l : s_Rules.line) l[0] = 0; return; }
     if(m.idx >= 1 && m.idx <= 10) MP_CopyStr(s_Rules.line[m.idx - 1], m.text, sizeof(s_Rules.line[0]));
 }
-static void RulesDlg(int, int, const char*, int) {}
+#define RULES_DLG_USER 0x5255
+static void RulesDlg(int, int, const char*, int) { s_Rules.shown = true; s_Rules.open = false; }   // the player pressed Close
 static bool RulesShow(bool quiet)
 {
     std::string body; const char* title = "RULES";
@@ -39,21 +40,33 @@ static bool RulesShow(bool quiet)
     }
     else { if(!quiet) SysMsg(COL_SYSTEM, "This server has no rules set."); return false; }
     char cap[64]; snprintf(cap, sizeof(cap), "{FFFFFF}%s", title);
-    ShowDialog(0, DIALOG_STYLE_MSGBOX, cap, body.c_str(), "Close", "", RulesDlg);
+    ShowDialog(0, DIALOG_STYLE_MSGBOX, cap, body.c_str(), "Close", "", RulesDlg, RULES_DLG_USER);
     return true;
 }
-// after the login is done (or the join settled when the server has no login)
+// 3.39.1: the rules come up by themselves after every login (default + custom servers), no /rules needed.
+// The old check fired 1.8 s after the join - before the login challenge came - so the login screen
+// covered it and it was never shown again. Now it waits for: the login done (or no login on that server
+// after 12 s), the join / spawn screen gone, no other dialog or keyboard; and when something else
+// replaces the window before the player presses Close, it comes back.
 static void RulesProcess(uint64_t now)
 {
-    if(client.GetState() != NET_CONNECTED) { if(s_Rules.shown || s_Rules.have) RulesReset(); return; }
+    if(client.GetState() != NET_CONNECTED) { s_Rules.shown = false; s_Rules.open = false; s_Rules.readyAt = 0; s_Rules.joinAt = 0; return; }
+    if(!s_Rules.joinAt) s_Rules.joinAt = now;
     if(s_Rules.shown || BcwOnServer() || Mw3OnServer() || RpOnServer() || !Game::IsReady()) return;
+    if(s_Rules.open)
+    {
+        if(SampDialogOpen() && s_Dlg.user == RULES_DLG_USER) return;
+        s_Rules.open = false; s_Rules.readyAt = 0;   // replaced by another window: show it again later
+    }
     if(!MP::IsOnDefault() && !(s_Rules.have && s_Rules.on)) return;
-    const bool authDone = !s_bAuthReq || s_Auth.state == AuthClient::DONE;
-    if(!authDone || AuthScreenUp() || SampDialogOpen() || VKeyboard::IsOpen()) { s_Rules.readyAt = 0; return; }
-    if(!s_Rules.readyAt) { s_Rules.readyAt = now + 1800; return; }
+    bool loginOk;
+    if(s_bAuthReq) loginOk = s_Auth.state == AuthClient::DONE && now - s_nAuthDoneAt > 1200;
+    else loginOk = now - s_Rules.joinAt > 12000;   // the login challenge comes in the first seconds
+    const bool settled = AuthJoinSettled() && (s_nJoinPhase == JP_NONE);
+    if(!loginOk || !settled || AuthScreenUp() || SampDialogOpen() || VKeyboard::IsOpen()) { s_Rules.readyAt = 0; return; }
+    if(!s_Rules.readyAt) { s_Rules.readyAt = now + 1500; return; }
     if(now < s_Rules.readyAt) return;
-    s_Rules.shown = true;
-    RulesShow(true);
+    if(RulesShow(true)) s_Rules.open = true; else s_Rules.shown = true;
 }
 static bool RulesCommand(const char* cmd, const char*)
 {

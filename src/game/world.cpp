@@ -60,6 +60,15 @@ void Game::UnlockWorld(bool girlfriends)
     if(!s_Garages) { s_Garages = true; for(auto g : kGarages) CALLSCM(ACTIVATE_GARAGE, g); }
 }
 
+// 3.39.1: the first ground BELOW zFrom (GroundZ starts 40 m up = it finds roofs / bridges)
+float Game::GroundZBelow(float x, float y, float zFrom)
+{
+    CALLSCM(REQUEST_COLLISION_W, x, y);
+    float z = 0;
+    CALLSCM(GET_GROUND_Z_FOR_3D_COORD, x, y, zFrom, F2U(z));
+    if(z < -90.0f || z > 1500.0f || z == 0.0f || z > zFrom + 0.05f) return -1000.0f;
+    return z;
+}
 float Game::GroundZ(float x, float y, float zHint)
 {
     CALLSCM(REQUEST_COLLISION_W, x, y);

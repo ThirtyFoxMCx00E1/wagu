@@ -33,6 +33,21 @@ const char* MPServer::HomeKey(int slot, char* buf, size_t n) const
     return buf;
 }
 
+// 3.39.1: a house belongs to the account (logged in), the phone id or the name - any of them matches,
+// so a rejoin before the login is done (or after it) still finds my houses
+bool MPServer::HomeOwns(int slot, const char* owner) const
+{
+    if(!owner || !owner[0]) return false;
+    const Slot& s = m_Slots[slot];
+    char b[HK_OWNER_LEN];
+    if(s.authed && s.account[0]) { snprintf(b, sizeof(b), "a:%s", s.account); if(!strcmp(owner, b)) return true; }
+    if(s.uid[0]) { snprintf(b, sizeof(b), "u:%s", s.uid); if(!strcmp(owner, b)) return true; }
+    char bare[MP_NAME_LEN]; MP_CopyStr(bare, s.name, sizeof(bare)); MP_StripAdminTag(bare);
+    const char* nm = bare; if(!strncmp(nm, "[MOD] ", 6)) nm += 6;
+    if(!strncmp(owner, "n:", 2)) { const char* o = owner + 2; if(!strncmp(o, "[MOD] ", 6)) o += 6; if(!strcasecmp(o, nm)) return true; }
+    return false;
+}
+
 bool MPServer::HomeStaff(int slot) const
 {
     const Slot& s = m_Slots[slot];
@@ -124,7 +139,7 @@ void MPServer::HomeChanged(int idx)
     HkHome& h = m_Homes[idx];
     h.h.rev = (uint16_t)(h.h.rev + 1); if(!h.h.rev) h.h.rev = 1;
     h.h.nObj = (uint16_t)h.obj.size();
-    m_bHomeDirty = true; m_nHomeSaveAt = MP_NowMs() + 2000;
+    m_bHomeDirty = true; m_nHomeSaveAt = MP_NowMs() + 600;   // 3.39.1: saved quickly (was 2 s)
     for(int i = 0; i < MP_MAX_PLAYERS; ++i) if(m_Slots[i].used && m_Slots[i].build >= 33900) HomeSend(i, idx);
 }
 
@@ -208,7 +223,8 @@ void MPServer::HomeHandleCmd(int slot, const PktHomeCmd& cin)
     int idx = (c.cmd == HC_INDEX || c.cmd == HC_CREATE) ? -1 : HomeFind(c.id);
     if(c.cmd != HC_INDEX && c.cmd != HC_CREATE && idx < 0) { HomeMsg(slot, false, c.id, 0, "That house doesn't exist."); return; }
     HkHome* h = idx >= 0 ? &m_Homes[idx] : nullptr;
-    const bool mine = h && !strcmp(h->h.owner, key);
+    const bool mine = h && HomeOwns(slot, h->h.owner);
+    if(mine && strcmp(h->h.owner, key) && s.authed && s.account[0]) { MP_CopyStr(h->h.owner, key, sizeof(h->h.owner)); m_bHomeDirty = true; m_nHomeSaveAt = now + 600; }   // move it to the account
     bool hasKey = false;
     if(h) for(int k = 0; k < HK_KEYS; ++k) if(h->h.keys[k][0] && !strcasecmp(h->h.keys[k], s.name)) hasKey = true;
     const bool canEdit = h && (mine || staff);
@@ -222,12 +238,12 @@ void MPServer::HomeHandleCmd(int slot, const PktHomeCmd& cin)
         if(!HkValidName(c.text)) { HomeMsg(slot, false, 0, 0, "House name: 2-23 letters, numbers, _ - ."); return; }
         if(HomeByName(c.text) >= 0) { HomeMsg(slot, false, 0, 0, "A house called %s already exists.", c.text); return; }
         if((int)m_Homes.size() >= HK_MAX_HOMES) { HomeMsg(slot, false, 0, 0, "This server has the most houses it can keep (%d).", HK_MAX_HOMES); return; }
-        int owned = 0; for(auto& o : m_Homes) if(!strcmp(o.h.owner, key)) ++owned;
+        int owned = 0; for(auto& o : m_Homes) if(HomeOwns(slot, o.h.owner)) ++owned;
         if(owned >= HK_PER_PLAYER && !staff) { HomeMsg(slot, false, 0, 0, "You already have %d houses (the most).", HK_PER_PLAYER); return; }
         PktHomeHead nh; memset(&nh, 0, sizeof(nh));
         nh.type = PKT_HOME_HEAD; nh.id = m_nHomeNextId++; if(!m_nHomeNextId) m_nHomeNextId = 1;
         MP_CopyStr(nh.name, c.text, sizeof(nh.name));
-        MP_CopyStr(nh.owner, key, sizeof(nh.owner)); MP_CopyStr(nh.ownerName, s.name, sizeof(nh.ownerName));
+        MP_CopyStr(nh.owner, key, sizeof(nh.owner)); MP_CopyStr(nh.ownerName, s.name, sizeof(nh.ownerName)); MP_StripAdminTag(nh.ownerName); if(!strncmp(nh.ownerName, "[MOD] ", 6)) memmove(nh.ownerName, nh.ownerName + 6, strlen(nh.ownerName + 6) + 1);
         nh.w = 8; nh.h = 8; nh.heading = c.pos[3];
         // the player stands in the middle of the new 8x8 slot
         float ox, oy; HkLocalToWorld(0, 0, nh.heading, -4 * HK_TILE, -4 * HK_TILE, ox, oy);
@@ -263,7 +279,7 @@ void MPServer::HomeHandleCmd(int slot, const PktHomeCmd& cin)
     {
         if(!(h->h.flags & HKF_SALE)) { HomeMsg(slot, false, c.id, 0, "%s is not for sale.", h->h.name); return; }
         if(mine) { HomeMsg(slot, false, c.id, 0, "It is already your house."); return; }
-        int owned = 0; for(auto& o : m_Homes) if(!strcmp(o.h.owner, key)) ++owned;
+        int owned = 0; for(auto& o : m_Homes) if(HomeOwns(slot, o.h.owner)) ++owned;
         if(owned >= HK_PER_PLAYER && !staff) { HomeMsg(slot, false, c.id, 0, "You already have %d houses (the most).", HK_PER_PLAYER); return; }
         if(IsRpServer())
         {
@@ -274,14 +290,13 @@ void MPServer::HomeHandleCmd(int slot, const PktHomeCmd& cin)
         for(int i = 0; i < MP_MAX_PLAYERS; ++i)
         {
             if(!m_Slots[i].used || i == slot) continue;
-            char k2[HK_OWNER_LEN]; HomeKey(i, k2, sizeof(k2));
-            if(!strcmp(k2, h->h.owner))
+            if(HomeOwns(i, h->h.owner))
             {
                 if(IsRpServer()) { RpPay(i, h->h.price, "House sold"); HomeMsg(i, true, c.id, 0, "%s bought your house %s for $%d.", s.name, h->h.name, h->h.price); }
                 else HomeMsg(i, true, c.id, h->h.price, "%s bought your house %s for $%d.", s.name, h->h.name, h->h.price);
             }
         }
-        MP_CopyStr(h->h.owner, key, sizeof(h->h.owner)); MP_CopyStr(h->h.ownerName, s.name, sizeof(h->h.ownerName));
+        MP_CopyStr(h->h.owner, key, sizeof(h->h.owner)); MP_CopyStr(h->h.ownerName, s.name, sizeof(h->h.ownerName)); MP_StripAdminTag(h->h.ownerName); if(!strncmp(h->h.ownerName, "[MOD] ", 6)) memmove(h->h.ownerName, h->h.ownerName + 6, strlen(h->h.ownerName + 6) + 1);
         h->h.flags &= ~HKF_SALE; h->h.flags &= ~HKF_LOCKED;
         memset(h->h.keys, 0, sizeof(h->h.keys));
         HomeChanged(idx);
@@ -380,7 +395,7 @@ void MPServer::HomeHandleCmd(int slot, const PktHomeCmd& cin)
         if(!canEdit) { HomeMsg(slot, false, c.id, 0, "It is not your house."); return; }
         if(c.val < 0 || c.val >= MP_MAX_PLAYERS || !m_Slots[c.val].used || c.val == slot) { HomeMsg(slot, false, c.id, 0, "No such player."); return; }
         char k2[HK_OWNER_LEN]; HomeKey(c.val, k2, sizeof(k2));
-        int owned = 0; for(auto& o : m_Homes) if(!strcmp(o.h.owner, k2)) ++owned;
+        int owned = 0; for(auto& o : m_Homes) if(HomeOwns(c.val, o.h.owner)) ++owned;
         if(owned >= HK_PER_PLAYER && !HomeStaff(c.val)) { HomeMsg(slot, false, c.id, 0, "%s already has %d houses.", m_Slots[c.val].name, HK_PER_PLAYER); return; }
         MP_CopyStr(h->h.owner, k2, sizeof(h->h.owner)); MP_CopyStr(h->h.ownerName, m_Slots[c.val].name, sizeof(h->h.ownerName));
         h->h.flags &= ~HKF_SALE; memset(h->h.keys, 0, sizeof(h->h.keys));
@@ -455,4 +470,98 @@ void MPServer::OnSrvSettings(int slot, const PktSrvSettings& p)
     pm.type = PKT_PERMS; pm.perms = m_nPerms.load(); pm.modesMagic = 0x47; pm.modes = GetModes();
     Broadcast(&pm, sizeof(pm));
     for(int i = 0; i < MP_MAX_PLAYERS; ++i) if(m_Slots[i].used) { SendSrvSettings(i); if(HomesOn()) HomeSendIndex(i); }
+}
+
+// ---- 3.39.1: saved progress ----------------------------------------------------------------------
+// progress.txt: P key|x|y|z|heading|money|interior|health|armour|hunger|energy|wanted|skin|w:a,w:a,...
+// key = the account (logged in) or the phone id - the same as the houses.
+void MPServer::SetProgressFile(const char* path)
+{
+    std::lock_guard<std::mutex> lk(m_Mutex);
+    MP_CopyStr(m_szProgFile, path && *path ? path : "progress.txt", sizeof(m_szProgFile));
+    m_bProgLoaded = false;
+}
+void MPServer::ProgLoad()
+{
+    m_bProgLoaded = true; m_Prog.clear();
+    FILE* f = fopen(m_szProgFile, "r"); if(!f) return;
+    char line[1024];
+    while(fgets(line, sizeof(line), f))
+    {
+        line[strcspn(line, "\r\n")] = 0;
+        if(line[0] != 'P' || line[1] != ' ') continue;
+        char* fl[16] = {0}; int nf = 0; char* p = line + 2;
+        while(nf < 16) { fl[nf++] = p; char* bar = strchr(p, '|'); if(!bar) break; *bar = 0; p = bar + 1; }
+        if(nf < 13 || !fl[0][0]) continue;
+        PktProgress g; memset(&g, 0, sizeof(g)); g.type = PKT_PROGRESS; g.ver = 1;
+        g.x = (float)atof(fl[1]); g.y = (float)atof(fl[2]); g.z = (float)atof(fl[3]); g.heading = (float)atof(fl[4]);
+        g.money = atoi(fl[5]); g.interior = (uint8_t)atoi(fl[6]); g.health = (uint8_t)atoi(fl[7]); g.armour = (uint8_t)atoi(fl[8]);
+        g.hunger = (uint8_t)atoi(fl[9]); g.energy = (uint8_t)atoi(fl[10]); g.wanted = (uint8_t)atoi(fl[11]); g.skin = (int16_t)atoi(fl[12]);
+        if(nf >= 14 && fl[13])
+        {
+            int k = 0; char* q = fl[13];
+            while(q && *q && k < 13) { int w = 0, a = 0; if(sscanf(q, "%d:%d", &w, &a) == 2 && w > 0 && w < 47) { g.wep[k] = (uint8_t)w; g.ammo[k] = (uint16_t)std::min(a, 65000); ++k; } char* c = strchr(q, ','); q = c ? c + 1 : nullptr; }
+        }
+        m_Prog[fl[0]] = g;
+    }
+    fclose(f);
+    Log("Progress: %d players loaded from %s", (int)m_Prog.size(), m_szProgFile);
+}
+void MPServer::ProgSave()
+{
+    m_bProgDirty = false;
+    std::string tmp = std::string(m_szProgFile) + ".tmp";
+    FILE* f = fopen(tmp.c_str(), "w"); if(!f) return;
+    fprintf(f, "# MP saved progress (3.39.1) - written by the server\n");
+    for(const auto& kv : m_Prog)
+    {
+        const PktProgress& g = kv.second;
+        std::string w; char b[24];
+        for(int k = 0; k < 13; ++k) if(g.wep[k]) { snprintf(b, sizeof(b), "%s%u:%u", w.empty() ? "" : ",", g.wep[k], g.ammo[k]); w += b; }
+        fprintf(f, "P %s|%.2f|%.2f|%.2f|%.1f|%d|%u|%u|%u|%u|%u|%u|%d|%s\n", kv.first.c_str(), g.x, g.y, g.z, g.heading, g.money,
+                g.interior, g.health, g.armour, g.hunger, g.energy, g.wanted, g.skin, w.c_str());
+    }
+    fclose(f);
+    rename(tmp.c_str(), m_szProgFile);
+}
+void MPServer::ProgTick(uint64_t now)
+{
+    if(!ProgressOn()) return;
+    if(!m_bProgLoaded) ProgLoad();
+    if(m_bProgDirty && now >= m_nProgSaveAt) ProgSave();
+}
+void MPServer::ProgSend(int slot)
+{
+    if(!ProgressOn() || slot < 0 || slot >= MP_MAX_PLAYERS || !m_Slots[slot].used || m_Slots[slot].build < 33910) return;
+    if(!m_bProgLoaded) ProgLoad();
+    const Slot& s = m_Slots[slot];
+    char k[HK_OWNER_LEN];
+    auto it = m_Prog.end();
+    if(s.authed && s.account[0]) { snprintf(k, sizeof(k), "a:%s", s.account); it = m_Prog.find(k); }
+    if(it == m_Prog.end() && s.uid[0]) { snprintf(k, sizeof(k), "u:%s", s.uid); it = m_Prog.find(k); }
+    PktProgress g; memset(&g, 0, sizeof(g));
+    if(it != m_Prog.end()) { g = it->second; g.op = 0; } else g.op = 2;
+    g.type = PKT_PROGRESS; g.ver = 1;
+    SendTo(slot, &g, sizeof(g));
+}
+void MPServer::OnProgress(int slot, const PktProgress& in)
+{
+    if(!ProgressOn() || in.op != 1) return;
+    Slot& s = m_Slots[slot];
+    if(AuthOn() && !s.authed) return;   // the default server: only a logged-in player is saved
+    const uint64_t now = MP_NowMs();
+    if(s.progAt && now - s.progAt < 1000) return;   // flood guard
+    s.progAt = now;
+    if(!m_bProgLoaded) ProgLoad();
+    if(!std::isfinite(in.x) || !std::isfinite(in.y) || !std::isfinite(in.z) || fabsf(in.x) > 6000 || fabsf(in.y) > 6000 || in.z < -200 || in.z > 2500) return;
+    PktProgress g = in; g.type = PKT_PROGRESS; g.op = 0; g.ver = 1;
+    if(g.money < -10000000) g.money = -10000000;
+    if(g.money > 999999999) g.money = 999999999;
+    if(g.health > 200) g.health = 200;
+    if(g.armour > 100) g.armour = 100;
+    for(int k = 0; k < 13; ++k) if(g.wep[k] >= 47 || (g.wep[k] >= 19 && g.wep[k] <= 21) || g.wep[k] >= 44) { g.wep[k] = 0; g.ammo[k] = 0; }
+    char key[HK_OWNER_LEN]; HomeKey(slot, key, sizeof(key));
+    m_Prog[key] = g;
+    if(m_Prog.size() > 20000) m_Prog.erase(m_Prog.begin());
+    if(!m_bProgDirty) { m_bProgDirty = true; m_nProgSaveAt = now + 5000; }
 }

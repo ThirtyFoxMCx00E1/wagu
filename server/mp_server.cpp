@@ -129,6 +129,10 @@ int main(int argc, char** argv)
         const char* hf = server.IsRpServer() ? "homes_rp.txt" : "homes.txt";
         for(int i = 1; i + 1 < argc; ++i) if(!strcasecmp(argv[i], "--home-file")) hf = argv[i + 1];
         server.SetHomeFile(hf);
+        // 3.39.1: saved progress (place, money, weapons, health, hunger). --progress-file PATH
+        const char* pf = "progress.txt";
+        for(int i = 1; i + 1 < argc; ++i) if(!strcasecmp(argv[i], "--progress-file")) pf = argv[i + 1];
+        server.SetProgressFile(pf);
     }
     // 3.39: --rules "Title|rule 1|rule 2|..." = the rules window after the login (custom servers)
     for(int i = 1; i + 1 < argc; ++i)

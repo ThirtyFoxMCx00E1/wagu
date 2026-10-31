@@ -67,6 +67,7 @@ public:
     void SetMw3File(const char* path);          // 3.23: MW3 stats + zone owners (default mw3_stats.txt)
     bool IsRpServer() const;                    // 3.25: Mega Vil Futuristic (Roleplay)
     void SetRpFile(const char* path);           // 3.25: citizens (money, bank, job, house...) + house owners (default rp_citizens.txt)
+    void SetProgressFile(const char* path);     // 3.39.1: saved progress of every player (default progress.txt)
     void SetHomeFile(const char* path);         // 3.39: Home Kit houses (default homes.txt)
     void SetRules(bool on, const char* title, const char* const lines[10]);   // 3.39: rules window (custom servers)
     void SetOwnerUid(const char* uid) { std::lock_guard<std::mutex> lk(m_Mutex); MP_CopyStr(m_szOwnerUid, uid ? uid : "", sizeof(m_szOwnerUid)); }   // 3.39: the host phone = the owner
@@ -157,6 +158,7 @@ private:
         uint8_t      authFails;
         bool         owner;          // 3.39: the host phone of this custom server (kick / settings)
         uint64_t     hkLastCmd;      // 3.39: Home Kit flood guard
+        uint64_t     progAt;         // 3.39.1: last progress save from this player
         uint64_t     gmEvAt;         // 3.39: PKT_GM_EVENT rate limit
     };
     // ---- 3.39: Home Kit (server_home.inc) ----
@@ -170,6 +172,14 @@ private:
     int  HomeFind(uint16_t id) const; int HomeByName(const char* name) const;
     const char* HomeKey(int slot, char* buf, size_t n) const;
     bool HomeStaff(int slot) const;
+    bool HomeOwns(int slot, const char* owner) const;   // 3.39.1
+    // 3.39.1: saved progress (place, money, weapons, health, hunger) - the default + custom servers
+    char     m_szProgFile[256] = "progress.txt";
+    std::map<std::string, PktProgress> m_Prog;
+    bool     m_bProgLoaded = false, m_bProgDirty = false; uint64_t m_nProgSaveAt = 0;
+    bool ProgressOn() const { return !IsBcwServer() && !IsMw3Server() && !IsRpServer(); }
+    void ProgLoad(); void ProgSave(); void ProgTick(uint64_t now);
+    void ProgSend(int slot); void OnProgress(int slot, const PktProgress& p);
     void HomeSendIndex(int slot); void HomeSend(int slot, int idx);
     void HomeMsg(int slot, bool ok, uint16_t id, int32_t cash, const char* fmt, ...);
     void HomeHandleCmd(int slot, const PktHomeCmd& c);

@@ -13,10 +13,10 @@
 // phones refuse servers older than that too (they would let old phones in).
 // 3.10: build 31000. MP_MIN_BUILD stays 30406 and the lobby stays thirtyfox/mp5/: 3.04.6 (no cheats)
 // and 3.10 phones play together on the same servers; only 3.04.5 and older (mp4) stay shut out.
-#define MP_BUILD 33900   // 3.39
+#define MP_BUILD 33910   // 3.39.1
 #define MP_MIN_BUILD       30406
 #define MP_AUTH_MIN_BUILD  32106   // 3.21.6: servers with the login system refuse older phones (they could not log in)
-#define MP_VERSION_STR     "3.39"
+#define MP_VERSION_STR     "3.39.1"
 #define MP_VOICE_BUILD     31100   // 3.11: phones from this build on get voice packets
 #define MP_DOWNLOAD_URL    "thirtyfoxmcx00e1.github.io/wagu"   // 3.37: the website is back in the wagu repo (one repo for everything)
 #define MP_DEFAULT_HOST    "127.0.0.1"
@@ -130,6 +130,7 @@ enum ePacket : uint8_t
     PKT_SRV_SETTINGS,   // S<->C         3.39: live server settings (gamemodes + permissions) - owner / admin / moderator
     PKT_RULES,          // S->C          3.39: server rules (title + 10 lines), shown after the login
     PKT_GM_EVENT,       // S<->C         3.39: new gamemodes (CnR, A/D, survival, stunt, drift) - scores / rounds / notices
+    PKT_PROGRESS,       // S<->C         3.39.1: my saved progress (place, money, weapons, health, hunger) on the default + custom servers
 };
 
 enum eRegion : uint8_t { REGION_ASIA = 0, REGION_EUROPE, REGION_NA, REGION_OCEANIA, REGION_COUNT };

@@ -1,3 +1,4 @@
+#include <cmath>
 #include <time.h>
 #include "server.h"
 #include "safezone.h"
@@ -202,6 +203,8 @@ void MPServer::Stop()
         std::lock_guard<std::mutex> lk(m_Mutex);
         if(IsMw3Server()) Mw3Save();   // 3.23
         if(IsRpServer()) RpSave();     // 3.25
+        if(m_bHomeDirty) HomeSave();   // 3.39.1: never lose a house that was just built
+        if(m_bProgDirty) ProgSave();   // 3.39.1
         PktReject rj; rj.type = PKT_REJECT; rj.reason = REJECT_SHUTDOWN;
         for(int k = 0; k < 2; ++k) Broadcast(&rj, sizeof(rj));
     }
@@ -554,6 +557,7 @@ void MPServer::AuthHandle(int slot, const uint8_t* data, int len)
     AnnounceJoin(slot);
     Mw3OnAuthed(slot);   // 3.23: load the MW3 stats of this account
     RpOnAuthed(slot);    // 3.25: load the citizen (money, job, house...)
+    ProgSend(slot);      // 3.39.1: my saved progress (place, money, weapons...)
     s.spawnProtUntil = now + MP_SPAWN_PROTECT_MS;
 }
 
@@ -650,6 +654,7 @@ void MPServer::Loop()
             Mw3Tick(now);   // 3.23
             RpTick(now);    // 3.25
             HomeTick(now);  // 3.39
+            ProgTick(now);  // 3.39.1
         }   // 3.04: 10 Hz referee
         if(now - lastCheck > 1000)
         {
@@ -1284,6 +1289,13 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             HomeHandleCmd(slot, c);
             break;
         }
+        case PKT_PROGRESS:   // 3.39.1: save my progress
+        {
+            if(slot < 0 || len < (int)sizeof(PktProgress) || !m_Slots[slot].used) return;
+            PktProgress p; memcpy(&p, data, sizeof(p));
+            OnProgress(slot, p);
+            break;
+        }
         case PKT_GM_EVENT:   // 3.39: new gamemodes - pass it on (rate limited)
         {
             if(slot < 0 || len < (int)sizeof(PktGmEvent) || !m_Slots[slot].used) return;
@@ -1807,6 +1819,7 @@ void MPServer::SendJoinExtras(int slot, bool fresh)
     if(HomesOn()) HomeSendIndex(slot);   // 3.39: Home Kit houses
     SendSrvSettings(slot);               // 3.39
     if(fresh) SendRules(slot);           // 3.39: shown after the login
+    if(fresh && !AuthOn()) ProgSend(slot);   // 3.39.1 (login servers: after the login)
     if(GetModes() & GM_TURF) SendTurf(slot);
     for(int i = 0; i < MP_MAX_PLAYERS; ++i)
     {
