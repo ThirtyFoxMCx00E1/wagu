@@ -46,10 +46,10 @@ It builds `mp_server` on the phone and runs it 24/7 in the internet lobby (free 
 
 ## 24/7 server on Debian 12 or Ubuntu (VPS or own PC)
 
-The [HiveMQ kit](HiveMQ/README.md#debian-12-own-pc-or-vps) runs on Ubuntu 22.04 / 24.04 or Debian 12. The small Debian 12 installer (677 MB, sha256 `cd4462c06aa8892e692c0c4b9c17802f38c8ab8690e85cbfb5ccaa5956e9af17`, same as Debian's) is in the HiveMQ [Derbian release](https://github.com/ThirtyFoxMCx00E1/HiveMQ/releases/tag/Derbian): [debian-12.15.0-amd64-netinst.iso](https://github.com/ThirtyFoxMCx00E1/HiveMQ/releases/download/Derbian/debian-12.15.0-amd64-netinst.iso). Install it with only "SSH server" and "standard system utilities", then as root:
+The [HiveMQ kit](HiveMQ/README.md#debian-12-own-pc-or-vps) runs on Ubuntu 22.04 / 24.04 or Debian 12. The small Debian 12 installer (677 MB, sha256 `cd4462c06aa8892e692c0c4b9c17802f38c8ab8690e85cbfb5ccaa5956e9af17`, same as Debian's) is in the HiveMQ [Derbian release](https://cdimage.debian.org/cdimage/archive/12.15.0/amd64/iso-cd/): [debian-12.15.0-amd64-netinst.iso](https://cdimage.debian.org/cdimage/archive/12.15.0/amd64/iso-cd/debian-12.15.0-amd64-netinst.iso). Install it with only "SSH server" and "standard system utilities", then as root:
 
 ```
-wget -qO- https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-setup.sh | bash -s europe
+wget -qO- https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/vps-setup.sh | bash -s europe
 ```
 
 Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in the provider's image list instead of the ISO. Ping depends on where the machine is, so Europe, NA and Oceania need a VPS in or near those regions (Frankfurt, Virginia / Ohio, Sydney).
@@ -68,7 +68,7 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 - **3.35.1**: the **wardrobe** ped lands on the shop floor (no more frozen in the air in the falling pose).
   - **Cosmetic wardrobe**: he was frozen at the spot before the Didier Sachs floor had loaded, so he hung in mid-air with the fall animation. Now the floor under the spot is found first, he is put just on it and drops onto it, and only when he stands still (or after 2.5 s) the fall animation is cleared and he is frozen standing. New outfits land the same way, and the camera follows his real height.
 - **3.35**: **openmp.com** website with its own downloads, **moderators** (`[MOD]`), player **Settings** dialog, **taxi passengers**, a **welcome board** at the Mega Vil plaza, `/googlemap`, and wardrobe / bag / pause map fixes.
-  - **Website = openmp.com** ([thirtyfoxmcx00e1.github.io/openmp.com](https://thirtyfoxmcx00e1.github.io/openmp.com/)): its own repo, and **Download** gets the files straight from the site (`downloads/MP-client.zip`, `MP-full.zip`, `libMP32.so`, `libMP64.so`, `MP-Voice.apk`, `HiveMQ-kit.zip`) - no links to this repo any more. The Termux installer downloads the server source from the site too. Published with `tools/publish_site.py <version>`. New background pictures: the real GTA SA / Los Santos night wallpapers.
+  - **Website = openmp.com** ([thirtyfoxmcx00e1.github.io/wagu](https://thirtyfoxmcx00e1.github.io/wagu/)): its own repo, and **Download** gets the files straight from the site (`downloads/MP-client.zip`, `MP-full.zip`, `libMP32.so`, `libMP64.so`, `MP-Voice.apk`, `HiveMQ-kit.zip`) - no links to this repo any more. The Termux installer downloads the server source from the site too. Published with `tools/publish_site.py <version>`. New background pictures: the real GTA SA / Los Santos night wallpapers.
   - **MP launcher**: the version under the logo always shows the real version (it was stuck at "v3.24").
   - **Moderators**: list them in **`moderator.txt`** next to `mp_server` (`<name> <key>` per line - separate from the admin key). The player puts the same key in `files/MP/moderator.txt` and joins with that name: **`[MOD] name`** with its own flowing cyan / green / gold tag in the name tag, chat and kill feed. Moderators can kick, mute and switch cheats on their server (ban stays admin only; staff can't kick staff). `mp_server --mods <file>` for another path; a phone-hosted server reads `files/MP/moderators_server.txt`.
   - **Server modes locked**: on a server that is not yours, players can't switch off the server modes any more (sync animations / explosions / NPCs, open world, actors, gang zones) - only the owner, `[ADMIN]` or `[MOD]`.
@@ -191,7 +191,7 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
   - Timeout raised from 20 s to 30 s, so a short lag spike on mobile data no longer kicks you.
   - New 24/7 bot **Broker** that always stays in Default Server (1/100), Brief Case War (1/20) and Call Of Duty: Modern Warfare 3 (1/64). It counts in the server list, shows in the Player list as `Broker (host, 24/7 bot)`, and is shown as the host of those 3 servers (`Host: Broker` on the HUD, `host: Broker (24/7)` on the server card). Nobody else becomes host there.
   - Discord bot: `/stats` and `/char` cards no longer have a website link, only Refresh and Switch view.
-  - The VPS updates by itself: every 10 minutes its autopilot checks GitHub and, when there is a new mod version or HiveMQ kit, runs `curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/update.sh | sudo bash` on its own (`MP_AUTOUPDATE=0` in `/etc/mp-hivemq/mp.env` turns it off). It also restarts a stopped Brief Case War or MW3 server. Run that command once by hand to get this autopilot.
+  - The VPS updates by itself: every 10 minutes its autopilot checks GitHub and, when there is a new mod version or HiveMQ kit, runs `curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/update.sh | sudo bash` on its own (`MP_AUTOUPDATE=0` in `/etc/mp-hivemq/mp.env` turns it off). It also restarts a stopped Brief Case War or MW3 server. Run that command once by hand to get this autopilot.
   - From Termux: `mp-server vps-update ubuntu@your-vps` runs the update on the VPS over SSH. The website's Termius page shows it with a Copy button, and its bot runs `update` by itself when a region is behind.
 - **3.23.4**: new MW3 stats display.
   - The stats box in the bottom right is gone: no background, no green outline, and it no longer covers the sprint button.
@@ -235,7 +235,7 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
   - **Login screen:** the SAFE ZONE / SPAWN PROTECTION text (and the Brief Case War match bar) no longer shows on top of the login pop-up and its animated background.
   - **Verification:** the Code authentication / Login pop-up opens only after the login server is connected. Until then a small "Connecting to the login server..." line shows at the top (the pop-up still opens with the error if it can't connect).
 - **3.21.7**: MP Railway - the Discord login bot online 24/7 on our own server.
-  - **MP Railway:** Railway.app stopped taking new accounts, so the login bot ([discordpy-bot](https://github.com/ThirtyFoxMCx00E1/discordpy-bot)) now runs on our own self-hosted Railway, part of the [HiveMQ kit](https://github.com/ThirtyFoxMCx00E1/HiveMQ#mp-3217-mp-railway---the-discord-bot-247-on-our-own-server): build from git, restart on crash and on reboot, auto deploy of every push within 2 minutes. One command on the server: `sudo mp-railway setup`. Without the bot Discord didn't show `/gen` and nobody could log in.
+  - **MP Railway:** Railway.app stopped taking new accounts, so the login bot ([discordpy-bot](https://github.com/ThirtyFoxMCx00E1/discordpy-bot)) now runs on our own self-hosted Railway, part of the [HiveMQ kit](https://github.com/ThirtyFoxMCx00E1/wagu/tree/main/HiveMQ#mp-3217-mp-railway---the-discord-bot-247-on-our-own-server): build from git, restart on crash and on reboot, auto deploy of every push within 2 minutes. One command on the server: `sudo mp-railway setup`. Without the bot Discord didn't show `/gen` and nobody could log in.
   - **Railway page:** new [Railway](https://thirtyfoxmcx00e1.github.io/wagu/railway.html) page next to Termux on the website: live bot status (signed by the bot, checked with the mod's public key), deployments, variables and the MP Bot terminal (types every command by itself).
   - **Discord:** `/stats` and `/char` show an account card with your avatar and Refresh / Switch view buttons (only you see it). Each command shows once (no more double `/gen`).
   - **Login screen:** if the broker answers but the bot doesn't, the game now says the login bot is offline (not your internet) and links the live status page.
@@ -269,7 +269,7 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
   - **More time.** Race queue: starts when 14 players are in, or after 45 s with 2 or more, or alone after 60 s; then a 20 s GO countdown (was 12 s) so everybody reaches the grid. Derby: 30 s lobby (8 s when alone), and 15 s (was 5 s) to get back into your car / the arena before you are out. Jobs: 5 s countdown.
   - **Brief Case War: no wanted level.** Being sent to Bone County (or anywhere) no longer gives you 4 stars: while you are in BCW your wanted level is held at 0.
   - **The host leaves -> the game no longer "restarts".** When a phone hosts a server and the 24/7 copy of the same server (HiveMQ / Termux machine) is online, MP 3.21 moves you to the 24/7 copy quietly (you keep playing where you are). When a phone host leaves, MP looks for the 24/7 copy first and waits for it (2 tries) instead of making another phone the host. The 24/7 copy always wins over phone copies.
-  - **Servers really update now.** The HiveMQ kit's `install.sh` copied the new `mp_server` over the running one: that fails ("Text file busy") and stopped the update, so the 24/7 servers kept running an old `mp_server` - the reason the new admin key was refused, and why phones still became hosts. Fixed (copy + rename), plus a one-line update: `curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/update.sh | sudo bash` (Termius console `7) update` uses it). Termux: `mp-server update` now also restarts the running server.
+  - **Servers really update now.** The HiveMQ kit's `install.sh` copied the new `mp_server` over the running one: that fails ("Text file busy") and stopped the update, so the 24/7 servers kept running an old `mp_server` - the reason the new admin key was refused, and why phones still became hosts. Fixed (copy + rename), plus a one-line update: `curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/update.sh | sudo bash` (Termius console `7) update` uses it). Termux: `mp-server update` now also restarts the running server.
   - **Admin key.** Keep `administrator.txt` (new key) in `files/MP/`; you can also keep the old `admin.txt` next to it: MP 3.21 sends the new key first and the old one only to a server that is still old, and tells you which server needs the update.
   - **Crash guards (from the crash logs).** `LOCATE_CHAR_*_OBJECT_2D/3D` (0471-0476) with a dead char or object (CLEO script crash in `LocateCharObjectCommand`) is skipped; `CBaseModelInfo::SetColModel` with no model info (streaming crash) is skipped; the game's `fseek / ftell / fread / fwrite / fclose / fgets / feof` refuse a broken `FILE*` (Samsung A02 crash in `fseeko` with `FILE* = 1`). The AML log says what was blocked. Two other logs are not MP: a crash inside `libFHSpeedometer.so` (that mod jumps into the middle of the game's `CPed::GiveWeapon` - update or remove FHSpeedometer) and one in Android's own `libgui` binder thread (realme, Android 15).
   - Clothes / CJ outfit: loaded in the background (no freeze), and the mod version in the AML log now says 3.21.
@@ -426,7 +426,7 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 - **2.23**: Lobby no longer flips online / offline when the region servers are down. A region now counts as "up" only when a real MQTT login works (before: a plain TCP connect, which a router or firewall can accept on every port without a broker behind it). Region checks run in parallel (~5 s instead of ~40 s), the first connect waits for them, dead regions are skipped instead of costing 4-8 s each on every reconnect, failed brokers back off (30 s up to 10 min), and the mod never drops a working public-lobby connection to try a region that is down. Connection page shows "All regions down: staying on the public lobby". Same fix for the 24/7 server (`mp_server`, Termux).
 - **2.22**: Crash + chat fix. The touch hook (Android UI thread) no longer touches ImGui while the game thread is drawing it: touches are queued and applied on the game thread, and the menu/chat hit test uses a snapshot of the last frame. This removes a heap race that could crash anywhere (often reported as `SIGSEGV` inside `libart.so`) and the stale-position taps that opened the chat "anywhere I press". The chat box only opens on a real short tap on the box. New in **Server > Display** (scroll down) and **Chat**: chat lines position X/Y, own chat box position (or right under the chat), show/hide the chat background, the chat box background and the "Tap to chat" label, and "Tap the chat box to type" (off = only the Chat button opens the keyboard, taps go to the game). New config keys: `ChatBoxBackground`, `ChatBoxLabel`, `ChatBoxTap`, `ChatBoxX`, `ChatBoxY`. Website: new [Termux page](https://thirtyfoxmcx00e1.github.io/wagu/termux.html) for the 24/7 phone server, and the MP Bot now runs Termius + Termux by itself (types the command, presses Enter, reacts to region / server changes, no input box). `regions.txt` now lists the HiveMQ public cluster as the shared Asia lobby (same lobby for 2.19-2.22 phones and the Termux 24/7 server) and `broker.txt` is ready to copy. HiveMQ kit: autopilot (auto-restart + reports shown by the MP Bot).
 - **2.21**: Stability + games. No more random 5-minute "timeout" kicks: the mod stays on the same broker during a game (no background region switch), reconnects to the last good broker within a second, detects dead relay sockets after 7 s, ignores short network blips (3 checks) and the game timeout is 20 s instead of 10 s. "Please wait" no longer appears while a server is online: background lobby jobs no longer block Join/Host, and Join waits up to 4.5 s for the server list. One shared broker login for 100 phones is safe (each phone has its own client id). NPC world sync like normal SA-MP: one stable NPC host (keeps the same 48 people / 32 cars instead of flickering), NPC copies and player avatars no longer attack the host (empty decision maker), wanted level no longer swaps the NPC host. Passenger name tags sit above the right seat. Open world: all cities, safe houses, schools, Pay 'n' Spray, barbers, Well Stacked Pizza, Burger Shot, Cluckin' Bell, tattoo, gyms, clothes, mod garages, Ammu-Nation, trucking, quarry, Emmet, race tournaments (`/unlock`, `/girlfriends` optional). Games for the default and custom servers: `/spawn id|name` (vehicles 400-611), `/w` weapons, `/fix /flip /heal /armour`, 37 teleports announced in chat (`(/ls) Name teleported to Los Santos!`), 8 races with checkpoints and times (`RACE: Name finished Off-Road Race 1! (1/2 - 1:20.994)`), 8 jobs, 5 deathmatch zones (`/war`), kill streak and wanted announcements, score bar (DM / RACE / JOB SCORE), chat tips. 125 built-in server resources (35 new). Website: new [Termius page](https://thirtyfoxmcx00e1.github.io/wagu/termius.html) (24/7 region status, live servers, ping, browser terminal of each HiveMQ server). HiveMQ kit: web console, status beacon, phone-only cloud-init setup.
-- **2.20**: Regional lobby servers. The mod downloads `regions.txt` from the website ([thirtyfoxmcx00e1.github.io/wagu](https://thirtyfoxmcx00e1.github.io/wagu/)), measures the ping to the Asia, Europe, NA and Oceania brokers in the background and joins the fastest one (MP menu shows "Asia 38 ms" etc. on the region buttons; "Lobby: lowest ping region" toggle). Hosting uses your server's region; joining a server from another region moves you to that region's broker and back afterwards. Server lists are shared between regions by the bridge, so everyone still sees every server. Until regions are filled in, the free public lobby is used exactly like 2.19. `broker.txt` now also accepts `[Asia]`/`[Europe]`/`[NA]`/`[Oceania]` blocks, `mqtt://`/`mqtts://` prefixes and `regions_url=` (`off` to disable). New website with live server list and region ping (`docs/`). Self-hosted HiveMQ regional broker kit: [ThirtyFoxMCx00E1/HiveMQ](https://github.com/ThirtyFoxMCx00E1/HiveMQ).
+- **2.20**: Regional lobby servers. The mod downloads `regions.txt` from the website ([thirtyfoxmcx00e1.github.io/wagu](https://thirtyfoxmcx00e1.github.io/wagu/)), measures the ping to the Asia, Europe, NA and Oceania brokers in the background and joins the fastest one (MP menu shows "Asia 38 ms" etc. on the region buttons; "Lobby: lowest ping region" toggle). Hosting uses your server's region; joining a server from another region moves you to that region's broker and back afterwards. Server lists are shared between regions by the bridge, so everyone still sees every server. Until regions are filled in, the free public lobby is used exactly like 2.19. `broker.txt` now also accepts `[Asia]`/`[Europe]`/`[NA]`/`[Oceania]` blocks, `mqtt://`/`mqtts://` prefixes and `regions_url=` (`off` to disable). New website with live server list and region ping (`docs/`). Self-hosted HiveMQ regional broker kit: [wagu/HiveMQ](https://github.com/ThirtyFoxMCx00E1/wagu/tree/main/HiveMQ).
 - **2.19.7**: Fixed the "100% progress: couldn't back up your saves" spam + lag on the default server: after a failure the save backup was retried every frame (copying every save file and posting the message each time). Now it gives up once per session. Empty or unreadable save slots no longer make the backup fail - they are just left untouched.
 - **2.19.6**: Player model sync: others now see your real ped model (skin mods, skin-changer scripts, story characters loaded by scripts); CJ players are shown with the avatar skin from the menu (Player > Show my real model). Story characters (special characters) work as avatar skins and over the network: Rose, Paul, Cesar, OG Loc, Woozie, Mike Toreno, Jizzy, Madd Dogg, Catalina, Claude (SA-MP ids 290-299) plus Kendl, The Truth, Maccer, Emmet, T-Bone, Jethro, Zero, Andre (312-319), loaded into MP's own special slots 8-10 on each phone. More gang / cop skins in the picker. Chat no longer covers the screen: lines shown, text size, width (long lines wrap), fade-out time, background and position are set in game (Server > Chat, or /pagesize /fontsize /chatwidth /chatfade /chatbg /clearchat). Hosting fixed: Host server with the default name / port no longer just joins the default server - it gets "<your name>'s server" on port 1923 and you join it right away; "Leave + join my server" while on another server; your own password is used when you join your own server. Sync status (animations, story characters, NPCs) shown under Display.
 - **2.19.5**: While the virtual keyboard is open, taps no longer reach the game HUD behind it (radar / map, weapon, enter-car and other buttons, camera swipes). Remote players no longer T-pose when walking or running without the sprint button: plain walk / run now uses the game's own walk at the same gait (sprint, jumps, fights etc. are still mirrored).
@@ -773,7 +773,7 @@ src/net/ca_roots.h      built-in root certificates
 
 ## HiveMQ server kit (merged into this repo)
 
-The [HiveMQ](https://github.com/ThirtyFoxMCx00E1/HiveMQ) repo is now also the [`HiveMQ/`](HiveMQ/) folder of this repo, so the mod, the website and the servers are kept together. Everything below is its README.
+The [HiveMQ](https://github.com/ThirtyFoxMCx00E1/wagu/tree/main/HiveMQ) repo is now also the [`HiveMQ/`](HiveMQ/) folder of this repo, so the mod, the website and the servers are kept together. Everything below is its README.
 
 ### HiveMQ regional brokers for MP Multiplayer
 
@@ -812,19 +812,19 @@ Game traffic stays inside one region (no bridging), so ping is only phone -> nea
 On a new VPS (Ubuntu 22.04 / 24.04 or Debian 12), as root - installs everything for a region (Asia on `mpsamp.duckdns.org` by default) with the bridge, uses the passwords from the public regions.txt (phones connect with no change) and starts the 24/7 servers, Mega Vil Futuristic included:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-setup.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/vps-setup.sh | sudo bash
 ```
 
 All four regions (one VPS each):
 
 | Region | DuckDNS | On the VPS |
 |---|---|---|
-| Asia | mpsamp.duckdns.org | `curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-setup.sh \| sudo bash -s asia` |
-| Europe | eusamp.duckdns.org | `curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-setup.sh \| sudo bash -s europe` |
-| NA | nasamp.duckdns.org | `curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-setup.sh \| sudo bash -s na` |
-| Oceania | ocsamp.duckdns.org | `curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-setup.sh \| sudo bash -s oceania` |
+| Asia | mpsamp.duckdns.org | `curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/vps-setup.sh \| sudo bash -s asia` |
+| Europe | eusamp.duckdns.org | `curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/vps-setup.sh \| sudo bash -s europe` |
+| NA | nasamp.duckdns.org | `curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/vps-setup.sh \| sudo bash -s na` |
+| Oceania | ocsamp.duckdns.org | `curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/vps-setup.sh \| sudo bash -s oceania` |
 
-From Termux on a phone: `pkg install -y openssh && ssh root@YOUR_VPS_IP "curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-setup.sh | bash -s europe"`. Point the DuckDNS name at the VPS first and open the ports (see Cloud firewall).
+From Termux on a phone: `pkg install -y openssh && ssh root@YOUR_VPS_IP "curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/vps-setup.sh | bash -s europe"`. Point the DuckDNS name at the VPS first and open the ports (see Cloud firewall).
 
 #### MP Oracle: free Oracle server by itself
 
@@ -864,9 +864,9 @@ So one account covers one MP region. For the other regions use the owner's own a
 
 #### Debian 12 (own PC or VPS)
 
-Debian 12 works the same as Ubuntu and is a much smaller download. Our copy of the official installer is in the [Derbian release](https://github.com/ThirtyFoxMCx00E1/HiveMQ/releases/tag/Derbian):
+Debian 12 works the same as Ubuntu and is a much smaller download. The official installer is on [Debian's archive](https://cdimage.debian.org/cdimage/archive/12.15.0/amd64/iso-cd/):
 
-- [debian-12.15.0-amd64-netinst.iso](https://github.com/ThirtyFoxMCx00E1/HiveMQ/releases/download/Derbian/debian-12.15.0-amd64-netinst.iso) (677 MB, x86_64)
+- [debian-12.15.0-amd64-netinst.iso](https://cdimage.debian.org/cdimage/archive/12.15.0/amd64/iso-cd/debian-12.15.0-amd64-netinst.iso) (677 MB, x86_64)
 - sha256 `cd4462c06aa8892e692c0c4b9c17802f38c8ab8690e85cbfb5ccaa5956e9af17` (same as Debian's own [SHA256SUMS](https://cdimage.debian.org/cdimage/archive/latest-oldstable/amd64/iso-cd/SHA256SUMS))
 
 On a VPS you don't need the ISO: pick "Debian 12" in the provider's image list. For your own PC, write the ISO to a USB stick (Rufus or balenaEtcher) and boot from it. The netinst installer downloads the rest while it installs, so keep the PC online.
@@ -877,12 +877,12 @@ On a VPS you don't need the ISO: pick "Debian 12" in the provider's image list. 
 
 | Region | DuckDNS | On the Debian machine, as root |
 |---|---|---|
-| Asia | mpsamp.duckdns.org | `wget -qO- https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-setup.sh \| bash -s asia` |
-| Europe | eusamp.duckdns.org | `wget -qO- https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-setup.sh \| bash -s europe` |
-| NA | nasamp.duckdns.org | `wget -qO- https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-setup.sh \| bash -s na` |
-| Oceania | ocsamp.duckdns.org | `wget -qO- https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-setup.sh \| bash -s oceania` |
+| Asia | mpsamp.duckdns.org | `wget -qO- https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/vps-setup.sh \| bash -s asia` |
+| Europe | eusamp.duckdns.org | `wget -qO- https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/vps-setup.sh \| bash -s europe` |
+| NA | nasamp.duckdns.org | `wget -qO- https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/vps-setup.sh \| bash -s na` |
+| Oceania | ocsamp.duckdns.org | `wget -qO- https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/vps-setup.sh \| bash -s oceania` |
 
-The script installs curl, git, Java 21 and HiveMQ by itself. Updates later: `wget -qO- https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/update.sh | bash` (as root).
+The script installs curl, git, Java 21 and HiveMQ by itself. Updates later: `wget -qO- https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/update.sh | bash` (as root).
 
 Ping depends on where the machine is, not on the system: a Debian PC in the Philippines is still far from Europe, NA and Oceania. For those regions use a VPS in Frankfurt, Virginia / Ohio or Sydney.
 
@@ -893,7 +893,7 @@ Railway.app stopped taking new accounts, so the MP login bot ([discordpy-bot](ht
 On **one** server (the Asia / bridge server), once:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/update.sh | sudo bash   # new kit + mp-railway tool
+curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/update.sh | sudo bash   # new kit + mp-railway tool
 sudo mp-railway setup                                                                            # asks DISCORD_TOKEN + AUTH_PRIVATE_KEY (hidden)
 ```
 
@@ -915,7 +915,7 @@ sudo mp-railway env               variables (masked)     sudo mp-railway env set
 sudo mp-railway add NAME REPO     host another Python / Node app the same way
 ```
 
-Without a VPS it also runs on an Android phone in Termux: `curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/railway/install.sh | bash` (Termux:Boot starts it after a reboot). Run the bot in **one** place only.
+Without a VPS it also runs on an Android phone in Termux: `curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/railway/install.sh | bash` (Termux:Boot starts it after a reboot). Run the bot in **one** place only.
 
 
 #### MP 3.34: region branches, 24/7 bot host, lower ping with many players
@@ -930,7 +930,7 @@ This kit now also lives inside the main repo: [wagu/HiveMQ](https://github.com/T
 
 #### MP 3.33: the 4 servers run only here, 24/7 - no Broker bot, lower ping
 
-Run the update on every region (Termius console **7) update**, or `curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/update.sh | sudo bash`). New in 3.33:
+Run the update on every region (Termius console **7) update**, or `curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/update.sh | sudo bash`). New in 3.33:
 
 - **The 4 featured servers are hosted by this machine only:** MP LAN Server (UDP 1922), Brief Case War (1930), Modern Warfare 3 (1931), Mega Vil Futuristic (1932). The **Broker bot is gone** (the server shows 0 players when empty) and no phone hosts them any more (the 100-rank Broker standby is off). A player who joins first is just a player, never the host. While a server restarts, 3.33 phones wait and reconnect by themselves.
 - **Always online:** the four units restart 2 s after a crash (`RestartSec=2`, no start limit) and the new **`mp-keepalive.timer`** checks every minute that the broker and the four servers are running and that their port is open, and starts / restarts them when not. Log: `journalctl -t mp-keepalive`.
@@ -941,7 +941,7 @@ Run the update on every region (Termius console **7) update**, or `curl -fsSL ht
 #### Auto update (3.23.5)
 
 The autopilot (mp-status) checks GitHub every 10 minutes. When the mod or this kit has a new version it runs
-`curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/update.sh | sudo bash` by itself
+`curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/update.sh | sudo bash` by itself
 (unit `mp-autoupdate`, log: `journalctl -u mp-autoupdate`). `MP_AUTOUPDATE=0` in `/etc/mp-hivemq/mp.env` turns it off.
 It also restarts mp-bcw, mp-mw3, mp-rp and mp-legacy when they stop. Servers older than this need the command run once by hand.
 
@@ -950,7 +950,7 @@ It also restarts mp-bcw, mp-mw3, mp-rp and mp-legacy when they stop. Servers old
 Run this on every region (or Termius console **7) update**, which now runs the same script):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/update.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/update.sh | sudo bash
 ```
 
 - **Why the old servers never updated:** `install.sh` copied the new `mp_server` over the running one. Linux refuses that ("Text file busy"), and `set -e` stopped the whole update, so the regions kept an old `mp_server`. That old server refuses SENJI's new admin key (`administrator.txt`), and phones kept becoming the host of the default server. Fixed: the binary is now copied to `mp_server.new` and renamed, and the kit in `/opt/mp/kit` is a real git clone (the old copy had no `.git`, so `git pull` in menu 7 failed too).
@@ -1030,7 +1030,7 @@ Pick each VPS in a data center close to its players, e.g. Singapore or Tokyo for
 ##### 1. First region (with the bridge)
 
 ```bash
-git clone https://github.com/ThirtyFoxMCx00E1/HiveMQ
+git clone https://github.com/ThirtyFoxMCx00E1/wagu/tree/main/HiveMQ
 cd HiveMQ
 sudo ./install.sh --region Asia --domain asia-you.duckdns.org --email you@mail.com --bridge
 ```
@@ -1167,7 +1167,7 @@ Why Community Edition: the HiveMQ Enterprise download without a license is an ev
 
 #### Tagalog
 
-Walang Ubuntu? Puwede ang Debian 12 (677 MB lang): i-download ang ISO sa [Derbian release](https://github.com/ThirtyFoxMCx00E1/HiveMQ/releases/tag/Derbian), i-install (SSH server + standard system utilities lang), tapos bilang root: `wget -qO- https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-setup.sh | bash -s europe` (o `asia` / `na` / `oceania`).
+Walang Ubuntu? Puwede ang Debian 12 (677 MB lang): i-download ang ISO sa [Debian archive](https://cdimage.debian.org/cdimage/archive/12.15.0/amd64/iso-cd/), i-install (SSH server + standard system utilities lang), tapos bilang root: `wget -qO- https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/vps-setup.sh | bash -s europe` (o `asia` / `na` / `oceania`).
 
 MP Oracle: ilagay ang Oracle API key sa repo Secrets (OCI_USER, OCI_TENANCY, OCI_FINGERPRINT, OCI_REGION, OCI_KEY), tapos Actions -> MP Oracle claim -> Run. Paulit-ulit itong susubok hanggang may libreng server, tapos kusa nang mag-iinstall.
 

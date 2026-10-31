@@ -1,5 +1,5 @@
 # MP Oracle: claims the Oracle Cloud Always Free Ampere A1 server for one MP region and installs
-# HiveMQ + the 24/7 servers on it (oracle/mp_oracle.py). Runs every hour for 50 minutes until Oracle
+# HiveMQ + the 24/7 servers on it (HiveMQ/oracle/mp_oracle.py; 3.37: this workflow moved from the HiveMQ repo to wagu). Runs every hour for 50 minutes until Oracle
 # has free capacity, then every run just sees "mp-<region> already exists" and stops in seconds.
 # Setup (phone browser is fine): repo Settings -> Secrets and variables -> Actions -> New secret:
 #   OCI_USER, OCI_TENANCY, OCI_FINGERPRINT, OCI_REGION, OCI_KEY   (from Oracle: Profile -> API keys)
@@ -62,8 +62,8 @@ jobs:
         if: steps.gate.outputs.go == '1'
         run: |
           CMD="${{ github.event.inputs.command || 'claim' }}"
-          if [ "$CMD" = claim ]; then python3 oracle/mp_oracle.py claim --minutes 50
-          else python3 oracle/mp_oracle.py "$CMD"; fi
+          if [ "$CMD" = claim ]; then python3 HiveMQ/oracle/mp_oracle.py claim --minutes 50
+          else python3 HiveMQ/oracle/mp_oracle.py "$CMD"; fi
       - name: Summary
         if: always() && steps.gate.outputs.go == '1'
         run: |

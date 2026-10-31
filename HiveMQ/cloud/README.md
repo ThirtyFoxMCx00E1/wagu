@@ -19,9 +19,9 @@ One-click installs on any server:
 On a Debian 12 or Ubuntu 22.04/24.04 server, as root:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/cloud/install.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/cloud/install.sh | sudo bash
 # HTTPS with your own name:
-curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/cloud/install.sh | sudo bash -s -- --domain mycloud.duckdns.org
+curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/cloud/install.sh | sudo bash -s -- --domain mycloud.duckdns.org
 ```
 
 It installs Incus (bridge `incusbr0`, btrfs pool), a Python venv in `/opt/mp-cloud`, the `mp-cloud` systemd service on port 9000 and the firewall rules. Data lives in `/var/lib/mp-cloud` (SQLite + the Oracle key, mode 0600). Update: run the installer again.

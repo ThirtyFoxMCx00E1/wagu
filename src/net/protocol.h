@@ -18,7 +18,7 @@
 #define MP_AUTH_MIN_BUILD  32106   // 3.21.6: servers with the login system refuse older phones (they could not log in)
 #define MP_VERSION_STR     "3.37"
 #define MP_VOICE_BUILD     31100   // 3.11: phones from this build on get voice packets
-#define MP_DOWNLOAD_URL    "thirtyfoxmcx00e1.github.io/openmp.com"   // 3.35: the site moved (openmp.com)
+#define MP_DOWNLOAD_URL    "thirtyfoxmcx00e1.github.io/wagu"   // 3.37: the website is back in the wagu repo (one repo for everything)
 #define MP_DEFAULT_HOST    "127.0.0.1"
 #define MP_DEFAULT_PORT    1922
 #define MP_DEFAULT_SERVER_NAME "MP LAN Server"   // default hosted server; one per Wi-Fi/hotspot

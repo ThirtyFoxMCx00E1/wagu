@@ -11,6 +11,19 @@ HOLD=/etc/mp-hivemq/hold
 [ -f "$ENV_FILE" ] && . "$ENV_FILE"
 mkdir -p "$HOLD"
 log() { logger -t mp-keepalive "$*"; echo "$*"; }
+# 3.37 VPS: a busy server (100+ players joining at once) can miss one check. Restarting it then would kick
+# everyone, so a running server is only restarted after STRIKES checks in a row fail (default 3 = ~3 min).
+# A stopped / crashed service is still started at once.
+STRIKES=${KEEPALIVE_STRIKES:-3}
+SD=/run/mp-keepalive; mkdir -p "$SD"
+strike() {  # unit reason -> restart only on the STRIKES-th failure in a row
+    local n; n=$(( $(cat "$SD/$1" 2>/dev/null || echo 0) + 1 ))
+    if [ "$n" -ge "$STRIKES" ]; then
+        log "$1 $2 ($n checks in a row) - restarting it"; rm -f "$SD/$1"; systemctl restart "$1" || true
+    else
+        echo "$n" > "$SD/$1"; log "$1 $2 (check $n of $STRIKES, not restarting yet)"
+    fi
+}
 # seconds the main process of a service has been running (0 = not running)
 age() {
     local pid; pid=$(systemctl show -p MainPID --value "$1" 2>/dev/null)
@@ -23,7 +36,7 @@ answers() {   # port -> 0 when the server answers
     python3 - "$1" <<'PY'
 import socket, struct, sys, time
 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM); s.settimeout(1.5)
-for _ in range(3):
+for _ in range(5):   # 3.37 VPS: 5 tries (was 3)
     try:
         s.sendto(struct.pack("<BI", 14, int(time.time() * 1000) & 0xFFFFFFFF), ("127.0.0.1", int(sys.argv[1])))
         d, _a = s.recvfrom(2048)
@@ -45,14 +58,14 @@ check() {   # unit  u|t  port  min-age-seconds
     a=$(age "$u"); [ "${a:-0}" -lt "$grace" ] && return 0     # just started: it needs a moment to open its port
     [ "$proto" = u ] && fl=-lun || fl=-ltn
     if [ -z "$(ss -H $fl "sport = :$port" 2>/dev/null)" ]; then
-        log "$u is running but $port is not open - restarting it"
-        systemctl restart "$u" || true
+        strike "$u" "is running but $port is not open"
         return 0
     fi
     if [ "$proto" = u ] && ! answers "$port"; then
-        log "$u has $port open but does not answer - restarting it"
-        systemctl restart "$u" || true
+        strike "$u" "has $port open but does not answer"
+        return 0
     fi
+    rm -f "$SD/$u"   # healthy: forget earlier misses
 }
 check hivemq t 1883 180
 check mp-server u "${SERVER_PORT:-1922}"

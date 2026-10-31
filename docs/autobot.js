@@ -74,7 +74,7 @@
   // 3.31: the Debian 12 one-line 24/7 VPS setup. Every console bot (Termius, Termux, Railway) types it
   // at start-up and again every few checks, going round the regions: asia, europe, na, oceania.
   window.MPDebian = (function () {
-    var URL = 'https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-setup.sh';
+    var URL = 'https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/vps-setup.sh';
     var REG = ['asia', 'europe', 'na', 'oceania'];
     var INFO = { europe: ['Europe', 'eusamp', 'Frankfurt'], na: ['NA', 'nasamp', 'Virginia / Ohio'], oceania: ['Oceania', 'ocsamp', 'Sydney'], asia: ['Asia', 'mpsamp', 'Singapore / Manila'] };
     var n = 0, ri = 0;
@@ -91,7 +91,7 @@
           ['g', '  ' + cmd(r)],
           ['m', '  installs curl, git, Java 21, HiveMQ and the 24/7 servers, and uses the passwords from regions.txt (phones connect with no change)'],
           ['m', '  first: duckdns.org -> point ' + i[1] + ' at the machine\'s IP · open TCP 1883 8883 8884 + UDP 1922 1932'],
-          ['m', '  Debian 12 installer (677 MB): github.com/ThirtyFoxMCx00E1/HiveMQ/releases/tag/Derbian - on a VPS pick Debian 12 in the image list'],
+          ['m', '  Debian 12 installer (677 MB): cdimage.debian.org/cdimage/archive/12.15.0/amd64/iso-cd/ - on a VPS pick Debian 12 in the image list'],
           ['m', '  low ping for ' + i[0] + ' players: put this machine in or near ' + i[2]]
         ];
       },

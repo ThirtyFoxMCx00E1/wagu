@@ -1,0 +1,10 @@
+# 3.37 VPS: trims logs / package cache without restarting anything (tools/mp-trim.sh)
+[Unit]
+Description=MP Multiplayer cache and log trim
+
+[Service]
+Type=oneshot
+Environment=BASE=@@BASE@@
+Nice=19
+IOSchedulingClass=idle
+ExecStart=@@BASE@@/console/mp-trim.sh

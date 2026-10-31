@@ -7,7 +7,7 @@
   var REG = ['Asia', 'Europe', 'NA', 'Oceania'];
   var PUBLIC = ['wss://broker.hivemq.com:8884/mqtt', 'wss://broker.emqx.io:8084/mqtt', 'wss://test.mosquitto.org:8081/'];
   var ROOT = 'thirtyfox/mp5/', FRESH = 15000;
-  var RAW = 'https://thirtyfoxmcx00e1.github.io/openmp.com/';   // 3.35: openmpsa.com (no repo links)
+  var RAW = 'https://thirtyfoxmcx00e1.github.io/wagu/';   // 3.35: openmpsa.com (no repo links)
   var API = 'release.json';
   var $ = function (id) { return document.getElementById(id); };
   var out = $('out'), stick = window.MPAutoScroll(out);
@@ -170,20 +170,20 @@
       p('m', 'not installed yet? curl -fsSL ' + RAW + 'termux/install.sh | bash');
     },
     'vps-update': function () {
-      var U = 'curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/update.sh | sudo bash';
+      var U = 'curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/update.sh | sudo bash';
       p('m', 'mp-server vps-update ubuntu@your-vps   - updates the 24/7 VPS over SSH (asked once, then saved)');
       print('  it runs: <span class="g">' + esc(U) + '</span>');
       p('m', '  the VPS autopilot also runs it by itself within 10 min of a new release' + (release && release.tag_name ? ' (latest ' + release.tag_name + ')' : ''));
     },
     'vps-setup': function () {   // 3.28.2: all four regions
-      var S = 'curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-setup.sh | bash -s ';
+      var S = 'curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/vps-setup.sh | bash -s ';
       p('m', 'a new 24/7 VPS (HiveMQ + bridge + servers) from this phone over SSH - one VPS per region:');
       [['asia', 'mpsamp'], ['europe', 'eusamp'], ['na', 'nasamp'], ['oceania', 'ocsamp']].forEach(function (r) {
         print('  <span class="g">' + esc('pkg install -y openssh && ssh root@YOUR_VPS_IP "' + S + r[0] + '"') + '</span> <span class="m">' + r[1] + '.duckdns.org</span>');
       });
       p('m', '  first point the DuckDNS name at the VPS IP and open TCP 1883 8883 8884 + UDP 1932');
-      p('m', '  Debian 12 (no sudo / curl): log in as root, then  wget -qO- https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-setup.sh | bash -s europe');
-      p('m', '  Debian 12 installer (677 MB): github.com/ThirtyFoxMCx00E1/HiveMQ/releases/tag/Derbian');
+      p('m', '  Debian 12 (no sudo / curl): log in as root, then  wget -qO- https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/vps-setup.sh | bash -s europe');
+      p('m', '  Debian 12 installer (677 MB): cdimage.debian.org/cdimage/archive/12.15.0/amd64/iso-cd/');
     },
     'clear': function () { out.innerHTML = ''; }
   };
@@ -194,7 +194,7 @@
     'cat ~/mp-server/server.conf': 'cat-conf',
     'cat $MP_DATA/broker.txt': 'cat-broker',
     'cat $MP_DATA/regions.txt': 'cat-regions',
-    'mp-server status': 'status', 'mp-server list': 'list', 'mp-server log': 'log', 'mp-server doctor': 'doctor', 'mp-server vps-update': 'vps-update', 'mp-server vps-setup': 'vps-setup', 'curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/update.sh | sudo bash': 'vps-update',
+    'mp-server status': 'status', 'mp-server list': 'list', 'mp-server log': 'log', 'mp-server doctor': 'doctor', 'mp-server vps-update': 'vps-update', 'mp-server vps-setup': 'vps-setup', 'curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/update.sh | sudo bash': 'vps-update',
     'ping -c 2 $BROKERS': 'ping', 'curl -s $MP/release.json': 'release', 'clear': 'clear'
   };
   function run(line) {
@@ -207,7 +207,7 @@
   }
 
   // ------------------------------------------------------------ MP Bot planner
-  var boot = ['termux-info', 'curl -fsSL $MP/install.sh | grep say', 'cat ~/mp-server/server.conf', 'cat $MP_DATA/broker.txt', 'cat $MP_DATA/regions.txt', 'curl -s $MP/release.json', 'curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/update.sh | sudo bash', 'mp-server status'];
+  var boot = ['termux-info', 'curl -fsSL $MP/install.sh | grep say', 'cat ~/mp-server/server.conf', 'cat $MP_DATA/broker.txt', 'cat $MP_DATA/regions.txt', 'curl -s $MP/release.json', 'curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/update.sh | sudo bash', 'mp-server status'];
   var relCheck = false, relSeen = '';
   var rot = ['mp-server status', 'mp-server list', 'mp-server log', 'mp-server status', 'mp-server log'], ri = 0, cycles = 0, lastRel = Date.now();
   function next() {
@@ -218,7 +218,7 @@
     if (events.length - evSeen >= 3) return { cmd: 'mp-server log', why: (events.length - evSeen) + ' new lobby events' };
     if (Date.now() - lastPing > 90000) return { cmd: 'ping -c 2 $BROKERS', why: 'ping every 90 s', wait: 7000 };
     if (Date.now() - lastRel > 600000) { lastRel = Date.now(); relCheck = true; return { cmd: 'curl -s $MP/release.json', why: 'checking for a new release' }; }
-    if (relCheck && release) { relCheck = false; if (release.tag_name !== relSeen) { relSeen = release.tag_name; return { cmd: 'curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/update.sh | sudo bash', why: 'release ' + release.tag_name + ': typing the VPS update' }; } }
+    if (relCheck && release) { relCheck = false; if (release.tag_name !== relSeen) { relSeen = release.tag_name; return { cmd: 'curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/update.sh | sudo bash', why: 'release ' + release.tag_name + ': typing the VPS update' }; } }
     if (++cycles % 10 === 0) return { cmd: 'clear', why: 'keeping the screen short', wait: 600 };
     if (!phoneSeen && cycles % 4 === 0) return { cmd: 'mp-server doctor', why: '24/7 phone server still not seen' };
     return { cmd: rot[ri++ % rot.length], why: 'routine check' };
@@ -226,7 +226,7 @@
 
   // ------------------------------------------------------------ start
   print('<span class="g">Welcome to Termux!</span>  <span class="m">(MP edition, runs in your browser)</span>');
-  print('<span class="m">Docs:       </span>https://thirtyfoxmcx00e1.github.io/openmp.com/#host');
+  print('<span class="m">Docs:       </span>https://thirtyfoxmcx00e1.github.io/wagu/#host');
   print('<span class="m">Bot:        </span>MP Bot types and presses Enter by itself - no chat, no typing');
   print('');
   live();

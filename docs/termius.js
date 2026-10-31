@@ -216,7 +216,7 @@
   }
   // 3.23.5: VPS update. The region autopilot runs it by itself when a new version is out;
   // a region with an older autopilot (no "mod" in its beacon) needs it run once by hand.
-  var UPD = 'curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/update.sh | sudo bash';
+  var UPD = 'curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/update.sh | sudo bash';
   var latestMod = '', updAsked = {};
   fetch('release.json', { cache: 'no-cache' }).then(function (r) { return r.json(); }).then(function (j) { latestMod = String(j.tag_name || '').replace(/^v/, ''); }).catch(function () {});
   function behind(i) {
@@ -228,7 +228,7 @@
     return want && be.mod !== want ? 'on ' + be.mod + ', latest ' + want : '';
   }
   // 3.28.2: one command installs a new 24/7 VPS (HiveMQ + bridge + Mega Vil), from SSH or from Termux
-  var SETUP = 'curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-setup.sh | sudo bash';
+  var SETUP = 'curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/vps-setup.sh | sudo bash';
   var setupAsked = {};
   function copyBtn(t) { return ' <a href="#" onclick="navigator.clipboard&&navigator.clipboard.writeText(' + esc(JSON.stringify(t)).replace(/"/g, '&quot;') + ');this.textContent=\'copied\';return false">copy</a>'; }
   var CMDS = {
@@ -241,7 +241,7 @@
       var tx = 'pkg install -y openssh && ssh root@YOUR_VPS_IP "' + cmd.replace('sudo ', '') + '"';
       p('m', '  from Termux on a phone (replace YOUR_VPS_IP):');
       print('  <span class="g">' + esc(tx) + '</span>' + copyBtn(tx));
-      var deb = 'wget -qO- https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-setup.sh | bash -s ' + r.toLowerCase();
+      var deb = 'wget -qO- https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/vps-setup.sh | bash -s ' + r.toLowerCase();
       p('m', '  Debian 12 (no sudo / curl yet), as root:');
       print('  <span class="g">' + esc(deb) + '</span>' + copyBtn(deb));
       p('m', '  first: duckdns.org -> point ' + ['mpsamp', 'eusamp', 'nasamp', 'ocsamp'][i] + ' at the VPS IP · open TCP 1883 8883 8884 + UDP 1932');

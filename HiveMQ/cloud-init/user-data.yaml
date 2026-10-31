@@ -33,6 +33,6 @@ runcmd:
       for p in 1922 1930 1931 1932; do iptables -I INPUT -p udp --dport $p -j ACCEPT || true; done
       command -v netfilter-persistent >/dev/null && netfilter-persistent save || true
     fi
-    git clone --depth 1 https://github.com/ThirtyFoxMCx00E1/HiveMQ.git /root/HiveMQ
+    git clone --depth 1 https://github.com/ThirtyFoxMCx00E1/wagu.git /root/HiveMQ
     cd /root/HiveMQ && ./install.sh --region "$REGION" $DOMAIN_ARG > /root/mp-install.log 2>&1
     /root/HiveMQ/tools/make-regions.sh > /root/regions.txt || true

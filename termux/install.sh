@@ -1,7 +1,7 @@
 #!/data/data/com.termux/files/usr/bin/bash
 # MP Multiplayer - 24/7 default server on an Android phone (Termux). No cloud server, no card.
 #
-#   curl -fsSL https://thirtyfoxmcx00e1.github.io/openmp.com/install.sh | bash
+#   curl -fsSL https://thirtyfoxmcx00e1.github.io/wagu/install.sh | bash
 #
 # Builds mp_server from the Sa-mp source on the phone, then runs it in the background:
 #   - listed in the internet lobby through the free public MQTT brokers (no port forwarding needed)
@@ -10,7 +10,7 @@
 # Afterwards:  mp-server status | log | restart | stop | start | config | update
 set -e
 
-SITE="https://thirtyfoxmcx00e1.github.io/openmp.com"   # 3.35: the server source comes from the website (downloads/mp-server-src.tar.gz)
+SITE="https://thirtyfoxmcx00e1.github.io/wagu"   # 3.35: the server source comes from the website (downloads/mp-server-src.tar.gz)
 HOME_DIR="$HOME/mp-server"
 SRC="$HOME_DIR/src"
 CONF="$HOME_DIR/server.conf"
@@ -109,11 +109,11 @@ case "$1" in
     restart) stop; sleep 1; start ;;
     log) tail -n 40 -f "$D/server.log" ;;
     config) ${EDITOR:-nano} "$D/server.conf" 2>/dev/null || vi "$D/server.conf"; echo "mp-server restart to apply" ;;
-    update) curl -fsSL https://thirtyfoxmcx00e1.github.io/openmp.com/install.sh | bash ;;
+    update) curl -fsSL https://thirtyfoxmcx00e1.github.io/wagu/install.sh | bash ;;
     vps-update)
         # 3.23.5: update the 24/7 VPS (HiveMQ kit + mp_server + MW3/BCW) from the phone over SSH.
         # The VPS autopilot also does it by itself within 10 min of a new release.
-        UPD='curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/update.sh | sudo bash'
+        UPD='curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/update.sh | sudo bash'
         H="$2"; [ -z "$H" ] && [ -f "$D/vps.txt" ] && H="$(cat "$D/vps.txt")"
         if [ -z "$H" ]; then echo "mp-server vps-update user@host   (for example ubuntu@mpsamp.duckdns.org; saved for next time)"; echo "or on the VPS: $UPD"; exit 1; fi
         echo "$H" > "$D/vps.txt"

@@ -14,7 +14,7 @@ the website (Termius) shows it as a command it ran. MP_AUTOPILOT=0 in mp.env tur
 
 3.23.5 auto update: every 10 minutes the autopilot checks GitHub. When the mod (wagu MP_VERSION_STR)
 or the HiveMQ kit has a new version, it runs by itself
-  curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/update.sh | sudo bash
+  curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/update.sh | sudo bash
 in its own systemd unit (mp-autoupdate), so nobody has to type it. MP_AUTOUPDATE=0 in mp.env turns it off.
 The 24/7 featured servers (mp-bcw, mp-mw3, mp-legacy) are now restarted too when they stop."""
 import json, os, re, socket, struct, subprocess, time, urllib.request
@@ -66,7 +66,7 @@ def sh(cmd):
 
 class Autopilot:
     SERVICES = ("hivemq", "mp-server", "mp-bcw", "mp-mw3", "mp-rp", "mp-legacy", "mp-bridge", "mp-console")
-    UPDATE_CMD = "curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/update.sh | sudo bash"
+    UPDATE_CMD = "curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/update.sh | sudo bash"
     WAGU_PROTO = "https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/src/net/protocol.h"
     def __init__(self, base, auto_update=True):
         self.base = base; self.hist = {}; self.last_disk = 0
@@ -87,7 +87,7 @@ class Autopilot:
         try:
             txt = urllib.request.urlopen(self.WAGU_PROTO + "?t=%d" % int(now), timeout=15).read().decode("utf-8", "replace")
             self.latest = re.search(r'MP_VERSION_STR\s+"([^"]+)"', txt).group(1)
-            r = subprocess.run(["git", "ls-remote", "https://github.com/ThirtyFoxMCx00E1/HiveMQ.git", "HEAD"], capture_output=True, text=True, timeout=15)
+            r = subprocess.run(["git", "ls-remote", "https://github.com/ThirtyFoxMCx00E1/wagu.git", "HEAD"], capture_output=True, text=True, timeout=15)
             kit_new = (r.stdout.split() or [""])[0]
         except Exception:
             return None
@@ -98,7 +98,7 @@ class Autopilot:
         if not why or now - self.last_update < 1800: return None   # at most one auto update per 30 min
         self.last_update = now
         ok, out = sh(["systemd-run", "--unit", "mp-autoupdate", "--collect", "--quiet", "/bin/bash", "-c",
-                      "curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/update.sh | bash"])
+                      "curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/update.sh | bash"])
         return (self.UPDATE_CMD, ("started: " + ", ".join(why)) if ok else (out[0] or "could not start"), ok)
     def _allowed(self, n):
         now = time.time(); h = [t for t in self.hist.get(n, []) if now - t < 600]

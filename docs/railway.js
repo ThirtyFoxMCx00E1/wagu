@@ -181,7 +181,7 @@
       print('  2. <span class="g">sudo mp-railway logs</span>       <span class="m">"Improper token" = new token: sudo mp-railway env set DISCORD_TOKEN</span>');
       print('  3. <span class="g">sudo mp-railway restart</span>');
       print('  4. <span class="g">sudo mp-railway setup</span>      <span class="m">first time on this server (ONE server only)</span>');
-      p('m', 'not installed yet? curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/railway/install.sh | sudo bash');
+      p('m', 'not installed yet? curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/railway/install.sh | sudo bash');
     },
     'clear': function () { out.innerHTML = ''; }
   };

@@ -21,6 +21,37 @@ Game traffic stays inside one region (no bridging), so ping is only phone -> nea
 
 
 
+## 3.37 VPS update: fast, steady ping with 100+ players
+
+The kit now lives in the **wagu repo** (`HiveMQ/` folder) - wagu is the only repo for the mod, the servers and the
+website ([thirtyfoxmcx00e1.github.io/wagu](https://thirtyfoxmcx00e1.github.io/wagu/)). `vps-setup.sh` and `update.sh`
+download only this folder (sparse clone), so a new VPS is set up fast.
+
+| What | Where | Effect |
+|---|---|---|
+| XDP flood filter | `xdp/mp_xdp.c`, `tools/mp-xdp.sh`, `mp-xdp.service` | runs on the network card before Linux: drops empty / oversized / type-0 packets and any IP over `XDP_PPS` (20000/s, high on purpose for carrier CGNAT) on UDP 1922 1930 1931 1932. Other regions' VPSes are never limited. Native XDP when the NIC supports it, generic XDP otherwise; if it can't load, the server just runs without it |
+| conntrack bypass | `tools/mp-net-tune.sh` | game UDP skips connection tracking (less CPU per packet, a full table can't drop game packets) |
+| NIC / CPU tuning | `tools/mp-net-tune.sh`, `mp-net-tune.service` | interrupt coalescing off, bigger RX ring, RPS over all CPUs, `performance` governor, THP defrag `defer` (no compaction stalls) |
+| kernel | `config/99-mp-network.conf` | bigger softirq budget, UDP minimum buffers, conntrack 262144, swappiness 10, small dirty-page bursts, faster dead-peer cleanup |
+| real-time packets | `src/net/server.cpp` (Linux VPS build only) | game socket marked DSCP EF + priority 6 |
+| no restart on join | `tools/mp-keepalive.sh` | a running server is restarted only after `KEEPALIVE_STRIKES` (3) failed checks in a row, never on one slow answer while 100 phones join |
+| no restart on update | `install.sh` | HiveMQ and each game server restart only when their files really changed (logins, TLS keystore and config are compared) - players stay connected. `MP_FORCE_RESTART=1` restarts all |
+| light broker | `config/config.xml.template` | sessions freed 2 min after a phone leaves (was 5), message expiry 10 min (was 60), queue 64 per client (newest state, not seconds of old positions), keep-alive 60 s |
+| cache / log trim | `tools/mp-trim.sh`, `mp-trim.timer` | every 6 h: journald 200 MB / 7 days, old HiveMQ logs, big server logs, apt cache, old /tmp. The Linux page cache is NOT dropped (that cache keeps the servers fast) |
+| priorities | `systemd/*.service` | game servers and the broker get the CPU first and are the last to be killed on low RAM |
+
+Settings (in `/etc/mp-hivemq/mp.env`): `XDP=1`, `XDP_PPS=20000`, `XDP_ALLOW=`, `NOTRACK=1`, `KEEPALIVE_STRIKES=3`.
+
+```
+sudo /opt/mp/console/mp-xdp.sh status     # XDP on/off + passed / dropped counters
+sudo /opt/mp/console/mp-xdp.sh allow IP   # never limit this IP
+sudo /opt/mp/console/mp-net-tune.sh off   # remove the conntrack bypass (XDP=0 + update.sh turns XDP off)
+journalctl -t mp-keepalive -t mp-xdp -t mp-net-tune -t mp-trim
+```
+
+Ping still depends on distance: a phone in Manila to a Frankfurt VPS is ~180 ms whatever the tuning. The tuning removes
+the spikes and the extra delay the server adds; for low ping everywhere, run one VPS per region (Asia, Europe, NA, Oceania).
+
 > **Easiest way (3.32):** open the [MP Oracle page](https://thirtyfoxmcx00e1.github.io/wagu/oracle.html), paste a GitHub token
 > (fine-grained, this repo only, Secrets + Variables + Actions = Read and write), the Oracle API key config text and the
 > private key file, pick the MP region and press **Save secrets + run claim**. The page encrypts everything in your browser
@@ -35,19 +66,19 @@ Game traffic stays inside one region (no bridging), so ping is only phone -> nea
 On a new VPS (Ubuntu 22.04 / 24.04 or Debian 12), as root - installs everything for a region (Asia on `mpsamp.duckdns.org` by default) with the bridge, uses the passwords from the public regions.txt (phones connect with no change) and starts the 24/7 servers, Mega Vil Futuristic included:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-setup.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/vps-setup.sh | sudo bash
 ```
 
 All four regions (one VPS each):
 
 | Region | DuckDNS | On the VPS |
 |---|---|---|
-| Asia | mpsamp.duckdns.org | `curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-setup.sh \| sudo bash -s asia` |
-| Europe | eusamp.duckdns.org | `curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-setup.sh \| sudo bash -s europe` |
-| NA | nasamp.duckdns.org | `curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-setup.sh \| sudo bash -s na` |
-| Oceania | ocsamp.duckdns.org | `curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-setup.sh \| sudo bash -s oceania` |
+| Asia | mpsamp.duckdns.org | `curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/vps-setup.sh \| sudo bash -s asia` |
+| Europe | eusamp.duckdns.org | `curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/vps-setup.sh \| sudo bash -s europe` |
+| NA | nasamp.duckdns.org | `curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/vps-setup.sh \| sudo bash -s na` |
+| Oceania | ocsamp.duckdns.org | `curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/vps-setup.sh \| sudo bash -s oceania` |
 
-From Termux on a phone: `pkg install -y openssh && ssh root@YOUR_VPS_IP "curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-setup.sh | bash -s europe"`. Point the DuckDNS name at the VPS first and open the ports (see Cloud firewall).
+From Termux on a phone: `pkg install -y openssh && ssh root@YOUR_VPS_IP "curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/vps-setup.sh | bash -s europe"`. Point the DuckDNS name at the VPS first and open the ports (see Cloud firewall).
 
 ## MP Oracle: free Oracle server by itself
 
@@ -87,9 +118,9 @@ So one account covers one MP region. For the other regions use the owner's own a
 
 ## Debian 12 (own PC or VPS)
 
-Debian 12 works the same as Ubuntu and is a much smaller download. Our copy of the official installer is in the [Derbian release](https://github.com/ThirtyFoxMCx00E1/HiveMQ/releases/tag/Derbian):
+Debian 12 works the same as Ubuntu and is a much smaller download. The official installer is on [Debian's archive](https://cdimage.debian.org/cdimage/archive/12.15.0/amd64/iso-cd/):
 
-- [debian-12.15.0-amd64-netinst.iso](https://github.com/ThirtyFoxMCx00E1/HiveMQ/releases/download/Derbian/debian-12.15.0-amd64-netinst.iso) (677 MB, x86_64)
+- [debian-12.15.0-amd64-netinst.iso](https://cdimage.debian.org/cdimage/archive/12.15.0/amd64/iso-cd/debian-12.15.0-amd64-netinst.iso) (677 MB, x86_64)
 - sha256 `cd4462c06aa8892e692c0c4b9c17802f38c8ab8690e85cbfb5ccaa5956e9af17` (same as Debian's own [SHA256SUMS](https://cdimage.debian.org/cdimage/archive/latest-oldstable/amd64/iso-cd/SHA256SUMS))
 
 On a VPS you don't need the ISO: pick "Debian 12" in the provider's image list. For your own PC, write the ISO to a USB stick (Rufus or balenaEtcher) and boot from it. The netinst installer downloads the rest while it installs, so keep the PC online.
@@ -100,12 +131,12 @@ On a VPS you don't need the ISO: pick "Debian 12" in the provider's image list. 
 
 | Region | DuckDNS | On the Debian machine, as root |
 |---|---|---|
-| Asia | mpsamp.duckdns.org | `wget -qO- https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-setup.sh \| bash -s asia` |
-| Europe | eusamp.duckdns.org | `wget -qO- https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-setup.sh \| bash -s europe` |
-| NA | nasamp.duckdns.org | `wget -qO- https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-setup.sh \| bash -s na` |
-| Oceania | ocsamp.duckdns.org | `wget -qO- https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-setup.sh \| bash -s oceania` |
+| Asia | mpsamp.duckdns.org | `wget -qO- https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/vps-setup.sh \| bash -s asia` |
+| Europe | eusamp.duckdns.org | `wget -qO- https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/vps-setup.sh \| bash -s europe` |
+| NA | nasamp.duckdns.org | `wget -qO- https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/vps-setup.sh \| bash -s na` |
+| Oceania | ocsamp.duckdns.org | `wget -qO- https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/vps-setup.sh \| bash -s oceania` |
 
-The script installs curl, git, Java 21 and HiveMQ by itself. Updates later: `wget -qO- https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/update.sh | bash` (as root).
+The script installs curl, git, Java 21 and HiveMQ by itself. Updates later: `wget -qO- https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/update.sh | bash` (as root).
 
 Ping depends on where the machine is, not on the system: a Debian PC in the Philippines is still far from Europe, NA and Oceania. For those regions use a VPS in Frankfurt, Virginia / Ohio or Sydney.
 
@@ -116,7 +147,7 @@ Railway.app stopped taking new accounts, so the MP login bot ([discordpy-bot](ht
 On **one** server (the Asia / bridge server), once:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/update.sh | sudo bash   # new kit + mp-railway tool
+curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/update.sh | sudo bash   # new kit + mp-railway tool
 sudo mp-railway setup                                                                            # asks DISCORD_TOKEN + AUTH_PRIVATE_KEY (hidden)
 ```
 
@@ -138,7 +169,7 @@ sudo mp-railway env               variables (masked)     sudo mp-railway env set
 sudo mp-railway add NAME REPO     host another Python / Node app the same way
 ```
 
-Without a VPS it also runs on an Android phone in Termux: `curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/railway/install.sh | bash` (Termux:Boot starts it after a reboot). Run the bot in **one** place only.
+Without a VPS it also runs on an Android phone in Termux: `curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/railway/install.sh | bash` (Termux:Boot starts it after a reboot). Run the bot in **one** place only.
 
 
 ## MP 3.34: region branches, 24/7 bot host, lower ping with many players
@@ -153,7 +184,7 @@ This kit now also lives inside the main repo: [wagu/HiveMQ](https://github.com/T
 
 ## MP 3.33: the 4 servers run only here, 24/7 - no Broker bot, lower ping
 
-Run the update on every region (Termius console **7) update**, or `curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/update.sh | sudo bash`). New in 3.33:
+Run the update on every region (Termius console **7) update**, or `curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/update.sh | sudo bash`). New in 3.33:
 
 - **The 4 featured servers are hosted by this machine only:** MP LAN Server (UDP 1922), Brief Case War (1930), Modern Warfare 3 (1931), Mega Vil Futuristic (1932). The **Broker bot is gone** (the server shows 0 players when empty) and no phone hosts them any more (the 100-rank Broker standby is off). A player who joins first is just a player, never the host. While a server restarts, 3.33 phones wait and reconnect by themselves.
 - **Always online:** the four units restart 2 s after a crash (`RestartSec=2`, no start limit) and the new **`mp-keepalive.timer`** checks every minute that the broker and the four servers are running and that their port is open, and starts / restarts them when not. Log: `journalctl -t mp-keepalive`.
@@ -164,7 +195,7 @@ Run the update on every region (Termius console **7) update**, or `curl -fsSL ht
 ## Auto update (3.23.5)
 
 The autopilot (mp-status) checks GitHub every 10 minutes. When the mod or this kit has a new version it runs
-`curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/update.sh | sudo bash` by itself
+`curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/update.sh | sudo bash` by itself
 (unit `mp-autoupdate`, log: `journalctl -u mp-autoupdate`). `MP_AUTOUPDATE=0` in `/etc/mp-hivemq/mp.env` turns it off.
 It also restarts mp-bcw, mp-mw3, mp-rp and mp-legacy when they stop. Servers older than this need the command run once by hand.
 
@@ -173,7 +204,7 @@ It also restarts mp-bcw, mp-mw3, mp-rp and mp-legacy when they stop. Servers old
 Run this on every region (or Termius console **7) update**, which now runs the same script):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/update.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/update.sh | sudo bash
 ```
 
 - **Why the old servers never updated:** `install.sh` copied the new `mp_server` over the running one. Linux refuses that ("Text file busy"), and `set -e` stopped the whole update, so the regions kept an old `mp_server`. That old server refuses SENJI's new admin key (`administrator.txt`), and phones kept becoming the host of the default server. Fixed: the binary is now copied to `mp_server.new` and renamed, and the kit in `/opt/mp/kit` is a real git clone (the old copy had no `.git`, so `git pull` in menu 7 failed too).
@@ -253,7 +284,7 @@ Pick each VPS in a data center close to its players, e.g. Singapore or Tokyo for
 ### 1. First region (with the bridge)
 
 ```bash
-git clone https://github.com/ThirtyFoxMCx00E1/HiveMQ
+git clone https://github.com/ThirtyFoxMCx00E1/wagu/tree/main/HiveMQ
 cd HiveMQ
 sudo ./install.sh --region Asia --domain asia-you.duckdns.org --email you@mail.com --bridge
 ```
@@ -390,7 +421,7 @@ Why Community Edition: the HiveMQ Enterprise download without a license is an ev
 
 ## Tagalog
 
-Walang Ubuntu? Puwede ang Debian 12 (677 MB lang): i-download ang ISO sa [Derbian release](https://github.com/ThirtyFoxMCx00E1/HiveMQ/releases/tag/Derbian), i-install (SSH server + standard system utilities lang), tapos bilang root: `wget -qO- https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-setup.sh | bash -s europe` (o `asia` / `na` / `oceania`).
+Walang Ubuntu? Puwede ang Debian 12 (677 MB lang): i-download ang ISO sa [Debian archive](https://cdimage.debian.org/cdimage/archive/12.15.0/amd64/iso-cd/), i-install (SSH server + standard system utilities lang), tapos bilang root: `wget -qO- https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/vps-setup.sh | bash -s europe` (o `asia` / `na` / `oceania`).
 
 MP Oracle: ilagay ang Oracle API key sa repo Secrets (OCI_USER, OCI_TENANCY, OCI_FINGERPRINT, OCI_REGION, OCI_KEY), tapos Actions -> MP Oracle claim -> Run. Paulit-ulit itong susubok hanggang may libreng server, tapos kusa nang mag-iinstall.
 
