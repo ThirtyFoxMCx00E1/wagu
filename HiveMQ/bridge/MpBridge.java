@@ -15,6 +15,16 @@
 //     Europe  = mqtts://bridge:PASSWORD@eu.example.com:8883
 //     topic   = thirtyfox/mp5/l/+,thirtyfox/mp4/l/+   (optional, default shown; comma = several)
 //     expire  = 45                          (seconds without update -> listing removed everywhere)
+//     mirror  = mqtt://broker.hivemq.com:1883   (3.38, optional: the free public lobby, see below)
+//     mirror_region = 0                     (3.38: Asia 0, Europe 1, NA 2, Oceania 3 = this VPS's region)
+//
+// 3.38 public mirror: a phone that can't reach any regional broker (blocked port, DuckDNS down,
+// VPS IP changed) falls back to the free public lobby, saw no 24/7 server there, hosted its own
+// copy - and everybody on it lost the connection when that phone left. With "mirror" the 24/7
+// servers (listing with "!d") of mirror_region are also listed in the public lobby and their
+// game frames are carried both ways, so those phones join the 24/7 bot host too. Only the
+// exported servers' upload topics are subscribed there (s/<token>/+): no public traffic is read,
+// nothing from the public lobby is copied into the regional brokers.
 //
 // Loop protection: the bridge remembers every message it copied to a broker and drops the copy
 // when that broker sends it back (the bridge is subscribed there too). Retained flag is kept.
@@ -47,6 +57,9 @@ public class MpBridge {
     static final Map<String, Peer> peers = new ConcurrentHashMap<>();
     static final java.util.concurrent.atomic.AtomicLong gameFwd = new java.util.concurrent.atomic.AtomicLong();
     static final List<Link> links = new ArrayList<>();
+    static final List<Link> mirrors = new ArrayList<>();   // 3.38: the public lobby (several lines = several public brokers)
+    static int mirrorRegion = 0;
+    static final Set<String> exported = ConcurrentHashMap.newKeySet();   // tokens listed in the public lobby
     // token topic -> last state (payload + when a LIVE update was last seen anywhere)
     static final Map<String, Listing> listings = new ConcurrentHashMap<>();
 
@@ -69,11 +82,15 @@ public class MpBridge {
             else if (k.equalsIgnoreCase("expire")) expireMs = Long.parseLong(v) * 1000L;
             else if (k.equalsIgnoreCase("branch")) branch = v.equalsIgnoreCase("on") || v.equals("1") || v.equalsIgnoreCase("true") || v.equalsIgnoreCase("yes");
             else if (k.equalsIgnoreCase("game_root")) gameRoot = v.endsWith("/") ? v : v + "/";
+            else if (k.equalsIgnoreCase("mirror_region")) mirrorRegion = Integer.parseInt(v);
+            else if (k.equalsIgnoreCase("mirror")) { if (!v.isEmpty() && !v.equalsIgnoreCase("off")) { URI u = URI.create(v); mirrors.add(new Link("Public-" + u.getHost(), u, true)); } }
             else links.add(new Link(k, URI.create(v)));
         }
+        if (!mirrors.isEmpty()) { branch = true; links.addAll(mirrors); }   // 3.38: the mirror needs the game branch
         if (links.size() < 2) { log("bridge.conf needs at least 2 brokers (found " + links.size() + ")"); System.exit(2); }
         log("MP bridge: " + links.size() + " brokers, topic " + topicFilter + ", expire " + expireMs / 1000 + " s"
-            + (branch ? ", game branch ON (" + gameRoot + "s|c|b)" : ""));
+            + (branch ? ", game branch ON (" + gameRoot + "s|c|b)" : "")
+            + (!mirrors.isEmpty() ? ", public mirror " + mirrors.stream().map(m -> m.uri.getHost()).toList() + " (24/7 servers of region " + mirrorRegion + ")" : ""));
         for (Link k : links) { Thread t = new Thread(k::runForever, "link-" + k.name); t.setDaemon(true); t.start(); }
         // expire listings of hosts that vanished while a broker or the bridge was down
         for (;;) {
@@ -84,13 +101,15 @@ public class MpBridge {
                 if (li.payload.length > 0 && now - li.lastLive > expireMs) {
                     listings.remove(e.getKey());
                     log("expired " + e.getKey() + " (from " + li.origin + ")");
-                    for (Link k : links) k.forward(e.getKey(), new byte[0]);
+                    for (Link k : links) if (!k.mirror) k.forward(e.getKey(), new byte[0]);
+                    unexport(e.getKey());
                 }
             }
             peers.entrySet().removeIf(e -> now - e.getValue().seen > 90_000);   // 3.34
             StringBuilder sb = new StringBuilder();
             for (Link k : links) sb.append(k.name).append(k.connected ? " up" : " DOWN").append("  ");
-            if (now / 1000 % 300 < 5) log("status: " + sb + "listings " + listings.size() + (branch ? ", branch players " + peers.size() + ", game frames " + gameFwd.get() : ""));
+            if (now / 1000 % 300 < 5) log("status: " + sb + "listings " + listings.size() + (branch ? ", branch players " + peers.size() + ", game frames " + gameFwd.get() : "")
+                + (!mirrors.isEmpty() ? ", public 24/7 servers " + exported.size() : ""));
         }
     }
 
@@ -143,25 +162,64 @@ public class MpBridge {
             String origin = retained && old != null ? old.origin : from.name;
             listings.put(topic, new Listing(payload, live, origin));
         }
-        for (Link k : links) if (k != from) k.forward(topic, payload);
+        for (Link k : links) if (k != from && !k.mirror) k.forward(topic, payload);
+        if (!mirrors.isEmpty() && !from.mirror) {
+            if (payload.length > 0 && isMirrored(payload)) export(topic, payload);
+            else unexport(topic);
+        }
+    }
+
+    // 3.38: "v1|port|players|max|region|proto:icon@start!d:lang|name" - a 24/7 server of our region
+    static boolean isMirrored(byte[] p) {
+        String s = new String(p, StandardCharsets.UTF_8);
+        String[] f = s.split("\\|", 7);
+        if (f.length < 7 || !f[0].equals("v1")) return false;
+        try { if (Integer.parseInt(f[4].trim()) != mirrorRegion) return false; } catch (NumberFormatException e) { return false; }
+        int c = f[5].indexOf(':'), c2 = c >= 0 ? f[5].indexOf(':', c + 1) : -1;
+        String mid = c >= 0 ? (c2 >= 0 ? f[5].substring(c, c2) : f[5].substring(c)) : "";
+        return mid.contains("!d");
+    }
+    static String tokOf(String listTopic) { return listTopic.substring(listTopic.lastIndexOf('/') + 1); }
+    static void export(String topic, byte[] payload) {
+        String tok = tokOf(topic);
+        if (exported.add(tok)) { log("public lobby: listing 24/7 server " + tok + " (" + new String(payload, StandardCharsets.UTF_8).replaceAll(".*\\|", "") + ")"); for (Link m : mirrors) m.subscribeGame(tok); }
+        for (Link m : mirrors) m.forward(topic, payload);
+    }
+    static void unexport(String topic) {
+        if (mirrors.isEmpty() || !topic.contains("/l/")) return;
+        String tok = tokOf(topic);
+        if (exported.remove(tok)) { log("public lobby: removed " + tok); for (Link m : mirrors) { m.forward(topic, new byte[0]); m.unsubscribeGame(tok); } }
     }
 
     static final class Link {
         final String name; final URI uri;
+        final boolean mirror;                 // 3.38: public lobby link
         volatile boolean connected;
+        private int nextSid = 100;
         private volatile OutputStream out;
         private final Object wlock = new Object();
         // copies we sent to this broker, waiting to come back (key -> expiry times)
         private final Map<String, ArrayDeque<Long>> echoes = new HashMap<>();
 
-        Link(String name, URI uri) { this.name = name; this.uri = uri; }
+        Link(String name, URI uri) { this(name, uri, false); }
+        Link(String name, URI uri, boolean mirror) { this.name = name; this.uri = uri; this.mirror = mirror; }
+
+        // 3.38: only the upload topic of the 24/7 servers we list there
+        void subscribeGame(String tok) {
+            if (!connected) return;   // (re)subscribed on connect
+            try { send(subscribePacket(++nextSid & 0xFFFF, gameRoot + "s/" + tok + "/+")); } catch (IOException e) { close(); }
+        }
+        void unsubscribeGame(String tok) {
+            if (!connected) return;
+            try { send(unsubscribePacket(++nextSid & 0xFFFF, gameRoot + "s/" + tok + "/+")); } catch (IOException e) { close(); }
+        }
 
         static String key(String topic, byte[] p) { return topic + '\0' + new String(p, StandardCharsets.ISO_8859_1); }
 
         void forward(String topic, byte[] payload) {
             if (!connected) return;
             String k = key(topic, payload);
-            synchronized (echoes) {
+            if (!mirror) synchronized (echoes) {
                 echoes.computeIfAbsent(k, x -> new ArrayDeque<>()).add(System.currentTimeMillis() + 10_000);
             }
             try { send(publishPacket(topic, payload, true)); }
@@ -243,9 +301,17 @@ public class MpBridge {
             byte[] body = readPacket(in, type);
             if ((type[0] >> 4) != 2 || body.length < 2 || body[1] != 0)
                 throw new IOException("broker refused the login (CONNACK " + (body.length >= 2 ? body[1] : -1) + ")");
+            if (mirror) {   // 3.38: public lobby: nothing is read there except the uploads to our 24/7 servers
+                int sid = 1;
+                for (String tok : exported) send(subscribePacket(sid++, gameRoot + "s/" + tok + "/+"));
+                connected = true;
+                for (var e : listings.entrySet())   // list them again right away after a reconnect
+                    if (exported.contains(tokOf(e.getKey())) && e.getValue().payload.length > 0) forward(e.getKey(), e.getValue().payload);
+            } else {
             { int sid = 1; for (String f : topicFilter.split(",")) if (!f.trim().isEmpty()) send(subscribePacket(sid++, f.trim()));
               if (branch) for (String g : new String[] { "s/+/+", "c/+", "b/+" }) send(subscribePacket(sid++, gameRoot + g)); }   // 3.34
             connected = true;
+            }
             log(name + ": connected to " + host + ":" + port + (tls ? " (TLS)" : ""));
             // keepalive
             ScheduledExecutorService ka = Executors.newSingleThreadScheduledExecutor(r -> { Thread t = new Thread(r); t.setDaemon(true); return t; });
@@ -300,6 +366,11 @@ public class MpBridge {
         ByteArrayOutputStream v = new ByteArrayOutputStream();
         v.write(id >> 8); v.write(id & 0xFF); str(v, filter); v.write(0);
         return packet(0x82, v.toByteArray());
+    }
+    static byte[] unsubscribePacket(int id, String filter) {   // 3.38
+        ByteArrayOutputStream v = new ByteArrayOutputStream();
+        v.write(id >> 8); v.write(id & 0xFF); str(v, filter);
+        return packet(0xA2, v.toByteArray());
     }
     static byte[] publishPacket(String topic, byte[] payload, boolean retain) {
         ByteArrayOutputStream v = new ByteArrayOutputStream();

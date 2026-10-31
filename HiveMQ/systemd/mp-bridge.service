@@ -1,4 +1,5 @@
-# MpBridge: joins the server lists of all regional brokers (run on ONE server only)
+# MpBridge: joins the server lists of all regional brokers (install.sh --bridge: on ONE server only)
+# 3.38: also runs on every VPS as the public mirror (its 24/7 servers listed in the public lobby)
 [Unit]
 Description=MP Multiplayer lobby bridge
 After=hivemq.service network-online.target
