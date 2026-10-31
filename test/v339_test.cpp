@@ -1,3 +1,4 @@
+#include <cmath>
 // 3.39 test: custom server owner (settings / kick), rules packets, Home Kit create + setup + sell + buy,
 // kick = 4:29 wait (not a ban), featured server settings = staff only.
 //   g++ -O2 -std=c++17 -pthread -I../src -I../third_party/mbedtls/include v339_test.cpp ../src/net/client.cpp ../src/net/server.cpp ../server/obj/libmbedtls.a -o v339_test && ./v339_test
@@ -17,6 +18,9 @@ struct Ev : INetEvents {
     bool haveSet = false; PktSrvSettings set = {};
     int homeMsgs = 0, homeOk = 0; uint16_t lastHome = 0; char lastHomeMsg[128] = ""; int cash = 0;
     char lastSrvMsg[128] = "";
+    int progs = 0; PktProgress prog = {};
+    void OnProgress(const PktProgress& m) override { ++progs; prog = m; }
+    int heads = 0; uint16_t headId = 0, headObjs = 0; char headOwner[32] = ""; int objsGot = 0; int idxTotal = -1; int dels = 0;
     void OnConnected(const PktWelcome&) override { ok = true; }
     void OnRejected(uint8_t r) override { rej = r; }
     void OnConnectFailed() override {} void OnLostConnection() override {}
@@ -32,6 +36,10 @@ struct Ev : INetEvents {
     void OnSrvSettings(const PktSrvSettings& s) override { haveSet = true; set = s; }
     void OnHome(const uint8_t* d, int len) override
     {
+        if(d[0] == PKT_HOME_HEAD && len >= (int)sizeof(PktHomeHead)) { PktHomeHead h; memcpy(&h, d, sizeof(h)); ++heads; headId = h.id; headObjs = h.nObj; snprintf(headOwner, sizeof(headOwner), "%s", h.ownerName); }
+        if(d[0] == PKT_HOME_OBJS) { PktHomeObjs o; memset(&o, 0, sizeof(o)); memcpy(&o, d, std::min(len, (int)sizeof(o))); objsGot += o.count; }
+        if(d[0] == PKT_HOME_INDEX) { PktHomeIndex x; memset(&x, 0, sizeof(x)); memcpy(&x, d, std::min(len, (int)sizeof(x))); idxTotal = x.total; }
+        if(d[0] == PKT_HOME_DEL) ++dels;
         if(len >= (int)sizeof(PktHomeMsg) && d[0] == PKT_HOME_MSG) { PktHomeMsg m; memcpy(&m, d, sizeof(m)); ++homeMsgs; if(m.ok) ++homeOk; if(m.id) lastHome = m.id; cash += m.cash; snprintf(lastHomeMsg, sizeof(lastHomeMsg), "%s", m.text); }
     }
 };
@@ -81,6 +89,14 @@ int main()
     std::this_thread::sleep_for(std::chrono::milliseconds(300));
     Cmd(own, HC_SETUP, hid, 0, nullptr, 996, 996, 19, 0, 16, 16); Pump({&own, &bob}, {&eo, &eb}, 400);
     CHECK(strstr(eo.lastHomeMsg, "16x16") != nullptr, "/setup 16x16 slot saved");
+    for(int k = 0; k < 3; ++k)
+    {
+        std::this_thread::sleep_for(std::chrono::milliseconds(300));
+        PktHomeCmd p; memset(&p, 0, sizeof(p)); p.type = PKT_HOME_CMD; p.cmd = HC_OBJ_ADD; p.id = hid;
+        p.obj.model = (uint16_t)(1700 + k); p.obj.x = (int16_t)(300 + k * 200); p.obj.y = 400; p.obj.z = 0; own.Send(&p, sizeof(p));
+        Pump({&own, &bob}, {&eo, &eb}, 200);
+    }
+    CHECK(strstr(eo.lastHomeMsg, "Object added (3/") != nullptr, "3 buildings / furniture added");
     std::this_thread::sleep_for(std::chrono::milliseconds(300));
     Cmd(own, HC_SETUP, hid, 0, nullptr, 996, 996, 19, 0, 200, 16); Pump({&own, &bob}, {&eo, &eb}, 400);
     CHECK(strstr(eo.lastHomeMsg, "up to") != nullptr, "an over-limit slot is refused (red)");
@@ -122,6 +138,46 @@ int main()
     s = e2.set; s.op = 1; s.modes = 0; o2.Send(&s, sizeof(s)); Pump({&o2}, {&e2}, 400);
     CHECK(def.GetModes() == GM_ALL, "default server keeps every gamemode");
     o2.Disconnect(); Pump({&o2}, {&e2}, 300); def.Stop();
+    // the server restarts (VPS update / reboot): the houses come back to a player who rejoins
+    {
+        MPServer s3; s3.SetPersistent(true); s3.SetHomeFile("/tmp/v339_homes.txt");
+        s3.Start(19341, "Test Custom", [](const char*){}, 50); s3.SetModes(GM_HOME);
+        MPClient b3; Ev e3; b3.SetUid("bobphone000000001"); b3.Connect("127.0.0.1", 19341, "Bob", 0);
+        Pump({&b3}, {&e3}, 1200);
+        CHECK(e3.ok && e3.idxTotal == 1, "after a server restart + rejoin: the house list has my house");
+        Cmd(b3, HC_GET, 1, 0, nullptr); Pump({&b3}, {&e3}, 500);
+        CHECK(e3.heads >= 1 && e3.headObjs == 3 && e3.objsGot >= 3, "... with all 3 saved buildings / furniture");
+        CHECK(!strcmp(e3.headOwner, "Bob"), "... and Bob still owns it");
+        std::this_thread::sleep_for(std::chrono::milliseconds(300));
+        Cmd(b3, HC_DELETE, 1, 0, nullptr); Pump({&b3}, {&e3}, 500);
+        CHECK(e3.dels == 1 && strstr(e3.lastHomeMsg, "deleted"), "/homedelete removes it");
+        b3.Disconnect(); Pump({&b3}, {&e3}, 300); s3.Stop();
+        FILE* f3 = fopen("/tmp/v339_homes.txt", "r"); int hl = 0; char ln[512]; while(f3 && fgets(ln, sizeof(ln), f3)) if(ln[0] == 'H') ++hl; if(f3) fclose(f3);
+        CHECK(hl == 0, "the delete is saved right away (server stopped < 1 s later)");
+    }
+    // 3.39.1: saved progress comes back after a server restart + rejoin
+    {
+        unlink("/tmp/v339_prog.txt");
+        MPServer s4; s4.SetPersistent(true); s4.SetProgressFile("/tmp/v339_prog.txt");
+        s4.Start(19342, "Test Custom", [](const char*){}, 50);
+        MPClient c4; Ev e4; c4.SetUid("carlphone00000001"); c4.Connect("127.0.0.1", 19342, "Carl", 0);
+        Pump({&c4}, {&e4}, 1200);
+        CHECK(e4.ok && e4.progs == 1 && e4.prog.op == 2, "first join: nothing saved yet (op 2)");
+        PktProgress g; memset(&g, 0, sizeof(g)); g.type = PKT_PROGRESS; g.op = 1; g.ver = 1;
+        g.x = 2495.5f; g.y = -1687.25f; g.z = 13.5f; g.heading = 90; g.money = 12345; g.health = 77; g.armour = 40;
+        g.hunger = 60; g.energy = 33; g.wep[0] = 24; g.ammo[0] = 70; g.wep[1] = 31; g.ammo[1] = 300; g.wep[2] = 44; g.ammo[2] = 1;
+        c4.Send(&g, sizeof(g)); Pump({&c4}, {&e4}, 300);
+        c4.Disconnect(); Pump({&c4}, {&e4}, 300); s4.Stop();
+        MPServer s5; s5.SetPersistent(true); s5.SetProgressFile("/tmp/v339_prog.txt");
+        s5.Start(19343, "Test Custom", [](const char*){}, 50);
+        MPClient c5; Ev e5; c5.SetUid("carlphone00000001"); c5.Connect("127.0.0.1", 19343, "Carl", 0);
+        Pump({&c5}, {&e5}, 1200);
+        const PktProgress& r = e5.prog;
+        CHECK(e5.progs == 1 && r.op == 0 && r.money == 12345 && r.health == 77 && r.armour == 40, "rejoin after restart: money / health / armour back");
+        CHECK(fabsf(r.x - 2495.5f) < 0.1f && fabsf(r.y + 1687.25f) < 0.1f && r.hunger == 60 && r.energy == 33, "... place + hunger / energy back");
+        CHECK(r.wep[0] == 24 && r.ammo[0] == 70 && r.wep[1] == 31 && r.ammo[1] == 300 && r.wep[2] == 0, "... weapons + ammo back (night vision dropped)");
+        c5.Disconnect(); Pump({&c5}, {&e5}, 300); s5.Stop();
+    }
     printf("%s (%d failed)\n", fails ? "FAILED" : "ALL PASSED", fails);
     return fails ? 1 : 0;
 }

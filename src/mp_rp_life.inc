@@ -284,46 +284,17 @@ static void RpPathAxes(float& fx, float& fy, float& sx, float& sy)
     float l = sqrtf(fx * fx + fy * fy); if(l < 0.01f) l = 1; fx /= l; fy /= l;
     sx = fy; sy = -fx;   // to the right of the path (seen from the camera)
 }
+// 3.39.1: no white board any more - the welcome floats in the air above the pathway as medium-big
+// outlined text (SA-MP 3D text label look), sized by the distance like the other labels.
 static void RpWelcomeBoard(ImDrawList* dl)
 {
     float fx, fy, sx, sy; RpPathAxes(fx, fy, sx, sy);
-    const float dist = 31.0f, halfW = 4.2f, z0 = g_RpPlaces[0].z + 1.0f, z1 = z0 + 3.0f;
-    const Vec3 c = { kRpLobbyCam.x + fx * dist, kRpLobbyCam.y + fy * dist, g_RpPlaces[0].z };
+    const float dist = 31.0f;
+    const Vec3 c = { kRpLobbyCam.x + fx * dist, kRpLobbyCam.y + fy * dist, g_RpPlaces[0].z + 3.2f };
     if(BcwCamDist(c) > 90.0f) return;
-    Vec3 w[4] = { { c.x - sx * halfW, c.y - sy * halfW, z1 }, { c.x + sx * halfW, c.y + sy * halfW, z1 },
-                  { c.x + sx * halfW, c.y + sy * halfW, z0 }, { c.x - sx * halfW, c.y - sy * halfW, z0 } };
-    ImVec2 q[4]; for(int i = 0; i < 4; ++i) if(!BcwW2S(w[i], q[i])) return;
-    // two black posts down to the ground
-    for(int k = 0; k < 2; ++k)
-    {
-        float o = (k ? 1 : -1) * halfW * 0.8f;
-        ImVec2 a, b;
-        if(BcwW2S({ c.x + sx * o, c.y + sy * o, z0 }, a) && BcwW2S({ c.x + sx * o, c.y + sy * o, c.z }, b))
-            dl->AddLine(a, b, IM_COL32(15, 15, 15, 255), fmaxf(2.0f, (q[1].x - q[0].x) * 0.025f));
-    }
-    // shadow, white board, black frame
-    ImVec2 sh(UI::S(4), UI::S(5));
-    dl->AddQuadFilled(ImVec2(q[0].x + sh.x, q[0].y + sh.y), ImVec2(q[1].x + sh.x, q[1].y + sh.y), ImVec2(q[2].x + sh.x, q[2].y + sh.y), ImVec2(q[3].x + sh.x, q[3].y + sh.y), IM_COL32(0, 0, 0, 110));
-    dl->AddQuadFilled(q[0], q[1], q[2], q[3], IM_COL32(250, 250, 250, 255));
-    const float bw = sqrtf((q[1].x - q[0].x) * (q[1].x - q[0].x) + (q[1].y - q[0].y) * (q[1].y - q[0].y));
-    const float bh = sqrtf((q[3].x - q[0].x) * (q[3].x - q[0].x) + (q[3].y - q[0].y) * (q[3].y - q[0].y));
-    dl->AddQuad(q[0], q[1], q[2], q[3], IM_COL32(0, 0, 0, 255), fmaxf(2.0f, bh * 0.045f));
-    if(bw < UI::S(60)) return;
-    // text: centred, sized to the board
-    const ImVec2 mid((q[0].x + q[1].x + q[2].x + q[3].x) * 0.25f, (q[0].y + q[1].y + q[2].y + q[3].y) * 0.25f);
-    const char* l1 = "Welcome to Mega Vil Futuristic Roleplay Server";
-    const char* l2 = "24/7 roleplay city - stay in character, no DM, no cheats";
-    const char* l3 = "/jobs work  -  /gps places  -  /phone  -  PANEL: bag + documents  -  /rules";
-    ImFont* f = UI::Font();
-    float fs1 = bh * 0.20f; { float tw = f->CalcTextSizeA(fs1, FLT_MAX, 0, l1).x; if(tw > bw * 0.90f) fs1 *= bw * 0.90f / tw; }
-    float fs2 = fs1 * 0.55f; { float tw = f->CalcTextSizeA(fs2, FLT_MAX, 0, l3).x; if(tw > bw * 0.92f) fs2 *= bw * 0.92f / tw; }
-    if(fs1 < 6.0f) return;
-    ImVec2 t1 = f->CalcTextSizeA(fs1, FLT_MAX, 0, l1), t2 = f->CalcTextSizeA(fs2, FLT_MAX, 0, l2), t3 = f->CalcTextSizeA(fs2, FLT_MAX, 0, l3);
-    float y = mid.y - (t1.y + t2.y + t3.y + fs2 * 0.6f) * 0.5f;
-    dl->AddText(f, fs1, ImVec2(mid.x - t1.x * 0.5f, y), IM_COL32(0, 0, 0, 255), l1); y += t1.y + fs2 * 0.6f;
-    dl->AddLine(ImVec2(mid.x - t1.x * 0.35f, y - fs2 * 0.3f), ImVec2(mid.x + t1.x * 0.35f, y - fs2 * 0.3f), IM_COL32(56, 189, 248, 255), fmaxf(1.0f, fs2 * 0.12f));
-    dl->AddText(f, fs2, ImVec2(mid.x - t2.x * 0.5f, y), IM_COL32(40, 40, 40, 255), l2); y += t2.y;
-    dl->AddText(f, fs2, ImVec2(mid.x - t3.x * 0.5f, y), IM_COL32(40, 40, 40, 255), l3);
+    BcwLabel3D(dl, { c.x, c.y, c.z + 0.85f }, "Welcome to Mega Vil Futuristic Roleplay Server", 0x38BDF8FF, 46.0f, 30.0f);
+    BcwLabel3D(dl, { c.x, c.y, c.z }, "24/7 roleplay city - stay in character, no DM, no cheats", 0xFFFFFFFF, 30.0f, 30.0f);
+    BcwLabel3D(dl, { c.x, c.y, c.z - 0.6f }, "/jobs work  -  /gps places  -  /phone  -  PANEL: bag + documents  -  /rules", 0xFFDD33FF, 26.0f, 30.0f);
 }
 static void RpInfoDraw(ImDrawList* dl)
 {

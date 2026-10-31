@@ -14,6 +14,9 @@ struct HkHomeC
     std::vector<HkObj> obj;         // the current objects
     std::vector<HkObj> rx;          // objects coming in (rev rxRev)
     uint16_t rxRev = 0; int rxGot = 0;
+    std::vector<uint8_t> rxHave;     // 3.39.1: which object slots came (a lost UDP page = ask again)
+    uint64_t headAt = 0; int retries = 0;
+    float doorGz = 0; uint64_t doorGzAt = 0; float doorGzFor[3] = {0, 0, 0};   // 3.39.1: the ground under the door
     std::vector<int> inst;          // spawned object handle per obj (0 = none, -1 = failed)
     std::vector<HkObj> instObj;     // what each handle shows
     int prefabInst = 0; uint16_t prefabModel = 0; float prefabAt[4] = {0, 0, 0, 0};
@@ -53,13 +56,36 @@ static bool HkActive()
 static HkHomeC* HkGet(uint16_t id) { auto it = s_Hk.find(id); return (it != s_Hk.end() && it->second.haveHead) ? &it->second : nullptr; }
 static void HkSendCmd(PktHomeCmd& c) { c.type = PKT_HOME_CMD; client.Send(&c, sizeof(c)); }
 static PktHomeCmd HkCmd(uint8_t cmd, uint16_t id = 0, int32_t val = 0) { PktHomeCmd c; memset(&c, 0, sizeof(c)); c.cmd = cmd; c.id = id; c.val = val; return c; }
-static bool HkMine(const PktHomeHead& h) { return h.ownerName[0] && !strcasecmp(h.ownerName, settings.name); }
-static bool HkHasKey(const PktHomeHead& h) { for(int k = 0; k < HK_KEYS; ++k) if(h.keys[k][0] && !strcasecmp(h.keys[k], settings.name)) return true; return false; }
+static const char* HkBareName(const char* n)   // 3.39.1: "[MOD] Juan" / "[ADMIN] SENJI" -> the plain name
+{
+    if(!n) return "";
+    for(int k = 0; k < 3; ++k) { if(!strncmp(n, "[MOD] ", 6)) n += 6; else if(!strncmp(n, "[ADMIN] ", 8)) n += 8; else break; }
+    return n;
+}
+static bool HkMine(const PktHomeHead& h) { return h.ownerName[0] && !strcasecmp(HkBareName(h.ownerName), HkBareName(settings.name)); }
+static bool HkHasKey(const PktHomeHead& h) { for(int k = 0; k < HK_KEYS; ++k) if(h.keys[k][0] && !strcasecmp(HkBareName(h.keys[k]), HkBareName(settings.name))) return true; return false; }
 static bool HkStaff() { return MP::IsLocalAdmin() || MP::IsLocalMod() || (s_Server.IsRunning() && !MP::IsHostingDefault()); }
 static bool HkCanEdit(const PktHomeHead& h) { return HkMine(h) || HkStaff(); }
 static Vec3 HkDoor(const PktHomeHead& h)
 {
     Vec3 p; HkLocalToWorld(h.x, h.y, h.heading, h.ex / 100.0f, h.ey / 100.0f, p.x, p.y); p.z = h.z + h.ez / 100.0f; return p;
+}
+// 3.39.1: the door marker / text stand on the ground. The door point is where the player stood
+// (body centre, ~1 m up, or on the stairs): find the ground under it once in a while (5 s) and cache it.
+static Vec3 HkDoorGround(HkHomeC& c, uint64_t now, bool compute = false)   // compute: game thread only (HkProcess)
+{
+    Vec3 d = HkDoor(c.h);
+    const bool moved = fabsf(d.x - c.doorGzFor[0]) > 0.05f || fabsf(d.y - c.doorGzFor[1]) > 0.05f || fabsf(d.z - c.doorGzFor[2]) > 0.05f;
+    if(!compute) { if(!c.doorGzAt || moved) d.z -= 0.95f; else d.z = c.doorGz; return d; }
+    if(!c.doorGzAt || moved || now - c.doorGzAt > 5000)
+    {
+        float g = Game::GroundZBelow(d.x, d.y, d.z + 0.4f);
+        if(g > -999.0f && g > d.z - 3.5f) c.doorGz = g + 0.03f;
+        else c.doorGz = d.z - 0.95f;   // no collision loaded yet: feet height
+        c.doorGzAt = now; c.doorGzFor[0] = d.x; c.doorGzFor[1] = d.y; c.doorGzFor[2] = d.z;
+    }
+    d.z = c.doorGz;
+    return d;
 }
 static Vec3 HkCentre(const PktHomeHead& h)
 {
@@ -198,7 +224,12 @@ static void HkOnPacket(const uint8_t* d, int len)
         HkHomeC& c = s_Hk[h.id];
         const bool newRev = !c.haveHead || c.h.rev != h.rev;
         c.h = h; c.haveHead = true; c.seen = true;
-        if(newRev) { c.rxRev = h.rev; c.rx.assign(std::min((int)h.nObj, HK_MAX_OBJ), HkObj{}); c.rxGot = 0; if(c.rx.empty()) c.obj.clear(); }
+        if(newRev || (c.rxGot < (int)c.rx.size()))
+        {
+            if(newRev || c.rxRev != h.rev) { c.rxRev = h.rev; c.rx.assign(std::min((int)h.nObj, HK_MAX_OBJ), HkObj{}); c.rxHave.assign(c.rx.size(), 0); c.rxGot = 0; c.retries = 0; }
+            if(c.rx.empty()) c.obj.clear();
+        }
+        c.headAt = MP_NowMs();
         s_HkWant.erase(std::remove(s_HkWant.begin(), s_HkWant.end(), h.id), s_HkWant.end());
         return;
     }
@@ -209,7 +240,8 @@ static void HkOnPacket(const uint8_t* d, int len)
         auto it = s_Hk.find(p.id); if(it == s_Hk.end()) return;
         HkHomeC& c = it->second;
         if(p.rev != c.rxRev) return;
-        for(int k = 0; k < p.count && k < HK_OBJ_PAGE; ++k) { int i = p.start + k; if(i < (int)c.rx.size()) { c.rx[i] = p.o[k]; ++c.rxGot; } }
+        if(c.rxHave.size() != c.rx.size()) c.rxHave.assign(c.rx.size(), 0);
+        for(int k = 0; k < p.count && k < HK_OBJ_PAGE; ++k) { int i = p.start + k; if(i < (int)c.rx.size()) { c.rx[i] = p.o[k]; if(!c.rxHave[i]) { c.rxHave[i] = 1; ++c.rxGot; } } }
         if(c.rxGot >= (int)c.rx.size()) { c.obj = c.rx; }
         return;
     }
@@ -298,7 +330,22 @@ static void HkProcess(int ped, uint64_t now)
     if(!act) { if(s_bWasActive) { if(s_nHkInside) { s_nHkInside = 0; } HkReset(); } s_bWasActive = false; return; }
     if(!s_bWasActive) { s_nHkIndexAt = now + 1500; }
     s_bWasActive = true;
-    if(s_nHkIndexAt && now >= s_nHkIndexAt && s_Hk.empty()) { PktHomeCmd c = HkCmd(HC_INDEX); HkSendCmd(c); s_nHkIndexAt = 0; }
+    if(s_nHkIndexAt && now >= s_nHkIndexAt && s_Hk.empty()) { PktHomeCmd c = HkCmd(HC_INDEX); HkSendCmd(c); s_nHkIndexAt = now + 4000; }   // 3.39.1: again until the list comes
+    {   // 3.39.1: the house list again every 30 s (a lost index page = houses missing after a rejoin)
+        static uint64_t s_nIdxAgain = 0;
+        if(!s_nIdxAgain || now >= s_nIdxAgain) { if(s_nIdxAgain) { PktHomeCmd c = HkCmd(HC_INDEX); HkSendCmd(c); } s_nIdxAgain = now + 30000; }
+    }
+    // 3.39.1: a house whose furniture / buildings didn't all arrive (lost UDP page): ask for it again
+    for(auto& kv : s_Hk)
+    {
+        HkHomeC& c = kv.second;
+        if(!c.haveHead || c.rxGot >= (int)c.rx.size() || c.retries > 20) continue;
+        if(now - c.headAt > 2500 && now - c.reqAt > 2500)
+        {
+            c.reqAt = now; ++c.retries;
+            PktHomeCmd q = HkCmd(HC_GET, kv.first); HkSendCmd(q);
+        }
+    }
     // ask for the houses I don't have (about 10 a second)
     if(!s_HkWant.empty() && now >= s_nHkWantAt)
     {
@@ -321,6 +368,7 @@ static void HkProcess(int ped, uint64_t now)
         for(auto& kv : s_Hk)
         {
             HkHomeC& c = kv.second; if(!c.haveHead) continue;
+            { Vec3 dd = HkDoor(c.h); if(fabsf(dd.x - myDrawPos.x) < 80.0f && fabsf(dd.y - myDrawPos.y) < 80.0f) HkDoorGround(c, now, true); }   // 3.39.1
             Vec3 m = HkCentre(c.h);
             const float dx = m.x - myDrawPos.x, dy = m.y - myDrawPos.y, d = sqrtf(dx * dx + dy * dy);
             const bool inside = s_nHkInside == kv.first;
@@ -410,6 +458,7 @@ static void HkDrawWorld(ImDrawList* dl, float now)
         Vec3 d = HkDoor(h);
         float dist = sqrtf((d.x - myDrawPos.x) * (d.x - myDrawPos.x) + (d.y - myDrawPos.y) * (d.y - myDrawPos.y) + (d.z - myDrawPos.z) * (d.z - myDrawPos.z));
         if(dist > 60.0f) continue;
+        d = HkDoorGround(kv.second, (uint64_t)MP_NowMs());   // 3.39.1: on the ground, not floating (the door point was the body centre)
         MkBeam(dl, d, 0.55f, 1.5f, 0xFF1A1AFF, 1.0f);   // the red glowing column
         HkArrow(dl, d, now, IM_COL32(255, 30, 30, 230));
         if(dist > 30.0f || !OccPoint({ d.x, d.y, d.z + 1.6f })) continue;
@@ -761,7 +810,7 @@ static void HkFurnish(HkHomeC& c, int level)
 static void HkHelp()
 {
     SysMsg(COL_YELLOW, "Home Kit: /create house <name>  /setup <name>  /buyhouse  /sellhouse <price>  /cancelsale  /edithouse  /edithouseinteriors");
-    SysMsg(COL_YELLOW, "/enterhouse  /exithouse  /lockhouse  /renamehouse <new>  /deletehouse  /myhouses  /houses  /houseinfo  /gotohouse <name>");
+    SysMsg(COL_YELLOW, "/enterhouse  /exithouse  /lockhouse  /renamehouse <new>  /deletehouse  /homedelete <name>  /myhouses  /houses  /houseinfo  /gotohouse <name>");
     SysMsg(COL_YELLOW, "/addobject <model>  /removeobject  /objects  /clearobjects  /furnish <low|med|swank>  /prefab <model|0>  /setentrance  /givehouse <id>  /housekey <id>");
 }
 static bool HkCommand(const char* cmd, const char* arg)
@@ -806,6 +855,18 @@ static bool HkCommand(const char* cmd, const char* arg)
         HkHomeC* h = pick(true); if(h) { PktHomeCmd m = HkCmd(HC_SELL, h->h.id, price); HkSendCmd(m); } return true;
     }
     if(c == "cancelsale") { HkHomeC* h = pick(true); if(h) { PktHomeCmd m = HkCmd(HC_SELL, h->h.id, 0); HkSendCmd(m); } return true; }
+    if(c == "homedelete" || c == "deletehome" || c == "delhome" || c == "removehome")   // 3.39.1: /homedelete <home_name>
+    {
+        if(!a2[0]) { SysMsg(COL_RED, "Use: /homedelete <home name>  (your houses: /myhouses)"); return true; }
+        int id = HkByName(a2); HkHomeC* h = id >= 0 ? HkGet((uint16_t)id) : nullptr;
+        if(!h) { SysMsg(COL_RED, "No house called \"%s\" (your houses: /myhouses).", a2); return true; }
+        if(!HkCanEdit(h->h)) { SysMsg(COL_RED, "%s is not your house.", h->h.name); return true; }
+        static uint16_t s_DelId; s_DelId = h->h.id;
+        char body[200]; snprintf(body, sizeof(body), "{FFFFFF}Delete the house {FFFF00}%s{FFFFFF} with all its buildings and furniture?\n{FF4444}This can't be undone.", h->h.name);
+        ShowDialog(0, DIALOG_STYLE_MSGBOX, "{FFFFFF}Delete house", body, "Delete", "Cancel",
+                   [](int resp, int, const char*, int) { if(resp) { PktHomeCmd m = HkCmd(HC_DELETE, s_DelId); HkSendCmd(m); } });
+        return true;
+    }
     if(c == "deletehouse") { HkHomeC* h = pick(true); if(h) { PktHomeCmd m = HkCmd(HC_DELETE, h->h.id); HkSendCmd(m); } return true; }
     if(c == "renamehouse")
     {

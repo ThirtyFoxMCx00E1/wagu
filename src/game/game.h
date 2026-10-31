@@ -185,6 +185,9 @@ namespace Game
     bool  PickupCollected(int pickup);
     void  RemovePickup(int pickup);
     int   GetAmmo(int ped, int weapon);
+    bool  GetWeaponInSlot(int ped, int slot, int& weapon, int& ammo);   // 3.39.1: slot 1..13
+    bool  GiveWeaponAmmo(int ped, int weapon, int ammo);             // 3.39.1
+    void  SetInterior(int ped, int area);                            // 3.39.1
     void  SetDropsWeapons(int ped, bool on);
 
     // ---- 2.17 ---------------------------------------------------------------------------------
@@ -303,6 +306,7 @@ namespace Game
     // 2.21 world.cpp
     void  UnlockWorld(bool girlfriends);      // all cities, shop / gym / food / barber / tattoo doors, garages
     float GroundZ(float x, float y, float zHint);
+    float GroundZBelow(float x, float y, float zFrom);   // 3.39.1: -1000 = none
     float GroundBelow(float x, float y, float fromZ);              // 3.21.4: -1000 = none
     bool  OpenGround(float x, float y, float zHint, float& out);   // 3.21.4: ground with open sky
     void  TeleportGround(int ped, Vec3 at, float heading);   // on the ground (car too if driving)

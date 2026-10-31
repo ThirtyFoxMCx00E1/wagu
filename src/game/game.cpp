@@ -464,6 +464,24 @@ int Game::CreateRemoteClothedCJ(const PktClothes& c, const Vec3& p0)
 
 void Game::DeleteChar(int ped) { if(ped > 0) CALLSCM(DELETE_CHAR, ped); }
 
+// 3.39.1: give a weapon with this much ammo (saved progress). false = the model can't load
+bool Game::GiveWeaponAmmo(int ped, int weapon, int ammo)
+{
+    if(ped <= 0 || !PedPtr(ped) || weapon <= 0 || weapon > 46 || (weapon >= 19 && weapon <= 21)) return false;
+    if(weapon >= 44 && ped != LocalPed()) return false;
+    uint32_t model = 0;
+    CALLSCM(GET_WEAPONTYPE_MODEL, weapon, &model);
+    if((int)model > 0 && !LoadModelNow((int)model)) return false;
+    if(!PedPtr(ped)) return false;
+    CALLSCM(GIVE_WEAPON_TO_CHAR, ped, weapon, ammo > 0 ? ammo : 1);
+    return true;
+}
+void Game::SetInterior(int ped, int area)
+{
+    if(area < 0 || area > 255) return;
+    CALLSCM(SET_AREA_VISIBLE, area);
+    if(ped > 0 && PedPtr(ped)) CALLSCM(SET_CHAR_AREA_VISIBLE, ped, area);
+}
 bool Game::GiveAndSelectWeapon(int ped, int weapon)
 {
     if(ped <= 0 || !PedPtr(ped)) return true;   // 2.19.1: never on a ped that is gone (crash in CPed::GiveWeapon)

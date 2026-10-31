@@ -61,6 +61,7 @@ public:
     virtual void OnSrvSettings(const PktSrvSettings&) {}          // 3.39
     virtual void OnGmEvent(const uint8_t* /*data*/, int /*len*/) {}   // 3.39
     virtual void OnKickWait(int /*seconds*/) {}                   // 3.39: kicked: wait before joining again
+    virtual void OnProgress(const PktProgress&) {}                // 3.39.1: my saved progress
 };
 
 class MPClient
@@ -78,6 +79,8 @@ public:
     bool Connect(const char* host, uint16_t port, const char* name, uint16_t skin, uint32_t color = 0, uint16_t viaLocalPort = 0);
     void SetJoinPassword(const char* pw) { MP_CopyStr(m_szPassword, pw ? pw : "", sizeof(m_szPassword)); }   // 2.19: before Connect
     void SetUid(const char* uid) { MP_CopyStr(m_szUid, uid ? uid : "", sizeof(m_szUid)); }   // 2.25: this phone's id
+    uint32_t GetServerBuild() const { return m_nServerBuild; }   // 3.39.1
+    bool HasModKey() const { return m_szModKey[0] != 0; }        // 3.39.1
     void SetModKey(const char* k) { MP_CopyStr(m_szModKey, k ? k : "", sizeof(m_szModKey)); }   // 3.35: moderator.txt
     void SetAdminKey(const char* k) { MP_CopyStr(m_szAdminKey, k ? k : "", sizeof(m_szAdminKey)); }   // 2.37: only for the reserved name SENJI
     // 3.11: direct UDP to a 24/7 server (its public address, found by Online's probe) instead of

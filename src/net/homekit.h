@@ -77,6 +77,15 @@ struct PktHomeIndex { uint8_t type, op; uint16_t page, count, total; uint16_t e[
 struct PktHomeDel   { uint8_t type, op; uint16_t id; };
 struct PktHomeMsg   { uint8_t type, ok; uint16_t id; int32_t cash; char text[120]; };   // cash: GTA money to add (house sold)
 // 3.39: live server settings: S->C what is on (+ can = may change it), C->S a change (owner / admin / moderator)
+// 3.39.1: saved progress. op 1 = C->S "save this", op 0 = S->C "here is yours", op 2 = S->C "nothing saved yet"
+struct PktProgress
+{
+    uint8_t  type, op; uint16_t ver;
+    float    x, y, z, heading;
+    int32_t  money;
+    uint8_t  interior, health, armour, hunger, energy, wanted; int16_t skin;
+    uint8_t  wep[13]; uint8_t pad2[3]; uint16_t ammo[13]; uint16_t pad3;
+};
 struct PktSrvSettings { uint8_t type, op, perms, can; uint16_t modes; uint8_t rulesOn, pad; };
 // 3.39: rules: idx 0 = title, 1..10 = the lines; on = 0 -> no rules window
 struct PktRules     { uint8_t type, idx, on, count; char text[100]; };

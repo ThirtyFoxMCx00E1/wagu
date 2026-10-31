@@ -10,7 +10,7 @@ static void SrvSettingsReset() { s_SrvSet.have = false; s_SrvSet.at = 0; }
 static void SrvSettingsShow();
 static void SrvSettingsOnPacket(const PktSrvSettings& m)
 {
-    const bool reopen = s_SrvSet.have && SampDialogOpen() && s_Dlg.fn != nullptr && s_Dlg.user == 0x5353;
+    const bool reopen = SampDialogOpen() && s_Dlg.fn != nullptr && s_Dlg.user == 0x5353;
     s_SrvSet.have = true; s_SrvSet.s = m; s_SrvSet.at = MP_NowMs();
     if(reopen) SrvSettingsShow();
 }
@@ -49,7 +49,26 @@ static void SrvSettingsDlg(int resp, int item, const char*, int)
 static void SrvSettingsShow()
 {
     if(client.GetState() != NET_CONNECTED) { SysMsg(COL_RED, "Join a server first."); return; }
-    if(!s_SrvSet.have) { PktSrvSettings q; memset(&q, 0, sizeof(q)); q.type = PKT_SRV_SETTINGS; q.op = 0; client.Send(&q, sizeof(q)); SysMsg(COL_SYSTEM, "Asking the server for its settings..."); return; }
+    // 3.39.1: never wait - show what this phone already knows (gamemodes + permissions the server sent
+    // at the join) right away, ask the server in the background and refresh the page when it answers.
+    // A server older than 3.39 can't answer at all (it updates itself within ~10 minutes): view only.
+    const bool newSrv = client.GetServerBuild() >= 33900;
+    if(!s_SrvSet.have || MP_NowMs() - s_SrvSet.at > 15000)
+    {
+        if(newSrv) { PktSrvSettings q; memset(&q, 0, sizeof(q)); q.type = PKT_SRV_SETTINGS; q.op = 0; client.Send(&q, sizeof(q)); }
+        if(!s_SrvSet.have)
+        {
+            memset(&s_SrvSet.s, 0, sizeof(s_SrvSet.s));
+            s_SrvSet.s.type = PKT_SRV_SETTINGS; s_SrvSet.s.modes = s_nServerModes; s_SrvSet.s.perms = s_nServerPerms; s_SrvSet.s.can = 0;
+            s_SrvSet.s.rulesOn = MP::IsOnDefault() ? 1 : 0;
+        }
+    }
+    if(!newSrv)
+    {
+        char b[16]; unsigned sb = client.GetServerBuild();
+        snprintf(b, sizeof(b), "%u.%02u", sb / 10000, (sb / 100) % 100);
+        SysMsg(COL_YELLOW, "This server still runs MP %s: settings are view only until it updates to 3.39 (the 24/7 servers update by themselves).", sb ? b : "(old)");
+    }
     const PktSrvSettings& s = s_SrvSet.s;
     std::string body = "Setting\tState\n";
     for(int i = 0; i < MP_GAMEMODE_COUNT; ++i)
@@ -69,4 +88,19 @@ static bool SrvSettingsCommand(const char* cmd, const char*)
     if(strcmp(cmd, "settings") && strcmp(cmd, "srvsettings") && strcmp(cmd, "ss") && strcmp(cmd, "serversettings")) return false;
     SrvSettingsShow();
     return true;
+}
+
+// 3.39.1: moderator.txt check after the join - tell the player why there is no [MOD] tag
+static void ModCheckProcess(uint64_t now)
+{
+    static uint64_t s_At = 0; static bool s_Said = false;
+    if(client.GetState() != NET_CONNECTED) { s_At = 0; s_Said = false; return; }
+    if(!s_At) { s_At = now; return; }
+    if(s_Said || now - s_At < 5000 || myId >= MP_MAX_PLAYERS || !players[myId].active) return;
+    s_Said = true;
+    if(MP_IsReservedName(settings.name) || UI::IsAdminName(players[myId].name)) return;
+    if(UI::IsModName(players[myId].name)) { SysMsg(COL_GREEN, "Moderator: you are [MOD] %s here (kick / mute: MP menu > Players).", settings.name); return; }
+    if(client.HasModKey())
+        SysMsg(COL_YELLOW, s_bModMaster ? "moderator.txt: the MP moderator key was read, but this server didn't give [MOD] - it still runs an older MP (it updates by itself)."
+                                         : "moderator.txt: this key is not the MP moderator key and this server's owner hasn't listed it - ask for the MP moderator key.");
 }

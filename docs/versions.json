@@ -1,6 +1,7 @@
 {
-"latest": "3.39",
+"latest": "3.39.1",
 "supported": [
+"3.39.1",
 "3.39",
 "3.37",
 "3.36.1",
@@ -50,6 +51,10 @@
 "3.04.6"
 ],
 "versions": [
+{
+"v": "3.39.1",
+"summary": "**Saved progress**: on the default server (after the login) and on custom servers your place, money, weapons + ammo, health, armour, hunger and energy are saved every 15 s and when you leave, and come back on the next join - also after a game or server restart (/save saves now). **Houses come back** after leaving and rejoining (lost pages are asked again, the owner is matched by account, phone or name). **/homedelete <name>** deletes your house (asks first). House door marker and floating text now sit on the ground, not in the air. **Rules window opens by itself** after the login on the default and custom servers (no need to type /rules). **Server settings** open right away (no more long 'asking the server'). **moderator.txt** is found in any data folder and any spelling, so the [MOD] tag shows on the default server. Mega Vil Futuristic: the white welcome board is now medium-big floating text."
+},
 {
 "v": "3.39",
 "summary": "**HOME KIT** gamemode (on the default server automatically, on custom servers with Add server > Gamemodes > Home Kit): **/create house <name>**, **/setup <name>** (slot window: 16x16 or any size up to the limit, the tapped square glows on the ground, green = OK, red = over the limit), **/buyhouse**, **/sellhouse**, **/edithouse**, **/edithouseinteriors** with real GTA SA buildings, furniture and interiors, house doors with white floating text and a red marker, 19+ commands. **/mv** My Vehicles list (model, status, distance; Select / Close). **Hunger + energy HUD** bottom-right (/eat /sleep /rest /needs; default server always, custom servers by permission, never on Mega Vil). **RULES** window after the login (default: 10 rules; custom: Add server > Rules with title + 1)-10)), /rules. **Server settings** page (/settings): everyone sees the gamemodes, permissions and rules; the host owner changes them on a custom server, only the admin and moderators on the 4 featured servers. Kicks are not bans any more: **{FFFFFF}[{FFFF00}SERVER{FFFFFF}]: name got kicked by reason** for everyone and a **4:29 wait** before joining again. Only the admin or a moderator phone can host the 4 featured servers (the 24/7 bot hosts them). New gamemodes from the open.mp forum: **Cops and Robbers**, **Attack / Defend**, **Survival (DayZ)**, **Stunt freeroam**, **Drift**. Fixes: the login screen always shows on the 4 servers after a rejoin or game restart, moderator.txt accepts any layout, SA-MP dialog buttons are black with white text, chat colour codes, the pause-menu map image now matches the radar blips (right size), other players' arms come up when they aim any gun (no restart of the aim every 250 ms, aiming while walking).",

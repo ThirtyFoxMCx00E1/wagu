@@ -43,6 +43,7 @@ DEFOPCODE(0215, REMOVE_PICKUP, i);
 DEFOPCODE(04ED, REQUEST_ANIMATION, s);
 DEFOPCODE(04EE, HAS_ANIMATION_LOADED, s);
 DEFOPCODE(041A, GET_AMMO_IN_CHAR_WEAPON, iiv);
+DEFOPCODE(04B8, GET_CHAR_WEAPON_IN_SLOT, iivvv);   // 3.39.1
 // 2.15 passengers
 DEFOPCODE(046C, GET_DRIVER_OF_CAR, iv);
 DEFOPCODE(01EA, GET_MAXIMUM_NUMBER_OF_PASSENGERS, iv);
@@ -773,6 +774,17 @@ void Game::RemovePickup(int pickup)    { if(pickup > 0) CALLSCM(REMOVE_PICKUP, p
 
 void Game::SetDropsWeapons(int ped, bool on) { if(ped > 0) CALLSCM(SET_CHAR_DROPS_WEAPONS_WHEN_DEAD, ped, on ? 1 : 0); }
 
+// 3.39.1: slot 1..13 -> weapon id + ammo (0 = empty)
+bool Game::GetWeaponInSlot(int ped, int slot, int& weapon, int& ammo)
+{
+    weapon = 0; ammo = 0;
+    if(ped <= 0 || !PedPtr(ped) || slot < 1 || slot > 13) return false;
+    uint32_t w = 0, a = 0, m = 0;
+    CALLSCM(GET_CHAR_WEAPON_IN_SLOT, ped, slot, &w, &a, &m);
+    if((int)w <= 0 || w > 46) return false;
+    weapon = (int)w; ammo = (int)a;
+    return true;
+}
 int Game::GetAmmo(int ped, int weapon)
 {
     uint32_t a = 0;
