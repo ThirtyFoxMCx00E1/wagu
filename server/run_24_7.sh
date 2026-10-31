@@ -8,7 +8,7 @@
 # the website, and the free public lobby when those are down. On a VPS use HiveMQ/vps-setup.sh instead
 # (systemd services + the public mirror). Logs: logs/<port>.log
 cd "$(dirname "$0")" || exit 1
-REGION="${1:-Asia}"
+REGION="${1:-${REGION:-Asia}}"
 if [ "$REGION" = stop ]; then
     for p in run/*.pid; do [ -f "$p" ] && kill "$(cat "$p")" 2>/dev/null; rm -f "$p"; done
     pkill -f "mp_server 19(22|30|31|32) " 2>/dev/null; echo "stopped"; exit 0
@@ -30,5 +30,9 @@ keep 1922 "MP LAN Server" 100
 keep 1930 "Brief Case War" 20
 keep 1931 "Call Of Duty: Modern Warfare 3" 64 --mw3-file mw3_stats.txt
 keep 1932 "Mega Vil Futuristic" 250 --rp-file rp_citizens.txt
+if [ "${FOREGROUND:-0}" = 1 ]; then   # 3.38: Docker / Railway: stay in the foreground, stop all 4 on exit
+    trap 'kill 0' TERM INT
+    tail -n 0 -F logs/*.log & wait
+fi
 echo "Running in the background (also after you close this terminal: use nohup / termux-wake-lock)."
 echo "Stop: ./run_24_7.sh stop"

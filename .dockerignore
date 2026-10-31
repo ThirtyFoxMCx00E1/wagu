@@ -1,0 +1,6 @@
+*
+!src/net
+!third_party/mbedtls
+!server/Makefile
+!server/mp_server.cpp
+!server/run_24_7.sh

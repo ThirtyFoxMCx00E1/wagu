@@ -193,7 +193,7 @@ sudo /opt/mp/console/mp-xdp.sh status</code></pre>
         <article><h3>Light broker</h3><p>Old sessions are freed after 2 minutes, stale messages after 10, and slow phones get the newest state. Logs and caches are trimmed every 6 hours.</p></article>
         <article><h3>24/7 bot host on all 4</h3><p>MP LAN Server, Brief Case War, MW3 and Mega Vil Futuristic are hosted by the bot "Broker", not by a phone. Players come and go, the server never leaves, so nobody is dropped when the first player leaves.</p></article>
         <article><h3>Public lobby mirror</h3><p>A phone that can't reach its region's broker lands in the free public lobby. The 4 bot servers are listed there too, so that phone joins the bot host instead of hosting a copy of its own.</p></article>
-        <article><h3>Any always-on machine</h3><p>No VPS yet? <code>server/run_24_7.sh</code> runs the 4 bot servers on a home PC or an old phone with Termux, each one back within 2 s if it stops.</p></article>
+        <article><h3>Any always-on machine</h3><p>No VPS yet? <code>curl -fsSL https://thirtyfoxmcx00e1.github.io/wagu/install.sh | bash</code> starts the 4 bot servers on a Termux phone or any Linux box (Termius / SSH). Or deploy the wagu repo on Railway. The <a href="termux.html">Termux console</a> shows them live.</p></article>
       </div>
     </div>
   </section>

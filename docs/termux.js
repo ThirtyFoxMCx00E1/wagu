@@ -12,7 +12,7 @@
   var $ = function (id) { return document.getElementById(id); };
   var out = $('out'), stick = window.MPAutoScroll(out);
   var servers = new Map(), events = [], evSeen = 0, conns = [], brokers = [], regionsTxt = '', installSh = '';
-  var phoneSeen = null, phoneWas = null, phoneChanged = false, lastPing = 0, release = null;
+  var phoneSeen = null, botsUp = 0, phoneWas = null, phoneChanged = false, lastPing = 0, release = null;
 
   function esc(x) { return String(x).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function print(html) { var d = document.createElement('div'); d.innerHTML = html; out.appendChild(d); while (out.childNodes.length > 500) out.removeChild(out.firstChild); stick(); }
@@ -24,13 +24,22 @@
   function cfgLines(txt) { return txt.split(/\r?\n/).filter(function (l) { return l.trim() && !/^\s*[#;]/.test(l); }); }
 
   // ------------------------------------------------------------ lobby (MQTT over WebSocket)
-  function isPhoneServer(s) { return s.port === 1922 && /mp lan server/i.test(s.name); }
+  // 3.38: the 4 featured servers and their 24/7 bot host ("!d" in the listing = hosted by the bot, not a phone)
+  var BOTS = [{ port: 1922, re: /^mp lan server$/i, name: 'MP LAN Server' }, { port: 1930, re: /brief ?case/i, name: 'Brief Case War' },
+              { port: 1931, re: /modern warfare|mw3/i, name: 'Call Of Duty: Modern Warfare 3' }, { port: 1932, re: /mega vil/i, name: 'Mega Vil Futuristic' }];
+  function botOf(s) { for (var i = 0; i < BOTS.length; i++) if (s.port === BOTS[i].port && BOTS[i].re.test(s.name)) return i; return -1; }
+  function isPhoneServer(s) { return botOf(s) >= 0 && s.bot; }
+  function botState() {   // per featured server: the best copy seen (bot host wins over a phone copy)
+    var st = BOTS.map(function () { return null; });
+    servers.forEach(function (s) { var i = botOf(s); if (i >= 0 && (!st[i] || (s.bot && !st[i].bot))) st[i] = s; });
+    return st;
+  }
   function onList(topic, payload) {
     var tok = topic.split('/').pop(), s = payload.toString(), had = servers.get(tok);
     if (!s) { if (had) events.push(now() + '  server closed: ' + had.name); servers.delete(tok); return; }
     var f = s.split('|');
     if (f[0] !== 'v1' || f.length < 7) return;
-    var r = +f[4], sv = { port: +f[1] || 0, players: +f[2] || 0, max: +f[3] || 0, region: isNaN(r) ? -1 : r, name: f.slice(6).join('|').slice(0, 64), seen: Date.now() };
+    var r = +f[4], sv = { port: +f[1] || 0, players: +f[2] || 0, max: +f[3] || 0, region: isNaN(r) ? -1 : r, name: f.slice(6).join('|').slice(0, 64), seen: Date.now(), bot: /^[^:]*:[^:]*!d/.test(f[5] || '') };
     if (!had) events.push(now() + '  server up: ' + sv.name + ' (port ' + sv.port + ', ' + sv.players + '/' + sv.max + ')');
     else if (had.players !== sv.players) events.push(now() + '  ' + sv.name + ': players ' + had.players + ' -> ' + sv.players);
     servers.set(tok, sv);
@@ -38,8 +47,9 @@
   function prune() {
     var t = Date.now();
     servers.forEach(function (s, k) { if (t - s.seen > FRESH) { events.push(now() + '  server timed out: ' + s.name); servers.delete(k); } });
-    var ph = null; servers.forEach(function (s) { if (isPhoneServer(s)) ph = s; });
-    var up = !!ph;
+    var bs = botState(), nb = bs.filter(function (x) { return x && x.bot; }).length;
+    var ph = nb ? bs[0] || bs.filter(Boolean)[0] : null; botsUp = nb;
+    var up = nb === BOTS.length;
     if (phoneWas !== null && phoneWas !== up) phoneChanged = true;
     phoneWas = up; phoneSeen = ph;
     while (events.length > 300) { events.shift(); evSeen = Math.max(0, evSeen - 1); }
@@ -59,8 +69,8 @@
     prune();
     var on = conns.filter(function (x) { return x.c.connected; }).length, players = 0;
     servers.forEach(function (s) { players += s.players; });
-    $('live').className = 'live ' + (on ? (phoneSeen ? 'ok' : 'warn') : 'bad');
-    $('live-t').textContent = (on ? on + ' broker' + (on === 1 ? '' : 's') : 'connecting…') + ' · ' + servers.size + ' servers · ' + players + ' players · 24/7 phone ' + (phoneSeen ? 'up' : 'not seen');
+    $('live').className = 'live ' + (on ? (botsUp === BOTS.length ? 'ok' : 'warn') : 'bad');
+    $('live-t').textContent = (on ? on + ' broker' + (on === 1 ? '' : 's') : 'connecting…') + ' · ' + servers.size + ' servers · ' + players + ' players · 24/7 bot host ' + botsUp + '/' + BOTS.length;
   }
   function wsPing(url) {
     return new Promise(function (res) {
@@ -112,11 +122,13 @@
     },
     'status': function () {
       prune();
-      if (phoneSeen) {
-        print('<span class="g">MP server running (24/7)</span>  ' + esc(phoneSeen.name) + ' · port ' + phoneSeen.port + ' · ' + phoneSeen.players + '/' + phoneSeen.max + ' players · ' + esc(REG[phoneSeen.region] || '?') + ' · seen ' + ago(Date.now() - phoneSeen.seen) + ' ago');
-      } else {
-        print('<span class="y">MP server not seen in the lobby</span> <span class="m">(looking for "MP LAN Server" on port 1922)</span>');
-      }
+      print('MP 24/7 bot host (Broker) - ' + botsUp + ' of ' + BOTS.length + ' servers');
+      botState().forEach(function (s, i) {
+        var n = esc(BOTS[i].name) + ' <span class="m">(' + BOTS[i].port + ')</span>';
+        if (s && s.bot) print('  <span class="g">online </span> ' + n + ' · ' + s.players + '/' + s.max + ' · ' + esc(REG[s.region] || '?') + ' · bot host');
+        else if (s) print('  <span class="y">phone  </span> ' + n + ' · ' + s.players + '/' + s.max + ' <span class="m">· hosted by a phone: drops everybody when that phone leaves</span>');
+        else print('  <span class="r">offline</span> ' + n);
+      });
       var on = conns.filter(function (x) { return x.c.connected; }).map(function (x) { return new URL(x.url).hostname; });
       p('m', 'lobby via ' + (on.length ? on.join(', ') : 'nothing yet') + ' · ' + servers.size + ' server(s) listed');
     },
@@ -124,7 +136,7 @@
       prune();
       var all = Array.from(servers.values()).sort(function (a, b) { return b.players - a.players || a.name.localeCompare(b.name); });
       if (!all.length) { p('m', 'no servers online right now'); return; }
-      all.forEach(function (s) { print('<span class="' + (s.max && s.players >= s.max ? 'r' : 'g') + '">' + (s.players + '/' + s.max + '      ').slice(0, 8) + '</span>' + esc(s.name || 'Unnamed') + ' <span class="m">· ' + esc(REG[s.region] || '?') + ' · port ' + s.port + '</span>' + (isPhoneServer(s) ? ' <span class="c">24/7</span>' : '')); });
+      all.forEach(function (s) { print('<span class="' + (s.max && s.players >= s.max ? 'r' : 'g') + '">' + (s.players + '/' + s.max + '      ').slice(0, 8) + '</span>' + esc(s.name || 'Unnamed') + ' <span class="m">· ' + esc(REG[s.region] || '?') + ' · port ' + s.port + '</span>' + (s.bot ? ' <span class="c">24/7</span>' : '')); });
     },
     'log': function () {
       prune();
@@ -160,14 +172,17 @@
     },
     'doctor': function () {
       prune();
-      if (phoneSeen) { p('g', 'all good: the 24/7 phone server is listed - nothing to fix'); return; }
-      p('y', 'the 24/7 phone server is not in the lobby. On the phone, in Termux:');
+      if (botsUp === BOTS.length) { p('g', 'all good: the 4 servers are on the 24/7 bot host - nothing to fix'); return; }
+      p('y', botsUp + ' of ' + BOTS.length + ' servers on the 24/7 bot host. Without it a phone hosts them, and everybody is dropped when that phone leaves.');
+      p('m', 'Start the bot host on any always-on device (Termux phone, Linux PC, Termius SSH box):');
+      print('  <span class="g">curl -fsSL https://thirtyfoxmcx00e1.github.io/wagu/install.sh | bash</span>');
+      p('m', 'or deploy the wagu repo on Railway (Dockerfile + railway.json, variable REGION). Already installed? In Termux:');
       print('  1. <span class="g">mp-server status</span>   <span class="m">is it running?</span>');
       print('  2. <span class="g">mp-server restart</span>  <span class="m">start it again (run.sh restarts it after crashes)</span>');
       print('  3. <span class="g">termux-wake-lock</span>   <span class="m">and turn off battery optimisation for Termux</span>');
       print('  4. <span class="g">mp-server log</span>      <span class="m">look for "lobby" / "broker" errors</span>');
       print('  5. <span class="g">mp-server update</span>   <span class="m">newest source + rebuild</span>');
-      p('m', 'not installed yet? curl -fsSL ' + RAW + 'termux/install.sh | bash');
+      p('m', 'not installed yet? curl -fsSL https://thirtyfoxmcx00e1.github.io/wagu/install.sh | bash');
     },
     'vps-update': function () {
       var U = 'curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/update.sh | sudo bash';
@@ -214,13 +229,13 @@
     if (boot.length) return { cmd: boot.shift(), why: 'start-up check' };
     var dj = window.MPDebian && MPDebian.tick(); if (dj) return dj;   // 3.31: the Debian one-line setup
     prune();
-    if (phoneChanged) { phoneChanged = false; return phoneSeen ? { cmd: 'mp-server status', why: '24/7 phone server came back' } : { cmd: 'mp-server doctor', why: '24/7 phone server left the lobby' }; }
+    if (phoneChanged) { phoneChanged = false; return phoneWas ? { cmd: 'mp-server status', why: 'all 4 servers back on the 24/7 bot host' } : { cmd: 'mp-server doctor', why: 'a server left the 24/7 bot host' }; }
     if (events.length - evSeen >= 3) return { cmd: 'mp-server log', why: (events.length - evSeen) + ' new lobby events' };
     if (Date.now() - lastPing > 90000) return { cmd: 'ping -c 2 $BROKERS', why: 'ping every 90 s', wait: 7000 };
     if (Date.now() - lastRel > 600000) { lastRel = Date.now(); relCheck = true; return { cmd: 'curl -s $MP/release.json', why: 'checking for a new release' }; }
     if (relCheck && release) { relCheck = false; if (release.tag_name !== relSeen) { relSeen = release.tag_name; return { cmd: 'curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/update.sh | sudo bash', why: 'release ' + release.tag_name + ': typing the VPS update' }; } }
     if (++cycles % 10 === 0) return { cmd: 'clear', why: 'keeping the screen short', wait: 600 };
-    if (!phoneSeen && cycles % 4 === 0) return { cmd: 'mp-server doctor', why: '24/7 phone server still not seen' };
+    if (botsUp < BOTS.length && cycles % 4 === 0) return { cmd: 'mp-server doctor', why: '24/7 bot host: ' + botsUp + '/' + BOTS.length };
     return { cmd: rot[ri++ % rot.length], why: 'routine check' };
   }
 
@@ -242,7 +257,7 @@
       if (!(k in cur)) cur[k] = v;
     });
     blocks.forEach(function (r) { if (/^wss:\/\//i.test(r.web || '')) connect(r.web, r.web_user, r.web_pass); });
-    if (!brokers.length) connect(PUBLIC[0]);
+    connect(PUBLIC[0]);   // 3.38: the public lobby too (phone copies + the mirrored 24/7 bot hosts are there when the regions are down)
     MPBot({ out: out, line: $('typed'), keyEnter: $('kenter'), status: $('botst'), run: run, next: next, startMs: 1200 });
   });
   setInterval(live, 3000);
