@@ -30,6 +30,7 @@ static void PSettingsPopup()
     const bool rp = RpOnServer(), mw3 = Mw3OnServer();
     PsRow rows[] = {
         { "Name Tag",          &settings.showNameTags,   0 },
+        { "Name Tag: Show Yourself", &settings.showOwnTag, 0 },   // 3.35.2
         { "Damage Indicator",  &settings.showDmgInd,     0 },
         { "Kill Feed",         &settings.showKillFeed,   0 },
         { "Chat Bubble",       &settings.chatBubbles,    0 },

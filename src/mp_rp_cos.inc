@@ -16,8 +16,8 @@ struct RpCosState
     uint64_t t0 = 0; int cat = 0, sel = -1; int origSkin = 0, curSkin = -1, wantSkin = -1;
     Vec3     fromP{}, fromL{}, toP{}, toL{}, camP{}, camL{}; float yaw = 0;
     int      obj[16] = {}; int nObj = 0; bool objDone = false; float scroll = 0;
-    // 3.36: landing - he is NOT frozen until he really stands on the shop floor (was frozen mid-fall)
-    bool     landed = false; int still = 0; uint64_t placedAt = 0; float floorZ = -1000.0f;
+    // 3.35.1: landing - he is NOT frozen until he really stands on the shop floor (was frozen mid-fall)
+    bool     landed = false; int still = 0; uint64_t placedAt = 0; float floorZ = -1000.0f; int replaced = 0;
 };
 static RpCosState s_Cos;
 static bool RpCosActive() { return s_Cos.on; }
@@ -62,7 +62,10 @@ static float RpCosFloor()
     if(z < -999.0f || fabsf(z - (kRpCosSpot.z - 1.0f)) > 2.5f) return -1000.0f;   // not this room's floor
     return z;
 }
-// put him on the spot; he lands in RpCosSettle() and is frozen only when he stands still on the floor
+// 3.35.2: Game::PlaceChar() (SET_CHAR_COORDINATES) puts his FEET at the given z, GetCharPos() gives his
+// CENTRE (feet + ~1 m). 3.35.1 placed him at floor + 1 (= 1 m in the air) and then checked his centre
+// against floor + 1 -> he fell, the "moved off the spot" check teleported him up again, he fell again...
+static const float kRpCosCentre = 1.0f;   // ped centre above his feet
 static void RpCosPlacePed(int ped)
 {
     if(ped <= 0) return;
@@ -70,14 +73,21 @@ static void RpCosPlacePed(int ped)
     Game::ClearTasksNow(ped);   // no falling / jumping anim left over
     Game::PreloadArea(kRpCosSpot, true);   // the floor collision is in before he stands on it
     float f = RpCosFloor(); if(f > -999.0f) s_Cos.floorZ = f;
-    Vec3 at = kRpCosSpot; if(s_Cos.floorZ > -999.0f) at.z = s_Cos.floorZ + 1.0f;   // ped centre = feet + 1 m
-    Game::PlaceChar(ped, at);
+    if(s_Cos.floorZ < -999.0f)
+    {   // no floor yet: hold him hidden at the spot (RpCosSettle places him when the floor is in)
+        Game::PlaceChar(ped, { kRpCosSpot.x, kRpCosSpot.y, kRpCosSpot.z - kRpCosCentre });
+        Game::FreezeChar(ped, true); Game::SetCharVisible(ped, false);
+        s_Cos.landed = false; s_Cos.still = 0; s_Cos.placedAt = MP_NowMs();
+        return;
+    }
+    Game::PlaceChar(ped, { kRpCosSpot.x, kRpCosSpot.y, s_Cos.floorZ + 0.02f });   // feet ON the floor (no drop)
     Game::SetCharHeading(ped, 0.0f);   // face the camera (+y)
+    Game::ClearTasksNow(ped);
     Game::SetCharVisible(ped, true);
     s_Cos.landed = false; s_Cos.still = 0; s_Cos.placedAt = MP_NowMs();
 }
-// every tick in the room until he stands: no floor yet -> hold him (frozen) at the spot; floor there ->
-// let him drop onto it, wait until he is still, clear the fall anim (= standing idle), then freeze
+// every tick in the room until he stands: no floor yet -> keep him held; floor there -> he is already on
+// it, wait a few still frames (standing idle), then freeze him where he IS (no second teleport)
 static void RpCosSettle(int ped, uint64_t now)
 {
     if(s_Cos.landed || ped <= 0) return;
@@ -85,26 +95,26 @@ static void RpCosSettle(int ped, uint64_t now)
     if(s_Cos.floorZ < -999.0f)
     {
         float f = RpCosFloor();
-        if(f < -999.0f) { Game::FreezeChar(ped, true); if(fabsf(q.z - kRpCosSpot.z) > 0.3f) Game::PlaceChar(ped, kRpCosSpot); return; }
-        s_Cos.floorZ = f; RpCosPlacePed(ped); return;   // the floor came in: put him just on it
+        if(f < -999.0f) { Game::FreezeChar(ped, true); return; }
+        s_Cos.floorZ = f; RpCosPlacePed(ped); return;   // the floor came in: put him on it
     }
-    const float stand = s_Cos.floorZ + 1.0f;
-    if(q.z < s_Cos.floorZ - 0.5f || q.z > stand + 1.5f || fabsf(q.x - kRpCosSpot.x) + fabsf(q.y - kRpCosSpot.y) > 1.0f)
-    {   // fell through / bounced off something: again
-        if(now - s_Cos.placedAt > 300) RpCosPlacePed(ped);
+    const float stand = s_Cos.floorZ + kRpCosCentre;
+    if(q.z < s_Cos.floorZ - 1.5f)
+    {   // really fell through the floor (collision dropped): put him back, at most 3 times
+        if(now - s_Cos.placedAt > 500 && s_Cos.replaced < 3) { ++s_Cos.replaced; RpCosPlacePed(ped); }
         return;
     }
     Vec3 v{}; Game::GetMoveSpeed(ped, false, v);
-    if(fabsf(v.z) < 0.15f && fabsf(q.z - stand) < 0.35f) ++s_Cos.still; else s_Cos.still = 0;
+    if(fabsf(v.z) < 0.15f) ++s_Cos.still; else s_Cos.still = 0;
     if(s_Cos.still >= 6 || now - s_Cos.placedAt > 2500)
     {
-        Game::PlaceChar(ped, { kRpCosSpot.x, kRpCosSpot.y, stand });   // exactly on the floor
+        Game::ClearTasksNow(ped);   // any land anim off -> he stands
         Game::SetCharHeading(ped, 0.0f);
-        Game::ClearTasksNow(ped);   // the fall / land anim off -> he stands
-        Game::FreezeChar(ped, true);
+        Game::FreezeChar(ped, true);   // frozen where he stands (no re-teleport = no new fall)
         s_Cos.landed = true;
-        // the camera at his real height (the spot's z was a guess)
-        s_Cos.toP.z = stand + 0.55f; s_Cos.toL.z = stand + 0.05f;
+        // the camera at his real height
+        float cz = (fabsf(q.z - stand) < 0.6f) ? q.z : stand;
+        s_Cos.toP.z = cz + 0.55f; s_Cos.toL.z = cz + 0.05f;
     }
 }
 static void RpCosOpen()
@@ -178,12 +188,14 @@ static void RpCosTick(int ped, uint64_t now)
         // a new outfit: change the model, put him back on the spot
         if(s_Cos.sel >= 0 && g_RpCos[s_Cos.sel].skin != s_Cos.curSkin)
         {
-            if(Game::SetLocalModel(g_RpCos[s_Cos.sel].skin)) { s_Cos.curSkin = g_RpCos[s_Cos.sel].skin; RpCosPlacePed(Game::LocalPed()); }
+            if(Game::SetLocalModel(g_RpCos[s_Cos.sel].skin)) { s_Cos.curSkin = g_RpCos[s_Cos.sel].skin; s_Cos.replaced = 0; RpCosPlacePed(Game::LocalPed()); }
         }
         if(s_Cos.landed && now % 1000 < 40)
-        {   // only when he moved off the spot after landing (pushed): land him again
+        {   // 3.35.2: only when he is really gone (pushed far / under the floor), and at most 3 times
             int lp = Game::LocalPed(); Vec3 q;
-            if(lp > 0 && Game::GetCharPos(lp, q) && (fabsf(q.x - kRpCosSpot.x) + fabsf(q.y - kRpCosSpot.y) + fabsf(q.z - (s_Cos.floorZ + 1.0f))) > 0.6f) RpCosPlacePed(lp);
+            if(lp > 0 && s_Cos.replaced < 3 && Game::GetCharPos(lp, q) &&
+               (fabsf(q.x - kRpCosSpot.x) + fabsf(q.y - kRpCosSpot.y) > 1.5f || q.z < s_Cos.floorZ - 1.5f))
+            { ++s_Cos.replaced; RpCosPlacePed(lp); }
         }
         Game::SetFixedCamera(s_Cos.toP, s_Cos.toL);
         s_Cos.camP = s_Cos.toP; s_Cos.camL = s_Cos.toL;

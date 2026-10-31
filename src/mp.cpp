@@ -11,6 +11,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <arpa/inet.h>
+#include <netinet/in.h>   // 3.35.2: port free test
 #include <net/if.h>
 #include <atomic>
 #include <mutex>
@@ -4944,7 +4945,7 @@ static void LoadAdminFile()
         }
     }
     client.SetAdminKey(settings.adminKey);
-    {   // 3.35: files/MP/moderator.txt = my moderator key (the server lists "<name> <key>" in its own moderator.txt)
+    {   // 3.35: files/MP/moderator.txt = my moderator key. 3.35.2: the MP moderator key (MP_MOD_KEY_HASH) gives "[MOD] name" on every server by itself
         char mk[120] = {0}, mp[512]; snprintf(mp, sizeof(mp), "%s/moderator.txt", s_szDataDir);
         if(FILE* f = fopen(mp, "r"))
         {
@@ -4959,7 +4960,7 @@ static void LoadAdminFile()
             fclose(f);
         }
         client.SetModKey(mk);
-        if(mk[0]) logger->Info("MP: moderator.txt found - join with your moderator name to get [MOD]");
+        if(mk[0]) logger->Info("MP: moderator.txt found - you join as [MOD] %s", settings.name);
     }
     if(settings.adminKey[0]) logger->Info("MP: administrator.txt OK (%s, %d key(s)) - you are the administrator (SENJI)", s_szAdminFound, (int)s_AdminKeys.size());
     else logger->Info("MP: no valid administrator.txt (looked in %s and %d other places)", cand[0].c_str(), (int)cand.size() - 1);
@@ -5531,6 +5532,77 @@ static void GamemodeSwitches()
     ImGui::PopID();
 }
 
+// 3.35.2: every player hosts with the same port (1923...) -> "port taken". A port is taken when it is a
+// featured server's port, another server (online lobby / Wi-Fi / your list) with ANOTHER name uses it,
+// or something on this phone already holds it. The same name + port is the same server (you join it).
+static bool PortReserved(int port)
+{
+    return port == MP_DEFAULT_PORT || port == MP_BCW_PORT || port == MP_MW3_PORT || port == MP_RP_PORT;
+}
+static bool PortBusyHere(int port)
+{   // something on this phone holds the UDP port (our own running server does not count)
+    if(s_Server.IsRunning() && s_Server.GetPort() == port) return false;
+    int fd = socket(AF_INET, SOCK_DGRAM, 0); if(fd < 0) return false;
+    sockaddr_in a{}; a.sin_family = AF_INET; a.sin_port = htons((uint16_t)port); a.sin_addr.s_addr = htonl(INADDR_ANY);
+    const bool busy = bind(fd, (sockaddr*)&a, sizeof(a)) != 0;
+    close(fd);
+    return busy;
+}
+static bool PortTakenBy(int port, const char* myName, const std::vector<LanServer>& nb, char* who, size_t n)
+{
+    if(who && n) who[0] = 0;
+    if(port <= 0 || port > 65535) return false;
+    if(PortReserved(port))
+    {
+        const char* f = port == MP_DEFAULT_PORT ? MP_DEFAULT_SERVER_NAME : port == MP_BCW_PORT ? MP_BCW_SERVER_NAME : port == MP_MW3_PORT ? MP_MW3_SERVER_NAME : MP_RP_SERVER_NAME;
+        if(who) MP_CopyStr(who, f, n);
+        return true;
+    }
+    for(const LanServer& sv : nb)
+        if(sv.port == port && (!myName || !*myName || strcasecmp(sv.name, myName)))
+        { if(who) MP_CopyStr(who, sv.name, n); return true; }
+    for(int i = 0; i < ServerList::Count(); ++i)
+        if(ServerEntry* e = ServerList::Get(i))
+            if(e->online && e->port == port && (!myName || !*myName || strcasecmp(e->name, myName)))
+            { if(who) MP_CopyStr(who, e->name, n); return true; }
+    if(PortBusyHere(port)) { if(who) MP_CopyStr(who, "another app on this phone", n); return true; }
+    return false;
+}
+// the first free port after 'from' (custom servers start at MP_DEFAULT_PORT + 1)
+static int PortFree(int from, const char* myName, const std::vector<LanServer>& nb)
+{
+    int p = from < MP_DEFAULT_PORT + 1 ? MP_DEFAULT_PORT + 1 : from;
+    for(int tries = 0; tries < 2000; ++tries, ++p)
+    {
+        if(p > 65535) p = MP_DEFAULT_PORT + 1;
+        if(!PortTakenBy(p, myName, nb, nullptr, 0)) return p;
+    }
+    return 0;
+}
+// under the Port field: "Port 1923 is taken by X - free port: 1924 [Use 1924]". Returns true when taken.
+static bool PortTakenHint(char* portBuf, size_t portLen, const char* myName, bool hostHere)
+{
+    static uint64_t s_At = 0; static int s_Port = -1, s_Free = 0; static bool s_Taken = false; static char s_Who[40] = "", s_Name[32] = "";
+    const int port = atoi(portBuf[0] ? portBuf : "0") > 0 ? atoi(portBuf) : (hostHere ? settings.port : 0);
+    if(port <= 0) return false;
+    if(port != s_Port || strcmp(s_Name, myName ? myName : "") || MP_NowMs() - s_At > 3000)
+    {   // checked at most every 3 s (or when the port / name changes): the lobby + a bind test
+        std::vector<LanServer> nb; { std::lock_guard<std::mutex> lk(s_LanMutex); nb = s_Nearby; }
+        s_At = MP_NowMs(); s_Port = port; MP_CopyStr(s_Name, myName ? myName : "", sizeof(s_Name));
+        s_Taken = PortTakenBy(port, myName, nb, s_Who, sizeof(s_Who));
+        if(!hostHere && s_Taken && PortBusyHere(port) && !PortReserved(port)) s_Taken = false;   // a remote server: this phone's ports do not matter
+        s_Free = s_Taken ? PortFree(port + 1, myName, nb) : 0;
+    }
+    if(!s_Taken) { ImGui::TextColored(kGreenTxt, "Port %d is free.", port); return false; }
+    ImGui::TextColored(kRedTxt, "Port %d is taken (%s). This port needs a new one.", port, s_Who);
+    if(s_Free > 0)
+    {
+        char b[48]; snprintf(b, sizeof(b), "Use free port %d", s_Free);
+        if(FloatMenu::BigButton(b)) { snprintf(portBuf, portLen, "%d", s_Free); s_Port = -1; }
+    }
+    return true;
+}
+
 static void SectionAddServer(void*)
 {
     AddFormPrefill();
@@ -5540,6 +5612,7 @@ static void SectionAddServer(void*)
     FloatMenu::TextField("Server name", s_szNewName, "Server name", 31, OnNewName);
     FloatMenu::TextField("Host / IP  (empty = host it on this phone)", s_szNewHost, "e.g. ggwar or net.ggwar.org", 63, OnNewHost, nullptr, false, true);   // 2.16: masked
     FloatMenu::TextField("Port", s_szNewPort, "Port", 6, OnNewPort, nullptr, true);
+    const bool portTaken = PortTakenHint(s_szNewPort, sizeof(s_szNewPort), s_szNewName[0] ? s_szNewName : (s_szNewHost[0] ? "" : settings.serverName), s_szNewHost[0] == 0 && !s_Server.IsRunning());   // 3.35.2
     FloatMenu::TextField("Password (optional, max 16)", s_szNewPw, "Password (max 16)", MP_PASSWORD_LEN, OnNewPw, nullptr, false, true);   // 2.19
     FloatMenu::TextField("Language", s_szNewLang, "Language (e.g. English)", MP_LANG_LEN - 1, OnNewLang);   // 2.25
     LanguageChips("newlang", s_szNewLang, sizeof(s_szNewLang), false);
@@ -5574,6 +5647,13 @@ static void SectionAddServer(void*)
             SysMsg(COL_YELLOW, "Mega Vil Futuristic is a 24/7 featured Roleplay server - it is always in the Internet list, just tap it.");
         else if(port == MP_DEFAULT_PORT && !IsDefaultServer(s_szNewName[0] ? s_szNewName : settings.serverName, port))
             SysMsg(COL_RED, "Port %d is for the default server. Use %d or higher for a custom server.", MP_DEFAULT_PORT, MP_DEFAULT_PORT + 1);
+        else if(portTaken)   // 3.35.2: another server already has this port
+        {
+            std::vector<LanServer> nb; { std::lock_guard<std::mutex> lk(s_LanMutex); nb = s_Nearby; }
+            const int fp = PortFree(port + 1, s_szNewName[0] ? s_szNewName : settings.serverName, nb);
+            if(fp > 0) SysMsg(COL_RED, "Port %d is taken - it needs a new port. Free port: %d (tap \"Use free port %d\").", port, fp, fp);
+            else SysMsg(COL_RED, "Port %d is taken - type another port.", port);
+        }
         else
         {
             HostFormApply();      // the fields become your hosted server's settings
@@ -5598,6 +5678,8 @@ static void SectionAddServer(void*)
             SysMsg(COL_YELLOW, "That is the default server - it is always on top, just tap Connect.");
         else if(atoi(s_szNewPort) == MP_DEFAULT_PORT)
             SysMsg(COL_RED, "Port %d is for the default server. Use %d or higher for a custom server.", MP_DEFAULT_PORT, MP_DEFAULT_PORT + 1);
+        else if(portTaken && s_szNewName[0])   // 3.35.2: another server (other name) already has this port
+            SysMsg(COL_RED, "Port %d is taken by another server - it needs a new port (see \"Use free port\").", atoi(s_szNewPort));
         else if(ServerList::FindByNamePort(s_szNewName[0] ? s_szNewName : s_szNewHost, atoi(s_szNewPort)) >= 0 ||
                 ServerList::FindByHostPort(s_szNewHost, atoi(s_szNewPort)) >= 0)
             SysMsg(COL_YELLOW, "That server is already in your list.");
@@ -5878,7 +5960,8 @@ static void SectionDisplay(void*)
     ImGui::TextUnformatted("Name tag distance");
     ImGui::SetNextItemWidth(-FLT_MIN);
     changed |= ImGui::SliderFloat("##ntdist", &settings.nametagDistance, 10.0f, 150.0f, "%.0f m");
-    changed |= FloatMenu::ToggleSwitch("Show my own name tag", &settings.showOwnTag);
+    changed |= FloatMenu::ToggleSwitch("Name tag: show yourself", &settings.showOwnTag);   // 3.35.2: clearer name (also in the player list > Settings dialog)
+    ImGui::TextDisabled(settings.showOwnTag ? "On: your own name tag shows above you (only on your screen)." : "Off: you don't see your own name tag (the others still see it).");
     {   // 3.34: fonts, text effect, font scale, UI scale
         ImGui::TextUnformatted("Font");
         ImGui::SetNextItemWidth(-FLT_MIN);

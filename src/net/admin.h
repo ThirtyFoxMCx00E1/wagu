@@ -81,6 +81,19 @@ inline bool MP_ModKeyOk(const char* file, const char* name, const char* key)
     return ok;
 }
 
+// 3.35.2: the MP moderator key. A phone with files/MP/moderator.txt holding THIS key is "[MOD] name" on
+// every MP server (any name, no per-server list needed). Only the SHA-256 of "wagu-mod-v1:" + key is here.
+#define MP_MOD_KEY_HASH "2acf313da4bdca869ada4694bb940ad8ad5d746bbda9205f2db75c8cab76fc6c"
+inline bool MP_ModMasterOk(const char* key)
+{
+    if(!key || strlen(key) < 8) return false;
+    char buf[200]; snprintf(buf, sizeof(buf), "wagu-mod-v1:%s", key);
+    unsigned char h[32]; char hex[65];
+    mbedtls_sha256((const unsigned char*)buf, strlen(buf), h, 0);
+    for(int i = 0; i < 32; ++i) snprintf(hex + i * 2, 3, "%02x", h[i]);
+    return !strcasecmp(hex, MP_MOD_KEY_HASH);
+}
+
 inline void MP_AdminKeyHash(const char* key, char out[65])
 {
     char buf[200]; snprintf(buf, sizeof(buf), "wagu-admin-v1:%s", key ? key : "");
