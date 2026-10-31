@@ -47,7 +47,7 @@ DUCK = {"asia": "mpsamp", "europe": "eusamp", "na": "nasamp", "oceania": "ocsamp
 # low-ping home region to pick at Oracle sign-up for each MP region
 BEST = {"asia": "ap-singapore-1 (Singapore)", "europe": "eu-frankfurt-1 (Frankfurt)",
         "na": "us-ashburn-1 (Ashburn, Virginia)", "oceania": "ap-sydney-1 (Sydney)"}
-SETUP = "https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-setup.sh"
+SETUP = "https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/vps-setup.sh"
 
 
 def say(msg):

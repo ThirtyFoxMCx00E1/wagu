@@ -47,6 +47,7 @@
     <a href="#install">Install</a>
     <a href="#versions">Versions</a>
     <a href="#host">Host a region</a>
+    <a href="#fast">Fast VPS</a>
     <a href="#security">Security</a>
   </div>
   <h2>Tools</h2>
@@ -55,7 +56,7 @@
     <a href="oracle.html">MP Oracle (free 24/7)</a>
     <a href="termux.html">Termux phone server</a>
     <a href="railway.html">MP Railway (Discord bot)</a>
-    <a href="https://github.com/ThirtyFoxMCx00E1/openmp.com/issues">Report a problem</a>
+    <a href="https://github.com/ThirtyFoxMCx00E1/wagu/issues">Report a problem</a>
   </div>
 </nav>
 <main>
@@ -158,22 +159,39 @@
     <div class="wrap two">
       <div>
         <h2>Run a region</h2>
-        <p>Each region is one Linux server with a HiveMQ broker and the region's 24/7 default server. One command sets it all up: Java 21, HiveMQ Community Edition, logins, firewall, TLS and restart on crash.</p>
-        <p><a class="link" href="downloads/HiveMQ-kit.zip">HiveMQ server kit (zip)</a> · <a class="link" href="https://github.com/ThirtyFoxMCx00E1/HiveMQ">HiveMQ guide</a></p>
-        <p>Works on Ubuntu 22.04 / 24.04 or Debian 12. No Ubuntu? Get the small Debian 12 installer (677 MB): <a class="link" href="https://github.com/ThirtyFoxMCx00E1/HiveMQ/releases/download/Derbian/debian-12.15.0-amd64-netinst.iso">debian-12.15.0-amd64-netinst.iso</a> (<a class="link" href="https://github.com/ThirtyFoxMCx00E1/HiveMQ/releases/tag/Derbian">release</a>, sha256 <code>cd4462c0...5956e9af17</code>, same as Debian's). Install it with only "SSH server" and "standard system utilities", then as root run the Debian line on the right. On a VPS just pick Debian 12 in the image list.</p>
+        <p>Each region is one Linux server with a HiveMQ broker and the region's 24/7 default server. One command sets it all up: Java 21, HiveMQ Community Edition, logins, firewall, TLS, restart on crash and the low-latency tuning below. Everything comes from the <a class="link" href="https://github.com/ThirtyFoxMCx00E1/wagu">wagu repo</a> (the <code>HiveMQ/</code> folder).</p>
+        <p><a class="link" href="downloads/HiveMQ-kit.zip">HiveMQ server kit (zip)</a> · <a class="link" href="https://github.com/ThirtyFoxMCx00E1/wagu/tree/main/HiveMQ">HiveMQ guide</a></p>
+        <p>Works on Ubuntu 22.04 / 24.04 or Debian 12. No Ubuntu? Get the small Debian 12 installer (677 MB): <a class="link" href="https://cdimage.debian.org/cdimage/archive/12.15.0/amd64/iso-cd/debian-12.15.0-amd64-netinst.iso">debian-12.15.0-amd64-netinst.iso</a> (<a class="link" href="https://cdimage.debian.org/cdimage/archive/12.15.0/amd64/iso-cd/">release</a>, sha256 <code>cd4462c0...5956e9af17</code>, same as Debian's). Install it with only "SSH server" and "standard system utilities", then as root run the Debian line on the right. On a VPS just pick Debian 12 in the image list.</p>
         <p>Ping depends on where the machine is: for Europe, NA and Oceania use a VPS in Frankfurt, Virginia / Ohio or Sydney.</p>
       </div>
-      <pre class="code" aria-label="Install commands"><code>git clone https://github.com/ThirtyFoxMCx00E1/HiveMQ
-cd HiveMQ
-sudo ./install.sh --region Asia \
-  --domain asia-you.duckdns.org --email you@mail.com
+      <pre class="code" aria-label="Install commands"><code># new VPS (Ubuntu 22.04 / 24.04, Debian 12), as root - one line per region:
+curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/vps-setup.sh \
+  | sudo bash -s asia      # or europe / na / oceania
 
-# on ONE server only: join the server lists
-sudo ./install.sh --region Asia --bridge
+# Debian 12 (no sudo / curl), as root:
+wget -qO- https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/vps-setup.sh \
+  | bash -s europe
 
-# Debian 12 (no sudo / curl), as root - one line per region:
-wget -qO- https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-setup.sh \
-  | bash -s europe      # or asia / na / oceania</code></pre>
+# update later (players stay connected unless a part changed):
+curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/update.sh | sudo bash
+
+# speed check: XDP flood filter counters
+sudo /opt/mp/console/mp-xdp.sh status</code></pre>
+    </div>
+  </section>
+
+  <section id="fast" class="card">
+    <div class="wrap">
+      <h2>Fast VPS</h2>
+      <p>Every region's server is tuned for steady ping with 100+ players. All of it is installed by the one command above.</p>
+      <div class="grid3">
+        <article><h3>XDP flood filter</h3><p>Junk and flood packets to the game UDP ports are dropped on the network card, before Linux sees them, so a flood never fills the server's queue.</p></article>
+        <article><h3>No conntrack for game UDP</h3><p>Game packets skip connection tracking: less work per packet, and a full tracking table can never drop them.</p></article>
+        <article><h3>Real-time packets</h3><p>Game packets are marked real-time (DSCP EF), NIC interrupt delay is off and receive work is spread over all CPUs.</p></article>
+        <article><h3>No lag spikes</h3><p>BBR + fq, no slow start after idle, huge page compaction deferred, low swappiness and small write bursts.</p></article>
+        <article><h3>No restart on join</h3><p>A busy server is restarted only after 3 failed health checks in a row. Updates restart only the parts that changed, so players stay connected.</p></article>
+        <article><h3>Light broker</h3><p>Old sessions are freed after 2 minutes, stale messages after 10, and slow phones get the newest state. Logs and caches are trimmed every 6 hours.</p></article>
+      </div>
     </div>
   </section>
 
@@ -196,7 +214,7 @@ wget -qO- https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-set
 <footer class="foot">
   <div class="wrap foot-in">
     <p>openmpsa.com · MP Multiplayer by ThirtyFoxMCx00E1. Fan-made mod, not affiliated with Rockstar Games.</p>
-    <p><a href="regions.txt">regions.txt</a> · <a href="broker.txt">broker.txt</a> · <a href="https://github.com/ThirtyFoxMCx00E1/openmp.com/issues">Report a problem</a></p>
+    <p><a href="regions.txt">regions.txt</a> · <a href="broker.txt">broker.txt</a> · <a href="https://github.com/ThirtyFoxMCx00E1/wagu/issues">Report a problem</a></p>
   </div>
 </footer>
 

@@ -15,7 +15,7 @@ set -uo pipefail
 RW_VERSION="3.21.7"
 DEFAULT_APP="discordpy-bot"
 DEFAULT_REPO="https://github.com/ThirtyFoxMCx00E1/discordpy-bot.git"
-SELF_URL="https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/railway/mp-railway.sh"
+SELF_URL="https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/railway/mp-railway.sh"
 
 SINCE=""; SINCE_LINE=0
 if [[ "${PREFIX:-}" == */com.termux/* ]] || [ "${MP_RAILWAY_MODE:-}" = user ]; then

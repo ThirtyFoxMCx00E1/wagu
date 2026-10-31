@@ -1,0 +1,15 @@
+# 3.37 VPS: XDP filter on the game UDP ports (tools/mp-xdp.sh, xdp/mp_xdp.c). XDP=0 in mp.env turns it off.
+[Unit]
+Description=MP Multiplayer XDP game-port filter
+After=network-online.target mp-net-tune.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+Environment=BASE=@@BASE@@
+ExecStart=-@@BASE@@/console/mp-xdp.sh start
+ExecStop=-@@BASE@@/console/mp-xdp.sh stop
+
+[Install]
+WantedBy=multi-user.target

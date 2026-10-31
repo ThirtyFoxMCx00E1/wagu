@@ -1,7 +1,7 @@
 """cloud-init for new MP Cloud servers (Oracle calls this "user data") + the one-click presets."""
 import json
 
-SETUP = "https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/vps-setup.sh"
+SETUP = "https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/vps-setup.sh"
 
 # MP region -> DuckDNS name (same as vps-setup.sh / oracle/mp_oracle.py)
 MP_REGIONS = {

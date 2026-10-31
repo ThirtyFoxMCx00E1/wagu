@@ -127,6 +127,13 @@ bool MPServer::Start(uint16_t port, const char* serverName, MPServerLogFn log, i
     int sb = MP_SERVER_SOCK_BUF;   // 100 players: don't drop bursts (3.22: 8 MB, was 512 KB)
     setsockopt(m_Sock, SOL_SOCKET, SO_RCVBUF, (const char*)&sb, sizeof(sb));
     setsockopt(m_Sock, SOL_SOCKET, SO_SNDBUF, (const char*)&sb, sizeof(sb));
+#if defined(__linux__) && !defined(__ANDROID__)
+    // 3.37 VPS (Linux servers only, not the phone build): game packets are marked "real-time"
+    //   - DSCP EF (46): routers / the VPS network that honour QoS send them before bulk traffic
+    //   - SO_PRIORITY 6 (interactive): priority-aware queues on the VPS send them before bulk traffic
+    { int tos = 0xB8; setsockopt(m_Sock, IPPROTO_IP, IP_TOS, &tos, sizeof(tos)); }
+    { int prio = 6;   setsockopt(m_Sock, SOL_SOCKET, SO_PRIORITY, &prio, sizeof(prio)); }
+#endif
 
     sockaddr_in addr; memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;

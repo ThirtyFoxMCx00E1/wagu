@@ -54,7 +54,7 @@ jobs:
           [ "$INCUS" = "true" ] || ARGS="$ARGS --no-incus"
           SSH="ssh -i ~/.ssh/id -p $P -o StrictHostKeyChecking=accept-new -o ServerAliveInterval=30 -o ConnectTimeout=20 $U@$HOST"
           $SSH 'echo "logged in as $(whoami) on $(hostname) - $(. /etc/os-release; echo $PRETTY_NAME), $(nproc) cores, $(free -g | awk "/Mem/{print \$2}") GB"'
-          $SSH "curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/cloud/install.sh | sudo bash -s -- $ARGS" 2>&1 | tee install.log
+          $SSH "curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/cloud/install.sh | sudo bash -s -- $ARGS" 2>&1 | tee install.log
           sleep 3
           $SSH 'systemctl is-active mp-cloud && curl -fsS http://127.0.0.1:9000/api/v1/public' | tee status.txt
 

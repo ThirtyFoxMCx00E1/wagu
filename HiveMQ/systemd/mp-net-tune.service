@@ -1,0 +1,15 @@
+# 3.37 VPS: low-latency NIC / CPU / conntrack tuning at boot (tools/mp-net-tune.sh)
+[Unit]
+Description=MP Multiplayer low-latency network tuning
+After=network-online.target ufw.service
+Wants=network-online.target
+Before=hivemq.service mp-server.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=@@BASE@@/console/mp-net-tune.sh on
+ExecStop=@@BASE@@/console/mp-net-tune.sh off
+
+[Install]
+WantedBy=multi-user.target

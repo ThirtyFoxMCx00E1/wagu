@@ -16,7 +16,7 @@
   },
   {
    "name": "release/MP-3.37-full.zip",
-   "size": 20924515,
+   "size": 20936318,
    "download_count": 0
   },
   {
@@ -26,7 +26,7 @@
   },
   {
    "name": "release/HiveMQ-kit-3.37.zip",
-   "size": 66237,
+   "size": 77269,
    "download_count": 0
   }
  ],
@@ -48,14 +48,15 @@
   },
   {
    "tag": "Derbian",
-   "repo": "ThirtyFoxMCx00E1/HiveMQ",
-   "url": "https://github.com/ThirtyFoxMCx00E1/HiveMQ/releases/tag/Derbian",
+   "repo": "debian.org",
+   "url": "https://cdimage.debian.org/cdimage/archive/12.15.0/amd64/iso-cd/",
    "assets": [
     {
      "name": "debian-12.15.0-amd64-netinst.iso",
      "size": 709885952,
      "download_count": 0,
-     "sha256": "cd4462c06aa8892e692c0c4b9c17802f38c8ab8690e85cbfb5ccaa5956e9af17"
+     "sha256": "cd4462c06aa8892e692c0c4b9c17802f38c8ab8690e85cbfb5ccaa5956e9af17",
+     "url": "https://cdimage.debian.org/cdimage/archive/12.15.0/amd64/iso-cd/debian-12.15.0-amd64-netinst.iso"
     }
    ]
   }

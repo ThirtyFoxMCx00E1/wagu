@@ -1,4 +1,4 @@
-// MP Oracle (3.32): saves the Oracle API key as encrypted HiveMQ Actions secrets and runs "MP Oracle claim".
+// MP Oracle (3.32): saves the Oracle API key as encrypted wagu Actions secrets and runs "MP Oracle claim".
 // Everything happens between this browser and api.github.com. Secrets are sealed with the repo's
 // public key (libsodium crypto_box_seal, vendor/mp-seal-1.0.min.js) before they are sent.
 (function () {

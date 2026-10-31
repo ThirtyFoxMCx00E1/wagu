@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>MP Oracle - claim the free 24/7 region server</title>
-<meta name="description" content="MP Oracle: paste your Oracle API key config once, the page saves it as encrypted HiveMQ repo secrets and runs the MP Oracle claim workflow. The server installs HiveMQ + the 24/7 servers by itself.">
+<meta name="description" content="MP Oracle: paste your Oracle API key config once, the page saves it as encrypted wagu repo secrets and runs the MP Oracle claim workflow. The server installs HiveMQ + the 24/7 servers by itself.">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src https://api.github.com; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="theme-color" content="#000000">
@@ -22,7 +22,7 @@
 
 <main class="ora-main">
   <p class="lead">One page for the whole Oracle part. Your key never leaves this browser unencrypted: it is sealed with the
-    HiveMQ repo's public key (the same libsodium sealed box GitHub uses) and only GitHub Actions can open it.</p>
+    wagu repo's public key (the same libsodium sealed box GitHub uses) and only GitHub Actions can open it.</p>
 
   <section class="card">
     <h2><span class="n">1</span> GitHub token</h2>
@@ -32,7 +32,7 @@
     <input id="tok" type="password" autocomplete="off" spellcheck="false" placeholder="github_pat_...">
     <div class="row">
       <label class="chk"><input id="remember" type="checkbox"> keep it for this tab only</label>
-      <input id="repo" type="text" value="ThirtyFoxMCx00E1/HiveMQ" spellcheck="false" aria-label="Repository">
+      <input id="repo" type="text" value="ThirtyFoxMCx00E1/wagu" spellcheck="false" aria-label="Repository">
     </div>
     <button id="b-login" class="btn">Check token</button>
     <p id="s-login" class="st" role="status"></p>
@@ -82,7 +82,7 @@
   </section>
 
   <p class="foot">Same thing by hand: HiveMQ &rarr; Settings &rarr; Secrets and variables &rarr; Actions. The workflow
-    (<a href="https://github.com/ThirtyFoxMCx00E1/HiveMQ/actions/workflows/oracle-claim.yml" target="_blank" rel="noopener">MP Oracle claim</a>)
+    (<a href="https://github.com/ThirtyFoxMCx00E1/wagu/actions/workflows/oracle-claim.yml" target="_blank" rel="noopener">MP Oracle claim</a>)
     retries every hour until Oracle has free A1 capacity, then the server installs itself in about 15 minutes.
     &middot; <a href="./">Website</a> &middot; <a href="regions.txt">regions.txt</a></p>
 </main>

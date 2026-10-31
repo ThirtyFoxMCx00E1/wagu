@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # MP Cloud installer - Debian 12 / Ubuntu 22.04 / 24.04, run as root.
-#   curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/HiveMQ/main/cloud/install.sh | sudo bash
+#   curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/cloud/install.sh | sudo bash
 #   ... | sudo bash -s -- --domain cloud.example.duckdns.org   (HTTPS with Caddy on 443)
 #   ... | sudo bash -s -- --no-incus                           (Oracle-only console, no local servers)
 set -euo pipefail
@@ -16,7 +16,7 @@ done
 [ "$(id -u)" = 0 ] || { echo "Run as root (sudo)."; exit 1; }
 . /etc/os-release
 export DEBIAN_FRONTEND=noninteractive
-APP=/opt/mp-cloud; DATA=/var/lib/mp-cloud; REPO=https://github.com/ThirtyFoxMCx00E1/HiveMQ.git
+APP=/opt/mp-cloud; DATA=/var/lib/mp-cloud; REPO=https://github.com/ThirtyFoxMCx00E1/wagu.git
 say(){ printf '\n== %s\n' "$*"; }
 
 say "Packages"

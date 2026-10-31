@@ -18,7 +18,11 @@ Restart=always
 # 3.33: back within 2 s after a crash, and never give up (the 4 servers stay online 24/7)
 RestartSec=2
 LimitNOFILE=65536
-Nice=-5
+Nice=-10
+# 3.37 VPS: the game gets the CPU first (bots, apt, logs wait), last to be killed when RAM runs out
+CPUWeight=1000
+IOWeight=1000
+OOMScoreAdjust=-900
 NoNewPrivileges=yes
 PrivateTmp=yes
 ProtectSystem=full
