@@ -13,10 +13,10 @@
 // phones refuse servers older than that too (they would let old phones in).
 // 3.10: build 31000. MP_MIN_BUILD stays 30406 and the lobby stays thirtyfox/mp5/: 3.04.6 (no cheats)
 // and 3.10 phones play together on the same servers; only 3.04.5 and older (mp4) stay shut out.
-#define MP_BUILD 33502   // 3.35.2
+#define MP_BUILD 33600   // 3.36
 #define MP_MIN_BUILD       30406
 #define MP_AUTH_MIN_BUILD  32106   // 3.21.6: servers with the login system refuse older phones (they could not log in)
-#define MP_VERSION_STR     "3.35.2"
+#define MP_VERSION_STR     "3.36"
 #define MP_VOICE_BUILD     31100   // 3.11: phones from this build on get voice packets
 #define MP_DOWNLOAD_URL    "thirtyfoxmcx00e1.github.io/openmp.com"   // 3.35: the site moved (openmp.com)
 #define MP_DEFAULT_HOST    "127.0.0.1"
@@ -537,8 +537,9 @@ struct PktTeam        { uint8_t type; uint8_t id; uint8_t team; uint8_t pad; int
 #define MP_EV_SERVER     255
 #define MP_SA_RACE_COUNT 27   // the GTA SA races (src/mp_races_sa.inc)
 #define MP_RACE_PLAYERS  14   // a race starts when this many players are in the queue
-#define MP_RACE_WAIT_MS  45000   // 3.21: ...or when 2+ players waited this long
-#define MP_RACE_SOLO_MS  60000   // 3.21: ...or one player waited this long (solo time trial)
+#define MP_RACE_WAIT_MS  45000   // 3.21: ...or 45 s after the 2nd player joined (3.36)
+#define MP_RACE_SOLO_MS  60000   // 3.21 (3.36: unused - a race never starts alone)
+#define MP_RACE_JOIN_MS  15000   // 3.36: and nobody joined in the last 15 s (late players get in)
 #define MP_RACE_GO_MS    20000   // 3.21: time on the grid before GO (was 12 s)
 struct PktTurf        { uint8_t type; uint8_t count; uint8_t owner[MP_TURF_MAX]; uint8_t attacker[MP_TURF_MAX]; uint8_t progress[MP_TURF_MAX]; };   // progress 0..100
 enum eDialogStyle : uint8_t { DIALOG_STYLE_MSGBOX = 0, DIALOG_STYLE_INPUT, DIALOG_STYLE_LIST, DIALOG_STYLE_PASSWORD, DIALOG_STYLE_TABLIST, DIALOG_STYLE_TABLIST_HEADERS };

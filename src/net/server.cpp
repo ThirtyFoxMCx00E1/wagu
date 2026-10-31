@@ -1745,10 +1745,12 @@ void MPServer::RaceQueueTick(uint64_t now, bool changed)
     for(int a = 1; a < n; ++a) for(int b = a; b > 0 && m_Slots[q[b]].raceQueuedAt < m_Slots[q[b - 1]].raceQueuedAt; --b) { int t = q[b]; q[b] = q[b - 1]; q[b - 1] = t; }
     // 3.21: a race also starts without 14 players: 2+ players waited MP_RACE_WAIT_MS, or one player
     // waited MP_RACE_SOLO_MS (solo time trial). Before, the queue waited for 14 forever.
-    uint64_t waited = n ? now - m_Slots[q[0]].raceQueuedAt : 0;
+    // 3.36: the race really waits for players - never alone (no solo time trial any more), and the
+    // countdown starts when the 2nd player is in; every new player gives the others MP_RACE_JOIN_MS more
+    uint64_t sinceSecond = n >= 2 ? now - m_Slots[q[1]].raceQueuedAt : 0;
+    uint64_t sinceLast   = n >= 2 ? now - m_Slots[q[n - 1]].raceQueuedAt : 0;
     int go = n >= MP_RACE_PLAYERS ? MP_RACE_PLAYERS
-           : (n >= 2 && waited >= MP_RACE_WAIT_MS) ? n
-           : (n == 1 && waited >= MP_RACE_SOLO_MS) ? 1 : 0;
+           : (n >= 2 && sinceSecond >= MP_RACE_WAIT_MS && sinceLast >= MP_RACE_JOIN_MS) ? n : 0;
     if(go > 0)
     {
         int race = rand() % MP_SA_RACE_COUNT;

@@ -11,6 +11,8 @@ namespace HUD
     void ReloadServerIcons();
     void* Texture(const char* fileInDataDir, ImVec2* uv);   // 3.04: e.g. "bcw_briefcase.png" (nullptr if missing)
     void  ReloadTexture(const char* fileInDataDir);          // 3.24: the file changed (Discord avatar): load it again
+    void* VehiclePic(int model, ImVec2* uv);   // 3.36: files/MP/Vehicles.jar (hotel computer), nullptr while loading / missing
+    void  FreeVehiclePics();
     // 3.34: a small extra ImGui frame drawn inside the pause-menu map (Game::MenuMapLayerFn)
     bool  RenderMenuMapLayer(int layer, const void* labels /* Game::MapLabel */, int n);
 }

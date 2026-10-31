@@ -864,6 +864,23 @@ void MPServer::RpHandleCmd(int slot, const PktRpCmd& c)
     // -------- shops -----------------------------------------------------------------------------
     case RPC_BUY:
     {
+        if(c.a == 2)
+        {   // 3.36: the hotel room computer (eyefind.info vehicle shops): val = model, store price, to my garage
+            int model = c.val, price = HotelVehPrice(model);
+            if(price <= 0) break;
+            if(now - m.lastBuy < 400) break; m.lastBuy = now;
+            if(m.nveh >= RP_VEH_SLOTS) { RpMsg(slot, RP_RED, "Your garage is full (%d). Sell one in the Garage app.", RP_VEH_SLOTS); break; }
+            if(m.cash + m.bank < price) { RpMsg(slot, RP_RED, "That costs %s - not enough money (cash + bank).", RpMoney(price, mb, sizeof(mb))); break; }
+            int fromCash = std::min(std::max(m.cash, 0), price);
+            m.bank -= price - fromCash;
+            if(fromCash) RpPay(slot, -fromCash, "eyefind.info");
+            m.veh[m.nveh++] = (uint16_t)model; m.lastVeh = now;
+            RpEv(slot, RPV_VEHICLE, 0, 0, MP_INVALID_ID, model);
+            RpMsg(slot, RP_GREEN, "[EYEFIND] Paid %s - your new vehicle is in your garage (Garage app).", RpMoney(price, mb, sizeof(mb)));
+            m.statT = (uint32_t)time(nullptr); m_bRpDirty = true;
+            RpSendMe(slot);
+            break;
+        }
         int idx = c.val; if(idx < 0 || idx >= RP_SHOP_COUNT) break;
         if(now - m.lastBuy < 400) break; m.lastBuy = now;
         const RpShopItem& it = g_RpShop[idx];

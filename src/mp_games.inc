@@ -841,7 +841,7 @@ static void GamesOnDeath(const PktDeath& d)
 struct GTip { uint16_t mode; const char* text; };
 static const GTip kTips[] =
 {
-    { GM_RACE, "[Race] Type /race to queue for a GTA SA race. It starts with 14 players, or 45 s after 2 players are in (alone: a time trial after 60 s)." },
+    { GM_RACE, "[Race] Type /race to queue for a GTA SA race. It waits for players: it starts with 14 players, or 45 s after the 2nd player is in (15 s more for every new player). Never alone." },
     { GM_DERBY, "[Derby] Type /derby for Blood Bowl, Monster, Docks, Desert or Chiliad Sumo. Last car standing wins." },
     { GM_DM, "[DM] Type /dm war for the War Zone DM. Kill streaks are announced to everyone." },
     { GM_JOBS, "[Job] Type /job trucking, /job quarry or /job pizza to earn money." },
@@ -1035,7 +1035,7 @@ static void UpdateEventTextDraws()
         TdHide(TD_EVENT_BOX);
         if(s_RQ.on && s_Ev.kind == EV_NONE)
         {
-            char q[128]; snprintf(q, sizeof(q), "~y~RACE QUEUE~n~~w~%d/%d players  -  /leave", s_RQ.count, s_RQ.need);
+            char q[160]; snprintf(q, sizeof(q), s_RQ.count < 2 ? "~y~RACE QUEUE~n~~w~Waiting for players (%d/%d)  -  /leave" : "~y~RACE QUEUE~n~~w~%d/%d players - starts soon  -  /leave", s_RQ.count, s_RQ.need);   // 3.36: it never starts alone
             PktTextDraw d = TdMake(q, 320.0f, 86.0f, 1.15f, 1, 2); TdSet(TD_EVENT_TOP, d);
         }
         else TdHide(TD_EVENT_TOP);

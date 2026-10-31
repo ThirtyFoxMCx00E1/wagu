@@ -1,6 +1,7 @@
 {
-"latest": "3.35.2",
+"latest": "3.36",
 "supported": [
+"3.36",
 "3.35.2",
 "3.35.1",
 "3.35",
@@ -46,6 +47,11 @@
 "3.04.6"
 ],
 "versions": [
+{
+"v": "3.36",
+"summary": "**hotel rooms with a computer** on every server (Jefferson Motel, Four Dragons, Caligula's + `files/MP/hotels.txt`): walk to the desk, tap the computer button, browse **eyefind.info** (Southern San Andreas Super Autos, Legendary Motorsport, Pedal and Metal, Elitas Travel, Docktease, search) and buy from a scrolling grid of vehicle pictures; **PANEL > STATUS** has its own page with your real character, your floating name tag and your stats; **races wait for players** (never start alone); server icons moved into **`files/MP/Icons.jar`**, vehicle pictures in **`files/MP/Vehicles.jar`**.",
+"items": []
+},
 {
 "v": "3.35.2",
 "summary": "**wardrobe** ped stands still on the floor (no more fall / teleport back / fall loop), the **login screen every time** you join, **\"port taken\"** check with a free port, **moderator.txt** = `[MOD] name` everywhere, and **Name tag: show yourself** in the player Settings dialog.",
