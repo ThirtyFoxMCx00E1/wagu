@@ -1,6 +1,7 @@
 {
-"latest": "3.39.2",
+"latest": "3.39.3",
 "supported": [
+"3.39.3",
 "3.39.2",
 "3.39.1",
 "3.39",
@@ -52,6 +53,10 @@
 "3.04.6"
 ],
 "versions": [
+{
+"v": "3.39.3",
+"summary": "The hunger + energy HUD is back to the 3.39.1 look (two squares in the bottom-right corner). Everything else from 3.39.2 stays: controller support, /hometp, the info pickups in the Mega Vil lobby."
+},
 {
 "v": "3.39.2",
 "summary": "**Controller support**: play MP's screens with a gamepad - Back turns the MP cursor on/off (hold it: MP menu), left stick / D-pad moves it, A taps (hold + move drags), B closes, right stick scrolls; the spawn picker uses D-pad + A; the cursor turns on by itself on the launcher, login and keyboard. **Hunger + energy HUD** now looks like the screenshot: one dark box at the right edge with fork + spoon and bowl icons and green values. **/hometp <home_name>** teleports you to your house door (or one you have a key for; no name = your only house). Mega Vil Futuristic lobby: the 5 info spots (Rules, Jobs, Money & Invest, Phone & Panel, Life) are the real spinning yellow info \"i\" pickup now; the welcome stays medium-big floating text."
