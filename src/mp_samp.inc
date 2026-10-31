@@ -25,6 +25,12 @@ static const GameModeInfo kGameModes[] =
     { GM_JOBS,    "Jobs",            "jobs",    "/job: trucking, quarry, pizza, taxi, medic ..." },
     { GM_LABELS,  "3D text labels",  "labels",  "names floating over the starts" },
     { GM_ACTORS,  "Actors",          "actors",  "people standing at the job starts" },
+    { GM_HOME,    "Home Kit",        "home",    "/create house <name>, /setup, /buyhouse, /edithouse, /edithouseinteriors (real GTA SA buildings + furniture)" },
+    { GM_SURVIVAL,"Survival (DayZ)", "survival","/survival: thirst, loot crates, zombies at night (Sunset DayZ style)" },
+    { GM_CNR,     "Cops and Robbers","cnr",     "/cop or /robber: /rob, /arrest, /cuff, wanted stars, /hitlist, /placehit" },
+    { GM_AD,      "Attack / Defend", "ad",      "/ad: attackers take the base checkpoint, defenders hold it (5 min rounds, /vote, /spec)" },
+    { GM_STUNT,   "Stunt freeroam",  "stunt",   "/ramp, /jump, /chiliad, /lv, /sf, /ls, /n nitro, /fix, stunt bonus" },
+    { GM_DRIFT,   "Drift",           "drift",   "/drift: drift points + combo, /drifttop (RogueDrifterZ style)" },
 };
 #define MP_GAMEMODE_COUNT ((int)(sizeof(kGameModes) / sizeof(kGameModes[0])))
 static const char* GameModeName(uint16_t bit) { for(auto& g : kGameModes) if(g.bit == bit) return g.name; return "That gamemode"; }
@@ -276,7 +282,7 @@ static void RenderDialog()
             bool hit = ImGui::InvisibleButton("##dlgbtn", ImVec2(bw, btnH));
             bool held = ImGui::IsItemActive();
             ImGui::PopID();
-            dl->AddRectFilled(a, b, held ? IM_COL32(169, 196, 228, 120) : IM_COL32(70, 70, 78, 220), UI::S(4));
+            dl->AddRectFilled(a, b, held ? IM_COL32(40, 40, 40, 245) : IM_COL32(0, 0, 0, 235), UI::S(2));   // 3.39: black, no outline, white text (SA-MP look)
             ImVec2 ts = f->CalcTextSizeA(fs, FLT_MAX, 0, lab.c_str());
             dl->AddText(f, fs, ImVec2(a.x + (bw - ts.x) * 0.5f, a.y + (btnH - ts.y) * 0.5f), IM_COL32_WHITE, lab.c_str());
             if(hit && MP_NowMs() - s_Dlg.openedAt > 250)

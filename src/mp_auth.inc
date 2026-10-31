@@ -117,6 +117,10 @@ static void AuthOnPacket(const uint8_t* d, int len)
     {
         PktAuthChal c; memcpy(&c, d, sizeof(c)); c.chal[32] = 0; c.server[31] = 0;
         if(s_bAuthReq && !strcmp(c.chal, s_szAuthChal)) return;   // the same one again (it is repeated)
+        // 3.39: a new challenge = a new join (rejoin, game restart, relay switch): always the login screen
+        s_Auth.ForgetSession(); s_szAuthSavedTok.clear();
+        if(s_Auth.state != AuthClient::IDLE && s_Auth.state != AuthClient::DONE) s_Auth.Stop();
+        s_Auth.state = AuthClient::IDLE; s_nAuthJoinAt = MP_NowMs();
         s_bAuthReq = true; s_nAuthStyle = c.style;
         MP_CopyStr(s_szAuthChal, c.chal, sizeof(s_szAuthChal));
         s_bAuthTicket = false; s_nAuthDoneAt = 0;

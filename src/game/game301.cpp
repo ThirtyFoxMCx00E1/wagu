@@ -14,6 +14,10 @@ DEFOPCODE(04EE, HAS_ANIMATION_LOADED, s);
 DEFOPCODE(0605, TASK_PLAY_ANIM_PED, issfbbbbi);
 DEFOPCODE(087B, GIVE_PLAYER_CLOTHES_OUTSIDE_SHOP, issi);
 DEFOPCODE(0784, GIVE_PLAYER_CLOTHES, iiii);
+DEFOPCODE(020A, LOCK_CAR_DOORS_301, ii);
+
+void Game::LockCar(int car, bool locked) { if(car > 0 && CarPtr(car)) CALLSCM(LOCK_CAR_DOORS_301, car, locked ? 2 : 1); }   // 3.39
+bool Game::CarExists(int car) { return car > 0 && CarPtr(car) != nullptr; }
 
 int Game::AddSpriteBlip(const Vec3& p, int sprite)
 {

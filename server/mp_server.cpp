@@ -124,6 +124,21 @@ int main(int argc, char** argv)
         server.SetRpFile(rf);
         printf("[MP Server] Mega Vil Futuristic: Roleplay only, %d players max, login on, cheats off, peaceful (police/military on duty only), citizens in %s\n", MP_RP_MAX_PLAYERS, rf);
     }
+    // 3.39: Home Kit houses. --home-file PATH (default homes.txt; Mega Vil: homes_rp.txt)
+    {
+        const char* hf = server.IsRpServer() ? "homes_rp.txt" : "homes.txt";
+        for(int i = 1; i + 1 < argc; ++i) if(!strcasecmp(argv[i], "--home-file")) hf = argv[i + 1];
+        server.SetHomeFile(hf);
+    }
+    // 3.39: --rules "Title|rule 1|rule 2|..." = the rules window after the login (custom servers)
+    for(int i = 1; i + 1 < argc; ++i)
+        if(!strcasecmp(argv[i], "--rules"))
+        {
+            static char buf[1200]; MP_CopyStr(buf, argv[i + 1], sizeof(buf));
+            const char* parts[11] = {0}; int n = 0; char* p = buf;
+            while(p && n < 11) { parts[n++] = p; char* bar = strchr(p, '|'); if(bar) { *bar = 0; p = bar + 1; } else p = nullptr; }
+            server.SetRules(n > 1, parts[0], parts + 1);
+        }
     // 3.00: --cheat-menu = players may use CheatMenu (libCheatMenu.so / libCheatMenu64.so) here.
     // Custom servers only: the default server ignores it.
     for(int i = 1; i < argc; ++i)
@@ -141,6 +156,7 @@ int main(int argc, char** argv)
             {
                 { "class", GM_CLASS }, { "turf", GM_TURF }, { "race", GM_RACE }, { "derby", GM_DERBY }, { "dm", GM_DM },
                 { "jobs", GM_JOBS }, { "labels", GM_LABELS }, { "actors", GM_ACTORS },
+                { "home", GM_HOME }, { "survival", GM_SURVIVAL }, { "cnr", GM_CNR }, { "ad", GM_AD }, { "stunt", GM_STUNT }, { "drift", GM_DRIFT },   // 3.39
                 { "icons", 0 }, { "bubbles", 0 },   // 3.03: player settings now, accepted and ignored
             };
             uint16_t m = 0;
@@ -151,15 +167,15 @@ int main(int argc, char** argv)
                 if(!strcasecmp(t, "none")) { m = 0; continue; }
                 bool found = false;
                 for(auto& k : kModes) if(!strcasecmp(t, k.n)) { m |= k.m; found = true; }
-                if(!found) printf("[MP Server] --gamemodes: unknown \"%s\" (class turf race derby dm jobs labels actors)\n", t);
+                if(!found) printf("[MP Server] --gamemodes: unknown \"%s\" (class turf race derby dm jobs labels actors home survival cnr ad stunt drift)\n", t);
             }
             server.SetModes(m);
         }
     if(server.IsDefaultServer()) printf("[MP Server] Gamemodes: all (default server).\n");
     else
     {
-        static const char* kNames[] = { "class", "turf", "race", "derby", "dm", "jobs", "labels", "icons", "actors", "bubbles" };
-        std::string on; for(int b = 0; b < 10; ++b) if((server.GetModes() & (1 << b)) && (1 << b) != GM_ICONS && (1 << b) != GM_BUBBLES) { if(!on.empty()) on += ","; on += kNames[b]; }
+        static const char* kNames[] = { "class", "turf", "race", "derby", "dm", "jobs", "labels", "icons", "actors", "bubbles", "home", "survival", "cnr", "ad", "stunt", "drift" };
+        std::string on; for(int b = 0; b < 16; ++b) if((server.GetModes() & (1 << b)) && (1 << b) != GM_ICONS && (1 << b) != GM_BUBBLES) { if(!on.empty()) on += ","; on += kNames[b]; }
         printf("[MP Server] Gamemodes: %s%s\n", on.empty() ? "none" : on.c_str(), on.empty() ? " (add --gamemodes all, or a list)" : "");
     }
     // 2.25: language, administrator name (shown to kicked / banned players), ban list

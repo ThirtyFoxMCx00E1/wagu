@@ -13,10 +13,10 @@
 // phones refuse servers older than that too (they would let old phones in).
 // 3.10: build 31000. MP_MIN_BUILD stays 30406 and the lobby stays thirtyfox/mp5/: 3.04.6 (no cheats)
 // and 3.10 phones play together on the same servers; only 3.04.5 and older (mp4) stay shut out.
-#define MP_BUILD 33700   // 3.37
+#define MP_BUILD 33900   // 3.39
 #define MP_MIN_BUILD       30406
 #define MP_AUTH_MIN_BUILD  32106   // 3.21.6: servers with the login system refuse older phones (they could not log in)
-#define MP_VERSION_STR     "3.37"
+#define MP_VERSION_STR     "3.39"
 #define MP_VOICE_BUILD     31100   // 3.11: phones from this build on get voice packets
 #define MP_DOWNLOAD_URL    "thirtyfoxmcx00e1.github.io/wagu"   // 3.37: the website is back in the wagu repo (one repo for everything)
 #define MP_DEFAULT_HOST    "127.0.0.1"
@@ -121,6 +121,15 @@ enum ePacket : uint8_t
     PKT_RP_DROPS,       // S->C          3.30: Mega Vil: items lying on the ground (dropped from bags)
     PKT_RP_FAC,         // S->C          3.34: Mega Vil: one faction of the list (/faction)
     PKT_RP_PFAC,        // S->C          3.34: Mega Vil: the faction of every player (nametag / chat / kill feed / radar)
+    PKT_HOME_CMD,       // C->S          3.39: Home Kit command (/createhouse /setup /buyhouse /edithouse ...)
+    PKT_HOME_HEAD,      // S->C          3.39: Home Kit: one house (slot, owner, price, prefab)
+    PKT_HOME_OBJS,      // S->C          3.39: Home Kit: objects of a house (pages of 40)
+    PKT_HOME_INDEX,     // S->C          3.39: Home Kit: id + revision of every house (the phone asks for what it lacks)
+    PKT_HOME_DEL,       // S->C          3.39: Home Kit: a house was deleted
+    PKT_HOME_MSG,       // S->C          3.39: Home Kit: answer to a command (ok / error text)
+    PKT_SRV_SETTINGS,   // S<->C         3.39: live server settings (gamemodes + permissions) - owner / admin / moderator
+    PKT_RULES,          // S->C          3.39: server rules (title + 10 lines), shown after the login
+    PKT_GM_EVENT,       // S<->C         3.39: new gamemodes (CnR, A/D, survival, stunt, drift) - scores / rounds / notices
 };
 
 enum eRegion : uint8_t { REGION_ASIA = 0, REGION_EUROPE, REGION_NA, REGION_OCEANIA, REGION_COUNT };
@@ -399,6 +408,8 @@ struct PktJoin2       { PktJoin j; char password[MP_PASSWORD_LEN + 1]; };   // 2
 struct PktJoin3       { PktJoin2 j2; char uid[MP_UID_LEN + 1]; };   // 2.25: + this phone's id (bans survive a name change)
 struct PktJoin4       { PktJoin3 j3; char adminKey[128 + 1]; };   // 2.37: + admin key (only the reserved name SENJI needs it)
 struct PktJoin5       { PktJoin4 j4; uint32_t build; };              // 3.04.6: + mod build (MP_BUILD)
+struct PktJoin6       { PktJoin5 j5; uint8_t flags; uint8_t pad[3]; };   // 3.39: flags 1 = same session, new network path (keep the slot + login)
+#define MP_JOIN_REBIND 1
 // which MP versions an old join packet can come from (they had no build number)
 inline const char* MP_GuessOldVersion(int joinLen, uint32_t build, char* out, int outLen)
 {
@@ -417,6 +428,8 @@ inline bool MP_IsTrailerModel(int m) { return m == 435 || m == 450 || m == 584 |
 enum eAdminCmd : uint8_t { ADMIN_KICK = 1, ADMIN_BAN = 2, ADMIN_MUTE = 3, ADMIN_UNMUTE = 4, ADMIN_CHEATS = 5 };
 struct PktAdminCmd    { uint8_t type; uint8_t cmd; uint8_t target; uint8_t value; char reason[MP_REASON_LEN]; };   // 2.37, value: ADMIN_CHEATS 1 = cheats off
 struct PktKicked      { uint8_t type; uint8_t banned; uint32_t when; char admin[MP_NAME_LEN]; char reason[MP_REASON_LEN]; };   // 2.25, when = unix time
+struct PktKicked2     { PktKicked k; uint16_t waitSec; };   // 3.39: a kick (not a ban) = wait waitSec (4 min 29 s) before joining again
+#define MP_KICK_WAIT_SEC 269
 struct PktWelcome     { uint8_t type; uint8_t yourId; uint8_t maxPlayers; uint32_t color; char serverName[32]; };
 struct PktWelcome2    { PktWelcome w; uint32_t build; };   // 3.04.6: + server build (older servers: no tail -> refused)
 struct PktReject      { uint8_t type; uint8_t reason; };
@@ -442,7 +455,7 @@ struct PktPause       { uint8_t type; uint8_t id; uint8_t paused; };
 enum eStatus : uint8_t { STATUS_MISSION = 1, STATUS_CUTSCENE = 2 };
 struct PktStatus      { uint8_t type; uint8_t id; uint8_t state; char mission[8]; };
 // 2.16 server permissions + mission pairs
-enum ePerm : uint8_t { PERM_MISSION_PAIR = 1, PERM_NO_CHEATS = 2, PERM_CHEAT_MENU = 4, PERM_AFK = 8, PERM_DMG_IND = 16, PERM_SHOW_IDS = 32, PERM_V219 = 0x80 };   // 3.34: AFK / damage indicator / ids   // 3.00: CHEAT_MENU = the host allows CheatMenu (libCheatMenu.so / libCheatMenu64.so), custom servers only   // 2.35: NO_CHEATS = the host disabled MP + CLEO menu cheats   // V219: server knows 2.19 packets (jack, player info, partner damage)     // "Mission sync" (2.17 name); hosts toggle it in the MP menu
+enum ePerm : uint8_t { PERM_MISSION_PAIR = 1, PERM_NO_CHEATS = 2, PERM_CHEAT_MENU = 4, PERM_AFK = 8, PERM_DMG_IND = 16, PERM_SHOW_IDS = 32, PERM_NEEDS = 64, PERM_V219 = 0x80 };   // 3.39: NEEDS = hunger + energy HUD (always on on the default server, never on Mega Vil)   // 3.34: AFK / damage indicator / ids   // 3.00: CHEAT_MENU = the host allows CheatMenu (libCheatMenu.so / libCheatMenu64.so), custom servers only   // 2.35: NO_CHEATS = the host disabled MP + CLEO menu cheats   // V219: server knows 2.19 packets (jack, player info, partner damage)     // "Mission sync" (2.17 name); hosts toggle it in the MP menu
 // 3.02: + the server's gamemodes (GM_*). modesMagic == MP_MODES_MAGIC when the server sends them;
 // older servers send 2 bytes (= no gamemodes on a custom server). Older phones read 2 bytes.
 enum eGameMode : uint16_t
@@ -457,7 +470,13 @@ enum eGameMode : uint16_t
     GM_ICONS = 128,    // 3.03: unused (map icons = a player setting)
     GM_ACTORS = 256,   // people standing at the job starts
     GM_BUBBLES = 512,  // 3.03: unused (chat bubbles = a player setting)
-    GM_ALL = 1023,
+    GM_HOME = 1024,    // 3.39: Home Kit - /createhouse /setup /buyhouse /edithouse /edithouseinteriors (real GTA SA models)
+    GM_SURVIVAL = 2048,// 3.39: PvP & PvE survival (Discordia / Sunset DayZ style): hunger, thirst, loot, zombies at night
+    GM_CNR = 4096,     // 3.39: Cops and Robbers (Project Open style): /cop /robber, wanted level, /rob /arrest /cuff /hitlist
+    GM_AD = 8192,      // 3.39: Attack & Defend (League A/D style): rounds, base checkpoint, 5 min timer, /vote /spec
+    GM_STUNT = 16384,  // 3.39: Stunt freeroam (xSF style): /ramp /jump /chiliad /drift /n /fix, stunt bonus
+    GM_DRIFT = 32768,  // 3.39: Drift (RogueDrifterZ style): drift points, combo, /drift top
+    GM_ALL = 0xFFFF,
 };
 #define MP_MODES_MAGIC 0x47
 struct PktPerms       { uint8_t type; uint8_t perms; uint8_t modesMagic; uint8_t pad; uint16_t modes; };

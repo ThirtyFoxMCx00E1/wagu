@@ -82,6 +82,10 @@ struct MPSettings
     bool  permAfk           = true;    // AFK: not moving for a long time shows AFK (and frees the seat after 20 min)
     bool  permDmgInd        = true;    // damage indicator over the name tag (-25.00 / "X hit the head")
     bool  permShowIds       = true;    // player ids in the player list + name tags: "name (1)"
+    bool  permNeeds         = false;   // 3.39: hunger + energy HUD on my custom server (the default server: always)
+    bool  rulesOn           = true;    // 3.39: Add server > Rules: show the rules window after the login
+    char  rulesTitle[32]    = "SERVER RULES";
+    char  rules[10][96]     = {};      // 1 ) .. 10 )
     // 3.34: Settings > Display
     int   uiFont            = 0;       // 0..8 (UI::FontName)
     int   uiFontFx          = 1;       // 0 none, 1 outline, 2 bold outline, 3 shadow

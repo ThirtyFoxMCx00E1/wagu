@@ -707,7 +707,32 @@ static void DrawVoiceList(ImDrawList* dl)
 // 2.19.6: the chat no longer covers the screen. Lines shown, text size, width (long lines wrap),
 // fade-out time and a see-through background are all set in game (Server > Chat, or
 // /pagesize /fontsize /chatwidth /chatfade). While the chat box is open every recent line shows.
-struct ChatRow { const ChatLine* l; bool first; std::string text; float alpha; };
+struct ChatRow { const ChatLine* l; bool first; std::string text; float alpha; ImU32 col = 0; };
+// 3.39: SA-MP colour codes in chat lines: "{FFFF00}SERVER{FFFFFF}" -> coloured parts (the code is not shown)
+static bool ChatColCode(const char* p, const char* e, ImU32& out)
+{
+    if(e - p < 8 || p[0] != '{' || p[7] != '}') return false;
+    unsigned v = 0;
+    for(int i = 1; i <= 6; ++i) { char c = p[i]; int d = c >= '0' && c <= '9' ? c - '0' : c >= 'a' && c <= 'f' ? c - 'a' + 10 : c >= 'A' && c <= 'F' ? c - 'A' + 10 : -1; if(d < 0) return false; v = v * 16 + d; }
+    out = IM_COL32((v >> 16) & 255, (v >> 8) & 255, v & 255, 255);
+    return true;
+}
+static void ChatColText(ImDrawList* dl, ImFont* f, float fs, ImVec2 pos, ImU32 col, const std::string& t, float alpha)
+{
+    const char* p = t.c_str(); const char* e = p + t.size(); const char* seg = p;
+    ImU32 c = col;
+    while(p < e)
+    {
+        ImU32 nc;
+        if(*p == '{' && ChatColCode(p, e, nc))
+        {
+            if(p > seg) { std::string part(seg, p); UI::OutlinedText(dl, fs, pos, c, part.c_str(), alpha); pos.x += f->CalcTextSizeA(fs, FLT_MAX, 0, part.c_str()).x; }
+            c = nc; p += 8; seg = p; continue;
+        }
+        ++p;
+    }
+    if(p > seg) { std::string part(seg, p); UI::OutlinedText(dl, fs, pos, c, part.c_str(), alpha); }
+}
 static void DrawChat(ImDrawList* dl)
 {
     MP::chatDrawnH = 0;
@@ -765,7 +790,11 @@ static void DrawChat(ImDrawList* dl)
             float avail = first ? ImMax(W - preW, UI::S(40)) : W;
             const char* cut = f->CalcWordWrapPositionA(fs / f->FontSize, s, e, avail);
             if(cut <= s) cut = s + 1 > e ? e : s + 1;
-            mine.push_back({ &l, first, std::string(s, cut), alpha });
+            {   // 3.39: the colour in effect where this row starts (codes before it)
+                ImU32 rc = UI::FromRGBA(l.textColor), nc;
+                for(const char* q = t.c_str(); q < s; ++q) if(*q == '{' && ChatColCode(q, e, nc)) { rc = nc; q += 7; }
+                mine.push_back({ &l, first, std::string(s, cut), alpha, rc });
+            }
             s = cut; while(s < e && *s == ' ') ++s;
             first = false;
         } while(s < e && mine.size() < 6);
@@ -803,7 +832,8 @@ static void DrawChat(ImDrawList* dl)
             cx += f->CalcTextSizeA(fs, FLT_MAX, 0, pre.c_str()).x;
         }
         else if(!r.first) cx += UI::S(14) * st.chatSize * st.chatScale;   // wrapped rest: small indent
-        UI::OutlinedText(dl, fs, ImVec2(cx, y), UI::FromRGBA(r.l->textColor), r.text.c_str(), r.alpha);
+        if(r.text.find('{') != std::string::npos) ChatColText(dl, f, fs, ImVec2(cx, y), r.col ? r.col : UI::FromRGBA(r.l->textColor), r.text, r.alpha);   // 3.39
+        else UI::OutlinedText(dl, fs, ImVec2(cx, y), r.col ? r.col : UI::FromRGBA(r.l->textColor), r.text.c_str(), r.alpha);
         y -= rowH;
     }
     if(open && skip > 0)   // 3.34: scrolled up: a hint + a small bar on the right

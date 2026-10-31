@@ -245,6 +245,7 @@ static bool HandleCommand(const char* text)
     cmd[n] = 0;
     while(*arg == ' ') ++arg;
     if(GatesCommand(cmd, arg)) return true;   // 3.04.2: /gatepos, /gates
+    if(RulesCommand(cmd, arg) || SrvSettingsCommand(cmd, arg) || MvCommand(cmd, arg) || HkCommand(cmd, arg) || NeedsCommand(cmd, arg) || Modes2Command(cmd, arg)) return true;   // 3.39
     if(Mw3Command(cmd, arg)) return true;   // 3.23: MW3 commands (others blocked)
     if(RpCommand(cmd, arg)) return true;    // 3.25: Mega Vil Futuristic RP commands (others blocked)
     if(AuthCommand(cmd)) return true;       // 3.21.6: /stats  /char (also on Brief Case War)
@@ -985,6 +986,7 @@ static void Render219(void*)
     RenderBcw();               // 3.04: Brief Case War
     RenderMw3();               // 3.23: Modern Warfare 3
     RenderRp();                // 3.25: Mega Vil Futuristic
+    HkRender(); NeedsRender(); Modes2Render();   // 3.39
     RenderHotelPc();           // 3.36: hotel room computer (every server)
     RenderSafeZones();         // 3.21: hospital safe zones
     RenderMarkers();           // 3.21: red checkpoint beams

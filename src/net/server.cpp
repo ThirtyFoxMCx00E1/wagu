@@ -467,7 +467,7 @@ void MPServer::MakePerms(PktPerms& p, uint8_t perms) const
     p.type = PKT_PERMS; p.perms = perms | PERM_V219;
     p.modesMagic = MP_MODES_MAGIC; p.modes = GetModes();
 }
-uint16_t MPServer::GetModes() const { if(IsBcwServer() || IsMw3Server() || IsRpServer()) return 0; return IsDefaultServer() ? (uint16_t)GM_ALL : (uint16_t)(m_nModes & GM_ALL); }   // 3.04: Brief Case War runs only its own gamemode
+uint16_t MPServer::GetModes() const { if(IsRpServer()) return GM_HOME; if(IsBcwServer() || IsMw3Server()) return 0; return IsDefaultServer() ? (uint16_t)GM_ALL : (uint16_t)(m_nModes & GM_ALL); }   // 3.04: Brief Case War runs only its own gamemode
 void MPServer::SetModes(uint16_t modes)
 {
     std::lock_guard<std::mutex> lk(m_Mutex);
@@ -649,6 +649,7 @@ void MPServer::Loop()
             BcwTick(now);
             Mw3Tick(now);   // 3.23
             RpTick(now);    // 3.25
+            HomeTick(now);  // 3.39
         }   // 3.04: 10 Hz referee
         if(now - lastCheck > 1000)
         {
@@ -764,6 +765,45 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             // 2.25: banned? (by this phone's id, or by name for phones older than 2.25)
             char juid[MP_UID_LEN + 1] = {0};
             if(len >= (int)sizeof(PktJoin3)) { memcpy(juid, ((const PktJoin3*)data)->uid, MP_UID_LEN); juid[MP_UID_LEN] = 0; }
+            // 3.39: the same phone on a new network path (Wi-Fi <-> mobile data, direct <-> relay) while it
+            // is still connected: keep its slot, id and login instead of a timeout + a new player
+            if(slot < 0 && juid[0] && len >= (int)sizeof(PktJoin6) && (data[offsetof(PktJoin6, flags)] & MP_JOIN_REBIND))
+            {
+                char jn[MP_NAME_LEN]; MP_CopyStr(jn, j->name, MP_NAME_LEN);
+                for(int i = 0; i < MP_MAX_PLAYERS; ++i)
+                {
+                    Slot& o = m_Slots[i];
+                    if(!o.used || strcmp(o.uid, juid) || MP_NowMs() - o.lastSeen < 1500) continue;
+                    char base[MP_NAME_LEN]; MP_CopyStr(base, o.name, sizeof(base)); MP_StripAdminTag(base);
+                    if(!strncmp(base, "[MOD] ", 6)) memmove(base, base + 6, strlen(base + 6) + 1);
+                    if(strncasecmp(base, jn, strlen(jn) > 17 ? 17 : strlen(jn))) continue;
+                    o.addr = from; o.lastSeen = MP_NowMs(); slot = i;
+                    Log("%s (id %d) is back on a new network path (no timeout)", o.name, i);
+                    break;
+                }
+            }
+            if(slot < 0)
+            {   // 3.39: kicked (not banned): wait MP_KICK_WAIT_SEC (4 min 29 s) before joining again
+                const uint32_t nowU = (uint32_t)time(nullptr);
+                char jn[MP_NAME_LEN]; MP_CopyStr(jn, j->name, MP_NAME_LEN);
+                for(size_t k = 0; k < m_TempKicks.size(); )
+                {
+                    TempKick& tk = m_TempKicks[k];
+                    if(tk.until <= nowU) { m_TempKicks.erase(m_TempKicks.begin() + k); continue; }
+                    if((juid[0] && !strcmp(tk.uid, juid)) || (!juid[0] && !strcasecmp(tk.name, jn)))
+                    {
+                        PktKicked2 kk; memset(&kk, 0, sizeof(kk));
+                        kk.k.type = PKT_KICKED; kk.k.banned = 0; kk.k.when = nowU;
+                        MP_CopyStr(kk.k.admin, tk.admin, sizeof(kk.k.admin)); MP_CopyStr(kk.k.reason, tk.reason, sizeof(kk.k.reason));
+                        kk.waitSec = (uint16_t)(tk.until - nowU);
+                        SendRaw(from, &kk, sizeof(kk));
+                        PktReject rj; rj.type = PKT_REJECT; rj.reason = REJECT_KICKED; SendRaw(from, &rj, sizeof(rj));
+                        Log("Join refused: %s was kicked (%u s left)", jn, (unsigned)kk.waitSec);
+                        return;
+                    }
+                    ++k;
+                }
+            }
             if(slot < 0)
             {
                 char jn[MP_NAME_LEN]; MP_CopyStr(jn, j->name, MP_NAME_LEN);
@@ -830,6 +870,8 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
                 s.admin = isAdmin;
                 s.authed = !AuthOn();   // 3.21.6
                 s.mod = isMod && !isAdmin;
+                s.owner = m_szOwnerUid[0] && juid[0] && !strcmp(juid, m_szOwnerUid) && !IsDefaultServer() && !IsBcwServer() && !IsMw3Server() && !IsRpServer();   // 3.39
+                s.hkLastCmd = 0;
                 if(s.mod) { char tmp[MP_NAME_LEN]; snprintf(tmp, sizeof(tmp), MP_MOD_TAG "%.17s", s.name); MP_CopyStr(s.name, tmp, MP_NAME_LEN); Log("%s is a moderator (moderator.txt)", s.name); }
                 if(isAdmin) MP_CopyStr(s.name, MP_ADMIN_TAG MP_ADMIN_NAME, MP_NAME_LEN);   // 2.37: the rank shows on every server (admin powers: default server only)
                 // make the name unique
@@ -850,7 +892,8 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
                 Log("%s (id %d) joined", s.name, slot);
             }
             Slot& s = m_Slots[slot];
-            if(!fresh && AuthOn() && s.authed && MP_NowMs() - s.joinedMs > 5000)
+            const bool rebind = len >= (int)sizeof(PktJoin6) && (data[offsetof(PktJoin6, flags)] & MP_JOIN_REBIND);   // 3.39: same session, keep the login
+            if(!fresh && !rebind && AuthOn() && s.authed && MP_NowMs() - s.joinedMs > 5000)
             {   // 3.22.1: a new join on an old slot (the game was closed / restarted and came back from the same
                 // relay or NAT address before the slot timed out): log in again like a fresh join. A phone that
                 // is still in the same game session sends its ticket by itself (no login screen).
@@ -1119,9 +1162,13 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
 
         case PKT_ADMIN_CMD:   // 2.37: only the real SENJI (joined with the admin key) may use these
         {
-            if(slot < 0 || len < (int)sizeof(PktAdminCmd) || !(m_Slots[slot].admin || m_Slots[slot].mod)) return;
+            // 3.39: the default server (+ the 3 other featured servers): the administrator + moderators;
+            // a custom server: only its host owner
+            const bool featured = IsDefaultServer() || IsBcwServer() || IsMw3Server() || IsRpServer();
+            if(slot < 0 || len < (int)sizeof(PktAdminCmd)) return;
+            if(featured ? !(m_Slots[slot].admin || m_Slots[slot].mod) : !m_Slots[slot].owner) return;
             PktAdminCmd c = *(const PktAdminCmd*)data;
-            if(!m_Slots[slot].admin && c.cmd == ADMIN_BAN) c.cmd = ADMIN_KICK;   // 3.35: moderators kick, only the admin bans
+            if(featured && !m_Slots[slot].admin && c.cmd == ADMIN_BAN) c.cmd = ADMIN_KICK;   // 3.35: moderators kick, only the admin bans
             if(!m_Slots[slot].admin && c.cmd != ADMIN_CHEATS && c.target < MP_MAX_PLAYERS && m_Slots[c.target].used && (m_Slots[c.target].admin || m_Slots[c.target].mod)) return;   // no staff vs staff
             c.reason[MP_REASON_LEN - 1] = 0;
             char who[MP_NAME_LEN]; MP_CopyStr(who, m_Slots[slot].name, sizeof(who));
@@ -1228,6 +1275,33 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             if(slot < 0 || len < (int)sizeof(PktRpCard)) return;
             PktRpCard c; memcpy(&c, data, sizeof(c));
             RpOnCard(slot, c);
+            break;
+        }
+        case PKT_HOME_CMD:  // 3.39: Home Kit
+        {
+            if(slot < 0 || len < (int)sizeof(PktHomeCmd)) return;
+            PktHomeCmd c; memcpy(&c, data, sizeof(c));
+            HomeHandleCmd(slot, c);
+            break;
+        }
+        case PKT_GM_EVENT:   // 3.39: new gamemodes - pass it on (rate limited)
+        {
+            if(slot < 0 || len < (int)sizeof(PktGmEvent) || !m_Slots[slot].used) return;
+            if(AuthOn() && !m_Slots[slot].authed) return;
+            const uint64_t nw = MP_NowMs();
+            if(nw - m_Slots[slot].gmEvAt < 150) return;
+            m_Slots[slot].gmEvAt = nw;
+            PktGmEvent e; memcpy(&e, data, sizeof(e)); e.from = (uint8_t)slot; e.text[sizeof(e.text) - 1] = 0;
+            if(!(GetModes() & e.mode)) return;
+            if(e.to == 0xFF) { for(int i = 0; i < MP_MAX_PLAYERS; ++i) if(i != slot && m_Slots[i].used && m_Slots[i].build >= 33900) SendTo(i, &e, sizeof(e)); }
+            else if(e.to < MP_MAX_PLAYERS && m_Slots[e.to].used && e.to != slot) SendTo(e.to, &e, sizeof(e));
+            return;
+        }
+        case PKT_SRV_SETTINGS:   // 3.39: live server settings (owner / staff)
+        {
+            if(slot < 0 || len < (int)sizeof(PktSrvSettings)) return;
+            PktSrvSettings p; memcpy(&p, data, sizeof(p));
+            if(p.op == 1) OnSrvSettings(slot, p); else SendSrvSettings(slot);
             break;
         }
         case PKT_RP_CMD:    // 3.25
@@ -1511,10 +1585,12 @@ void MPServer::SendKicked(const sockaddr_in& a, const BanEntry& b, bool banned)
     snprintf(m.text, sizeof(m.text), "%s Administrator: %s  Reason: %s", banned ? "You are banned from the server!" : "You were kicked from the server!",
              b.admin, b.reason[0] ? b.reason : "-");
     SendRaw(a, &m, sizeof(m));
-    PktKicked k; memset(&k, 0, sizeof(k));
+    PktKicked2 k2; memset(&k2, 0, sizeof(k2));   // 3.39: + the wait (old phones read the PktKicked part)
+    PktKicked& k = k2.k;
     k.type = PKT_KICKED; k.banned = banned ? 1 : 0; k.when = b.when;
     MP_CopyStr(k.admin, b.admin, sizeof(k.admin)); MP_CopyStr(k.reason, b.reason, sizeof(k.reason));
-    for(int r = 0; r < 2; ++r) SendRaw(a, &k, sizeof(k));
+    k2.waitSec = banned ? 0 : MP_KICK_WAIT_SEC;
+    for(int r = 0; r < 2; ++r) SendRaw(a, &k2, sizeof(k2));
 }
 
 bool MPServer::Kick(int id, const char* admin, const char* reason, bool ban)
@@ -1537,11 +1613,24 @@ bool MPServer::KickLocked(int id, const char* admin, const char* reason, bool ba
     SendKicked(a, b, ban);
     PktReject rj; rj.type = PKT_REJECT; rj.reason = ban ? REJECT_BANNED : REJECT_KICKED;
     for(int r = 0; r < 2; ++r) SendRaw(a, &rj, sizeof(rj));
-    PktServerMsg m; memset(&m, 0, sizeof(m)); m.type = PKT_SERVER_MSG; m.color = 0xFF6060FF;
-    snprintf(m.text, sizeof(m.text), "%s was %s by %s%s%s", b.name, ban ? "banned" : "kicked", b.admin, b.reason[0] ? ". Reason: " : "", b.reason);
-    Log("%s", m.text);
+    if(!ban)
+    {   // 3.39: a kick is not a ban - the player can join again after MP_KICK_WAIT_SEC (4 min 29 s)
+        TempKick tk; memset(&tk, 0, sizeof(tk));
+        MP_CopyStr(tk.uid, b.uid, sizeof(tk.uid)); MP_CopyStr(tk.name, b.name, sizeof(tk.name));
+        MP_CopyStr(tk.admin, b.admin, sizeof(tk.admin)); MP_CopyStr(tk.reason, b.reason, sizeof(tk.reason));
+        tk.until = b.when + MP_KICK_WAIT_SEC;
+        if(m_TempKicks.size() > 500) m_TempKicks.erase(m_TempKicks.begin());
+        m_TempKicks.push_back(tk);
+    }
+    // 3.39: (white)[(yellow)SERVER(white)]: <name> got kicked by <reason>   (phones before 3.39: plain text)
+    PktServerMsg m; memset(&m, 0, sizeof(m)); m.type = PKT_SERVER_MSG; m.color = 0xFFFFFFFF;
+    snprintf(m.text, sizeof(m.text), "{FFFFFF}[{FFFF00}SERVER{FFFFFF}]: %s got %s by %s", b.name, ban ? "banned" : "kicked", b.reason[0] ? b.reason : "no reason");
+    PktServerMsg mo; memset(&mo, 0, sizeof(mo)); mo.type = PKT_SERVER_MSG; mo.color = 0xFF6060FF;
+    snprintf(mo.text, sizeof(mo.text), "[SERVER]: %s got %s by %s", b.name, ban ? "banned" : "kicked", b.reason[0] ? b.reason : "no reason");
+    Log("%s (by %s)%s", mo.text, b.admin, ban ? "" : " - can join again in 4 min 29 s");
     Drop(id, LEAVE_KICK);
-    Broadcast(&m, sizeof(m));
+    for(int i = 0; i < MP_MAX_PLAYERS; ++i)
+        if(m_Slots[i].used) { if(m_Slots[i].build >= 33900) SendTo(i, &m, sizeof(m)); else SendTo(i, &mo, sizeof(mo)); }
     return true;
 }
 
@@ -1715,6 +1804,9 @@ void MPServer::TurfTick(uint64_t now)
 }
 void MPServer::SendJoinExtras(int slot, bool fresh)
 {
+    if(HomesOn()) HomeSendIndex(slot);   // 3.39: Home Kit houses
+    SendSrvSettings(slot);               // 3.39
+    if(fresh) SendRules(slot);           // 3.39: shown after the login
     if(GetModes() & GM_TURF) SendTurf(slot);
     for(int i = 0; i < MP_MAX_PLAYERS; ++i)
     {
@@ -1790,6 +1882,7 @@ void MPServer::RaceQueueTick(uint64_t now, bool changed)
 #include "server_bcw.inc"   // 3.04: Brief Case War
 #include "server_mw3.inc"   // 3.23: Call Of Duty: Modern Warfare 3
 #include "server_rp.inc"    // 3.25: Mega Vil Futuristic (Roleplay)
+#include "server_home.inc"  // 3.39: Home Kit, rules, live settings
 
 // 3.04.6: an old MP version tried to join: log it once per phone every 10 minutes (console + the
 // --outdated-log file of the 24/7 server) and count it
