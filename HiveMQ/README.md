@@ -21,6 +21,30 @@ Game traffic stays inside one region (no bridging), so ping is only phone -> nea
 
 
 
+## 3.38: 24/7 bot host on the 4 servers (no more "lost connection" when a player leaves)
+
+"Lost connection to the server" when the first player leaves = that player's **phone was the host**. It
+happens when phones can't see the 24/7 copy (the VPS is off, its IP changed, DuckDNS points to a dead
+address, or a phone's network blocks port 1883 and it fell back to the free public lobby). The phones
+then host the server themselves, and when that phone leaves everybody on it is moved to a new host.
+
+The 4 featured servers are hosted 24/7 by the bot **Broker** (`mp-server`, `mp-bcw`, `mp-mw3`, `mp-rp`,
+always in the player list as id 99). 3.38 makes sure every phone finds them:
+
+| Part | What it does |
+|---|---|
+| Public mirror (`PUBLIC_MIRROR=1`, default) | `mp-bridge` now runs on **every** VPS. It lists the region's 4 24/7 servers in the free public lobby (`broker.hivemq.com`) and carries their game frames both ways. Only those servers' upload topics are read there; nothing from the public lobby is copied in. Phones already on a phone copy move to the 24/7 one by themselves within 10 s. |
+| `server/run_24_7.sh [region]` | The 4 bot servers on any always-on machine (home PC, old Android phone with Termux) without HiveMQ. Each restarts within 2 s. `./run_24_7.sh stop` stops them. |
+
+Check that the bot hosts are online (the `!d` = 24/7):
+
+```bash
+mosquitto_sub -h broker.hivemq.com -t 'thirtyfox/mp5/l/+' -v -W 6 | grep '!d'
+journalctl -u mp-bridge -f        # "public lobby: listing 24/7 server ..."
+```
+
+Settings in `/etc/mp-hivemq/mp.env`: `PUBLIC_MIRROR=0` turns the mirror off, `PUBLIC_MIRROR_BROKERS="mqtt://broker.hivemq.com:1883 mqtt://test.mosquitto.org:1883"` lists on more public brokers.
+
 ## 3.37 VPS update: fast, steady ping with 100+ players
 
 The kit now lives in the **wagu repo** (`HiveMQ/` folder) - wagu is the only repo for the mod, the servers and the
