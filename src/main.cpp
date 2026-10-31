@@ -7,6 +7,7 @@
 #include <sys/stat.h>
 #include <string.h>
 #include <float.h>
+#include <math.h>
 #include <mutex>
 #include <atomic>
 #include <vector>
@@ -37,6 +38,8 @@ void InitRenderWareFunctions();
 
 static bool s_bRWReady = false;
 static std::atomic<int> s_nClearMouse{0};
+static std::atomic<bool> s_bPadCursor{false};   // 3.39.2: controller cursor on (the game gets no pad / touch)
+static void PadTick();
 static int  s_nMouseFinger = -1;
 
 // ---- 2.22: touch -> ImGui input goes through a queue ------------------------------------
@@ -97,7 +100,7 @@ DECL_HOOKv(Render2dStuff)
 {
     Render2dStuff();
     if(!s_bRWReady) { InitRenderWareFunctions(); s_bRWReady = true; }
-    if(HUD::IsInitialised()) { PollTouches(); DrainIO(); }
+    if(HUD::IsInitialised()) { PollTouches(); PadTick(); DrainIO(); }   // 3.39.2: + controller
     HUD::Render();
     int cm = s_nClearMouse.load();
     if(cm > 0 && s_nClearMouse.compare_exchange_strong(cm, cm - 1) && cm == 1) QueueIO(TQ_CLEAR);
@@ -215,7 +218,7 @@ static inline bool UiOwnsAFinger()
 }
 static inline bool BlockGameTouch()
 {
-    if(VKeyboard::IsOpen() || FloatMenu::IsModal() || UiOwnsAFinger()) { s_nKbOpenMs = MP_NowMs(); return true; }   // 2.26: + launcher, 2.28: + MP-owned finger
+    if(VKeyboard::IsOpen() || FloatMenu::IsModal() || UiOwnsAFinger() || s_bPadCursor.load()) { s_nKbOpenMs = MP_NowMs(); return true; }   // 2.26: + launcher, 2.28: + MP-owned finger
     return s_nKbOpenMs && MP_NowMs() - s_nKbOpenMs < 350;   // the release of the last key tap too
 }
 DECL_HOOK(bool, TI_IsTouched, int w, void* v, int i)        { return BlockGameTouch() ? false : TI_IsTouched(w, v, i); }
@@ -227,6 +230,133 @@ DECL_HOOK(bool, TI_IsSwipedRight, int w, int i)             { return BlockGameTo
 DECL_HOOK(bool, TI_IsSwipedUp, int w, int i)                { return BlockGameTouch() ? false : TI_IsSwipedUp(w, i); }
 DECL_HOOK(bool, TI_IsSwipedDown, int w, int i)              { return BlockGameTouch() ? false : TI_IsSwipedDown(w, i); }
 DECL_HOOK(bool, Widget_IsTouched, void* self, void* v)      { return BlockGameTouch() ? false : Widget_IsTouched(self, v); }
+
+
+// ---- 3.39.2: controller (gamepad) support for MP's screens ---------------------------------
+// The game reads the pad through WarGamepad_GetGamepadButtons / _GetGamepadAxis (Java side). MP hooks
+// both: it sees every button, and while the MP cursor is on, the game gets nothing (no walking or
+// shooting behind a menu). Buttons (Xbox names): A 0x1, B 0x2, X 0x4, Y 0x8, Start 0x10, Back 0x20,
+// LB 0x40, RB 0x80, D-pad up/down/left/right 0x100/0x200/0x400/0x800, L3 0x1000, R3 0x2000.
+//   Back (Select)        : MP cursor on / off   (hold 0.6 s: the MP menu + cursor)
+//   left stick / D-pad   : move the cursor       right stick: scroll
+//   A                    : tap (hold A + move = drag)    B: cursor off
+//   on the spawn picker  : D-pad left / right = the spot, A = spawn
+// The cursor turns itself on when the launcher / login / keyboard opens after the pad was used.
+enum { PB_A = 0x1, PB_B = 0x2, PB_X = 0x4, PB_Y = 0x8, PB_START = 0x10, PB_BACK = 0x20, PB_LB = 0x40, PB_RB = 0x80,
+       PB_UP = 0x100, PB_DOWN = 0x200, PB_LEFT = 0x400, PB_RIGHT = 0x800 };
+static std::atomic<int> s_nPadMask{0};
+static float s_fPadAxis[6] = { 0, 0, 0, 0, 0, 0 };
+static std::atomic<uint64_t> s_nPadHookAt{0}, s_nPadUsedAt{0};
+static bool  s_bPadAuto = false, s_bPadADown = false, s_bPadLogged = false;
+static float s_fPadX = -1, s_fPadY = -1;
+static int   s_nPadPrev = 0;
+static uint64_t s_nPadBackAt = 0, s_nPadLastMs = 0;
+static int   (*Pad_Buttons0)() = nullptr;
+static float (*Pad_Axis1)(int) = nullptr;
+static inline bool PadBlocksGame() { return s_bPadCursor.load(); }
+DECL_HOOK(int, WarPadButtons, void)
+{
+    int m = WarPadButtons();
+    s_nPadMask = m; s_nPadHookAt = MP_NowMs();
+    if(m) s_nPadUsedAt = MP_NowMs();
+    if(PadBlocksGame()) return 0;
+    return m & ~PB_BACK;   // Back is MP's cursor key
+}
+DECL_HOOK(float, WarPadAxis, int axis)
+{
+    float v = WarPadAxis(axis);
+    if(axis >= 0 && axis < 6) s_fPadAxis[axis] = v;
+    if(fabsf(v) > 0.3f) s_nPadUsedAt = MP_NowMs();
+    return PadBlocksGame() ? 0.0f : v;
+}
+static void HookGamepad()
+{
+    void* b = (void*)aml->GetSym(pGameHandle, "_Z28WarGamepad_GetGamepadButtonsv");
+    void* a = (void*)aml->GetSym(pGameHandle, "_Z25WarGamepad_GetGamepadAxisi");
+    if(b) { HOOK(WarPadButtons, b); Pad_Buttons0 = WarPadButtons; }
+    if(a) { HOOK(WarPadAxis, a); Pad_Axis1 = WarPadAxis; }
+    logger->Info("Controller: buttons %s, axes %s", b ? "hooked" : "not found", a ? "hooked" : "not found");
+}
+static bool DispatchTouch(int type, int finger, int x, int y);
+static void PadTick()   // game thread, every 2D frame (before ImGui's frame)
+{
+    if(!Pad_Buttons0) return;
+    const uint64_t now = MP_NowMs();
+    // the game stopped asking (paused / a menu of its own): read it ourselves
+    if(now - s_nPadHookAt.load() > 300)
+    {
+        int m = WarPadButtons(); s_nPadMask = m; if(m) s_nPadUsedAt = now;
+        if(Pad_Axis1) for(int i = 0; i < 4; ++i) { s_fPadAxis[i] = WarPadAxis(i); if(fabsf(s_fPadAxis[i]) > 0.3f) s_nPadUsedAt = now; }
+    }
+    const int m = s_nPadMask.load(), pressed = m & ~s_nPadPrev, released = ~m & s_nPadPrev; s_nPadPrev = m;
+    float dt = s_nPadLastMs ? (now - s_nPadLastMs) / 1000.0f : 0.016f; s_nPadLastMs = now; if(dt > 0.1f) dt = 0.1f;
+    if(m && !s_bPadLogged) { s_bPadLogged = true; logger->Info("Controller: first input (mask 0x%X)", m); }
+    const float W = (float)Game::ScreenWidth(), H = (float)Game::ScreenHeight();
+    if(W < 10 || H < 10) return;
+    // spawn picker
+    if(MP::SpawnPickerShown() && !s_bPadCursor.load())
+    {
+        if(pressed & PB_LEFT) MP::SpawnStep(-1);
+        if(pressed & PB_RIGHT) MP::SpawnStep(1);
+        if(pressed & PB_A) MP::SpawnConfirm();
+    }
+    // Back: short = cursor on/off, long = MP menu
+    if(pressed & PB_BACK) s_nPadBackAt = now;
+    if((m & PB_BACK) && s_nPadBackAt && now - s_nPadBackAt > 600)
+    {
+        s_nPadBackAt = 0;
+        if(!FloatMenu::IsOpen()) FloatMenu::Toggle();
+        s_bPadCursor = true; s_bPadAuto = false;
+    }
+    if((released & PB_BACK) && s_nPadBackAt) { s_nPadBackAt = 0; s_bPadCursor = !s_bPadCursor.load(); s_bPadAuto = false; }
+    // auto: an MP screen that needs taps opened and the pad is being used
+    const bool screen = FloatMenu::IsModal() || VKeyboard::IsOpen() || MP::AuthScreenShown();
+    const bool padRecent = s_nPadUsedAt.load() && now - s_nPadUsedAt.load() < 60000;
+    if(screen && padRecent && !s_bPadCursor.load()) { s_bPadCursor = true; s_bPadAuto = true; }
+    if(!screen && s_bPadAuto && s_bPadCursor.load()) { s_bPadCursor = false; s_bPadAuto = false; }
+    if(!s_bPadCursor.load())
+    {
+        if(s_bPadADown) { DispatchTouch(TOUCH_RELEASE, 15, (int)s_fPadX, (int)s_fPadY); s_bPadADown = false; }
+        return;
+    }
+    if(s_fPadX < 0) { s_fPadX = W * 0.5f; s_fPadY = H * 0.5f; }
+    if(pressed & PB_B) { s_bPadCursor = false; s_bPadAuto = false; if(s_bPadADown) { DispatchTouch(TOUCH_RELEASE, 15, (int)s_fPadX, (int)s_fPadY); s_bPadADown = false; } return; }
+    // move: left stick (curve: fine near the middle), D-pad steps
+    float lx = s_fPadAxis[0], ly = s_fPadAxis[1];
+    if(fabsf(lx) < 0.15f) lx = 0; if(fabsf(ly) < 0.15f) ly = 0;
+    const float sp = H * 1.1f;
+    const float ox = s_fPadX, oy = s_fPadY;
+    s_fPadX += lx * fabsf(lx) * sp * dt; s_fPadY += ly * fabsf(ly) * sp * dt;
+    const float step = H * 0.035f;
+    if(pressed & PB_LEFT) s_fPadX -= step; if(pressed & PB_RIGHT) s_fPadX += step;
+    if(pressed & PB_UP) s_fPadY -= step;   if(pressed & PB_DOWN) s_fPadY += step;
+    s_fPadX = fmaxf(0, fminf(W - 1, s_fPadX)); s_fPadY = fmaxf(0, fminf(H - 1, s_fPadY));
+    const bool moved = fabsf(s_fPadX - ox) > 0.5f || fabsf(s_fPadY - oy) > 0.5f;
+    if(!s_bPadADown && moved) QueueIO(TQ_POS, s_fPadX, s_fPadY);   // hover
+    // A = finger 15
+    if(pressed & PB_A) { DispatchTouch(TOUCH_PUSH, 15, (int)s_fPadX, (int)s_fPadY); s_bPadADown = true; }
+    else if(s_bPadADown && moved) DispatchTouch(TOUCH_MOVE, 15, (int)s_fPadX, (int)s_fPadY);
+    if((released & PB_A) && s_bPadADown) { DispatchTouch(TOUCH_RELEASE, 15, (int)s_fPadX, (int)s_fPadY); s_bPadADown = false; }
+    // right stick = scroll
+    const float ry = s_fPadAxis[3];
+    if(fabsf(ry) > 0.25f) { ImGui::GetIO().AddMouseWheelEvent(0.0f, -ry * dt * 8.0f); }
+}
+void PadDrawCursor()   // inside the HUD's ImGui frame (hud.cpp)
+{
+    if(!s_bPadCursor.load() || s_fPadX < 0) return;
+    ImDrawList* dl = ImGui::GetForegroundDrawList();
+    const float H = ImGui::GetIO().DisplaySize.y, r = H * 0.018f;
+    ImVec2 p(s_fPadX, s_fPadY);
+    ImVec2 t[3] = { p, ImVec2(p.x + r * 0.55f, p.y + r * 1.6f), ImVec2(p.x + r * 1.25f, p.y + r * 1.05f) };
+    dl->AddTriangleFilled(t[0], t[1], t[2], s_bPadADown ? IM_COL32(56, 189, 248, 255) : IM_COL32(255, 255, 255, 255));
+    dl->AddTriangle(t[0], t[1], t[2], IM_COL32(0, 0, 0, 255), fmaxf(1.0f, r * 0.12f));
+    const char* hint = "A tap   B close   Back cursor";
+    const float fs = H * 0.028f;
+    ImVec2 ts = ImGui::GetFont()->CalcTextSizeA(fs, FLT_MAX, 0, hint);
+    ImVec2 hp(ImGui::GetIO().DisplaySize.x * 0.5f - ts.x * 0.5f, H - ts.y - H * 0.012f);
+    dl->AddRectFilled(ImVec2(hp.x - fs * 0.5f, hp.y - fs * 0.2f), ImVec2(hp.x + ts.x + fs * 0.5f, hp.y + ts.y + fs * 0.2f), IM_COL32(0, 0, 0, 150), fs * 0.3f);
+    dl->AddText(ImGui::GetFont(), fs, hp, IM_COL32(230, 230, 230, 255), hint);
+}
 
 #define HOOK_IF(_name, _sym) do { void* _a = (void*)aml->GetSym(pGameHandle, _sym); if(_a) { HOOK(_name, _a); ++hooked; } } while(0)
 static void HookTouchInterface()
@@ -334,6 +464,7 @@ extern "C" void OnModLoad()
     HOOKSYM(CGame_Process, pGameHandle, "_ZN5CGame7ProcessEv");
     HOOKSYM(Render2dStuff, pGameHandle, "_Z13Render2dStuffv");
     HookTouchInterface();   // 2.19.5
+    HookGamepad();          // 3.39.2: controller
 
 #ifdef AML32
     // GTA SA 2.00 (32-bit): the touch handler must be hooked through its PLT slot

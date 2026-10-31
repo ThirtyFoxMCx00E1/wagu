@@ -284,38 +284,71 @@ static void RpPathAxes(float& fx, float& fy, float& sx, float& sy)
     float l = sqrtf(fx * fx + fy * fy); if(l < 0.01f) l = 1; fx /= l; fy /= l;
     sx = fy; sy = -fx;   // to the right of the path (seen from the camera)
 }
-// 3.39.1: no white board any more - the welcome floats in the air above the pathway as medium-big
-// outlined text (SA-MP 3D text label look), sized by the distance like the other labels.
-static void RpWelcomeBoard(ImDrawList* dl)
+// 3.39.2: the 5 info spots in the lobby (RULES / JOBS / MONEY & INVEST / PHONE & PANEL / LIFE)
+// is the real GTA SA info pickup now - the yellow spinning "i" (model 1239, the one SA-MP servers use),
+// bobbing just above the ground, with its floating text over it. No more drawn circles.
+struct RpInfoIcon { int obj = 0; float z = -1000.0f; uint64_t tryAt = 0; };
+static RpInfoIcon s_RpIcon[RP_INFO_COUNT];
+static Vec3 RpInfoSpot(int i)   // i = index in s_RpInfo (0 = welcome, in the middle of the path)
 {
     float fx, fy, sx, sy; RpPathAxes(fx, fy, sx, sy);
-    const float dist = 31.0f;
-    const Vec3 c = { kRpLobbyCam.x + fx * dist, kRpLobbyCam.y + fy * dist, g_RpPlaces[0].z + 3.2f };
-    if(BcwCamDist(c) > 90.0f) return;
-    BcwLabel3D(dl, { c.x, c.y, c.z + 0.85f }, "Welcome to Mega Vil Futuristic Roleplay Server", 0x38BDF8FF, 46.0f, 30.0f);
-    BcwLabel3D(dl, { c.x, c.y, c.z }, "24/7 roleplay city - stay in character, no DM, no cheats", 0xFFFFFFFF, 30.0f, 30.0f);
-    BcwLabel3D(dl, { c.x, c.y, c.z - 0.6f }, "/jobs work  -  /gps places  -  /phone  -  PANEL: bag + documents  -  /rules", 0xFFDD33FF, 26.0f, 30.0f);
+    if(i == 0) return { kRpLobbyCam.x + fx * 26.0f, kRpLobbyCam.y + fy * 26.0f, g_RpPlaces[0].z + 0.6f };
+    const int k = i - 1, side = (k % 2) ? 1 : -1, row = k / 2;   // beside the pathway: left / right, rows further away
+    const float d = 19.0f + row * 6.5f, lat = 8.5f + row * 0.8f;
+    return { kRpLobbyCam.x + fx * d + sx * lat * side, kRpLobbyCam.y + fy * d + sy * lat * side, g_RpPlaces[0].z + 0.6f };
+}
+static Vec3 RpIconPos(int i) { Vec3 c = RpInfoSpot(i); if(s_RpIcon[i].z > -100.0f) c.z = s_RpIcon[i].z; return c; }
+static void RpWelcomeIconClear()
+{
+    for(auto& o : s_RpIcon) { if(o.obj > 0 && Game::WorldObjectExists(o.obj)) Game::DeleteWorldObject(o.obj); o = RpInfoIcon{}; }
+}
+static void RpWelcomeIconStream(uint64_t now)   // game thread
+{
+    if(!Game::IsReady()) return;
+    bool made = false;
+    const float spin = (float)(now % 3000) * 0.12f;   // one turn in 3 s, like a pickup
+    const float bob = 0.08f * sinf((float)(now % 2000) * 0.00314f);
+    for(int i = 1; i < RP_INFO_COUNT; ++i)   // 0 = the welcome: text only
+    {
+        RpInfoIcon& o = s_RpIcon[i];
+        if(o.obj > 0 && !Game::WorldObjectExists(o.obj)) o.obj = 0;
+        if(o.obj <= 0)
+        {
+            if(made || now - o.tryAt < 500) continue;   // one new object per frame
+            o.tryAt = now; made = true;
+            Vec3 c = RpInfoSpot(i);
+            const float gz = Game::GroundZ(c.x, c.y, c.z + 3.0f);
+            if(gz > -100.0f && fabsf(gz - (c.z - 0.6f)) < 4.0f) c.z = gz + 0.6f;
+            o.z = c.z;
+            int h = Game::CreateWorldObject(1239, c);   // 0 = the model is still loading: next try
+            if(h > 0) o.obj = h;
+            continue;
+        }
+        Vec3 p = RpIconPos(i); p.z += bob;
+        Game::MoveWorldObject(o.obj, p, spin + i * 40.0f);
+    }
 }
 static void RpInfoDraw(ImDrawList* dl)
 {
     char t[256];
-    const float now = (float)(MP_NowMs() % 1000000ULL) / 1000.0f;
-    RpWelcomeBoard(dl);   // 3.35
-    float fx, fy, sx, sy; RpPathAxes(fx, fy, sx, sy);
-    int i = 0, k = 0;
-    for(auto& r : s_RpInfo)
+    for(int i = 0; i < RP_INFO_COUNT; ++i)
     {
-        ++i;
-        if(i == 1) continue;   // WELCOME is on the board now
-        // 3.35: beside the pathway - even = left, odd = right, rows further away
-        const int side = (k % 2) ? 1 : -1, row = k / 2; ++k;
-        const float d = 19.0f + row * 6.5f, lat = 8.5f + row * 0.8f;
-        Vec3 p = { kRpLobbyCam.x + fx * d + sx * lat * side, kRpLobbyCam.y + fy * d + sy * lat * side, g_RpPlaces[0].z + 1.9f };
+        if(i == 0)
+        {   // the welcome stays medium-big floating text over the pathway (no icon)
+            float fx, fy, sx, sy; RpPathAxes(fx, fy, sx, sy);
+            const Vec3 c = { kRpLobbyCam.x + fx * 31.0f, kRpLobbyCam.y + fy * 31.0f, g_RpPlaces[0].z + 3.2f };
+            if(BcwCamDist(c) > 90.0f) continue;
+            BcwLabel3D(dl, { c.x, c.y, c.z + 0.85f }, "Welcome to Mega Vil Futuristic Roleplay Server", 0x38BDF8FF, 46.0f, 30.0f);
+            BcwLabel3D(dl, { c.x, c.y, c.z }, "24/7 roleplay city - stay in character, no DM, no cheats", 0xFFFFFFFF, 30.0f, 30.0f);
+            BcwLabel3D(dl, { c.x, c.y, c.z - 0.6f }, "/jobs work  -  /gps places  -  /phone  -  PANEL: bag + documents  -  /rules", 0xFFDD33FF, 26.0f, 30.0f);
+            continue;
+        }
+        const RpInfoPed& r = s_RpInfo[i];
+        const Vec3 p = RpIconPos(i);
         if(BcwCamDist(p) > 70.0f) continue;
-        RpSpinPickup(dl, p, RpInfoGlyph(r), r.col, now + i * 0.7f);
-        BcwLabel3D(dl, { p.x, p.y, p.z + 1.05f }, r.title, r.col, 30.0f, 26.0f);
-        snprintf(t, sizeof(t), "%s", r.text);
-        BcwLabel3D(dl, { p.x, p.y, p.z - 0.95f }, t, 0xFFFFFFFF, 21.0f, 26.0f);
+        snprintf(t, sizeof(t), "=== [%s] ===", r.title);
+        BcwLabel3D(dl, { p.x, p.y, p.z + 2.05f }, t, r.col, 26.0f, 26.0f);
+        BcwLabel3D(dl, { p.x, p.y, p.z + 1.35f }, r.text, 0xFFFFFFFF, 20.0f, 26.0f);
     }
 }
 
@@ -388,9 +421,10 @@ static bool RpLifeCommand(const char* cmd, const char* arg)
 static void RpLifeProcess(int ped, uint64_t now, bool engaged)
 {
     static bool s_Welcomed = false;
-    if(!engaged) { if(s_Welcomed) { RpAtmClear(); RpDropsClear(); RpInfoUpdate(false, now); s_Atm.open = false; } s_Welcomed = false; return; }
+    if(!engaged) { if(s_Welcomed || s_RpIcon[1].obj) { RpAtmClear(); RpDropsClear(); RpWelcomeIconClear(); RpInfoUpdate(false, now); s_Atm.open = false; } s_Welcomed = false; return; }
     if(!s_Welcomed) { s_Welcomed = true; RpWelcome(); }
     RpInfoUpdate(false, now);   // 3.34: no info people (floating pickups instead, RpInfoDraw)
+    RpWelcomeIconStream(now);   // 3.39.2: the spinning info "i" at the welcome spot
     if(s_Rp.view == 2) { RpAtmStream(now, ped); RpDropsStream(now, ped); } else { RpAtmClear(); RpDropsClear(); }
 }
 

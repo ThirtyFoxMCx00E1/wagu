@@ -810,7 +810,7 @@ static void HkFurnish(HkHomeC& c, int level)
 static void HkHelp()
 {
     SysMsg(COL_YELLOW, "Home Kit: /create house <name>  /setup <name>  /buyhouse  /sellhouse <price>  /cancelsale  /edithouse  /edithouseinteriors");
-    SysMsg(COL_YELLOW, "/enterhouse  /exithouse  /lockhouse  /renamehouse <new>  /deletehouse  /homedelete <name>  /myhouses  /houses  /houseinfo  /gotohouse <name>");
+    SysMsg(COL_YELLOW, "/enterhouse  /exithouse  /lockhouse  /renamehouse <new>  /deletehouse  /homedelete <name>  /myhouses  /houses  /houseinfo  /hometp <name>");
     SysMsg(COL_YELLOW, "/addobject <model>  /removeobject  /objects  /clearobjects  /furnish <low|med|swank>  /prefab <model|0>  /setentrance  /givehouse <id>  /housekey <id>");
 }
 static bool HkCommand(const char* cmd, const char* arg)
@@ -893,6 +893,35 @@ static bool HkCommand(const char* cmd, const char* arg)
         return true;
     }
     if(c == "houseinfo") { HkHomeC* h = pick(false); if(h) HkShowDoor(h->h); return true; }
+    if(c == "hometp" || c == "tphome" || c == "housetp" || c == "tphouse")   // 3.39.2: /hometp <home_name>
+    {
+        if(!a2[0])
+        {   // no name: my only house, else the list
+            int mine = -1, n = 0;
+            for(auto& kv : s_Hk) if(kv.second.haveHead && HkMine(kv.second.h)) { mine = kv.first; ++n; }
+            if(n == 1) snprintf(a2, sizeof(a2), "%s", s_Hk[(uint16_t)mine].h.name);
+            else
+            {
+                SysMsg(COL_RED, "Use: /hometp <home name>");
+                for(auto& kv : s_Hk) if(kv.second.haveHead && (HkMine(kv.second.h) || HkHasKey(kv.second.h))) SysMsg(COL_WHITE, "  %s%s", kv.second.h.name, HkMine(kv.second.h) ? "" : "  (key)");
+                if(!n) SysMsg(COL_SYSTEM, "You have no house yet: /create house <name>");
+                return true;
+            }
+        }
+        const int id = HkByName(a2);
+        if(id < 0) { SysMsg(COL_RED, "No house called \"%s\" (your houses: /myhouses).", a2); return true; }
+        HkHomeC* h = HkGet((uint16_t)id); if(!h) { SysMsg(COL_YELLOW, "That house is still loading, try again."); return true; }
+        if(!HkMine(h->h) && !HkHasKey(h->h) && !HkStaff()) { SysMsg(COL_RED, "%s is not your house (you need to own it or have its key).", h->h.name); return true; }
+        static uint64_t s_tpAt = 0; const uint64_t now = MP_NowMs();
+        if(s_tpAt && now - s_tpAt < 5000 && !HkStaff()) { SysMsg(COL_RED, "Wait %d s.", (int)((5000 - (now - s_tpAt)) / 1000) + 1); return true; }
+        s_tpAt = now;
+        const int ped = Game::LocalPed();
+        Vec3 d = HkDoor(h->h); float r = (h->h.heading + 180.0f) * 0.0174533f; d.x += -sinf(r) * 2.0f; d.y += cosf(r) * 2.0f;
+        if(s_nHkInside) { s_nHkInside = 0; Game::EnterArea(0); }
+        Game::TeleportGround(ped, d, h->h.heading + 180.0f); s_nHkDoorShown = h->h.id;
+        SysMsg(COL_GREEN, "Teleported to %s.", h->h.name);
+        return true;
+    }
     if(c == "gotohouse")
     {
         HkHomeC* h = pick(false); if(!h) return true;

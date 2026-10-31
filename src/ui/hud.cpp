@@ -935,6 +935,7 @@ static void DrawLogo(ImDrawList* dl)
 
 // ---- frame ----------------------------------------------------------------------------------
 static void PublishHitRects();   // 2.22
+void PadDrawCursor();   // main.cpp
 void HUD::Render()
 {
     if(!s_bInit && !Init()) return;
@@ -964,6 +965,7 @@ void HUD::Render()
         FloatMenu::Render();
         VKeyboard::Render();
     }
+    PadDrawCursor();   // 3.39.2: controller cursor
 
     ImGui::EndFrame();
     PublishHitRects();   // 2.22

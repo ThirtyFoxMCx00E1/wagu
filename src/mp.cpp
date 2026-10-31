@@ -6446,6 +6446,7 @@ static void MpFreeAllObjects()
     RpCosFreeProps();
     RpAtmClear();
     RpDropsClear();
+    RpWelcomeIconClear();   // 3.39.2
     if(s_Rp.petObj) { Game::DeleteWorldObject(s_Rp.petObj); s_Rp.petObj = 0; s_Rp.petModel = 0; }
     int n = Game::DeleteAllMpObjects();
     if(n > 0) logger->Info("[MP] save load: %d more MP objects freed", n);
