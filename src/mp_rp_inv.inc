@@ -361,6 +361,24 @@ static void RpInvFigure(ImDrawList* dl, float cx, float top, float s)
     dl->AddCircleFilled(P(0, 20), UI::S(22) * s, edge, 28);
     dl->AddCircleFilled(P(0, 20), UI::S(19) * s, RpInvPartCol(p[0] / 100.0f), 28);
 }
+// 3.36.1: the player info figure is a texture of a man (files/MP/rp_figure.png, built into the .so):
+// 6 layers (head, torso, left arm, right arm, left leg, right leg) of 128x256 in a 512x512 atlas, each
+// drawn over the same rect and tinted by the condition of that part. false = not loaded (yet).
+static bool RpInvFigureTex(ImDrawList* dl, float cx, float top, float s)
+{
+    ImVec2 uv; void* tex = HUD::Texture("rp_figure.png", &uv);
+    if(!tex) return false;
+    const float u = UI::S(1) * s, K = 0.97f;
+    ImVec2 a(cx - 64.0f / K * u, top - 2.0f / K * u), b(cx + 64.0f / K * u, top + 254.0f / K * u);
+    dl->AddRectFilled(ImVec2(cx - UI::S(40) * s, top + UI::S(250) * s), ImVec2(cx + UI::S(40) * s, top + UI::S(258) * s), IM_COL32(0, 0, 0, 70), UI::S(4) * s);
+    static const int kOrder[6] = { 4, 5, 2, 3, 1, 0 };   // legs, arms, torso, head (front last)
+    for(int q : kOrder)
+    {
+        float u0 = (q % 4) * 0.25f * uv.x, v0 = (q / 4) * 0.5f * uv.y;
+        dl->AddImage((ImTextureID)tex, a, b, ImVec2(u0, v0), ImVec2(u0 + 0.25f * uv.x, v0 + 0.5f * uv.y), RpInvPartCol(s_Inv.part[q] / 100.0f));
+    }
+    return true;
+}
 // HEALTH / ARMOUR: label on the left, value on the right, a flat bar under it
 static void RpInvStat(ImDrawList* dl, ImVec2 a, float w, const char* label, float v, ImU32 col)
 {
@@ -435,7 +453,7 @@ static void RpDrawStatusBox(ImDrawList* dl, ImVec2 ra, ImVec2 rb, float k, float
         float vw = RpTextW(UI::S(16), rows[i].v);
         RpPlainText(dl, UI::S(16), ImVec2(rb.x - pad - UI::S(8) - vw, y + UI::S(3)), rows[i].c, rows[i].v);
     }
-    snprintf(t, sizeof(t), "Drag your character on the left to turn him");
+    snprintf(t, sizeof(t), "Body parts: white = fine, amber = hurt, red = badly hurt");
     RpPlainText(dl, UI::S(12), ImVec2(ra.x + pad, rb.y - pad - UI::S(14)), kInvDim, t);
 }
 
@@ -463,12 +481,8 @@ static void RpDrawInvWindow(uint64_t nowMs)
     // ---------------- PLAYER INFO ----------------
     RpInvBox(dl, la, lb, "PLAYER INFO", k, s_Inv.cam ? 60 : 102);   // 3.35: see your real character through it
     {
-        snprintf(t, sizeof(t), "%s (ID %d)", settings.name, myId);
-        dl->PushClipRect(ImVec2(la.x + pad, la.y + head), ImVec2(lb.x - pad, la.y + head + UI::S(30)), true);
-        RpPlainText(dl, UI::S(14), ImVec2(la.x + pad, la.y + head + UI::S(7)), kInvDim, t);
-        dl->PopClipRect();
         const float closeY = lb.y - pad - bh, statY = closeY - UI::S(84);
-        const float figTop0 = la.y + head + UI::S(36), figH = statY - UI::S(10) - figTop0;
+        const float figTop0 = la.y + head + UI::S(54), figH = statY - UI::S(10) - figTop0;   // 3.36.1: room for the floating info
         float fs = figH / UI::S(262); if(fs > 1.0f) fs = 1.0f; if(fs < 0.6f) fs = 0.6f;
         const float cx = (la.x + lb.x) * 0.5f, top = figTop0 + (figH - UI::S(262) * fs) * 0.5f;
         // 3.34: your real character stands behind this box (the camera looks at you while the bag is up);
@@ -488,17 +502,11 @@ static void RpDrawInvWindow(uint64_t nowMs)
                 }
             }
         }
-        if(!real) RpInvFigure(dl, cx, top, fs);   // 3.36: whenever the real one can't be shown (car, camera not ready) - never empty
-        else
-        {   // 3.36: your real floating info (the name tag) above your real head, inside the box
-            int pp = Game::LocalPed(); Vec3 pc; float sx, sy, dp;
-            if(pp > 0 && Game::GetCharPos(pp, pc) && Game::WorldToScreen(Vec3{ pc.x, pc.y, pc.z + 1.05f }, sx, sy, dp) && dp > 0)
-            {
-                dl->PushClipRect(ImVec2(la.x, la.y + head + UI::S(30)), lb, true);
-                RpMyFloatingTag(dl, ImVec2(sx, sy), lw - pad * 2);
-                dl->PopClipRect();
-            }
-        }
+        if(!real && !RpInvFigureTex(dl, cx, top, fs)) RpInvFigure(dl, cx, top, fs);   // 3.36.1: the man figure texture (drawn one while it loads)
+        // 3.36.1: your floating info (name tag: [MOD] name (ID), health + armour bars) over the figure's head
+        dl->PushClipRect(ImVec2(la.x, la.y + head), lb, true);
+        RpMyFloatingTag(dl, ImVec2(cx, top - UI::S(4)), lw - pad * 2);
+        dl->PopClipRect();
         if(s_Inv.cam)
         {   // 3.35: drag inside the box to turn your character round (inspect)
             ImGui::SetCursorScreenPos(ImVec2(la.x + pad + UI::S(74), figTop0));
@@ -798,7 +806,7 @@ static void RenderRpInv()
     if(s_Rp.phone) { s_Inv.panel = false; s_Inv.win = RPW_NONE; }
     {   // 3.34: the bag looks at your real character, standing in the PLAYER INFO box on the left
         int pp = Game::LocalPed(); Vec3 pc;
-        bool want = (s_Inv.win == RPW_INV || s_Inv.win == RPW_STATUS) && pp > 0 && !Game::IsCharInAnyCar(pp) && Game::GetCharPos(pp, pc);
+        bool want = false && pp > 0 && Game::GetCharPos(pp, pc);   // 3.36.1: the player info uses the man figure texture, no camera on the real one
         if(want)
         {
             ImVec2 ds = ImGui::GetIO().DisplaySize;
