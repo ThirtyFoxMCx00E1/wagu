@@ -15,9 +15,15 @@ def zf(path): return zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED, compressle
 old = zipfile.ZipFile("release/MP-3.32-client.zip")
 inst = old.read("MP-3.31-client/INSTALL.txt").decode("utf-8", "replace").replace("3.31", V).replace("3.32", V)
 admin = zipfile.ZipFile("release/MP-3.32-full.zip").read("MP-3.32/ADMIN_KEY_README.txt")
-MOD = """MP moderators (3.35)
-====================
-Moderators are NOT the admin key (admin.txt). Every server owner picks their own.
+MOD = """MP moderators (3.35.2)
+======================
+Moderators are NOT the admin key (admin.txt).
+
+3.35.2: the MP moderator key. Put Android/data/com.rockstargames.gtasa/files/MP/moderator.txt
+(the MP moderator key on one line, get it from the MP owner) on your phone and you are "[MOD] your name"
+on every updated MP server, with any name - no server list needed.
+
+Or a server owner picks their own moderators:
 
 Server owner (VPS / Termux / Oracle): make moderator.txt next to mp_server, one line per moderator:
     # name  key (8+ characters, no spaces)

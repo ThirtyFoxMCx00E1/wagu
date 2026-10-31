@@ -793,7 +793,7 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
                     char key[MP_ADMIN_KEY_LEN + 1] = {0};
                     memcpy(key, ((const PktJoin4*)data)->adminKey, MP_ADMIN_KEY_LEN);
                     char bare[MP_NAME_LEN]; MP_CopyStr(bare, jn, sizeof(bare)); MP_StripAdminTag(bare);
-                    if(!strncmp(key, MP_MOD_PREFIX, 4) && MP_ModKeyOk(m_szModFile, bare, key + 4)) isMod = true;
+                    if(!strncmp(key, MP_MOD_PREFIX, 4) && (MP_ModMasterOk(key + 4) || MP_ModKeyOk(m_szModFile, bare, key + 4))) isMod = true;   // 3.35.2: the phone's moderator.txt alone is enough
                 }
             }
             bool fresh = false;
