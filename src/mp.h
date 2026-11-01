@@ -68,6 +68,7 @@ struct MPSettings
     int   team              = 0;       // class selection team (TEAM_*, 0 = civilian)
     int   classSkin         = -1;      // class selection skin (-1 = keep my own skin)
     char  serverPassword[MP_PASSWORD_LEN + 1] = "";   // 2.19: password of the server you host (empty = open)
+    char  uiLanguage[12] = "en";                     // 3.52: Settings > Language (files/MP/lang/<code>.lng)
     char  serverLang[MP_LANG_LEN] = "English";      // 2.25: language of the server you host (server list "Language")
     char  deviceId[MP_UID_LEN + 1] = "";            // 2.25: this phone's id (bans), made on first start
     char  adminKey[129] = "";                         // 2.37: read from files/MP/admin.txt (never saved in the config) - proof you are SENJI

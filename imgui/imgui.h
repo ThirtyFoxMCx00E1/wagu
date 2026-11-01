@@ -2941,6 +2941,11 @@ struct ImFontAtlas
 
 // Font runtime data and rendering
 // ImFontAtlas automatically loads a default embedded font for you when you call GetTexDataAsAlpha8() or GetTexDataAsRGBA32().
+// MP: languages - every text drawn goes through these (NULL = as is). GImTrSuspend > 0: off (typed text)
+extern IMGUI_API const char* (*GImTrText)(const ImFont* font, const char* text_begin, const char* text_end, const char** out_end);
+extern IMGUI_API const char* (*GImTrFmt)(const char* fmt);
+extern IMGUI_API int GImTrSuspend;
+
 struct ImFont
 {
     // Members: Hot ~20/24 bytes (for CalcTextSize)

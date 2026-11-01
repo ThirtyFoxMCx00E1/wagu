@@ -275,6 +275,7 @@ void ImGui::TextV(const char* fmt, va_list args)
         return;
 
     const char* text, *text_end;
+    if (GImTrFmt && !GImTrSuspend) fmt = GImTrFmt(fmt); // MP: same specs, same order
     ImFormatStringToTempBufferV(&text, &text_end, fmt, args);
     TextEx(text, text_end, ImGuiTextFlags_NoWidthForLargeClippedText);
 }
@@ -4066,8 +4067,18 @@ void ImGui::InputTextDeactivateHook(ImGuiID id)
 // - If you want to use ImGui::InputText() with std::string, see misc/cpp/imgui_stdlib.h
 // (FIXME: Rather confusing and messy function, among the worse part of our codebase, expecting to rewrite a V2 at some point.. Partly because we are
 //  doing UTF8 > U16 > UTF8 conversions on the go to easily interface with stb_textedit. Ideally should stay in UTF-8 all the time. See https://github.com/nothings/stb/issues/188)
+static bool InputTextEx_Impl(const char* label, const char* hint, char* buf, int buf_size, const ImVec2& size_arg, ImGuiInputTextFlags flags, ImGuiInputTextCallback callback, void* callback_user_data);
 bool ImGui::InputTextEx(const char* label, const char* hint, char* buf, int buf_size, const ImVec2& size_arg, ImGuiInputTextFlags flags, ImGuiInputTextCallback callback, void* callback_user_data)
 {
+    // MP: what is typed is never translated (the label is drawn outside, by its own RenderText call below)
+    GImTrSuspend++;
+    bool r = InputTextEx_Impl(label, hint, buf, buf_size, size_arg, flags, callback, callback_user_data);
+    GImTrSuspend--;
+    return r;
+}
+static bool InputTextEx_Impl(const char* label, const char* hint, char* buf, int buf_size, const ImVec2& size_arg, ImGuiInputTextFlags flags, ImGuiInputTextCallback callback, void* callback_user_data)
+{
+    using namespace ImGui;
     ImGuiWindow* window = GetCurrentWindow();
     if (window->SkipItems)
         return false;

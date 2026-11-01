@@ -3466,6 +3466,8 @@ ImVec2 ImFont::CalcTextSizeA(float size, float max_width, float wrap_width, cons
 {
     if (!text_end)
         text_end = text_begin + strlen(text_begin); // FIXME-OPT: Need to avoid this.
+    if (GImTrText && !remaining && !GImTrSuspend) // MP: the drawn language
+        text_begin = GImTrText(this, text_begin, text_end, &text_end);
 
     const float line_height = size;
     const float scale = size / FontSize;
@@ -3560,6 +3562,8 @@ void ImFont::RenderText(ImDrawList* draw_list, float size, const ImVec2& pos, Im
 {
     if (!text_end)
         text_end = text_begin + strlen(text_begin); // ImGui:: functions generally already provides a valid text_end, so this is merely to handle direct calls.
+    if (GImTrText && !GImTrSuspend) // MP: the drawn language
+        text_begin = GImTrText(this, text_begin, text_end, &text_end);
 
     // Align to be pixel perfect
     float x = IM_FLOOR(pos.x);

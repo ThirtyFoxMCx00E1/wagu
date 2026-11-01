@@ -203,3 +203,11 @@ void ImGui_ImplRenderWare_NewFrame()
 
     //ImGuiIO &io = ImGui::GetIO();
 }
+
+// 3.52: the atlas was rebuilt (a new language): drop the old texture, NewFrame makes the new one
+void ImGui_ImplRenderWare_DestroyFontTexture()
+{
+    if(g_FontRaster) RwRasterDestroy(g_FontRaster);
+    g_FontRaster = nullptr;
+    ImGui::GetIO().Fonts->TexID = nullptr;
+}

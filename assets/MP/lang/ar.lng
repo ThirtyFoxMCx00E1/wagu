@@ -1,0 +1,2692 @@
+#mp-lang 1
+#code=ar
+#name=ﺔﻴﺑﺮﻌﻟﺍ
+#english=Arabic
+#font=
+#rtl=1
+no (script fallback)	(ﻲﺼﻨﻟﺍ ﻉﻮﺟﺮﻟﺍ) ﻻ
+GTASAsf%d.b	GTASASf%d.ﺏ
+, its ImGui is not exported: still blocked from every server	ﻡﺩﺎﺧ ﻞﻛ ﻦﻣ ﺍﺭﻮﻈﺤﻣ ﻝﺍﺰﻳ ﻻ :ﻪﺑ ﺹﺎﺨﻟﺍ ImGui ﺮﻳﺪﺼﺗ ﻢﺘﻳ ﻢﻟ ،
+renamed, found by its CheatMenu label	ﻪﺑ ﺔﺻﺎﺨﻟﺍ CheatMenu ﺔﻣﻼﻋ ﺔﻄﺳﺍﻮﺑ ﻪﻴﻠﻋ ﺭﻮﺜﻌﻟﺍ ﻢﺗﻭ ،ﻪﺘﻴﻤﺴﺗ ﺓﺩﺎﻋﺇ ﺖﻤﺗ
+Fire	ﻖﻳﺮﺣ
+past the map edge, moved back inside	ﻞﺧﺍﺪﻟﺍ ﻰﻟﺇ ﻯﺮﺧﺃ ﺓﺮﻣ ﻞﻘﺘﻧﺍ ،ﺔﻄﻳﺮﺨﻟﺍ ﺔﻓﺎﺣ ﺪﻌﺑ
+skipped: position is NaN / inf	NaN / inf ﻮﻫ ﻊﺿﻮﻤﻟﺍ :ﻪﻴﻄﺨﺗ ﻢﺗ
+skipped: broken bounding box	ﺭﻮﺴﻜﻤﻟﺍ ﻂﻴﺤﻤﻟﺍ ﻊﺑﺮﻤﻟﺍ :ﻲﻄﺨﺘﻟﺍ ﻢﺗ
+skipped: world node pools are full	ﺔﺌﻠﺘﻤﻣ ﻢﻟﺎﻌﻟﺍ ﺓﺪﻘﻋ ﺕﺎﻌﻤﺠﺗ :ﻲﻄﺨﺘﻟﺍ ﻢﺗ
+triangles without vertices 	 ﺱﻭﺅﺭ ﻥﻭﺪﺑ ﺕﺎﺜﻠﺜﻣ
+spheres 	 ﺕﻻﺎﺠﻤﻟﺍ
+boxes 	 ﻖﻳﺩﺎﻨﺻ
+lines 	 ﻁﻮﻄﺧ
+MP command	ﺐﺋﺎﻨﻟﺍ ﺮﻣﺃ
+that script is stopped there	ﻙﺎﻨﻫ ﻲﺼﻨﻟﺍ ﺞﻣﺎﻧﺮﺒﻟﺍ ﺍﺬﻫ ﻒﻗﻮﺗ
+Rose	ﺯﻭﺭ
+Paul	ﻝﻮﺑ
+Cesar	ﺭﺍﺰﻴﺳ
+OG Loc	ﻙﻮﻟ ﻲﺟ ﻭﺍ
+Woozie	ﻱﺯﻭﻭ
+Mike Toreno	ﻮﻨﻳﺭﻮﺗ ﻚﻳﺎﻣ
+Jizzy	ﻱﺰﻴﺟ
+Madd Dogg	ﺝﻭﺩ ﺩﺎﻣ
+Catalina	ﺎﻨﻴﻟﺎﺗﺎﻛ
+Claude	ﺩﻮﻠﻛ
+Kendl	ﻝﺪﻨﻴﻛ
+The Truth	ﺔﻘﻴﻘﺤﻟﺍ
+Maccer	ﺮﻴﻛﺎﻣ
+Emmet	ﺖﻴﻤﻳﺍ
+T-Bone	ﻥﻮﺑ ﻲﺗ
+Jethro	ﻭﺮﺜﻴﺟ
+Zero	ﺮﻔﺻ
+Andre	ﻪﻳﺭﺪﻧﺃ
+CEspray	ﺫﺍﺫﺭ
+CNspray	ﺫﺍﺫﺭ
+A tap   B close   Back cursor	ﻲﻔﻠﺨﻟﺍ ﺮﺷﺆﻤﻟﺍ ﻖﻠﻏﺃ B ﻕﻮﻓ ﺮﻘﻧﺍ
+MPMenu	MPMenu ﺔﻤﺋﺎﻗ
+server_combat system	server_combat ﻡﺎﻈﻧ
+server_player sync	server_player ﺔﻨﻣﺍﺰﻣ
+server_vehicle sync	ﻡﺩﺎﺨﻟﺍ_ﺔﺒﻛﺮﻣ ﺔﻨﻣﺍﺰﻣ
+server_weapon sync	ﻡﺩﺎﺨﻟﺍ_ﺡﻼﺳ ﺔﻨﻣﺍﺰﻣ
+server_damage system	ﻡﺩﺎﺨﻟﺍ ﻒﻠﺗ ﻡﺎﻈﻧ
+server_death system	ﻡﺩﺎﺨﻟﺍ ﺓﺎﻓﻭ ﻡﺎﻈﻧ
+server_kill feed	server_kill ﺔﺻﻼﺧ
+server_chat system	server_chat ﻡﺎﻈﻧ
+server_name tags	ﻡﺩﺎﺨﻟﺍ ﻢﺳﺍ ﺕﺎﻣﻼﻋ
+server_health bars	ﻡﺩﺎﺨﻟﺍ ﺔﺤﺻ ﺔﻃﺮﺷﺃ
+server_armour bars	server_armour ﺔﻃﺮﺷﺃ
+server_radar icons	server_radar ﺕﺎﻧﻮﻘﻳﺃ
+server_player colors	server_player ﻥﺍﻮﻟﺃ
+server_pause system	server_pause ﻡﺎﻈﻧ
+server_ping system	server_ping ﻡﺎﻈﻧ
+server_spawn system	server_spawn ﻡﺎﻈﻧ
+server_grove street spawn	server_grove ﻉﺭﺎﺷ ﺭﻮﻬﻇ
+server_teleport system	server_teleport ﻞﻘﻨﻟﺍ ﻡﺎﻈﻧ
+server_skin system	server_skin_ﻡﺎﻈﻧ
+server_animation sync	server_animation ﺔﻨﻣﺍﺰﻣ
+server_movement sync	ﻡﺩﺎﺨﻟﺍ ﺔﻛﺮﺣ ﺔﻨﻣﺍﺰﻣ
+server_aim sync	server_aim ﺔﻨﻣﺍﺰﻣ
+server_shooting sync	ﻡﺩﺎﺨﻟﺍ ﻰﻠﻋ ﺭﺎﻨﻟﺍ ﻕﻼﻃﺇ ﺔﻨﻣﺍﺰﻣ
+server_crouch sync	server_crouch ﺔﻨﻣﺍﺰﻣ
+server_driver sync	server_driver ﺔﻨﻣﺍﺰﻣ
+server_passenger sync	server_passenger ﺔﻨﻣﺍﺰﻣ
+server_vehicle health	ﺔﻣﺩﺎﺨﻟﺍ_ﺓﺭﺎﻴﺴﻟﺍ ﺔﺤﺻ
+server_vehicle colors	ﻡﺩﺎﺨﻟﺍ ﺔﺒﻛﺮﻣ ﻥﺍﻮﻟﺃ
+server_vehicle spawn	ﻡﺩﺎﺨﻟﺍ ﺔﺒﻛﺮﻣ ﺭﻮﻬﻇ
+server_vehicle respawn	ﻡﺩﺎﺨﻟﺍ ﺔﺒﻛﺮﻣ ﻞﻴﻐﺸﺗ ﺓﺩﺎﻋﺇ
+server_weather sync	ﺲﻘﻄﻟﺍ_ﻡﺩﺎﺨﻟﺍ ﺔﻨﻣﺍﺰﻣ
+server_clock sync	ﻡﺩﺎﺨﻟﺍ ﺔﻋﺎﺳ ﺔﻨﻣﺍﺰﻣ
+server_day night cycle	ﺔﻴﻠﻴﻠﻟﺍ ﺔﻳﺭﺎﻬﻨﻟﺍ_ﻡﺩﺎﺨﻟﺍ ﺓﺭﻭﺩ
+server_world objects	server_world ﺕﺎﻨﺋﺎﻛ
+server_world streaming	server_world ﻖﻓﺪﺗ
+server_map zones	server_map ﻖﻃﺎﻨﻣ
+server_gang zones	server_gang ﻖﻃﺎﻨﻣ
+server_turf wars	server_turf ﺏﻭﺮﺣ
+server_territory system	ﻡﺩﺎﺨﻟﺍ ﺔﻘﻄﻨﻣ ﻡﺎﻈﻧ
+server_police system	ﻡﺩﺎﺨﻟﺍ_ﺔﻃﺮﺸﻟﺍ ﻡﺎﻈﻧ
+server_wanted level	ﺏﻮﻠﻄﻤﻟﺍ_ﻡﺩﺎﺨﻟﺍ ﻯﻮﺘﺴﻣ
+server_jail system	server_jail ﻡﺎﻈﻧ
+server_hospital respawn	server_hospital ﺀﺎﺸﻧﺇ ﺓﺩﺎﻋﺇ
+server_money system	server_money ﻡﺎﻈﻧ
+server_bank system	server_bank ﻡﺎﻈﻧ
+server_shop system	server_shop ﻡﺎﻈﻧ
+server_ammu nation	server_ammu ﺔﻣﻷﺍ
+server_property system	ﻡﺩﺎﺨﻟﺍ_ﺺﺋﺎﺼﺧ_ﻡﺎﻈﻧ
+server_house system	server_house ﻡﺎﻈﻧ
+server_business system	ﻡﺩﺎﺨﻟﺍ_ﻝﺎﻤﻋﻷﺍ_ﻡﺎﻈﻧ
+server_job system	server_job ﻡﺎﻈﻧ
+server_taxi job	server_taxi ﺔﻔﻴﻇﻭ
+server_pizza job	server_pizza ﺔﻔﻴﻇﻭ
+server_trucker job	server_trucker ﺔﻔﻴﻇﻭ
+server_mission system	ﻡﺩﺎﺨﻟﺍ ﺔﻤﻬﻣ ﻡﺎﻈﻧ
+server_race system	server_race ﻡﺎﻈﻧ
+server_team deathmatch	server_team ـﺑ ﺕﻮﻤﻟﺍ ﺓﺍﺭﺎﺒﻣ
+server_capture the flag	server_capture ﻢﻠﻌﻟﺍ
+server_casino system	ﻡﺩﺎﺨﻟﺍ ﻮﻨﻳﺯﺎﻛ ﻡﺎﻈﻧ
+server_stunt system	server_stunt ﻡﺎﻈﻧ
+server_drift system	server_drift ﻡﺎﻈﻧ
+server_score board	server_score ﺔﺣﻮﻟ
+server_stats system	ﻡﺩﺎﺨﻟﺍ ﺕﺎﻴﺋﺎﺼﺣﺇ ﻡﺎﻈﻧ
+server_level system	ﻡﺩﺎﺨﻟﺍ ﻯﻮﺘﺴﻣ ﻡﺎﻈﻧ
+server_admin system	server_admin ﻡﺎﻈﻧ
+server_anti cheat	server_anti ﺶﻐﻟﺍ
+server_ban system	server_ban ﻡﺎﻈﻧ
+server_kick system	server_kick ﻡﺎﻈﻧ
+server_mute system	server_mute ﻡﺎﻈﻧ
+server_report system	ﻡﺩﺎﺨﻟﺍ ﺮﻳﺮﻘﺗ ﻡﺎﻈﻧ
+server_player list	server_player ﺔﻤﺋﺎﻗ
+server_region system	ﻡﺩﺎﺨﻟﺍ ﺔﻘﻄﻨﻣ ﻡﺎﻈﻧ
+server_server list	ﻡﺩﺎﺨﻟﺍ_ﻡﺩﺎﺨﻟﺍ ﺔﻤﺋﺎﻗ
+server_lan discovery	server_lan ﻑﺎﺸﺘﻛﺍ
+server_host takeover	server_host ﻰﻠﻋ ﺀﻼﻴﺘﺳﻻﺍ
+server_save system	ﻡﺩﺎﺨﻟﺍ ﻆﻔﺣ ﻡﺎﻈﻧ
+server_account system	ﻡﺩﺎﺨﻟﺍ ﺏﺎﺴﺣ ﻡﺎﻈﻧ
+server_login system	ﻡﺩﺎﺨﻠﻟ ﻝﻮﺧﺪﻟﺍ ﻞﻴﺠﺴﺗ ﻡﺎﻈﻧ
+server_audio system	ﻲﺗﻮﺼﻟﺍ_ﻡﺩﺎﺨﻟﺍ_ﻡﺎﻈﻧ
+server_connect logo	server_connect ﺭﺎﻌﺷ
+server_virtual keyboard	server_virtual ﺢﻴﺗﺎﻔﻤﻟﺍ ﺔﺣﻮﻟ
+server_floating menu	ﺔﻤﺋﺎﻌﻟﺍ_ﻡﺩﺎﺨﻟﺍ ﺔﻤﺋﺎﻗ
+server_hud system	server_hud ﻡﺎﻈﻧ
+server_world unlock	server_world ﺢﺘﻓ
+server_city unlock	server_city ﺢﺘﻓ
+server_safe houses	ﻡﺩﺎﺨﻠﻟ ﺔﻨﻣﺁ ﻝﺯﺎﻨﻣ
+server_driving school	ﻡﺩﺎﺨﻟﺍ ﺓﺩﺎﻴﻗ ﻢﻴﻠﻌﺗ ﺔﺳﺭﺪﻣ
+server_flight school	server_flight ﺔﺳﺭﺪﻣ
+server_bike school	server_bike ﺔﺳﺭﺪﻣ
+server_boat school	server_boat ﺔﺳﺭﺪﻣ
+server_race tournaments	server_race ﺕﻻﻮﻄﺑ
+server_pay n spray	server_pay n ﺫﺍﺫﺭ
+server_barber shops	ﺔﻣﺩﺎﺨﻟﺍ_ﺔﻗﻼﺤﻟﺍ ﺕﻼﺤﻣ
+server_well stacked pizza	server_well ﺔﺳﺪﻜﻣ ﺍﺰﺘﻴﺑ
+server_burger shot	server_burger ﺔﻘﻠﻃ
+server_cluckin bell	server_cluckin ﺱﺮﺠﻟﺍ
+server_tattoo shops	server_tattoo ﺕﻼﺤﻣ
+server_gym system	server_gym ﻡﺎﻈﻧ
+server_clothing shops	ﻡﺩﺎﺨﻟﺍ ﺲﺑﻼﻣ ﺕﻼﺤﻣ
+server_mod garages	server_mod ﺕﺎﺟﺍﺮﻛ
+server_interior doors	ﺔﻴﻠﺧﺍﺪﻟﺍ_ﻡﺩﺎﺨﻟﺍ ﺏﺍﻮﺑﺃ
+server_trucking job	server_trucking ﺕﺎﻨﺣﺎﺸﻟﺎﺑ ﻞﻘﻨﻟﺍ ﺔﻔﻴﻇﻭ
+server_quarry job	server_quarry ﺔﻔﻴﻇﻭ
+server_delivery jobs	server_delivery ﻒﺋﺎﻇﻭ
+server_vehicle spawner	ﻡﺩﺎﺨﻟﺍ ﺔﺒﻛﺮﻣ_ﺪﻟﻮﻣ
+server_weapon spawner	server_weapon Spawner
+server_teleport events	server_teleport ﺙﺍﺪﺣﺃ
+server_deathmatch zones	server_deathmatch ﻖﻃﺎﻨﻣ
+server_kill streaks	server_kill ﻁﻮﻄﺧ
+server_race checkpoints	server_race ﺶﻴﺘﻔﺗ ﻁﺎﻘﻧ
+server_race timer	server_race ﺖﻴﻗﻮﺗ
+server_event announcer	server_event ﻊﻳﺬﻣ
+server_score board hud	server_score ﻢﻜﺤﺗ ﺔﺣﻮﻟ
+server_npc world mirror	server_npc ﻢﻟﺎﻌﻟﺍ ﺓﺁﺮﻣ
+server_seat name tags	server_seat ﻢﺳﺍ ﺕﺎﻣﻼﻋ
+server_home kit	ﺔﻴﻟﺰﻨﻤﻟﺍ_ﻡﺩﺎﺨﻟﺍ ﺔﻋﻮﻤﺠﻣ
+server_house builder	server_house ﺊﺸﻨﻣ
+server_house doors	ﻡﺩﺎﺨﻟﺍ ﻝﺰﻨﻣ ﺏﺍﻮﺑﺃ
+server_house keys	server_house ﺢﻴﺗﺎﻔﻣ
+server_furniture objects	server_furniture ﺕﺎﻨﺋﺎﻛ
+server_progress save	ﻡﺩﺎﺨﻟﺍ ﻡﺪﻘﺗ ﻆﻔﺣ
+server_hunger system	ﻡﺩﺎﺨﻟﺍ ﻉﻮﺟ ﻡﺎﻈﻧ
+server_energy system	ﻡﺩﺎﺨﻟﺍ ﺔﻗﺎﻃ ﻡﺎﻈﻧ
+server_needs hud	ﺩﻮﻫ ﺝﺎﺘﺤﻳ ﻡﺩﺎﺨﻟﺍ
+server_rules window	ﻡﺩﺎﺨﻟﺍ_ﺪﻋﺍﻮﻗ ﺓﺬﻓﺎﻧ
+server_server settings	ﻡﺩﺎﺨﻟﺍ_ﻡﺩﺎﺨﻟﺍ ﺕﺍﺩﺍﺪﻋﺇ
+server_moderator system	server_moderator ﻡﺎﻈﻧ
+server_temp kicks	server_temp ﺕﻼﻛﺭ
+server_gamemode manager	server_gamemode ﺮﻳﺪﻣ
+server_gamemode vote	server_gamemode ﺖﻳﻮﺼﺘﻟﺍ
+server_brief case war	server_brief ﺔﻟﺎﺣ ﺏﺮﺣ
+server_modern warfare 3	3 ﺔﺜﻳﺪﺤﻟﺍ ﺏﺮﺤﻟﺍ_ﻡﺩﺎﺨﻟﺍ
+server_mega vil roleplay	server_mega vil ﺭﺍﻭﺩﻷﺍ
+server_roleplay jobs	server_roleplay ﻒﺋﺎﻇﻭ
+server_roleplay factions	server_roleplay ﻞﺋﺎﺼﻓ
+server_roleplay phone	server_roleplay ﻒﺗﺎﻫ
+server_roleplay inventory	server_roleplay ﻥﻭﺰﺨﻣ
+server_roleplay documents	server_roleplay ﺕﺍﺪﻨﺘﺴﻣ
+server_atm machines	server_atm ﺓﺰﻬﺟﺃ
+server_invest system	server_invest ﻡﺎﻈﻧ
+server_marriage system	ﻡﺩﺎﺨﻟﺍ ﺝﺍﻭﺰﻟﺍ ﻡﺎﻈﻧ
+server_pawn shop	server_pawn ﺮﺠﺘﻣ
+server_seatbelt system	server_ﻥﺎﻣﻷﺍ ﻡﺍﺰﺣ ﻡﺎﻈﻧ
+server_starter pack	server_starter ﺔﻣﺰﺣ
+server_info pickups	ﻡﺩﺎﺨﻟﺍ ﺕﺎﻣﻮﻠﻌﻣ ﺕﺎﻃﺎﻘﺘﻟﺍ
+server_gps system	server_gps ﻡﺎﻈﻧ
+server_hotel rooms	ﻡﺩﺎﺨﻟﺍ ﻕﺪﻨﻓ ﻑﺮﻏ
+server_hotel computer	server_hotel ﺮﺗﻮﻴﺒﻤﻛ
+server_safe zones	ﺔﻨﻣﻵﺍ_ﻡﺩﺎﺨﻟﺍ ﻖﻃﺎﻨﻣ
+server_hospital zones	server_hospital ﻖﻃﺎﻨﻣ
+server_red checkpoints	server_red ﺶﻴﺘﻔﺘﻟﺍ ﻁﺎﻘﻧ
+server_gate system	server_gate ﻡﺎﻈﻧ
+server_mv vehicles	server_mv ﺕﺎﺒﻛﺮﻣ
+server_voice chat	ﺔﻴﺗﻮﺼﻟﺍ ﺔﺷﺩﺭﺪﻟﺍ_ﻡﺩﺎﺨﻟﺍ
+server_voice range	ﻡﺩﺎﺨﻟﺍ ﺕﻮﺻ ﻕﺎﻄﻧ
+server_clothes sync	ﻡﺩﺎﺨﻟﺍ ﺲﺑﻼﻣ ﺔﻨﻣﺍﺰﻣ
+server_ped aim sync	server_ped ﻑﺪﻫ ﺔﻨﻣﺍﺰﻣ
+server_remote weapons	server_remote ﺔﺤﻠﺳﻷﺍ
+server_jetpack sync	server_jetpack ﺔﻨﻣﺍﺰﻣ
+server_parachute sync	server_parachute ﺔﻨﻣﺍﺰﻣ
+server_swim sync	server_swim ﺔﻨﻣﺍﺰﻣ
+server_ladder sync	server_ladder ﺔﻨﻣﺍﺰﻣ
+server_fight styles	server_fight ﻁﺎﻤﻧﺃ
+server_drive by sync	server_drive ﺔﻨﻣﺍﺰﻤﻟﺍ ﻖﻳﺮﻃ ﻦﻋ
+server_trailer sync	server_trailer ﺔﻨﻣﺍﺰﻣ
+server_train sync	ﻡﺩﺎﺨﻟﺍ_ﺭﺎﻄﻗ ﺔﻨﻣﺍﺰﻣ
+server_plane sync	server_plane ﺔﻨﻣﺍﺰﻣ
+server_heli sync	server_heli ﺔﻨﻣﺍﺰﻣ
+server_boat sync	server_boat ﺔﻨﻣﺍﺰﻣ
+server_bike sync	server_bike ﺔﻨﻣﺍﺰﻣ
+server_radio stations	server_ﻮﻳﺩﺍﺭ ﺕﺎﻄﺤﻣ
+server_3d labels	server_3d ﺕﺎﻴﻤﺴﺗ
+server_class selection	ﻡﺩﺎﺨﻟﺍ ﺔﺌﻓ ﺭﺎﻴﺘﺧﺍ
+server_controller support	ﻡﺩﺎﺨﻟﺍ ﻢﻜﺤﺗ ﺓﺪﺣﻭ ﻢﻋﺩ
+server_loading screen	ﻡﺩﺎﺨﻟﺍ ﻞﻴﻤﺤﺗ ﺔﺷﺎﺷ
+server_welcome message	ﻡﺩﺎﺨﻟﺍ_ﺐﻴﺣﺮﺗ ﺔﻟﺎﺳﺭ
+ resources	ﺩﺭﺍﻮﻤﻟﺍ 
+Connected successfully!	!ﺡﺎﺠﻨﺑ ﻝﺎﺼﺗﻻﺍ ﻢﺗ
+{FFFFFF}Welcome to {38BDF8}%s	{FFFFFF}ﻲﻓ ﻚﺑ ﺎﺒﺣﺮﻣ {38BDF8}%s
+the server	ﻡﺩﺎﺨﻟﺍ
+Receiving Server Info...	...ﻡﺩﺎﺨﻟﺍ ﺕﺎﻣﻮﻠﻌﻣ ﻲﻘﻠﺗ ﺭﺎﺟ
+Receiving Resources...	...ﺩﺭﺍﻮﻤﻟﺍ ﻡﻼﺘﺳﺍ ﺭﺎﺟ
+Receiving Player Info...	...ﺐﻋﻼﻟﺍ ﺕﺎﻣﻮﻠﻌﻣ ﻲﻘﻠﺗ ﺭﺎﺟ
+Receiving Vehicle Info...	...ﺔﺒﻛﺮﻤﻟﺍ ﺕﺎﻣﻮﻠﻌﻣ ﻡﻼﺘﺳﺍ ﺭﺎﺟ
+Receiving Weapon Info...	...ﺔﺤﻠﺳﻷﺍ ﺕﺎﻣﻮﻠﻌﻣ ﻲﻘﻠﺗ ﺭﺎﺟ
+Receiving World Data...	...ﻢﻟﺎﻌﻟﺍ ﺕﺎﻧﺎﻴﺑ ﻲﻘﻠﺗ ﺭﺎﺟ
+Connecting	ﻝﺎﺼﺗﻻﺍ
+Please Wait, Loading Server Data...	...ﻡﺩﺎﺨﻟﺍ ﺕﺎﻧﺎﻴﺑ ﻞﻴﻤﺤﺗ ﺭﺎﺟ ،ﺭﺎﻈﺘﻧﻻﺍ ﺀﺎﺟﺮﻟﺍ
+Done - joining %s	%s ﻰﻟﺇ ﻡﺎﻤﻀﻧﻻﺍ - ﻢﺗ
+Receiving Resources... %s	%s ...ﺩﺭﺍﻮﻤﻟﺍ ﻲﻘﻠﺗ ﺭﺎﺟ
+Connecting to %s...	...%s ـﺑ ﻝﺎﺼﺗﻻﺍ ﺭﺎﺟ
+In the Beginning	ﺔﻳﺍﺪﺒﻟﺍ ﻲﻓ
+Big Smoke / Sweet & Kendl	ﻝﺪﻨﻴﻛ ﺪﻧﺍ ﺖﻳﻮﺳ / ﻙﻮﻤﺳ ﺞﻴﺑ
+Ryder	ﺭﺪﻳﺍﺭ
+Tagging Up Turf	ﺐﺸﻌﻟﺍ ﻰﻠﻋ ﺕﺎﻣﻼﻌﻟﺍ ﻊﺿﻭ
+Cleaning the Hood	ﺓﺭﺎﻴﺴﻟﺍ ﻙﺮﺤﻣ ﺀﺎﻄﻏ ﻒﻴﻈﻨﺗ
+Drive-Thru	ﺓﺩﺎﻴﻘﻟﺍ ﻝﻼﺧ ﻦﻣ
+Nines and AK's	ﺔﻴﻤﻨﺘﻟﺍﻭ ﺔﻟﺍﺪﻌﻟﺍ ﺏﺰﺣﻭ ﺔﻌﺴﺗ
+Drive-By	ﺓﺭﺎﻴﺴﻟﺎﺑ
+Sweet's Girl	ﻮﻠﺤﻟﺍ ﺖﻨﺑ
+Cesar Vialpando	ﻭﺪﻧﺎﺒﻟﺎﻴﻓ ﺭﺍﺰﻴﺳ
+Los Sepulcros	ﺱﻭﺮﻜﻟﻮﺒﻴﺳ ﺱﻮﻟ
+Doberman	ﻥﺎﻣﺮﻴﺑﻭﺩ
+Burning Desire	ﺔﻠﻌﺘﺸﻤﻟﺍ ﺔﺒﻏﺮﻟﺍ
+Gray Imports	ﺔﻳﺩﺎﻣﺮﻟﺍ ﺕﺍﺩﺭﺍﻮﻟﺍ
+Home Invasion	ﻝﺰﻨﻤﻟﺍ ﻭﺰﻏ
+Catalyst	ﺰﻔﺤﻣ
+Robbing Uncle Sam	ﻡﺎﺳ ﻢﻌﻟﺍ ﺔﻗﺮﺳ
+Running Dog	ﺐﻠﻜﻟﺍ ﻞﻴﻐﺸﺗ
+Wrong Side of the Tracks	ﺕﺍﺭﺎﺴﻤﻟﺍ ﻦﻣ ﺄﻄﺨﻟﺍ ﺐﻧﺎﺠﻟﺍ
+Just Business	ﻞﻤﻋ ﺩﺮﺠﻣ
+Life's a Beach	ﺊﻃﺎﺷ ﺓﺎﻴﺤﻟﺍ
+Madd Dogg's Rhymes	ﺝﻭﺩ ﺩﺎﻣ ﻲﻓﺍﻮﻗ
+Management Issues	ﺓﺭﺍﺩﻹﺍ ﺎﻳﺎﻀﻗ
+House Party	ﺖﻴﺒﻟﺍ ﺔﻠﻔﺣ
+High Stakes, Low Rider	ﺾﻔﺨﻨﻣ ﺐﻛﺍﺭﻭ ،ﺔﻴﻟﺎﻋ ﺮﻃﺎﺨﻣ
+Reuniting the Families	ﺕﻼﺋﺎﻌﻟﺍ ﻞﻤﺷ ﻢﻟ
+The Green Sabre	ﺮﻀﺧﻷﺍ ﺮﺑﺎﺻ
+Badlands	ﺓﺮﻋﻮﻟﺍ ﻲﺿﺍﺭﻷﺍ
+First Date	ﻝﻭﻷﺍ ﺦﻳﺭﺎﺘﻟﺍ
+First Base / Local Liquor Store	ﻲﻠﺤﻤﻟﺍ ﺭﻮﻤﺨﻟﺍ ﺮﺠﺘﻣ / ﻰﻟﻭﻷﺍ ﺓﺪﻋﺎﻘﻟﺍ
+Made in Heaven / Small Town Bank	ﺓﺮﻴﻐﺼﻟﺍ ﺔﻨﻳﺪﻤﻟﺍ ﻚﻨﺑ / ﺔﻨﺠﻟﺍ ﻲﻓ ﻊﻨﺻ
+Tanker Commander	ﺔﻠﻗﺎﻨﻟﺍ ﺪﺋﺎﻗ
+Gone Courting / Against All Odds	ﺏﺎﻌﺼﻟﺍ ﻞﻛ ﻢﻏﺭ / ﺔﻟﺯﺎﻐﻤﻠﻟ ﺐﻫﺫ
+King in Exile	ﻰﻔﻨﻤﻟﺍ ﻲﻓ ﻚﻠﻤﻟﺍ
+Body Harvest	ﺪﺴﺠﻟﺍ ﺩﺎﺼﺣ
+Are You Going to San Fierro?	؟ﻭﺮﻴﻴﻓ ﻥﺎﺳ ﻰﻟﺇ ﺐﻫﺍﺫ ﺖﻧﺃ ﻞﻫ
+Wu Zi Mu / Farewell, My Love...	...ﻲﺒﺣ ﺎﻳ ﻉﺍﺩﻮﻟﺍ / ﻮﻣ ﻱﺯ ﻭﻭ
+Wear Flowers in Your Hair	ﻙﺮﻌﺷ ﻲﻓ ﺭﻮﻫﺰﻟﺍ ﻱﺪﺗﺭﺍ
+Deconstruction	ﻚﻴﻜﻔﺘﻟﺍ
+555 We Tip	ﺔﺤﻴﺼﻧ ﻦﺤﻧ 555
+Snail Trail	ﻥﻭﺰﻠﺤﻟﺍ ﺏﺭﺩ
+Mountain Cloud Boys	ﺰﻳﻮﺑ ﺩﻭﻼﻛ ﻦﺘﻧﻭﺎﻣ
+Ran Fa Li	ﻲﻟ ﺎﻓ ﻥﺍﺭ
+Lure	ﺀﺍﺮﻏﺇ
+Amphibious Assault	ﻲﺋﺎﻣﺮﺒﻟﺍ ﻡﻮﺠﻬﻟﺍ
+The Da Nang Thang	ﻎﻧﺎﺛ ﻎﻧﺎﻧ ﺍﺩ
+Photo Opportunity	ﺭﻮﺼﻟﺍ ﻁﺎﻘﺘﻟﺍ ﺔﺻﺮﻓ
+Outrider	ﺭﺪﻳﺍﺮﺗﻭﺃ
+Ice Cold Killa	ﻼﻴﻛ ﺩﺭﺎﺒﻟﺍ ﺪﻴﻠﺠﻟﺍ
+Toreno's Last Flight	ﺓﺮﻴﺧﻷﺍ ﻮﻨﻳﺭﻮﺗ ﺔﻠﺣﺭ
+Yay Ka-Boom-Boom	ﻡﻮﺑ ﻡﻮﺑ ﺎﻛ ﻱﺎﻳ
+Pier 69	69 ﻒﻴﺻﺮﻟﺍ
+T-Bone Mendez	ﺰﻳﺪﻨﻣ ﻥﻮﺑ ﻲﺗ
+Zeroing In	ﻲﻓ ﺮﻴﻔﺼﺘﻟﺍ
+Test Drive	ﺓﺩﺎﻴﻘﻟﺍ ﺭﺎﺒﺘﺧﺍ
+Customs Fast Track	ﻙﺭﺎﻤﺠﻠﻟ ﻊﻳﺮﺴﻟﺍ ﺭﺎﺴﻤﻟﺍ
+Puncture Wounds	ﺔﻴﺒﻘﺜﻟﺍ ﺡﻭﺮﺠﻟﺍ
+Back to School	ﺔﺳﺭﺪﻤﻟﺍ ﻰﻟﺇ ﺓﺩﻮﻌﻟﺍ
+Air Raid	ﺔﻳﻮﺟ ﺓﺭﺎﻏ
+Supply Lines...	...ﺩﺍﺪﻣﻹﺍ ﻁﻮﻄﺧ
+New Model Army	ﺪﻳﺪﺠﻟﺍ ﻲﺟﺫﻮﻤﻨﻟﺍ ﺶﻴﺠﻟﺍ
+Monster	ﺶﺣﻮﻟﺍ
+Highjack	ﻙﺎﺠﻳﺎﻫ
+Interdiction	ﺮﻈﺤﻟﺍ
+Verdant Meadows	ﺀﺍﺮﻀﺨﻟﺍ ﺝﻭﺮﻤﻟﺍ
+Stowaway	ﺔﺴﻠﺧ ﺮﻓﺎﺴﻣ
+Black Project	ﺩﻮﺳﻷﺍ ﻉﻭﺮﺸﻤﻟﺍ
+Green Goo	ﻦﻳﺮﺟ ﻮﺟ
+Learning to Fly	ﻥﺍﺮﻴﻄﻟﺍ ﻢﻠﻌﺗ
+Fender Ketchup	ﺭﺪﻨﻓ ﺐﺸﺗﺎﻛ
+Explosive Situation	ﺮﺠﻔﺘﻤﻟﺍ ﻊﺿﻮﻟﺍ
+You've Had Your Chips	ﻚﻘﺋﺎﻗﺭ ﻰﻠﻋ ﺖﻠﺼﺣ ﺪﻘﻟ
+Fish in a Barrel	ﻞﻴﻣﺮﺑ ﻲﻓ ﻚﻤﺴﻟﺍ
+Don Peyote	ﺕﻮﻴﺑ ﻥﻭﺩ
+Intensive Care	ﺓﺰﻛﺮﻤﻟﺍ ﺔﻳﺎﻨﻌﻟﺍ
+The Meat Business	ﻡﻮﺤﻠﻟﺍ ﺓﺭﺎﺠﺗ
+Freefall	ﺮﺤﻟﺍ ﻁﻮﻘﺴﻟﺍ
+Saint Mark's Bistro	ﻙﺭﺎﻣ ﺖﻧﺎﺳ ﻭﺮﺘﺴﻴﺑ
+Misappropriation	ﺱﻼﺘﺧﺍ
+High Noon	ﺮﻬﻈﻟﺍ ﻉﺎﻔﺗﺭﺍ
+Architectural Espionage	ﻱﺭﺎﻤﻌﻤﻟﺍ ﺲﺴﺠﺘﻟﺍ
+Key to Her Heart	ﺎﻬﺒﻠﻗ ﺡﺎﺘﻔﻣ
+Dam and Blast	ﺭﺎﺠﻔﻧﻻﺍﻭ ﺪﺴﻟﺍ
+Cop Wheels	ﻲﻃﺮﺸﻟﺍ ﺕﻼﺠﻋ
+Up, Up and Away!	!ﺍﺪﻴﻌﺑﻭ ﻰﻠﻋﺃ ،ﻰﻠﻋﺃ
+Breaking the Bank at Caligula's	ﻻﻮﺠﻴﻟﺎﻛ ﻲﻓ ﻚﻨﺒﻟﺍ ﺮﺴﻛ
+A Home in the Hills	ﻝﻼﺘﻟﺍ ﻲﻓ ﻝﺰﻨﻣ
+Vertical Bird	ﺔﻳﺩﻮﻤﻌﻟﺍ ﺭﻮﻴﻄﻟﺍ
+Home Coming	ﺔﻣﺩﺎﻘﻟﺍ ﺔﻴﺴﻴﺋﺮﻟﺍ ﺔﺤﻔﺼﻟﺍ
+Cut Throat Business	ﻖﻠﺤﻟﺍ ﻊﻄﻗ ﻝﺎﻤﻋﺃ
+Beat Down on B Dup	B Dup ﻰﻠﻋ ﺯﺎﻓ
+Grove 4 Life	ﺓﺎﻴﺤﻟﺍ 4 ﻑﻭﺮﻏ
+Riot	ﺐﻐﺸﻟﺍ ﺔﺤﻓﺎﻜﻣ
+Los Desperados	ﺱﻭﺩﺍﺮﻴﺒﺴﻳﺩ ﺱﻮﻟ
+End of the Line	ﺮﻄﺴﻟﺍ ﺔﻳﺎﻬﻧ
+Shooting Range	ﺔﻳﺎﻣﺮﻟﺍ ﻕﺎﻄﻧ
+Gym Fight School	ﺔﻴﺿﺎﻳﺮﻟﺍ ﻝﺎﺘﻘﻟﺍ ﺔﺳﺭﺪﻣ
+Trucking	ﺕﺎﻨﺣﺎﺸﻟﺎﺑ ﻞﻘﻨﻟﺍ
+Quarry	ﻊﻠﻘﻣ
+Boat School	ﺏﺭﺍﻮﻘﻟﺍ ﺔﺳﺭﺪﻣ
+Bike School	ﺔﺟﺍﺭﺪﻟﺍ ﺔﺳﺭﺪﻣ
+Taxi Driver	ﺓﺮﺟﺃ ﺓﺭﺎﻴﺳ ﻖﺋﺎﺳ
+Paramedic	ﻒﻌﺴﻣ
+Firefighter	ﺀﺎﻔﻃﻻﺍ ﻞﺟﺭ
+Vigilante	ﺱﺭﺎﺣ
+Burglary	ﻮﻄﺴﻟﺍ
+Freight Train	ﻦﺤﺸﻟﺍ ﺭﺎﻄﻗ
+Pimping	ﺓﺩﺍﻮﻘﻟﺍ
+Race Tournament	ﻕﺎﺒﺴﻟﺍ ﺔﻟﻮﻄﺑ
+Lowrider Challenge	ﺭﺪﻳﺭﻮﻟ ﻱﺪﺤﺗ
+Pool	ﺔﺣﺎﺒﺳ ﻡﺎﻤﺣ
+Beefy Baron	ﻦﻴﻤﺳ ﻥﻭﺭﺎﺑ
+Blood Ring	ﻡﺪﻟﺍ ﻢﺗﺎﺧ
+Kickstart	ﺕﺭﺎﺘﺳ ﻚﻴﻛ
+Beat the Cock!	!ﻚﻳﺪﻟﺍ ﻰﻠﻋ ﺯﺎﻓ
+Courier	ﻲﻋﺎﺳ
+The Chiliad Challenge	ﺩﺎﻴﻠﻴﺷ ﻱﺪﺤﺗ
+Stunt Challenge	ﺔﻠﻴﺣ ﻱﺪﺤﺗ
+Buy Property	ﺕﺍﺭﺎﻘﻌﻟﺍ ﺀﺍﺮﺷ
+a mission	ﺔﻤﻬﻣ
+*** %s: other players are hidden until it ends. Your Mission sync group (%d players) stays with you.	*** %s: ﻚﺑ ﺔﺻﺎﺨﻟﺍ ﺔﻤﻬﻤﻟﺍ ﺔﻨﻣﺍﺰﻣ ﺔﻋﻮﻤﺠﻣ ﻞﻈﺗ .ﻲﻬﺘﻨﺗ ﻰﺘﺣ ﻦﻳﺮﺧﻵﺍ ﻦﻴﺒﻋﻼﻟﺍ ﺀﺎﻔﺧﺇ ﻢﺘﻳ (%d ﻚﻌﻣ (ﻦﻴﺒﻋﻼﻟﺍ ﻦﻣ.
+*** %s: other players are hidden until it ends. %s (Mission sync) stays with you.	*** %s: ﻲﻬﺘﻨﺗ ﻰﺘﺣ ﻦﻳﺮﺧﻵﺍ ﻦﻴﺒﻋﻼﻟﺍ ﺀﺎﻔﺧﺇ ﻢﺘﻳ. %s (ﻚﻌﻣ ﻰﻘﺒﺗ (ﺔﻤﻬﻤﻟﺍ ﺔﻨﻣﺍﺰﻣ.
+your partner	ﻚﻜﻳﺮﺷ
+*** %s: other players are hidden until it ends (your own story).	*** %s: ﺔﺻﺎﺨﻟﺍ ﻚﺘﺼﻗ) ﻲﻬﺘﻨﺗ ﻰﺘﺣ ﻦﻳﺮﺧﻵﺍ ﻦﻴﺒﻋﻼﻟﺍ ﺀﺎﻔﺧﺇ ﻢﺘﻳ).
+Cutscene	ﻲﺋﺎﻤﻨﻴﺳ ﺪﻬﺸﻣ
+*** %s is on a mission: %s	*** %s ﺔﻤﻬﻣ ﻲﻓ: %s
+*** %s finished their mission.	.ﻢﻬﺘﻤﻬﻣ %s ﻰﻬﻧﺃ ***
+%s set by the server - change blocked.	%s ﺮﻴﻴﻐﺘﻟﺍ ﺮﻈﺣ ﻢﺗ - ﻡﺩﺎﺨﻟﺍ ﺔﻄﺳﺍﻮﺑ ﻪﻨﻴﻴﻌﺗ ﻢﺗ.
+Time and weather are	ﺲﻘﻄﻟﺍﻭ ﺖﻗﻮﻟﺍ
+Weather is	ﺲﻘﻄﻟﺍ
+Time is	ﻮﻫ ﺖﻗﻮﻟﺍ
+*** Voice of %s unmuted.	.%s ﺕﻮﺻ ﻢﺘﻛ ﺀﺎﻐﻟﺇ ﻢﺗ ***
+*** Voice of %s muted (only for you).	.(ﻂﻘﻓ ﻚﻟ) ﺎﻣﻮﺘﻜﻣ %s ﺕﻮﺻ ***
+Voice chat works on a server: connect first, then tap the mic.	.ﻥﻮﻓﻭﺮﻜﻴﻤﻟﺍ ﻰﻠﻋ ﻂﻐﺿﺍ ﻢﺛ ،ﻻﻭﺃ ﻞﺼﺗﺍ :ﻡﺩﺎﺨﻟﺍ ﻰﻠﻋ ﺔﻴﺗﻮﺼﻟﺍ ﺔﺷﺩﺭﺪﻟﺍ ﻞﻤﻌﺗ
+*** Microphone off.	.ﻖﻠﻐﻣ ﻥﻮﻓﻭﺮﻜﻴﻤﻟﺍ ***
+Voice chat is not available on this phone (%s).	.(%s) ﻒﺗﺎﻬﻟﺍ ﺍﺬﻫ ﻰﻠﻋ ﺔﺣﺎﺘﻣ ﺮﻴﻏ ﺔﻴﺗﻮﺼﻟﺍ ﺔﺷﺩﺭﺪﻟﺍ
+Allow the microphone, then tap the mic again.	.ﻯﺮﺧﺃ ﺓﺮﻣ ﻥﻮﻓﻭﺮﻜﻴﻤﻟﺍ ﻰﻠﻋ ﻂﻐﺿﺍ ﻢﺛ ،ﻥﻮﻓﻭﺮﻜﻴﻤﻠﻟ ﺢﻤﺳﺍ
+Could not turn on the microphone: %s.	.%s :ﻥﻮﻓﻭﺮﻜﻴﻤﻟﺍ ﻞﻴﻐﺸﺗ ﺭﺬﻌﺗ
+*** Your GTA SA app can't use the microphone, so the MP Voice app does it for you...	...ﻚﻨﻋ ﺔﺑﺎﻴﻧ ﻚﻟﺬﺑ ﻡﻮﻘﻳ MP Voice ﻖﻴﺒﻄﺗ ﻥﺈﻓ ﺍﺬﻟ ،ﻥﻮﻓﻭﺮﻜﻴﻤﻟﺍ ﻡﺍﺪﺨﺘﺳﺍ ﻚﺑ ﺹﺎﺨﻟﺍ GTA SA ﻖﻴﺒﻄﺗ ﻊﻴﻄﺘﺴﻳ ﻻ ***
+*** Microphone on: players near you hear you (louder up close, nothing past %d m).	.(ﺔﻘﻴﻗﺩ %d ﺪﻌﺑ ﺀﻲﺷ ﻻ ،ﻰﻠﻋﺃ ﺕﻮﺼﺑ) ﻚﻨﻣ ﻥﻮﺒﻳﺮﻘﻟﺍ ﻥﻮﺒﻋﻼﻟﺍ ﻚﻌﻤﺴﻳ :ﻥﻮﻓﻭﺮﻜﻴﻤﻟﺍ ﻞﻴﻐﺸﺗ ***
+*** Microphone on (MP Voice): players near you hear you (louder up close, nothing past %d m).	.(ﻡ %d ﺪﻌﺑ ﺀﻲﺷ ﺪﺟﻮﻳ ﻻﻭ ،ﺏﺮﻗ ﻦﻋ ﺎﺗﻮﺻ ﻰﻠﻋﺃ) ﻚﻨﻣ ﻥﻮﺒﻳﺮﻘﻟﺍ ﻥﻮﺒﻋﻼﻟﺍ ﻚﻌﻤﺴﻳ :(MP Voice) ﻥﻮﻓﻭﺮﻜﻴﻤﻟﺍ ﻞﻴﻐﺸﺗ ***
+MP Voice stopped sending your voice. Open MP Voice and tap Start microphone.	.ﻥﻮﻓﻭﺮﻜﻴﻤﻟﺍ ﺀﺪﺑ ﻰﻠﻋ ﻂﻐﺿﺍﻭ MP Voice ﺢﺘﻓﺍ .ﻚﺗﻮﺻ ﻝﺎﺳﺭﺇ ﻦﻋ MP Voice ﻒﻗﻮﺗ
+Install the MP Voice app (MP-Voice.apk in the MP package / on the MP website), open it once, tap Start microphone, then tap the mic here again.	.ﻯﺮﺧﺃ ﺓﺮﻣ ﺎﻨﻫ ﻥﻮﻓﻭﺮﻜﻴﻤﻟﺍ ﻕﻮﻓ ﺮﻘﻧﺍ ﻢﺛ ،ﻥﻮﻓﻭﺮﻜﻴﻤﻟﺍ ﺀﺪﺑ ﻕﻮﻓ ﺮﻘﻧﺍﻭ ،ﺓﺪﺣﺍﻭ ﺓﺮﻣ ﻪﺤﺘﻓﺍﻭ ،(ﺐﻳﻮﻟﺍ ﻰﻠﻋ MP ﻊﻗﻮﻣ ﻰﻠﻋ / MP ﺔﻣﺰﺣ ﻲﻓ MP Voice (MP-Voice.apk ﻖﻴﺒﻄﺗ ﺖﻴﺒﺜﺘﺑ ﻢﻗ
+You can still hear the others without it.	.ﺎﻬﻧﻭﺪﺑ ﻦﻳﺮﺧﻵﺍ ﻉﺎﻤﺳ ﻚﻧﺎﻜﻣﺈﺑ ﻝﺍﺰﻳ ﻻ
+[ADMIN] SENJI	[ADMIN] ﻲﺠﻨﻴﺳ
+The server was closed by its host.	.ﻒﻴﻀﻤﻟﺍ ﻞﺒﻗ ﻦﻣ ﻡﺩﺎﺨﻟﺍ ﻕﻼﻏﺇ ﻢﺗ
+Your MP version is too old. Download MP %s: %s	MP %s: %s ﻞﻳﺰﻨﺗ .ﺍﺪﺟ ﻢﻳﺪﻗ ﻚﺑ ﺹﺎﺨﻟﺍ MP ﺭﺍﺪﺻﺇ
+This server runs an old MP version (it lets cheaters in). Ask the host to update to MP %s.	.MP %s ﻰﻟﺇ ﺚﻳﺪﺤﺘﻟﺍ ﻒﻴﻀﻤﻟﺍ ﻦﻣ ﺐﻠﻃﺍ .(ﻝﻮﺧﺪﻟﺎﺑ ﻦﻴﺷﺎﺸﻐﻠﻟ ﺢﻤﺴﻳ) ﻢﻳﺪﻗ MP ﺭﺍﺪﺻﺇ ﻞﻴﻐﺸﺘﺑ ﻡﺩﺎﺨﻟﺍ ﺍﺬﻫ ﻡﻮﻘﻳ
+Wrong server password. Edit the server and type the right one (max 16 characters).	.(ﺎﻓﺮﺣ 16 ﻰﺼﻗﺃ ﺪﺤﺑ) ﺢﻴﺤﺼﻟﺍ ﻡﺩﺎﺨﻟﺍ ﺐﺘﻛﺍﻭ ﻡﺩﺎﺨﻟﺍ ﺮﻳﺮﺤﺘﺑ ﻢﻗ .ﺔﺌﻃﺎﺧ ﻡﺩﺎﺨﻟﺍ ﺭﻭﺮﻣ ﺔﻤﻠﻛ
+This server runs an old MP (before 3.23.6) - trying your old admin key on it...	...ﻪﻴﻠﻋ ﻢﻳﺪﻘﻟﺍ ﻝﻭﺆﺴﻤﻟﺍ ﺡﺎﺘﻔﻣ ﺏﺮﺟ - (3.23.6 ﻞﺒﻗ) ﻢﻳﺪﻗ MP ﻞﻴﻐﺸﺘﺑ ﻡﺩﺎﺨﻟﺍ ﺍﺬﻫ ﻡﻮﻘﻳ
+This server didn't take your first admin key - trying your other key from administrator.txt...	...administrator.txt ﻦﻣ ﺮﺧﻵﺍ ﻚﺣﺎﺘﻔﻣ ﺏﺮﺟ - ﻝﻭﻷﺍ ﻑﺮﺸﻤﻟﺍ ﺡﺎﺘﻔﻣ ﻡﺩﺎﺨﻟﺍ ﺍﺬﻫ ﺬﺧﺄﻳ ﻢﻟ
+This server refused your admin key. Your MP %s and administrator.txt are fine: the SERVER runs MP older than 3.23.6 and only knows the old key.	.ﻢﻳﺪﻘﻟﺍ ﺡﺎﺘﻔﻤﻟﺍ ﻯﻮﺳ ﻑﺮﻌﻳ ﻻﻭ 3.23.6 ﻦﻣ ﻡﺪﻗﻷﺍ MP ﻞﻴﻐﺸﺘﺑ ﻡﺩﺎﺨﻟﺍ ﻡﻮﻘﻳ :ﻥﺍﺪﻴﺟ ﻚﺑ ﺹﺎﺨﻟﺍ administrator.txtﻭ MP %s ﻥﺇ .ﻚﺑ ﺹﺎﺨﻟﺍ ﻝﻭﺆﺴﻤﻟﺍ ﺡﺎﺘﻔﻣ ﻡﺩﺎﺨﻟﺍ ﺍﺬﻫ ﺾﻓﺭ
+Quick fix: keep your old key as admin.txt next to administrator.txt (MP folder) - MP %s tries the old key on old servers by itself.	.ﻪﺴﻔﻨﺑ ﺔﻤﻳﺪﻘﻟﺍ ﻡﺩﺍﻮﺨﻟﺍ ﻰﻠﻋ ﻢﻳﺪﻘﻟﺍ ﺡﺎﺘﻔﻤﻟﺍ ﻡﺍﺪﺨﺘﺳﺍ MP %s ﻝﻭﺎﺤﻳ - (MP ﺪﻠﺠﻣ) administrator.txt ﺭﺍﻮﺠﺑ admin.txt ـﻛ ﻢﻳﺪﻘﻟﺍ ﻚﺣﺎﺘﻔﻤﺑ ﻆﻔﺘﺣﺍ :ﻊﻳﺮﺳ ﻞﺣ
+Real fix: update the server. 24/7 VPS: sudo bash /opt/mp/kit/update.sh (or: curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/update.sh | sudo bash). Termux: mp-server update.	.mp-server ﺚﻳﺪﺤﺗ :curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/update.sh | sudo bash). Termux :ﻭﺃ) VPS 24/7: sudo bash /opt/mp/kit/update.sh .ﻡﺩﺎﺨﻟﺍ ﺚﻳﺪﺤﺗ :ﻲﻘﻴﻘﺤﻟﺍ ﺡﻼﺻﻹﺍ
+This server refused your moderator key for %s: it runs MP older than 3.40.1 (it updates by itself) or the key in moderator.txt is wrong.	.ﺢﻴﺤﺻ ﺮﻴﻏ moderator.txt ﻲﻓ ﺩﻮﺟﻮﻤﻟﺍ ﺡﺎﺘﻔﻤﻟﺍ ﻥﺃ ﻭﺃ (ﻪﺴﻔﻨﺑ ﻪﺜﻳﺪﺤﺗ ﻢﺘﻳ) 3.40.1 ﻦﻣ ﻡﺪﻗﻷﺍ MP ﻞﻴﻐﺸﺘﺑ ﻡﻮﻘﻳ ﻮﻬﻓ :%s ـﻟ ﻚﺑ ﺹﺎﺨﻟﺍ ﻑﺮﺸﻤﻟﺍ ﺡﺎﺘﻔﻣ ﻡﺩﺎﺨﻟﺍ ﺍﺬﻫ ﺾﻓﺭ
+You are banned from the server!	!ﻡﺩﺎﺨﻟﺍ ﻦﻣ ﺭﻮﻈﺤﻣ ﺖﻧﺃ
+You were kicked from the server!	!ﻡﺩﺎﺨﻟﺍ ﻦﻣ ﻙﺩﺮﻃ ﻢﺗ ﺪﻘﻟ
+Server is full.	.ﺊﻠﺘﻤﻣ ﻡﺩﺎﺨﻟﺍ
+Server uses a different MP version.	.ﺎﻔﻠﺘﺨﻣ MP ﺭﺍﺪﺻﺇ ﻡﺩﺎﺨﻟﺍ ﻡﺪﺨﺘﺴﻳ
+Could not connect to %s (no response).	.(ﺔﺑﺎﺠﺘﺳﺍ ﺪﺟﻮﺗ ﻻ) %s ـﺑ ﻝﺎﺼﺗﻻﺍ ﺭﺬﻌﺗ
+Lost connection to the server. (Timeout)	(ﺔﻠﻬﻤﻟﺍ) .ﻡﺩﺎﺨﻟﺎﺑ ﻝﺎﺼﺗﻻﺍ ﺕﺪﻘﻓ
+*** %s joined the server.	.ﻡﺩﺎﺨﻟﺍ ﻰﻟﺇ %s ﻢﻀﻧﺍ ***
+*** %s left the server.%s	*** %s ﻡﺩﺎﺨﻟﺍ ﺭﺩﺎﻏ.%s
+ (Timeout)	(ﺔﻠﻬﻤﻟﺍ) 
+ (Kicked)	(ﻞﻛﺭ) 
+*** Cheats were disabled on this server (MP cheats).	.(MP Cheats) ﻡﺩﺎﺨﻟﺍ ﺍﺬﻫ ﻰﻠﻋ ﺕﻻﺎﻴﺘﺣﻹﺍ ﻞﻴﻄﻌﺗ ﻢﺗ ***
+*** The host allowed cheats again.	.ﻯﺮﺧﺃ ﺓﺮﻣ ﺶﻐﻟﺎﺑ ﻒﻴﻀﻤﻟﺍ ﺢﻤﺳ ***
+*** The host turned off Mission sync.	.ﺔﻤﻬﻤﻟﺍ ﺔﻨﻣﺍﺰﻣ ﻞﻴﻐﺸﺗ ﻑﺎﻘﻳﺈﺑ ﻒﻴﻀﻤﻟﺍ ﻡﺎﻗ ***
+*** Mission sync is allowed here (MP menu > Players online).	.(ﺖﻧﺮﺘﻧﻹﺍ ﺮﺒﻋ ﻥﻮﺒﻋﻼﻟﺍ < MP ﺔﻤﺋﺎﻗ) ﺎﻨﻫ ﺔﻤﻬﻤﻟﺍ ﺔﻨﻣﺍﺰﻤﺑ ﺢﻤﺴﻳ ***
+*** %s wants Mission sync with you: Accept or Decline.	.ﺾﻓﺭ ﻭﺃ ﻝﻮﺒﻗ :ﻚﻌﻣ ﺔﻤﻬﻤﻟﺍ ﺔﻨﻣﺍﺰﻣ %s ﺪﻳﺮﻳ ***
+*** Mission sync with %s ended.	.%s ﻊﻣ ﺔﻤﻬﻤﻟﺍ ﺔﻨﻣﺍﺰﻣ ﺖﻬﺘﻧﺍ ***
+*** %s declined Mission sync.	.%s ﺔﻄﺳﺍﻮﺑ ﺔﻤﻬﻤﻟﺍ ﺔﻨﻣﺍﺰﻣ ﺾﻓﺭ ﻢﺗ ***
+The player	ﺐﻋﻼﻟﺍ
+*** Could not start Mission sync (the player left, didn't ask you, or the group is full: 16 max).	.(ﻰﺼﻗﺃ ﺪﺤﻛ 16 :ﺔﺌﻠﺘﻤﻣ ﺔﻋﻮﻤﺠﻤﻟﺍ ﻭﺃ ،ﻚﻨﻣ ﺐﻠﻄﻳ ﻢﻟ ﻭﺃ ،ﺭﺩﺎﻏ ﺐﻋﻼﻟﺍ) ﺔﻤﻬﻤﻟﺍ ﺔﻨﻣﺍﺰﻣ ﺀﺪﺑ ﺭﺬﻌﺗ ***
+*** Mission sync is turned off on this server.	.ﻡﺩﺎﺨﻟﺍ ﺍﺬﻫ ﻰﻠﻋ ﺔﻤﻬﻤﻟﺍ ﺔﻨﻣﺍﺰﻣ ﻑﺎﻘﻳﺇ ﻢﺗ ***
+*** %s pulled you out of your car.	*** %s ﻚﺗﺭﺎﻴﺳ ﻦﻣ ﻚﺟﺮﺧﺃ.
+That car is full.	.ﺔﺌﻠﺘﻤﻣ ﺓﺭﺎﻴﺴﻟﺍ ﻚﻠﺗ
+NPC sync isn't available on this game version.	.ﺍﺬﻫ ﺔﺒﻌﻠﻟﺍ ﺭﺍﺪﺻﺇ ﻲﻓ ﺔﺣﺎﺘﻣ ﺮﻴﻏ NPC ﺔﻨﻣﺍﺰﻣ
+NPCs around you come from %s.	.%s ﻦﻣ ﻲﺗﺄﺗ ﻚﻟﻮﺣ ﺓﺩﻮﺟﻮﻤﻟﺍ ﺐﻌﻠﻟ ﺔﻠﺑﺎﻘﻟﺍ ﺮﻴﻏ ﺕﺎﻴﺼﺨﺸﻟﺍ
+On a mission: your own NPCs.	.ﻚﺑ ﺔﺻﺎﺨﻟﺍ ﺐﻌﻠﻟ ﺔﻠﺑﺎﻘﻟﺍ ﺮﻴﻏ ﺕﺎﻴﺼﺨﺸﻟﺍ :ﺔﻤﻬﻣ ﻲﻓ
+Wanted: your own NPCs and police.	.ﺔﻃﺮﺸﻟﺍﻭ ﻚﺑ ﺔﺻﺎﺨﻟﺍ ﺐﻌﻠﻟ ﺔﻠﺑﺎﻘﻟﺍ ﺮﻴﻏ ﺕﺎﻴﺼﺨﺸﻟﺍ :ﺏﻮﻠﻄﻣ
+Nobody near you: your own NPCs.	.ﻚﺑ ﺔﺻﺎﺨﻟﺍ ﺐﻌﻠﻟ ﺔﻠﺑﺎﻘﻟﺍ ﺮﻴﻏ ﺕﺎﻴﺼﺨﺸﻟﺍ :ﻚﻨﻣ ﺏﺮﻘﻟﺎﺑ ﺪﺣﺃ ﻻ
+Sync status shows here while you are on a server.	.ﻡﺩﺎﺨﻟﺍ ﻰﻠﻋ ﻙﺪﺟﺍﻮﺗ ﺀﺎﻨﺛﺃ ﺎﻨﻫ ﺔﻨﻣﺍﺰﻤﻟﺍ ﺔﻟﺎﺣ ﺮﻬﻈﺗ
+Animations: off (switch on above).	.(ﻩﻼﻋﺃ ﻞﻴﻐﺸﺗ) ﻑﺎﻘﻳﺇ :ﺔﻛﺮﺤﺘﻤﻟﺍ ﻡﻮﺳﺮﻟﺍ
+Animations: not available on this game version.	.ﺍﺬﻫ ﺔﺒﻌﻠﻟﺍ ﺭﺍﺪﺻﺇ ﻲﻓ ﺓﺮﻓﻮﺘﻣ ﺮﻴﻏ :ﺔﻛﺮﺤﺘﻤﻟﺍ ﻡﻮﺳﺮﻟﺍ
+Animations: on (no player near you).	.(ﻚﻨﻣ ﺏﺮﻘﻟﺎﺑ ﺐﻋﻻ ﺪﺟﻮﻳ ﻻ) ﻞﻴﻐﺸﺗ :ﺔﻛﺮﺤﺘﻤﻟﺍ ﻡﻮﺳﺮﻟﺍ
+Animations: %d of %d players near you send their full animations.	.ﺔﻠﻣﺎﻜﻟﺍ ﺔﻛﺮﺤﺘﻤﻟﺍ ﻡﻮﺳﺮﻟﺍ ﻚﻨﻣ ﻦﻴﺒﻳﺮﻘﻟﺍ ﻦﻴﺒﻋﻼﻟﺍ ﻦﻣ %d ﻲﻟﺎﻤﺟﺇ ﻦﻣ %d ﻞﺳﺮﻳ :ﺔﻛﺮﺤﺘﻤﻟﺍ ﻡﻮﺳﺮﻟﺍ
+Players on an older MP version only send walk / run / basic moves.	.ﻂﻘﻓ ﺔﻴﺳﺎﺳﻷﺍ/ﻱﺮﺠﻟﺍ/ﻲﺸﻤﻟﺍ ﺕﺎﻛﺮﺣ ﻡﺪﻗﻷﺍ MP ﺭﺍﺪﺻﺇ ﻲﻓ ﻥﻮﺒﻋﻼﻟﺍ ﻞﺳﺮﻳ
+Server modes stay on here - only the server owner, [ADMIN] or [MOD] can change them.	.ﺎﻫﺮﻴﻴﻐﺗ ﻪﻨﻜﻤﻳ [MOD] ﻭﺃ [ADMIN] ،ﻡﺩﺎﺨﻟﺍ ﻚﻟﺎﻣ ﻂﻘﻓ - ﺎﻨﻫ ﺓﺩﻮﺟﻮﻣ ﻡﺩﺎﺨﻟﺍ ﻉﺎﺿﻭﺃ ﻞﻈﺗ
+Trailers like the Tug Stairs can't be driven in MP (they fly off). Use the Tug to pull it.	.ﺎﻬﺒﺤﺴﻟ ﺔﺒﺣﺎﺴﻟﺍ ﻡﺪﺨﺘﺳﺍ .(ﺍﺪﻴﻌﺑ ﺮﻴﻄﺗ ﻲﻬﻓ) MP ﻲﻓ Tug Stairs ﻞﺜﻣ ﺕﺍﺭﻮﻄﻘﻤﻟﺍ ﺓﺩﺎﻴﻗ ﻦﻜﻤﻳ ﻻ
+You are offline. Turn on Wi-Fi or mobile data.	.ﻝﺍﻮﺠﻟﺍ ﺕﺎﻧﺎﻴﺑ ﻭﺃ Wi-Fi ﻞﻴﻐﺸﺘﺑ ﻢﻗ .ﻞﺼﺘﻣ ﺮﻴﻏ ﺖﻧﺃ
+this server	ﻡﺩﺎﺨﻟﺍ ﺍﺬﻫ
+Sorry, this server doesn't allow cheat menus. %s is loaded in your game: remove it from your mods folder and restart the game.	.ﺔﺒﻌﻠﻟﺍ ﻞﻴﻐﺸﺗ ﺪﻋﺃﻭ ﻚﺑ ﺹﺎﺨﻟﺍ ﺕﻼﻳﺪﻌﺘﻟﺍ ﺪﻠﺠﻣ ﻦﻣ ﻪﺘﻟﺍﺯﺈﺑ ﻢﻗ :ﻚﺘﺒﻌﻟ ﻲﻓ %s ﻞﻴﻤﺤﺗ ﻢﺗ .ﺔﻴﻟﺎﻴﺘﺣﻻﺍ ﻢﺋﺍﻮﻘﻟﺎﺑ ﺢﻤﺴﻳ ﻻ ﻡﺩﺎﺨﻟﺍ ﺍﺬﻫ ،ﺍﺭﺬﻋ
+That online server is gone. Tap Connect / Join again.	.ﻯﺮﺧﺃ ﺓﺮﻣ ﻡﺎﻤﻀﻧﻻﺍ / ﻝﺎﺼﺗﻻﺍ ﻰﻠﻋ ﻂﻐﺿﺍ .ﺖﻧﺮﺘﻧﻹﺍ ﺮﺒﻋ ﻡﺩﺎﺨﻟﺍ ﺍﺬﻫ ﻰﻔﺘﺧﺍ ﺪﻘﻟ
+Invalid server address.	.ﺢﻟﺎﺻ ﺮﻴﻏ ﻡﺩﺎﺨﻟﺍ ﻥﺍﻮﻨﻋ
+SERVER RULES	ﻡﺩﺎﺨﻟﺍ ﺪﻋﺍﻮﻗ
+%s is hosted by the 24/7 bot - waiting for it (only the admin / moderators can host it).	.(ﻪﺘﻓﺎﻀﺘﺳﺍ ﻂﻘﻓ ﻦﻴﻓﺮﺸﻤﻟﺍ / ﻝﻭﺆﺴﻤﻠﻟ ﻦﻜﻤﻳ) ﻩﺭﺎﻈﺘﻧﺍ ﻲﻓ - ﻉﻮﺒﺳﻷﺍ ﻡﺎﻳﺃ ﻝﺍﻮﻃ ﺔﻋﺎﺳ 24 ﺭﺍﺪﻣ ﻰﻠﻋ ﻞﻤﻌﻳ ﻱﺬﻟﺍ ﺕﻮﺑﻭﺮﻟﺍ ﺔﻄﺳﺍﻮﺑ %s ﺔﻓﺎﻀﺘﺳﺍ ﻢﺘﺗ
+Could not start the server on port %d	%d ﺬﻔﻨﻤﻟﺍ ﻰﻠﻋ ﻡﺩﺎﺨﻟﺍ ﻞﻴﻐﺸﺗ ﺀﺪﺑ ﺭﺬﻌﺗ
+Disconnected. Your server stays online for the others.	.ﻦﻳﺮﺧﻶﻟ ﺖﻧﺮﺘﻧﻹﺎﺑ ﻼﺼﺘﻣ ﻚﺑ ﺹﺎﺨﻟﺍ ﻡﺩﺎﺨﻟﺍ ﻰﻘﺒﻳ .ﻞﺼﺘﻣ ﺮﻴﻏ
+Disconnected from the server.	.ﻡﺩﺎﺨﻟﺎﺑ ﻝﺎﺼﺗﻻﺍ ﻊﻄﻗ ﻢﺗ
+Please wait...	...ﺮﻈﺘﻧﺍ ﻚﻠﻀﻓ ﻦﻣ
+You are already connected to %s.	.%s ـﺑ ﻞﻌﻔﻟﺎﺑ ﻞﺼﺘﻣ ﺖﻧﺃ
+Already connecting to %s...	...%s ـﺑ ﻞﻌﻔﻟﺎﺑ ﻝﺎﺼﺗﻻﺍ ﺭﺎﺟ
+%s's server	.%s ﻡﺩﺎﺧ
+Player	ﺐﻋﻻ
+Server name: \"%s\" (change it in Host your own server).	.(ﻚﺑ ﺹﺎﺨﻟﺍ ﻡﺩﺎﺨﻟﺍ ﺔﻓﺎﻀﺘﺳﺍ ﻲﻓ ﻩﺮﻴﻴﻐﺘﺑ ﻢﻗ) \"%s\" :ﻡﺩﺎﺨﻟﺍ ﻢﺳﺍ
+Port %d is the default server's, your server uses port %d.	.%d ﺬﻔﻨﻤﻟﺍ ﻚﺑ ﺹﺎﺨﻟﺍ ﻡﺩﺎﺨﻟﺍ ﻡﺪﺨﺘﺴﻳﻭ ،ﻲﺿﺍﺮﺘﻓﻻﺍ ﻡﺩﺎﺨﻟﺍ ﻮﻫ %d ﺬﻔﻨﻤﻟﺍ
+Server stopped.	.ﻡﺩﺎﺨﻟﺍ ﻒﻗﻮﺗ
+Reconnecting to \"%s\" (host: 	 :ﻒﻴﻀﻤﻟﺍ) \"%s\" ـﺑ ﻝﺎﺼﺗﻻﺍ ﺓﺩﺎﻋﺇ ﺭﺎﺟ
+The other copy of \"%s\" did not answer - you host it again.	.ﻯﺮﺧﺃ ﺓﺮﻣ ﺎﻬﺘﻔﻀﺘﺳﺍ - ﺐﺠﺗ ﻢﻟ \"%s\" ﻦﻣ ﻯﺮﺧﻷﺍ ﺔﺨﺴﻨﻟﺍ
+The host left - moving to the 24/7 server (you keep playing)...	...(ﺐﻌﻠﻟﺍ ﻲﻓ ﺮﻤﺘﺴﺗ) ﻉﻮﺒﺳﻷﺍ ﻡﺎﻳﺃ ﻝﺍﻮﻃ ﺔﻋﺎﺴﻟﺍ ﺭﺍﺪﻣ ﻰﻠﻋ ﻞﻤﻌﻳ ﻱﺬﻟﺍ ﻡﺩﺎﺨﻟﺍ ﻰﻟﺇ ﻞﻘﺘﻧﺍ - ﻒﻴﻀﻤﻟﺍ ﺭﺩﺎﻏ
+Connection to \"%s\" lost - you host it now (nobody else was on it)...	...(ﻪﻴﻠﻋ ﺮﺧﺁ ﺺﺨﺷ ﻱﺃ ﻙﺎﻨﻫ ﻦﻜﻳ ﻢﻟ) ﻥﻵﺍ ﻪﻔﻴﻀﺘﺴﺗ ﺖﻧﺃ - \"%s\" ـﺑ ﻝﺎﺼﺗﻻﺍ ﻊﻄﻘﻧﺍ
+The host left - moving to the new host...	...ﺪﻳﺪﺠﻟﺍ ﻒﻴﻀﻤﻟﺍ ﻰﻟﺇ ﻞﻘﺘﻧﺍ - ﻒﻴﻀﻤﻟﺍ ﺭﺩﺎﻏ
+\"%s\" is already online on another phone - joining it. Pick another name to host your own.	\"%s\" ﺹﺎﺨﻟﺍ ﻚﻤﺳﺍ ﺔﻓﺎﻀﺘﺳﻻ ﺮﺧﺁ ﺎﻤﺳﺍ ﺮﺘﺧﺍ .ﻪﻴﻟﺇ ﻢﻀﻧﺍ - ﺮﺧﺁ ﻒﺗﺎﻫ ﻰﻠﻋ ﻞﻌﻔﻟﺎﺑ ﺖﻧﺮﺘﻧﻹﺎﺑ ﻞﺼﺘﻣ.
+Looking for the 24/7 server again...	...ﻯﺮﺧﺃ ﺓﺮﻣ 24/7 ﻡﺩﺎﺧ ﻦﻋ ﺚﺤﺑﺃ
+\"%s\" isn't online and uses port %d (reserved for the default server). Edit it to port %d or higher.	\"%s\" ﺬﻔﻨﻤﻟﺍ ﻡﺪﺨﺘﺴﻳﻭ ﻞﺼﺘﻣ ﺮﻴﻏ %d (ﺬﻔﻨﻤﻟﺍ ﻰﻟﺇ ﻩﺮﻳﺮﺤﺘﺑ ﻢﻗ .(ﻲﺿﺍﺮﺘﻓﻻﺍ ﻡﺩﺎﺨﻠﻟ ﺯﻮﺠﺤﻣ %d ﻰﻠﻋﺃ ﻭﺃ.
+Same server on another phone - moving there (you stay connected).	.(ﻝﺎﺼﺗﺍ ﻰﻠﻋ ﻰﻘﺒﺗ) ﻙﺎﻨﻫ ﻰﻟﺇ ﻝﺎﻘﺘﻧﻻﺍ - ﺮﺧﺁ ﻒﺗﺎﻫ ﻰﻠﻋ ﻡﺩﺎﺨﻟﺍ ﺲﻔﻧ
+*** Broker standby #%d/%d: \"%s\" was offline - this phone hosts it in the background until the 24/7 host is back.	.ﻉﻮﺒﺳﻷﺍ ﻡﺎﻳﺃ ﻝﺍﻮﻃ ﺔﻋﺎﺳ 24 ﺭﺍﺪﻣ ﻰﻠﻋ ﻞﻤﻌﻳ ﻱﺬﻟﺍ ﻒﻴﻀﻤﻟﺍ ﺩﻮﻌﻳ ﻰﺘﺣ ﺔﻴﻔﻠﺨﻟﺍ ﻲﻓ ﻒﺗﺎﻬﻟﺍ ﺍﺬﻫ ﻪﻔﻴﻀﺘﺴﻳ - ﻞﺼﺘﻣ ﺮﻴﻏ %d/%d: \"%s\" ﻢﻗﺭ ﻂﻴﺳﻮﻠﻟ ﺩﺍﺪﻌﺘﺳﻻﺍ ﻊﺿﻭ ***
+You are online again.	.ﻯﺮﺧﺃ ﺓﺮﻣ ﺖﻧﺮﺘﻧﻹﺎﺑ ﻞﺼﺘﻣ ﺖﻧﺃ
+The 24/7 server is online - moving there (you keep playing).	.(ﺐﻌﻠﻟﺍ ﻲﻓ ﺮﻤﺘﺴﺗ) ﻙﺎﻨﻫ ﻰﻟﺇ ﻞﻘﺘﻧﺍ - ﻉﻮﺒﺳﻷﺍ ﻡﺎﻳﺃ ﻝﺍﻮﻃ ﺔﻋﺎﺳ 24 ﺭﺍﺪﻣ ﻰﻠﻋ ﺡﺎﺘﻣ ﻡﺩﺎﺨﻟﺍ
+Not connected.	.ﻞﺼﺘﻣ ﺮﻴﻏ
+Name	ﻢﺳﻻﺍ
+Host	ﻒﻴﻀﻤﻟﺍ
+Port	ﺀﺎﻨﻴﻣ
+Skin	ﺪﻠﺠﻟﺍ
+Region	ﺔﻘﻄﻨﻤﻟﺍ
+Girlfriends	ﺕﺎﻘﻳﺪﺼﻟﺍ
+Rule%d	%dﺓﺪﻋﺎﻘﻟﺍ
+Actors	ﺔﻠﻋﺎﻔﻟﺍ ﺕﺎﻬﺠﻟﺍ
+Team	ﻖﻳﺮﻓ
+/Android/	/ﺪﻳﻭﺭﺪﻧﺃ/
+key=	=ﺡﺎﺘﻔﻣ
+The name SENJI is reserved for the administrator. No valid administrator.txt found.	.ﺢﻟﺎﺻ administrator.txt ﻰﻠﻋ ﺭﻮﺜﻌﻟﺍ ﻢﺘﻳ ﻢﻟ .ﻝﻭﺆﺴﻤﻠﻟ ﺯﻮﺠﺤﻣ SENJI ﻢﺳﺍ
+Put administrator.txt here: %s/administrator.txt	%s/administrator.txt :ﺎﻨﻫ administrator.txt ﻊﺿ
+The name %s is reserved for moderators. moderator.txt was found (%s) but it has no valid moderator key.	.ﺢﻟﺎﺻ ﻂﻴﺳﻭ ﺡﺎﺘﻔﻣ ﻰﻠﻋ ﻱﻮﺘﺤﻳ ﻻ ﻦﻜﻟﻭ (moderator.txt (%s ﻰﻠﻋ ﺭﻮﺜﻌﻟﺍ ﻢﺗ .ﻦﻴﻓﺮﺸﻤﻠﻟ ﺯﻮﺠﺤﻣ %s ﻢﺳﻻﺍ
+The name %s is reserved for moderators. No moderator.txt found.	.moderator.txt ﻰﻠﻋ ﺭﻮﺜﻌﻟﺍ ﻢﺘﻳ ﻢﻟ .ﻦﻴﻓﺮﺸﻤﻠﻟ ﺯﻮﺠﺤﻣ %s ﻢﺳﻻﺍ
+Put moderator.txt (one line: the moderator key) here: %s/moderator.txt	%s/moderator.txt :ﺎﻨﻫ (ﻑﺮﺸﻤﻟﺍ ﺡﺎﺘﻔﻣ :ﺪﺣﺍﻭ ﺮﻄﺳ) moderator.txt ﻊﺿ
+Reserved name	ﺯﻮﺠﺤﻣ ﻢﺳﺍ
+Reserved (moderator)	(ﻑﺮﺸﻤﻟﺍ) ﺯﻮﺠﺤﻣ
+Not allowed	ﺡﻮﻤﺴﻣ ﺮﻴﻏ
+No [ ] in names	ﺀﺎﻤﺳﻷﺍ ﻲﻓ [ ] ﺪﺟﻮﻳ ﻻ
+Names can't have [ or ]. Use only your name - [TAGS] are for staff, factions and clans (Mega Vil: /createfaction).	.(Mega Vil: /createfaction) ﺮﺋﺎﺸﻌﻟﺍﻭ ﻞﺋﺎﺼﻔﻟﺍﻭ ﻦﻴﻔﻇﻮﻤﻠﻟ ﺺﺼﺨﻣ [TAGS] - ﻂﻘﻓ ﻚﻤﺳﺍ ﻡﺪﺨﺘﺳﺍ .[ ﻭﺃ ] ﻰﻠﻋ ﺀﺎﻤﺳﻷﺍ ﻱﻮﺘﺤﺗ ﻥﺃ ﻦﻜﻤﻳ ﻻ
+Names can't start with [ADMIN] or [MOD].	.[MOD] ﻭﺃ [ADMIN] ـﺑ ﺀﺎﻤﺳﻷﺍ ﺃﺪﺒﺗ ﻥﺃ ﻦﻜﻤﻳ ﻻ
+moderator.txt found: you are [MOD] %s on every MP server (name tag, chat, kill feed, kick / mute).	.(ﺕﻮﺼﻟﺍ ﻢﺘﻛ / ﺔﻠﻛﺮﻟﺍ ،ﻞﺘﻘﻟﺍ ﺔﺻﻼﺧ ،ﺔﺷﺩﺭﺪﻟﺍ ،ﻢﺳﻻﺍ ﺔﻣﻼﻋ) MP ﻡﺩﺎﺧ ﻞﻛ ﻰﻠﻋ MOD] %s] ﺖﻧﺃ :moderator.txt ﻰﻠﻋ ﺭﻮﺜﻌﻟﺍ ﻢﺗ
+administrator.txt found: you are the administrator. On the default server you show as [ADMIN] SENJI.	.ADMIN] SENJI] ـﻛ ﺮﻬﻈﺗ ﻲﺿﺍﺮﺘﻓﻻﺍ ﻡﺩﺎﺨﻟﺍ ﻰﻠﻋ .ﻝﻭﺆﺴﻤﻟﺍ ﺖﻧﺃ :administrator.txt ﻰﻠﻋ ﺭﻮﺜﻌﻟﺍ ﻢﺗ
+Type the IP and the port (1-65535).	.(65535-1) ﺬﻔﻨﻤﻟﺍﻭ IP ﺐﺘﻛﺍ
+Connecting to %s:%d ...	... %s:%d ـﺑ ﻝﺎﺼﺗﻻﺍ
+English	ﺔﻳﺰﻴﻠﺠﻧﻹﺍ
+Filipino	ﺔﻴﻨﻴﺒﻠﻓ
+Tagalog / English	ﺔﻳﺰﻴﻠﺠﻧﻹﺍ / ﺔﻴﻏﻮﻟﺎﻏﺎﺘﻟﺍ
+Bisaya	ﺎﻳﺎﺴﻴﺑ
+Hindi	ﺔﻳﺪﻨﻬﻟﺍ
+Indonesian	ﺔﻴﺴﻴﻧﻭﺪﻧﻻﺍ
+Russian	ﺔﻴﺳﻭﺮﻟﺍ
+Spanish	ﺔﻴﻧﺎﺒﺳﻻﺍ
+Portuguese	ﺔﻴﻟﺎﻐﺗﺮﺒﻟﺍ
+Arabic	ﺔﻴﺑﺮﻌﻟﺍ
+%s  %d ms\n%d online	%s %d ﺔﻴﻧﺎﺛ ﻲﻠﻠﻣ\n%d ﺖﻧﺮﺘﻧﻹﺍ ﺮﺒﻋ
+%d online	%d ﺖﻧﺮﺘﻧﻹﺍ ﻰﻠﻋ
+%s\n%d online	%s\n%d ﺖﻧﺮﺘﻧﻹﺍ ﺮﺒﻋ
+Lobby: lowest ping region	ping ﺔﻘﻄﻨﻣ ﻰﻧﺩﺃ :ﺔﻫﺩﺮﻟﺍ
+Lobby broker: %s%s. Servers of other regions are joined through their own broker.	.ﻢﻬﺑ ﺹﺎﺨﻟﺍ ﻂﻴﺳﻮﻟﺍ ﻝﻼﺧ ﻦﻣ ﻯﺮﺧﻷﺍ ﻖﻃﺎﻨﻤﻟﺍ ﻡﺩﺍﻮﺧ ﻢﺿ ﻢﺘﻳ .%s%s :ﺔﻫﺩﺮﻟﺍ ﻂﻴﺳﻭ
+ (auto)	(ﻲﺋﺎﻘﻠﺗ) 
+Lobby broker: public (regional brokers not reachable)	(ﻦﻴﻴﻤﻴﻠﻗﻹﺍ ﺀﺎﻄﺳﻮﻟﺍ ﻰﻟﺇ ﻝﻮﺻﻮﻟﺍ ﻦﻜﻤﻳ ﻻ) ﻡﺎﻋ :ﻲﺑﻮﻠﻟﺍ ﻂﻴﺳﻭ
+Server icon (tap it for the next one)	(ﻲﻟﺎﺘﻟﺍ ﺰﻣﺮﻠﻟ ﻪﻴﻠﻋ ﻂﻐﺿﺍ) ﻡﺩﺎﺨﻟﺍ ﺔﻧﻮﻘﻳﺃ
+Default (main_df_icon.png)	(main_df_icon.png) ﻲﺿﺍﺮﺘﻓﻻﺍ
+Custom icon	ﺺﺼﺨﻣ ﺰﻣﺭ
+Default	ﻲﺿﺍﺮﺘﻓﻻﺍ
+The default MP LAN Server always shows the default icon.	.ﻲﺿﺍﺮﺘﻓﻻﺍ ﺰﻣﺮﻟﺍ ﺎﻤﺋﺍﺩ ﻲﺿﺍﺮﺘﻓﻻﺍ MP LAN ﻡﺩﺎﺧ ﺮﻬﻈﻳ
+Your own pictures: icon_1.png ... icon_250.png inside files/MP/Icons.jar (or loose in files/MP, max 256x256).	.(256 × 256 ﻰﺼﻗﺃ ﺪﺤﺑ ,files/MP ﻲﻓ ﺔﺿﺎﻔﻀﻓ ﻭﺃ) files/MP/Icons.jar ﻞﺧﺍﺩ icon_1.png ... icon_250.png :ﺔﺻﺎﺨﻟﺍ ﻙﺭﻮﺻ
+Offline: turn on Wi-Fi or mobile data	ﻝﺍﻮﺠﻟﺍ ﺕﺎﻧﺎﻴﺑ ﻭﺃ Wi-Fi ﻞﻴﻐﺸﺘﺑ ﻢﻗ :ﻞﺼﺘﻣ ﺮﻴﻏ
+Connected  |  %d/%d  |  %d ms	ﺔﻴﻧﺎﺛ ﻲﻠﻠﻣ %d/%d |  %d  | ﻞﺼﺘﻣ
+Online  |  host: 	 :ﻒﻴﻀﻤﻟﺍ  | ﻦﻳﻻ ﻥﻭﺍ
+Online at %s  |  %d/%d  |  %d ms	ﺔﻴﻧﺎﺛ ﻲﻠﻠﻣ %s |  %d/%d |  %d ﻰﻠﻋ ﺖﻧﺮﺘﻧﻹﺎﺑ ﻞﺼﺘﻣ
+Always online  |  tap Connect	ﻝﺎﺼﺗﺍ ﻕﻮﻓ ﺮﻘﻧﺍ  | ﺎﻤﺋﺍﺩ ﻞﺼﺘﻣ
+Connect	ﻝﺎﺼﺗﻻﺍ
+Cancel	ﺀﺎﻐﻟﺇ
+Leave	ﺭﺩﺎﻏ
+Search...	...ﺚﺤﺑ
+%s  (default)  -  port %d	%s (ﺬﻔﻨﻤﻟﺍ - (ﻲﺿﺍﺮﺘﻓﺍ %d
+Offline: turn on Wi-Fi or mobile data.	.ﻝﺍﻮﺠﻟﺍ ﺕﺎﻧﺎﻴﺑ ﻭﺃ Wi-Fi ﻞﻴﻐﺸﺘﺑ ﻢﻗ :ﻞﺼﺘﻣ ﺮﻴﻏ
+Internet lobby: NOT connected - other networks can't see servers yet	ﻥﻵﺍ ﻰﺘﺣ ﻡﺩﺍﻮﺨﻟﺍ ﺔﻳﺅﺭ ﻯﺮﺧﻷﺍ ﺕﺎﻜﺒﺸﻟﺍ ﻊﻴﻄﺘﺴﺗ ﻻ - ﻞﺼﺘﻣ ﺮﻴﻏ :ﺖﻧﺮﺘﻧﻹﺍ ﺔﻫﺩﺭ
+Hide lobby details	ﺔﻫﺩﺮﻟﺍ ﻞﻴﺻﺎﻔﺗ ﺀﺎﻔﺧﺇ
+Lobby details	ﻲﺑﻮﻠﻟﺍ ﻞﻴﺻﺎﻔﺗ
+Custom server permissions	ﺔﺼﺼﺨﻤﻟﺍ ﻡﺩﺎﺨﻟﺍ ﺕﺎﻧﻭﺫﺃ
+Mission sync with somebody	ﺎﻣ ﺺﺨﺷ ﻊﻣ ﺔﻤﻬﻤﻟﺍ ﺔﻨﻣﺍﺰﻣ
+On: two players can sync up: they see each other on missions and share their mission markers.	.ﻢﻬﺑ ﺔﺻﺎﺨﻟﺍ ﺔﻤﻬﻤﻟﺍ ﺕﺎﻣﻼﻋ ﻥﻮﻛﺭﺎﺸﺘﻳﻭ ﻡﺎﻬﻤﻟﺍ ﻲﻓ ﺾﻌﺒﻟﺍ ﻢﻬﻀﻌﺑ ﻥﻭﺮﻳ :ﺔﻨﻣﺍﺰﻤﻟﺍ ﻦﻴﺒﻋﻼﻟ ﻦﻜﻤﻳ :ﻞﻴﻐﺸﺗ
+Off: everyone is alone on missions; running mission syncs end.	.ﻞﻴﻐﺸﺘﻟﺍ ﺪﻴﻗ ﺔﻤﻬﻤﻟﺍ ﺔﻨﻣﺍﺰﻣ ﺀﺎﻬﺘﻧﺍ ؛ﺕﺎﻤﻬﻤﻟﺍ ﻲﻓ ﻢﻫﺩﺮﻔﻤﺑ ﻊﻴﻤﺠﻟﺍ :ﻑﺎﻘﻳﺇ
+Cheat Menu	ﺶﻐﻟﺍ ﺔﻤﺋﺎﻗ
+On: players may use Cheat Menu (libCheatMenu.so / libCheatMenu64.so) on your server.	.ﻚﺑ ﺹﺎﺨﻟﺍ ﻡﺩﺎﺨﻟﺍ ﻰﻠﻋ (libCheatMenu.so / libCheatMenu64.so) ﺶﻐﻟﺍ ﺔﻤﺋﺎﻗ ﻡﺍﺪﺨﺘﺳﺍ ﻦﻴﺒﻋﻼﻟ ﻦﻜﻤﻳ :ﻞﻴﻐﺸﺗ
+Off: players with Cheat Menu (libCheatMenu.so / libCheatMenu64.so) can't join.	.ﻡﺎﻤﻀﻧﻻﺍ (libCheatMenu.so / libCheatMenu64.so) ﺶﻐﻟﺍ ﺔﻤﺋﺎﻗ ﻢﻬﻳﺪﻟ ﻦﻳﺬﻟﺍ ﻦﻴﺒﻋﻼﻟ ﻦﻜﻤﻳ ﻻ :ﻒﻗﻮﺘﻣ
+Never on the default server. \"Disable cheats\" (Settings > Cheats) switches it off too.	.ﺎﻀﻳﺃ ﻪﻠﻴﻐﺸﺗ ﻑﺎﻘﻳﺇ ﻰﻟﺇ ﻱﺩﺆﻳ (ﺶﻐﻟﺍ < ﺕﺍﺩﺍﺪﻋﻹﺍ) \"ﺶﻐﻟﺍ ﻞﻴﻄﻌﺗ\" .ﻲﺿﺍﺮﺘﻓﻻﺍ ﻡﺩﺎﺨﻟﺍ ﻰﻠﻋ ﺍﺪﺑﺃ
+AFK (too long without moving)	AFK (ﻙﺮﺤﺘﻟﺍ ﻥﻭﺩ ﺍﺪﺟ ﻞﻳﻮﻃ)
+On: after 3 minutes without moving players get an AFK tag; after 20 minutes their seat is freed.	.ﻢﻫﺪﻌﻘﻣ ﺮﻳﺮﺤﺗ ﻢﺘﻳ ﺔﻘﻴﻗﺩ 20 ﺪﻌﺑ ؛AFK ﺔﻣﻼﻋ ﻰﻠﻋ ﻥﻮﻠﺼﺤﻳ ،ﻦﻴﺒﻋﻼﻟﺍ ﻚﻳﺮﺤﺗ ﻥﻭﺩ ﻖﺋﺎﻗﺩ 3 ﺪﻌﺑ :ﻞﻴﻐﺸﺗ
+Off: nobody is marked AFK on your server.	.ﻚﺑ ﺹﺎﺨﻟﺍ ﻡﺩﺎﺨﻟﺍ ﻰﻠﻋ ﺺﺨﺷ ﻱﺃ ﻰﻠﻋ AFK ﺔﻣﻼﻋ ﻊﺿﻭ ﻢﺘﻳ ﻢﻟ :ﻑﺎﻘﻳﺇ
+Damage indicator	ﺭﺮﻀﻟﺍ ﺮﺷﺆﻣ
+On: a hit shows \"-25.00\" and \"<shooter> hit the head / torso / arm / leg\" over the name tag (4 s).	.(ﻥﺍﻮﺛ 4) ﻢﺳﻻﺍ ﺔﻣﻼﻋ ﻕﻮﻓ \"ﻕﺎﺴﻟﺍ / ﻉﺍﺭﺬﻟﺍ / ﻉﺬﺠﻟﺍ / ﺱﺃﺮﻟﺍ <\"<shooter ﺔﺑﺮﺿﻭ \"-25.00\" ﺔﺑﺮﻀﻟﺍ ﺮﻬﻈﺗ :ﻞﻴﻐﺸﺗ
+Off: no damage numbers over the name tags.	.ﺀﺎﻤﺳﻷﺍ ﺕﺎﻗﺎﻄﺑ ﻰﻠﻋ ﺭﺮﺿ ﻡﺎﻗﺭﺃ ﺪﺟﻮﺗ ﻻ :ﻑﺎﻘﻳﺇ
+Player IDs (name tags + player list)	(ﻦﻴﺒﻋﻼﻟﺍ ﺔﻤﺋﺎﻗ + ﺀﺎﻤﺳﻷﺍ ﺕﺎﻣﻼﻋ) ﺐﻋﻼﻟﺍ ﺕﺎﻓﺮﻌﻣ
+On: name tags and the player list show \"name (id)\".	.\"(ﻑﺮﻌﻤﻟﺍ) ﻢﺳﻻﺍ\" ﻦﻴﺒﻋﻼﻟﺍ ﺔﻤﺋﺎﻗﻭ ﺀﺎﻤﺳﻷﺍ ﺕﺎﻣﻼﻋ ﺽﺮﻌﺗ :ﻞﻴﻐﺸﺗ
+Off: names only.	.ﻂﻘﻓ ﺀﺎﻤﺳﻷﺍ :ﺔﻠﻄﻌﻣ
+Hunger + energy HUD	HUD ﺔﻗﺎﻄﻟﺍ + ﻉﻮﺠﻟﺍ
+On: a hunger and energy box (bottom right) - eat with /eat, rest standing still or /sleep in a house.	.ﻝﺰﻨﻤﻟﺍ ﻲﻓ sleep/ ﻭﺃ ﺎﻔﻗﺍﻭ ﺡﺮﺘﺳﺍ ﻭﺃ ،eat/ ﻊﻣ ﻡﺎﻌﻄﻟﺍ ﻝﻭﺎﻨﺗ - (ﻦﻴﻤﻴﻟﺍ ﻞﻔﺳﺃ) ﺔﻗﺎﻄﻟﺍﻭ ﻉﻮﺠﻟﺍ ﻕﻭﺪﻨﺻ :ﻰﻠﻋ
+Off: no hunger / energy (the default server always has it, Mega Vil Futuristic has its own).	.(ﻪﺘﺻﺎﺧ ﻪﻳﺪﻟ Mega Vil Futuristic ،ﺎﻤﺋﺍﺩ ﻪﻳﺪﻟ ﻲﺿﺍﺮﺘﻓﻻﺍ ﻡﺩﺎﺨﻟﺍ) ﺔﻗﺎﻃ / ﻉﻮﺟ ﺪﺟﻮﻳ ﻻ :ﻒﻗﻮﺘﻣ
+/stats and /char work on custom servers that have the Authentication system (login with Discord).	.(Discord ﻡﺍﺪﺨﺘﺳﺎﺑ ﻝﻮﺧﺪﻟﺍ ﻞﻴﺠﺴﺗ) ﺔﻗﺩﺎﺼﻤﻟﺍ ﻡﺎﻈﻧ ﺎﻬﺑ ﺔﺼﺼﺨﻣ ﻡﺩﺍﻮﺧ ﻰﻠﻋ char/ﻭ stats/ ﻞﻤﻌﻳ
+(The default server always allows Mission sync.)	(.ﺔﻤﻬﻤﻟﺍ ﺔﻨﻣﺍﺰﻤﺑ ﺎﻤﺋﺍﺩ ﻲﺿﺍﺮﺘﻓﻻﺍ ﻡﺩﺎﺨﻟﺍ ﺢﻤﺴﻳ)
+Applied to \"%s\" now.	.ﻥﻵﺍ \"%s\" ﻰﻠﻋ ﻖﻴﺒﻄﺘﻟﺍ ﻢﺗ
+Used for every custom server you create or host.	.ﻪﺘﻓﺎﻀﺘﺳﺍ ﻭﺃ ﻪﺋﺎﺸﻧﺈﺑ ﻡﻮﻘﺗ ﺺﺼﺨﻣ ﻡﺩﺎﺧ ﻞﻜﻟ ﻡﺪﺨﺘﺴﻳ
+Server cheats	ﻡﺩﺎﺨﻟﺍ ﺶﻏ
+Disable cheats	ﺶﻐﻟﺍ ﻞﻴﻄﻌﺗ
+*** MP cheats disabled for everyone on your server (the CLEO menu is always blocked).	.(ﺎﻤﺋﺍﺩ ﺓﺭﻮﻈﺤﻣ CLEO ﺔﻤﺋﺎﻗ) ﻚﺑ ﺹﺎﺨﻟﺍ ﻡﺩﺎﺨﻟﺍ ﻰﻠﻋ ﻊﻴﻤﺠﻠﻟ MP ﺶﻏ ﻞﻴﻄﻌﺗ ﻢﺗ ***
+*** Cheats allowed again on your server.	.ﻚﺑ ﺹﺎﺨﻟﺍ ﻡﺩﺎﺨﻟﺍ ﻰﻠﻋ ﻯﺮﺧﺃ ﺓﺮﻣ ﺶﻐﻟﺎﺑ ﺢﻤﺴﻳ ***
+On: nobody can use MP cheat commands (/fly, /god, /tp, /wh, ...).	.(... ،MP (/fly، /god، /tp، /wh ﺶﻐﻟﺍ ﺮﻣﺍﻭﺃ ﻡﺍﺪﺨﺘﺳﺍ ﺪﺣﻷ ﻦﻜﻤﻳ ﻻ :ﻞﻴﻐﺸﺗ
+Off: MP cheat commands (/fly, /god, /tp, /wh, ...) work as usual.	.ﺩﺎﺘﻌﻤﻟﺎﻛ (... ،MP (/fly، /god، /tp، /wh ﺶﻐﻟﺍ ﺮﻣﺍﻭﺃ ﻞﻤﻌﺗ :ﻑﺎﻘﻳﺇ
+CLEO menu + Cheat Menu: allowed by this server's Cheat Menu permission.	.ﻡﺩﺎﺨﻟﺍ ﺍﺬﻬﻟ ﺶﻐﻟﺍ ﺔﻤﺋﺎﻗ ﻥﺫﺇ ﻝﻼﺧ ﻦﻣ ﺎﻬﺑ ﺡﻮﻤﺴﻣ :ﺶﻐﻟﺍ ﺔﻤﺋﺎﻗ + CLEO ﺔﻤﺋﺎﻗ
+CLEO menu + Cheat Menu (libCheatMenu.so / libCheatMenu64.so): always blocked (custom servers: Cheat Menu permission).	.(ﺶﻐﻟﺍ ﺔﻤﺋﺎﻗ ﻥﺫﺇ :ﺔﺼﺼﺨﻤﻟﺍ ﻡﺩﺍﻮﺨﻟﺍ) ﺎﻤﺋﺍﺩ ﺓﺭﻮﻈﺤﻣ :(libCheatMenu.so / libCheatMenu64.so) ﺶﻐﻟﺍ ﺔﻤﺋﺎﻗ + CLEO ﺔﻤﺋﺎﻗ
+(CLEO menu: no CLEO Android found on this phone - only MP cheats are blocked here.)	(.ﺎﻨﻫ ﻂﻘﻓ MP ﺶﻏ ﺮﻈﺣ ﻢﺗ - ﻒﺗﺎﻬﻟﺍ ﺍﺬﻫ ﻰﻠﻋ CLEO Android ﻰﻠﻋ ﺭﻮﺜﻌﻟﺍ ﻢﺘﻳ ﻢﻟ :CLEO ﺔﻤﺋﺎﻗ)
+You are %s: this applies to every player on the server (until everybody left).	.(ﻊﻴﻤﺠﻟﺍ ﺭﺩﺎﻐﻳ ﻰﺘﺣ) ﻡﺩﺎﺨﻟﺍ ﻰﻠﻋ ﺐﻋﻻ ﻞﻛ ﻰﻠﻋ ﺍﺬﻫ ﻖﺒﻄﻨﻳ :%s ﺖﻧﺃ
+You are the host of \"%s\": this applies to every player.	.ﺐﻋﻻ ﻞﻛ ﻰﻠﻋ ﻖﺒﻄﻨﻳ ﺍﺬﻫﻭ :\"%s\" ﻒﻴﻀﻣ ﺖﻧﺃ
+On the default server only [ADMIN] SENJI and the moderators ([MOD], moderator.txt) can change this.	.ﺍﺬﻫ ﺮﻴﻴﻐﺗ ﻢﻬﻨﻜﻤﻳ (MOD]، moderator.txt]) ﻥﻮﻓﺮﺸﻤﻟﺍﻭ ADMIN] SENJI] ﻂﻘﻓ ﻲﺿﺍﺮﺘﻓﻻﺍ ﻡﺩﺎﺨﻟﺍ ﻰﻠﻋ
+Only the host of this server can change this.	.ﺍﺬﻫ ﺮﻴﻴﻐﺗ ﻂﻘﻓ ﻡﺩﺎﺨﻟﺍ ﺍﺬﻫ ﻒﻴﻀﻤﻟ ﻦﻜﻤﻳ
+Host your own server to change this. On the default server only [ADMIN] SENJI and [MOD] can.	.ﻚﻟﺫ ﻢﻬﻨﻜﻤﻳ [MOD]ﻭ ADMIN] SENJI] ﻂﻘﻓ ﻲﺿﺍﺮﺘﻓﻻﺍ ﻡﺩﺎﺨﻟﺍ ﻰﻠﻋ .ﺍﺬﻫ ﺮﻴﻴﻐﺘﻟ ﻚﺑ ﺹﺎﺨﻟﺍ ﻡﺩﺎﺨﻟﺍ ﺔﻓﺎﻀﺘﺳﺎﺑ ﻢﻗ
+Default server	ﻲﺿﺍﺮﺘﻓﻻﺍ ﻡﺩﺎﺨﻟﺍ
+  (searching...)	(...ﺚﺤﺒﻳ)  
+Searching...	...ﺚﺤﺒﻟﺍ ﺭﺎﺟ
+No other server online right now. Tap Connect to host the default one.	.ﻲﺿﺍﺮﺘﻓﻻﺍ ﺯﺎﻬﺠﻟﺍ ﺔﻓﺎﻀﺘﺳﻻ "ﻝﺎﺼﺗﺍ" ﻕﻮﻓ ﺮﻘﻧﺍ .ﻲﻟﺎﺤﻟﺍ ﺖﻗﻮﻟﺍ ﻲﻓ ﺖﻧﺮﺘﻧﻹﺍ ﻰﻠﻋ ﺮﺧﺁ ﻡﺩﺎﺧ ﺪﺟﻮﻳ ﻻ
+internet  |  %d/%d  |  ~%d ms	ﺔﻴﻧﺎﺛ ﻲﻠﻠﻣ %d/%d |  ~%d  | ﺖﻧﺮﺘﻧﻻﺍ
+on Wi-Fi  |  %d/%d  |  %d ms	ﺔﻴﻧﺎﺛ ﻲﻠﻠﻣ %d/%d |  %d  | ﻱﺎﻓ ﻱﺍﻮﻟﺍ ﻰﻠﻋ
+Join	ﻢﻀﻧﺍ
+Left the server.	.ﻡﺩﺎﺨﻟﺍ ﺭﺩﺎﻏ
+Custom servers in %s  (%d / %d)	(%s (%d / %d ﻲﻓ ﺔﺼﺼﺨﻣ ﻡﺩﺍﻮﺧ
+   [password]	[ﺭﻭﺮﻤﻟﺍ ﺔﻤﻠﻛ]   
+IP hidden  |  connected  |  %d/%d  |  %d ms	IP ﻞﺼﺘﻣ  | ﻲﻔﺨﻣ |  %d/%d |  %d ﺔﻴﻧﺎﺛ ﻲﻠﻠﻣ
+online  |  host: 	 :ﻒﻴﻀﻤﻟﺍ  | ﺖﻧﺮﺘﻧﻻﺍ ﻰﻠﻋ
+IP hidden  |  online (you host it)  |  %d/%d	IP ﻪﻔﻴﻀﺘﺴﺗ ﺖﻧﺃ) ﺖﻧﺮﺘﻧﻹﺍ ﺮﺒﻋ  | ﻲﻔﺨﻣ) |  %d/%d
+IP hidden  |  online %d/%d  |  %d ms	IP ﻞﺼﺘﻣ  | ﻲﻔﺨﻣ %d/%d |  %d ﺔﻴﻧﺎﺛ ﻲﻠﻠﻣ
+IP hidden  |  online %s %d/%d  |  %d ms	IP ﻞﺼﺘﻣ  | ﻲﻔﺨﻣ %s %d/%d |  %d ﺔﻴﻧﺎﺛ ﻲﻠﻠﻣ
+(internet)	(ﺖﻧﺮﺘﻧﻹﺍ)
+on Wi-Fi	ﻱﺎﻓ ﻱﺍﻮﻟﺍ ﺔﻣﺪﺧ ﻰﻠﻋ
+IP hidden  |  you are offline (Wi-Fi/data off)	IP ﺖﻧﺮﺘﻧﻹﺎﺑ ﻞﺼﺘﻣ ﺮﻴﻏ ﺖﻧﺃ  | ﻲﻔﺨﻣ (Wi-Fi/ﺔﻔﻗﻮﺘﻣ ﺕﺎﻧﺎﻴﺒﻟﺍ)
+IP hidden  |  always active  |  tap Join	IP ﻡﺎﻤﻀﻧﺍ" ﻕﻮﻓ ﺮﻘﻧﺍ  | ﺎﻤﺋﺍﺩ ﻂﻴﺸﻧ  | ﻲﻔﺨﻣ".
+Joining...	...ﻡﺎﻤﻀﻧﻻﺍ
+No custom servers in this region yet. Add one below.	.ﻩﺎﻧﺩﺃ ﺓﺪﺣﺍﻭ ﻒﺿﺃ .ﻥﻵﺍ ﻰﺘﺣ ﺔﻘﻄﻨﻤﻟﺍ ﻩﺬﻫ ﻲﻓ ﺔﺼﺼﺨﻣ ﻡﺩﺍﻮﺧ ﺪﺟﻮﺗ ﻻ
+Refresh	ﺚﻳﺪﺤﺗ
+Delete selected	ﺩﺪﺤﻤﻟﺍ ﻑﺬﺣ
+Tap a server to select it, tap Join to play on it.	.ﻪﻴﻠﻋ ﺐﻌﻠﻟ "ﻡﺎﻤﻀﻧﺍ" ﻰﻠﻋ ﻂﻐﺿﺍ ﻢﺛ ،ﻩﺪﻳﺪﺤﺘﻟ ﻡﺩﺎﺧ ﻰﻠﻋ ﻂﻐﺿﺍ
+Custom servers are always active: if nobody runs it, Join hosts it.	.ﺎﻬﻔﻴﻀﺘﺴﻳ Join ﻥﺈﻓ ،ﺎﻬﻠﻴﻐﺸﺘﺑ ﺪﺣﺃ ﻡﻮﻘﻳ ﻢﻟ ﺍﺫﺇ :ﺎﻤﺋﺍﺩ ﺔﻄﺸﻧ ﺔﺼﺼﺨﻤﻟﺍ ﻡﺩﺍﻮﺨﻟﺍ
+Gamemodes	ﺐﻌﻠﻟﺍ ﻉﺎﺿﻭﺃ
+\"%s\" (the default server): every gamemode is ON (fixed).	\"%s\" (ﺖﺑﺎﺛ) ﻞﻴﻐﺸﺘﻟﺍ ﺪﻴﻗ ﺔﺒﻌﻠﻟﺍ ﻉﺎﺿﻭﺃ ﻞﻛ :(ﻲﺿﺍﺮﺘﻓﻻﺍ ﻡﺩﺎﺨﻟﺍ).
+The default server has all of them. A custom server starts with none: turn on the ones you want.	.ﺎﻫﺪﻳﺮﺗ ﻲﺘﻟﺍ ﻡﺩﺍﻮﺨﻟﺍ ﻞﻴﻐﺸﺘﺑ ﻢﻗ :ﺀﻲﺷ ﻼﺑ ﺺﺼﺨﻤﻟﺍ ﻡﺩﺎﺨﻟﺍ ﺃﺪﺒﻳ .ﻢﻬﻨﻣ ﻞﻛ ﻪﻳﺪﻟ ﻲﺿﺍﺮﺘﻓﻻﺍ ﻡﺩﺎﺨﻟﺍ
+Map icons and Chat bubbles are each player's own switches: Settings > Display / Chat.	.ﺔﺷﺩﺭﺪﻟﺍ / ﺽﺮﻌﻟﺍ < ﺕﺍﺩﺍﺪﻋﻹﺍ :ﺐﻋﻻ ﻞﻜﺑ ﺔﺻﺎﺨﻟﺍ ﺢﻴﺗﺎﻔﻤﻟﺍ ﻲﻫ ﺔﺷﺩﺭﺪﻟﺍ ﺕﺎﻋﺎﻘﻓﻭ ﺔﻄﻳﺮﺨﻟﺍ ﺕﺎﻧﻮﻘﻳﺃ
+All on	ﻰﻠﻋ ﺀﻲﺷ ﻞﻛ
+All off	ﺝﺭﺎﺧ ﺀﻲﺷ ﻞﻛ
+Only for a NEW server you create (Host). Servers that already exist keep their gamemodes - the one you are on is not changed.	.ﻪﻣﺪﺨﺘﺴﺗ ﻱﺬﻟﺍ ﻊﺿﻮﻟﺍ ﺮﻴﻴﻐﺗ ﻢﺘﻳ ﻻﻭ - ﺎﻬﺑ ﺔﺻﺎﺨﻟﺍ ﺐﻌﻠﻟﺍ ﻉﺎﺿﻭﺄﺑ ﻞﻌﻔﻟﺎﺑ ﺓﺩﻮﺟﻮﻤﻟﺍ ﻡﺩﺍﻮﺨﻟﺍ ﻆﻔﺘﺤﺗ .(ﻒﻴﻀﻤﻟﺍ) ﻪﺋﺎﺸﻧﺈﺑ ﻡﻮﻘﺗ ﻱﺬﻟﺍ ﺪﻳﺪﺠﻟﺍ ﻡﺩﺎﺨﻠﻟ ﻂﻘﻓ
+This phone runs \"%s\": %s (fixed).	.(ﺖﺑﺎﺛ) \"%s\": %s ﻡﺎﻈﻨﺑ ﻒﺗﺎﻬﻟﺍ ﺍﺬﻫ ﻞﻤﻌﻳ
+every gamemode	ﺔﺒﻌﻟ ﻊﺿﻭ ﻞﻛ
+no gamemodes	ﺐﻌﻟ ﻕﺮﻃ ﺪﺟﻮﺗ ﻻ
+24/7 server (mp_server): --gamemodes %s	mp_server): --gamemodes %s) 24/7 ﻡﺩﺎﺧ
+Anti-cheat	ﺶﻐﻟﺍ ﺔﺤﻓﺎﻜﻣ
+Nex-AC checks on the server. Always on (every check) on the default server, Mega Vil Futuristic, Brief Case War and MW3.	.MW3ﻭ ،Brief Case Warﻭ ،Mega Vil Futuristic ،ﻲﺿﺍﺮﺘﻓﻻﺍ ﻡﺩﺎﺨﻟﺍ ﻰﻠﻋ (ﺺﺤﻓ ﺔﻴﻠﻤﻋ ﻞﻛ) ﺎﻤﺋﺍﺩ ﻞﻴﻐﺸﺘﻟﺍ ﺪﻴﻗ .ﻡﺩﺎﺨﻟﺍ ﻰﻠﻋ Nex-AC ﻖﻘﺤﺘﻳ
+Staff (you, admins, moderators) only get the warning. Checks marked (cheat) are skipped while menu cheats are allowed.	.ﺔﻤﺋﺎﻘﻟﺍ ﻲﻓ ﺶﻐﻟﺎﺑ ﺢﻤﺴﻳ ﺎﻤﻨﻴﺑ (ﺶﻐﻟﺍ) ﺔﻣﻼﻋ ﻞﻤﺤﺗ ﻲﺘﻟﺍ ﺕﺎﻜﻴﺸﻟﺍ ﻲﻄﺨﺗ ﻢﺘﻳ .ﻂﻘﻓ ﺮﻳﺬﺤﺘﻟﺍ ﻰﻠﻋ ﻥﻮﻠﺼﺤﻳ (ﻥﻮﻓﺮﺸﻤﻟﺍ ،ﻥﻮﻓﺮﺸﻤﻟﺍ ،ﺖﻧﺃ) ﻥﻮﻔﻇﻮﻤﻟﺍ
+Anti-cheat on my custom server	ﺺﺼﺨﻤﻟﺍ ﻲﻣﺩﺎﺧ ﻰﻠﻋ ﺶﻐﻟﺍ ﺔﺤﻓﺎﻜﻣ
+ (cheat)	(ﺶﻐﻟﺍ) 
+All checks on	ﻰﻠﻋ ﺕﺎﻜﻴﺸﻟﺍ ﻊﻴﻤﺟ
+All checks off	ﺔﻟﺎﺒﻗ ﺕﺎﻜﻴﺸﻟﺍ ﻊﻴﻤﺟ
+24/7 server (mp_server): --anticheat %llX  (or --no-anticheat)	(no-antiheat-- ﻭﺃ) mp_server): --antiheat %llX) 24/7 ﻡﺩﺎﺧ
+another app on this phone	ﻒﺗﺎﻬﻟﺍ ﺍﺬﻫ ﻰﻠﻋ ﺮﺧﺁ ﻖﻴﺒﻄﺗ
+Port %d is free.	.ﻲﻧﺎﺠﻣ %d ﺬﻔﻨﻤﻟﺍ
+Use free port %d	%d ﻲﻧﺎﺠﻤﻟﺍ ﺬﻔﻨﻤﻟﺍ ﻡﺪﺨﺘﺳﺍ
+Rules	ﺪﻋﺍﻮﻘﻟﺍ
+A RULES window after the login on your server (players read it again with /rules).	.(rules/ ﻡﺍﺪﺨﺘﺳﺎﺑ ﻯﺮﺧﺃ ﺓﺮﻣ ﻥﻮﺒﻋﻼﻟﺍ ﺎﻫﺃﺮﻘﻳ) ﻚﺑ ﺹﺎﺨﻟﺍ ﻡﺩﺎﺨﻟﺍ ﻰﻠﻋ ﻝﻮﺧﺪﻟﺍ ﻞﻴﺠﺴﺗ ﺪﻌﺑ ﺪﻋﺍﻮﻘﻟﺍ ﺓﺬﻓﺎﻧ
+Show the rules	ﺪﻋﺍﻮﻘﻟﺍ ﺽﺮﻋ
+Title	ﻥﺍﻮﻨﻌﻟﺍ
+Rules title	ﺪﻋﺍﻮﻘﻟﺍ ﻥﺍﻮﻨﻋ
+Rule %d	%d ﺓﺪﻋﺎﻘﻟﺍ
+Colours work like SA-MP: {FF0000}red {FFFF00}yellow {33CC55}green. Empty lines are skipped.	.ﺔﻏﺭﺎﻔﻟﺍ ﺮﻄﺳﻷﺍ ﻲﻄﺨﺗ ﻢﺘﻳ .ﺮﻀﺧﺃ{33CC55} ﺮﻔﺻﺃ{FFFF00} ﺮﻤﺣﺃSA-MP: {FF0000} ﻞﺜﻣ ﻥﺍﻮﻟﻷﺍ ﻞﻤﻌﺗ
+Custom server  -  %s	%s - ﺺﺼﺨﻣ ﻡﺩﺎﺧ
+Server name	ﻡﺩﺎﺨﻟﺍ ﻢﺳﺍ
+Host / IP  (empty = host it on this phone)	(ﻒﺗﺎﻬﻟﺍ ﺍﺬﻫ ﻰﻠﻋ ﻪﻔﻀﺘﺳﺍ = ﻍﺭﺎﻓ) IP/ﻒﻴﻀﻤﻟﺍ
+e.g. ggwar or net.ggwar.org	net.ggwar.org ﻭﺃ ggwar ﻝﺎﺜﻤﻟﺍ ﻞﻴﺒﺳ ﻰﻠﻋ
+Password (optional, max 16)	(16 ﻰﺼﻗﺃ ﺪﺤﺑ ،ﺔﻳﺭﺎﻴﺘﺧﺍ) ﺭﻭﺮﻤﻟﺍ ﺔﻤﻠﻛ
+Password (max 16)	(16 ﻰﺼﻗﻷﺍ ﺪﺤﻟﺍ) ﺭﻭﺮﻤﻟﺍ ﺔﻤﻠﻛ
+Language	ﺔﻐﻠﻟﺍ
+Language (e.g. English)	(ﺔﻳﺰﻴﻠﺠﻧﻹﺍ ﻞﺜﻣ) ﺔﻐﻠﻟﺍ
+Max players	ﻦﻴﺒﻋﻼﻟﺍ ﺲﻛﺎﻣ
+%d players	%d ﻦﻴﺒﻋﻻ
+Server list full (%d/%d)	(%d/%d) ﺔﺌﻠﺘﻤﻣ ﻡﺩﺍﻮﺨﻟﺍ ﺔﻤﺋﺎﻗ
+Add server  (%d/%d)	(%d/%d) ﻡﺩﺎﺧ ﺔﻓﺎﺿﺇ
+Add server  (hosted on this phone)	(ﻒﺗﺎﻬﻟﺍ ﺍﺬﻫ ﻰﻠﻋ ﻑﺎﻀﺘﺴﻣ) ﻡﺩﺎﺧ ﺔﻓﺎﺿﺇ
+Add server  (starting...)	(...ﺃﺪﺒﻳ) ﻡﺩﺎﺧ ﺔﻓﺎﺿﺇ
+Add server  (host on this phone)	(ﻒﺗﺎﻬﻟﺍ ﺍﺬﻫ ﻰﻠﻋ ﻒﻴﻀﻣ) ﻡﺩﺎﺧ ﺔﻓﺎﺿﺇ
+Brief Case War is a private gamemode server - it is always in the Internet list, just tap it.	.ﻪﻴﻠﻋ ﻂﻐﺿﺍ ﻂﻘﻓ ،ﺖﻧﺮﺘﻧﻹﺍ ﺔﻤﺋﺎﻗ ﻲﻓ ﺎﻤﺋﺍﺩ ﺩﻮﺟﻮﻣ ﻮﻫﻭ - ﺏﺎﻌﻟﻷﺍ ﻊﺿﻮﻟ ﺎﺻﺎﺧ ﺎﻣﺩﺎﺧ Case War ﺰﺟﻮﻣ ﺪﻌﻳ
+Modern Warfare 3 is a 24/7 featured server - it is always in the Internet list, just tap it.	Modern Warfare 3 ﻪﻴﻠﻋ ﻂﻐﺿﺍ ﻂﻘﻓ ،ﺖﻧﺮﺘﻧﻹﺍ ﺔﻤﺋﺎﻗ ﻲﻓ ﺎﻤﺋﺍﺩ ﺩﻮﺟﻮﻣ ﻮﻫﻭ - ﻉﻮﺒﺳﻷﺍ ﻡﺎﻳﺃ ﻝﺍﻮﻃ ﺔﻋﺎﺴﻟﺍ ﺭﺍﺪﻣ ﻰﻠﻋ ﻞﻤﻌﻳ ﺰﻴﻤﻣ ﻡﺩﺎﺧ ﻮﻫ.
+Mega Vil Futuristic is a 24/7 featured Roleplay server - it is always in the Internet list, just tap it.	Mega Vil Futuristic ﻪﻴﻠﻋ ﻂﻐﺿﺍ ﻂﻘﻓ ،ﺖﻧﺮﺘﻧﻹﺍ ﺔﻤﺋﺎﻗ ﻲﻓ ﺎﻤﺋﺍﺩ ﺩﻮﺟﻮﻣ ﻮﻫﻭ - ﻉﻮﺒﺳﻷﺍ ﻡﺎﻳﺃ ﻝﺍﻮﻃ ﺔﻋﺎﺳ 24 ﺭﺍﺪﻣ ﻰﻠﻋ ﻞﻤﻌﻳ ﺰﻴﻤﻣ ﺭﺍﻭﺩﻷﺍ ﺐﻌﻟ ﻡﺩﺎﺧ ﻮﻫ.
+Port %d is for the default server. Use %d or higher for a custom server.	.ﺺﺼﺨﻣ ﻡﺩﺎﺨﻟ ﻰﻠﻋﺃ ﻭﺃ %d ﻡﺪﺨﺘﺳﺍ .ﻲﺿﺍﺮﺘﻓﻻﺍ ﻡﺩﺎﺨﻠﻟ ﺺﺼﺨﻣ %d ﺬﻔﻨﻤﻟﺍ
+Port %d is taken - it needs a new port. Free port: %d (tap \"Use free port %d\").	.(%d\" ﻲﻧﺎﺠﻤﻟﺍ ﺬﻔﻨﻤﻟﺍ ﻡﺍﺪﺨﺘﺳﺍ\" ﻕﻮﻓ ﺮﻘﻧﺍ) %d :ﻲﻧﺎﺠﻤﻟﺍ ﺬﻔﻨﻤﻟﺍ .ﺪﻳﺪﺟ ﺬﻔﻨﻣ ﻰﻟﺇ ﺝﺎﺘﺤﻳ - ﺫﻮﺧﺄﻣ %d ﺬﻔﻨﻤﻟﺍ
+Port %d is taken - type another port.	.ﺮﺧﺁ ﺍﺬﻔﻨﻣ ﺐﺘﻛﺍ - ﺫﻮﺧﺄﻣ %d ﺬﻔﻨﻤﻟﺍ
+That is the default server - it is always on top, just tap Connect.	."ﻝﺎﺼﺗﺍ" ﻰﻠﻋ ﻂﻐﺿﺍ ﻂﻘﻓ ،ﻰﻠﻋﻷﺍ ﻲﻓ ﺎﻤﺋﺍﺩ ﺩﻮﺟﻮﻣ ﻮﻫﻭ - ﻲﺿﺍﺮﺘﻓﻻﺍ ﻡﺩﺎﺨﻟﺍ ﻮﻫ ﺍﺬﻫ
+Port %d is taken by another server - it needs a new port (see \"Use free port\").	.(\"ﺮﺤﻟﺍ ﺬﻔﻨﻤﻟﺍ ﻡﺍﺪﺨﺘﺳﺍ\" ﻊﺟﺍﺭ) ﺪﻳﺪﺟ ﺬﻔﻨﻣ ﻰﻟﺇ ﺝﺎﺘﺤﻳ ﻮﻬﻓ - ﺮﺧﺁ ﻡﺩﺎﺧ ﻦﻣ ﺫﻮﺧﺄﻣ %d ﺬﻔﻨﻤﻟﺍ
+That server is already in your list.	.ﻚﺘﻤﺋﺎﻗ ﻲﻓ ﻞﻌﻔﻟﺎﺑ ﺩﻮﺟﻮﻣ ﻡﺩﺎﺨﻟﺍ ﺍﺬﻫ
+Added server \"%s\" (%s). Its IP stays hidden.	.ﺎﻴﻔﺨﻣ ﻪﺑ ﺹﺎﺨﻟﺍ IP ﻥﺍﻮﻨﻋ ﻰﻘﺒﻳ .(\"%s\" (%s ﻡﺩﺎﺨﻟﺍ ﺔﻓﺎﺿﺇ ﺖﻤﺗ
+Enter a host/IP and a port (1-65535).	.(65535-1) ﺬﻔﻨﻤﻟﺍﻭ IP/ﻒﻴﻀﻤﻟﺍ ﻞﺧﺩﺃ
+\"%s\" is hosted by 	 ﺔﻄﺳﺍﻮﺑ \"%s\" ﺔﻓﺎﻀﺘﺳﺍ ﻢﺘﺗ
+ (24/7 bot), %d/%d online	ﺖﻧﺮﺘﻧﻹﺍ ﺮﺒﻋ %d/%d ،(24/7 ﺕﻮﺑ) 
+Listed in the internet lobby: players on mobile data can join.	.ﻡﺎﻤﻀﻧﻻﺍ ﻝﻮﻤﺤﻤﻟﺍ ﻒﺗﺎﻬﻟﺍ ﺕﺎﻧﺎﻴﺑ ﻥﻮﻣﺪﺨﺘﺴﻳ ﻦﻳﺬﻟﺍ ﻦﻴﺒﻋﻼﻟ ﻦﻜﻤﻳ :ﺖﻧﺮﺘﻧﻹﺍ ﺔﻫﺩﺭ ﻲﻓ ﺝﺭﺪﻣ
+Not in the internet lobby yet (Wi-Fi/hotspot players only).	.(ﻂﻘﻓ ﻝﺎﺼﺗﻻﺍ ﺔﻄﻘﻧ/Wi-Fi ﺕﻼﻐﺸﻣ) ﺪﻌﺑ ﺖﻧﺮﺘﻧﻹﺍ ﺔﻫﺩﺭ ﻰﻟﺇ ﻝﻮﺻﻮﻟﺍ ﻢﺘﻳ ﻢﻟ
+Stays online when you disconnect. If you leave the game, another player takes over.	.ﺔﻴﻟﻭﺆﺴﻤﻟﺍ ﺮﺧﺁ ﺐﻋﻻ ﻰﻟﻮﺘﻳ ،ﺔﺒﻌﻠﻟﺍ ﺖﻛﺮﺗ ﺍﺫﺇ .ﻝﺎﺼﺗﻻﺍ ﻊﻄﻗ ﺪﻨﻋ ﺖﻧﺮﺘﻧﻹﺎﺑ ﻼﺼﺘﻣ ﻰﻘﺒﻳ
+Join my server	ﻲﺑ ﺹﺎﺨﻟﺍ ﻡﺩﺎﺨﻟﺍ ﻰﻟﺇ ﻢﻀﻧﺍ
+Leave + join my server	ﻲﺑ ﺹﺎﺨﻟﺍ ﻡﺩﺎﺨﻟﺍ ﻰﻟﺇ ﻢﻀﻧﺍ + ﻙﺮﺗﺍ
+Stopping...	...ﻑﺎﻘﻳﻹﺍ ﺭﺎﺟ
+Stop my server	ﻲﺑ ﺹﺎﺨﻟﺍ ﻡﺩﺎﺨﻟﺍ ﻒﻗﻭﺃ
+Checking online + Wi-Fi for \"%s\"...	...\"%s\" ـﻟ Wi-Fi + ﺖﻧﺮﺘﻧﻹﺍ ﻝﺎﺼﺗﺍ ﻦﻣ ﻖﻘﺤﺘﻟﺍ ﺭﺎﺟ
+Add server = save it to your server list.	.ﻚﺑ ﺔﺻﺎﺨﻟﺍ ﻡﺩﺎﺨﻟﺍ ﺔﻤﺋﺎﻗ ﻲﻓ ﻪﻈﻔﺣﺍ = ﻡﺩﺎﺧ ﺔﻓﺎﺿﺇ
+No Host / IP: Add server runs it on this phone. If it already runs on another phone, you join it.	.ﻪﻴﻟﺇ ﻢﻀﻨﺗ ﻚﻧﺈﻓ ،ﺮﺧﺁ ﻒﺗﺎﻫ ﻰﻠﻋ ﻞﻌﻔﻟﺎﺑ ﻞﻤﻌﻳ ﻥﺎﻛ ﺍﺫﺇ .ﻒﺗﺎﻬﻟﺍ ﺍﺬﻫ ﻰﻠﻋ ﻪﻠﻴﻐﺸﺘﺑ ﻡﻮﻘﻳ ﻡﺩﺎﺧ ﺔﻓﺎﺿﺇ :IP / ﻒﻴﻀﻣ ﺪﺟﻮﻳ ﻻ
+Local IP	ﺔﻴﻠﺤﻤﻟﺍ ﺔﻳﺮﻜﻔﻟﺍ ﺔﻴﻜﻠﻤﻟﺍ
+Disconnect	ﻝﺎﺼﺗﻻﺍ ﻊﻄﻗ
+Same Wi-Fi / hotspot: type the host's local IP and port, then Connect.	.ﻞﺼﺗﺍ ﻢﺛ ،ﺬﻔﻨﻤﻟﺍﻭ ﻲﻠﺤﻤﻟﺍ IP ﻥﺍﻮﻨﻋ ﺐﺘﻛﺍ :ﻝﺎﺼﺗﻻﺍ ﺔﻄﻘﻧ / Wi-Fi ﺔﻜﺒﺷ ﺲﻔﻧ
+Hotspot: turn on your phone hotspot, host a server, friends join 192.168.43.1.	.192.168.43.1 ﻰﻟﺇ ﺀﺎﻗﺪﺻﻷﺍ ﻢﻀﻧﺍﻭ ،ﻡﺩﺎﺧ ﺔﻓﺎﻀﺘﺳﺎﺑ ﻢﻗﻭ ،ﻚﻔﺗﺎﻬﺑ ﻝﺎﺼﺗﻻﺍ ﺔﻄﻘﻧ ﻞﻴﻐﺸﺘﺑ ﻢﻗ :ﻝﺎﺼﺗﻻﺍ ﺔﻄﻘﻧ
+Authentication system	ﺔﻗﺩﺎﺼﻤﻟﺍ ﻡﺎﻈﻧ
+Login with Discord	ﻑﻼﺨﻟﺍ ﻊﻣ ﻝﻮﺧﺪﻟﺍ ﻞﻴﺠﺴﺗ
+Login system %s on \"%s\" (players who join from now on).	.(ﺍﺪﻋﺎﺼﻓ ﻥﻵﺍ ﻦﻣ ﻥﻮﻤﻀﻨﻴﺳ ﻦﻳﺬﻟﺍ ﻥﻮﺒﻋﻼﻟﺍ) \"%s\" ﻰﻠﻋ %s ﻡﺎﻈﻨﻟﺍ ﻰﻟﺇ ﻝﻮﺧﺪﻟﺍ ﻞﺠﺳ
+On: a new player gets a code, types /gen CODE in #verification on Discord, then creates an account (user, password, gender, age). Next time: login only.	.ﻂﻘﻓ ﻝﻮﺧﺪﻟﺍ ﻞﻴﺠﺴﺗ :ﺔﻣﺩﺎﻘﻟﺍ ﺓﺮﻤﻟﺍ ﻲﻓ .(ﺮﻤﻌﻟﺍ ،ﺲﻨﺠﻟﺍ ،ﺭﻭﺮﻤﻟﺍ ﺔﻤﻠﻛ ،ﻡﺪﺨﺘﺴﻣ) ﺏﺎﺴﺣ ﺀﺎﺸﻧﺈﺑ ﻡﻮﻘﻳ ﻢﺛ ،Discord ﻰﻠﻋ ﻖﻘﺤﺘﻟﺍ# ﻲﻓ gen CODE/ ﺐﺘﻜﻳﻭ ،ﺰﻣﺭ ﻰﻠﻋ ﺪﻳﺪﺠﻟﺍ ﺐﻋﻼﻟﺍ ﻞﺼﺤﻳ :ﻞﻴﻐﺸﺗ
+Off: players spawn right away (no account).	.(ﺏﺎﺴﺣ ﻥﻭﺪﺑ) ﺭﻮﻔﻟﺍ ﻰﻠﻋ ﻦﻴﺒﻋﻼﻟﺍ ﺮﺸﻧ ﻢﺘﻳ :ﻑﺎﻘﻳﺇ
+Discord: %s  (accounts are kept by the MP bot, never by the host, never shown to the others)	Discord: %s (ﺔﻄﺳﺍﻮﺑ ﺕﺎﺑﺎﺴﺤﻟﺎﺑ ﻅﺎﻔﺘﺣﻻﺍ ﻢﺘﻳ MP bot، ﻦﻳﺮﺧﻶﻟ ﺍﺪﺑﺃ ﺎﻬﺿﺮﻋ ﻢﺘﻳ ﻻﻭ ،ﺍﺪﺑﺃ ﻒﻴﻀﻤﻟﺍ ﺔﻄﺳﺍﻮﺑ ﺲﻴﻟﻭ)
+The default server and Brief Case War always use it. Needs MP %s or newer on every phone.	.ﻒﺗﺎﻫ ﻞﻛ ﻰﻠﻋ ﺙﺪﺣﺃ ﻭﺃ MP %s ﻰﻟﺇ ﺝﺎﺘﺤﻳ .ﺎﻤﺋﺍﺩ Brief Case Warﻭ ﻲﺿﺍﺮﺘﻓﻻﺍ ﻡﺩﺎﺨﻟﺍ ﻪﻣﺪﺨﺘﺴﻳ
+\"%s\": login %s	\"%s\": ﻝﻮﺧﺪﻟﺍ ﻞﻴﺠﺴﺗ %s
+administrator.txt OK - this is how everyone sees you (name tag, chat, kill feed).	administrator.txt ﻞﺘﻘﻟﺍ ﺔﺻﻼﺧ ،ﺔﺷﺩﺭﺪﻟﺍ ،ﻢﺳﻻﺍ ﺔﻣﻼﻋ) ﻊﻴﻤﺠﻟﺍ ﺎﻬﺑ ﻙﺍﺮﻳ ﻲﺘﻟﺍ ﺔﻘﻳﺮﻄﻟﺍ ﻲﻫ ﻩﺬﻫ - ﺎﻨﺴﺣ).
+Connect  -  %s (default)	(ﻲﺿﺍﺮﺘﻓﺍ) %s - ﻝﺎﺼﺗﺍ
+Connecting...  (tap to cancel)	(ﺀﺎﻐﻟﻺﻟ ﻂﻐﺿﺍ) ...ﻝﺎﺼﺗﻻﺍ ﺭﺎﺟ
+Connected  -  tap to Disconnect	ﻝﺎﺼﺗﻻﺍ ﻊﻄﻘﻟ ﺮﻘﻧﺍ - ﻞﺼﺘﻣ
+Searching online + Wi-Fi...	...Wi-Fi + ﺖﻧﺮﺘﻧﻹﺍ ﺮﺒﻋ ﺚﺤﺒﻟﺍ
+On \"%s\"  (%s)	(\"%s\" (%s ﻲﻓ
+internet, direct UDP	ﺮﺷﺎﺒﻤﻟﺍ UDP ،ﺖﻧﺮﺘﻧﻹﺍ
+IP hidden	IP ﻲﻔﺨﻣ
+Offline: turn on Wi-Fi or mobile data to play.	.ﺐﻌﻠﻟ ﻝﻮﻤﺤﻤﻟﺍ ﻒﺗﺎﻬﻟﺍ ﺕﺎﻧﺎﻴﺑ ﻭﺃ Wi-Fi ﻞﻴﻐﺸﺘﺑ ﻢﻗ :ﻞﺼﺘﻣ ﺮﻴﻏ
+Host left - reconnecting to \"%s\"...	...\"%s\" ـﺑ ﻝﺎﺼﺗﻻﺍ ﺓﺩﺎﻋﺇ ﺭﺎﺟ - ﻲﻘﺒﺘﻤﻟﺍ ﻒﻴﻀﻤﻟﺍ
+Connect = the default server, always online.	.ﺎﻤﺋﺍﺩ ﺖﻧﺮﺘﻧﻹﺎﺑ ﻞﺼﺘﻣ ،ﻲﺿﺍﺮﺘﻓﻻﺍ ﻡﺩﺎﺨﻟﺍ = ﻝﺎﺼﺗﻻﺍ
+Custom servers: Servers tab -> Join.	.ﻡﺎﻤﻀﻧﻻﺍ <- ﻡﺩﺍﻮﺨﻟﺍ ﺐﻳﻮﺒﺗ ﺔﻣﻼﻋ :ﺔﺼﺼﺨﻤﻟﺍ ﻡﺩﺍﻮﺨﻟﺍ
+Players online: %d/%d	%d/%d :ﺖﻧﺮﺘﻧﻹﺎﺑ ﻥﻮﻠﺼﺘﻤﻟﺍ ﻥﻮﺒﻋﻼﻟﺍ
+Sound effects	ﺔﻴﺗﻮﺼﻟﺍ ﺕﺍﺮﺛﺆﻤﻟﺍ
+Hitsound effect	ﺕﻮﺼﻟﺍ ﺮﻴﺛﺄﺗ
+Enabled: a hit sound plays when you hit a player (guns, fists, melee, drive-by, cars).	.(ﺕﺍﺭﺎﻴﺴﻟﺍ ،ﺓﺩﺎﻴﻘﻟﺍ ،ﺓﺮﺟﺎﺸﻤﻟﺍ ،ﺕﺎﻀﺒﻘﻟﺍ ،ﻕﺩﺎﻨﺒﻟﺍ) ﻦﻴﺒﻋﻼﻟﺍ ﺪﺣﺃ ﺏﺮﻀﺗ ﺎﻣﺪﻨﻋ ﺔﺑﺮﻀﻟﺍ ﺕﻮﺻ ﻞﻴﻐﺸﺗ ﻢﺘﻳ :ﻦﻜﻤﻣ
+Disabled: no hit sound.	.ﺏﺮﺿ ﺕﻮﺻ ﺪﺟﻮﻳ ﻻ :ﻞﻄﻌﻣ
+Test hit sound	ﺕﻮﺼﻟﺍ ﺏﺮﺿ ﺭﺎﺒﺘﺧﺍ
+sound_010.mp3 is missing from the MP folder (assets/MP).	sound_010.mp3 ﺪﻠﺠﻣ ﻦﻣ ﺩﻮﻘﻔﻣ MP (ﻝﻮﺻﻷﺍ/MP).
+Voice chat	ﺔﻴﺗﻮﺼﻟﺍ ﺔﺷﺩﺭﺪﻟﺍ
+Voice chat (hear players near you)	(ﻚﻨﻣ ﺏﺮﻘﻟﺎﺑ ﻦﻴﺒﻋﻼﻟﺍ ﻉﺎﻤﺳ) ﺔﻴﺗﻮﺼﻟﺍ ﺔﺷﺩﺭﺪﻟﺍ
+Only on a server. Turn your mic on/off with the mic button next to Chat at the top. Players within 40 m hear you: louder up close, quieter further away.	.ﺪﻌﺑﺃ ﺔﻓﺎﺴﻣ ﻰﻠﻋ ﺍﺀﻭﺪﻫ ﺮﺜﻛﺃﻭ ،ﺏﺍﺮﺘﻗﻻﺍ ﺪﻨﻋ ﻰﻠﻋﺃ ﺕﻮﺼﺑ :ﺍﺮﺘﻣ 40 ﺔﻓﺎﺴﻣ ﻰﻠﻋ ﻥﻮﺒﻋﻼﻟﺍ ﻚﻌﻤﺴﻳ .ﻰﻠﻋﻷﺍ ﻲﻓ ﺔﺷﺩﺭﺪﻟﺍ ﺭﺍﻮﺠﺑ ﻥﻮﻓﻭﺮﻜﻴﻤﻟﺍ ﺭﺯ ﻡﺍﺪﺨﺘﺳﺎﺑ ﻥﻮﻓﻭﺮﻜﻴﻤﻟﺍ ﻑﺎﻘﻳﺇ/ﻞﻴﻐﺸﺘﺑ ﻢﻗ .ﻡﺩﺎﺨﻟﺍ ﻰﻠﻋ ﻂﻘﻓ
+Voice volume	ﺕﻮﺼﻟﺍ ﻢﺠﺣ
+Microphone boost	ﻥﻮﻓﻭﺮﻜﻴﻤﻟﺍ ﺰﻳﺰﻌﺗ
+Voice pitch (how the others hear you)	(ﻥﻭﺮﺧﻵﺍ ﻚﻌﻤﺴﻳ ﻒﻴﻛ) ﺕﻮﺼﻟﺍ ﺔﺟﺭﺩ
+Turn microphone off	ﻥﻮﻓﻭﺮﻜﻴﻤﻟﺍ ﻞﻴﻐﺸﺗ ﻑﺎﻘﻳﺈﺑ ﻢﻗ
+Turn microphone on	ﻥﻮﻓﻭﺮﻜﻴﻤﻟﺍ ﻞﻴﻐﺸﺘﺑ ﻢﻗ
+Mic level	ﻥﻮﻓﻭﺮﻜﻴﻤﻟﺍ ﻯﻮﺘﺴﻣ
+Connect to a server to turn on your microphone.	.ﻥﻮﻓﻭﺮﻜﻴﻤﻟﺍ ﻞﻴﻐﺸﺘﻟ ﻡﺩﺎﺨﻟﺎﺑ ﻞﺼﺗﺍ
+Muted players: %d	%d :ﻢﻬﺗﻮﺻ ﻢﺘﻛ ﻢﺗ ﻦﻳﺬﻟﺍ ﻥﻮﺒﻋﻼﻟﺍ
+Unmute everybody	ﻊﻴﻤﺠﻟﺍ ﺕﻮﺻ ﻢﺘﻛ ﺀﺎﻐﻟﺇ
+          Microphone (connect to a server first)	(ﻻﻭﺃ ﻡﺩﺎﺨﻟﺎﺑ ﻝﺎﺼﺗﻻﺍ) ﻥﻮﻓﻭﺮﻜﻴﻤﻟﺍ          
+          Microphone ON - tap to turn off	ﻞﻴﻐﺸﺘﻟﺍ ﻑﺎﻘﻳﻹ ﺮﻘﻧﺍ - ﻥﻮﻓﻭﺮﻜﻴﻤﻟﺍ ﻞﻴﻐﺸﺗ          
+          Microphone OFF - tap to turn on	ﻞﻴﻐﺸﺘﻠﻟ ﺮﻘﻧﺍ - ﻥﻮﻓﻭﺮﻜﻴﻤﻟﺍ ﻞﻴﻐﺸﺗ ﻑﺎﻘﻳﺇ          
+Sending your voice...	...ﻚﺗﻮﺻ ﻞﺳﺭﺃ
+Listening - talk and the bar turns green.	.ﺮﻀﺧﻷﺍ ﻥﻮﻠﻟﺍ ﻰﻟﺇ ﻂﻳﺮﺸﻟﺍ ﻝﻮﺤﺘﻴﺳﻭ ﺙﺪﺤﺗ - ﻉﺎﻤﺘﺳﻻﺍ
+Microphone: MP Voice app (working)	(ﻞﻤﻌﻳ) MP Voice ﻖﻴﺒﻄﺗ :ﻥﻮﻓﻭﺮﻜﻴﻤﻟﺍ
+Waiting for the MP Voice app...	...MP Voice ﻖﻴﺒﻄﺗ ﺭﺎﻈﺘﻧﺍ ﻲﻓ
+Open MP Voice	MP Voice ﺢﺘﻓﺍ
+Hear voice chat	ﺔﻴﺗﻮﺼﻟﺍ ﺔﺷﺩﺭﺪﻟﺍ ﻉﺎﻤﺳ
+Mute everybody (only for you)	(ﻂﻘﻓ ﻚﻟ) ﻊﻴﻤﺠﻟﺍ ﺕﻮﺻ ﻢﺘﻛ
+Voice volume (what you hear)	(ﻪﻌﻤﺴﺗ ﺎﻣ) ﺕﻮﺼﻟﺍ ﻢﺠﺣ
+Deep	ﻖﻴﻤﻋ
+Normal	ﻱﺩﺎﻋ
+High	ﺔﻴﻟﺎﻋ
+Chipmunk	ﺏﺎﺠﻨﺴﻟﺍ
+Crazy	ﻥﻮﻨﺠﻣ
+Hear myself (test the pitch, use earphones)	(ﻥﺫﻷﺍ ﺕﺎﻋﺎﻤﺳ ﻡﺪﺨﺘﺳﺍ ،ﺕﻮﺼﻟﺍ ﺔﺟﺭﺩ ﺮﺒﺘﺧﺍ) ﻲﺴﻔﻨﻟ ﻊﻤﺘﺳﺍ
+Muted in the player list: %d	%d :ﺕﻼﻐﺸﻤﻟﺍ ﺔﻤﺋﺎﻗ ﻲﻓ ﺕﻮﺼﻟﺍ ﻢﺘﻛ ﻢﺗ
+Unmute all	ﻞﻜﻟﺍ ﺕﻮﺻ ﻢﺘﻛ ﺀﺎﻐﻟﺇ
+Like real life: players right next to you are loud, further away they get quieter, past %d m you can't hear them. Walk closer to hear someone.	.ﺎﻣ ﺺﺨﺷ ﻉﺎﻤﺴﻟ ﺮﺜﻛﺃ ﺏﺮﺘﻗﺍ .ﻢﻬﻋﺎﻤﺳ ﻚﻨﻜﻤﻳ ﻻ ﺔﻘﻴﻗﺩ %d ﺭﻭﺮﻣ ﺪﻌﺑﻭ ،ﺍﺀﻭﺪﻫ ﺮﺜﻛﺃ ﻥﻮﺤﺒﺼﻳ ﺍﻭﺪﻌﺘﺑﺍ ﺎﻤﻠﻛﻭ ،ﺔﻴﻟﺎﻋ ﺎﺗﺍﻮﺻﺃ ﻥﻭﺭﺪﺼﻳ ﻚﻟ ﻥﻭﺭﻭﺎﺠﻤﻟﺍ ﻥﻮﺒﻋﻼﻟﺍ :ﺔﻴﻌﻗﺍﻮﻟﺍ ﺓﺎﻴﺤﻟﺍ ﻞﺜﻣ
+Name tag size	ﻢﺳﻻﺍ ﺔﻣﻼﻋ ﻢﺠﺣ
+Name tag distance	ﻢﺳﻻﺍ ﺔﻣﻼﻋ ﺔﻓﺎﺴﻣ
+Name tag: show yourself	ﻚﺴﻔﻧ ﺮﻬﻇﺃ :ﻢﺳﻻﺍ ﺔﻣﻼﻋ
+On: your own name tag shows above you (only on your screen).	.(ﻂﻘﻓ ﻚﺘﺷﺎﺷ ﻰﻠﻋ) ﻚﻗﻮﻓ ﻚﺑ ﺔﺻﺎﺨﻟﺍ ﻢﺳﻻﺍ ﺔﻣﻼﻋ ﺮﻬﻈﺗ :ﻞﻴﻐﺸﺗ
+Off: you don't see your own name tag (the others still see it).	.(ﺎﻬﻧﻭﺮﻳ ﻥﻭﺮﺧﻵﺍ ﻝﺍﺰﻳ ﻻ) ﻚﺑ ﺔﺻﺎﺨﻟﺍ ﻢﺳﻻﺍ ﺔﻣﻼﻋ ﻯﺮﺗ ﻻ :ﻑﺎﻘﻳﺇ
+Font	ﻂﺨﻟﺍ
+  (not on this phone)	(ﻒﺗﺎﻬﻟﺍ ﺍﺬﻫ ﻰﻠﻋ ﺲﻴﻟ)  
+None	ﺀﻲﺷ ﻻ
+Outline	ﺔﻀﻳﺮﻌﻟﺍ ﻁﻮﻄﺨﻟﺍ
+Bold outline	ﺔﺌﻳﺮﺟ ﺔﻀﻳﺮﻌﻟﺍ ﻁﻮﻄﺨﻟﺍ
+Shadow	ﻞﻈﻟﺍ
+Text effect	ﺺﻨﻟﺍ ﺮﻴﺛﺄﺗ
+Font scale	ﻂﺨﻟﺍ ﺱﺎﻴﻘﻣ
+UI scale	ﻡﺪﺨﺘﺴﻤﻟﺍ ﺔﻬﺟﺍﻭ ﺱﺎﻴﻘﻣ
+No camera shake	ﺍﺮﻴﻣﺎﻜﻟﺍ ﺰﺘﻬﺗ ﻻ
+Health bars	ﺔﻴﺤﺼﻟﺍ ﺕﺎﻧﺎﺤﻟﺍ
+Player radar icons	ﺐﻋﻼﻟﺍ ﺭﺍﺩﺍﺭ ﺕﺎﻧﻮﻘﻳﺃ
+Chat	ﺔﺷﺩﺭﺪﻟﺍ
+Kill feed	ﻑﻼﻋﻷﺍ ﻞﺘﻗ
+Server modes are locked on this server (only the owner, [ADMIN] or [MOD]).	.([MOD] ﻭﺃ [ADMIN] ،ﻂﻘﻓ ﻚﻟﺎﻤﻟﺍ) ﻡﺩﺎﺨﻟﺍ ﺍﺬﻫ ﻰﻠﻋ ﻡﺩﺎﺨﻟﺍ ﻉﺎﺿﻭﺃ ﻞﻔﻗ ﻢﺗ
+Sync player animations	ﻞﻐﺸﻤﻠﻟ ﺔﻛﺮﺤﺘﻤﻟﺍ ﻡﻮﺳﺮﻟﺍ ﺔﻨﻣﺍﺰﻣ
+Sync explosions, fire, weapons	ﺔﺤﻠﺳﻷﺍﻭ ﻖﺋﺍﺮﺤﻟﺍﻭ ﺕﺍﺭﺎﺠﻔﻧﻻﺍ ﺔﻨﻣﺍﺰﻣ
+Sync NPCs (people + traffic)	(ﺭﻭﺮﻤﻟﺍ ﺔﻛﺮﺣ + ﺹﺎﺨﺷﻷﺍ) ﺐﻌﻠﻟ ﺔﻠﺑﺎﻘﻟﺍ ﺮﻴﻏ ﺕﺎﻴﺼﺨﺸﻟﺍ ﺔﻨﻣﺍﺰﻣ
+Broker standby #%d/100 (host offline featured servers)	(ﻒﻴﻀﻤﻟﺎﺑ ﺔﻠﺼﺘﻣ ﺮﻴﻏ ﺓﺰﻴﻤﻣ ﻡﺩﺍﻮﺧ) %d/100 ﻂﻴﺳﻮﻠﻟ ﺩﺍﺪﻌﺘﺳﻻﺍ ﻢﻗﺭ
+Open world (cities, shops, food, gyms, garages)	(ﺕﺎﺟﺍﺮﺟ ،ﺔﻴﺿﺎﻳﺭ ﺕﻻﺎﺻ ،ﻡﺎﻌﻃ ،ﺔﻳﺭﺎﺠﺗ ﺕﻼﺤﻣ ،ﻥﺪﻣ) ﺡﻮﺘﻔﻣ ﻢﻟﺎﻋ
+Girlfriend houses (optional)	(ﻱﺭﺎﻴﺘﺧﺍ) ﺕﺎﻘﻳﺪﺼﻟﺍ ﺕﻮﻴﺑ
+[Race] / [DM] / [Job] tips in the chat	ﺔﺷﺩﺭﺪﻟﺍ ﻲﻓ [ﺔﻔﻴﻇﻮﻟﺍ] ﺢﺋﺎﺼﻧ / [DM] / [ﻕﺎﺒﺴﻟﺍ]
+3D text labels (job / race / derby starts)	(ﻲﺑﺮﻳﺪﻟﺍ ﺔﻳﺍﺪﺑ / ﻕﺎﺒﺴﻟﺍ / ﺔﻤﻬﻤﻟﺍ) ﺩﺎﻌﺑﻷﺍ ﺔﻴﺛﻼﺛ ﺔﻴﺼﻧ ﺕﺎﻴﻤﺴﺗ
+Map icons (jobs, races, derbies, DM)	(DM ،ﺕﺎﻴﺑﺮﻳﺪﻟﺍ ،ﺕﺎﻗﺎﺒﺴﻟﺍ ،ﻒﺋﺎﻇﻮﻟﺍ) ﺔﻄﻳﺮﺨﻟﺍ ﺕﺎﻧﻮﻘﻳﺃ
+Actors (people at the job starts)	(ﻞﻤﻌﻟﺍ ﺔﻳﺍﺪﺑ ﻲﻓ ﺹﺎﺨﺷﻷﺍ) ﻥﻮﻠﺜﻤﻤﻟﺍ
+Gang zones on the radar + map	ﺔﻄﻳﺮﺨﻟﺍ + ﺭﺍﺩﺍﺮﻟﺍ ﻰﻠﻋ ﺕﺎﺑﺎﺼﻌﻟﺍ ﻖﻃﺎﻨﻣ
+Mega Vil radar	ﻞﻴﻓ ﺎﺠﻴﻣ ﺭﺍﺩﺍﺭ
+Game radar	ﺔﺒﻌﻠﻟﺍ ﺭﺍﺩﺍﺭ
+Google map 2D	2D ﻞﺟﻮﺟ ﺔﻄﻳﺮﺧ
+Google map 3D	ﺩﺎﻌﺑﻷﺍ ﺔﻴﺛﻼﺛ ﻞﺟﻮﺟ ﺔﻄﻳﺮﺧ
+MW3: PUBG compass on top	MW3: ﺔﻠﺻﻮﺑ PUBG ﻰﻠﻋﻷﺍ ﻲﻓ
+Chat position + chat box	ﺔﺷﺩﺭﺪﻟﺍ ﻊﺑﺮﻣ + ﺔﺷﺩﺭﺪﻟﺍ ﻒﻗﻮﻣ
+Show chat background (strip behind the lines)	(ﻁﻮﻄﺨﻟﺍ ﻒﻠﺧ ﻱﺮﻌﺘﻟﺍ) ﺔﺷﺩﺭﺪﻟﺍ ﺔﻴﻔﻠﺧ ﺭﺎﻬﻇﺇ
+Show chat box background	ﺔﺷﺩﺭﺪﻟﺍ ﻊﺑﺮﻣ ﺔﻴﻔﻠﺧ ﺭﺎﻬﻇﺇ
+Show chat box label (\"Tap to chat\")	(\"ﺔﺷﺩﺭﺪﻠﻟ ﺮﻘﻧﺍ\") ﺔﺷﺩﺭﺪﻟﺍ ﻊﺑﺮﻣ ﺔﻴﻤﺴﺗ ﺭﺎﻬﻇﺇ
+Tap the chat box to type	ﺔﺑﺎﺘﻜﻠﻟ ﺔﺷﺩﺭﺪﻟﺍ ﻊﺑﺮﻣ ﻰﻠﻋ ﻂﻐﺿﺍ
+Only the Chat button opens the keyboard - taps on the box go to the game.	.ﺔﺒﻌﻠﻟﺍ ﻰﻟﺇ ﻝﺎﻘﺘﻧﻻﺍ ﻰﻟﺇ ﻊﺑﺮﻤﻟﺍ ﻰﻠﻋ ﻂﻐﻀﻟﺍ ﻱﺩﺆﻳ - ﺢﻴﺗﺎﻔﻤﻟﺍ ﺔﺣﻮﻟ ﻂﻘﻓ ﺔﺷﺩﺭﺪﻟﺍ ﺭﺯ ﺢﺘﻔﻳ
+Chat lines position X / Y	X / Y ﺔﺷﺩﺭﺪﻟﺍ ﻁﻮﻄﺧ ﻊﺿﻮﻣ
+Chat box right under the chat lines	ﺔﺷﺩﺭﺪﻟﺍ ﻁﻮﻄﺧ ﺖﺤﺗ ﺓﺮﺷﺎﺒﻣ ﺔﺷﺩﺭﺪﻟﺍ ﻊﺑﺮﻣ
+Chat box position X / Y	X / Y ﺔﺷﺩﺭﺪﻟﺍ ﻕﻭﺪﻨﺻ ﻊﺿﻮﻣ
+Reset chat position	ﺔﺷﺩﺭﺪﻟﺍ ﻊﺿﻮﻣ ﻂﺒﺿ ﺓﺩﺎﻋﺇ
+Chat scale (chat lines + chat box)	(ﺔﺷﺩﺭﺪﻟﺍ ﻕﻭﺪﻨﺻ + ﺔﺷﺩﺭﺪﻟﺍ ﻁﻮﻄﺧ) ﺔﺷﺩﺭﺪﻟﺍ ﺱﺎﻴﻘﻣ
+Small	ﺮﻴﻐﺻ
+Big	ﺮﻴﺒﻛ
+Huge	ﻢﺨﺿ
+Player: preview of the chat size	ﺔﺷﺩﺭﺪﻟﺍ ﻢﺠﺣ ﺔﻨﻳﺎﻌﻣ :ﻞﻐﺸﻤﻟﺍ
+Chat timestamps [HH:MM:SS]	[HH:MM:SS] ﺔﺷﺩﺭﺪﻠﻟ ﺔﻴﻨﻣﺰﻟﺍ ﻊﺑﺍﻮﻄﻟﺍ
+On: every chat line starts with the time it arrived, like [18:02:48].	.[18:02:48] ﻞﺜﻣ ،ﻪﻟﻮﺻﻭ ﺖﻗﻮﺑ ﺔﺛﺩﺎﺤﻣ ﻂﺧ ﻞﻛ ﺃﺪﺒﻳ :ﻞﻴﻐﺸﺗ
+Off: no time in front of the chat lines (turn on to see [18:02:48]).	.([18:02:48] ﺔﻳﺅﺮﻟ ﻞﻴﻐﺸﺘﺑ ﻢﻗ) ﺔﺷﺩﺭﺪﻟﺍ ﻁﻮﻄﺧ ﻡﺎﻣﺃ ﺖﻗﻭ ﺪﺟﻮﻳ ﻻ :ﻑﺎﻘﻳﺇ
+Lines shown (0 = only while typing)	(ﺔﺑﺎﺘﻜﻟﺍ ﺀﺎﻨﺛﺃ ﻂﻘﻓ = 0) ﺔﺿﻭﺮﻌﻤﻟﺍ ﺮﻄﺳﻷﺍ
+%d lines	%d ﺮﻄﺳ
+Text size	ﺺﻨﻟﺍ ﻢﺠﺣ
+Width (long lines wrap)	(ﺔﻠﻳﻮﻄﻟﺍ ﻁﻮﻄﺨﻟﺍ ﻑﺎﻔﺘﻟﺍ) ﺽﺮﻌﻟﺍ
+%d %% of the screen	%d %% ﺔﺷﺎﺸﻟﺍ ﻦﻣ
+Fade out after	ﺪﻌﺑ ﻰﺷﻼﺘﺗ
+%d seconds	%d ﺔﻴﻧﺎﺛ
+Chat bubbles (text over the head)	(ﺱﺃﺮﻟﺍ ﻕﻮﻓ ﺺﻧ) ﺔﺷﺩﺭﺪﻟﺍ ﺕﺎﻋﺎﻘﻓ
+Small chat (4 lines, 70 %)	(%70 ،ﺮﻄﺳﺃ 4) ﺓﺮﻴﻐﺻ ﺔﺛﺩﺎﺤﻣ
+Reset chat layout	ﺔﺷﺩﺭﺪﻟﺍ ﻂﻴﻄﺨﺗ ﻂﺒﺿ ﺓﺩﺎﻋﺇ
+Clear chat	ﺔﺷﺩﺭﺪﻟﺍ ﺢﺴﻣ
+Chat commands: /chatscale /pagesize /fontsize /chatwidth /chatfade /chatbg /clearchat	chatscale /pagesize /fontsize /chatwidth /chatfade /chatbg /clearchat/ :ﺔﺷﺩﺭﺪﻟﺍ ﺮﻣﺍﻭﺃ
+Name color	ﻢﺳﻻﺍ ﻥﻮﻟ
+Shows on your name tag, chat, kill feed and radar icon.	.ﺭﺍﺩﺍﺮﻟﺍ ﺔﻧﻮﻘﻳﺃﻭ ،ﻞﺘﻘﻟﺍ ﺔﺻﻼﺧﻭ ،ﺔﺷﺩﺭﺪﻟﺍﻭ ،ﻚﺑ ﺔﺻﺎﺨﻟﺍ ﻢﺳﻻﺍ ﺔﻣﻼﻋ ﻰﻠﻋ ﺮﻬﻈﻳ
+Custom color (R / G / B)	(R / G / B) ﺺﺼﺨﻣ ﻥﻮﻟ
+Automatic (server color)	(ﻡﺩﺎﺨﻟﺍ ﻥﻮﻟ) ﻲﺋﺎﻘﻠﺗ
+Avatar skin (how others see you as CJ)	(CJ ـﻛ ﻥﻭﺮﺧﻵﺍ ﻙﺍﺮﻳ ﻒﻴﻛ) ﺔﻳﺰﻣﺮﻟﺍ ﺓﺭﻮﺼﻟﺍ ﺮﻬﻈﻣ
+GSF 1	1 ﻑﺇ ﺱﺇ ﻲﺟ
+GSF 2	2 ﻑﺇ ﺱﺇ ﻲﺟ
+GSF 3	3 ﻑﺇ ﺱﺇ ﻲﺟ
+Big Smoke	ﺮﻴﺒﻛ ﻥﺎﺧﺩ
+Sweet	ﻮﻠﺣ
+Ballas 1	1 ﺱﻻﺎﺑ
+Ballas 2	2 ﺱﻻﺎﺑ
+Ballas 3	3 ﺱﻻﺎﺑ
+Vagos 1	1 ﺱﻮﺟﺎﻓ
+Vagos 2	2 ﺱﻮﺟﺎﻓ
+Vagos 3	3 ﺱﻮﺟﺎﻓ
+Aztecas 1	1 ﺱﺎﻜﻴﺗﺯﻷﺍ
+Aztecas 2	2 ﺱﺎﻜﻴﺗﺯﺃ
+Aztecas 3	3 ﺱﺎﻜﻴﺗﺯﻷﺍ
+Rifa 1	1 ﻉﺎﻓﺮﻟﺍ
+Rifa 2	2 ﺎﻓﺭ
+Rifa 3	3 ﺎﻓﺭ
+Triads 1	1 ﺕﺎﻴﺛﻼﺜﻟﺍ
+Triads 2	2 ﺕﺎﻴﺛﻼﺜﻟﺍ
+Triad boss	ﺙﻮﻟﺎﺜﻟﺍ ﺲﻴﺋﺭ
+Da Nang 1	1 ﻎﻧﺎﻧ ﺍﺩ
+Da Nang 2	2 ﻎﻧﺎﻧ ﺍﺩ
+Da Nang 3	3 ﻎﻧﺎﻧ ﺍﺩ
+Country cop	ﺪﻠﺒﻟﺍ ﻲﻃﺮﺷ
+Biker cop	ﺔﻳﺭﺎﻨﻟﺍ ﺔﺟﺍﺭﺪﻟﺍ ﺐﻛﺍﺭ ﻲﻃﺮﺷ
+Army	ﺶﻴﺠﻟﺍ
+Show my real model (skin mods, story characters, CJ's clothes)	(CJ ﺲﺑﻼﻣ ،ﺔﺼﻘﻟﺍ ﺕﺎﻴﺼﺨﺷ ،ﺪﻠﺠﻟﺍ ﺕﻼﻳﺪﻌﺗ) ﻲﻘﻴﻘﺤﻟﺍ ﻲﺟﺫﻮﻤﻧ ﺭﺎﻬﻇﺇ
+Others see you as: %s	%s :ـﻛ ﻥﻭﺮﺧﻵﺍ ﻙﺍﺮﻳ
+Others see you as: ped model %d	ped %d ﺝﺫﻮﻤﻧ :ـﻛ ﻥﻭﺮﺧﻵﺍ ﻙﺍﺮﻳ
+Teleport to Grove Street	ﻑﻭﺮﺟ ﻉﺭﺎﺷ ﻰﻟﺇ ﻱﺭﻮﻔﻟﺍ ﻞﻘﻨﻟﺍ
+100% progress on the default server	ﻲﺿﺍﺮﺘﻓﻻﺍ ﻡﺩﺎﺨﻟﺍ ﻰﻠﻋ100% p ﺔﺒﺴﻨﺑ ﻡﺪﻘﺗ
+All missions done while you play on the default server. Leaving it loads your own latest save again (your saves are backed up and put back). Custom servers always use your own progress.	.ﺹﺎﺨﻟﺍ ﻚﻣﺪﻘﺗ ﺎﻤﺋﺍﺩ ﺔﺼﺼﺨﻤﻟﺍ ﻡﺩﺍﻮﺨﻟﺍ ﻡﺪﺨﺘﺴﺗ .(ﺎﻬﺗﺩﺎﻋﺇﻭ ﺎﻴﻃﺎﻴﺘﺣﺍ ﻚﺗﺎﻔﻠﻣ ﺦﺴﻧ ﻢﺘﻳ) ﻯﺮﺧﺃ ﺓﺮﻣ ﻪﻈﻔﺤﺑ ﺖﻤﻗ ﺎﻣ ﺮﺧﺁ ﻞﻴﻤﺤﺗ ﻰﻟﺇ ﺎﻬﻛﺮﺗ ﻱﺩﺆﻳ .ﻲﺿﺍﺮﺘﻓﻻﺍ ﻡﺩﺎﺨﻟﺍ ﻰﻠﻋ ﺐﻌﻠﻟﺍ ﺀﺎﻨﺛﺃ ﻡﺎﻬﻤﻟﺍ ﻊﻴﻤﺟ ﻢﺘﺗ
+Connection	ﻝﺎﺼﺗﺍ
+Servers	ﻡﺩﺍﻮﺨﻟﺍ
+Display	ﺽﺮﻋ
+Sound	ﺕﻮﺼﻟﺍ
+Voice	ﺕﻮﺻ
+Cheats	ﺶﻏ
+User	ﻡﺪﺨﺘﺴﻤﻟﺍ
+Password	ﺭﻭﺮﻤﻟﺍ ﺔﻤﻠﻛ
+Age	ﺮﻤﻌﻟﺍ
+Male	ﺮﻛﺫ
+Female	ﻰﺜﻧﺃ
+Other	ﻯﺮﺧﺃ
+# the game logs you in by itself. Delete it (or log out) to use another account.\nuser=%s\n	.ﺮﺧﺁ ﺏﺎﺴﺣ ﻡﺍﺪﺨﺘﺳﻻ (ﺝﻭﺮﺨﻟﺍ ﻞﺠﺳ ﻭﺃ) ﻪﻓﺬﺣﺍ .ﺎﻬﺴﻔﻧ ﺀﺎﻘﻠﺗ ﻦﻣ ﻚﻟﻮﺧﺩ ﻞﺠﺴﺗ ﺔﺒﻌﻠﻟﺍ #\nuser=%s\n
+# the game logs you in by itself. Delete it (or log out) to use another account.	.ﺮﺧﺁ ﺏﺎﺴﺣ ﻡﺍﺪﺨﺘﺳﻻ (ﺝﻭﺮﺨﻟﺍ ﻞﺠﺳ ﻭﺃ) ﻪﻓﺬﺣﺍ .ﺎﻬﺴﻔﻧ ﺀﺎﻘﻠﺗ ﻦﻣ ﻚﻟﻮﺧﺩ ﻞﺠﺴﺗ ﺔﺒﻌﻠﻟﺍ #
+user=%s	%s=ﻡﺪﺨﺘﺴﻤﻟﺍ
+Your account was created successfully. Welcome, %s.	.%s ،ﺎﺒﺣﺮﻣ .ﺡﺎﺠﻨﺑ ﻚﺑﺎﺴﺣ ﺀﺎﺸﻧﺇ ﻢﺗ
+Logged in as %s.	.%s ـﻛ ﻝﻮﺧﺪﻟﺍ ﻞﻴﺠﺴﺗ ﻢﺗ
+user=	=ﻡﺪﺨﺘﺴﻤﻟﺍ
+discord=	=ﻑﻼﺨﻟﺍ
+tap to type	ﺔﺑﺎﺘﻜﻠﻟ ﺮﻘﻧﺍ
+your account	ﻚﺑﺎﺴﺣ
+Logging in as %s	%s ﻢﺳﺎﺑ ﻝﻮﺧﺪﻟﺍ ﻞﻴﺠﺴﺗ
+Connecting to the login server	ﻝﻮﺧﺪﻟﺍ ﻞﻴﺠﺴﺗ ﻡﺩﺎﺨﺑ ﻝﺎﺼﺗﻻﺍ
+Code authentication	ﺰﻣﺮﻟﺍ ﺔﻗﺩﺎﺼﻣ
+Welcome	ﺎﺒﺣﺮﻣ
+Login	ﻝﻮﺧﺪﻟﺍ ﻞﻴﺠﺴﺗ
+MEGA VIL FUTURISTIC  |  	  | ﺔﻴﻠﺒﻘﺘﺴﻤﻟﺍ ﻞﻴﻓ ﺎﺠﻴﻣ
+MODERN WARFARE 3  |  	  | 3 ﺔﺜﻳﺪﺤﻟﺍ ﺏﺮﺤﻟﺍ
+BRIEF CASE WAR  |  	  | ﺓﺮﺼﺘﺨﻣ ﺏﺮﺣ
+MP  |  	  | ﺐﺋﺎﻨﻟﺍ
+Logging in	ﻝﻮﺧﺪﻟﺍ ﻞﻴﺠﺴﺗ
+This server uses accounts. Verify with Discord first:	:ﻻﻭﺃ Discord ﻡﺍﺪﺨﺘﺳﺎﺑ ﻖﻘﺤﺘﻟﺍ .ﺕﺎﺑﺎﺴﺤﻟﺍ ﻡﺩﺎﺨﻟﺍ ﺍﺬﻫ ﻡﺪﺨﺘﺴﻳ
+1.  Join the Discord server:	:Discord ﻡﺩﺎﺧ ﻰﻟﺇ ﻢﻀﻧﺍ .1
+2.  In the #verification channel type:	:ﻖﻘﺤﺘﻟﺍ# ﺓﺎﻨﻗ ﻉﻮﻧ ﻲﻓ .2
+Waiting for /gen...  (code works %d:%02d more)	(ﺪﻳﺰﻤﻟﺍ %d:%02d ﺩﻮﻜﻟﺍ ﻞﻤﻌﻳ) ...gen/ ﺭﺎﻈﺘﻧﺍ ﻲﻓ
+Open Discord	ﻑﻼﺨﻟﺍ ﺢﺘﻓﺍ
+New code	ﺪﻳﺪﺟ ﺰﻣﺭ
+I have an account: Login	ﻝﻮﺧﺪﻟﺍ ﻞﻴﺠﺴﺗ :ﺏﺎﺴﺣ ﻱﺪﻟ
+Leave server	ﻡﺩﺎﺨﻟﺍ ﻙﺮﺗ
+Discord verified: %s	%s :ﻑﻼﺨﻟﺍ ﻦﻣ ﻖﻘﺤﺘﻟﺍ ﻢﺗ
+Gender	ﺲﻨﺠﻟﺍ
+User 3-20 letters / numbers / _   Password 6-32   Age 10-24	24-10 ﺮﻤﻌﻟﺍ 32-6 ﺭﻭﺮﻤﻟﺍ ﺔﻤﻠﻛ _ /ﻢﻗﺭ/ﻑﺮﺣ 20-3 ﻡﺪﺨﺘﺴﻤﻟﺍ
+Create	ﺀﺎﺸﻧﺇ
+Age must be 10-24.	.24-10 ﺮﻤﻌﻟﺍ ﻥﻮﻜﻳ ﻥﺃ ﺐﺠﻳ
+Welcome back. Log in to play.	.ﺐﻌﻠﻟ ﻝﻮﺧﺪﻟﺍ ﻞﻴﺠﺴﺗ .ﻚﺗﺩﻮﻌﺑ ﺎﺒﺣﺮﻣ
+New account (Discord code)	(ﺩﺭﻮﻜﺴﻳﺪﻟﺍ ﺩﻮﻛ) ﺪﻳﺪﺟ ﺏﺎﺴﺣ
+Your account was created successfully	ﺡﺎﺠﻨﺑ ﻚﺑﺎﺴﺣ ﺀﺎﺸﻧﺇ ﻢﺗ
+Welcome, %s	%s ،ﺎﺒﺣﺮﻣ
+Login failed.	.ﻝﻮﺧﺪﻟﺍ ﻞﻴﺠﺴﺗ ﻞﺸﻓ
+Try again	ﻯﺮﺧﺃ ﺓﺮﻣ ﻝﻭﺎﺣ
+Log in first.	.ﻻﻭﺃ ﻝﻮﺧﺪﻟﺍ ﻞﻴﺠﺴﺗ
+No account here: this server has no login system (the default server and Brief Case War have it).	.(ﻪﻧﺎﻜﻠﺘﻤﻳ Brief Case Warﻭ ﻲﺿﺍﺮﺘﻓﻻﺍ ﻡﺩﺎﺨﻟﺍ) ﻝﻮﺧﺩ ﻞﻴﺠﺴﺗ ﻡﺎﻈﻧ ﻪﻳﺪﻟ ﺲﻴﻟ ﻡﺩﺎﺨﻟﺍ ﺍﺬﻫ :ﺎﻨﻫ ﺏﺎﺴﺣ ﺪﺟﻮﻳ ﻻ
+My account  (only you see this)	(ﺍﺬﻫ ﻯﺮﺗ ﻂﻘﻓ ﺖﻧﺃ) ﻲﺑﺎﺴﺣ
+Loading...	...ﻞﻴﻤﺤﺘﻟﺍ ﺭﺎﺟ
+Could not load your account.	.ﻚﺑﺎﺴﺣ ﻞﻴﻤﺤﺗ ﻦﻜﻤﻳ ﻻ
+Discord	ﺔﻨﺘﻔﻟﺍ
+Created	ﺎﻫﺅﺎﺸﻧﺇ ﻢﺗ
+Logins	ﻝﻮﺧﺪﻟﺍ ﺕﻼﻴﺠﺴﺗ
+Last login	ﻝﻮﺧﺩ ﻞﻴﺠﺴﺗ ﺮﺧﺁ
+Score here	ﺎﻨﻫ ﺔﺠﻴﺘﻨﻟﺍ
+Server	ﻡﺩﺎﺨﻟﺍ
+Close	ﻕﻼﻏﺇ
+ [Leader]	[ﺪﺋﺎﻘﻟﺍ] 
+%s STOLE THE %s BRIEFCASE	%s ﺔﺒﻴﻘﺤﻟﺍ ﻕﺮﺳ %s.
+%s stole the %s briefcase!	%s ﺔﺒﻴﻘﺣ ﻕﺮﺳ %s!
+THE %s BRIEFCASE WAS DROPPED	.%s ﺔﺒﻴﻘﺣ ﻁﺎﻘﺳﺇ ﻢﺗ
+The %s briefcase was dropped%s%s.	.%s%s%s ﺔﺒﻴﻘﺤﻟﺍ ﻁﺎﻘﺳﺇ ﻢﺗ
+ by 	 ﺔﻄﺳﺍﻮﺑ 
+%s PICKED UP THE %s BRIEFCASE	%s ﺔﺒﻴﻘﺣ ﻂﻘﺘﻟﺍ %s.
+%s picked up the %s briefcase.	.%s ﺔﺒﻴﻘﺤﻟﺍ %s ﻂﻘﺘﻟﺍ
+THE %s BRIEFCASE IS BACK HOME	ﻝﺰﻨﻤﻟﺍ ﻰﻟﺇ %s ﺔﺒﻴﻘﺣ ﺕﺩﺎﻋ ﺪﻘﻟ
+The %s briefcase is back in its base%s%s.	.%s%sﺎﻬﺗﺪﻋﺎﻗ ﻰﻟﺇ %s ﺔﺒﻴﻘﺣ ﺕﺩﺎﻋ
+ - returned by 	 ﺔﻄﺳﺍﻮﺑ ﺩﺎﻋ - 
+%s VICTORY	%s ﺮﺼﻨﻟﺍ
+GUSTAV TEAM	ﻑﺎﺘﺳﻮﺟ ﻖﻳﺮﻓ
+SCHELAPZ TEAM	ﺰﺑﻼﻴﺷ ﻖﻳﺮﻓ
+%s wins the Brief Case War!%s	%s ﺓﺰﺟﻮﻤﻟﺍ ﺔﻴﻀﻘﻟﺍ ﺏﺮﺣ ﻲﻓ ﺯﻮﻔﻳ!%s
+ (Victory)	(ﺮﺼﻨﻟﺍ) 
+ (Defeat)	(ﺔﻤﻳﺰﻫ) 
+WAR! STEAL THE ENEMY BRIEFCASE	ﻭﺪﻌﻟﺍ ﺔﺒﻴﻘﺣ ﺔﻗﺮﺳ !ﺏﺮﺤﻟﺍ
+Brief Case War started on %s. Steal the enemy briefcase and bring it to your base.	.ﻚﺗﺪﻋﺎﻗ ﻰﻟﺇ ﺎﻫﺮﻀﺣﺃﻭ ﻭﺪﻌﻟﺍ ﺔﺒﻴﻘﺣ ﻕﺮﺳﺍ .%s ﻲﻓ ﺓﺰﺟﻮﻤﻟﺍ ﺔﻟﺎﺤﻟﺍ ﺏﺮﺣ ﺕﺃﺪﺑ
+NEXT MAP: %s	%s :ﺔﻴﻟﺎﺘﻟﺍ ﺔﻄﻳﺮﺨﻟﺍ
+Next map: %s. Pick your team.	.ﻚﻘﻳﺮﻓ ﺮﺘﺧﺍ .%s :ﺔﻴﻟﺎﺘﻟﺍ ﺔﻄﻳﺮﺨﻟﺍ
+Put war_ambient.mp3 in files/MP to hear the war music.	.ﺏﺮﺤﻟﺍ ﻰﻘﻴﺳﻮﻣ ﻉﺎﻤﺴﻟ files/MP ﻲﻓ war_ambient.mp3 ﻊﺿ
+You are in %s. Steal the %s briefcase!	!%s ﺔﺒﻴﻘﺣ ﺔﻗﺮﺳ .%s ﻲﻓ ﺖﻧﺃ
+Schelapz	ﺰﺑﻼﻴﺷ
+Gustav	ﻑﺎﺘﺳﻮﻏ
+Wait %d s for the next vehicle.	.ﺔﻴﻟﺎﺘﻟﺍ ﺔﺒﻛﺮﻤﻟﺍ ﻞﺼﺗ ﻰﺘﺣ ﺔﻴﻧﺎﺛ %d ﺮﻈﺘﻧﺍ
+/%s is not available in Brief Case War.	/%s ﺓﺰﺟﻮﻤﻟﺍ ﺏﺮﺤﻟﺍ ﺔﻟﺎﺣ ﻲﻓ ﺮﻓﻮﺘﻣ ﺮﻴﻏ.
+%s BASE	%s ﺓﺪﻋﺎﻘﻟﺍ
+%s BRIEFCASE  %ds	%sﺐﺋﺎﻘﺤﻟﺍ %d.
+GUSTAV %d	%d ﻑﺎﺘﺳﻮﻏ
+%d SCHELAPZ	%d ﺰﺑﻼﻴﺷ
+STEALING THE %s BRIEFCASE  %d%%	%s %d%% ﺔﺒﻴﻘﺣ ﺔﻗﺮﺳ
+YOUR BRIEFCASE IS BEING STOLEN!	!ﻚﺘﺒﻴﻘﺣ ﺔﻗﺮﺳ ﻢﺗ ﺪﻘﻟ
+YOU HAVE THE BRIEFCASE - BRING IT TO YOUR BASE!	!ﻚﺗﺪﻋﺎﻗ ﻰﻟﺇ ﺎﻫﺮﻀﺣﺃ - ﺔﺒﻴﻘﺤﻟﺍ ﻚﻳﺪﻟ
+YOUR BRIEFCASE IS STOLEN TOO - KILL THEIR CARRIER FIRST!	!ﻻﻭﺃ ﺎﻬﻠﻣﺎﺣ ﻞﺘﻗﺍ - ﺎﻀﻳﺃ ﻚﺘﺒﻴﻘﺣ ﺖﻗﺮﺳ ﺪﻘﻟ
+WORLD BARRIER	ﻲﻤﻟﺎﻌﻟﺍ ﺰﺟﺎﺤﻟﺍ
+BRIEF CASE WAR	ﺓﺮﺼﺘﺨﻣ ﺔﻟﺎﺣ ﺏﺮﺣ
+YOU DIED	ﺖﻣ ﺪﻘﻟ
+%s - you will spawn in your safe zone	%s - ﺔﻨﻣﻵﺍ ﻚﺘﻘﻄﻨﻣ ﻲﻓ ﺮﻬﻈﺗ ﻑﻮﺳ
+Respawn in %d.%02d	%d.%02d ﻝﻼﺧ ﺭﻮﻬﻈﻟﺍ ﺓﺩﺎﻋﺇ
+WAITING FOR PLAYERS  %d/%d	%d/%d ﻦﻴﺒﻋﻼﻟﺍ ﺭﺎﻈﺘﻧﺍ ﻲﻓ
+PICK YOUR TEAM  -  %d/%d IN THE QUEUE	ﺭﺎﻈﺘﻧﻻﺍ ﺔﻤﺋﺎﻗ ﻲﻓ %d/%d - ﻚﻘﻳﺮﻓ ﺮﺘﺧﺍ
+A WAR IS RUNNING - JOIN A TEAM WITH A FREE SLOT	ﺔﻴﻧﺎﺠﻣ ﺔﺤﺘﻓ ﻪﻳﺪﻟ ﻖﻳﺮﻓ ﻰﻟﺇ ﻢﻀﻧﺍ - ﺔﻳﺭﺎﺟ ﺏﺮﺣ ﻙﺎﻨﻫ
+Gustav Team  %d/%d	%d/%d ﻑﺎﺘﺳﻮﻏ ﻖﻳﺮﻓ
+Schelapz Team  %d/%d	%d/%d ﺰﺑﻼﻴﺷ ﻖﻳﺮﻓ
+PICKING TEAM LEADERS	ﻖﻳﺮﻔﻟﺍ ﺓﺩﺎﻗ ﺭﺎﻴﺘﺧﺍ
+GUSTAV TEAM LEADER	ﻖﻳﺮﻔﻟﺍ ﺪﺋﺎﻗ ﻑﺎﺘﺳﻮﺟ
+SCHELAPZ TEAM LEADER	ﺰﺑﻼﻴﺷ ﻖﻳﺮﻓ ﺪﺋﺎﻗ
+LEADER!	!ﻢﻴﻋﺯ
+GUSTAV TEAM VICTORY	ﻑﺎﺘﺳﻮﺟ ﻖﻳﺮﻓ ﺯﻮﻓ
+SCHELAPZ TEAM VICTORY	ﺰﺑﻼﻴﺷ ﻖﻳﺮﻓ ﺯﻮﻓ
+Cooldown - resetting the war zone  %d.%02d	%d.%02d ﺏﺮﺤﻟﺍ ﺔﻘﻄﻨﻣ ﻂﺒﺿ ﺓﺩﺎﻋﺇ - ﺔﺋﺪﻬﺘﻟﺍ ﺓﺮﺘﻓ
+briefcases, objects and war vehicles cleared  -  scoreboard and map vote next	ﻚﻟﺫ ﺪﻌﺑ ﺔﻄﻳﺮﺨﻟﺍﻭ ﺞﺋﺎﺘﻨﻟﺍ ﺔﺣﻮﻟ ﻰﻠﻋ ﺖﻳﻮﺼﺘﻟﺍ - ﺔﻴﺑﺮﺤﻟﺍ ﺕﺎﺒﻛﺮﻤﻟﺍﻭ ﺀﺎﻴﺷﻷﺍﻭ ﺐﺋﺎﻘﺤﻟﺍ ﺮﻴﻬﻄﺗ ﻢﺗ
+BRIEF CASE WAR  -  %s	%s - ﺓﺮﻴﺼﻘﻟﺍ ﺔﻟﺎﺤﻟﺍ ﺏﺮﺣ
+%d kills  -  %d score	%d ﻞﺘﻘﻟﺍ ﺕﺍﺮﻣ ﺩﺪﻋ - %d ﺔﺠﻴﺘﻧ
+Gustav Team [%s]	[%s] ﻑﺎﺘﺳﻮﺟ ﻖﻳﺮﻓ
+Victory	ﺮﺼﻨﻟﺍ
+Defeat	ﺔﻤﻳﺰﻫ
+Schelapz Team [%s]	[%s] ﺰﺑﻼﻴﺷ ﻖﻳﺮﻓ
+Steal	ﺔﻗﺮﺳ
+Cap	ﺏﺎﻛ
+Ret	ﺪﻋﺎﻘﺘﻣ
+Dmg	ﻎﻣﺩ
+Score	ﺔﺠﻴﺘﻨﻟﺍ
+map vote in %d s	ﺔﻴﻧﺎﺛ %d ﻝﻼﺧ ﺔﻄﻳﺮﺨﻟﺍ ﻰﻠﻋ ﺖﻳﻮﺼﺘﻟﺍ
+VOTE THE NEXT WAR MAP  -  %d s	ﺙ %d - ﺔﻣﺩﺎﻘﻟﺍ ﺏﺮﺤﻟﺍ ﺔﻄﻳﺮﺧ ﻰﻠﻋ ﺖﻳﻮﺼﺘﻟﺍ
+VOTE THE NEXT WAR MAP  -  opens in %d s	ﺔﻴﻧﺎﺛ %d ﻝﻼﺧ ﺎﻬﺤﺘﻓ ﻢﺘﻴﺳ - ﺔﻴﻟﺎﺘﻟﺍ ﺏﺮﺤﻟﺍ ﺔﻄﻳﺮﺧ ﻰﻠﻋ ﺖﻳﻮﺼﺘﻟﺎﺑ ﻢﻗ
+%d vote%s	%d ﺖﻳﻮﺼﺘﻟﺍ%s
+last map	ﺓﺮﻴﺧﻷﺍ ﺔﻄﻳﺮﺨﻟﺍ
+Patriot	ﺕﻮﻳﺮﺗﺎﺑ
+Barracks	ﺕﺎﻨﻜﺛ
+Rhino (tank)	(ﺔﺑﺎﺑﺩ) ﻥﺮﻘﻟﺍ ﺪﻴﺣﻭ
+Hunter (fighter helicopter)	(ﺔﻠﺗﺎﻘﻣ ﺔﻴﺣﻭﺮﻣ) ﺮﺘﻨﻫ
+Vehicle	ﺔﺒﻛﺮﻣ
+Left Brief Case War.	.ﻯﺮﺴﻴﻟﺍ ﺓﺮﻴﺼﻘﻟﺍ ﺔﻴﻀﻘﻟﺍ ﺏﺮﺣ
+teleport, e.g. /tp :grove_street	tp :grove_street/ .ﻝﺎﺜﻤﻟﺍ ﻞﻴﺒﺳ ﻰﻠﻋ ،ﻲﺋﺎﻀﻔﻟﺍ ﻞﻘﻨﻟﺍ
+name tags through walls, any distance (on foot + in a car)	(ﺓﺭﺎﻴﺴﻟﺍ ﻲﻓ + ﻡﺍﺪﻗﻷﺍ ﻰﻠﻋ ﺍﺮﻴﺳ) ﺔﻓﺎﺴﻣ ﻱﻷ ،ﻥﺍﺭﺪﺠﻟﺍ ﻰﻠﻋ ﺀﺎﻤﺳﻷﺍ ﺕﺎﻣﻼﻋ
+no fall damage, soft landings (on foot + in a car)	(ﺓﺭﺎﻴﺴﻟﺍ ﻲﻓ + ﻡﺍﺪﻗﻷﺍ ﻰﻠﻋ ﺍﺮﻴﺳ) ﺲﻠﺳ ﻁﻮﺒﻫ ،ﻁﻮﻘﺴﻟﺍ ﺪﻨﻋ ﺭﺍﺮﺿﺃ ﺪﺟﻮﺗ ﻻ
+no damage at all (on foot + in a car)	(ﺓﺭﺎﻴﺴﻟﺍ ﻲﻓ + ﻡﺍﺪﻗﻷﺍ ﻰﻠﻋ ﺍﺮﻴﺳ) ﻕﻼﻃﻹﺍ ﻰﻠﻋ ﺭﺮﺿ ﻻ
+freeze in place (on foot)	(ﻡﺍﺪﻗﻷﺍ ﻰﻠﻋ ﺍﺮﻴﺳ) ﻪﻧﺎﻜﻣ ﻲﻓ ﺪﻴﻤﺠﺗ
+nobody sees you (on foot)	(ﻡﺍﺪﻗﻷﺍ ﻰﻠﻋ ﺍﺮﻴﺳ) ﻙﺍﺮﻳ ﺪﺣﺃ ﻻ
+fly where the camera looks, joystick = move (on foot + in a car)	(ﺓﺭﺎﻴﺴﻟﺍ ﻲﻓ + ﻡﺍﺪﻗﻷﺍ ﻰﻠﻋ ﺍﺮﻴﺳ) ﻙﺮﺤﺘﻟﺍ = ﻢﻜﺤﺘﻟﺍ ﺎﺼﻋ ،ﺍﺮﻴﻣﺎﻜﻟﺍ ﻭﺪﺒﺗ ﺚﻴﺣ ﺮﻴﻄﻳ
+run super fast (on foot)	(ﻡﺍﺪﻗﻷﺍ ﻰﻠﻋ ﺍﺮﻴﺳ) ﺔﻘﺋﺎﻓ ﺔﻋﺮﺴﺑ ﺾﻛﺮﻟﺍ
+[id|stop]	[ﻒﻗﻮﺗ|ﻑﺮﻌﻣ]
+go behind the nearest player / player id after 3 2 1 (30 s cooldown)	(ﺔﻴﻧﺎﺛ 30) 1 2 3 ﺪﻌﺑ ﺐﻋﻻ / ﺐﻋﻻ ﻑﺮﻌﻣ ﺏﺮﻗﺃ ﻒﻠﺧ ﻞﻘﺘﻧﺍ
+gravity, 1 = normal (on foot + in a car)	(ﺓﺭﺎﻴﺴﻟﺍ ﻲﻓ + ﻡﺍﺪﻗﻷﺍ ﻰﻠﻋ ﺍﺮﻴﺳ) ﻱﺩﺎﻋ = 1 ﺔﻴﺑﺫﺎﺠﻟﺍ
+chat lines shown (0 = only while typing)	(ﺔﺑﺎﺘﻜﻟﺍ ﺀﺎﻨﺛﺃ ﻂﻘﻓ = 0) ﺔﺿﻭﺮﻌﻤﻟﺍ ﺔﺷﺩﺭﺪﻟﺍ ﻁﻮﻄﺧ
+chat text size in %	% ﺔﺒﺴﻨﺑ ﺔﺷﺩﺭﺪﻟﺍ ﺺﻧ ﻢﺠﺣ
+scale the whole chat (lines + chat box) in %	٪ﺔﺒﺴﻨﺑ (ﺔﺷﺩﺭﺪﻟﺍ ﻊﺑﺮﻣ + ﻁﻮﻄﺨﻟﺍ) ﺎﻬﻠﻤﻛﺄﺑ ﺔﺷﺩﺭﺪﻟﺍ ﻢﻴﺠﺤﺗ
+chat width in % of the screen	ﺔﺷﺎﺸﻟﺍ ﻦﻣ % ﺔﺒﺴﻨﺑ ﺔﺷﺩﺭﺪﻟﺍ ﺽﺮﻋ
+seconds before chat lines fade (0 = never)	(ﺍﺪﺑﺃ = 0) ﺔﺷﺩﺭﺪﻟﺍ ﻁﻮﻄﺧ ﻰﺷﻼﺘﺗ ﻥﺃ ﻞﺒﻗ ﻥﺍﻮﺛ
+chat background on / off	ﺔﺷﺩﺭﺪﻟﺍ ﺔﻴﻔﻠﺧ ﻑﺎﻘﻳﺇ/ﻞﻴﻐﺸﺗ
+clear your chat	ﻚﺑ ﺔﺻﺎﺨﻟﺍ ﺔﺷﺩﺭﺪﻟﺍ ﺢﺴﻣ
+your account (user, Discord, gender, age, logins)	(ﻝﻮﺧﺪﻟﺍ ﺕﻼﻴﺠﺴﺗ ،ﺮﻤﻌﻟﺍ ،ﺲﻨﺠﻟﺍ ،Discord ،ﻡﺪﺨﺘﺴﻤﻟﺍ) ﻚﺑﺎﺴﺣ
+same as /stats	stats/ ﺲﻔﻧ
+list the commands	ﺮﻣﺍﻭﻷﺍ ﺔﻤﺋﺎﻗ
+player left	ﺐﻋﻼﻟﺍ ﺭﺩﺎﻏ
+no position from them yet	ﻥﻵﺍ ﻰﺘﺣ ﻢﻬﻨﻣ ﻒﻗﻮﻣ ﺪﺟﻮﻳ ﻻ
+they are paused	ﺎﺘﻗﺆﻣ ﻢﻬﻓﺎﻘﻳﺇ ﻢﺗ
+they are on a mission / in a cutscene	ﻲﺋﺎﻤﻨﻴﺳ ﺪﻬﺸﻣ ﻲﻓ / ﺔﻤﻬﻣ ﻲﻓ ﻢﻬﻧﺇ
+their position is too old	ﺍﺪﺟ ﻢﻳﺪﻗ ﻢﻬﻔﻗﻮﻣ
+they are in another interior	ﺮﺧﺁ ﻞﺧﺍﺩ ﻲﻓ ﻢﻫ
+Go behind cancelled%s%s.	.%s%sﺀﺎﻐﻟﻹﺍ ﺯﻭﺎﺠﺗ
+tapped again	ﻯﺮﺧﺃ ﺓﺮﻣ ﺎﻬﻟﻼﻐﺘﺳﺍ
+Go behind again in %d s.	.ﺔﻴﻧﺎﺛ %d ﻝﻼﺧ ﻯﺮﺧﺃ ﺓﺮﻣ ﻒﻠﺨﺗ
+Can't go behind %s: %s.	.%s: %s ﺯﻭﺎﺠﺗ ﻦﻜﻤﻳ ﻻ
+Can't go behind as a passenger.	.ﺐﻛﺍﺮﻛ ﻒﻠﺨﺘﻳ ﻥﺃ ﻦﻜﻤﻳ ﻻ
+Going behind %s in 3... (tap Cancel to stop)	(ﻒﻗﻮﺘﻠﻟ "ﺀﺎﻐﻟﺇ" ﻕﻮﻓ ﺮﻘﻧﺍ) ...3 ﻝﻼﺧ %s ﺯﻭﺎﺠﺗ
+Behind %s.	.%s ﻒﻠﺧ
+you died	ﺖﻣ ﺪﻘﻟ
+Going behind %s	%s ﻦﻋ ﻒﻠﺨﺘﻟﺍ
+No player to go behind%s.	.%sﻪﻨﻋ ﻒﻠﺨﺘﻴﻟ ﺐﻋﻻ ﺪﺟﻮﻳ ﻻ
+ (wrong id)	(ﺊﻃﺎﺧ ﻑﺮﻌﻣ) 
+Usage: /tp :place  -  %s	%s - ﻥﺎﻜﻣ: tp/ :ﻡﺍﺪﺨﺘﺳﻻﺍ
+Teleported to %s.	.%s ﻰﻟﺇ ﺎﻳﺭﻮﻓ ﻞﻘﻨﻟﺍ ﻢﺗ
+No player with id %d.	.%d ﻑﺮﻌﻤﻟﺎﺑ ﺐﻋﻻ ﺪﺟﻮﻳ ﻻ
+Unknown place \"%s\". Type /tp to list them.	.ﺎﻬﺟﺍﺭﺩﻹ tp/ ﺐﺘﻛﺍ .\"%s\" ﻑﻭﺮﻌﻣ ﺮﻴﻏ ﻥﺎﻜﻣ
+Gravity: %.2f%s	%.2f%s :ﺔﻴﺑﺫﺎﺠﻟﺍ
+ (normal)	(ﻱﺩﺎﻋ) 
+Unknown command /%s. Type /help.	.help/ ﺐﺘﻛﺍ .%s/ ﻑﻭﺮﻌﻣ ﺮﻴﻏ ﺮﻣﺃ
+Mission sync request	ﺔﻤﻬﻤﻟﺍ ﺔﻨﻣﺍﺰﻣ ﺐﻠﻃ
+wants to Mission sync with you: you see each other on missions and share the mission.	.ﺔﻤﻬﻤﻟﺍ ﻥﺎﻛﺭﺎﺸﺗﻭ ﻡﺎﻬﻤﻟﺍ ﻲﻓ ﺾﻌﺒﻟﺍ ﺎﻤﻜﻀﻌﺑ ﻯﺮﺗ :ﻚﻌﻣ ﺔﻤﻬﻤﻟﺍ ﺔﻨﻣﺍﺰﻣ ﺪﻳﺮﻳ
+Closes in %d s	ﺔﻴﻧﺎﺛ %d ﻝﻼﺧ ﻕﻼﻏﻹﺍ ﻢﺘﻳ
+Accept	ﻝﻮﺒﻗ
+*** Mission sync with %s...	...%s ﻊﻣ ﺔﻤﻬﻤﻟﺍ ﺔﻨﻣﺍﺰﻣ ***
+Decline	ﺾﻓﺭ
+*** You declined Mission sync with %s.	.%s ﻊﻣ ﺔﻤﻬﻤﻟﺍ ﺔﻨﻣﺍﺰﻣ ﺖﻀﻓﺭ ﺪﻘﻟ ***
+Unsync mission	ﺔﻨﻣﺍﺰﺘﻣ ﺮﻴﻏ ﺔﻤﻬﻣ
+Accept Mission sync	ﺔﻤﻬﻤﻟﺍ ﺔﻨﻣﺍﺰﻣ ﻝﻮﺒﻗ
+Group full (16)	(16) ﺔﻠﻣﺎﻜﻟﺍ ﺔﻋﻮﻤﺠﻤﻟﺍ
+Asked... (waiting)	(ﺭﺎﻈﺘﻧﺍ ﻲﻓ)...ﻝﺄﺳ
+Mission sync	ﺔﻤﻬﻤﻟﺍ ﺔﻨﻣﺍﺰﻣ
+*** Asked %s for Mission sync. Waiting for them to accept...	..ﻢﻬﻟﻮﺒﻗ ﺭﺎﻈﺘﻧﺍ ﻲﻓ .ﺔﻤﻬﻤﻟﺍ ﺔﻨﻣﺍﺰﻤﻟ %s ﻝﺍﺆﺳ ﻢﺗ ***
+*** %s is no longer in your Mission sync.	*** %s ﻚﺘﻤﻬﻣ ﺔﻨﻣﺍﺰﻣ ﻲﻓ ﺍﺩﻮﺟﻮﻣ ﺪﻌﻳ ﻢﻟ.
+Player list	ﻦﻴﺒﻋﻼﻟﺍ ﺔﻤﺋﺎﻗ
+Not connected	ﻞﺼﺘﻣ ﺮﻴﻏ
+Players: %d	%d :ﻥﻮﺒﻋﻼﻟﺍ
+Not connected. Server > Connect, or join a custom server.	.ﺺﺼﺨﻣ ﻡﺩﺎﺧ ﻰﻟﺇ ﻡﺎﻤﻀﻧﻻﺍ ﻭﺃ ،ﻝﺎﺼﺗﻻﺍ < ﻡﺩﺎﺨﻟﺍ .ﻞﺼﺘﻣ ﺮﻴﻏ
+%s: on mission %s	%s: ﺔﻤﻬﻤﻟﺍ ﻲﻓ %s
+%s: in a cutscene	%s: ﻲﺋﺎﻤﻨﻴﺳ ﺪﻬﺸﻣ ﻲﻓ
+%s  |  HP %d  |  armour %d	%s |  ﻲﺑ ﺶﺗﺍ %d |  ﻉﺭﺩ %d
+Mission sync is off on this server	ﻡﺩﺎﺨﻟﺍ ﺍﺬﻫ ﻰﻠﻋ ﺔﻠﻄﻌﻣ ﺔﻤﻬﻤﻟﺍ ﺔﻨﻣﺍﺰﻣ
+Go behind (%d s)	(ﻲﻧﺍﻮﺛ %d) ﻒﻠﺨﻠﻟ ﺏﺎﻫﺬﻟﺍ
+Go behind (3 2 1)	(1 2 3) ﻒﻠﺨﻠﻟ ﺏﺎﻫﺬﻟﺍ
+      Unmute voice	ﺕﻮﺼﻟﺍ ﻢﺘﻛ ﺀﺎﻐﻟﺇ      
+      Mute voice	ﺕﻮﺼﻟﺍ ﻢﺘﻛ      
+Leave Mission sync	ﺔﻤﻬﻤﻟﺍ ﺔﻨﻣﺍﺰﻣ ﻙﺮﺗﺍ
+*** You left Mission sync.	.ﺔﻤﻬﻤﻟﺍ ﺔﻨﻣﺍﺰﻣ ﺖﻛﺮﺗ ﺪﻘﻟ ***
+Tap a player, then Mission sync (up to 16 together). They get Accept / Decline.	.ﺾﻓﺭ / ﻝﻮﺒﻗ ﻰﻠﻋ ﻥﻮﻠﺼﺤﻳ .(ﺎﻌﻣ ﺎﺒﻋﻻ 16 ﻰﻟﺇ ﻞﺼﻳ ﺎﻣ) ﺔﻤﻬﻤﻟﺍ ﺔﻨﻣﺍﺰﻣ ﻢﺛ ،ﻦﻴﺒﻋﻼﻟﺍ ﺪﺣﺃ ﻰﻠﻋ ﻂﻐﺿﺍ
+Settings	ﺕﺍﺩﺍﺪﻋﻹﺍ
+Help	ﺓﺪﻋﺎﺴﻣ
+MP 2.37 - multiplayer for GTA SA	MP 2.37 - ـﻟ ﻦﻴﺒﻋﻼﻟﺍ ﺓﺩﺪﻌﺘﻣ ﺔﺒﻌﻟ GTA SA
+Top bar: the dots open Help, Server and Player list. Chat opens the chat box (type / for the commands). Drag the bar to move it.	.ﻪﻜﻳﺮﺤﺘﻟ ﻂﻳﺮﺸﻟﺍ ﺐﺤﺳﺍ .(ﺮﻣﺍﻭﻸﻟ / ﺐﺘﻛﺍ) ﺔﺷﺩﺭﺪﻟﺍ ﻊﺑﺮﻣ ﺢﺘﻔﺗ ﺔﺷﺩﺭﺪﻟﺍ .ﻞﻐﺸﻤﻟﺍﻭ ﻡﺩﺎﺨﻟﺍﻭ ﺕﺎﻤﻴﻠﻌﺘﻟﺍ ﺔﻤﺋﺎﻗ ﻁﺎﻘﻨﻟﺍ ﺢﺘﻔﺗ :ﻱﻮﻠﻌﻟﺍ ﻂﻳﺮﺸﻟﺍ
+Server: connect to the default server, join or add custom servers (with an optional password, max 16 characters), host your own.	.ﺔﺻﺎﺨﻟﺍ ﻚﻣﺩﺍﻮﺧ ﺔﻓﺎﻀﺘﺳﺎﺑ ﻢﻗﻭ ،(ﺎﻓﺮﺣ 16 ﻰﺼﻗﺃ ﺪﺤﺑ ،ﺔﻳﺭﺎﻴﺘﺧﺍ ﺭﻭﺮﻣ ﺔﻤﻠﻜﺑ) ﺎﻬﻔﺿﺃ ﻭﺃ ﺔﺼﺼﺨﻣ ﻡﺩﺍﻮﺧ ﻰﻟﺇ ﻢﻀﻧﺍﻭ ،ﻲﺿﺍﺮﺘﻓﻻﺍ ﻡﺩﺎﺨﻟﺎﺑ ﻞﺼﺗﺍ :ﻡﺩﺎﺨﻟﺍ
+Player list: tap a player, then Mission sync. They get a popup with Accept / Decline. Synced players see each other on every mission (also in mission scenes) and share markers.	.ﺕﺎﻣﻼﻌﻟﺍ ﻥﻮﻛﺭﺎﺸﻳﻭ (ﺔﻤﻬﻤﻟﺍ ﺪﻫﺎﺸﻣ ﻲﻓ ﺎﻀﻳﺃ) ﺔﻤﻬﻣ ﻞﻛ ﻲﻓ ﺾﻌﺒﻟﺍ ﻢﻬﻀﻌﺑ ﻥﻮﻨﻣﺍﺰﺘﻤﻟﺍ ﻥﻮﺒﻋﻼﻟﺍ ﻯﺮﻳ .ﺾﻓﺭ/ﻝﻮﺒﻗ ﻦﻤﻀﺘﺗ ﺔﻘﺜﺒﻨﻣ ﺓﺬﻓﺎﻧ ﻢﻬﻟ ﺮﻬﻈﺗ .ﺔﻤﻬﻤﻟﺍ ﺔﻨﻣﺍﺰﻣ ﻢﺛ ،ﻦﻴﺒﻋﻼﻟﺍ ﺪﺣﺃ ﻰﻠﻋ ﻂﻐﺿﺍ :ﻦﻴﺒﻋﻼﻟﺍ ﺔﻤﺋﺎﻗ
+Chat commands	ﺔﺷﺩﺭﺪﻟﺍ ﺮﻣﺍﻭﺃ
+Games (2.21)	(2.21) ﺏﺎﻌﻟﻷﺍ
+/spawn [id|name] (or /v) any vehicle 400-611, /w [id|name|all] weapons, /fix, /flip, /heal, /armour	/spawn [ﻭﺃ) [ﻢﺳﻻﺍ|ﻑﺮﻌﻤﻟﺍ /v) 611-400 ﺔﺒﻛﺮﻣ ﻱﺃ، /w [ﺔﺤﻠﺳﻷﺍ [ﻊﻴﻤﺟ|ﻢﺳﻻﺍ|ﻑﺮﻌﻤﻟﺍ، /fix، /flip، /heal، /armour
+/race 1-8 races with checkpoints and times, /job trucking|quarry|pizza|burger|cluckin|taxi|medic|firetruck, /dm war|grove|airport|minigun|sniper, /leave, /scores	/race 1-8 ﺕﺎﻗﻭﻷﺍﻭ ﺶﻴﺘﻔﺘﻟﺍ ﻁﺎﻘﻧ ﻊﻣ ﺕﺎﻗﺎﺒﺳ، /job ﺀﺎﻔﻃﻹﺍ ﺔﺑﺮﻋ|ﻒﻌﺴﻤﻟﺍ|ﻲﺴﻛﺎﺘﻟﺍ|ﻦﻴﻛﻮﻠﻛ|ﺮﺟﺮﺒﻟﺍ|ﺍﺰﺘﻴﺒﻟﺍ|ﺮﺠﺤﻤﻟﺍ|ﺕﺎﻨﺣﺎﺸﻟﺎﺑ ﻞﻘﻨﻟﺍ، /dm ﺹﺎﻨﻗ|ﻥﻮﻐﻴﻨﻴﻣ|ﺭﺎﻄﻤﻟﺍ|ﻥﺎﺘﺴﺒﻟﺍ|ﺏﺮﺤﻟﺍ، /leave، /scores
+Teleports everybody sees: /ls /sf /lv /chiliad /lsairport /sfairport /lvairport /desert /beach /strip /dam /area51 /pizza /burger /cluckin /barber /tattoo /gym /gymsf /gymlv /clothes /prolaps /victim /ammu /spray /transfender /locolow /waa /school /flightschool /boatschool /truck /quarry /emmet /home /gf /casino	ls /sf /lv /chiliad /lsairport /sfairport /lvairport /desert /beach /strip /dam /area51 /pizza /burger /cluckin /barber /tattoo /gym /gymsf /gymlv /clothes /prolaps /victim /ammu /spray /transfender /locolow /waa /school /flightschool /boatschool /truck /quarry /emmet /home /gf /casino/ :ﻊﻴﻤﺠﻟﺍ ﻩﺍﺮﻳ ﻱﺬﻟﺍ ﻱﺭﻮﻔﻟﺍ ﻞﻘﻨﻟﺍ
+Open world: /unlock (all cities, shops, food, gyms, barbers, tattoo, clothes, Ammu-Nation, Pay 'n' Spray, mod garages, schools, safe houses), /girlfriends	girlfriends/ ،(ﺔﻨﻣﻵﺍ ﻝﺯﺎﻨﻤﻟﺍ ،ﺱﺭﺍﺪﻤﻟﺍ ،ﺔﺜﻳﺪﺤﻟﺍ ﺕﺎﺟﺍﺮﻜﻟﺍ ،Ammu-Nation، Pay 'n' Spray ،ﺲﺑﻼﻤﻟﺍ ،ﻢﺷﻮﻟﺍ ،ﻥﻮﻗﻼﺤﻟﺍ ،ﺔﻴﺿﺎﻳﺮﻟﺍ ﺏﺎﻌﻟﻷﺍ ﺕﻻﺎﺻ ،ﻡﺎﻌﻄﻟﺍ ،ﺔﻳﺭﺎﺠﺘﻟﺍ ﺕﻼﺤﻤﻟﺍ ،ﻥﺪﻤﻟﺍ ﻊﻴﻤﺟ) unlock/ :ﺡﻮﺘﻔﻤﻟﺍ ﻢﻟﺎﻌﻟﺍ
+Places for /tp :place	tp :place/ ـﻟ ﻦﻛﺎﻣﺃ
+Say	ﻞﻗ
+Tap to chat  -  type / for commands	ﺮﻣﺍﻭﻸﻟ / ﺐﺘﻛﺍ - ﺔﺷﺩﺭﺪﻠﻟ ﺮﻘﻧﺍ
+Chat button to type  -  / for commands	ﺮﻣﺍﻭﻸﻟ / - ﺔﺑﺎﺘﻜﻟ ﺔﺷﺩﺭﺪﻟﺍ ﺭﺯ
+Spawn	ﺥﺮﻔﺗ
+You are back (not AFK any more).	.(ﻥﻵﺍ ﺪﻌﺑ AFK ﺪﻌﺗ ﻢﻟ) ﺕﺪﻋ ﺪﻘﻟ
+You are AFK (3 minutes without moving). Move to come back.	.ﺩﻮﻌﺘﻟ ﻙﺮﺤﺗ .(ﻙﺮﺤﺘﺗ ﻥﺃ ﻥﻭﺩ ﻖﺋﺎﻗﺩ AFK (3 ﻊﺿﻭ ﻲﻓ ﺖﻧﺃ
+AFK: you leave the server in 1 minute if you don't move.	AFK: ﻙﺮﺤﺘﺗ ﻢﻟ ﺍﺫﺇ ﺓﺪﺣﺍﻭ ﺔﻘﻴﻗﺩ ﻝﻼﺧ ﻡﺩﺎﺨﻟﺍ ﻙﺮﺘﺗ.
+AFK for 20 minutes: you left the server so somebody else can play.	AFK ﺐﻌﻠﻟﺍ ﻦﻣ ﺮﺧﺁ ﺺﺨﺷ ﻦﻜﻤﺘﻳ ﻰﺘﺣ ﻡﺩﺎﺨﻟﺍ ﺖﻛﺮﺗ ﺪﻘﻟ :ﺔﻘﻴﻗﺩ 20 ﺓﺪﻤﻟ.
+right arm	ﻰﻨﻤﻴﻟﺍ ﻉﺍﺭﺬﻟﺍ
+left arm	ﻯﺮﺴﻴﻟﺍ ﻉﺍﺭﺬﻟﺍ
+right torso	ﻦﻤﻳﻷﺍ ﻉﺬﺠﻟﺍ
+left torso	ﺮﺴﻳﻷﺍ ﻉﺬﺠﻟﺍ
+right leg	ﻰﻨﻤﻴﻟﺍ ﻕﺎﺴﻟﺍ
+left leg	ﻯﺮﺴﻴﻟﺍ ﻕﺎﺴﻟﺍ
+%s hit the %s	%s ﺏﺮﺿ %s
+Landstalker	ﺩﺭﺎﻄﻤﻟﺍ
+Bravura	ﺍﺭﻮﻓﺍﺮﺑ
+Buffalo	ﺱﻮﻣﺎﺠﻟﺍ
+Linerunner	ﻂﺳﻮﻟﺍ ﻂﺧ ﺀﺍﺪﻋ
+Perennial	ﺓﺮﻤﻌﻤﻟﺍ
+Sentinel	ﺱﺭﺎﺤﻟﺍ
+Dumper	ﺔﺑﻼﻗ ﺔﻨﺣﺎﺷ
+Firetruck	ﺀﺎﻔﻃﺇ ﺔﺑﺮﻋ
+Trashmaster	ﺔﻣﺎﻤﻘﻟﺍ ﺮﻳﺪﻣ
+Stretch	ﺪﺘﻤﺗ
+Manana	ﺎﻧﺎﻧﺎﻣ
+Infernus	ﻢﻴﺤﺠﻟﺍ
+Voodoo	ﻭﺩﻮﻔﻟﺍ
+Pony	ﺮﻬﻤﻟﺍ
+Mule	ﻞﻐﺑ
+Cheetah	ﺪﻬﻔﻟﺍ
+Ambulance	ﻑﺎﻌﺳﺇ ﺓﺭﺎﻴﺳ
+Leviathan	ﺕﻮﻏﺎﻄﻟﺍ
+Moonbeam	ﺮﻤﻘﻟﺍ ﻉﺎﻌﺷ
+Esperanto	ﻮﺘﻧﺍﺮﺒﺳﻻﺍ
+Taxi	ﻲﺴﻛﺎﺗ
+Washington	ﻦﻄﻨﺷﺍﻭ
+Bobcat	ﺕﺎﻜﺑﻮﺒﻟﺍ
+Mr Whoopee	ﻲﺑﻭﻭ ﺪﻴﺴﻟﺍ
+BF Injection	ﻑﺇ ﻲﺑ ﻦﻘﺣ
+Hunter	ﺮﺘﻨﻫ
+Premier	ﺀﺍﺭﺯﻮﻟﺍ ﺲﻴﺋﺭ
+Enforcer	ﺬﻔﻨﻤﻟﺍ
+Securicar	ﺭﺎﻜﻳﺭﻮﻴﻜﻴﺳ
+Banshee	ﻲﺸﻧﺎﺑ
+Predator	ﺱﺮﺘﻔﻤﻟﺍ
+Bus	ﺔﻠﻓﺎﺣ
+Rhino	ﻥﺮﻘﻟﺍ ﺪﻴﺣﻭ
+Hotknife	ﺔﻨﺧﺎﺳ ﻦﻴﻜﺳ
+Trailer 1	1 ﺓﺭﻮﻄﻘﻣ
+Previon	ﻥﻮﻴﻔﻳﺮﺑ
+Coach	ﺏﺭﺪﻣ
+Cabbie	ﺓﺮﺟﺃ ﻲﺴﻛﺎﺗ ﻖﺋﺎﺳ
+Stallion	ﻞﺤﻔﻟﺍ
+Rumpo	ﻮﺒﻣﺍﺭ
+RC Bandit	RC ﺹﻮﺼﻠﻟﺍ
+Romero	ﻭﺮﻴﻣﻭﺭ
+Packer	ﺮﻛﺎﺑ
+Admiral	ﻝﺍﺮﻴﻣﺩﺃ
+Squalo	ﻮﻟﺍﻮﻜﺳ
+Seasparrow	ﺮﺤﺒﻟﺍ ﺭﻮﻔﺼﻋ
+Pizzaboy	ﻱﻮﺑ ﺍﺰﺘﻴﺑ
+Tram	ﻡﺍﺮﺘﻟﺍ
+Trailer 2	2 ﺓﺭﻮﻄﻘﻣ
+Turismo	ﻮﻣﺰﻳﺭﻮﺗ
+Speeder	ﻉﺮﺳﺃ
+Reefer	ﺓﺩﺮﺒﻤﻟﺍ
+Tropic	ﺭﺍﺪﻣ
+Flatbed	ﺔﺤﻄﺴﻣ
+Yankee	ﻲﻜﻧﺎﻳ
+Caddy	ﺔﺒﻠﻌﻟﺍ
+Solair	ﺮﻴﻟﻮﺳ
+Berkley RC Van	ﻥﺎﻓ ﻲﺳ ﺭﺁ ﻲﻠﻛﺮﻴﺑ
+Skimmer	ﺓﺪﺸﻘﻣ
+Faggio	ﻮﻴﺟﺎﻓ
+Freeway	ﻊﻳﺮﺴﻟﺍ ﻖﻳﺮﻄﻟﺍ
+RC Baron	ﻥﻭﺭﺎﺑ ﻲﺳ ﺭﺁ
+RC Raider	ﺭﺪﻳﺍﺭ ﻲﺳ ﺭﺁ
+Glendale	ﻝﺍﺪﻨﻴﻠﻏ
+Oceanic	ﻲﻄﻴﺤﻣ
+Sanchez	ﺰﻴﺸﻧﺎﺳ
+Sparrow	ﺭﻮﻔﺼﻋ
+Quad	ﺔﻴﻋﺎﺑﺭ
+Coastguard	ﻞﺣﺍﻮﺴﻟﺍ ﺮﻔﺧ
+Dinghy	ﻕﺭﻭﺯ
+Hermes	ﺲﻴﻣﺮﻴﻫ
+Sabre	ﺮﺑﺎﺻ
+Rustler	ﺮﻠﺘﺳﺍﺭ
+Walton	ﻥﻮﺘﻟﺍﻭ
+Regina	ﺎﻨﻴﺠﻳﺭ
+Comet	ﺐﻧﺬﻤﻟﺍ
+Burrito	ﻮﺘﻳﺭﻮﺑ
+Camper	ﺔﺑﺮﻌﻟﺍ
+Marquis	ﺰﻴﻛﺭﺎﻣ
+Baggage	ﺔﻌﺘﻣﻷﺍ
+Dozer	ﺭﺯﻭﺪﻠﺒﻟﺍ
+Maverick	ﻖﺸﻨﻤﻟﺍ
+News Chopper	ﺔﻴﺣﻭﺮﻤﻟﺍ ﺭﺎﺒﺧﺃ
+Rancher	ﺮﺸﻧﺍﺭ
+FBI Rancher	ﺮﺸﻧﺍﺭ ﻲﻟﺍﺭﺪﻔﻟﺍ ﺕﺎﻘﻴﻘﺤﺘﻟﺍ ﺐﺘﻜﻣ
+Virgo	ﺀﺍﺭﺬﻌﻟﺍ ﺝﺮﺑ
+Greenwood	ﺩﻭﻮﻨﻳﺮﻏ
+Jetmax	ﺲﻛﺎﻣ ﺖﻴﺟ
+Hotring	ﺞﻨﻳﺮﺗﻮﻫ
+Sandking	ﺞﻨﻴﻛﺪﻧﺎﺳ
+Blista Compact	ﺖﻛﺎﺒﻣﻮﻛ ﺎﺘﺴﻴﻠﺑ
+Police Maverick	ﻚﻳﺮﻓﺎﻣ ﺔﻃﺮﺸﻟﺍ
+Boxville	ﻞﻴﻔﺴﻛﻮﺑ
+Benson	ﻥﻮﺴﻨﻴﺑ
+Mesa	ﺎﺴﻴﻣ
+RC Goblin	RC ﺖﻳﺮﻔﻋ
+Hotring Racer A	ﺃ ﻖﺑﺎﺴﺘﻤﻟﺍ ﻎﻨﻳﺮﺗﻮﻫ
+Hotring Racer B	ﺏ ﻖﺑﺎﺴﺘﻤﻟﺍ ﻎﻨﻳﺮﺗﻮﻫ
+Bloodring Banger	ﺀﺎﻣﺩ ﺹﺎﺼﻣ
+Rancher Lure	ﺮﺸﻧﺍﺭ ﺀﺍﺮﻏﺇ
+Super GT	ﻲﺗ ﻲﺟ ﺮﺑﻮﺳ
+Elegant	ﻖﻴﻧﺃ
+Journey	ﺔﻠﺣﺭ
+Bike	ﺔﺟﺍﺭﺩ
+Mountain Bike	ﺔﻴﻠﺒﺠﻟﺍ ﺔﺟﺍﺭﺪﻟﺍ
+Beagle	ﻞﻐﻴﺑ
+Cropduster	ﺮﺘﺳﺍﺩ ﺏﻭﺮﻛ
+Stunt	ﺔﻠﻴﺣ
+Tanker	ﺔﻠﻗﺎﻧ
+Roadtrain	ﻖﻳﺮﻄﻟﺍ ﺭﺎﻄﻗ
+Nebula	ﻢﻳﺪﺳ
+Majestic	ﺐﻴﻬﻣ
+Buccaneer	ﻥﺎﺻﺮﻘﻟﺍ
+Shamal	ﻝﺎﻤﺷ
+Hydra	ﺍﺭﺪﻴﻫ
+Cement Truck	ﺖﻨﻤﺳﻻﺍ ﺔﻨﺣﺎﺷ
+Tow Truck	ﺐﺤﺴﻟﺍ ﺔﻨﺣﺎﺷ
+Fortune	ﺓﻭﺮﺛ
+Cadrona	ﺎﻧﻭﺭﺩﺎﻛ
+FBI Truck	ﻲﻟﺍﺭﺪﻴﻔﻟﺍ ﺕﺎﻘﻴﻘﺤﺘﻟﺍ ﺐﺘﻜﻣ ﺔﻨﺣﺎﺷ
+Willard	ﺩﺭﻼﻳﻭ
+Forklift	ﺔﻴﻛﻮﺷ ﺔﻌﻓﺍﺭ
+Tractor	ﺭﺍﺮﺟ
+Combine	ﻊﻤﺠﻟﺍ
+Feltzer	ﺭﺰﺘﻠﻴﻓ
+Remington	ﻥﻮﺘﺠﻨﻤﻳﺭ
+Slamvan	ﻥﺎﻔﻣﻼﺳ
+Blade	ﺪﻴﻠﺑ
+Freight	ﻦﺤﺸﻟﺍ
+Streak	ﻂﺧ
+Vortex	ﺔﻣﺍﻭﺩ
+Vincent	ﺖﻨﺴﻨﻓ
+Bullet	ﺔﺻﺎﺻﺭ
+Clover	ﻢﻴﺳﺮﺒﻟﺍ
+Sadler	ﺮﻟﺩﺎﺳ
+Firetruck LA	ﺱﻮﻠﺠﻧﺃ ﺱﻮﻟ ﺀﺎﻔﻃﺇ ﺔﺑﺮﻋ
+Hustler	ﻝﺎﺘﺤﻣ
+Intruder	ﻞﻴﺧﺩ
+Primo	ﻮﻤﻳﺮﺑ
+Cargobob	ﺏﻮﺑﻮﺟﺭﺎﻛ
+Tampa	ﺎﺒﻣﺎﺗ
+Sunrise	ﺲﻤﺸﻟﺍ ﻕﻭﺮﺷ
+Merit	ﺓﺭﺍﺪﺠﻟﺍ
+Utility	ﺓﺪﺋﺎﻓ
+Nevada	ﺍﺩﺎﻔﻴﻧ
+Yosemite	ﺖﻳﺎﻤﺳﻮﻳ
+Windsor	ﺭﻮﺳﺪﻧﻭ
+Monster A	ﺃ ﺶﺣﻮﻟﺍ
+Monster B	ﺏ ﺶﺣﻮﻟﺍ
+Uranus	ﺱﻮﻧﺍﺭﻭﺃ
+Jester	ﺝﺮﻬﻣ
+Sultan	ﻥﺎﻄﻠﺳ
+Stratum	ﺔﻘﺒﻄﻟﺍ
+Elegy	ﺓﺎﺛﺮﻣ
+Raindance	ﺲﻧﺍﺪﻨﻳﺭ
+RC Tiger	RC ﺮﻤﻨﻟﺍ
+Flash	ﺵﻼﻓ
+Tahoma	ﺎﻣﻮﻫﺎﺗ
+Savanna	ﺎﻧﺎﻓﺎﺴﻟﺍ
+Bandito	ﻮﺘﻳﺪﻧﺎﺑ
+Freight Flat	ﻦﺤﺸﻟﺍ ﺔﻘﺷ
+Streak Carriage	ﻂﺧ ﻞﻘﻨﻟﺍ
+Kart	ﺕﺭﺎﻛ
+Mower	ﺓﺯﺍﺰﺟ
+Duneride	ﺪﻳﺮﻴﻧﺩ
+Sweeper	ﺔﺳﺎﻨﻛ
+Broadway	ﻱﺍﻭﺩﻭﺮﺑ
+Tornado	ﺭﺎﺼﻋﺍ
+Huntley	ﻲﻠﺘﻨﻫ
+Stafford	ﺩﺭﻮﻓﺎﺘﺳ
+Newsvan	ﻥﺎﻔﺳﻮﻴﻧ
+Tug	ﺮﻄﻘﻟﺍ
+Trailer 3	3 ﺓﺭﻮﻄﻘﻣ
+Emperor	ﺭﻮﻃﺍﺮﺒﻣﻹﺍ
+Wayfarer	ﺮﻓﺎﺴﻣ
+Euros	ﻭﺭﻮﻳ
+Hotdog	ﺝﻭﺩ ﺕﻮﻫ
+Club	ﻱﺩﺎﻧ
+Freight Box	ﻦﺤﺸﻟﺍ ﻕﻭﺪﻨﺻ
+Article Trailer 3	3 ﺓﺭﻮﻄﻘﻣ ﺓﺩﺎﻤﻟﺍ
+Andromada	ﺍﺩﺎﻣﻭﺭﺪﻧﺃ
+Dodo	ﻭﺩﻭﺩ
+RC Cam	RC ﺍﺮﻴﻣﺎﻛ
+Launch	ﻕﻼﻃﺇ
+Police LSPD	LSPD ﺔﻃﺮﺸﻟﺍ
+Police SFPD	SFPD ﺔﻃﺮﺸﻟﺍ
+Police LVPD	LVPD ﺔﻃﺮﺸﻟﺍ
+Police Ranger	ﺔﻃﺮﺸﻟﺍ ﺱﺭﺎﺣ
+Picador	ﺭﻭﺩﺎﻜﻴﺑ
+Alpha	ﺎﻔﻟﺃ
+Phoenix	ﺲﻜﻴﻨﻴﻓ
+Glendale Shit	ﻑﺮﻘﻟﺍ ﻝﺍﺪﻨﻴﻠﻏ
+Sadler Shit	ﻑﺮﻘﻟﺍ ﺮﻟﺩﺎﺳ
+Baggage Trailer A	ﺃ ﺔﻌﺘﻣﻷﺍ ﺓﺭﻮﻄﻘﻣ
+Baggage Trailer B	ﺏ ﺔﻌﺘﻣﻷﺍ ﺓﺭﻮﻄﻘﻣ
+Tug Stairs	ﺮﻄﻘﻟﺍ ﻢﻟﻼﺳ
+Boxville Black	ﻙﻼﺑ ﻞﻴﻔﺴﻛﻮﺑ
+Farm Trailer	ﺔﻋﺭﺰﻤﻟﺍ ﺓﺭﻮﻄﻘﻣ
+Utility Trailer	ﺓﺪﺋﺎﻓ ﺓﺭﻮﻄﻘﻣ
+Could not spawn that vehicle here.	.ﺎﻨﻫ ﺓﺭﺎﻴﺴﻟﺍ ﻚﻠﺗ ﺥﺮﻔﺗ ﻥﺃ ﻦﻜﻤﻳ ﻻ
+Spawned %s (%d).	.(%s (%d ﺝﺎﺘﻧﺇ ﻢﺗ
+/spawn [id or name]  e.g. /spawn 411  or  /spawn infernus  (400 - 611)	/spawn [ﻝﺎﺜﻤﻟﺍ ﻞﻴﺒﺳ ﻰﻠﻋ [ﻢﺳﻻﺍ ﻭﺃ ﻑﺮﻌﻤﻟﺍ. /spawn 411 ﻭﺃ /spawn 611 - 400) ﻢﻴﺤﺠﻟﺍ)
+Popular: 411 Infernus, 522 NRG-500, 560 Sultan, 541 Bullet, 451 Turismo, 487 Maverick, 520 Hydra, 432 Rhino, 556 Monster, 468 Sanchez	ﺰﻴﺸﻧﺎﺳ 468 ،ﺮﺘﺴﻧﻮﻣ 556 ،ﻥﺮﻘﻟﺍ ﺪﻴﺣﻭ 432 ،ﺍﺭﺪﻴﻫ 520 ،ﻚﻳﺮﻓﺎﻣ 487 ،ﻮﻣﺰﻳﺭﻮﺗ 451 ،ﺔﺻﺎﺻﺭ 541 ،ﻥﺎﻄﻠﺳ NRG-500، 560 522 ،ﺱﻮﻧﺮﻴﻔﻧﺇ 411 :ﺔﻴﺒﻌﺸﻟﺍ
+No vehicle \"%s\". Use an id 400 - 611 or a name (/spawn infernus).	.(ﻢﻴﺤﺠﻟﺍ spawn/) ﻢﺳﻻﺍ ﻭﺃ 611 - 400 ﻑﺮﻌﻤﻟﺍ ﻡﺪﺨﺘﺳﺍ .\"%s\" ﺔﺒﻛﺮﻣ ﺪﺟﻮﺗ ﻻ
+%s (%d) can't be spawned (rail / camera vehicle or trailer).	.(ﺓﺭﻮﻄﻘﻣ ﻭﺃ ﺍﺮﻴﻣﺎﻛ / ﺪﻳﺪﺣ ﺔﻜﺳ ﺔﺒﻛﺮﻣ) (%s (%d ﺮﺸﻧ ﻦﻜﻤﻳ ﻻ
+/w [id or name]  or  /w all  (pack: deagle, m4, spas, sniper, grenades)	/w [id or name] ﻭﺃ /w ﺔﻣﺰﺤﻟﺍ) ﻞﻜﻟﺍ: deagle، m4، spas، ﺔﻳﻭﺪﻳ ﻞﺑﺎﻨﻗ ،ﺹﺎﻨﻗ)
+Weapon pack given.	.ﺔﻣﺪﻘﻤﻟﺍ ﺔﺤﻠﺳﻷﺍ ﺔﻣﺰﺣ
+No weapon \"%s\". Type /w for the list.	.ﺔﻤﺋﺎﻘﻠﻟ w/ ﺐﺘﻛﺍ .\"%s\" ﺡﻼﺳ ﺪﺟﻮﻳ ﻻ
+Weapon: %s (%d).	.(%s (%d :ﺡﻼﺴﻟﺍ
+Los Santos	ﺱﻮﺘﻧﺎﺳ ﺱﻮﻟ
+San Fierro	ﻭﺮﻴﻴﻓ ﻥﺎﺳ
+Las Venturas	ﺱﺍﺭﻮﺘﻨﻴﻓ ﺱﻻ
+Mount Chiliad	ﺩﺎﻴﻠﺷ ﻞﺒﺟ
+Los Santos Airport	ﺱﻮﺘﻧﺎﺳ ﺱﻮﻟ ﺭﺎﻄﻣ
+Easter Bay Airport	ﻱﺎﺑ ﺮﺘﺴﻳﺇ ﺭﺎﻄﻣ
+Las Venturas Airport	ﺱﺍﺭﻮﺘﻨﻴﻓ ﺱﻻ ﺭﺎﻄﻣ
+Verdant Meadows Airstrip	ﺯﻭﺪﻴﻣ ﺖﻧﺍﺩﺮﻴﻓ ﺕﺍﺮﺋﺎﻃ ﻂﺒﻬﻣ
+Santa Maria Beach	ﺎﻳﺭﺎﻣ ﺎﺘﻧﺎﺳ ﺊﻃﺎﺷ
+The Strip	ﻂﻳﺮﺸﻟﺍ
+Sherman Dam	ﻥﺎﻣﺮﻴﺷ ﺪﺳ
+Area 69 gate	69 ﺔﻘﻄﻨﻤﻟﺍ ﺔﺑﺍﻮﺑ
+Well Stacked Pizza Co.	ﺪﻴﻛﺎﺘﺳ ﻞﻳﻭ ﺍﺰﺘﻴﺑ ﺔﻛﺮﺷ
+Burger Shot	ﺕﻮﺷ ﺮﺟﺮﺑ
+Cluckin' Bell	ﻞﻴﺑ ﻦﻴﻛﻮﻠﻛ
+Reece's Barber Shop	ﺔﻗﻼﺤﻠﻟ ﺲﻳﺭ ﻞﺤﻣ
+Idlewood Tattoo	ﻢﺷﻮﻟﺍ ﺩﻭﻮﻟﺪﻳﺇ
+Ganton Gym	ﺔﻴﺿﺎﻳﺮﻟﺍ ﻥﻮﺘﻧﺎﺟ ﺔﻟﺎﺻ
+Cobra Martial Arts	ﺍﺮﺑﻮﻜﻟﺍ ﻝﺎﺘﻘﻟﺍ ﻥﻮﻨﻓ
+Below the Belt Gym	ﻡﺍﺰﺤﻟﺍ ﺖﺤﺗ ﺔﻴﺿﺎﻳﺮﻟﺍ ﺏﺎﻌﻟﻷﺍ ﺔﻟﺎﺻ
+Binco	ﻮﻜﻨﻴﺑ
+Pro-Laps	ﺲﺑﻻ ﻭﺮﺑ
+Victim	ﺔﻴﺤﻀﻟﺍ
+Ammu-Nation	ﺔﻣﻷﺍ-ﻮﻣﺃ
+Pay 'n' Spray	ﺵﺮﻟﺍﻭ ﻊﻓﺪﻟﺍ
+Loco Low Co.	ﻮﻟ ﻮﻛﻮﻟ ﺔﻛﺮﺷ
+Wheel Arch Angels	ﺔﻠﺠﻌﻟﺍ ﺱﻮﻗ ﺔﻜﺋﻼﻣ
+Driving School	ﺕﺍﺭﺎﻴﺴﻟﺍ ﺓﺩﺎﻴﻗ ﻢﻴﻠﻌﺘﻟ ﺔﺳﺭﺪﻣ
+Flight School	ﻥﺍﺮﻴﻄﻟﺍ ﺔﺳﺭﺪﻣ
+RS Haul (trucking)	(ﺕﺎﻨﺣﺎﺸﻟﺎﺑ ﻞﻘﻨﻟﺍ) ﻝﻮﻫ ﺱﺇ ﺭﺁ
+Hunter Quarry	ﺮﺠﺤﻤﻟﺍ ﺮﺘﻨﻫ
+Emmet's	ﺖﻴﻤﻳﺍ
+CJ's safe house	ﻦﻣﻵﺍ CJ ﻝﺰﻨﻣ
+Denise's house	ﺲﻴﻨﻳﺩ ﻝﺰﻨﻣ
+Caligula's Casino	ﻻﻮﺠﻴﻟﺎﻛ ﻮﻨﻳﺯﺎﻛ
+Leave the race / job / DM first (/leave).	.(leave/) ﻻﻭﺃ DM / ﺔﻔﻴﻇﻮﻟﺍ / ﻕﺎﺒﺴﻟﺍ ﻙﺮﺗﺍ
+(/%s) %s teleported to %s!	(/%s) ﻞﻘﻧ ﻢﺗ %s ﻰﻟﺇ %s!
+Trucking: RS Haul -> Las Venturas	ﺱﺍﺭﻮﺘﻨﻴﻓ ﺱﻻ <- RS Haul :ﺕﺎﻨﺣﺎﺸﻟﺎﺑ ﻞﻘﻨﻟﺍ
+Quarry: haul the rocks	ﺭﻮﺨﺼﻟﺍ ﻞﻘﻧ :ﺮﺠﺤﻤﻟﺍ
+Pizza Delivery: Idlewood	ﺩﻭﻮﻟﺪﻳﺇ :ﺍﺰﺘﻴﺒﻟﺍ ﻞﻴﺻﻮﺗ
+Burger Shot Delivery	ﺕﻮﺷ ﺮﻏﺮﺑ ﻢﻴﻠﺴﺗ
+Cluckin' Bell Delivery	Cluckin ﺱﺮﺠﻟﺍ ﻢﻴﻠﺴﺗ
+Taxi: downtown fares	ﺔﻨﻳﺪﻤﻟﺍ ﻂﺳﻭ ﺭﺎﻌﺳﺃ :ﺓﺮﺟﻷﺍ ﺕﺍﺭﺎﻴﺳ
+Paramedic: hospital run	ﻰﻔﺸﺘﺴﻤﻟﺍ ﻞﻴﻐﺸﺗ :ﻒﻌﺴﻤﻟﺍ
+Firefighter: Ganton call	ﻥﻮﺘﻧﺎﻏ ﺀﺍﺪﻧ :ﺀﺎﻔﻃﻹﺍ ﻞﺟﺭ
+War Zone DM	DM ﺏﺮﺤﻟﺍ ﺔﻘﻄﻨﻣ
+Grove Street DM	ﻡﺇ ﻱﺩ ﺖﻳﺮﺘﺳ ﻑﻭﺮﺟ
+LV Airport DM	LV DM ﺭﺎﻄﻣ
+Minigun Madness	ﻥﻮﻐﻴﻨﻴﻣ ﻥﻮﻨﺟ
+Chiliad Sniper DM	ﻡﺇ ﻱﺩ ﺹﺎﻨﻗ ﺩﺎﻴﻠﻴﺷ
+Blood Bowl Derby	ﻡﺪﻟﺍ ﺀﺎﻋﻭ ﻲﺑﺮﻳﺩ
+Monster Truck Derby	ﺔﻨﺣﺎﺷ ﺶﺣﻮﻟﺍ ﻲﺑﺮﻳﺩ
+Ocean Docks Derby	ﻲﺑﺮﻳﺩ ﺲﻛﻭﺩ ﻦﺷﻭﺃ
+Verdant Meadows Derby	ﺯﻭﺪﻴﻣ ﺖﻧﺍﺩﺮﻴﻓ ﻲﺑﺮﻳﺩ
+Chiliad Sumo	ﻮﻣﻮﺳ ﺩﺎﻴﻠﻴﺷ
+[Job] %s started %s (/job %s)	(%s %s (/job %s ﺃﺪﺑ [ﺔﻔﻴﻇﻮﻟﺍ]
+Connect to a server first.	.ﻻﻭﺃ ﻡﺩﺎﺨﻟﺎﺑ ﻞﺼﺗﺍ
+This server can't run races yet: it needs the 3.01 server (HiveMQ console option 7, or mp-server update).	.(mp ﻡﺩﺎﺧ ﺚﻳﺪﺤﺗ ﻭﺃ ،HiveMQ ﻢﻜﺤﺘﻟﺍ ﺓﺪﺣﻮﻟ 7 ﺭﺎﻴﺨﻟﺍ) 3.01 ﻡﺩﺎﺧ ﻰﻟﺇ ﺝﺎﺘﺤﻳ ﻮﻬﻓ :ﺪﻌﺑ ﺕﺎﻗﺎﺒﺴﻟﺍ ﻞﻴﻐﺸﺗ ﻡﺩﺎﺨﻟﺍ ﺍﺬﻬﻟ ﻦﻜﻤﻳ ﻻ
+Finish (or /leave) your race / derby / job / DM first.	.ﻻﻭﺃ DM / ﺔﻤﻬﻤﻟﺍ / ﻲﺑﺮﻳﺪﻟﺍ / ﻕﺎﺒﺴﻟﺍ (leave/ ﻭﺃ) ﺀﺎﻬﻧﺈﺑ ﻢﻗ
+You are in the race queue: %d/%d players. The race starts at %d. /leave to leave.	.ﺓﺭﺩﺎﻐﻤﻠﻟ %d. /leave ﺔﻋﺎﺴﻟﺍ ﻕﺎﺒﺴﻟﺍ ﺃﺪﺒﻳ .ﻦﻴﺒﻋﻼﻟﺍ ﻦﻣ %d/%d :ﻕﺎﺒﺴﻟﺍ ﺭﺎﻈﺘﻧﺍ ﺔﻤﺋﺎﻗ ﻲﻓ ﺖﻧﺃ
+You left the race queue.	.ﻕﺎﺒﺴﻟﺍ ﺭﺎﻈﺘﻧﺍ ﺔﻤﺋﺎﻗ ﺖﻛﺮﺗ ﺪﻘﻟ
+Could not spawn the race vehicle.	.ﻕﺎﺒﺴﻟﺍ ﺔﺒﻛﺮﻣ ﺥﺮﻔﺗ ﻥﺃ ﻦﻜﻤﻳ ﻻ
+~y~%s~n~~w~%d racers	~y~%s~n~~w~%d ﻥﻮﻘﺑﺎﺴﺘﻣ
+ - best	ﻞﻀﻓﻷﺍ - 
+~y~%d%s place!~n~~w~%s  ~g~+$%d	~y~%d%s ﻥﺎﻜﻣ!~n~~w~%s ~g~+$%d
+~g~Job complete!~n~~w~+$%d	~g~ﺔﻤﻬﻤﻟﺍ ﺖﻠﻤﺘﻛﺍ!~n~~w~+$%d
+(/dm %s) %s teleported to %s!	(/dm %s) %s ﻰﻟﺇ ﺎﻳﺭﻮﻓ ﻪﻠﻘﻧ ﻢﺗ %s!
+[Derby] %s joined %s (/derby %s)	(%s (/derby %s ﻰﻟﺇ %s ﻢﻀﻧﺍ [ﻲﺑﺮﻳﺩ]
+DERBY: %s survived %s!	!%s ﻦﻣ ﺎﺠﻧ %s :ﻲﺑﺮﻳﺩ
+~y~Survived!~n~~g~+$%d	~y~ﺕﻮﺠﻧ ﺪﻘﻟ!~n~~g~+$%d
+~y~Winner!~n~~g~+$%d	~y~ﺰﺋﺎﻔﻟﺍ!~n~~g~+$%d
+Job	ﺔﻔﻴﻇﻭ
+Pay	ﻊﻓﺩﺍ
+Best	ﻞﻀﻓﻷﺍ
+Start	ﺃﺪﺑﺍ
+%s is inside the stadium (interior %d): the race takes you there.	%s ﻲﻠﺧﺍﺪﻟﺍ ﺀﺰﺠﻟﺍ) ﺩﺎﺘﺳﻻﺍ ﻞﺧﺍﺩ %d): ﻙﺎﻨﻫ ﻰﻟﺇ ﻕﺎﺒﺴﻟﺍ ﻙﺬﺧﺄﻳ.
+%s start is marked on your radar for 90 seconds.	.ﺔﻴﻧﺎﺛ 90 ﺓﺪﻤﻟ ﻙﺭﺍﺩﺍﺭ ﻰﻠﻋ %s ﺔﻳﺍﺪﺑ ﻰﻠﻋ ﺔﻣﻼﻋ ﻊﺿﻭ ﻢﺗ
+Race	ﻕﺎﺒﺳ
+Where	ﻦﻳﺃ
+{FFE14D}GTA SA races - /race to queue (%d players)	{FFE14D}ﺕﺎﻗﺎﺒﺳ GTA SA - /race ﺭﺎﻈﺘﻧﻻﺍ ﺔﻤﺋﺎﻗ ﻲﻓ (%d ﻦﻴﺒﻋﻼﻟﺍ ﻦﻣ)
+Mark	ﻙﺭﺎﻣ
+Zone	ﺔﻘﻄﻨﻤﻟﺍ
+Weapons	ﺔﺤﻠﺳﻷﺍ
+Go	ﺐﻫﺫﺍ
+Derby	ﻲﺑﺮﻳﺩ
+Prize	ﺓﺰﺋﺎﺟ
+ in)	(ﻲﻓ 
+{FF8C1E}Derbies - last car standing	{FF8C1E}ﻒﻘﺗ ﺓﺭﺎﻴﺳ ﺮﺧﺁ - ﻲﺑﺮﻳﺩ
+  best %s	%s ﻞﻀﻓﺃ  
+/job %s  -  %s  (%s, $%d)%s	/job %s - %s (%s، $%d)%s
+/spawn [id|name] vehicle  /v = same  /w [id|name|all] weapons  /fix  /flip  /heal  /armour	/spawn [ﺔﺒﻛﺮﻣ [ﻢﺳﻻﺍ|ﻑﺮﻌﻤﻟﺍ /v = ﺲﻔﻧ /w [ﺔﺤﻠﺳﻷﺍ [ﻊﻴﻤﺟ|ﻢﺳﻻﺍ|ﻑﺮﻌﻤﻟﺍ /fix /flip /heal /armour
+/race (queue: %d players start a GTA SA race)  /races (the 27 tracks)	/race (ﺭﺎﻈﺘﻧﻻﺍ ﺔﻤﺋﺎﻗ: %d ﻕﺎﺒﺳ ﻥﻭﺃﺪﺒﻳ ﻥﻮﺒﻋﻻ GTA SA) /races (27 ـﻟﺍ ﺕﺍﺭﺎﺴﻤﻟﺍ)
+/derby [bloodbowl|monster|docks|desert|sumo]  /job [trucking|quarry|pizza|burger|cluckin|taxi|medic|firetruck]  /dm [war|grove|airport|minigun|sniper]  /leave	/derby [ﻮﻣﻮﺴﻟﺍ|ﺀﺍﺮﺤﺼﻟﺍ|ﻦﻔﺴﻟﺍ ﺔﻔﺻﺭﺃ|ﺶﺣﻮﻟﺍ|ﻡﺪﻟﺍ ﺀﺎﻋﻭ] /job [ﺀﺎﻔﻃﺇ ﺔﺑﺮﻋ|ﻒﻌﺴﻣ|ﻲﺴﻛﺎﺗ|ﻦﻴﻛﻮﻠﻛ|ﺮﺟﺮﺑ|ﺍﺰﺘﻴﺑ|ﺮﺠﺤﻤﻟﺍ|ﺕﺎﻨﺣﺎﺸﻟﺎﺑ ﻞﻘﻨﻟﺍ] /dm [ﺹﺎﻨﻗ|ﻥﻮﻐﻴﻨﻴﻣ|ﺭﺎﻄﻣ|ﻥﺎﺘﺴﺑ|ﺏﺮﺣ] /leave
+/class (gang / police / civilian)  /turf (gang zones)  /teams  /bubbles  /labels  /icons  /actors  /zones	/class (ﻲﻧﺪﻣ / ﺔﻃﺮﺷ / ﺔﺑﺎﺼﻋ) /turf (ﺕﺎﺑﺎﺼﻌﻟﺍ ﻖﻃﺎﻨﻣ) /teams /bubbles /labels /icons /actors /zones
+Teleports:	:ﻱﺭﻮﻔﻟﺍ ﻞﻘﻨﻟﺍ
+/scores  /unlock (open world on/off)  /girlfriends  /tips	/scores /unlock (ﺡﻮﺘﻔﻤﻟﺍ ﻢﻟﺎﻌﻟﺍ ﻑﺎﻘﻳﺇ/ﻞﻴﻐﺸﺗ) /girlfriends /tips
+Get in a car first.	.ﻻﻭﺃ ﺓﺭﺎﻴﺴﻟﺍ ﺐﻛﺭﺍ
+No repairs in a derby.	.ﻲﺑﺮﻳﺪﻟﺍ ﻲﻓ ﺕﺎﺣﻼﺻﺇ ﻻ
+Vehicle repaired.	.ﺔﺒﻛﺮﻤﻟﺍ ﺡﻼﺻﺇ ﻢﺗ
+No job %s. Type /job.	.job/ ﺐﺘﻛﺍ .%s ﺔﻔﻴﻇﻭ ﺪﺟﻮﺗ ﻻ
+No derby %s. Type /derby.	.derby/ ﺐﺘﻛﺍ .%s ﻲﺑﺮﻳﺩ ﺪﺟﻮﻳ ﻻ
+No DM %s. Type /dm.	.dm/ ﺐﺘﻛﺍ .%s ﺓﺮﺷﺎﺒﻣ ﺔﻟﺎﺳﺭ ﺪﺟﻮﺗ ﻻ
+You are not in a race / derby / job / DM.	.DM/ﺔﻔﻴﻇﻭ/ﻲﺑﺮﻳﺩ/ﻕﺎﺒﺳ ﻲﻓ ﺖﺴﻟ ﺖﻧﺃ
+DEATHMATCH: %s left %s.	.%s ﺭﺩﺎﻏ %s :ﺕﻮﻤﻟﺍ ﺓﺍﺭﺎﺒﻣ
+Left the event.	.ﺙﺪﺤﻟﺍ ﺭﺩﺎﻏ
+[id|name]  -  spawn a vehicle (/spawn 411, /spawn nrg)	(spawn 411، /spawn nrg/) ﺔﺒﻛﺮﻣ ﺀﺎﺸﻧﺇ - [ﻢﺳﻻﺍ|ﻑﺮﻌﻤﻟﺍ]
+[id|name|all]  -  weapons	ﺔﺤﻠﺳﻷﺍ - [ﻞﻜﻟﺍ|ﻢﺳﻻﺍ|ﻑﺮﻌﻤﻟﺍ]
+queue for a GTA SA race (14 players)	(ﺎﺒﻋﻻ GTA SA (14 ﻕﺎﺒﺴﻟ ﺭﺎﻈﺘﻧﻻﺍ ﺔﻤﺋﺎﻗ
+the 27 race tracks (mark on radar)	(ﺭﺍﺩﺍﺮﻟﺍ ﻰﻠﻋ ﺔﻣﻼﻋ) 27 ـﻟﺍ ﻕﺎﺒﺴﻟﺍ ﺕﺍﺭﺎﺴﻣ
+[arena]  -  last car standing wins	ﺯﻮﻔﺗ ﻲﺘﻟﺍ ﻲﻫ ﺔﻔﻗﺍﻭ ﺓﺭﺎﻴﺳ ﺮﺧﺁ - [ﺔﺣﺎﺴﻟﺍ]
+[name]  -  trucking, quarry, pizza, taxi...	...ﺓﺮﺟﻷﺍ ﺕﺍﺭﺎﻴﺳﻭ ،ﺍﺰﺘﻴﺒﻟﺍﻭ ،ﺮﺟﺎﺤﻤﻟﺍﻭ ،ﺕﺎﻨﺣﺎﺸﻟﺎﺑ ﻞﻘﻨﻟﺍ - [ﻢﺳﻻﺍ]
+[zone]  -  deathmatch zones	ﺕﻮﻤﻟﺍ ﻖﻃﺎﻨﻣ - [ﺔﻘﻄﻨﻤﻟﺍ]
+leave the race / derby / job / DM	DM / ﺔﻔﻴﻇﻮﻟﺍ / ﻲﺑﺮﻳﺪﻟﺍ / ﻕﺎﺒﺴﻟﺍ ﻙﺮﺗﺍ
+teleports everybody sees	ﻊﻴﻤﺠﻟﺍ ﻩﺍﺮﻳ ﻱﺬﻟﺍ ﻱﺭﻮﻔﻟﺍ ﻞﻘﻨﻟﺍ
+pick a gang, police or civilian (SA-MP class selection)	(SA-MP ﺔﺌﻓ ﺭﺎﻴﺘﺧﺍ) ﺎﻴﻧﺪﻣ ﻭﺃ ﺔﻃﺮﺷ ﻭﺃ ﺔﺑﺎﺼﻋ ﺮﺘﺧﺍ
+gang zones + who owns them	ﺎﻬﻜﻠﻤﻳ ﻦﻣ + ﺕﺎﺑﺎﺼﻌﻟﺍ ﻖﻃﺎﻨﻣ
+turf count per gang	ﺔﺑﺎﺼﻋ ﻞﻜﻟ ﺐﺸﻌﻟﺍ ﺩﺪﻋ
+repair your vehicle	ﻚﺗﺭﺎﻴﺳ ﺡﻼﺻﺇ
+flip your vehicle	ﻚﺗﺭﺎﻴﺳ ﺐﻠﻗﺍ
+your DM / race / job score	ﻚﺑ ﺔﺻﺎﺨﻟﺍ ﺔﻔﻴﻇﻮﻟﺍ / ﻕﺮﻌﻟﺍ / DM ﺔﺟﺭﺩ
+chat bubbles on / off (off by default)	(ﺎﻴﺿﺍﺮﺘﻓﺍ ﻞﻴﻐﺸﺘﻟﺍ ﻑﺎﻘﻳﺇ) ﺔﺷﺩﺭﺪﻟﺍ ﺕﺎﻋﺎﻘﻓ ﻑﺎﻘﻳﺇ/ﻞﻴﻐﺸﺗ
+3D text labels on / off	ﺩﺎﻌﺑﻷﺍ ﺔﻴﺛﻼﺛ ﺔﻴﺼﻨﻟﺍ ﺕﺎﻴﻤﺴﺘﻟﺍ ﻑﺎﻘﻳﺇ/ﻞﻴﻐﺸﺗ
+map icons on / off	ﺔﻄﻳﺮﺨﻟﺍ ﺕﺎﻧﻮﻘﻳﺃ ﻑﺎﻘﻳﺇ/ﻞﻴﻐﺸﺗ
+actors at the job starts on / off	ﻑﺎﻘﻳﺇ / ﻞﻴﻐﺸﺗ ﺃﺪﺒﻳ ﻞﻤﻌﻟﺍ ﻲﻓ ﺔﻠﻋﺎﻔﻟﺍ ﺕﺎﻬﺠﻟﺍ
+gang zones on the radar on / off	ﻑﺎﻘﻳﺇ / ﻞﻴﻐﺸﺗ ﺭﺍﺩﺍﺮﻟﺍ ﻰﻠﻋ ﺕﺎﺑﺎﺼﻌﻟﺍ ﻖﻃﺎﻨﻣ
+open world on / off	ﻑﺎﻘﻳﺇ / ﻞﻴﻐﺸﺗ ﺡﻮﺘﻔﻣ ﻢﻟﺎﻋ
+girlfriend houses on / off	ﻑﺎﻘﻳﺇ / ﻞﻴﻐﺸﺗ ﺔﻘﻳﺪﺻ ﻝﺯﺎﻨﻣ
+teleport: 	 :ﻲﺋﺎﻀﻔﻟﺍ ﻞﻘﻨﻟﺍ
+DEATHMATCH: %s has %d kills in a row in %s!	!%s ﻲﻓ ﺔﻴﻟﺎﺘﺘﻣ ﻞﺘﻗ ﺓﺮﻣ %d ﻪﻳﺪﻟ %s :ﺕﻮﻤﻟﺍ ﺓﺍﺭﺎﺒﻣ
+[Race] Type /race to queue for a GTA SA race. It waits for players: it starts with 14 players, or 45 s after the 2nd player is in (15 s more for every new player). Never alone.	.ﺎﻫﺪﺣﻭ ﺍﺪﺑﺃ .(ﺪﻳﺪﺟ ﺐﻋﻻ ﻞﻜﻟ ﺔﻴﻓﺎﺿﺇ ﺔﻴﻧﺎﺛ 15) ﻲﻧﺎﺜﻟﺍ ﺐﻋﻼﻟﺍ ﻝﻮﺧﺩ ﺪﻌﺑ ﺔﻴﻧﺎﺛ 45 ﻭﺃ ،ﺎﺒﻋﻻ 14 ـﺑ ﺃﺪﺒﺗ :ﻦﻴﺒﻋﻼﻟﺍ ﺮﻈﺘﻨﺗ ﺎﻬﻧﺇ .GTA SA ﻕﺎﺒﺴﻟ ﺭﺎﻈﺘﻧﻻﺍ ﺔﻤﺋﺎﻗ ﻲﻓ ﻑﻮﻗﻮﻠﻟ race/ ﺐﺘﻛﺍ [ﻕﺎﺒﺴﻟﺍ]
+[Derby] Type /derby for Blood Bowl, Monster, Docks, Desert or Chiliad Sumo. Last car standing wins.	.ﺯﻮﻔﺗ ﺔﻔﻗﺍﻭ ﺓﺭﺎﻴﺳ ﺮﺧﺁ .Chiliad Sumo ﻭﺃ Desert ﻭﺃ Docks ﻭﺃ Monster ﻭﺃ Blood Bowl ـﻟ derby/ ﺐﺘﻛﺍ [ﻲﺑﺮﻳﺩ]
+[DM] Type /dm war for the War Zone DM. Kill streaks are announced to everyone.	[DM] ﺐﺘﻛﺍ /dm war ﺏﺮﺤﻟﺍ ﺔﻘﻄﻨﻤﻟ DM. ﻊﻴﻤﺠﻠﻟ ﻞﺘﻘﻟﺍ ﻁﻮﻄﺧ ﻦﻋ ﻥﻼﻋﻹﺍ ﻢﺘﻳ.
+[Job] Type /job trucking, /job quarry or /job pizza to earn money.	.ﻝﺎﻤﻟﺍ ﺐﺴﻜﻟ ﺍﺰﺘﻴﺒﻟﺍ job/ ﻭﺃ ﺮﺠﺤﻤﻟﺍ job/ ﻭﺃ ﺕﺎﻨﺣﺎﺸﻟﺎﺑ ﻞﻘﻨﻟﺍ job/ ﺐﺘﻛﺍ [ﺔﻔﻴﻇﻭ]
+[Turf] Type /class to join a gang, then stand in an enemy zone (/turf) for 60 s to take it.	.ﺎﻬﻴﻠﻋ ﺀﻼﻴﺘﺳﻼﻟ ﺔﻴﻧﺎﺛ 60 ﺓﺪﻤﻟ (turf/) ﻭﺪﻌﻟﺍ ﺔﻘﻄﻨﻣ ﻲﻓ ﻒﻗ ﻢﺛ ،ﺔﺑﺎﺼﻋ ﻰﻟﺇ ﻡﺎﻤﻀﻧﻼﻟ class/ ﺐﺘﻛﺍ [ﺐﺸﻌﻟﺍ]
+[Spawn] Type /spawn infernus (or any id 400 - 611) for a vehicle, /w all for weapons.	.ﺔﺤﻠﺳﻸﻟ ﻞﻜﻟﺍ w/ ،ﺔﺒﻛﺮﻤﻠﻟ (611 - 400 ﻑﺮﻌﻣ ﻱﺃ ﻭﺃ) spawn infernus/ ﺐﺘﻛﺍ [ﺮﺸﻨﻟﺍ]
+[Teleport] /ls /sf /lv /chiliad /desert /beach /pizza /gym /ammu /emmet /home ... (/t for all)	(ﻞﻜﻠﻟ ls /sf /lv /chiliad /desert /beach /pizza /gym /ammu /emmet /home ... (/t/ [ﻱﺭﻮﻓ ﻝﺎﻘﺘﻧﺍ]
+[World] All cities, shops, gyms, barbers, tattoo, clothes, Pay 'n' Spray and mod garages are open.	.ﺔﺣﻮﺘﻔﻣ ﻞﻳﺪﻌﺘﻟﺍ ﺕﺎﺟﺍﺮﻛﻭ Pay 'n' Sprayﻭ ﺲﺑﻼﻤﻟﺍﻭ ﻢﺷﻮﻟﺍﻭ ﻦﻴﻗﻼﺤﻟﺍﻭ ﺔﻴﺿﺎﻳﺮﻟﺍ ﺏﺎﻌﻟﻷﺍ ﺕﻻﺎﺻﻭ ﺔﻳﺭﺎﺠﺘﻟﺍ ﺕﻼﺤﻤﻟﺍﻭ ﻥﺪﻤﻟﺍ ﻊﻴﻤﺟ [ﻢﻟﺎﻌﻟﺍ]
+~g~GO!	~g~ﻖﻠﻄﻧﺍ!
+Race over: you died.	.ﺖﻣ ﺪﻘﻟ :ﻕﺎﺒﺴﻟﺍ ﻰﻬﺘﻧﺍ
+Get back in your vehicle within 20 seconds.	.ﺔﻴﻧﺎﺛ 20 ﻥﻮﻀﻏ ﻲﻓ ﻚﺗﺭﺎﻴﺳ ﻰﻟﺇ ﺪﻋ
+Left the vehicle: race over.	. ﻕﺎﺒﺴﻟﺍ ﻰﻬﺘﻧﺍ : ﺓﺭﺎﻴﺴﻟﺍ ﻙﺮﺗ
+Job failed: you died.	.ﺖﻣ ﺪﻘﻟ :ﺔﻤﻬﻤﻟﺍ ﺖﻠﺸﻓ
+Left the vehicle: event over.	.ﺙﺪﺤﻟﺍ ﻰﻬﺘﻧﺍ :ﺓﺭﺎﻴﺴﻟﺍ ﻙﺮﺗ
+was wrecked	ﺎﻫﺮﻴﻣﺪﺗ ﻢﺗ
+Get back in your car within %d seconds!	!ﺔﻴﻧﺎﺛ %d ﻝﻼﺧ ﻚﺗﺭﺎﻴﺳ ﻰﻟﺇ ﺪﻋ
+was out of the car	ﺓﺭﺎﻴﺴﻟﺍ ﺝﺭﺎﺧ ﻥﺎﻛ
+fell off	ﻂﻘﺳ
+Back into the arena within %d seconds! (follow the red ring)	(ﺀﺍﺮﻤﺤﻟﺍ ﺔﻘﻠﺤﻟﺍ ﻊﺒﺗﺍ) !ﺔﻴﻧﺎﺛ %d ﻝﻼﺧ ﺔﺣﺎﺴﻟﺍ ﻰﻟﺇ ﺓﺩﻮﻌﻟﺍ
+left the arena	ﺔﺣﺎﺴﻟﺍ ﺭﺩﺎﻏ
+You left the DM zone: go back within 10 seconds (/leave to quit).	.(ﺀﺎﻬﻧﻺﻟ leave/) ﻥﺍﻮﺛ 10 ﻝﻼﺧ ﺪﻋ :DM ﺔﻘﻄﻨﻣ ﺕﺭﺩﺎﻏ ﺪﻘﻟ
+Left the DM zone.	.DM ﺔﻘﻄﻨﻣ ﺭﺩﺎﻏ
+DM SCORE: %d	%d :ﺓﺮﺷﺎﺒﻤﻟﺍ ﺔﻟﺎﺳﺮﻟﺍ ﺔﺠﻴﺘﻧ
+RACE SCORE: %d	%d :ﻕﺎﺒﺴﻟﺍ ﺔﺠﻴﺘﻧ
+JOB SCORE: %d	%d :ﺔﻔﻴﻇﻮﻟﺍ ﻁﺎﻘﻧ
+SCORE: %d	%d :ﺔﺠﻴﺘﻨﻟﺍ
+~y~RACE QUEUE~n~~w~Waiting for players (%d/%d)  -  /leave	~y~ﻕﺎﺒﺴﻟﺍ ﺭﺎﻈﺘﻧﺍ ﺔﻤﺋﺎﻗ~n~~w~ﻦﻴﺒﻋﻼﻟﺍ ﺭﺎﻈﺘﻧﺍ ﻲﻓ (%d/%d) - /leave
+~y~RACE QUEUE~n~~w~%d/%d players - starts soon  -  /leave	~y~ﻕﺎﺒﺴﻟﺍ ﺭﺎﻈﺘﻧﺍ ﺔﻤﺋﺎﻗ~n~~w~%d/%d ﺎﺒﻳﺮﻗ ﺃﺪﺒﻳ - ﻦﻴﺒﻋﻼﻟﺍ ﻦﻣ - /leave
+~y~%s~n~~w~GO in %d  -  %d racers	~y~%s~n~~w~ﻲﻓ ﻖﻠﻄﻧﺍ %d - %d ﻦﻴﻘﺑﺎﺴﺘﻣ
+~y~%s~n~~w~starts in %d  -  %d car%s	~y~%s~n~~w~ﻲﻓ ﺃﺪﺒﻳ %d - %d ﺓﺭﺎﻴﺳ%s
+~b~~h~%s~w~   CP ~y~%d~w~/%d   TIME ~y~%s	~b~~h~%s~w~ CP ~y~%d~w~/%d ﺖﻗﻮﻟﺍ ~y~%s
+~r~~h~DERBY~w~   CARS ~y~%d~w~/%d   TIME ~y~%s	~r~~h~ﻲﺑﺮﻳﺩ~w~ ﺕﺍﺭﺎﻴﺳ ~y~%d~w~/%d ﺖﻗﻮﻟﺍ ~y~%s
+%s  -  kills %d  -  streak %d  -  /leave to quit	%s - ﻞﺘﻘﻳ %d - ﻂﺧ %d - /leave ﺏﺎﺤﺴﻧﻼﻟ
+Gate	ﺔﺑﺍﻮﺑ
+Area 69 North Gate	ﺔﻴﻟﺎﻤﺸﻟﺍ ﺔﺑﺍﻮﺒﻟﺍ 69 ﺔﻘﻄﻨﻣ
+Area 69 East Gate	ﺔﻴﻗﺮﺸﻟﺍ ﺔﺑﺍﻮﺒﻟﺍ 69 ﺔﻘﻄﻨﻣ
+gates.txt line:  %.2f %.2f %.2f %.0f 11 My Gate	gates.txt ﺮﻄﺴﻟﺍ: %.2f %.2f %.2f %.0f 11 ﻲﺘﺑﺍﻮﺑ
+Stand in the middle of the gate, facing through it. Put the line in files/MP/gates.txt, then /gates reload.	.ﻞﻴﻤﺤﺘﻟﺍ ﺪﻋﺃ gates/ ﻢﺛ ,files/MP/gates.txt ﻲﻓ ﺮﻄﺴﻟﺍ ﻊﺿ .ﺎﻬﻟﻼﺧ ﻦﻣ ﺎﻬﻬﺟﺍﻭﻭ ،ﺔﺑﺍﻮﺒﻟﺍ ﻒﺼﺘﻨﻣ ﻲﻓ ﻒﻗ
+%d gate teleport(s):	%d ﺔﻴﻧﻵﺍ ﺔﺑﺍﻮﺒﻟﺍ (ﺕﻼﻘﻧ) ﺔﺑﺍﻮﺑ:
+No house called \"%s\" (/houses lists them).	.(ﻢﻫﺩﺮﺴﻳ \"%s\" (/houses ﻰﻤﺴﻳ ﻝﺰﻨﻣ ﺪﺟﻮﻳ ﻻ
+Stand at a house (or type its name).	.(ﻪﻤﺳﺍ ﺐﺘﻛﺍ ﻭﺃ) ﻝﺰﻨﻣ ﺪﻨﻋ ﻒﻗ
+~r~Locked	~r~ﻞﻔﻘﻣ
+%s has no interior yet (owner: /edithouseinteriors).	%s ﻚﻟﺎﻤﻟﺍ) ﺪﻌﺑ ﻲﻠﺧﺍﺩ ﻢﻴﻤﺼﺗ ﻪﻟ ﺲﻴﻟ: /edithouseinteriors).
+Get out of the vehicle first.	.ﻻﻭﺃ ﺓﺭﺎﻴﺴﻟﺍ ﻦﻣ ﺝﺮﺧﺍ
+You need $%d (you have $%d).	.(%d$ ﻚﻳﺪﻟ) %d$ ﻰﻟﺇ ﺔﺟﺎﺤﺑ ﺖﻧﺃ
+{FFFFFF}House: {00BFFF}%s {FFFFFF}[H:%u]\n	{FFFFFF}ﻝﺰﻨﻤﻟﺍ: {00BFFF}%s {FFFFFF}[ﺡ:%u]\n
+{FFFFFF}House: {00BFFF}%s {FFFFFF}[H:%u]	{FFFFFF}ﻝﺰﻨﻤﻟﺍ: {00BFFF}%s {FFFFFF}[ﺡ:%u]
+{FFFFFF}Owner: {FFFF00}%s\n	{FFFFFF}ﻚﻟﺎﻤﻟﺍ: {FFFF00}%s\n
+{FFFFFF}Owner: {FFFF00}%s	{FFFFFF}ﻚﻟﺎﻤﻟﺍ: {FFFF00}%s
+{FFFFFF}Slot: {33CC55}%dx%d {FFFFFF}squares   Objects: {33CC55}%u\n	{FFFFFF}ﺔﺤﺘﻔﻟﺍ: {33CC55}%dx%d {FFFFFF}ﺕﺎﻨﺋﺎﻜﻟﺍ ﺕﺎﻌﺑﺮﻣ: {33CC55}%u\n
+{FFFFFF}Slot: {33CC55}%dx%d {FFFFFF}squares   Objects: {33CC55}%u	{FFFFFF}ﺔﺤﺘﻔﻟﺍ: {33CC55}%dx%d {FFFFFF}ﺕﺎﻨﺋﺎﻜﻟﺍ ﺕﺎﻌﺑﺮﻣ: {33CC55}%u
+{FFFFFF}Status: %s\n%s	{FFFFFF}ﺔﻟﺎﺤﻟﺍ: %s\n%s
+{FFFFFF}Status: %s	{FFFFFF}ﺔﻟﺎﺤﻟﺍ: %s
+Nobody (the server)	(ﻡﺩﺎﺨﻟﺍ) ﺪﺣﺃ ﻻ
+{33CC55}For sale	{33CC55}ﻊﻴﺒﻠﻟ
+{FFFFFF}Price: {33CC55}$	{FFFFFF}ﺮﻌﺴﻟﺍ: {33CC55}$
+\n{A9C4E4}Tap Buy or type /buyhouse	\n{A9C4E4}ﺐﺘﻛﺍ ﻭﺃ "ﺀﺍﺮﺷ" ﻰﻠﻋ ﺮﻘﻧﺍ /buyhouse
+{A9C4E4}Tap Buy or type /buyhouse	{A9C4E4}ﺐﺘﻛﺍ ﻭﺃ "ﺀﺍﺮﺷ" ﻰﻠﻋ ﺮﻘﻧﺍ /buyhouse
+{A9C4E4}Tap Enter to go in (/exithouse to leave)	{A9C4E4}ﻕﻮﻓ ﺮﻘﻧﺍ Enter ﻝﻮﺧﺪﻠﻟ (/exithouse ﺓﺭﺩﺎﻐﻤﻠﻟ)
+{A9C4E4}No interior yet	{A9C4E4}ﺪﻌﺑ ﻲﻠﺧﺍﺩ ﻢﻴﻤﺼﺗ ﺪﺟﻮﻳ ﻻ
+{FFFFFF}House {00BFFF}[H:%u]	{FFFFFF}ﻝﺰﻨﻤﻟﺍ {00BFFF}[ﺡ:%u]
+Buy	ﺀﺍﺮﺷ
+Enter	ﻞﺧﺩﺃ
+~g~House created	~g~ﻝﺰﻨﻤﻟﺍ ﺀﺎﺸﻧﺇ ﻢﺗ
+{00BFFF}[H:%u]\n{FFFF00}Owner: {FFFFFF}%s\n{FFFFFF}%s\n{33CC55}For sale: ${FFFFFF}%d {A9C4E4}/buyhouse	{00BFFF}[H:%u]\n{FFFF00}ﻚﻟﺎﻤﻟﺍ: {FFFFFF}%s\n{FFFFFF}%s\n{33CC55}ﻊﻴﺒﻠﻟ: ${FFFFFF}%d {A9C4E4}/buyhouse
+{FFFF00}Owner: {FFFFFF}%s	{FFFF00}ﻚﻟﺎﻤﻟﺍ: {FFFFFF}%s
+{33CC55}For sale: ${FFFFFF}%d {A9C4E4}/buyhouse	{33CC55}ﻊﻴﺒﻠﻟ: ${FFFFFF}%d {A9C4E4}/buyhouse
+{00BFFF}[H:%u]\n{FFFF00}Owner: {FFFFFF}%s\n{FFFFFF}%s%s	{00BFFF}[H:%u]\n{FFFF00}ﻚﻟﺎﻤﻟﺍ: {FFFFFF}%s\n{FFFFFF}%s%s
+{FFFFFF}Exit	{FFFFFF}ﺝﻭﺮﺧ
+Setup %s: pick the slot size (1x1 - 16x16, each square 2x2 m). Tap a square to light it on the ground. Green = fine, red = over the limit / taken.	.ﺫﻮﺧﺄﻣ / ﺪﺤﻟﺍ ﻕﻮﻓ = ﺮﻤﺣﻷﺍ ،ﺪﻴﺟ = ﺮﻀﺧﻷﺍ .ﺽﺭﻷﺍ ﻰﻠﻋ ﻪﻟﺎﻌﺷﻹ ﻊﺑﺮﻣ ﻰﻠﻋ ﻂﻐﺿﺍ .(ﻡ 2x2 ﻊﺑﺮﻣ ﻞﻛ ،1x1 - 16x16) ﺔﺤﺘﻔﻟﺍ ﻢﺠﺣ ﺮﺘﺧﺍ :%s ﺩﺍﺪﻋﻹﺍ
+Red squares: make the slot 16x16 or smaller and keep it off other houses.	.ﻯﺮﺧﻷﺍ ﻝﺯﺎﻨﻤﻟﺍ ﻦﻋ ﺎﻫﺪﻌﺑﺃﻭ ﺮﻐﺻﺃ ﻭﺃ 16x16 ﺔﺤﺘﻔﻟﺍ ﻞﻌﺟﺍ :ﺀﺍﺮﻤﺤﻟﺍ ﺕﺎﻌﺑﺮﻤﻟﺍ
+SETUP  [H:%u] %s	H:%u] %s] ﺩﺍﺪﻋﻹﺍ
+Width	ﺽﺮﻌﻟﺍ
+Height	ﻉﺎﻔﺗﺭﻻﺍ
+Turn -15	15- ﻩﺭﻭﺪﺑ
+Turn +15	15+ ﻩﺭﻭﺪﺑ
+Move here	ﺎﻨﻫ ﻙﺮﺤﺗ
+Square %d,%d %s	%d،%d %s ﻊﺑﺮﻣ
+(red: not allowed)	(ﺡﻮﻤﺴﻣ ﺮﻴﻏ :ﺮﻤﺣﻷﺍ)
+(green: fine)	(ﺪﻴﺟ :ﺮﻀﺧﻷﺍ)
+Tap a square to light it up on the ground.	.ﺽﺭﻷﺍ ﻰﻠﻋ ﻪﺗﺀﺎﺿﻹ ﻊﺑﺮﻣ ﻰﻠﻋ ﻂﻐﺿﺍ
+Building: %s	%s :ﻰﻨﺒﻤﻟﺍ
+None (build your own)	(ﻚﺴﻔﻨﺑ ﻊﻨﺻﺍ) ﺪﺟﻮﻳ ﻻ
+Red squares: 16x16 is the limit / another house is there.	.ﺮﺧﺁ ﻝﺰﻨﻣ ﺪﺟﻮﻳ / ﺪﺤﻟﺍ ﻮﻫ 16×16 :ﺀﺍﺮﻤﺤﻟﺍ ﺕﺎﻌﺑﺮﻤﻟﺍ
+Save	ﻆﻔﺣ
+Pick an interior first (top of the editor).	.(ﺭﺮﺤﻤﻟﺍ ﻰﻠﻋﺃ) ﻻﻭﺃ ﻲﻠﺧﺍﺪﻟﺍ ﻢﻴﻤﺼﺘﻟﺍ ﺮﺘﺧﺍ
+Pick an interior first.	.ﻻﻭﺃ ﻲﻠﺧﺍﺪﻟﺍ ﻢﻴﻤﺼﺘﻟﺍ ﺮﺘﺧﺍ
+EDIT HOUSE	ﻝﺰﻨﻤﻟﺍ ﺮﻳﺮﺤﺗ
+Objects %d/%d (outside %d, inside %d)	(%d ﻞﺧﺍﺩ ،%d ﺝﺭﺎﺧ) %d/%d ﺕﺎﻨﺋﺎﻜﻟﺍ
+Interior: %s	%s :ﻲﻠﺧﺍﺪﻟﺍ ﻢﻴﻤﺼﺘﻟﺍ
+Go inside	ﻞﺧﺍﺪﻠﻟ ﺐﻫﺫﺍ
+Add in front of me	ﻲﻣﺎﻣﺃ ﻒﺿﺃ
+No object picked	ﻦﺋﺎﻛ ﻱﺃ ﺭﺎﻴﺘﺧﺍ ﻢﺘﻳ ﻢﻟ
+Turn	ﻩﺭﻭﺪﺑ
+Delete	ﻑﺬﺣ
+Door here	ﺎﻨﻫ ﺏﺎﺒﻟﺍ
+Pick an interior first (/edithouseinteriors).	.(edithouseinteriors/) ﻻﻭﺃ ﺎﻴﻠﺧﺍﺩ ﺎﻤﻴﻤﺼﺗ ﺮﺘﺧﺍ
+Furniture on its way - move it with /edithouseinteriors.	.edithouseinteriors/ ﻡﺍﺪﺨﺘﺳﺎﺑ ﻪﻠﻘﻧﺍ - ﻪﻘﻳﺮﻃ ﻲﻓ ﺙﺎﺛﻷﺍ
+Home Kit: /create house <name>  /setup <name>  /buyhouse  /sellhouse <price>  /cancelsale  /edithouse  /edithouseinteriors	name> /setup <name> /buyhouse /sellhouse <price> /cancelsale /edithouse /edithouseinteriors> ﻝﺰﻨﻣ create/ :ﻝﺰﻨﻤﻟﺍ ﻢﻘﻃ
+/enterhouse  /exithouse  /lockhouse  /renamehouse <new>  /deletehouse  /homedelete <name>  /myhouses  /houses  /houseinfo  /hometp <name>	/enterhouse /exithouse /lockhouse /renamehouse <ﺪﻳﺪﺟ> /deletehouse /homedelete <ﻢﺳﻻﺍ> /myhouses /houses /houseinfo /hometp <ﻢﺳﻻﺍ>
+/addobject <model>  /removeobject  /objects  /clearobjects  /furnish <low|med|swank>  /prefab <model|0>  /setentrance  /givehouse <id>  /housekey <id>	/addobject <model> /removeobject /objects /clearobjects /furnish <low|med|swank> /prefab <model|0> /setentrance /givehouse <id> /housekey <id>
+%s is not your house.	%s ﻚﻟﺰﻨﻣ ﺲﻴﻟ.
+Use: /create house <name>  (2-23 letters, numbers, _ - .)	(. - _ ،ﺎﻣﺎﻗﺭﺃﻭ ﺎﻓﺮﺣ name> (2-23> ﻝﺰﻨﻣ create/ :ﻡﺍﺪﺨﺘﺳﻻﺍ
+You need the house key.	.ﻝﺰﻨﻤﻟﺍ ﺡﺎﺘﻔﻣ ﻰﻟﺇ ﺔﺟﺎﺤﺑ ﺖﻧﺃ
+Stand at the red marker of a house for sale.	.ﻊﻴﺒﻠﻟ ﻝﺰﻨﻤﻟ ﺀﺍﺮﻤﺤﻟﺍ ﺔﻣﻼﻌﻟﺍ ﺪﻨﻋ ﻑﻮﻗﻮﻟﺍ
+%s is not for sale.	%s ﻊﻴﺒﻠﻟ ﺲﻴﻟ.
+Use: /sellhouse <price>  (at your house)	(ﻚﻟﺰﻨﻣ ﻲﻓ) <sellhouse <price/ :ﻡﺍﺪﺨﺘﺳﻻﺍ
+Use: /homedelete <home name>  (your houses: /myhouses)	(myhouses/ :ﻚﻟﺯﺎﻨﻣ) <ﻝﺰﻨﻤﻟﺍ ﻢﺳﺍ> homedelete/ :ﻡﺍﺪﺨﺘﺳﻻﺍ
+No house called \"%s\" (your houses: /myhouses).	.(myhouses/ :ﻢﻜﻟﺯﺎﻨﻣ) \"%s\" ﻰﻤﺴﻳ ﻝﺰﻨﻣ ﺪﺟﻮﻳ ﻻ
+{FFFFFF}Delete the house {FFFF00}%s{FFFFFF} with all its buildings and furniture?\n{FF4444}This can't be undone.	{FFFFFF}ﻝﺰﻨﻤﻟﺍ ﻑﺬﺣ ﺪﻳﺮﺗ ﻞﻫ {FFFF00}%s{FFFFFF} ؟ﻪﺛﺎﺛﺃﻭ ﻪﻴﻧﺎﺒﻣ ﻞﻜﺑ\n{FF4444}ﺀﺍﺮﺟﻹﺍ ﺍﺬﻫ ﻦﻋ ﻊﺟﺍﺮﺘﻟﺍ ﻦﻜﻤﻳ ﻻ.
+{FFFFFF}Delete the house {FFFF00}%s{FFFFFF} with all its buildings and furniture?	{FFFFFF}ﻝﺰﻨﻤﻟﺍ ﻑﺬﺣ ﺪﻳﺮﺗ ﻞﻫ {FFFF00}%s{FFFFFF} ؟ﻪﺛﺎﺛﺃﻭ ﻪﻴﻧﺎﺒﻣ ﻞﻜﺑ
+{FF4444}This can't be undone.	{FF4444}ﺍﺬﻫ ﻦﻋ ﻊﺟﺍﺮﺘﻟﺍ ﻦﻜﻤﻳ ﻻ.
+{FFFFFF}Delete house	{FFFFFF}ﻝﺰﻨﻤﻟﺍ ﻑﺬﺣ
+Use: /renamehouse <new name>  (at your house)	(ﻚﻟﺰﻨﻣ ﻲﻓ) <ﺪﻳﺪﺟ ﻢﺳﺍ> renamehouse/ :ﻡﺍﺪﺨﺘﺳﻻﺍ
+Stand at a house door.	.ﻝﺰﻨﻤﻟﺍ ﺏﺎﺑ ﻰﻠﻋ ﻑﻮﻗﻮﻟﺍ
+You are not in a house.	.ﻝﺰﻨﻣ ﻲﻓ ﺖﺴﻟ ﺖﻧﺃ
+[H:%u] %s  %dx%d  %u objects%s	[H:%u] %s %dx%d %u ﺕﺎﻨﺋﺎﻛ%s
+  (for sale)	(ﻊﻴﺒﻠﻟ)  
+You have no house. Go to an empty field and type /create house <name>.	.<ﻢﺳﻻﺍ> ﻝﺰﻨﻣ create/ ﺐﺘﻛﺍﻭ ﻍﺭﺎﻓ ﻞﻘﺣ ﻰﻟﺇ ﻞﻘﺘﻧﺍ .ﻝﺰﻨﻣ ﻚﻳﺪﻟ ﺲﻴﻟ
+ - for sale	ﻊﻴﺒﻠﻟ - 
+%d houses on this server.	%d ﻡﺩﺎﺨﻟﺍ ﺍﺬﻫ ﻰﻠﻋ ﻝﺰﻨﻣ.
+Use: /hometp <home name>	<ﻝﺰﻨﻤﻟﺍ ﻢﺳﺍ> hometp/ :ﻡﺍﺪﺨﺘﺳﻻﺍ
+  (key)	(ﺡﺎﺘﻔﻣ)  
+You have no house yet: /create house <name>	<name> ﻝﺰﻨﻣ create/ :ﺪﻌﺑ ﻝﺰﻨﻣ ﻚﻳﺪﻟ ﺲﻴﻟ
+That house is still loading, try again.	.ﻯﺮﺧﺃ ﺓﺮﻣ ﻝﻭﺎﺣ ،ﻞﻴﻤﺤﺘﻟﺍ ﺪﻴﻗ ﻝﺰﻨﻤﻟﺍ ﺍﺬﻫ ﻝﺍﺰﻳ ﻻ
+%s is not your house (you need to own it or have its key).	%s ﻪﺣﺎﺘﻔﻣ ﻰﻠﻋ ﻝﻮﺼﺤﻟﺍ ﻭﺃ ﻪﻛﻼﺘﻣﺍ ﻰﻟﺇ ﺝﺎﺘﺤﺗ) ﻚﻟﺰﻨﻣ ﺲﻴﻟ).
+Wait %d s.	.ﺔﻴﻧﺎﺛ %d ﺮﻈﺘﻧﺍ
+Only to your own house (or one you have a key for).	.(ﻪﻟ ﺡﺎﺘﻔﻣ ﻚﻳﺪﻟ ﻱﺬﻟﺍ ﻝﺰﻨﻤﻟﺍ ﻭﺃ) ﺹﺎﺨﻟﺍ ﻚﻟﺰﻨﻣ ﻰﻟﺇ ﻂﻘﻓ
+Stand at your house.	.ﻚﻟﺰﻨﻣ ﻲﻓ ﻒﻗ
+Use: /addobject <GTA SA model id>  (or pick from the /edithouse list)	(edithouse/ ﺔﻤﺋﺎﻘﻟﺍ ﻦﻣ ﺮﺘﺧﺍ ﻭﺃ) <GTA SA ﺝﺫﻮﻤﻧ ﻑﺮﻌﻣ> addobject/ :ﻡﺪﺨﺘﺳﺍ
+Stand next to an object of your house.	.ﻚﻟﺰﻨﻣ ﻦﻣ ﺀﻲﺷ ﺐﻧﺎﺠﺑ ﻒﻗ
+No object of your house within 6 m.	.ﻡ 6 ﻦﻤﺿ ﻚﻟﺰﻨﻣ ﻦﻣ ﻦﺋﺎﻛ ﺪﺟﻮﻳ ﻻ
+%d objects.	%d ﺕﺎﻨﺋﺎﻛ.
+Use it at (or in) your house: /furnish <low|med|swank>	<furnish <low|med|swank/ :ﻚﻟﺰﻨﻣ (ﻲﻓ ﻭﺃ) ﻲﻓ ﻪﻣﺪﺨﺘﺳﺍ
+Buildings: %s0 = none	ﺀﻲﺷ ﻻ = %s0 :ﻲﻧﺎﺒﻤﻟﺍ
+Use it at your house: /%s <player id>	<%s <player id/ :ﻚﻟﺰﻨﻣ ﻲﻓ ﻪﻣﺪﺨﺘﺳﺍ
+Southern San Andreas Super Autos	ﺔﻘﺋﺎﻔﻟﺍ ﺱﺎﻳﺭﺪﻧﺃ ﻥﺎﺳ ﺏﻮﻨﺟ ﺕﺍﺭﺎﻴﺳ
+Legendary Motorsport	ﺔﻳﺭﻮﻄﺳﻷﺍ ﺕﺍﺭﺎﻴﺴﻟﺍ ﺔﺿﺎﻳﺭ
+Pedal and Metal	ﺔﻴﻧﺪﻌﻣﻭ ﺔﺳﺍﻭﺩ
+Elitas Travel	ﺕﺎﻳﺮﻔﺴﻠﻟ ﺱﺎﺘﻴﻟﺇ
+Docktease	ﺰﻴﺘﻛﻭﺩ
+Cars, vans and trucks for every budget	ﺔﻴﻧﺍﺰﻴﻣ ﻞﻜﻟ ﺕﺎﻨﺣﺎﺸﻟﺍﻭ ﺓﺮﻴﻐﺼﻟﺍ ﺕﺎﻨﺣﺎﺸﻟﺍﻭ ﺕﺍﺭﺎﻴﺴﻟﺍ
+Sports and luxury cars	ﺔﻫﺭﺎﻔﻟﺍﻭ ﺔﻴﺿﺎﻳﺮﻟﺍ ﺕﺍﺭﺎﻴﺴﻟﺍ
+Motorbikes, quads and bicycles	ﺔﻴﺋﺍﻮﻬﻟﺍ ﺕﺎﺟﺍﺭﺪﻟﺍﻭ ﺔﻴﻋﺎﺑﺮﻟﺍ ﺕﺎﺟﺍﺭﺪﻟﺍﻭ ﺔﻳﺭﺎﻨﻟﺍ ﺕﺎﺟﺍﺭﺪﻟﺍ
+Planes and helicopters	ﺕﺎﻴﺣﻭﺮﻤﻟﺍﻭ ﺕﺍﺮﺋﺎﻄﻟﺍ
+Boats and yachts	ﺕﻮﺨﻴﻟﺍﻭ ﺏﺭﺍﻮﻘﻟﺍ
+Jefferson Motel	ﻥﻮﺳﺮﻔﻴﺟ ﻞﻴﺗﻮﻣ
+Four Dragons Casino	ﺔﻌﺑﺭﻷﺍ ﻦﻴﻧﺎﻨﺘﻟﺍ ﻮﻨﻳﺯﺎﻛ
+Caligula's Palace	ﻻﻮﺠﻴﻟﺎﻛ ﺮﺼﻗ
+[EYEFIND] Your new %s is here.	[EYEFIND] ﺯﺎﻬﺟ %s ﺎﻨﻫ ﻚﺑ ﺹﺎﺨﻟﺍ ﺪﻳﺪﺠﻟﺍ.
+Welcome to your room. The computer is on the desk.	.ﺐﺘﻜﻤﻟﺍ ﻰﻠﻋ ﺮﺗﻮﻴﺒﻤﻜﻟﺍ .ﻚﺘﻓﺮﻏ ﻲﻓ ﻚﺑ ﺎﺒﺣﺮﻣ
+The hotel room did not load - try again.	.ﻯﺮﺧﺃ ﺓﺮﻣ ﻝﻭﺎﺣ - ﻕﺪﻨﻔﻟﺍ ﺔﻓﺮﻏ ﻞﻴﻤﺤﺗ ﻢﺘﻳ ﻢﻟ
+Not enough money: the %s costs %s.	.%s ﻲﻫ %s ﺔﻔﻠﻜﺗ :ﻝﺎﻤﻟﺍ ﻦﻣ ﻲﻔﻜﻳ ﺎﻣ ﻙﺎﻨﻫ ﺲﻴﻟ
+Your garage is full - sell one in the Garage app first.	.ﻻﻭﺃ Garage ﻖﻴﺒﻄﺗ ﻲﻓ ﺪﺣﺍﻭ ﻊﻴﺒﺑ ﻢﻗ - ﺊﻠﺘﻤﻣ ﻚﺑ ﺹﺎﺨﻟﺍ ﺏﺁﺮﻤﻟﺍ
+[EYEFIND] You bought a %s for %s.	[EYEFIND] ﺖﻳﺮﺘﺷﺍ ﺪﻘﻟ %s ﻞﺑﺎﻘﻣ %s.
+Search vehicles (name or site)...	...(ﻊﻗﻮﻤﻟﺍ ﻭﺃ ﻢﺳﻻﺍ) ﺕﺎﺒﻛﺮﻤﻟﺍ ﺚﺤﺑ
+eyefind.info search	Eyefind.info ﺚﺤﺑ
+%s  -  %s  (%d vehicles)	%s - %s (%d ﺔﺒﻛﺮﻣ)
+Exclusive cars for exclusive people	ﻦﻴﻳﺮﺼﺤﻟﺍ ﺹﺎﺨﺷﻸﻟ ﺔﻳﺮﺼﺣ ﺕﺍﺭﺎﻴﺳ
+Search results	ﺚﺤﺒﻟﺍ ﺞﺋﺎﺘﻧ
+\"%s\" - tap to search again	\"%s\" - ﻯﺮﺧﺃ ﺓﺮﻣ ﺚﺤﺒﻠﻟ ﺮﻘﻧﺍ
+Nothing found - try another word.	.ﻯﺮﺧﺃ ﺔﻤﻠﻛ ﻝﻭﺎﺣ - ﺀﻲﺷ ﻱﺃ ﻰﻠﻋ ﺭﻮﺜﻌﻟﺍ ﻢﺘﻳ ﻢﻟ
+  -  not enough money	ﻝﺎﻤﻟﺍ ﻦﻣ ﻲﻔﻜﻳ ﺎﻣ ﺪﺟﻮﻳ ﻻ -  
+HOTEL - %s	%s - ﻕﺪﻨﻓ
+Hotel room	ﻕﺪﻨﻔﻟﺍ ﺔﻓﺮﻏ
+Going to your room...	...ﻚﺘﻓﺮﻏ ﻰﻟﺍ ﺐﻫﺫﺍ
+Leave room	ﺔﻓﺮﻐﻟﺍ ﻙﺮﺗﺍ
+Computer	ﺮﺗﻮﻴﺒﻤﻜﻟﺍ
+Grove Street	ﻑﻭﺮﺟ ﻉﺭﺎﺷ
+Ganton	ﻥﻮﺘﻧﺎﺟ
+Idlewood	ﺩﻭﻮﻟﺪﻳﺇ
+Willowfield	ﺪﻠﻴﻓﻮﻠﻳﻭ
+East Beach	ﻲﻗﺮﺸﻟﺍ ﺊﻃﺎﺸﻟﺍ
+Pershing Square (LSPD)	(LSPD) ﺞﻨﻴﺷﺮﻴﺑ ﻥﺍﺪﻴﻣ
+Conference Center	ﺕﺍﺮﻤﺗﺆﻤﻟﺍ ﺰﻛﺮﻣ
+Market	ﻕﻮﺴﻟﺍ
+Downtown Los Santos	ﺱﻮﺘﻧﺎﺳ ﺱﻮﻟ ﺔﻨﻳﺪﻣ ﻂﺳﻭ
+Vinewood	ﺩﻭﻮﻨﻴﻓ
+Rodeo	ﺮﻘﺒﻟﺍ ﺓﺎﻋﺭ ﺕﺎﻘﺑﺎﺴﻣ
+Richman	ﻥﺎﻤﺸﺘﻳﺭ
+El Corona	ﺎﻧﻭﺭﻮﻜﻟﺍ
+Ocean Docks	ﻂﻴﺤﻤﻟﺍ ﺽﺍﻮﺣﺃ
+Dillimore	ﺭﻮﻤﻴﻠﻳﺩ
+Palomino Creek	ﻚﻳﺮﻛ ﻮﻨﻴﻣﻮﻟﺎﺑ
+Angel Pine	ﻦﻳﺎﺑ ﻞﻴﺠﻧﺍ
+Fort Carson	ﻥﻮﺳﺭﺎﻛ ﺕﺭﻮﻓ
+Doherty	ﻲﺗﺮﻫﻭﺩ
+Downtown San Fierro	ﻭﺮﻴﻴﻓ ﻥﺎﺳ ﺔﻨﻳﺪﻣ ﻂﺳﻭ
+Juniper Hill	ﻞﻴﻫ ﺮﺒﻴﻧﻮﺟ
+Avispa Country Club	ﻲﻔﻳﺮﻟﺍ ﺎﺒﺴﻴﻓﺃ ﻱﺩﺎﻧ
+Garcia	ﺎﻴﺳﺭﺎﺟ
+The Strip (Pyramid)	(ﻡﺮﻬﻟﺍ) ﻂﻳﺮﺸﻟﺍ
+Royal Casino	ﻲﻜﻠﻤﻟﺍ ﻮﻨﻳﺯﺎﻜﻟﺍ
+The Visage	ﺎﻴﺤﻤﻟﺍ
+Come-A-Lot	ﺍﺮﻴﺜﻛ ﻝﺎﻌﺗ
+Las Venturas Hospital	ﺱﺍﺭﻮﺘﻨﻴﻓ ﺱﻻ ﻰﻔﺸﺘﺴﻣ
+LV Airport	LV ﺭﺎﻄﻣ
+Emerald Isle	ﺩﺮﻣﺰﻟﺍ ﺓﺮﻳﺰﺟ
+V-Rock Hotel	ﻙﻭﺭ ﻲﻓ ﻕﺪﻨﻓ
+Spawned at %s.	.%s ﻲﻓ ﺮﺸﻨﻟﺍ ﻢﺗ
+All	ﻞﻜﻟﺍ
+briefcase war	ﺔﺒﻴﻘﺤﻟﺍ ﺏﺮﺣ
+modern warfare	ﺔﺜﻳﺪﺤﻟﺍ ﺏﺮﺤﻟﺍ
+mega vil	ﻞﻴﻓ ﺎﺠﻴﻣ
+Region: Auto (lowest ping)%s%s. All regions are listed.	.ﻖﻃﺎﻨﻤﻟﺍ ﺔﻓﺎﻛ ﺩﺮﺳ ﻢﺘﻳ .%s%s(ﻝﺎﺼﺗﺍ ﺭﺎﺒﺘﺧﺍ ﻞﻗﺃ) ﻲﺋﺎﻘﻠﺗ :ﺔﻘﻄﻨﻤﻟﺍ
+Region: %s. Only %s servers are listed.	.ﻂﻘﻓ %s ﻡﺩﺍﻮﺧ ﺝﺍﺭﺩﺇ ﻢﺗ .%s :ﺔﻘﻄﻨﻤﻟﺍ
+Auto	ﻲﺋﺎﻘﻠﺗ
+%s  |  %d servers	%s |  %d ﻡﺩﺍﻮﺧ
+lowest ping  |  %d	%d  | ﻎﻨﻴﺑ ﻰﻧﺩﺃ
+%d ms  |  %d servers	%d ﺔﻴﻧﺎﺛ ﻲﻠﻠﻣ |  %d ﻡﺩﺍﻮﺧ
+-- ms	ﻲﻠﻠﻣ --
+Players	ﻦﻴﺒﻋﻼﻟﺍ
+Ping	ﻎﻨﻴﺑ
+Mode	ﻊﺿﻮﻟﺍ
+  (default)	(ﻲﺿﺍﺮﺘﻓﺍ)  
+  (gamemode)	(ﺐﻌﻠﻟﺍ ﻊﺿﻭ)  
+  (Roleplay 24/7)	(24/7 ﺭﺍﻭﺩﻷﺍ ﺐﻌﻟ)  
+  (yours)	(ﻚﻟ)  
+Freeroam %s%s	%s%s ﺮﺤﻟﺍ ﻝﺍﻮﺠﺘﻟﺍ
+(all)	(ﻞﻜﻟﺍ)
+ (LAN)	(ﺔﻴﻠﺤﻤﻟﺍ ﺔﻜﺒﺸﻟﺍ) 
+Brief Case War	ﺓﺮﻴﺼﻘﻟﺍ ﺔﻴﻀﻘﻟﺍ ﺏﺮﺣ
+MW3 Team DM	MW3 DM ﻖﻳﺮﻓ
+No server matches \"%s\".	.\"%s\" ﻖﺑﺎﻄﻳ ﻡﺩﺎﺧ ﺪﺟﻮﻳ ﻻ
+No favourite servers yet. Tap + to add one.	.ﺓﺪﺣﺍﻭ ﺔﻓﺎﺿﻹ + ﻰﻠﻋ ﻂﻐﺿﺍ .ﻥﻵﺍ ﻰﺘﺣ ﺔﻠﻀﻔﻣ ﻡﺩﺍﻮﺧ ﺪﺟﻮﺗ ﻻ
+  Nobody on your server yet.	.ﻥﻵﺍ ﻰﺘﺣ ﻚﺑ ﺹﺎﺨﻟﺍ ﻡﺩﺎﺨﻟﺍ ﻰﻠﻋ ﺪﺣﺃ ﻻ  
+  Join to see who is playing.	.ﺐﻌﻠﻳ ﻦﻣ ﺔﻓﺮﻌﻤﻟ ﻢﻀﻧﺍ  
+  Select a server.	.ﻡﺩﺎﺨﻟﺍ ﺩﺪﺣ  
+Rule	ﺓﺪﻋﺎﻘﻟﺍ
+Value	ﺔﻤﻴﻘﻟﺍ
+default (always on)	(ﺎﻤﺋﺍﺩ ﻞﻴﻐﺸﺗ) ﻲﺿﺍﺮﺘﻓﻻﺍ
+internet lobby	ﺖﻧﺮﺘﻧﻹﺍ ﺔﻫﺩﺭ
+always active	ﺎﻤﺋﺍﺩ ﻂﺸﻧ
+San Andreas	ﺱﺎﻳﺭﺪﻧﺃ ﻥﺎﺳ
+MP 3.04	3.04 ﺐﺋﺎﻨﻟﺍ
+server synced	ﻡﺩﺎﺨﻟﺍ ﺔﻨﻣﺍﺰﻣ ﺖﻤﺗ
+24/7 featured (always on, VPS + Broker)	(VPS + Broker ،ﺎﻤﺋﺍﺩ ﺡﺎﺘﻣ) ﻉﻮﺒﺳﻷﺍ ﻡﺎﻳﺃ ﻝﺍﻮﻃ ﺔﻋﺎﺳ 24 ﺭﺍﺪﻣ ﻰﻠﻋ ﺰﻴﻤﻣ
+Roleplay RP (only)	(ﻂﻘﻓ) RP ﺭﺍﻭﺩﻷﺍ ﺐﻌﻟ
+Mega Vil (Los Santos of the future)	(ﻞﺒﻘﺘﺴﻤﻟﺍ ﺱﻮﺘﻧﺎﺳ ﺱﻮﻟ) ﻞﻴﻓ ﺎﺠﻴﻣ
+20 jobs, payday every 30 min	ﺔﻘﻴﻗﺩ 30 ﻞﻛ ﻊﻓﺪﻟﺍ ﻡﻮﻳ ،ﺔﻔﻴﻇﻭ 20
+calls, SMS, bank, GPS, shop, games...	...ﺏﺎﻌﻟﺃ ،ﺮﺠﺘﻣ ،ﻊﻗﺍﻮﻤﻟﺍ ﺪﻳﺪﺤﺗ ﻡﺎﻈﻧ ،ﻚﻨﺑ ،ﺔﻴﺼﻧ ﻞﺋﺎﺳﺭ ،ﺕﺎﻤﻟﺎﻜﻣ
+peaceful: only police / military on duty	ﺔﻣﺪﺨﻟﺍ ﻲﻓ ﻂﻘﻓ ﺶﻴﺠﻟﺍ / ﺔﻃﺮﺸﻟﺍ :ﺔﻴﻤﻠﺳ
+off (MP + CLEO menu)	(MP + CLEO ﺔﻤﺋﺎﻗ) ﻑﺎﻘﻳﺇ
+MP 3.25	3.25 ﺐﺋﺎﻨﻟﺍ
+24/7 featured (always on, VPS)	(VPS ،ﺎﻤﺋﺍﺩ ﻞﻐﺸﻣ) ﻉﻮﺒﺳﻷﺍ ﻡﺎﻳﺃ ﻝﺍﻮﻃ ﺔﻋﺎﺳ 24 ﺭﺍﺪﻣ ﻰﻠﻋ ﺰﻴﻤﻣ
+Call Of Duty: Modern Warfare 3	3 ﺔﺜﻳﺪﺤﻟﺍ ﺏﺮﺤﻟﺍ :ﺐﺟﺍﻮﻟﺍ ﺀﺍﺪﻧ
+Eurasia, Arabia, Soviet, USA, Australia, Brazil, Taliban, France	ﺎﺴﻧﺮﻓ ،ﻥﺎﺒﻟﺎﻃ ،ﻞﻳﺯﺍﺮﺒﻟﺍ ،ﺎﻴﻟﺍﺮﺘﺳﺃ ،ﺔﻴﻜﻳﺮﻣﻷﺍ ﺓﺪﺤﺘﻤﻟﺍ ﺕﺎﻳﻻﻮﻟﺍ ،ﺖﻴﻴﻓﻮﺴﻟﺍ ،ﺔﻴﺑﺮﻌﻟﺍ ﺓﺮﻳﺰﺠﻟﺍ ،ﺎﻴﺳﺍﺭﻭﺃ
+34 capture zones + 8 bases	ﺪﻋﺍﻮﻗ 8 + ﻁﺎﻘﺘﻟﺍ ﺔﻘﻄﻨﻣ 34
+6 DM arenas, duels, events, hourly tournament	ﺔﻋﺎﺳ ﻞﻛ ﺔﻟﻮﻄﺑﻭ ،ﺙﺍﺪﺣﺃﻭ ،ﺕﺍﺯﺭﺎﺒﻣﻭ ،DM ﺕﺎﺣﺎﺳ 6
+MP 3.23	3.23 ﺐﺋﺎﻨﻟﺍ
+private gamemode (always on)	(ﺎﻤﺋﺍﺩ ﻞﻐﺸﻣ) ﺹﺎﺨﻟﺍ ﺐﻌﻠﻟﺍ ﻊﺿﻭ
+Gustav 10 vs Schelapz 10	10 ﺰﺑﻼﻴﺷ ﺪﺿ 10 ﻑﺎﺘﺳﻮﻏ
+starts at	ﻲﻓ ﺃﺪﺒﻳ
+20 players	ﺎﺒﻋﻻ 20
+Bone County, San Fierro Bay	ﻭﺮﻴﻴﻓ ﻥﺎﺳ ﺞﻴﻠﺧ ،ﻥﻮﺑ ﺔﻌﻃﺎﻘﻣ
+not allowed	ﻪﺑ ﺡﻮﻤﺴﻣ ﺮﻴﻏ
+MP 3.04.6	3.04.6 ﺐﺋﺎﻨﻟﺍ
+This server   |   Moderator: 	 :ﻑﺮﺸﻤﻟﺍ   | ﻡﺩﺎﺨﻟﺍ ﺍﺬﻫ
+Default server   |   Administrator: 	 :ﻝﻭﺆﺴﻤﻟﺍ   | ﻲﺿﺍﺮﺘﻓﻻﺍ ﻡﺩﺎﺨﻟﺍ
+  Nobody else on the default server right now.	.ﻲﻟﺎﺤﻟﺍ ﺖﻗﻮﻟﺍ ﻲﻓ ﻲﺿﺍﺮﺘﻓﻻﺍ ﻡﺩﺎﺨﻟﺍ ﻰﻠﻋ ﺮﺧﺁ ﺪﺣﺃ ﻻ  
+Reason	ﺐﺒﺴﻟﺍ
+Reason (kick / ban)	(ﺮﻈﺣ / ﺔﻠﻛﺭ) ﺐﺒﺴﻟﺍ
+Cheating	ﺶﻐﻟﺍ
+Spamming	ﻲﺋﺍﻮﺸﻌﻟﺍ ﺪﻳﺮﺒﻟﺍ
+Insulting	ﺔﻧﺎﻫﺇ
+Griefing	ﻥﺰﺤﻟﺍ
+Bug abuse	ﺀﺎﻄﺧﻷﺍ ﻡﺍﺪﺨﺘﺳﺍ ﺓﺀﺎﺳﺇ
+Kick	ﺔﻠﻛﺭ
+Ban	ﺮﻈﺣ
+Mute	ﺕﻮﺼﻟﺍ ﻢﺘﻛ
+Unmute	ﺕﻮﺼﻟﺍ ﻢﺘﻛ ﺀﺎﻐﻟﺇ
+Tap a player, pick a reason, then Kick / Ban / Mute. The 24/7 server keeps its ban list.	.ﻪﺑ ﺔﺻﺎﺨﻟﺍ ﺮﻈﺤﻟﺍ ﺔﻤﺋﺎﻘﺑ ﻉﻮﺒﺳﻷﺍ ﻡﺎﻳﺃ ﻝﺍﻮﻃ ﺔﻋﺎﺴﻟﺍ ﺭﺍﺪﻣ ﻰﻠﻋ ﻞﻤﻌﻳ ﻱﺬﻟﺍ ﻡﺩﺎﺨﻟﺍ ﻆﻔﺘﺤﻳ .ﺕﻮﺼﻟﺍ ﻢﺘﻛ / ﺮﻈﺣ / ﺔﻠﻛﺭ ﻢﺛ ،ﺎﺒﺒﺳ ﺮﺘﺧﺍﻭ ،ﻦﻴﺒﻋﻼﻟﺍ ﺪﺣﺃ ﻰﻠﻋ ﻂﻐﺿﺍ
+Server settings (gamemodes / permissions / rules)	(ﺪﻋﺍﻮﻘﻟﺍ / ﺕﺎﻧﻭﺫﻷﺍ / ﺐﻌﻠﻟﺍ ﻉﺎﺿﻭﺃ) ﻡﺩﺎﺨﻟﺍ ﺕﺍﺩﺍﺪﻋﺇ
+moderator.txt has the MP moderator key, but this server didn't give you [MOD] (older MP copy). Type /modcheck, then rejoin.	.ﻯﺮﺧﺃ ﺓﺮﻣ ﻢﻀﻧﺍ ﻢﺛ ،modcheck/ ﺐﺘﻛﺍ .(ﻡﺪﻗﻷﺍ MP ﺔﺨﺴﻧ) [MOD] ﻚﺤﻨﻤﻳ ﻢﻟ ﻡﺩﺎﺨﻟﺍ ﺍﺬﻫ ﻦﻜﻟ ،MP ﻂﻴﺳﻭ ﺡﺎﺘﻔﻣ ﻰﻠﻋ moderator.txt ﻱﻮﺘﺤﻳ
+Player management	ﺐﻋﻼﻟﺍ ﺓﺭﺍﺩﺇ
+The default server has one administrator: [ADMIN] SENJI. Joining first (or hosting it) doesn't make you the host.	.ﻒﻴﻀﻤﻟﺍ ﻚﻠﻌﺠﻳ ﻻ (ﻪﺘﻓﺎﻀﺘﺳﺍ ﻭﺃ) ﻻﻭﺃ ﻡﺎﻤﻀﻧﻻﺍ .ADMIN] SENJI] :ﺪﺣﺍﻭ ﻝﻭﺆﺴﻣ ﻰﻠﻋ ﻲﺿﺍﺮﺘﻓﻻﺍ ﻡﺩﺎﺨﻟﺍ ﻱﻮﺘﺤﻳ
+Want your own rules? Add a server with your own name (Add server -> Host this server).	.(ﻡﺩﺎﺨﻟﺍ ﺍﺬﻫ ﺔﻓﺎﻀﺘﺳﺍ <- ﻡﺩﺎﺧ ﺔﻓﺎﺿﺇ) ﻚﻤﺳﺎﺑ ﺎﻣﺩﺎﺧ ﻒﺿﺃ ؟ﻚﺑ ﺔﺻﺎﺨﻟﺍ ﺪﻋﺍﻮﻘﻟﺍ ﺪﻳﺮﺗ ﻞﻫ
+Go to Add server	ﻡﺩﺎﺧ ﺔﻓﺎﺿﺇ ﻰﻟﺇ ﻞﻘﺘﻧﺍ
+Only the administrator can kick and ban: the phone that hosts the server.	.ﻡﺩﺎﺨﻟﺍ ﻒﻴﻀﺘﺴﻳ ﻱﺬﻟﺍ ﻒﺗﺎﻬﻟﺍ :ﺮﻈﺤﻟﺍﻭ ﻞﻛﺮﻟﺍ ﻂﻘﻓ ﻝﻭﺆﺴﻤﻠﻟ ﻦﻜﻤﻳ
+Host a server first (Add server -> Host this server), then your players show up here.	.ﺎﻨﻫ ﻥﻮﺒﻋﻼﻟﺍ ﺮﻬﻈﻳ ﻢﺛ ،(ﻡﺩﺎﺨﻟﺍ ﺍﺬﻫ ﺔﻓﺎﻀﺘﺳﺍ <- ﻡﺩﺎﺧ ﺔﻓﺎﺿﺇ) ﻻﻭﺃ ﻡﺩﺎﺧ ﺔﻓﺎﻀﺘﺳﺎﺑ ﻢﻗ
+Phone id	ﻒﺗﺎﻬﻟﺍ ﻑﺮﻌﻣ
+Online	ﺖﻧﺮﺘﻧﻻﺍ ﻰﻠﻋ
+  (you, administrator)	(ﻝﻭﺆﺴﻤﻟﺍ ﺎﻬﻳﺃ ﺖﻧﺃ)  
+old version	ﺔﻤﻳﺪﻘﻟﺍ ﺔﺨﺴﻨﻟﺍ
+%llu min	%llu ﺔﻘﻴﻗﺩ
+Kick %s	%s ﺔﻠﻛﺭ
+Kicked %s.	.%s ﻞﻛﺮﻟﺍ ﻢﺗ
+Ban %s	%s ﺮﻈﺣ
+Banned %s.	.%s ﺭﻮﻈﺤﻣ
+That is you (the administrator).	.(ﻝﻭﺆﺴﻤﻟﺍ) ﺖﻧﺃ ﺍﺬﻫ
+Tap a player, type or pick a reason, then Kick or Ban. Banned players see the date, you as administrator and the reason.	.ﺐﺒﺴﻟﺍﻭ ﻝﻭﺆﺴﻤﻛ ﺖﻧﺃﻭ ﺦﻳﺭﺎﺘﻟﺍ ﻥﻭﺭﻮﻈﺤﻤﻟﺍ ﻥﻮﺒﻋﻼﻟﺍ ﻯﺮﻳ .ﺮﻈﺤﻟﺍ ﻭﺃ ﺩﺮﻄﻟﺎﺑ ﻢﻗ ﻢﺛ ،ﺎﺒﺒﺳ ﺮﺘﺧﺍ ﻭﺃ ﺐﺘﻛﺍﻭ ،ﻦﻴﺒﻋﻼﻟﺍ ﺪﺣﺃ ﻰﻠﻋ ﻂﻐﺿﺍ
+Saved in files/MP/bans.txt, used by every server this phone hosts.	.ﻒﺗﺎﻬﻟﺍ ﺍﺬﻫ ﻪﻔﻴﻀﺘﺴﻳ ﻡﺩﺎﺧ ﻞﻛ ﻪﻣﺪﺨﺘﺴﻳﻭ ,files/MP/bans.txt ﻲﻓ ﻆﻔﺤﻟﺍ ﻢﺗ
+Ban date	ﺮﻈﺤﻟﺍ ﺦﻳﺭﺎﺗ
+Administrator	ﻝﻭﺆﺴﻤﻟﺍ
+  Nobody is banned.	.ﺭﻮﻈﺤﻣ ﺪﺣﺃ ﻻ  
+Unban selected	ﺮﻈﺤﻟﺍ ﺀﺎﻐﻟﺇ ﺪﻳﺪﺤﺗ ﻢﺗ
+Ban a name (also when that player is offline)	(ﺖﻧﺮﺘﻧﻹﺎﺑ ﻞﺼﺘﻣ ﺮﻴﻏ ﺐﻋﻼﻟﺍ ﺍﺬﻫ ﻥﻮﻜﻳ ﺎﻣﺪﻨﻋ ﺎﻀﻳﺃ) ﻢﺳﺍ ﺮﻈﺣ
+Player name	ﺐﻋﻼﻟﺍ ﻢﺳﺍ
+Ban name	ﺮﻈﺤﻟﺍ ﻢﺳﺍ
+Banned the name %s.	.%s ﻢﺳﻻﺍ ﺮﻈﺣ ﻢﺗ
+%s is already banned.	%s ﻞﻌﻔﻟﺎﺑ ﺭﻮﻈﺤﻣ.
+Guest	ﻒﻴﺿ
+Not logged in	ﻝﻮﺧﺪﻟﺍ ﻞﻴﺠﺴﺗ ﻢﺘﻳ ﻢﻟ
+Logged in	ﻝﻮﺧﺪﻟﺍ ﻞﻴﺠﺴﺗ ﻢﺗ
+Log in on a server	ﻡﺩﺎﺨﻟﺍ ﻰﻠﻋ ﻝﻮﺧﺪﻟﺍ ﻞﻴﺠﺴﺗ
+MP Launcher	ﺔﻓﺫﺎﻗ ﺐﺋﺎﻨﻟﺍ
+powered by HiveMQ/ThirtyFoxMC	HiveMQ/ThirtyFoxMC ﻦﻣ ﻡﻮﻋﺪﻣ
+MP Launcher  v	MP Launcher v
+Search server	ﺚﺤﺒﻟﺍ ﻡﺩﺎﺧ
+Nickname	ﺐﻘﻠﻟﺍ
+Internet	ﺖﻧﺮﺘﻧﻹﺍ
+Favorites	ﺔﻠﻀﻔﻤﻟﺍ
+Add server	ﻡﺩﺎﺨﻟﺍ ﻒﺿﺃ
+Bans	ﺮﻈﺤﻟﺍ
+Server:	:ﻡﺩﺎﺨﻟﺍ
+Ban date:	:ﺮﻈﺤﻟﺍ ﺦﻳﺭﺎﺗ
+Kick date:	:ﺔﻠﻛﺮﻟﺍ ﺦﻳﺭﺎﺗ
+Administrator:	:ﻝﻭﺆﺴﻤﻟﺍ
+Reason:	:ﺐﺒﺴﻟﺍ
+No reason given	ﻦﻴﻌﻣ ﺐﺒﺳ ﺪﺟﻮﻳ ﻻ
+If you think this is a mistake, ask the administrator (the host) to unban you.	.ﻚﻨﻋ ﺮﻈﺤﻟﺍ ﻊﻓﺭ (ﻒﻴﻀﻤﻟﺍ) ﻝﻭﺆﺴﻤﻟﺍ ﻦﻣ ﺐﻠﻃﺎﻓ ،ﺄﻄﺧ ﺍﺬﻫ ﻥﺃ ﺪﻘﺘﻌﺗ ﺖﻨﻛ ﺍﺫﺇ
+You can join again in %d:%02d.	.%d:%02d ﻝﻼﺧ ﻯﺮﺧﺃ ﺓﺮﻣ ﻡﺎﻤﻀﻧﻻﺍ ﻚﻨﻜﻤﻳ
+You can join again now. Follow the server rules.	.ﻡﺩﺎﺨﻟﺍ ﺪﻋﺍﻮﻗ ﻊﺒﺗﺍ .ﻥﻵﺍ ﻯﺮﺧﺃ ﺓﺮﻣ ﻡﺎﻤﻀﻧﻻﺍ ﻚﻨﻜﻤﻳ
+This server doesn't allow cheat menus	ﺶﻐﻟﺍ ﻢﺋﺍﻮﻘﺑ ﺢﻤﺴﻳ ﻻ ﻡﺩﺎﺨﻟﺍ ﺍﺬﻫ
+%s is loaded in your game right now. To keep it fair for everyone, 	 ،ﻊﻴﻤﺠﻠﻟ ﻻﺩﺎﻋ ﺮﻣﻷﺍ ﻥﻮﻜﻳ ﻲﻜﻟﻭ .ﻥﻵﺍ ﻚﺘﺒﻌﻟ ﻲﻓ %s ﻞﻴﻤﺤﺗ ﻢﺗ
+cheat menus aren't allowed on %s.	.%s ﻲﻓ ﺎﻬﺑ ﺡﻮﻤﺴﻣ ﺮﻴﻏ ﺶﻐﻟﺍ ﻢﺋﺍﻮﻗ
+Cheat Menu works only on custom servers whose host turned on \"Cheat Menu\" (Add server > permissions). 	 .(ﺕﺎﻧﻭﺫﻷﺍ < ﻡﺩﺎﺧ ﺔﻓﺎﺿﺇ) \"ﺶﻐﻟﺍ ﺔﻤﺋﺎﻗ\" ﻞﻴﻐﺸﺘﺑ ﺎﻬﻔﻴﻀﻣ ﻡﺎﻗ ﻲﺘﻟﺍ ﺔﺼﺼﺨﻤﻟﺍ ﻡﺩﺍﻮﺨﻟﺍ ﻰﻠﻋ ﻂﻘﻓ ﺶﻐﻟﺍ ﺔﻤﺋﺎﻗ ﻞﻤﻌﺗ
+For the default server, remove it from your AML mods folder and restart the game - once it is not loaded any more you can join right away.	.ﺭﻮﻔﻟﺍ ﻰﻠﻋ ﻡﺎﻤﻀﻧﻻﺍ ﻚﻨﻜﻤﻳ ،ﻯﺮﺧﺃ ﺓﺮﻣ ﻪﻠﻴﻤﺤﺗ ﻡﺪﻋ ﺩﺮﺠﻤﺑ - ﺔﺒﻌﻠﻟﺍ ﻞﻴﻐﺸﺗ ﺪﻋﺃﻭ ﻚﺑ ﺹﺎﺨﻟﺍ AML ﻞﻳﺪﻌﺗ ﺪﻠﺠﻣ ﻦﻣ ﻪﺘﻟﺍﺯﺈﺑ ﻢﻗ ،ﻲﺿﺍﺮﺘﻓﻻﺍ ﻡﺩﺎﺨﻠﻟ ﺔﺒﺴﻨﻟﺎﺑ
+We check this every time you join, so it can't be switched off while playing.	.ﺐﻌﻠﻟﺍ ﺀﺎﻨﺛﺃ ﻪﻠﻴﻐﺸﺗ ﻑﺎﻘﻳﺇ ﻦﻜﻤﻳ ﻻ ﺍﺬﻟ ،ﺎﻬﻴﻓ ﻢﻀﻨﺗ ﺓﺮﻣ ﻞﻛ ﻲﻓ ﻚﻟﺫ ﻦﻣ ﻖﻘﺤﺘﻧ ﻦﺤﻧ
+Got it	ﻪﻴﻠﻋ ﺖﻠﺼﺣ
+JOB: %s	%s :ﺔﻔﻴﻇﻮﻟﺍ
+DERBY: %s	%s :ﻲﺑﺮﻳﺩ
+DM: %s	%s :ﺓﺮﺷﺎﺒﻣ ﺔﻟﺎﺳﺭ
+%s - starting...	%s - ﺀﺪﺒﻟﺍ...
+GET BACK IN YOUR CAR	ﻚﺗﺭﺎﻴﺳ ﻰﻟﺇ ﺪﻋ
+BACK INTO THE ARENA	ﺔﺣﺎﺴﻟﺍ ﻰﻟﺇ ﺓﺩﻮﻌﻟﺍ
+BACK INTO THE DM ZONE  %d	DM %d ﺔﻘﻄﻨﻣ ﻰﻟﺇ ﺓﺩﻮﻌﻟﺍ
+GET BACK IN YOUR VEHICLE  %d	%d ﻚﺗﺭﺎﻴﺳ ﻰﻟﺇ ﺓﺩﻮﻌﻟﺍ
+Wanted players can't join the police.	.ﺔﻃﺮﺸﻟﺍ ﻰﻟﺇ ﻡﺎﻤﻀﻧﻻﺍ ﻦﻴﺑﻮﻠﻄﻤﻟﺍ ﻦﻴﺒﻋﻼﻟ ﻦﻜﻤﻳ ﻻ
+You are a COP: /cuff <id> and /arrest <id> wanted players ($500 a star).	.(ﺔﻤﺠﻨﻠﻟ ﺭﻻﻭﺩ 500) ﻦﻴﺒﻋﻻ ﻥﺍﺪﻳﺮﻳ <arrest <id/ﻭ <cuff <id/ :ﻲﻃﺮﺷ ﺖﻧﺃ
+You are a ROBBER: /rob <id> players for cash (it makes you wanted).	.(ﻪﻴﻓ ﺎﺑﻮﻏﺮﻣ ﻚﻠﻌﺠﻳ ﺍﺬﻫ) ﻝﺎﻤﻟﺍ ﻞﺑﺎﻘﻣ <id> ﺐﻋﻻ rob/ :ﺺﻟ ﺖﻧﺃ
+You are a civilian.	.ﻲﻧﺪﻣ ﺖﻧﺃ
+Only robbers can rob (/robber).	.(robber/) ﺔﻗﺮﺳ ﻢﻬﻨﻜﻤﻳ ﻂﻘﻓ ﺹﻮﺼﻠﻟﺍ
+Use: /rob <id> standing next to them.	.ﻢﻬﺒﻧﺎﺠﺑ ﺎﻔﻗﺍﻭ <rob <id/ :ﻡﺪﺨﺘﺳﺍ
+Wait a minute before the next robbery.	.ﺔﻴﻟﺎﺘﻟﺍ ﺔﻗﺮﺴﻟﺍ ﻞﺒﻗ ﺔﻘﻴﻗﺩ ﺮﻈﺘﻧﺍ
+Only cops (/cop).	.(cop/) ﻂﻘﻓ ﺔﻃﺮﺸﻟﺍ ﻝﺎﺟﺭ
+Use: /%s <id> standing next to them.	.ﻢﻬﺒﻧﺎﺠﺑ ﺎﻔﻗﺍﻭ <%s <id/ :ﻡﺪﺨﺘﺳﺍ
+%s is not wanted.	%s ﻪﻴﻓ ﺏﻮﻏﺮﻣ ﺮﻴﻏ.
+Use: /placehit <id> <amount $100+>	<+placehit <id> <amount $100/ :ﻡﺪﺨﺘﺳﺍ
+You don't have $%d.	.%d$ ﻚﻳﺪﻟ ﺲﻴﻟ
+Hit placed on %s: $%d (whoever kills them gets it).	.(ﻪﻴﻠﻋ ﻞﺼﺤﻳ ﻢﻬﻠﺘﻘﻳ ﻦﻣ) %s: $%d ﻰﻠﻋ ﻂﻐﻀﻟﺍ ﻢﺗ
+No hits. /placehit <id> <amount>	<ﻎﻠﺒﻤﻟﺍ> <ﻑﺮﻌﻤﻟﺍ> placehit/ .ﺏﺮﻀﻳ ﻻ
+%s robbed you: -$%d.	%s ﻚﻨﻣ ﻕﺮﺳ: -$%d.
+Robbery done: +$%d. Cops are after you.	.ﻚﻧﻮﻘﺣﻼﻳ ﺔﻃﺮﺸﻟﺍ ﻝﺎﺟﺭ .%d$+ :ﺔﻗﺮﺴﻟﺍ ﺖﻤﺗ
+Officer %s cuffed you.	.ﻙﺪﻴﻴﻘﺘﺑ %s ﻂﺑﺎﻀﻟﺍ ﻡﺎﻗ
+Hit done on %s: +$%d.	.%s: +$%d ﻰﻠﻋ ﻢﺗ ﻂﻐﺿﺍ
+You are free. Behave.	.ﻑﺮﺼﺘﺗ .ﺮﺣ ﺖﻧﺃ
+JAIL %d	%d ﻦﺠﺴﻟﺍ
+LS Docks	ﺱﺇ ﻝﺇ ﺊﻧﺍﻮﻣ
+SF Construction	SF ﺀﺎﻨﺒﻟﺍ
+Bayside Marina	ﺎﻨﻳﺭﺎﻣ ﺪﻳﺎﺴﻳﺎﺑ
+A/D round: %s. Attackers: stand 20 s in the checkpoint. Defenders: hold it 5 minutes.	.ﻖﺋﺎﻗﺩ 5 ﺓﺪﻤﻟ ﺎﻬﻜﺴﻣﺃ :ﻥﻮﻌﻓﺍﺪﻤﻟﺍ .ﺶﻴﺘﻔﺘﻟﺍ ﺔﻄﻘﻧ ﻲﻓ ﺔﻴﻧﺎﺛ 20 ﺓﺪﻤﻟ ﻒﻗ :ﻥﻮﻤﺟﺎﻬﻤﻟﺍ .A/D: %s ﺔﻟﻮﺟ
+~r~Attackers win	~r~ﻥﻮﻤﺟﺎﻬﻤﻟﺍ ﺯﻮﻔﻳ
+~b~Defenders win	~b~ﻥﻮﻌﻓﺍﺪﻤﻟﺍ ﺯﻮﻔﻳ
+Your team won: +$1000.	.ﺭﻻﻭﺩ 1000+ :ـﺑ ﻚﻘﻳﺮﻓ ﺯﺎﻓ
+You left A/D.	.ﺩ/ﺃ ﺖﻛﺮﺗ ﺪﻘﻟ
+You are a %s. /vote <1-%d> picks the base, /ad start starts a round, /ad leave.	.ﺭﺩﺎﻐﻳ ad/ ،ﺔﻟﻮﺠﻟﺍ ﺃﺪﺒﻳ ad/ ،ﺓﺪﻋﺎﻘﻟﺍ ﺭﺎﺘﺨﻳ <%s. /vote <1-%d ﺖﻧﺃ
+A round is on (%s).	.(%s) ﻞﻴﻐﺸﺘﻟﺍ ﺪﻴﻗ ﺔﻟﻮﺟ ﻙﺎﻨﻫ
+Voted %s (2 votes start it).	.(ﺀﺪﺒﻠﻟ ﻥﺎﺗﻮﺻ) %s ـﺑ ﺖﻳﻮﺼﺘﻟﺍ ﻢﺗ
+%s voted %s.	%s ـﺑ ﺖﻳﻮﺼﺘﻟﺍ ﻢﺗ %s.
+CAPTURE %d%%	%d%% ﻁﺎﻘﺘﻟﻻﺍ
+LV airport stunts	LV ﺭﺎﻄﻣ ﻲﻓ ﺓﺮﻴﺜﻤﻟﺍ ﻝﺎﻤﻋﻷﺍ
+SF airport	ﻑﺇ ﺱﺇ ﺭﺎﻄﻣ
+Big Ear	ﺓﺮﻴﺒﻜﻟﺍ ﻥﺫﻷﺍ
+Stunt park (LV)	(LV) ﺓﺮﻴﺜﻤﻟﺍ ﺏﺎﻌﻟﻷﺍ ﺔﻘﻳﺪﺣ
+Not during an event.	.ﺙﺪﺤﻟﺍ ﻝﻼﺧ ﺲﻴﻟ
+Ramp ahead of you. Go.	.ﺐﻫﺬﻳ .ﻚﻣﺎﻣﺃ ﺭﺪﺤﻨﻣ
+Could not place the ramp (try again).	.(ﻯﺮﺧﺃ ﺓﺮﻣ ﻝﻭﺎﺣ) ﺭﺪﺤﻨﻤﻟﺍ ﻊﺿﻭ ﺭﺬﻌﺗ
+~y~Stunt bonus ~w~$%d	~y~ﺓﺮﻴﺜﻤﻟﺍ ﻝﺎﻤﻋﻷﺍ ﺓﺄﻓﺎﻜﻣ ~w~$%d
+~r~Drift lost	~r~ﻑﺍﺮﺠﻧﻻﺍ ﺪﻘﻓ
+~g~Drift %d ~w~+$%d	~g~ﻑﺍﺮﺠﻧﺍ %d ~w~+$%d
+New best drift: %d.	.%d :ﺪﻳﺪﺟ ﻑﺍﺮﺠﻧﺍ ﻞﻀﻓﺃ
+DRIFT %d x%d	%d ×%d ﻑﺍﺮﺠﻧﻻﺍ
+Survival on: find loot crates (yellow arrows), keep your thirst up (/drink $15), zombies come at night (21:00-06:00).	.(06:00-21:00) ﻼﻴﻟ ﻲﺒﻣﻭﺰﻟﺍ ﻲﺗﺄﻳ ،(ﺍﺭﻻﻭﺩ drink 15/) ﻚﺸﻄﻋ ﻰﻠﻋ ﻆﻓﺎﺣ ،(ﺀﺍﺮﻔﺼﻟﺍ ﻢﻬﺳﻷﺍ) ﻢﺋﺎﻨﻐﻟﺍ ﻖﻳﺩﺎﻨﺻ ﻦﻋ ﺚﺤﺑﺍ :ﺀﺎﻘﺒﻟﺍ ﻲﻓ ﺮﻤﺘﺳﺍ
+Survival off.	.ﺔﻟﺎﺒﻗ ﺓﺎﻴﺤﻟﺍ ﺪﻴﻗ ﻰﻠﻋ ﺀﺎﻘﺒﻟﺍ
+A drink is $15.	.ﺍﺭﻻﻭﺩ 15 ﻮﻫ ﺏﺍﺮﺸﻟﺍ
+Thirst %d%%.	.%d%% ﺶﻄﻋ
+~b~Water	~b~ﺀﺎﻤﻟﺍ
+~g~Medkit	~g~ﺔﻴﺒﻃ ﺕﺍﻭﺩﺃ
+~y~Weapon	~y~ﺡﻼﺳ
+~w~Armour	~w~ﻉﺭﺩ
+THIRST %d%%  KILLS %d	%d ﻞﺘﻘﻳ %d%% ﺶﻄﻌﻟﺍ
+My Vehicles is empty: sit in a car and type /savecar (up to %d).	.(%d ﻰﺘﺣ) savecar/ ﺐﺘﻛﺍﻭ ﺓﺭﺎﻴﺴﻟﺍ ﻲﻓ ﺲﻠﺟﺍ :ﺔﻏﺭﺎﻓ ﻲﺗﺎﺒﻛﺮﻣ
+#\tVehicle Model\tStatus\tDistance\n	#\tﺔﺒﻛﺮﻤﻟﺍ ﺯﺍﺮﻃ\tﺔﻟﺎﺤﻟﺍ\tﺔﻓﺎﺴﻤﻟﺍ\n
+Vehicle Model	ﺓﺭﺎﻴﺴﻟﺍ ﺯﺍﺮﻃ
+Status	ﺔﻟﺎﺤﻟﺍ
+Distance	ﺔﻓﺎﺴﻤﻟﺍ
+{FFFFFF}My Vehicles (%d/%d):	{FFFFFF}ﻲﺗﺎﺒﻛﺮﻣ (%d/%d):
+Select	ﺮﺘﺧﺍ
+Could not spawn the %s here (try again near it).	.(ﻪﻨﻣ ﺏﺮﻘﻟﺎﺑ ﻯﺮﺧﺃ ﺓﺮﻣ ﻝﻭﺎﺣ) ﺎﻨﻫ %s ﺮﺸﻧ ﺭﺬﻌﺗ
+Somebody is driving it.	.ﺎﻫﺩﻮﻘﻳ ﻦﻣ ﻙﺎﻨﻫ
+%s despawned (parked here for next time).	%s ﺔﻣﺩﺎﻘﻟﺍ ﺓﺮﻤﻠﻟ ﺎﻨﻫ ﻒﻗﻮﺘﻣ) ﻪﻓﺎﻘﻳﺇ ﻢﺗ).
+Spawn it first.	.ﻻﻭﺃ ﺎﻫﺮﺸﻧﺍ
+Parking spot saved.	.ﺕﺍﺭﺎﻴﺴﻟﺍ ﻑﻮﻗﻭ ﻥﺎﻜﻣ ﻆﻔﺣ ﻢﺗ
+%s removed from My Vehicles.	.ﻲﺗﺎﺒﻛﺮﻣ ﻦﻣ %s ﺔﻟﺍﺯﺇ ﺖﻤﺗ
+%s\n%s\n{FFFF00}Locate\n{FFFFFF}Park here\n{FF3333}Remove	%s\n%s\n{FFFF00}ﻊﻗﻮﻣ ﺪﻳﺪﺤﺗ\n{FFFFFF}ﺎﻨﻫ ﺓﺭﺎﻴﺴﻟﺍ ﻑﺎﻘﻳﺇ\n{FF3333}ﺔﻟﺍﺯﺇ
+{FFFFFF}Park here	{FFFFFF}ﺎﻨﻫ ﻚﺗﺭﺎﻴﺳ ﻦﻛﺭﺍ
+{FFFFFF}Unlock	{FFFFFF}ﺢﺘﻓ
+Back	ﺓﺩﻮﻌﻟﺍ
+Sit in the car you want to keep, then /savecar.	.savecar/ ﻢﺛ ،ﺎﻬﺑ ﻅﺎﻔﺘﺣﻻﺍ ﺪﻳﺮﺗ ﻲﺘﻟﺍ ﺓﺭﺎﻴﺴﻟﺍ ﻲﻓ ﺲﻠﺟﺍ
+It is already in My Vehicles.	.ﻲﺗﺎﺒﻛﺮﻣ ﻲﻓ ﻞﻌﻔﻟﺎﺑ ﺩﻮﺟﻮﻣ ﻪﻧﺇ
+My Vehicles is full (%d) - /mv > Remove one first.	.ﻻﻭﺃ ﺓﺪﺣﺍﻭ ﺔﻟﺍﺯﺈﺑ ﻢﻗ < %d) - /mv) ﺔﺌﻠﺘﻤﻣ ﻲﺗﺎﺒﻛﺮﻣ
+Human	ﻥﺎﺴﻧﻹﺍ
+CAPTURING %s	%s ﻁﺎﻘﺘﻟﻻﺍ
+CAPTURE FAILED	ﻁﺎﻘﺘﻟﻻﺍ ﻞﺸﻓ
+%s CAPTURED	%s ﺎﻬﻃﺎﻘﺘﻟﺍ ﻢﺗ
+[EVENT] You are in the %s team.	[EVENT] ﻖﻳﺮﻓ ﻲﻓ ﺖﻧﺃ %s.
+[EVENT] You are the first zombie. Infect the humans with the chainsaw.	[EVENT] ﺭﺎﺸﻨﻤﻟﺎﺑ ﺮﺸﺒﻟﺍ ﺐﻴﺼﺗ .ﻝﻭﻷﺍ ﻲﺒﻣﻭﺰﻟﺍ ﺖﻧﺃ.
+DUEL VS %s	%s ﺪﺿ ﺓﺯﺭﺎﺒﻣ
+PROMOTED: %s	%s :ﻪﻟ ﺞﻳﻭﺮﺘﻟﺍ ﻢﺗ
+YOU ARE A ZOMBIE	ﻲﺒﻣﻭﺯ ﺖﻧﺃ
+{3CFF6A}MW3 - Help	{3CFF6A}MW3 - ﺓﺪﻋﺎﺴﻣ
+{FFFFFF}Capture zones: stand in a zone checkpoint (on foot) for 25 s.\n	{FFFFFF}ﺔﻴﻧﺎﺛ 25 ﺓﺪﻤﻟ (ﻡﺍﺪﻗﻷﺍ ﻰﻠﻋ ﺍﺮﻴﺳ) ﺔﻘﻄﻨﻤﻟﺍ ﺶﻴﺘﻔﺗ ﺔﻄﻘﻧ ﻲﻓ ﻒﻗ :ﻁﺎﻘﺘﻟﻻﺍ ﻖﻃﺎﻨﻣ.\n
+{FFFFFF}Capture zones: stand in a zone checkpoint (on foot) for 25 s.	{FFFFFF}ﺔﻴﻧﺎﺛ 25 ﺓﺪﻤﻟ (ﻡﺍﺪﻗﻷﺍ ﻰﻠﻋ ﺍﺮﻴﺳ) ﺔﻘﻄﻨﻤﻟﺍ ﺶﻴﺘﻔﺗ ﺔﻄﻘﻧ ﻲﻓ ﻒﻗ :ﻁﺎﻘﺘﻟﻻﺍ ﻖﻃﺎﻨﻣ.
+Kills: +2 score, $1500. Captures: +5 score, $5000. Owned zones pay every 10 min.\n	.ﻖﺋﺎﻗﺩ 10 ﻞﻛ ﻊﻓﺪﺗ ﺔﻛﻮﻠﻤﻤﻟﺍ ﻖﻃﺎﻨﻤﻟﺍ .ﺭﻻﻭﺩ 5000 ،ﻁﺎﻘﻧ 5+ :ﻂﻘﺘﻠﻳ .ﺭﻻﻭﺩ 1500 ،ﺔﺠﻴﺘﻨﻟﺍ 2+ :ﻞﺘﻘﻟﺍ\n
+Kills: +2 score, $1500. Captures: +5 score, $5000. Owned zones pay every 10 min.	.ﺔﻘﻴﻗﺩ 10 ﻞﻛ ﻊﻓﺪﺗ ﺔﻛﻮﻠﻤﻤﻟﺍ ﻖﻃﺎﻨﻤﻟﺍ .ﺭﻻﻭﺩ 5000 ،ﻁﺎﻘﻧ 5+ :ﻂﻘﺘﻠﻳ .ﺭﻻﻭﺩ 1500 ،ﺔﺠﻴﺘﻨﻟﺍ 2+ :ﻞﺘﻘﻟﺍ
+Kill 2+ players within 6 s for a badge. Every 5 kills = a killing spree bonus.\n\n	.ﻞﺘﻘﻟﺍ ﺓﺭﻮﻓ ﺓﺄﻓﺎﻜﻣ = ﻞﺘﻗ ﺕﺎﻴﻠﻤﻋ 5 ﻞﻛ .ﺓﺭﺎﺷ ﻰﻠﻋ ﻝﻮﺼﺤﻠﻟ ﻥﺍﻮﺛ 6 ﻝﻼﺧ ﻦﻴﺒﻋﻻ ﻦﻣ ﺮﺜﻛﺃ ﻞﺘﻗﺍ\n\n
+Kill 2+ players within 6 s for a badge. Every 5 kills = a killing spree bonus.	.ﻞﺘﻘﻟﺍ ﺓﺭﻮﻓ ﺓﺄﻓﺎﻜﻣ = ﻞﺘﻗ ﺕﺎﻴﻠﻤﻋ 5 ﻞﻛ .ﺓﺭﺎﺷ ﻰﻠﻋ ﻝﻮﺼﺤﻠﻟ ﻥﺍﻮﺛ 6 ﻝﻼﺧ ﻦﻴﺒﻋﻻ ﻦﻣ ﺮﺜﻛﺃ ﻞﺘﻗﺍ
+{3CFF6A}/dm /sdm /mdm /chdm /cbdm /hsdm{FFFFFF} - deathmatch arenas, {3CFF6A}/qdm{FFFFFF} - leave\n	{3CFF6A}/dm /sdm /mdm /chdm /cbdm /hsdm{FFFFFF} - ﺕﻮﻤﻟﺍ ﺓﺍﺭﺎﺒﻣ ﺕﺎﺣﺎﺳ، {3CFF6A}/qdm{FFFFFF} - ﺓﺭﺩﺎﻐﻣ\n
+{3CFF6A}/dm /sdm /mdm /chdm /cbdm /hsdm{FFFFFF} - deathmatch arenas, {3CFF6A}/qdm{FFFFFF} - leave	{3CFF6A}/dm /sdm /mdm /chdm /cbdm /hsdm{FFFFFF} - ﺕﻮﻤﻟﺍ ﺕﺎﺣﺎﺳ، {3CFF6A}/qdm{FFFFFF} - ﺓﺭﺩﺎﻐﻣ
+{3CFF6A}/duel <id> [weapon]{FFFFFF}, {3CFF6A}/accept{FFFFFF} - 1 vs 1 duel\n	{3CFF6A}/duel <id> [weapon]{FFFFFF}، {3CFF6A}/accept{FFFFFF} - 1 ﺪﺿ 1 ﺓﺯﺭﺎﺒﻣ\n
+{3CFF6A}/duel <id> [weapon]{FFFFFF}, {3CFF6A}/accept{FFFFFF} - 1 vs 1 duel	{3CFF6A}/duel <id> [weapon]{FFFFFF}، {3CFF6A}/accept{FFFFFF} - 1 ﺪﺿ 1 ﺓﺯﺭﺎﺒﻣ
+{3CFF6A}/join /leave{FFFFFF} - events (every 15 min at the LS Docks)\n	{3CFF6A}/join /leave{FFFFFF} - ﻲﻓ ﺔﻘﻴﻗﺩ 15 ﻞﻛ) ﺙﺍﺪﺣﻷﺍ LS Docks)\n
+{3CFF6A}/join /leave{FFFFFF} - events (every 15 min at the LS Docks)	{3CFF6A}/join /leave{FFFFFF} - ﻲﻓ ﺔﻘﻴﻗﺩ 15 ﻞﻛ) ﺙﺍﺪﺣﻷﺍ LS Docks)
+{3CFF6A}/team /class{FFFFFF} - change (back to the docks screen)\n	{3CFF6A}/team /class{FFFFFF} - ﺀﺎﺳﺭﻹﺍ ﺔﺷﺎﺷ ﻰﻟﺇ ﻉﻮﺟﺮﻟﺍ) ﺮﻴﻴﻐﺗ)\n
+{3CFF6A}/team /class{FFFFFF} - change (back to the docks screen)	{3CFF6A}/team /class{FFFFFF} - ﺀﺎﺳﺭﻹﺍ ﺔﺷﺎﺷ ﻰﻟﺇ ﺓﺩﻮﻌﻟﺍ) ﺮﻴﻴﻐﺗ)
+{3CFF6A}/jp{FFFFFF} JetTrooper  {3CFF6A}/heal{FFFFFF} Medic  {3CFF6A}/tank{FFFFFF} Engineer  {3CFF6A}/air{FFFFFF} Pilot\n	{3CFF6A}/jp{FFFFFF} JetTrooper {3CFF6A}/heal{FFFFFF} ﻒﻌﺴﻣ {3CFF6A}/tank{FFFFFF} ﺱﺪﻨﻬﻣ {3CFF6A}/air{FFFFFF} ﺭﺎﻴﻃ\n
+{3CFF6A}/jp{FFFFFF} JetTrooper  {3CFF6A}/heal{FFFFFF} Medic  {3CFF6A}/tank{FFFFFF} Engineer  {3CFF6A}/air{FFFFFF} Pilot	{3CFF6A}/jp{FFFFFF} JetTrooper {3CFF6A}/heal{FFFFFF} ﻒﻌﺴﻣ {3CFF6A}/tank{FFFFFF} ﺱﺪﻨﻬﻣ {3CFF6A}/air{FFFFFF} ﺭﺎﻴﻃ
+Rank	ﺔﺒﺗﺭ
+{3CFF6A}MW3 - Ranks	{3CFF6A}MW3 - ﺐﺗﺮﻟﺍ
+Class	ﺔﺌﻓ
+{3CFF6A}MW3 - Classes	{3CFF6A}MW3 - ﺔﻴﺳﺍﺭﺪﻟﺍ ﻝﻮﺼﻔﻟﺍ
+{FFFFFF}Rank: {3CFF6A}%s (%d){FFFFFF}	{FFFFFF}ﺔﺒﺗﺮﻟﺍ: {3CFF6A}%s (%d){FFFFFF}
+Cash: $%d	%d$ :ﺍﺪﻘﻧ
+Kills: %d	%d :ﻞﺘﻘﻟﺍ ﺕﺎﻴﻠﻤﻋ
+Deaths: %d	%d :ﺕﺎﻴﻓﻮﻟﺍ
+Ratio: %.2f	%.2f :ﺔﺒﺴﻨﻟﺍ
+Zone captures: %d	%d :ﺔﻘﻄﻨﻤﻟﺍ ﻁﺎﻘﺘﻟﺍ ﺕﺎﻴﻠﻤﻋ
+Deagle kills: %d	%d :ﺮﺴﻨﻟﺍ ﻞﺘﻗ
+Best killing spree: %d	%d :ﻞﺘﻗ ﺔﻴﻠﻤﻋ ﻞﻀﻓﺃ
+Killing spree now: %d	%d :ﻥﻵﺍ ﻞﺘﻘﻟﺍ ﺓﺭﻮﻓ
+{3CFF6A}MW3 - Stats	{3CFF6A}MW3 - ﺕﺎﻴﺋﺎﺼﺣﻹﺍ
+/startevent 1 TDM, 2 DM, 3 Zombie, 4 Last Man Standing	/startevent 1 TDM، 2 DM، 3 ﻒﻗﺍﻭ ﻞﺟﺭ ﺮﺧﺁ 4 ،ﻲﺒﻣﻭﺯ
+Only the JetTrooper class has a jetpack (rank %d).	.(%d ﺔﺒﺗﺮﻤﻟﺍ) jetpack ﻚﻠﺘﻤﺗ ﻲﺘﻟﺍ ﻲﻫ ﻂﻘﻓ JetTrooper ﺔﺌﻓ
+Jetpack ready in %d s.	Jetpack ﻝﻼﺧ ﺰﻫﺎﺟ %d ﺔﻴﻧﺎﺛ.
+Only the Engineer class can drive the tank.	.ﺔﺑﺎﺑﺪﻟﺍ ﺓﺩﺎﻴﻗ ﺎﻬﻨﻜﻤﻳ ﺱﺪﻨﻬﻤﻟﺍ ﺔﺌﻓ ﻂﻘﻓ
+Only the Pilot class can fly.	.ﻥﺍﺮﻴﻄﻟﺍ ﺎﻬﻨﻜﻤﻳ ﻦﻳﺭﺎﻴﻄﻟﺍ ﺔﺌﻓ ﻂﻘﻓ
+Only in your own base.	.ﺔﺻﺎﺨﻟﺍ ﻚﺗﺪﻋﺎﻗ ﻲﻓ ﻂﻘﻓ
+Next vehicle in %d s.	.ﺔﻴﻧﺎﺛ %d ﻝﻼﺧ ﺔﻴﻟﺎﺘﻟﺍ ﺔﺒﻛﺮﻤﻟﺍ
+{3CFF6A}MW3 - Aircraft	{3CFF6A}MW3 - ﺕﺍﺮﺋﺎﻄﻟﺍ
+Leave the arena / event / duel first.	.ﻻﻭﺃ ﺓﺯﺭﺎﺒﻤﻟﺍ / ﺙﺪﺤﻟﺍ / ﺔﺣﺎﺴﻟﺍ ﻙﺮﺗﺍ
+/%s is not available on Modern Warfare 3. Type /help.	/%s ﻲﻓ ﺡﺎﺘﻣ ﺮﻴﻏ Modern Warfare 3. ﺐﺘﻛﺍ /help.
+%s capturing  %d%%	%s ﻁﺎﻘﺘﻟﻻﺍ %d%%
+%s %s BASE	%s %s ﺓﺪﻋﺎﻘﻟﺍ
+%s %s (%d%%)   Score: %d   XP: %d	%s %s (%d%%) ﺔﺠﻴﺘﻨﻟﺍ: %d XP: %d
+%s %s   Score: %d   XP: %d	%s %s ﺔﺠﻴﺘﻨﻟﺍ: %d XP: %d
+Kills: %d   Deaths: %d   K/D: %.2f   Spree: %d   Caps: %d	%d :ﺔﻴﻟﻭﺪﻟﺍ ﺕﺎﻳﺭﺎﺒﻤﻟﺍ %d :ﺡﺮﻤﻟﺍ %.2f :ﻞﺘﻘﻟﺍ/ﻞﺘﻘﻟﺍ ﻝﺪﻌﻣ %d :ﺓﺎﻓﻮﻟﺍ ﺕﻻﺎﺣ %d :ﻞﺘﻘﻟﺍ ﺕﺎﻴﻠﻤﻋ
++%d score  	+%d ﺔﺠﻴﺘﻨﻟﺍ  
+Event	ﺙﺪﺣ
+Duel	ﺓﺯﺭﺎﺒﻣ
+  -  /qdm to leave	  - /qdm ﺓﺭﺩﺎﻐﻤﻠﻟ
+CAPTURING %s  %d%%	%s %d%% ﻁﺎﻘﺘﻟﻻﺍ
+MODERN WARFARE 3	3 ﺔﺜﻳﺪﺤﻟﺍ ﺏﺮﺤﻟﺍ
+CALL OF DUTY  -  24/7  -  LOS SANTOS DOCKS & WAREHOUSES	CALL OF DUTY - 24/7 - ﺱﻮﺘﻧﺎﺳ ﺱﻮﻟ ﺕﺎﻋﺩﻮﺘﺴﻣﻭ ﺔﻔﺻﺭﺃ
+TAP A TEAM TO DEPLOY	ﺮﺸﻨﻠﻟ ﻖﻳﺮﻓ ﻰﻠﻋ ﻂﻐﺿﺍ
+CLASS >	< ﺔﺌﻓ
+No waiting: tap a team and you spawn in its base. /class changes your class.	.ﻚﻔﺻ ﺮﻴﻐﻳ class/ .ﻪﺗﺪﻋﺎﻗ ﻲﻓ ﺮﻬﻈﺘﺳﻭ ﻖﻳﺮﻔﻟﺍ ﻰﻠﻋ ﻂﻐﺿﺍ :ﺭﺎﻈﺘﻧﺍ ﻻ
+%s %s  -  CHOOSE YOUR CLASS	%s %s - ﻲﺳﺍﺭﺪﻟﺍ ﻚﻠﺼﻓ ﺮﺘﺧﺍ
+%s\nRank %d	%s\n%d ﺔﺒﺗﺮﻟﺍ
+Rank %d	%d ﺔﺒﺗﺮﻟﺍ
+< TEAM	ﻖﻳﺮﻓ>
+Left Modern Warfare 3.	.3 ﺔﺜﻳﺪﺤﻟﺍ ﺏﺮﺤﻟﺍ ﺭﺎﺴﻴﻟﺍ
+You slept well: energy 100%%.	.100%% ﺔﻗﺎﻄﻟﺍ :ﺍﺪﻴﺟ ﺖﻤﻧ ﺪﻘﻟ
+You are hungry: /eat ($25 a meal).	.(ﺔﺒﺟﻮﻠﻟ ﺍﺭﻻﻭﺩ eat (25/ :ﻊﺋﺎﺟ ﺖﻧﺃ
+You are tired: stand still to rest, or /sleep in your house.	.ﻚﻟﺰﻨﻣ ﻲﻓ sleep/ ﻭﺃ ،ﺡﺎﺗﺮﺘﻟ ﺎﻨﻛﺎﺳ ﻒﻗ :ﺐﻌﺘﻣ ﺖﻧﺃ
+You are not hungry.	.ﺎﻌﺋﺎﺟ ﺖﺴﻟ ﺖﻧﺃ
+A meal is $25.	.ﺍﺭﻻﻭﺩ 25 ﺔﺒﺟﻮﻟﺍ
+You ate a meal ($25). Hunger %d%%.	.%d%% ﻉﻮﺠﻟﺍ .(ﺍﺭﻻﻭﺩ 25) ﺔﺒﺟﻭ ﺖﻠﻛﺃ ﺪﻘﻟ
+Resting... (move to stop)	(ﻒﻗﻮﺘﻠﻟ ﻙﺮﺤﺗ) ...ﺢﻳﺮﺘﺴﻳ
+Hunger %d%%  Energy %d%%  (/eat, /sleep, /rest)	(%d%% (/eat، /sleep، /rest ﺔﻗﺎﻄﻟﺍ %d%% ﻉﻮﺠﻟﺍ
+Log in first - your progress is saved to your account.	.ﻚﺑﺎﺴﺣ ﻲﻓ ﻚﻣﺪﻘﺗ ﻆﻔﺣ ﻢﺘﻳ - ﻻﻭﺃ ﻝﻮﺧﺪﻟﺍ ﻞﻴﺠﺴﺘﺑ ﻢﻗ
+This server can't save progress (it needs MP 3.39.1).	.(MP 3.39.1 ﻰﻟﺇ ﺝﺎﺘﺤﻳ) ﻡﺪﻘﺘﻟﺍ ﻆﻔﺣ ﻡﺩﺎﺨﻟﺍ ﺍﺬﻬﻟ ﻦﻜﻤﻳ ﻻ
+Your saved progress is still loading...	...ﻞﻴﻤﺤﺘﻟﺍ ﺪﻴﻗ ﻅﻮﻔﺤﻤﻟﺍ ﻚﻣﺪﻘﺗ ﻝﺍﺰﻳ ﻻ
+Progress saved (it also saves by itself every 15 s and when you leave).	.(ﺓﺭﺩﺎﻐﻤﻟﺍ ﺪﻨﻋﻭ ﺔﻴﻧﺎﺛ 15 ﻞﻛ ﻪﺴﻔﻧ ﺀﺎﻘﻠﺗ ﻦﻣ ﻆﻔﺤﻳ ﻪﻧﺃ ﺎﻤﻛ) ﻡﺪﻘﺘﻟﺍ ﻆﻔﺣ ﻢﺗ
+Name Tag	ﻢﺳﻻﺍ ﺔﻣﻼﻋ
+Name Tag: Show Yourself	ﻚﺴﻔﻧ ﺮﻬﻇﺃ :ﺔﻣﻼﻌﻟﺍ ﻢﺳﺍ
+Damage Indicator	ﺭﺮﻀﻟﺍ ﺮﺷﺆﻣ
+Kill Feed	ﻑﻼﻋﻷﺍ ﻞﺘﻗ
+Chat Bubble	ﺔﺷﺩﺭﺪﻟﺍ ﺔﻋﺎﻘﻓ
+Voice Chat	ﺔﻴﺗﻮﺼﻟﺍ ﺔﺷﺩﺭﺪﻟﺍ
+Hit Sound	ﺕﻮﺼﻟﺍ ﺏﺮﺿ
+Chat Timestamp	ﺔﺷﺩﺭﺪﻠﻟ ﻲﻨﻣﺰﻟﺍ ﻊﺑﺎﻄﻟﺍ
+Radar Player Icons	ﺭﺍﺩﺍﺮﻟﺍ ﻞﻐﺸﻣ ﺕﺎﻧﻮﻘﻳﺃ
+Global Chat (OOC)	(OOC) ﺔﻴﻤﻟﺎﻌﻟﺍ ﺔﺷﺩﺭﺪﻟﺍ
+Google Map Radar	ﻞﺟﻮﺟ ﻂﺋﺍﺮﺧ ﺭﺍﺩﺍﺭ
+PUBG Compass	ﻲﺠﺒﺑ ﺔﻠﺻﻮﺑ
+Username	ﻡﺪﺨﺘﺴﻤﻟﺍ ﻢﺳﺍ
+Not linked (verify on Discord)	(Discord ﻰﻠﻋ ﻖﻘﺤﺘﻟﺍ) ﻂﺒﺗﺮﻣ ﺮﻴﻏ
+Enable	ﻦﻴﻜﻤﺗ
+Disable	ﻞﻴﻄﻌﺗ
+Your own switches (this phone). Mega Vil: Global chat hides (( [OOC] )) lines, Google map = /googlemap on|off.	.ﻑﺎﻘﻳﺇ|ﻞﻴﻐﺸﺗ googlemap/ = ﻞﺟﻮﺟ ﺔﻄﻳﺮﺧ (( [OOC] )) ﻁﻮﻄﺧ ﻲﻔﺨﺗ ﺔﻴﻤﻟﺎﻌﻟﺍ ﺔﺷﺩﺭﺪﻟﺍ :ﻞﻴﻓ ﺎﺠﻴﻣ .(ﻒﺗﺎﻬﻟﺍ ﺍﺬﻫ) ﻚﺑ ﺔﺻﺎﺨﻟﺍ ﺢﻴﺗﺎﻔﻤﻟﺍ
+Your own switches (this phone). Server modes can only be changed by the owner, [ADMIN] or [MOD].	.[MOD] ﻭﺃ [ADMIN] ،ﻚﻟﺎﻤﻟﺍ ﺔﻄﺳﺍﻮﺑ ﻻﺇ ﻡﺩﺎﺨﻟﺍ ﻉﺎﺿﻭﺃ ﺮﻴﻴﻐﺗ ﻦﻜﻤﻳ ﻻ .(ﻒﺗﺎﻬﻟﺍ ﺍﺬﻫ) ﻚﺑ ﺔﺻﺎﺨﻟﺍ ﺢﻴﺗﺎﻔﻤﻟﺍ
+Toggle	ﻞﻳﺪﺒﺗ
+Lowrider Race	ﺭﺪﻳﺭﻮﻟ ﻕﺎﺒﺳ
+Little Loop	ﺓﺮﻴﻐﺻ ﺔﻘﻠﺣ
+Backroad Wanderer	ﺔﻴﻔﻠﺨﻟﺍ ﻕﺮﻄﻟﺍ ﻲﻓ ﻝﻮﺠﺘﻤﻟﺍ
+City Circuit	ﺔﻨﻳﺪﻤﻟﺍ ﺔﺒﻠﺣ
+Into the Country	ﺩﻼﺒﻟﺍ ﻞﺧﺍﺩ
+Badlands A	ﺃ ﺓﺮﻋﻮﻟﺍ ﻲﺿﺍﺭﻷﺍ
+Badlands B	ﺏ ﺓﺮﻋﻮﻟﺍ ﻲﺿﺍﺭﻷﺍ
+Dirtbike Danger	ﺔﻴﺑﺍﺮﺘﻟﺍ ﺔﺟﺍﺭﺪﻟﺍ ﺮﻄﺧ
+Bandito County	ﻮﺘﻳﺪﻧﺎﺑ ﺔﻌﻃﺎﻘﻣ
+Go-Go Karting	ﺞﻨﻴﺗﺭﺎﻜﻟﺍ ﺏﺎﻫﺬﻟﺍ ﺏﺎﻫﺬﻟﺍ
+San Fierro Fastlane	ﻦﻳﻻ ﺖﺳﺎﻓ ﻭﺮﻴﻴﻓ ﻥﺎﺳ
+San Fierro Hills	ﻭﺮﻴﻴﻓ ﻥﺎﺳ ﻝﻼﺗ
+Country Endurance	ﺩﻼﺒﻟﺍ ﺩﻮﻤﺻ
+SF to LV	SF ﻰﻟﺇ LV
+Dam Rider	ﺪﺴﻟﺍ ﺐﻛﺍﺭ
+Desert Tricks	ﺀﺍﺮﺤﺼﻟﺍ ﻞﻴﺣ
+LV Ringroad	LV ﻱﺮﺋﺍﺪﻟﺍ ﻖﻳﺮﻄﻟﺍ
+World War Ace	ﺔﻴﻤﻟﺎﻌﻟﺍ ﺏﺮﺤﻟﺍ ﺲﻳﺍ
+Air race	ﻱﻮﺟ ﻕﺎﺒﺳ
+Barnstorming	ﺭﻮﻔﺼﻌﻟﺍ
+Military Service	ﺔﻳﺮﻜﺴﻌﻟﺍ ﺔﻣﺪﺨﻟﺍ
+Chopper Checkpoint	ﺔﻴﺣﻭﺮﻤﻟﺍ ﺶﻴﺘﻔﺗ ﺔﻄﻘﻧ
+Whirly Bird Waypoint	ﺔﻣﺍﻭﺪﻟﺍ ﺮﺋﺎﻃ ﻒﻗﻮﺗ ﺔﻄﻘﻧ
+Heli Hell	ﻢﻴﺤﺠﻟﺍ ﻲﻠﻴﻫ
+8-Track	ﺭﺎﺴﻤﻟﺍ -8
+Stadium	ﺐﻌﻠﻤﻟﺍ
+Dirt Track	ﻲﺑﺍﺮﺘﻟﺍ ﺭﺎﺴﻤﻟﺍ
+Citizen	ﻦﻃﺍﻮﻣ
+New Citizen - %s	%s - ﺪﻳﺪﺟ ﻦﻃﺍﻮﻣ
+%s%s - Lv %d	%s%s - ﻯﻮﺘﺴﻤﻟﺍ %d
+ (duty)	(ﺐﺟﺍﻭ) 
+[GPS] Route set: %s.	[GPS] ﺭﺎﺴﻤﻟﺍ ﺔﻋﻮﻤﺠﻣ: %s.
+Hey there, citizen. Beautiful neon night in Mega Vil, isn't it?	؟ﻚﻟﺬﻛ ﺲﻴﻟﺃ ،ﻞﻴﻓ ﺎﺠﻴﻣ ﻲﻓ ﺔﻠﻴﻤﺟ ﻥﻮﻴﻧ ﺔﻠﻴﻟ .ﻦﻃﺍﻮﻤﻟﺍ ﺎﻬﻳﺃ ،ﻼﻬﻣ
+Oh! You startled me. Can I help you?	؟ﻚﺗﺪﻋﺎﺴﻣ ﻲﻨﻨﻜﻤﻳﺃ .ﻲﻨﺘﻠﻫﺫﺃ ﺪﻘﻟ !ﻩﻭﺃ
+Welcome to the future, friend. What do you need?	؟ﺝﺎﺘﺤﺗ ﺍﺫﺎﻣ .ﻲﻘﻳﺪﺻ ﺎﻳ ﻞﺒﻘﺘﺴﻤﻟﺍ ﻲﻓ ﻚﺑ ﺎﺒﺣﺮﻣ
+Hi! Don't mind me, just waiting for my hover bus.	.ﺔﻣﺍﻮﺤﻟﺍ ﻲﺘﻠﻓﺎﺣ ﺮﻈﺘﻧﺃ ﻂﻘﻓ ،ﻲﺑ ﻢﺘﻬﺗ ﻻ !ﻼﻫﺃ
+Good to see a friendly face. The city's busy today.	.ﻡﻮﻴﻟﺍ ﺔﻤﺣﺩﺰﻣ ﺔﻨﻳﺪﻤﻟﺍ .ﺩﻭﺩﻭ ﻪﺟﻭ ﺔﻳﺅﺭ ﺪﻴﺠﻟﺍ ﻦﻣ
+Yo. You new around here? I can tell.	.ﻝﻮﻗﺃ ﻥﺃ ﻊﻴﻄﺘﺳﺃ ؟ﺎﻨﻫ ﺪﻳﺪﺟ ﺖﻧﺃ ﻞﻫ .ﻮﻳ
+Careful, the holo ads are loud today. What's up?	؟ﻙﺭﺎﺒﺧﺃ ﺎﻣ .ﻡﻮﻴﻟﺍ ﺔﻴﻟﺎﻋ ﻮﻟﻮﻬﻟﺍ ﺕﺎﻧﻼﻋﺇ ،ﺭﺬﺣﺍ
+Hello! My drone is charging, so I've got a minute.	.ﺔﻘﻴﻗﺩ ﻱﺪﻟ ﺍﺬﻟ ،ﻦﺤﺸﺗ ﺭﺎﻴﻃ ﻥﻭﺪﺑ ﻲﺗﺮﺋﺎﻃ !ﺎﺒﺣﺮﻣ
+Ask about the city	ﺔﻨﻳﺪﻤﻟﺍ ﻦﻋ ﻝﺄﺳﺍ
+Mega Vil used to be Los Santos. Then the towers went up and the holograms came on.	.ﺔﻤﺴﺠﻤﻟﺍ ﺭﻮﺼﻟﺍ ﺕﺮﻬﻇﻭ ﺝﺍﺮﺑﻷﺍ ﺖﻌﻔﺗﺭﺍ ﻢﺛ .ﺱﻮﺘﻧﺎﺳ ﺱﻮﻟ ﻮﻫ ﻞﻴﻓ ﺎﺠﻴﻣ ﻥﺎﻛ
+City Hall has the Job Center. Everyone starts there - taxi, trucker, police, even pilot.	.ﺭﺎﻴﻄﻟﺍ ﻰﺘﺣﻭ ،ﺔﻃﺮﺸﻟﺍﻭ ،ﺔﻨﺣﺎﺷ ﻖﺋﺎﺳﻭ ،ﺓﺮﺟﺃ ﺓﺭﺎﻴﺳ - ﻙﺎﻨﻫ ﻦﻣ ﻊﻴﻤﺠﻟﺍ ﺃﺪﺒﻳ .ﻞﻤﻌﻟﺍ ﺰﻛﺮﻣ ﺎﻬﻳﺪﻟ ﺔﻨﻳﺪﻤﻟﺍ ﺔﻋﺎﻗ
+Paydays every half hour, straight to your bank. The Mega Bank pays interest too.	.ﺎﻀﻳﺃ ﺓﺪﺋﺎﻔﻟﺍ Mega Bank ﻚﻨﺑ ﻊﻓﺪﻳ .ﻪﻌﻣ ﻞﻣﺎﻌﺘﺗ ﻱﺬﻟﺍ ﻚﻨﺒﻟﺍ ﻰﻟﺇ ﺓﺮﺷﺎﺒﻣ ،ﺔﻋﺎﺳ ﻒﺼﻧ ﻞﻛ ﻊﻓﺪﻟﺍ ﻡﺎﻳﺃ
+Stay in the greenzones if you want peace. Nobody can hurt you in there.	.ﻙﺎﻨﻫ ﻚﻳﺫﺆﻳ ﻥﺃ ﻊﻴﻄﺘﺴﻳ ﺪﺣﺃ ﻻ .ﻡﻼﺴﻟﺍ ﻥﻭﺪﻳﺮﺗ ﻢﺘﻨﻛ ﺍﺫﺇ ﺀﺍﺮﻀﺨﻟﺍ ﻖﻃﺎﻨﻤﻟﺍ ﻲﻓ ﺍﻮﻘﺑﺍ
+Ask for directions	ﺕﺎﻫﺎﺠﺗﻻﺍ ﻦﻋ ﻝﺄﺳﺍ
+Let me put it on your GPS. Follow the sky blue marker.	.ﺔﻳﻭﺎﻤﺴﻟﺍ ﺀﺎﻗﺭﺰﻟﺍ ﺔﻣﻼﻌﻟﺍ ﻊﺒﺗﺍ .ﻚﺑ ﺹﺎﺨﻟﺍ ﻊﻗﺍﻮﻤﻟﺍ ﺪﻳﺪﺤﺗ ﻡﺎﻈﻧ ﻰﻠﻋ ﻪﻌﺿﺃ ﻥﺃ ﻲﻟ ﺍﻮﺤﻤﺳﺍ
+It's not far. I'll send the route to your phone.	.ﻚﻔﺗﺎﻫ ﻰﻟﺇ ﻖﻳﺮﻄﻟﺍ ﻞﺳﺭﺄﺳ .ﺓﺪﻴﻌﺑ ﺖﺴﻴﻟ ﺎﻬﻧﺍ
+Easy. Check your GPS, I marked it.	.ﻪﻴﻠﻋ ﺔﻣﻼﻋ ﻊﺿﻮﺑ ﺖﻤﻗ ﺪﻘﻟ ،ﻚﺑ ﺹﺎﺨﻟﺍ (GPS) ﻲﻤﻟﺎﻌﻟﺍ ﻊﻗﺍﻮﻤﻟﺍ ﺪﻳﺪﺤﺗ ﻡﺎﻈﻧ ﻦﻣ ﻖﻘﺤﺗ .ﻞﻬﺳ
+Head that way. Your phone has the route now.	.ﻥﻵﺍ ﻖﻳﺮﻄﻟﺍ ﻪﻳﺪﻟ ﻚﻔﺗﺎﻫ .ﺔﻘﻳﺮﻄﻟﺍ ﻩﺬﻬﺑ ﻪﺠﺗﺍ
+Ask for a job tip	ﺔﻴﻔﻴﻇﻭ ﺔﺤﻴﺼﻧ ﺐﻠﻃﺍ
+Truckers make good money. Long routes pay the most.	.ﺮﺜﻛﺃ ﻊﻓﺪﺗ ﺔﻠﻳﻮﻄﻟﺍ ﻕﺮﻄﻟﺍ .ﺓﺪﻴﺟ ﻻﺍﻮﻣﺃ ﻥﻮﺒﺴﻜﻳ ﺕﺎﻨﺣﺎﺸﻟﺍ ﻮﻘﺋﺎﺳ
+Pilots get the biggest pay, but you need level 2 first.	.ﻻﻭﺃ 2 ﻯﻮﺘﺴﻤﻟﺍ ﻰﻟﺇ ﺝﺎﺘﺤﺗ ﻚﻨﻜﻟ ،ﺮﺒﻛﻷﺍ ﺮﺟﻷﺍ ﻰﻠﻋ ﻥﻭﺭﺎﻴﻄﻟﺍ ﻞﺼﺤﻳ
+Police need level 3 and two hours in the city. Then you can wear the badge.	.ﺓﺭﺎﺸﻟﺍ ﺀﺍﺪﺗﺭﺍ ﻚﻨﻜﻤﻳ ﻢﺛ .ﺔﻨﻳﺪﻤﻟﺍ ﻲﻓ ﻦﻴﺘﻋﺎﺳﻭ 3 ﻯﻮﺘﺴﻤﻟﺍ ﻰﻟﺇ ﺔﻃﺮﺸﻟﺍ ﺝﺎﺘﺤﺗ
+Double Pay Hour comes with the city events. Work then - everything pays twice.	.ﻦﻴﺗﺮﻣ ﻊﻓﺪﻳ ﺀﻲﺷ ﻞﻛ - ﻚﻟﺫ ﺪﻌﺑ ﻞﻤﻋﺍ .ﺔﻨﻳﺪﻤﻟﺍ ﺙﺍﺪﺣﺃ ﻊﻣ ﺔﺟﻭﺩﺰﻤﻟﺍ ﻊﻓﺪﻟﺍ ﺔﻋﺎﺳ ﻲﺗﺄﺗ
+Compliment them	ﻢﻬﺣﺪﻣﺍ
+Aww, thank you! You made my day.	.ﻲﻣﻮﻳ ﺖﻌﻨﺻ ﺪﻘﻟ !ﻚﻟ ﺍﺮﻜﺷ ،ﻩﺍ
+Ha! You're too kind. Nice outfit yourself.	.ﻚﺴﻔﻨﺑ ﻞﻴﻤﺟ ﻱﺯ .ﺍﺪﺟ ﻒﻴﻄﻟ ﺖﻧﺃ !ﺎﻫ
+Thanks, citizen. Mega Vil needs more people like you.	.ﻚﻠﺜﻣ ﺹﺎﺨﺷﻷﺍ ﻦﻣ ﺪﻳﺰﻤﻟﺍ ﻰﻟﺇ ﺔﺟﺎﺤﺑ ﻞﻴﻓ ﺎﺠﻴﻣ .ﻦﻃﺍﻮﻤﻟﺍ ﺎﻬﻳﺃ ﺍﺮﻜﺷ
+Oh stop it. ...No, keep going.	.ﺮﻤﺘﺳﺍ ،ﻻ... .ﻚﻟﺫ ﻦﻋ ﻒﻗﻮﺗ ﻩﻭﺃ
+Ask about the news	ﺭﺎﺒﺧﻷﺍ ﻦﻋ ﻝﺄﺳﺍ
+Did you hear? A Holo Cash Drop hits the streets every so often. Free money!	!ﺔﻴﻧﺎﺠﻣ ﻝﺍﻮﻣﺃ .ﺮﺧﻵﺍﻭ ﻦﻴﺤﻟﺍ ﻦﻴﺑ ﻉﺭﺍﻮﺸﻟﺍ Holo Cash Drop ﺏﺮﻀﺗ ؟ﺖﻌﻤﺳ ﻞﻫ
+The Neon Night Festival at the Plaza is the best party in the city.	.ﺔﻨﻳﺪﻤﻟﺍ ﻲﻓ ﻞﻔﺣ ﻞﻀﻓﺃ ﻮﻫ Plaza ﻲﻓ Neon Night ﻥﺎﺟﺮﻬﻣ ﺪﻌﻳ
+Lottery tickets are $500. I never win, but you might.	.ﺖﻧﺃ ﺎﻤﺑﺭ ﻦﻜﻟ ،ﺍﺪﺑﺃ ﺯﻮﻓﺃ ﻻ ﺎﻧﺃ .ﺭﻻﻭﺩ 500 ﻲﻫ ﺐﻴﺼﻧﺎﻴﻟﺍ ﺮﻛﺍﺬﺗ
+They say the holo towers pay $2,500 to whoever reaches them first.	.ﻻﻭﺃ ﺎﻬﻴﻟﺇ ﻞﺼﻳ ﻦﻤﻟ ﺭﻻﻭﺩ 2500 ﻊﻓﺪﺗ ﻮﻟﻮﻬﻟﺍ ﺝﺍﺮﺑﺃ ﻥﺃ ﻥﻮﻟﻮﻘﻳ
+Take care out there!	!ﻙﺎﻨﻫ ﺔﻳﺎﻋﺭ
+See you around, citizen.	.ﻦﻃﺍﻮﻤﻟﺍ ﺎﻬﻳﺃ ﺭﺍﻮﺠﻟﺍ ﻲﻓ ﻢﻛﺍﺮﻧ
+Stay safe in the neon.	.ﻥﻮﻴﻨﻟﺍ ﻲﻓ ﺎﻨﻣﺁ ﻦﻛ
+Bye! Watch out for drones.	.ﺭﺎﻴﻃ ﻥﻭﺪﺑ ﺕﺍﺮﺋﺎﻄﻟﺍ ﻦﻣ ﺱﺮﺘﺣﺍ !ﻉﺍﺩﻮﻟﺍ
+STOP EMOTE	ﻱﺮﻴﺒﻌﺘﻟﺍ ﺮﻴﺒﻌﺘﻟﺍ ﻑﺎﻘﻳﺇ
+Talk	ﺙﺪﺤﺗ
+Nevermind	ﻢﻬﻳ ﻻ
+Goodbye	ﺎﻋﺍﺩﻭ
+[MEGA VIL] Welcome home - %s.	[MEGA VIL] ﻚﺘﻴﺑ ﻲﻓ ﻚﺑ ﺎﺒﺣﺮﻣ - %s.
+[MEGA VIL] You arrived at the Lobby Hub (Mega Vil Plaza). Buy a house and you will always spawn at home.	[MEGA VIL] ﺔﻫﺩﺮﻟﺍ ﻰﻟﺇ ﺖﻠﺻﻭ ﺪﻘﻟ (Mega Vil Plaza). ﻝﺰﻨﻤﻟﺍ ﻲﻓ ﺎﻤﺋﺍﺩ ﺥﺮﻔﺗ ﻑﻮﺳﻭ ﻝﺰﻨﻣ ﺀﺍﺮﺸﺑ ﻢﻗ.
+YOU ARE CUFFED	ﻞﺒﻜﻣ ﺖﻧﺃ
+[PHONE] Connected with %s - talk with the voice chat (mic button).	[PHONE] ـﺑ ﻞﺼﺘﻣ %s - ﻥﻮﻓﻭﺮﻜﻴﻤﻟﺍ ﺭﺯ) ﺔﻴﺗﻮﺼﻟﺍ ﺔﺷﺩﺭﺪﻟﺍ ﺮﺒﻋ ﺙﺪﺤﺗ).
+Call ended.	.ﺔﻤﻟﺎﻜﻤﻟﺍ ﺖﻬﺘﻧﺍ
+%s treated you.	%s ﻚﻌﻣ ﻞﻣﺎﻌﺗ.
+[MECHANIC] Vehicle repaired.	[MECHANIC] ﺔﺒﻛﺮﻤﻟﺍ ﺡﻼﺻﺇ ﻢﺗ.
+Sit in the vehicle to get it repaired.	.ﺎﻬﺣﻼﺻﻹ ﺓﺭﺎﻴﺴﻟﺍ ﻲﻓ ﺱﻮﻠﺠﻟﺍ
+JAILED  -  %d:%02d	%d:%02d - ﻥﻮﺠﺴﻣ
+[GARAGE] Your %s is here.	[GARAGE] ﺯﺎﻬﺟ %s ﺎﻨﻫ ﺩﻮﺟﻮﻣ ﻚﺑ ﺹﺎﺨﻟﺍ.
+[MEGA VIL] You woke up at home.	[MEGA VIL] ﻝﺰﻨﻤﻟﺍ ﻲﻓ ﺖﻈﻘﻴﺘﺳﺍ ﺪﻘﻟ.
+[MEGA VIL] Weapons are for on-duty police and soldiers only. Mega Vil is peaceful.	[MEGA VIL] ﺔﻴﻤﻠﺳ ﻞﻴﻓ ﺎﺠﻴﻣ .ﻂﻘﻓ ﺔﻣﺪﺨﻟﺍ ﺀﺎﻨﺛﺃ ﺩﻮﻨﺠﻟﺍﻭ ﺔﻃﺮﺸﻠﻟ ﺔﺼﺼﺨﻣ ﺔﺤﻠﺳﻷﺍ.
+{38BDF8}MEGA VIL FUTURISTIC - Help	{38BDF8}MEGA VIL FUTURISTIC - ﺓﺪﻋﺎﺴﻣ
+{FFFFFF}Roleplay only: be your character. Mega Vil is peaceful - only on-duty police and soldiers may use force.\n	{FFFFFF}ﺔﻣﺪﺨﻟﺍ ﺀﺎﻨﺛﺃ ﺩﻮﻨﺠﻟﺍﻭ ﺔﻃﺮﺸﻟﺍ ﻞﺒﻗ ﻦﻣ ﻻﺇ ﺓﻮﻘﻟﺍ ﻡﺍﺪﺨﺘﺳﺍ ﺯﻮﺠﻳ ﻻﻭ - ﻡﻼﺴﻟﺎﺑ ﻞﻴﻓ ﺎﺠﻴﻣ ﺔﻨﻳﺪﻣ ﺰﻴﻤﺘﺗ .ﻚﺘﻴﺼﺨﺷ ﻦﻛ :ﻂﻘﻓ ﺭﺍﻭﺩﻷﺍ ﺐﻌﻟ.\n
+{FFFFFF}Roleplay only: be your character. Mega Vil is peaceful - only on-duty police and soldiers may use force.	{FFFFFF}ﺔﻣﺪﺨﻟﺍ ﺀﺎﻨﺛﺃ ﺩﻮﻨﺠﻟﺍﻭ ﺔﻃﺮﺸﻟﺍ ﻞﺒﻗ ﻦﻣ ﻻﺇ ﺓﻮﻘﻟﺍ ﻡﺍﺪﺨﺘﺳﺍ ﺯﻮﺠﻳ ﻻﻭ - ﻡﻼﺴﻟﺎﺑ ﻞﻴﻓ ﺎﺠﻴﻣ ﺔﻘﻄﻨﻣ ﺰﻴﻤﺘﺗ .ﻚﺘﻴﺼﺨﺷ ﻦﻛ :ﻂﻘﻓ ﺭﺍﻭﺩﻷﺍ ﺐﻌﻟ.
+Open the phone: PANEL > Phone or {38BDF8}/phone{FFFFFF}.\n	.{38BDF8}/phone{FFFFFF} ﻭﺃ ﻒﺗﺎﻬﻟﺍ < PANEL :ﻒﺗﺎﻬﻟﺍ ﺢﺘﻓﺍ\n
+Open the phone: PANEL > Phone or {38BDF8}/phone{FFFFFF}.	.{38BDF8}/phone{FFFFFF} ﻭﺃ ﻒﺗﺎﻬﻟﺍ < PANEL :ﻒﺗﺎﻬﻟﺍ ﺢﺘﻓﺍ
+PANEL (the 4-square icon on the right, or {38BDF8}/panel{FFFFFF}): vehicle, documents, player info + bag, phone.\n\n	PANEL (ﻭﺃ ،ﻦﻴﻤﻴﻟﺍ ﻰﻠﻋ ﻊﺑﺍﺮﻟﺍ ﻊﺑﺮﻤﻟﺍ ﺰﻣﺭ {38BDF8}/panel{FFFFFF}): ﻒﺗﺎﻬﻟﺍﻭ ﺔﺒﻴﻘﺤﻟﺍ + ﺐﻋﻼﻟﺍ ﺕﺎﻣﻮﻠﻌﻣﻭ ﺕﺍﺪﻨﺘﺴﻤﻟﺍﻭ ﺔﺒﻛﺮﻤﻟﺍ.\n\n
+PANEL (the 4-square icon on the right, or {38BDF8}/panel{FFFFFF}): vehicle, documents, player info + bag, phone.	PANEL (ﻭﺃ ،ﻦﻴﻤﻴﻟﺍ ﻰﻠﻋ ﻊﺑﺍﺮﻟﺍ ﻊﺑﺮﻤﻟﺍ ﺰﻣﺭ {38BDF8}/panel{FFFFFF}): ﻒﺗﺎﻬﻟﺍﻭ ﺔﺒﻴﻘﺤﻟﺍ + ﺐﻋﻼﻟﺍ ﺕﺎﻣﻮﻠﻌﻣﻭ ﺕﺍﺪﻨﺘﺴﻤﻟﺍﻭ ﺔﺒﻛﺮﻤﻟﺍ.
+{38BDF8}Talk:{FFFFFF} normal chat (20 m), /me /do /ame /try /b /s /l /w /o /n /ad /feed /r /d /m /gov\n	{38BDF8}ﺔﺛﺩﺎﺤﻣ:{FFFFFF} ﺔﻘﻴﻗﺩ 20) ﺔﻳﺩﺎﻋ ﺔﺛﺩﺎﺤﻣ)، /me /do /ame /try /b /s /l /w /o /n /ad /feed /r /d /m /gov\n
+{38BDF8}Talk:{FFFFFF} normal chat (20 m), /me /do /ame /try /b /s /l /w /o /n /ad /feed /r /d /m /gov	{38BDF8}ﺔﺛﺩﺎﺤﻣ:{FFFFFF} ﺔﻘﻴﻗﺩ 20) ﺔﻳﺩﺎﻋ ﺔﺛﺩﺎﺤﻣ)، /me /do /ame /try /b /s /l /w /o /n /ad /feed /r /d /m /gov
+{38BDF8}Money:{FFFFFF} /pay /deposit /withdraw /transfer /balance /atm\n	{38BDF8}ﻝﺎﻤﻟﺍ:{FFFFFF} /pay /deposit /withdraw /transfer /balance /atm\n
+{38BDF8}Money:{FFFFFF} /pay /deposit /withdraw /transfer /balance /atm	{38BDF8}ﻝﺎﻤﻟﺍ:{FFFFFF} /pay /deposit /withdraw /transfer /balance /atm
+{38BDF8}Jobs:{FFFFFF} /jobs /job /quitjob /work /stopwork /duty /myjob\n	{38BDF8}ﻒﺋﺎﻇﻮﻟﺍ:{FFFFFF} /jobs /job /quitjob /work /stopwork /duty /myjob\n
+{38BDF8}Jobs:{FFFFFF} /jobs /job /quitjob /work /stopwork /duty /myjob	{38BDF8}ﻒﺋﺎﻇﻮﻟﺍ:{FFFFFF} /jobs /job /quitjob /work /stopwork /duty /myjob
+{38BDF8}Phone:{FFFFFF} /call /sms /answer /hangup /number /contacts /911 /taxi\n	{38BDF8}ﻒﺗﺎﻬﻟﺍ:{FFFFFF} /call /sms /answer /hangup /number /contacts /911 /taxi\n
+{38BDF8}Phone:{FFFFFF} /call /sms /answer /hangup /number /contacts /911 /taxi	{38BDF8}ﻒﺗﺎﻬﻟﺍ:{FFFFFF} /call /sms /answer /hangup /number /contacts /911 /taxi
+{38BDF8}Home:{FFFFFF} /houses /buyhouse /sellhouse /home /setspawn /myhouse\n	{38BDF8}ﺔﻴﺴﻴﺋﺮﻟﺍ ﺔﺤﻔﺼﻟﺍ:{FFFFFF} /houses /buyhouse /sellhouse /home /setspawn /myhouse\n
+{38BDF8}Home:{FFFFFF} /houses /buyhouse /sellhouse /home /setspawn /myhouse	{38BDF8}ﺔﻴﺴﻴﺋﺮﻟﺍ ﺔﺤﻔﺼﻟﺍ:{FFFFFF} /houses /buyhouse /sellhouse /home /setspawn /myhouse
+{38BDF8}Shops:{FFFFFF} /shop /food /clothes /cars /tech /ammu /lotto   {38BDF8}Bag:{FFFFFF} /inv /docs /panel\n	{38BDF8}ﺮﺟﺎﺘﻤﻟﺍ:{FFFFFF} /shop /food /clothes /cars /tech /ammu /lotto {38BDF8}ﺔﺒﻴﻘﺤﻟﺍ:{FFFFFF} /inv /docs /panel\n
+{38BDF8}Shops:{FFFFFF} /shop /food /clothes /cars /tech /ammu /lotto   {38BDF8}Bag:{FFFFFF} /inv /docs /panel	{38BDF8}ﺮﺟﺎﺘﻤﻟﺍ:{FFFFFF} /shop /food /clothes /cars /tech /ammu /lotto {38BDF8}ﺔﺒﻴﻘﺤﻟﺍ:{FFFFFF} /inv /docs /panel
+{38BDF8}Garage & pets:{FFFFFF} /garage /v [n] /sellveh [n] /pets /pet [n] /petoff /jetpack\n	{38BDF8}ﺔﻔﻴﻟﻷﺍ ﺕﺎﻧﺍﻮﻴﺤﻟﺍﻭ ﺏﺁﺮﻤﻟﺍ:{FFFFFF} /garage /v [n] /sellveh [n] /pets /pet [n] /petoff /jetpack\n
+{38BDF8}Garage & pets:{FFFFFF} /garage /v [n] /sellveh [n] /pets /pet [n] /petoff /jetpack	{38BDF8}ﺔﻔﻴﻟﻷﺍ ﺕﺎﻧﺍﻮﻴﺤﻟﺍﻭ ﺏﺁﺮﻤﻟﺍ:{FFFFFF} /garage /v [n] /sellveh [n] /pets /pet [n] /petoff /jetpack
+{38BDF8}Police:{FFFFFF} /cuff /uncuff /arrest /fine /su /frisk /mdc   {38BDF8}Medic:{FFFFFF} /heal   {38BDF8}Mechanic:{FFFFFF} /repair   {38BDF8}Lawyer:{FFFFFF} /defend\n	{38BDF8}ﺔﻃﺮﺸﻟﺍ:{FFFFFF} /cuff /uncuff /arrest /fine /su /frisk /mdc {38BDF8}ﻒﻌﺴﻤﻟﺍ:{FFFFFF} /heal {38BDF8}ﻲﻜﻴﻧﺎﻜﻴﻣ:{FFFFFF} /repair {38BDF8}ﻲﻣﺎﺤﻤﻟﺍ:{FFFFFF} /defend\n
+{38BDF8}Police:{FFFFFF} /cuff /uncuff /arrest /fine /su /frisk /mdc   {38BDF8}Medic:{FFFFFF} /heal   {38BDF8}Mechanic:{FFFFFF} /repair   {38BDF8}Lawyer:{FFFFFF} /defend	{38BDF8}ﺔﻃﺮﺸﻟﺍ:{FFFFFF} /cuff /uncuff /arrest /fine /su /frisk /mdc {38BDF8}ﻒﻌﺴﻣ:{FFFFFF} /heal {38BDF8}ﻲﻜﻴﻧﺎﻜﻴﻣ:{FFFFFF} /repair {38BDF8}ﻲﻣﺎﺤﻣ:{FFFFFF} /defend
+{38BDF8}Fun:{FFFFFF} /e [emote] /emotes /e c /dance /accept /flip /dice /games /event /joinevent\n	{38BDF8}ﺡﺮﻣ:{FFFFFF} /e [emote] /emotes /e ﺝ /dance /accept /flip /dice /games /event /joinevent\n
+{38BDF8}Fun:{FFFFFF} /e [emote] /emotes /e c /dance /accept /flip /dice /games /event /joinevent	{38BDF8}ﺡﺮﻣ:{FFFFFF} /e [ﺔﻳﺮﻴﺒﻌﺗ] /emotes /e ﺝ /dance /accept /flip /dice /games /event /joinevent
+{38BDF8}Info:{FFFFFF} /stats /id /time /gps /places /rules /levels /players /greenzones /talk /rp	{38BDF8}ﺕﺎﻣﻮﻠﻌﻣ:{FFFFFF} /stats /id /time /gps /places /rules /levels /players /greenzones /talk /rp
+{38BDF8}Mega Vil - Rules	{38BDF8}ﺪﻋﺍﻮﻘﻟﺍ - ﻞﻴﻓ ﺎﺠﻴﻣ
+{FFFFFF}1. Roleplay at all times. Out of character only with /b or /o.\n	{FFFFFF}1. ﻊﻣ ﻂﻘﻓ ﻑﺮﺤﻟﺍ ﻕﺎﻄﻧ ﺝﺭﺎﺧ .ﺕﺎﻗﻭﻷﺍ ﻊﻴﻤﺟ ﻲﻓ ﺭﺍﻭﺩﻷﺍ ﺐﻌﻟ /b ﻭﺃ /o.\n
+{FFFFFF}1. Roleplay at all times. Out of character only with /b or /o.	{FFFFFF}1. ﻊﻣ ﻂﻘﻓ ﻑﺮﺤﻟﺍ ﺝﺭﺎﺧ .ﺕﺎﻗﻭﻷﺍ ﻊﻴﻤﺟ ﻲﻓ ﺭﺍﻭﺩﻷﺍ ﺐﻌﻟ /b ﻭﺃ /o.
+2. No deathmatch: the city is peaceful. Police / soldiers on duty use force only when the roleplay needs it.\n	.ﺭﺍﻭﺩﻷﺍ ﺐﻌﻟ ﺎﻬﺟﺎﺘﺤﻳ ﺎﻣﺪﻨﻋ ﻂﻘﻓ ﺓﻮﻘﻟﺍ ﻥﻮﺑﻭﺎﻨﻤﻟﺍ ﺩﻮﻨﺠﻟﺍ / ﺔﻃﺮﺸﻟﺍ ﻝﺎﺟﺭ ﻡﺪﺨﺘﺴﻳ .ﺔﻤﻟﺎﺴﻣ ﺔﻨﻳﺪﻤﻟﺍ :ﺕﻮﻤﻟﺍ ﺓﺍﺭﺎﺒﻣ ﺪﺟﻮﻳ ﻻ .2\n
+2. No deathmatch: the city is peaceful. Police / soldiers on duty use force only when the roleplay needs it.	.ﺭﺍﻭﺩﻷﺍ ﺐﻌﻟ ﺎﻬﺟﺎﺘﺤﻳ ﺎﻣﺪﻨﻋ ﻂﻘﻓ ﺓﻮﻘﻟﺍ ﻥﻮﺑﻭﺎﻨﻤﻟﺍ ﺩﻮﻨﺠﻟﺍ/ﺔﻃﺮﺸﻟﺍ ﻝﺎﺟﺭ ﻡﺪﺨﺘﺴﻳ .ﺔﻤﻟﺎﺴﻣ ﺔﻨﻳﺪﻤﻟﺍ :ﺕﻮﻤﻟﺍ ﺓﺍﺭﺎﺒﻣ ﺪﺟﻮﻳ ﻻ .2
+3. No cheats, no mods that give an advantage, no bug abuse.\n	.ﺀﺎﻄﺧﻷﺍ ﻡﺍﺪﺨﺘﺳﺍ ﺓﺀﺎﺳﺇ ﻭﺃ ﺓﺰﻴﻣ ﻲﻄﻌﺗ ﺕﻼﻳﺪﻌﺗ ﻭﺃ ﺶﻏ ﺪﺟﻮﺗ ﻻ .3\n
+3. No cheats, no mods that give an advantage, no bug abuse.	.ﺀﺎﻄﺧﻸﻟ ﻡﺍﺪﺨﺘﺳﺍ ﺓﺀﺎﺳﺇ ﺪﺟﻮﺗ ﻻﻭ ،ﺓﺰﻴﻣ ﻲﻄﻌﺗ ﺕﻼﻳﺪﻌﺗ ﻻﻭ ،ﺶﻏ ﺪﺟﻮﺗ ﻻ .3
+4. Respect everyone - new citizens too. Help them in /n.\n	.n/ ﻲﻓ ﻢﻫﺪﻋﺎﺳ .ﺎﻀﻳﺃ ﺩﺪﺠﻟﺍ ﻦﻴﻨﻃﺍﻮﻤﻟﺍ - ﻊﻴﻤﺠﻟﺍ ﻡﺍﺮﺘﺣﺍ .4\n
+4. Respect everyone - new citizens too. Help them in /n.	.n/ ﻲﻓ ﻢﻫﺪﻋﺎﺳ .ﺎﻀﻳﺃ ﺩﺪﺠﻟﺍ ﻦﻴﻨﻃﺍﻮﻤﻟﺍ - ﻊﻴﻤﺠﻟﺍ ﻡﺍﺮﺘﺣﺍ .4
+5. No powergaming / metagaming. Your character only knows what it saw.\n	.ﻪﺗﺃﺭ ﺎﻣ ﻂﻘﻓ ﻑﺮﻌﺗ ﻚﺘﻴﺼﺨﺷ .powergaming / metagaming ﺏﺎﻌﻟﺃ ﺪﺟﻮﻳ ﻻ .5\n
+5. No powergaming / metagaming. Your character only knows what it saw.	.ﻪﺗﺃﺭ ﺎﻣ ﻂﻘﻓ ﻑﺮﻌﺗ ﻚﺘﻴﺼﺨﺷ .powergaming / metagaming ﺏﺎﻌﻟﺃ ﺪﺟﻮﻳ ﻻ .5
+6. Greenzones (green squares on the radar) are safe for everyone.\n	.ﻊﻴﻤﺠﻠﻟ ﺔﻨﻣﺁ (ﺭﺍﺩﺍﺮﻟﺍ ﻰﻠﻋ ﺀﺍﺮﻀﺨﻟﺍ ﺕﺎﻌﺑﺮﻤﻟﺍ) ﺀﺍﺮﻀﺨﻟﺍ ﻖﻃﺎﻨﻤﻟﺍ .6\n
+6. Greenzones (green squares on the radar) are safe for everyone.	.ﻊﻴﻤﺠﻠﻟ ﺔﻨﻣﺁ (ﺭﺍﺩﺍﺮﻟﺍ ﻰﻠﻋ ﺀﺍﺮﻀﺨﻟﺍ ﺕﺎﻌﺑﺮﻤﻟﺍ) ﺀﺍﺮﻀﺨﻟﺍ ﻖﻃﺎﻨﻤﻟﺍ .6
+7. Have fun in the city of the future.	.ﻞﺒﻘﺘﺴﻤﻟﺍ ﺔﻨﻳﺪﻣ ﻲﻓ ﻚﺘﻗﻮﺑ ﻊﺘﻤﺘﺳﺍ .7
+{38BDF8}GPS - Mega Vil	{38BDF8}ﻲﻤﻟﺎﻌﻟﺍ ﻊﻗﺍﻮﻤﻟﺍ ﺪﻳﺪﺤﺗ ﻡﺎﻈﻧ (GPS) - ﻞﻴﻓ ﺎﺠﻴﻣ
+Route	ﻖﻳﺮﻄﻟﺍ
+Command	ﺮﻣﻷﺍ
+Emote	ﺮﻴﺒﻌﺘﻟﺍ
+Type	ﺐﺘﻛﺍ
+{38BDF8}Emotes & dances (rpemotes)	{38BDF8}ﺓﺭﺮﻜﺘﻤﻟﺍ ﺕﺎﻛﺮﺤﻟﺍ) ﺕﺎﺼﻗﺮﻟﺍﻭ ﺕﺍﺮﻴﺒﻌﺘﻟﺍ)
+Type something after the command.	.ﺮﻣﻷﺍ ﺪﻌﺑ ﺎﺌﻴﺷ ﺐﺘﻛﺍ
+/w [id] [text]	/w [ﺺﻨﻟﺍ] [ﻑﺮﻌﻤﻟﺍ]
+/deposit [amount] (at an ATM or the bank)	/deposit [ﻚﻨﺒﻟﺍ ﻭﺃ ﻲﻟﻵﺍ ﻑﺍﺮﺼﻟﺍ ﺔﻨﻴﻛﺎﻣ ﻲﻓ) [ﻎﻠﺒﻤﻟﺍ)
+/withdraw [amount] (at an ATM or the bank)	/withdraw [ﻚﻨﺒﻟﺍ ﻭﺃ ﻲﻟﻵﺍ ﻑﺍﺮﺼﻟﺍ ﺔﻨﻴﻛﺎﻣ ﻲﻓ) [ﻎﻠﺒﻤﻟﺍ)
+[BANK] Cash $%d  |  Bank $%d  |  Payday in %d:%02d	[BANK] ﺍﺪﻘﻧ $%d |  ﻚﻨﺒﻟﺍ $%d |  ﻲﻓ ﻊﻓﺪﻟﺍ ﻡﻮﻳ %d:%02d
+[PHONE] Your number: %d	[PHONE] ﻚﻤﻗﺭ: %d
+Help needed!	!ﺔﺑﻮﻠﻄﻣ ﺓﺪﻋﺎﺴﻤﻟﺍ
+Stand at a house door (Houses app shows them on the GPS).	.(ﻲﻤﻟﺎﻌﻟﺍ ﻊﻗﺍﻮﻤﻟﺍ ﺪﻳﺪﺤﺗ ﻡﺎﻈﻧ ﻰﻠﻋ ﻝﺯﺎﻨﻤﻟﺍ ﻖﻴﺒﻄﺗ ﺮﻬﻈﻳ) ﻝﺰﻨﻤﻟﺍ ﺏﺎﺑ ﺪﻨﻋ ﻒﻗ
+You don't own a house yet (/houses).	.(houses/) ﺪﻌﺑ ﻻﺰﻨﻣ ﻚﻠﺘﻤﺗ ﻻ ﺖﻧﺃ
+Buy a house first - then /setspawn inside or at it.	.ﻪﻴﻓ ﻭﺃ ﻪﻠﺧﺍﺪﺑ setspawn/ ﻢﺛ - ﻻﻭﺃ ﻝﺰﻨﻣ ﺀﺍﺮﺸﺑ ﻢﻗ
+Stand at your house (within 30 m, on foot) to set the spawn point.	.ﺮﺸﻨﻟﺍ ﺔﻄﻘﻧ ﻦﻴﻴﻌﺘﻟ (ﻡﺍﺪﻗﻷﺍ ﻰﻠﻋ ﺍﺮﻴﺳ ﺍﺮﺘﻣ 30 ﻕﺎﻄﻧ ﻲﻓ) ﻚﻟﺰﻨﻣ ﻲﻓ ﻒﻗ
+[HOME] Spawn point set. You will always spawn here - never at the Lobby Hub.	[HOME] ﺍﺪﺑﺃ ﺔﻫﺩﺮﻟﺍ ﻲﻓ ﺲﻴﻟﻭ - ﺎﻨﻫ ﺎﻤﺋﺍﺩ ﺮﻬﻈﺗ ﻑﻮﺳ .ﺮﺸﻨﻟﺍ ﺔﻄﻘﻧ ﺪﻳﺪﺤﺗ ﻢﺗ.
+No vehicles yet (/cars).	.(cars/) ﻥﻵﺍ ﻰﺘﺣ ﺕﺎﺒﻛﺮﻣ ﺪﺟﻮﺗ ﻻ
+/sellveh [slot 1-6] (Garage app shows them)	/sellveh [ﻖﻴﺒﻄﺗ ﺎﻬﺿﺮﻌﻳ) [6-1 ﺔﺤﺘﻔﻟﺍ Garage)
+/%s [id]	/%s [ﻑﺮﻌﻤﻟﺍ]
+[MDC] %s (%d) - WANTED	[MDC] %s (%d) - ﺏﻮﻠﻄﻣ
+[MDC] Nobody is wanted. A quiet day in Mega Vil.	[MDC] ﻞﻴﻓ ﺎﺠﻴﻣ ﻲﻓ ﺉﺩﺎﻫ ﻡﻮﻳ .ﺏﻮﻠﻄﻣ ﺪﺣﺃ ﻻ.
+No emote \"%s\" (/emotes)	(\"%s\" (/emotes ﻱﺮﻴﺒﻌﺗ ﺰﻣﺭ ﺪﺟﻮﻳ ﻻ
+/e %s [player id] - a shared emote	/e %s [ﻙﺮﺘﺸﻣ ﻱﺮﻴﺒﻌﺗ ﺰﻣﺭ - [ﺐﻋﻼﻟﺍ ﻑﺮﻌﻣ
+[EVENT] %s - %d s left. /joinevent for the GPS.	[EVENT] %s - %d ﺔﻴﻘﺒﺘﻣ ﺔﻴﻧﺎﺛ. /joinevent ﻊﻗﺍﻮﻤﻟﺍ ﺪﻳﺪﺤﺗ ﻡﺎﻈﻨﻟ.
+[EVENT] Next city event in %d:%02d. Lottery jackpot $%d.	[EVENT] ﻲﻓ ﻲﻟﺎﺘﻟﺍ ﺔﻨﻳﺪﻤﻟﺍ ﺙﺪﺣ %d:%02d. ﻯﺮﺒﻜﻟﺍ ﺐﻴﺼﻧﺎﻴﻟﺍ ﺓﺰﺋﺎﺟ $%d.
+Walk up to someone in the street - they stop and you can talk.	.ﺙﺪﺤﺘﻟﺍ ﻚﻨﻜﻤﻳﻭ ﻒﻗﻮﺗ - ﻉﺭﺎﺸﻟﺍ ﻲﻓ ﺎﻣ ﺺﺨﺷ ﻰﻟﺇ ﺐﻫﺫﺍ
+[LEVEL] You are level %d: %d / %d respect. +1 every 10 min played, +2 every payday, +1 every 3 job tasks.	[LEVEL] ﻯﻮﺘﺴﻤﻟﺍ ﻲﻓ ﺖﻧﺃ %d: %d / %d ﺔﻴﻔﻴﻇﻭ ﻡﺎﻬﻣ 3 ﻞﻛ 1+ ،ﻊﻓﺩ ﻡﻮﻳ ﻞﻛ 2+ ،ﺐﻌﻟ ﻖﺋﺎﻗﺩ 10 ﻞﻛ 1+ .ﻡﺍﺮﺘﺣﺍ.
+Google map radar ON (pause map too). /googlemap off = the original radar.	.ﻲﻠﺻﻷﺍ ﺭﺍﺩﺍﺮﻟﺍ = ﻑﺎﻘﻳﺇ googlemap/ .(ﺎﻀﻳﺃ ﺎﺘﻗﺆﻣ ﺔﻄﻳﺮﺨﻟﺍ ﻑﺎﻘﻳﺇ) ﻞﻴﻐﺸﺘﻟﺍ ﺪﻴﻗ ﻞﺟﻮﺟ ﺔﻄﻳﺮﺧ ﺭﺍﺩﺍﺭ
+Original GTA SA radar ON. /googlemap on = the Google map radar again.	.ﻯﺮﺧﺃ ﺓﺮﻣ Google ﺔﻄﻳﺮﺧ ﺭﺍﺩﺍﺭ = googlemap on/ .ﻲﻠﺻﻷﺍ GTA SA ﺭﺍﺩﺍﺭ ﻞﻴﻐﺸﺗ
+[GREENZONE] Lobby Hub (Plaza), City Hall, both hospitals and the Mega Bank: nobody can be hurt there.	[GREENZONE] ﺔﻫﺩﺮﻟﺍ ﺔﻫﺩﺭ (Plaza)، ﻚﻨﺑﻭ ﻦﻴﻴﻔﺸﺘﺴﻤﻟﺍ ﻼﻛﻭ ،ﺔﻨﻳﺪﻤﻟﺍ ﺲﻠﺠﻣﻭ Mega Bank: ﻙﺎﻨﻫ ﺪﺣﺃ ﻯﺫﺄﺘﻳ ﻥﺃ ﻦﻜﻤﻳ ﻻ.
+Your id: %d	%d :ﻚﺘﻳﻮﻫ
+%s: id %d, phone %d	%s: ﻑﺮﻌﻤﻟﺍ %d، ﻒﺗﺎﻬﻟﺍ %d
+MEGA VIL FUTURISTIC - Roleplay 24/7, %d citizens max. The future awaits.	MEGA VIL FUTURISTIC - ﻉﻮﺒﺳﻷﺍ ﻡﺎﻳﺃ ﻝﺍﻮﻃ ﺔﻋﺎﺴﻟﺍ ﺭﺍﺪﻣ ﻰﻠﻋ ﺭﺍﻭﺩﻷﺍ ﺐﻌﻟ، %d ﺮﻈﺘﻨﻳ ﻞﺒﻘﺘﺴﻤﻟﺍ .ﻰﺼﻗﺃ ﺪﺤﻛ ﺎﻨﻃﺍﻮﻣ.
+/%s is not available on Mega Vil Futuristic (no cheats / other gamemodes). /help	/%s ﻲﻓ ﺡﺎﺘﻣ ﺮﻴﻏ Mega Vil Futuristic (ﻯﺮﺧﺃ ﺐﻌﻟ ﻉﺎﺿﻭﺃ / ﺶﻏ ﺪﺟﻮﺗ ﻻ). /help
+Mega Vil	ﻞﻴﻓ ﺎﺠﻴﻣ
+Futuristic	ﺔﻴﻠﺒﻘﺘﺴﻣ
+%d  |  Lv %d	%d |  ﻯﻮﺘﺴﻤﻟﺍ %d
+Payday in %d:%02d	%d:%02d ﻲﻓ ﻊﻓﺪﻟﺍ ﻡﻮﻳ
+VOICE: %s%s	%s%s :ﺕﻮﺼﻟﺍ
+PHONE CALL	ﺔﻴﻔﺗﺎﻫ ﺔﻤﻟﺎﻜﻣ
+  (talking)	(ﺙﺪﺤﺘﻳ)  
+EVENT: %s  %d:%02d  /joinevent	%s %d:%02d /joinevent :ﺙﺪﺤﻟﺍ
+YOU ARE A NEW CITIZEN	ﺪﻳﺪﺟ ﻦﻃﺍﻮﻣ ﺖﻧﺃ
+%02d:%02d:%02d left  -  /n for help	%02d:%02d:%02d ﺭﺎﺴﻴﻟﺍ - /n ﺓﺪﻋﺎﺴﻤﻠﻟ
+YOU ARE IN A GREENZONE	ﺀﺍﺮﻀﺧ ﺔﻘﻄﻨﻣ ﻲﻓ ﺖﻧﺃ
+JAIL: %d:%02d	%d:%02d :ﻦﺠﺴﻟﺍ
+WANTED LEVEL %d	%d ﺏﻮﻠﻄﻤﻟﺍ ﻯﻮﺘﺴﻤﻟﺍ
+%s: marker %d m  |  tasks %u	%s: ﺔﻣﻼﻌﻟﺍ %d ﻡﺎﻬﻤﻟﺍ  | ﻡ %u
+GPS: %s	%s :ﻲﻤﻟﺎﻌﻟﺍ ﻊﻗﺍﻮﻤﻟﺍ ﺪﻳﺪﺤﺗ ﻡﺎﻈﻧ
+ON CALL: %s  %d:%02d  /h	%s %d:%02d /h :ﻝﺎﺼﺗﻻﺍ ﺪﻨﻋ
+YOUR HOME\n%s	ﻚﻟﺰﻨﻣ\n%s
+YOUR HOME	ﻚﻟﺰﻨﻣ
+%s\nFOR SALE  $%d  /buyhouse	%s\n%d /buyhouse$ ﻊﻴﺒﻠﻟ
+FOR SALE  $%d  /buyhouse	%d /buyhouse$ ﻊﻴﺒﻠﻟ
+Going home: %s	%s :ﻝﺰﻨﻤﻟﺍ ﻰﻟﺇ ﺓﺩﻮﻌﻟﺍ
+LOBBY HUB  -  MEGA VIL PLAZA	ﺍﺯﻼﺑ ﻞﻴﻓ ﺎﺠﻴﻣ - ﺔﻫﺩﺮﻟﺍ ﺰﻛﺮﻣ
+Level %d  |  Cash $%d  |  Bank $%d  |  Phone %d	%d ﻒﺗﺎﻬﻟﺍ  | %d$ ﻚﻨﺒﻟﺍ  | %d$ ﺍﺪﻘﻧ  | %d ﻯﻮﺘﺴﻤﻟﺍ
+Roleplay only - peaceful city - no cheats. Own a house and you always spawn at home.	.ﻝﺰﻨﻤﻟﺍ ﻲﻓ ﺎﻤﺋﺍﺩ ﺮﺛﺎﻜﺘﺗﻭ ﻻﺰﻨﻣ ﻚﻠﺘﻣﺍ .ﺶﻏ ﺪﺟﻮﻳ ﻻ - ﺔﺋﺩﺎﻫ ﺔﻨﻳﺪﻣ - ﻂﻘﻓ ﺭﺍﻭﺩﻷﺍ ﺐﻌﻟ
+Left Mega Vil Futuristic.	.ﺔﻴﻠﺒﻘﺘﺴﻤﻟﺍ ﻞﻴﻓ ﺎﺠﻴﻣ ﺭﺩﺎﻏ
+Enter an amount first.	.ﻻﻭﺃ ﻎﻠﺒﻤﻟﺍ ﻞﺧﺩﺃ
+Withdrawing %s - please take your cash.	.ﻚﻟﺍﻮﻣﺃ ﺬﺧﺃ ﻰﺟﺮﻳ - %s ﺐﺤﺳ
+Depositing %s into your account.	.ﻚﺑﺎﺴﺣ ﻲﻓ %s ﻉﺍﺪﻳﺇ
+FAST CASH $100	ﺭﻻﻭﺩ 100 ﻊﻳﺮﺳ ﺪﻘﻧ
+OTHER AMOUNT	ﺮﺧﺁ ﻎﻠﺒﻣ
+ALL CASH	ﺩﻮﻘﻨﻟﺍ ﻞﻛ
+BUY %s	%s ﺀﺍﺮﺷ
+SELL ALL	ﻞﻜﻟﺍ ﻊﻴﺑ
+SEND MONEY	ﻝﺍﻮﻣﻷﺍ ﻝﺎﺳﺭﺇ
+Bank %s  -  cash %s	%s ﺪﻘﻨﻟﺍ - %s ﻚﻨﺒﻟﺍ
+Withdraw amount	ﻎﻠﺒﻤﻟﺍ ﺐﺤﺳ
+You have no cash on you.	.ﻚﻴﻠﻋ ﺩﻮﻘﻧ ﻚﻳﺪﻟ ﺲﻴﻟ
+Deposit amount	ﻉﺍﺪﻳﻹﺍ ﻎﻠﺒﻣ
+Buying %s of %s...	...%s ﻦﻣ %s ﺀﺍﺮﺷ
+Selling all of %s...	...%s ﻞﻛ ﻊﻴﺑ
+Phone number	ﻒﺗﺎﻬﻟﺍ ﻢﻗﺭ
+Now press BUY next to a plan.	.ﺔﻄﺨﻟﺍ ﺭﺍﻮﺠﺑ BUY ﻰﻠﻋ ﻂﻐﺿﺍ ﻥﻵﺍ
+Type an amount, then press BUY.	.ﺀﺍﺮﺷ ﻰﻠﻋ ﻂﻐﺿﺍ ﻢﺛ ،ﻎﻠﺒﻤﻟﺍ ﺐﺘﻛﺍ
+Pick WITHDRAWAL or DEPOSIT first.	.ﻻﻭﺃ ﻉﺍﺪﻳﻹﺍ ﻭﺃ ﺐﺤﺴﻟﺍ ﺮﺘﺧﺍ
+Please select a transaction.	.ﺔﻠﻣﺎﻌﻤﻟﺍ ﺪﻳﺪﺤﺗ ﺀﺎﺟﺮﻟﺍ
+MEGA BANK	ﺎﺠﻴﻣ ﻚﻨﺑ
+24 HOUR BANKING	ﺔﻋﺎﺳ 24 ﺭﺍﺪﻣ ﻰﻠﻋ ﺔﻴﻓﺮﺼﻤﻟﺍ ﺕﺎﻣﺪﺨﻟﺍ
+CASH  -  DEPOSIT  -  INVEST  -  TRANSFER	ﻞﻳﻮﺤﺗ - ﺭﺎﻤﺜﺘﺳﺍ - ﻉﺍﺪﻳﺇ - ﺪﻘﻧ
+WELCOME, %s	%s ،ﺎﺒﺣﺮﻣ
+Please select a transaction	ﺔﻠﻣﺎﻌﻤﻟﺍ ﺪﻳﺪﺤﺗ ﺀﺎﺟﺮﻟﺍ
+Select an amount, or type it on the keypad and press ENTER	ENTER ﻰﻠﻋ ﻂﻐﺿﺍﻭ ﺢﻴﺗﺎﻔﻤﻟﺍ ﺔﺣﻮﻟ ﻰﻠﻋ ﻪﺒﺘﻛﺍ ﻭﺃ ،ﺎﻐﻠﺒﻣ ﺩﺪﺣ
+One city market - prices move every 5 minutes	ﻖﺋﺎﻗﺩ 5 ﻞﻛ ﻙﺮﺤﺘﺗ ﺭﺎﻌﺳﻷﺍ - ﺓﺪﺣﺍﻭ ﺔﻨﻳﺪﻣ ﻕﻮﺳ
+Send bank money to a phone number	ﻒﺗﺎﻬﻟﺍ ﻢﻗﺭ ﻰﻟﺇ ﻚﻨﺒﻟﺍ ﻝﺍﻮﻣﺃ ﻞﺳﺭﺃ
+ENTER AMOUNT	ﻎﻠﺒﻤﻟﺍ ﻞﺧﺩﺃ
+Available: %s	%s :ﺡﺎﺘﻣ
+Cash on you: %s	%s :ﻚﻴﻠﻋ ﺔﻳﺪﻘﻨﻟﺍ
+%d (%+.1f%%)  yours %s	%d (%+.1f%%) ﻚﻟ %s
+Typed: %s - BUY uses it	ﺀﺍﺮﺸﻟﺍ ﻪﻣﺪﺨﺘﺴﻳ - %s :ﻪﺘﺑﺎﺘﻛ ﺖﻤﺗ
+Your number: %d	%d :ﻚﻤﻗﺭ
+Next payday in %d:%02d	%d:%02d ﻲﻓ ﻲﻟﺎﺘﻟﺍ ﻊﻓﺪﻟﺍ ﻡﻮﻳ
+Works anywhere too: /transfer [number] [amount]	[ﻎﻠﺒﻤﻟﺍ] [ﻢﻗﺮﻟﺍ] transfer/ :ﺎﻀﻳﺃ ﻥﺎﻜﻣ ﻱﺃ ﻲﻓ ﻞﻤﻌﻳ
+CASH %s	%s ﺍﺪﻘﻧ
+BANK %s	%s ﻚﻨﺒﻟﺍ
+INSERT CARD	ﺔﻗﺎﻄﺒﻟﺍ ﻞﺧﺩﺃ
+UPPER BODY	ﻢﺴﺠﻟﺍ ﻦﻣ ﻱﻮﻠﻌﻟﺍ ﺀﺰﺠﻟﺍ
+[MEGA VIL] CJ outfit saved. Press Spawn.	[MEGA VIL] ﻱﺯ ﻆﻔﺣ ﻢﺗ CJ. ﺥﺮﻔﺗ ﻰﻠﻋ ﻂﻐﺿﺍ.
+[MEGA VIL] Outfit saved: %s. Press Spawn.	[MEGA VIL] ﻱﺰﻟﺍ ﻆﻔﺣ ﻢﺗ: %s. ﺥﺮﻔﺗ ﻰﻠﻋ ﻂﻐﺿﺍ.
+skin %d	%d ﺪﻠﺠﻟﺍ
+take it off	ﻪﻌﻠﺧ
+CJ's own	CJـﺑ ﺔﺻﺎﺨﻟﺍ
+FULL VIEW	ﻞﻣﺎﻛ ﺽﺮﻋ
+FACTIONS  %d / %d	%d / %d ﻞﺋﺎﺼﻔﻟﺍ
+No factions yet. Create the first one.	.ﺪﺣﺍﻭ ﻝﻭﺃ ﺀﺎﺸﻧﺇ .ﺪﻌﺑ ﻞﺋﺎﺼﻓ ﺪﺟﻮﺗ ﻻ
+  (member)	(ﻮﻀﻋ)  
+%d / %d players   -   owner %s	%d / %d ﻚﻟﺎﻤﻟﺍ - ﻥﻮﺒﻋﻻ %s
+SET RULES	ﺪﻋﺍﻮﻘﻟﺍ ﻊﺿ
+Faction rules	ﻞﺋﺎﺼﻔﻟﺍ ﺪﻋﺍﻮﻗ
+CLOSE IT	ﻪﻘﻠﻏﺃ
+Pick a faction on the left.	.ﺭﺎﺴﻴﻟﺍ ﻰﻠﻋ ﻼﻴﺼﻓ ﺮﺘﺧﺍ
+CREATE FACTION  ($%d)	(%d$) ﻞﻴﺼﻓ ﺀﺎﺸﻧﺇ
+TAG (2-5 letters)	(ﻑﺮﺣﺃ 5-2) ﺔﻣﻼﻌﻟﺍ
+(tap to type)	(ﺔﺑﺎﺘﻜﻠﻟ ﻂﻐﺿﺍ)
+PLAYER LIMIT	ﺐﻋﻼﻟﺍ ﺪﺣ
+CREATE  ($%d)	(%d$) ﺀﺎﺸﻧﺇ
+L ARM	ﻡﺭﺃ ﻡﻻ
+R ARM	ﻡﺇ ﺭﺁ ﺭﺁ
+L LEG	L ﻕﺎﺴﻟﺍ
+R LEG	R ﻕﺎﺴﻟﺍ
+[BAG] Tap an item first.	[BAG] ﻻﻭﺃ ﺮﺼﻨﻌﻟﺍ ﻰﻠﻋ ﺮﻘﻧﺍ.
+Give to player id (nearest: %s)	(%s :ﺏﺮﻗﻷﺍ) ﺐﻋﻼﻟﺍ ﻑﺮﻌﻣ ﺀﺎﻄﻋﺇ
+Give to player id (stand next to them)	(ﻢﻬﺒﻧﺎﺠﺑ ﻑﻮﻗﻮﻟﺍ) ﺐﻋﻼﻟﺍ ﻑﺮﻌﻣ ﺀﺎﻄﻋﺇ
+Food  -  fills %d hunger	ﻉﻮﺠﻟﺍ %d ﺪﺴﻳ - ﻡﺎﻌﻄﻟﺍ
+Drink  -  fills %d thirst	ﺎﺸﻄﻋ %d ﺪﺴﻳ - ﺏﺮﺷﺍ
+Heals %d health	ﺔﺤﺼﻟﺍ %d ﻲﻔﺸﻳ
+Repairs the car you sit in	ﺎﻬﻴﻓ ﺲﻠﺠﺗ ﻲﺘﻟﺍ ﺓﺭﺎﻴﺴﻟﺍ ﺡﻼﺻﺇ
+Opens your phone	ﻚﻔﺗﺎﻫ ﺢﺘﻔﻳ
+Starter pack  -  open it to unpack	ﺎﻬﻐﻳﺮﻔﺘﻟ ﺎﻬﺤﺘﻓﺍ - ﺔﻳﺍﺪﺒﻟﺍ ﺔﻣﺰﺣ
+Item	ﺪﻨﺒﻟﺍ
+MEGA VIL QUICK MENU	ﻞﻴﻓ ﺎﺠﻴﻣ ﻲﻓ ﺔﻌﻳﺮﺴﻟﺍ ﺔﻤﺋﺎﻘﻟﺍ
+PLAYER ID	ﺐﻋﻼﻟﺍ ﻑﺮﻌﻣ
+%d  (%d XP)	%d (%d XP)
+  (on duty)	(ﺔﻣﺪﺨﻟﺍ ﻲﻓ)  
+%uh %02um	%uﺔﻋﺎﺳ %02uﺔﻘﻴﻗﺩ
+Body parts: white = fine, amber = hurt, red = badly hurt	ﺓﺪﺸﺑ ﺡﻭﺮﺠﻣ = ﺮﻤﺣﺃ ،ﺡﻭﺮﺠﻣ = ﻲﻧﺎﻣﺮﻬﻛ ،ﺪﻴﺟ = ﺾﻴﺑﺃ :ﻢﺴﺠﻟﺍ ﺀﺍﺰﺟﺃ
+PLAYER INFO	ﺐﻋﻼﻟﺍ ﺕﺎﻣﻮﻠﻌﻣ
+drag to turn	ﻥﺍﺭﻭﺪﻠﻟ ﺐﺤﺳﺍ
+%d.%d / %d.%d Kg	%d.%d / %d.%d ﻢﺠﻛ
+Opening the bag...	...ﺔﺒﻴﻘﺤﻟﺍ ﺢﺘﻓ
+AMOUNT: %d	%d :ﻎﻠﺒﻤﻟﺍ
+Amount	ﻎﻠﺒﻤﻟﺍ
+MEGA VIL	ﻞﻴﻓ ﺎﺠﻴﻣ
+CITIZEN IDENTITY CARD	ﻦﻃﺍﻮﻤﻟﺍ ﺔﻳﻮﻫ ﺔﻗﺎﻄﺑ
+No. %06d	%06d ﻢﻗﺭ
+%s%s (lv %d)	%s%s (ﻯﻮﺘﺴﻤﻟﺍ %d)
+, on duty	ﺔﻣﺪﺨﻟﺍ ﻲﻓ ،
+Lobby Hub	ﻲﺑﻮﻠﻟﺍ ﺰﻛﺮﻣ
+%u h %02u min	%u ﺔﻋﺎﺳ %02u ﺔﻘﻴﻗﺩ
+TIME IN CITY	ﺔﻨﻳﺪﻤﻟﺍ ﻲﻓ ﺖﻗﻮﻟﺍ
+SHOW ID	ﺔﻳﻮﻬﻟﺍ ﺭﺎﻬﻇﺇ
+Received %dx	%dx ﻡﻼﺘﺳﻻﺍ ﻢﺗ
+Mega Bank	ﻚﻨﺑ ﺎﺠﻴﻣ
+Use ATM	ﻲﻟﻵﺍ ﻑﺍﺮﺼﻟﺍ ﺓﺰﻬﺟﺃ ﻡﺪﺨﺘﺳﺍ
+Pick up %s	%s ﻂﻘﺘﻟﺍ
+WELCOME TO MEGA VIL	ﻞﻴﻓ ﺎﺠﻴﻣ ﻲﻓ ﻢﻜﺑ ﺎﺒﺣﺮﻣ
+Futuristic Roleplay 24/7\nRoleplay only - no DM, no cheats\nBe a citizen: work, earn, live	ﻉﻮﺒﺳﻷﺍ ﻡﺎﻳﺃ ﻝﺍﻮﻃ ﺔﻋﺎﺴﻟﺍ ﺭﺍﺪﻣ ﻰﻠﻋ ﺔﻴﻠﺒﻘﺘﺴﻤﻟﺍ ﺭﺍﻭﺩﻷﺍ ﺐﻌﻟ\nﺶﻏ ﻥﻭﺪﺑ ،ﺓﺮﺷﺎﺒﻣ ﻞﺋﺎﺳﺭ ﻥﻭﺪﺑ - ﻂﻘﻓ ﺭﺍﻭﺩﻷﺍ ﺐﻌﻟ\nﺶﻴﻋﻭ ،ﺐﺴﻛﺍﻭ ،ﻞﻤﻋﺍ :ﺎﻨﻃﺍﻮﻣ ﻦﻛ
+Futuristic Roleplay 24/7	24/7 ﺔﻴﻠﺒﻘﺘﺴﻤﻟﺍ ﺭﺍﻭﺩﻷﺍ ﺐﻌﻟ
+Roleplay only - no DM, no cheats	ﺶﻏ ﻥﻭﺪﺑ ،ﺓﺮﺷﺎﺒﻣ ﺔﻟﺎﺳﺭ ﻥﻭﺪﺑ - ﻂﻘﻓ ﺭﺍﻭﺩﻷﺍ ﺐﻌﻟ
+Be a citizen: work, earn, live	ﺶﻋ ،ﺐﺴﻛﺍ ،ﻞﻤﻋﺍ :ﺎﻨﻃﺍﻮﻣ ﻦﻛ
+/rules - roleplay, don't fail it\n/b OOC  /me /do  /n newbie help\nGreenzones: nobody gets hurt	/rules - ﻞﺸﻔﺗ ﻻ ،ﺭﺍﻭﺩﻷﺍ ﺐﻌﻟ\n/b OOC /me /do /n ﻦﻴﺋﺪﺘﺒﻤﻟﺍ ﺓﺪﻋﺎﺴﻣ\nﻯﺫﺄﺘﻳ ﺪﺣﺃ ﻻ :ﺀﺍﺮﻀﺨﻟﺍ ﻖﻃﺎﻨﻤﻟﺍ
+/rules - roleplay, don't fail it	/rules - ﺎﻬﻴﻓ ﻞﺸﻔﺗ ﻻ ،ﺭﺍﻭﺩﻷﺍ ﺐﻌﻟ
+/b OOC  /me /do  /n newbie help	/b OOC /me /do /n ﻦﻴﺋﺪﺘﺒﻤﻠﻟ ﺓﺪﻋﺎﺴﻣ
+Greenzones: nobody gets hurt	ﻯﺫﺄﺘﻳ ﺪﺣﺃ ﻻ :ﺀﺍﺮﻀﺨﻟﺍ ﻖﻃﺎﻨﻤﻟﺍ
+/jobs - pick one at the Job Center\n/duty  /work  then follow the GPS\nPayday every 30 min of play	/jobs - ﻞﻤﻌﻟﺍ ﺰﻛﺮﻣ ﻲﻓ ﺍﺪﺣﺍﻭ ﺮﺘﺧﺍ\n(GPS) ﻲﻤﻟﺎﻌﻟﺍ ﻊﻗﺍﻮﻤﻟﺍ ﺪﻳﺪﺤﺗ ﻡﺎﻈﻧ ﻊﺒﺗﺍ ﻢﺛ work/ ﺔﻤﻬﻤﻟﺍ/\nﺐﻌﻠﻟﺍ ﻦﻣ ﺔﻘﻴﻗﺩ 30 ﻞﻛ ﻊﻓﺪﻟﺍ ﻡﻮﻳ
+/jobs - pick one at the Job Center	/jobs - ﻞﻤﻌﻟﺍ ﺰﻛﺮﻣ ﻦﻣ ﺓﺪﺣﺍﻭ ﺮﺘﺧﺍ
+/duty  /work  then follow the GPS	/duty /work ﻊﺒﺗﺍ ﻢﺛ GPS
+Payday every 30 min of play	ﺐﻌﻠﻟﺍ ﻦﻣ ﺔﻘﻴﻗﺩ 30 ﻞﻛ ﻊﻓﺪﻟﺍ ﻡﻮﻳ
+MONEY & INVEST	ﺭﺎﻤﺜﺘﺳﻻﺍﻭ ﻝﺎﻤﻟﺍ
+ATM: walk into the ring - Use ATM\n/invest  /sellinvest  /market\n/pawn at a 24/7 - /lotto 1-60	ﻲﻟﻵﺍ ﻑﺍﺮﺼﻟﺍ ﺔﻨﻴﻛﺎﻣ ﻡﺪﺨﺘﺳﺍ - ﺔﺒﻠﺤﻟﺍ ﻰﻟﺇ ﻞﺧﺩﺍ :ﻲﻟﻵﺍ ﻑﺍﺮﺼﻟﺍ ﺔﻨﻴﻛﺎﻣ\nsellinvest /market/ ﺮﻤﺜﺘﺳﺍ/\nlotto 1-60/ - ﻉﻮﺒﺳﻷﺍ ﻡﺎﻳﺃ ﻝﺍﻮﻃ ﺔﻋﺎﺳ 24 ﻲﻓ ﻕﺪﻴﺑ/
+ATM: walk into the ring - Use ATM	ﻲﻟﻵﺍ ﻑﺍﺮﺼﻟﺍ ﺔﻨﻴﻛﺎﻣ ﻡﺪﺨﺘﺳﺍ - ﺔﺒﻠﺤﻟﺍ ﻰﻟﺇ ﻞﺧﺩﺍ :ﻲﻟﻵﺍ ﻑﺍﺮﺼﻟﺍ ﺔﻨﻴﻛﺎﻣ
+/invest  /sellinvest  /market	/invest /sellinvest /market
+/pawn at a 24/7 - /lotto 1-60	/pawn 24/7 ﻲﻓ - /lotto 1-60
+PHONE & PANEL	ﺔﺣﻮﻠﻟﺍﻭ ﻒﺗﺎﻬﻟﺍ
+PANEL button: bag, documents\n/phone  /sms  /call  /taxi  /911\n/gps - every place in the city	ﺕﺍﺪﻨﺘﺴﻤﻟﺍﻭ ﺔﺒﻴﻘﺤﻟﺍ :PANEL ﺭﺯ\nsms /call /taxi /911/ ﻒﺗﺎﻬﻟﺍ/\n/gps - ﺔﻨﻳﺪﻤﻟﺍ ﻲﻓ ﻥﺎﻜﻣ ﻞﻛ
+PANEL button: bag, documents	ﺕﺍﺪﻨﺘﺴﻤﻟﺍﻭ ﺔﺒﻴﻘﺤﻟﺍ :ﺔﺣﻮﻠﻟﺍ ﺭﺯ
+/phone  /sms  /call  /taxi  /911	/phone /sms /call /taxi /911
+/gps - every place in the city	/gps - ﺔﻨﻳﺪﻤﻟﺍ ﻲﻓ ﻥﺎﻜﻣ ﻞﻛ
+/buyhouse  /home  /pet  /emotes\n/propose /divorce  /seatbelt\n/joinevent - city events	/buyhouse /home /pet /emotes\ndivorce /seatbelt/ ﺡﺍﺮﺘﻗﺍ/\n/joinevent - ﺔﻨﻳﺪﻤﻟﺍ ﺙﺍﺪﺣﺃ
+/buyhouse  /home  /pet  /emotes	/buyhouse /home /pet /emotes
+/propose /divorce  /seatbelt	/propose /divorce /seatbelt
+/joinevent - city events	/joinevent - ﺔﻨﻳﺪﻤﻟﺍ ﺙﺍﺪﺣﺃ
+Welcome to Mega Vil Futuristic Roleplay Server	ﺭﺍﻭﺩﻷﺍ ﺐﻌﻠﻟ ﻲﻠﺒﻘﺘﺴﻤﻟﺍ Mega Vil ﻡﺩﺎﺧ ﻲﻓ ﻚﺑ ﺎﺒﺣﺮﻣ
+24/7 roleplay city - stay in character, no DM, no cheats	ﺶﻏ ﻥﻭﺪﺑ ،ﺓﺮﺷﺎﺒﻣ ﻞﺋﺎﺳﺭ ﻥﻭﺪﺑ ،ﻚﺘﻴﺼﺨﺷ ﻰﻠﻋ ﻆﻓﺎﺣ - ﻉﻮﺒﺳﻷﺍ ﻡﺎﻳﺃ ﻝﺍﻮﻃ ﺔﻋﺎﺴﻟﺍ ﺭﺍﺪﻣ ﻰﻠﻋ ﺭﺍﻭﺩﻷﺍ ﺐﻌﻟ ﺔﻨﻳﺪﻣ
+/jobs work  -  /gps places  -  /phone  -  PANEL: bag + documents  -  /rules	/jobs ﻞﻤﻋ - /gps ﻦﻛﺎﻣﺃ - /phone - ﺕﺍﺪﻨﺘﺴﻣ + ﺔﺒﻴﻘﺣ :ﺔﺣﻮﻟ - /rules
+________ Welcome to Mega Vil Futuristic Roleplay ________	________ ﺔﻴﻠﺒﻘﺘﺴﻤﻟﺍ Mega Vil ﺔﺒﻌﻟ ﻲﻓ ﻢﻜﺑ ﺎﺒﺣﺮﻣ ________
+Hello %s, you are a citizen of Mega Vil now. This is a 24/7 roleplay city: stay in character.	.ﻚﺘﻴﺼﺨﺷ ﻰﻠﻋ ﻆﻓﺎﺣ :ﻉﻮﺒﺳﻷﺍ ﻡﺎﻳﺃ ﻝﺍﻮﻃ ﺔﻋﺎﺴﻟﺍ ﺭﺍﺪﻣ ﻰﻠﻋ ﺭﺍﻭﺩﻷﺍ ﺐﻌﻟ ﺔﻨﻳﺪﻣ ﺎﻬﻧﺇ .ﻥﻵﺍ Mega Vil ﻲﻓ ﻦﻃﺍﻮﻣ ﺖﻧﺃ ،%s ﺎﺒﺣﺮﻣ
+Start: /jobs for work, the PANEL button for your bag + documents, /phone, /gps for every place.	.ﻥﺎﻜﻣ ﻞﻜﻟ phone، /gps/ ،ﺕﺍﺪﻨﺘﺴﻤﻟﺍ + ﻚﺘﺒﻴﻘﺤﻟ PANEL ﺭﺯ ،ﻞﻤﻌﻠﻟ jobs/ :ﺀﺪﺒﻟﺍ
+Money: walk into an ATM ring and tap Use ATM - deposit, withdraw, transfer, /invest.	.invest/ ،ﻞﻳﻮﺤﺗ ،ﺐﺤﺳ ،ﻉﺍﺪﻳﺇ - ﻲﻟﻵﺍ ﻑﺍﺮﺼﻟﺍ ﺔﻨﻴﻛﺎﻣ ﻡﺍﺪﺨﺘﺳﺍ ﻕﻮﻓ ﺮﻘﻧﺍﻭ ﻲﻟﻵﺍ ﻑﺍﺮﺼﻟﺍ ﺔﻨﻴﻛﺎﻣ ﺔﻘﻠﺣ ﻰﻟﺇ ﻞﺧﺩﺍ :ﻝﺎﻤﻟﺍ
+Rules: /rules  ·  help: /n [question] (newbie chat)  ·  all commands: /help	help/ :ﺮﻣﺍﻭﻷﺍ ﻊﻴﻤﺟ · (ﺉﺪﺘﺒﻣ ﺔﺷﺩﺭﺩ) [ﻝﺍﺆﺳ] n/ :ﺓﺪﻋﺎﺴﻤﻟﺍ · rules/ :ﺪﻋﺍﻮﻘﻟﺍ
+/propose [id]  ($500 wedding, they /accept marry)	/propose [id] (ﺭﻻﻭﺩ 500 ﺔﻤﻴﻘﺑ ﻑﺎﻓﺯ ﻞﻔﺣ، /accept ﺎﺟﻭﺰﺗ)
+/checkseatbelt [id]	/checkseatbelt [ﻑﺮﻌﻤﻟﺍ]
+______ MEGA VIL RULES ______	______ ﻞﻴﻓ ﺎﺠﻴﻣ ﺪﻋﺍﻮﻗ ______
+1. Roleplay: act like a real citizen. No deathmatch, no random killing.	.ﻲﺋﺍﻮﺸﻋ ﻞﺘﻗ ﻻﻭ ،ﺕﻮﻣ ﺓﺍﺭﺎﺒﻣ ﺪﺟﻮﻳ ﻻ .ﻲﻘﻴﻘﺣ ﻦﻃﺍﻮﻤﻛ ﻑﺮﺼﺗ :ﺭﺍﻭﺩﻷﺍ ﺐﻌﻟ .1
+2. No cheats, no hacks, no bug abuse. Greenzones: nobody can be hurt.	.ﺪﺣﺃ ﻯﺫﺄﺘﻳ ﻥﺃ ﻦﻜﻤﻳ ﻻ :ﺀﺍﺮﻀﺨﻟﺍ ﻖﻃﺎﻨﻤﻟﺍ .ﺀﺎﻄﺧﻷﺍ ﻡﺍﺪﺨﺘﺳﺍ ﺓﺀﺎﺳﺇ ﻭﺃ ﻕﺍﺮﺘﺧﺍ ﻭﺃ ﺶﻏ ﺪﺟﻮﻳ ﻻ .2
+3. Police / military: force only on duty. Respect /fine and /arrest.	.arrest/ﻭ fine/ ﻡﺮﺘﺣﺍ .ﺔﻣﺪﺨﻟﺍ ﻲﻓ ﻂﻘﻓ ﺓﻮﻘﻟﺍ :ﺶﻴﺠﻟﺍ / ﺔﻃﺮﺸﻟﺍ .3
+4. OOC talk in /b or /ooc only. Be nice in /n newbie chat.	.n/ ﻦﻴﺋﺪﺘﺒﻤﻟﺍ ﺔﺷﺩﺭﺩ ﻲﻓ ﺎﻔﻴﻄﻟ ﻦﻛ .ﻂﻘﻓ ooc/ ﻭﺃ b/ ﺔﻐﻠﻟﺎﺑ OOC ﺙﺪﺤﺗ .4
+[TAXI] No passenger in your taxi - pick them up first (yellow marker).	[TAXI] ﺀﺍﺮﻔﺻ ﺔﻣﻼﻋ) ﻻﻭﺃ ﻢﻬﺑﺎﺤﻄﺻﺎﺑ ﻢﻗ - ﻚﺑ ﺔﺻﺎﺨﻟﺍ ﺓﺮﺟﻷﺍ ﺓﺭﺎﻴﺳ ﻲﻓ ﺏﺎﻛﺭ ﺪﺟﻮﻳ ﻻ).
+[TAXI] Passenger: \"Thanks, keep the change.\"	[TAXI] ﺐﻛﺍﺮﻟﺍ: \"ﻲﻗﺎﺒﻟﺎﺑ ﻆﻔﺘﺣﺍ ،ﺍﺮﻜﺷ.\"
+[TAXI] A passenger is waiting (yellow marker). Stop next to them, then drive to the fare marker.	[TAXI] ﺓﺮﺟﻷﺍ ﺔﻣﻼﻋ ﻰﻟﺇ ﺓﺩﺎﻴﻘﻟﺎﺑ ﻢﻗ ﻢﺛ ،ﻢﻬﺒﻧﺎﺠﺑ ﻒﻗﻮﺗ .(ﺀﺍﺮﻔﺻ ﺔﻣﻼﻋ) ﺭﺎﻈﺘﻧﻻﺍ ﻲﻓ ﺐﻛﺍﺭ ﻙﺎﻨﻫ.
+[TAXI] Your passenger got hurt - a new one is waiting.	[TAXI] ﻩﺭﺎﻈﺘﻧﺍ ﻲﻓ ﺪﻳﺪﺟ ﺐﻛﺍﺭ ﻙﺎﻨﻫ - ﻚﺒﻛﺍﺭ ﺐﻴﺻﺃ.
+[TAXI] Your car is full.	[TAXI] ﺔﺌﻠﺘﻤﻣ ﻚﺗﺭﺎﻴﺳ.
+[TAXI] Passenger: \"Where is your taxi?\" (get in a car)	[TAXI] ﺐﻛﺍﺮﻟﺍ: \"؟ﻚﺑ ﺔﺻﺎﺨﻟﺍ ﺓﺮﺟﻷﺍ ﺓﺭﺎﻴﺳ ﻦﻳﺃ\" (ﺓﺭﺎﻴﺴﻟﺍ ﺐﻛﺭﺍ)
+[TAXI] Passenger in. Drive to the fare marker and stop there.	[TAXI] ﻙﺎﻨﻫ ﻒﻗﻮﺗﻭ ﺓﺮﺟﻷﺍ ﺔﻣﻼﻋ ﻰﻟﺇ ﻪﺟﻮﺗ .ﺐﻛﺍﺮﻟﺍ ﻞﺧﺩ.
+[TAXI] Your passenger is out of the car - pick them up again.	[TAXI] ﻯﺮﺧﺃ ﺓﺮﻣ ﻪﺑﺎﺤﻄﺻﺎﺑ ﻢﻗ - ﺓﺭﺎﻴﺴﻟﺍ ﺝﺭﺎﺧ ﻚﺑ ﺹﺎﺨﻟﺍ ﺐﻛﺍﺮﻟﺍ.
+Home	ﺔﻴﺴﻴﺋﺮﻟﺍ ﺔﺤﻔﺼﻟﺍ
+Contacts	ﺕﻻﺎﺼﺗﺍ
+Messages	ﻞﺋﺎﺳﺮﻟﺍ
+Phone	ﻒﺗﺎﻬﻟﺍ
+Bank	ﻚﻨﺒﻟﺍ
+Jobs	ﻒﺋﺎﻇﻭ
+Shop	ﻕﻮﺴﺗ
+Garage	ﺏﺁﺮﻤﻟﺍ
+Houses	ﻝﺯﺎﻨﻣ
+Pets	ﺔﻔﻴﻟﻷﺍ ﺕﺎﻧﺍﻮﻴﺤﻟﺍ
+Emotes	ﻒﻃﺍﻮﻌﻟﺍ
+Vil Feed	ﻞﻴﻓ ﺔﻳﺬﻐﺗ
+Games	ﺏﺎﻌﻟﺍ
+News	ﺭﺎﺒﺧﺃ
+Amount to send	ﻪﻟﺎﺳﺭﺇ ﺩﺍﺮﻤﻟﺍ ﻎﻠﺒﻤﻟﺍ
+Snake	ﻥﺎﺒﻌﺛ
+Sky Hop	ﺏﻮﻫ ﻱﺎﻜﺳ
+Tic-Tac-Toe	ﻮﺗ ﻙﺎﺗ ﻚﻴﺗ
+%s   (best %d%s)	%s (ﻞﻀﻓﻷﺍ %d%s)
+ wins	ﺯﻮﻔﻳ 
+   GAME OVER	ﺔﺒﻌﻠﻟﺍ ﺖﻬﺘﻧﺍ   
+Play	ﺐﻌﻟﺍ
+Tap to play  -  best %d	%d ﻞﻀﻓﻷﺍ - ﻞﻴﻐﺸﺘﻠﻟ ﺮﻘﻧﺍ
+%s   Wins %d	%s ﺕﺍﺭﺎﺼﺘﻧﻻﺍ %d
+You win!	!ﺕﺰﻓ
+The phone wins.	.ﺯﻮﻔﻳ ﻒﺗﺎﻬﻟﺍ
+Draw.	.ﻢﺳﺮﻳ
+You are X.	.ﺮﺷﺎﻌﻟﺍ ﺖﻧﺃ
+Again	ﻯﺮﺧﺃ ﺓﺮﻣ
+< Games	ﺏﺎﻌﻟﻷﺍ>
+My number: %d	%d :ﻲﻤﻗﺭ
+New message to a number	ﻢﻗﺮﻟ ﺓﺪﻳﺪﺟ ﺔﻟﺎﺳﺭ
+%d  -  %s, Lv %d%s	%d - %s، ﻯﻮﺘﺴﻤﻟﺍ %d%s
+  (busy)	(ﻝﻮﻐﺸﻣ)  
+Call	ﻞﺼﺗﺍ
+Message	ﺔﻟﺎﺳﺭ
+New message	ﺓﺪﻳﺪﺟ ﺔﻟﺎﺳﺭ
+Unknown	ﻑﻭﺮﻌﻣ ﺮﻴﻏ
+No messages yet.	.ﻥﻵﺍ ﻰﺘﺣ ﻞﺋﺎﺳﺭ ﺪﺟﻮﺗ ﻻ
+Reply	ﺩﺭ
+< All messages	ﻞﺋﺎﺳﺮﻟﺍ ﻊﻴﻤﺟ >
+Dial a number	ﺎﻤﻗﺭ ﺐﻠﻃﺍ
+Number to call	ﻝﺎﺼﺗﻼﻟ ﻢﻗﺭ
+911 = emergency, the Taxi app calls a taxi.	.ﺓﺮﺟﺃ ﺓﺭﺎﻴﺳ ﺀﺎﻋﺪﺘﺳﺎﺑ Taxi ﻖﻴﺒﻄﺗ ﻡﻮﻘﻳ ،ﺉﺭﺍﻮﻃ ﺔﻟﺎﺣ = 911
+Recent calls	ﺓﺮﻴﺧﻷﺍ ﺕﺎﻤﻟﺎﻜﻤﻟﺍ
+Missed:	:ﺏﺎﻏ
+Out:	:ﺝﺭﺎﺧ
+In:	:ﻲﻓ
+Bank balance  -  cash $%d	%d$ ﺍﺪﻘﻧ - ﻚﻨﺒﻟﺍ ﺪﻴﺻﺭ
+Payday in %d:%02d (salary + 0.1%% interest)	(ﺓﺪﺋﺎﻓ 0.1%% + ﺐﺗﺍﺮﻟﺍ) %d:%02d ﻲﻓ ﻊﻓﺪﻟﺍ ﻡﻮﻳ
+Deposit	ﻉﺍﺪﻳﺇ
+Deposit amount (at an ATM)	(ﻲﻟﻵﺍ ﻑﺍﺮﺼﻟﺍ ﺔﻨﻴﻛﺎﻣ ﻲﻓ) ﻉﺍﺪﻳﻹﺍ ﻎﻠﺒﻣ
+Withdraw	ﺏﺎﺤﺴﻧﺍ
+Withdraw amount (at an ATM)	(ﻲﻟﻵﺍ ﻑﺍﺮﺼﻟﺍ ﺔﻨﻴﻛﺎﻣ ﻦﻣ) ﻎﻠﺒﻤﻟﺍ ﺐﺤﺳ
+Transfer to a phone number	ﻒﺗﺎﻬﻟﺍ ﻢﻗﺭ ﻰﻟﺇ ﻞﻳﻮﺤﺗ
+Their phone number	ﻢﻬﻔﺗﺎﻫ ﻢﻗﺭ
+Nearest ATM on GPS	GPS ﻰﻠﻋ ﻲﻟﺁ ﻑﺍﺮﺻ ﺯﺎﻬﺟ ﺏﺮﻗﺃ
+Deposits and withdrawals work at ATMs and the Mega Bank. Transfers work anywhere.	.ﻥﺎﻜﻣ ﻱﺃ ﻲﻓ ﻞﻤﻌﺗ ﺕﻼﻳﻮﺤﺘﻟﺍ .ﺎﺠﻴﻣ ﻚﻨﺑﻭ ﻲﻟﻵﺍ ﻑﺍﺮﺼﻟﺍ ﺓﺰﻬﺟﺃ ﻲﻓ ﺕﺎﺑﻮﺤﺴﻟﺍﻭ ﻊﺋﺍﺩﻮﻟﺍ ﻞﻤﻌﺗ
+Job Center	ﻞﻤﻌﻟﺍ ﺰﻛﺮﻣ
+ (on duty)	(ﺔﻣﺪﺨﻟﺍ ﻲﻓ) 
+Stop shift	ﻝﻮﺤﺘﻟﺍ ﻒﻗﻭ
+Start shift	ﻝﻮﺤﺘﻟﺍ ﺀﺪﺑ
+Off duty	ﺔﻣﺪﺨﻟﺍ ﺝﺭﺎﺧ
+On duty	ﺔﻣﺪﺨﻟﺍ ﻲﻓ
+Quit job	ﺔﻔﻴﻇﻮﻟﺍ ﻙﺮﺗ
+%s  Pay ~$%d / task. Level %d.	%s ﻊﻓﺩﺍ ~$%d / ﻯﻮﺘﺴﻤﻟﺍ .ﺔﻤﻬﻣ %d.
+Locked	ﻖﻠﻐﻣ
+Take this job	ﺔﻔﻴﻇﻮﻟﺍ ﻩﺬﻫ ﺬﺧ
+Clear route	ﺢﺿﺍﻭ ﻖﻳﺮﻃ
+My home	ﻲﻟﺰﻨﻣ
+At the store counter: normal price. Anywhere else: drone delivery (+10%). Weapons only at the Licensed Ammu-Nation.	.ﺔﺼﺧﺮﻤﻟﺍ Ammu-Nation ﻲﻓ ﻂﻘﻓ ﺓﺩﻮﺟﻮﻣ ﺔﺤﻠﺳﻷﺍ .(%10+) ﺭﺎﻴﻃ ﻥﻭﺪﺑ ﺕﺍﺮﺋﺎﻄﺑ ﻞﻴﺻﻮﺘﻟﺍ :ﺮﺧﺁ ﻥﺎﻜﻣ ﻱﺃ ﻲﻓ .ﻱﺩﺎﻌﻟﺍ ﺮﻌﺴﻟﺍ :ﺮﺠﺘﻤﻟﺍ ﺔﻟﻭﺎﻃ ﻰﻠﻋ
+Cash $%d  |  Bank $%d	%d$ ﻚﻨﺒﻟﺍ  | %d$ ﺍﺪﻘﻧ
+   (owned)	(ﺔﻛﻮﻠﻤﻤﻟﺍ)   
+< Categories	ﺕﺎﺌﻔﻟﺍ >
+No vehicles yet. Shop - Vehicles, or the dealerships on the GPS.	.ﻊﻗﺍﻮﻤﻟﺍ ﺪﻳﺪﺤﺗ ﻡﺎﻈﻧ ﻰﻠﻋ ﺀﻼﻛﻮﻟﺍ ﻭﺃ ،ﺕﺎﺒﻛﺮﻤﻟﺍ - ﺮﺠﺘﻣ .ﻥﻵﺍ ﻰﺘﺣ ﺕﺎﺒﻛﺮﻣ ﺪﺟﻮﺗ ﻻ
+Deliver here	ﺎﻨﻫ ﻢﻴﻠﺴﺗ
+Sell (50%)	(%50) ﻊﻴﺑ
+Mega Realty	ﺔﻳﺭﺎﻘﻌﻟﺍ ﺎﺠﻴﻣ
+Your home: %s	%s :ﻚﻟﺰﻨﻣ
+You always spawn at home. /setspawn at your house sets the exact point.	.ﺓﺩﺪﺤﻤﻟﺍ ﺔﻄﻘﻨﻟﺍ ﺩﺪﺤﻳ ﻚﻟﺰﻨﻣ ﻲﻓ setspawn/ .ﻝﺰﻨﻤﻟﺍ ﻲﻓ ﺎﻤﺋﺍﺩ ﺥﺮﻔﺗ ﺖﻧﺃ
+GPS home	ﻝﺰﻨﻤﻠﻟ ﻊﻗﺍﻮﻤﻟﺍ ﺪﻳﺪﺤﺗ ﻡﺎﻈﻧ
+Sell (60%)	(%60) ﻊﻴﺑ
+Buy a house: you will always spawn there instead of the Lobby Hub.	.ﺔﻫﺩﺮﻟﺍ ﺰﻛﺮﻣ ﻦﻣ ﻻﺪﺑ ﻙﺎﻨﻫ ﺎﻤﺋﺍﺩ ﺮﻬﻈﺗ ﻑﻮﺳ :ﻝﺰﻨﻣ ﺀﺍﺮﺸﺑ ﻢﻗ
+Tap a house for the GPS, then /buyhouse at the door (paid from the bank first).	.(ﻻﻭﺃ ﻚﻨﺒﻟﺍ ﻦﻣ ﻊﻓﺪﻟﺍ ﻢﺘﻳ) ﺏﺎﺒﻟﺍ ﺪﻨﻋ buyhouse/ ﻢﺛ ،(GPS) ﻲﻤﻟﺎﻌﻟﺍ ﻊﻗﺍﻮﻤﻟﺍ ﺪﻳﺪﺤﺗ ﻡﺎﻈﻧ ﻰﻠﻋ ﻝﻮﺼﺤﻠﻟ ﻝﺯﺎﻨﻤﻟﺍ ﺪﺣﺃ ﻰﻠﻋ ﺮﻘﻧﺍ
+Holo Pets	ﺔﻔﻴﻟﻷﺍ ﺕﺎﻧﺍﻮﻴﺤﻟﺍ ﻮﻟﻮﻫ
+Send my pet home	ﻝﺰﻨﻤﻟﺍ ﻰﻟﺇ ﻒﻴﻟﻷﺍ ﻲﻧﺍﻮﻴﺣ ﻞﺳﺭﺃ
+  (with you)	(ﻚﻌﻣ)  
+  - call	ﻞﺼﺗﺍ -  
+ in the Shop	ﺮﺠﺘﻤﻟﺍ ﻲﻓ 
+Emotes & Dances	ﺕﺎﺼﻗﺮﻟﺍﻭ ﻒﻃﺍﻮﻌﻟﺍ
+Stop (/e c)	(ﺝ e/) ﻒﻗﻮﺗ
+Shared emote: /e %s [player id]	[ﺐﻋﻼﻟﺍ ﻑﺮﻌﻣ] e %s/ :ﻙﺮﺘﺸﻤﻟﺍ ﻱﺮﻴﺒﻌﺘﻟﺍ ﺮﻴﺒﻌﺘﻟﺍ
+New post	ﺓﺪﻳﺪﺟ ﺔﻔﻴﻇﻭ
+Post to Vil Feed	Vil Feed ﻲﻓ ﺮﺸﻧﺍ
+Advert ($100)	(ﺭﻻﻭﺩ 100) ﻥﻼﻋﺍ
+Advert text	ﻥﻼﻋﻹﺍ ﺺﻧ
+%d min ago	ﺔﻘﻴﻗﺩ %d ﻞﺒﻗ
+Nothing posted yet. Be the first.	.ﻝﻭﻷﺍ ﻦﻛ .ﻥﻵﺍ ﻰﺘﺣ ﺀﻲﺷ ﻱﺃ ﺮﺸﻧ ﻢﺘﻳ ﻢﻟ
+Mega Vil News	ﻞﻴﻓ ﺎﺠﻴﻣ ﺭﺎﺒﺧﺃ
+LIVE: %s	%s :ﺮﺷﺎﺒﻣ
+%d:%02d left	%d:%02d ﺭﺎﺴﻳ
+Go there (GPS)	(ﻲﻤﻟﺎﻌﻟﺍ ﻊﻗﺍﻮﻤﻟﺍ ﺪﻳﺪﺤﺗ ﻡﺎﻈﻧ) ﻙﺎﻨﻫ ﻰﻟﺇ ﺐﻫﺫﺍ
+Next city event in %d:%02d	%d:%02d ﻲﻓ ﻲﻟﺎﺘﻟﺍ ﺔﻨﻳﺪﻤﻟﺍ ﺙﺪﺣ
+Mega Lottery jackpot: $%d	%d$ :ﻯﺮﺒﻜﻟﺍ ﺐﻴﺼﻧﺎﻴﻟﺍ ﺓﺰﺋﺎﺟ
+Your ticket: %d	%d :ﻚﺗﺮﻛﺬﺗ
+No ticket yet ($500, numbers 1-60).	.(60 ﻰﻟﺇ 1 ﻦﻣ ﻡﺎﻗﺭﻷﺍ ،ﺭﻻﻭﺩ 500) ﺪﻌﺑ ﺓﺮﻛﺬﺗ ﺪﺟﻮﺗ ﻻ
+Buy a ticket	ﺓﺮﻛﺬﺗ ﺀﺍﺮﺷ
+Your number (1-60)	(60-1) ﻚﻤﻗﺭ
+City events (every 15 minutes):	:(ﺔﻘﻴﻗﺩ 15 ﻞﻛ) ﺔﻨﻳﺪﻤﻟﺍ ﺙﺍﺪﺣﺃ
+Sky Blue	ﺀﺎﻗﺭﺰﻟﺍ ﺀﺎﻤﺴﻟﺍ
+Neon	ﻥﻮﻴﻧ
+Sunset	ﺲﻤﺸﻟﺍ ﺏﻭﺮﻏ
+Matrix	ﺔﻓﻮﻔﺼﻣ
+  (on)	(ﻰﻠﻋ)  
+  (Shop)	(ﺮﺠﺘﻣ)  
+incoming call...	...ﺓﺩﺭﺍﻭ ﺔﻤﻟﺎﻜﻣ
+Voice chat goes to this call. Hold the mic button to talk.	.ﺙﺪﺤﺘﻠﻟ ﻥﻮﻓﻭﺮﻜﻴﻤﻟﺍ ﺭﺯ ﻰﻠﻋ ﺭﺍﺮﻤﺘﺳﻻﺍ ﻊﻣ ﻂﻐﺿﺍ .ﺔﻤﻟﺎﻜﻤﻟﺍ ﻩﺬﻫ ﻰﻟﺇ ﺐﻫﺬﺗ ﺔﻴﺗﻮﺼﻟﺍ ﺔﺷﺩﺭﺪﻟﺍ
+Answer	ﺔﺑﺎﺟﻹﺍ
+End call	ﺔﻤﻟﺎﻜﻤﻟﺍ ﺀﺎﻬﻧﺇ
+MegaVil 6G  100%	%100 ﻲﺟ 6 ﻞﻴﻓﺎﺠﻴﻣ
+911 - what happened?	؟ﺙﺪﺣ ﺍﺫﺎﻣ - 911
+Taxi - where to? (optional)	(ﻱﺭﺎﻴﺘﺧﺍ) ؟ﻦﻳﺃ ﻰﻟﺇ - ﺓﺮﺟﺃ ﺓﺭﺎﻴﺳ
+Cash $%d  |  Bank $%d  |  Lv %d	%d ﻯﻮﺘﺴﻤﻟﺍ  | %d$ ﻚﻨﺒﻟﺍ  | %d$ ﺍﺪﻘﻧ
+911 Emergency	ﺉﺭﺍﻮﻄﻟﺍ 911
+Police, paramedics and firefighters on duty get your location.	.ﻚﻌﻗﻮﻣ ﻰﻠﻋ ﻥﻮﻠﺼﺤﻳ ﻦﻴﺑﻭﺎﻨﻤﻟﺍ ﺀﺎﻔﻃﻹﺍ ﻝﺎﺟﺭﻭ ﻦﻴﻔﻌﺴﻤﻟﺍﻭ ﺔﻃﺮﺸﻟﺍ
+Call 911	911 ﻢﻗﺮﻟﺎﺑ ﻞﺼﺗﺍ
+Mega Taxi	ﻲﺴﻛﺎﺗ ﺎﺠﻴﻣ
+Taxi drivers get your location.	.ﻚﻌﻗﻮﻣ ﻰﻠﻋ ﻥﻮﻠﺼﺤﻳ ﺓﺮﺟﻷﺍ ﺕﺍﺭﺎﻴﺳ ﻲﻘﺋﺎﺳ
+Call a taxi	ﺓﺮﺟﺃ ﺓﺭﺎﻴﺴﺑ ﻞﺼﺗﺍ
+{FF4444}No cheating{FFFFFF}: no hacks, aimbots, mod menus or speed / fly mods.	{FF4444}ﺶﻐﻟﺍ ﻉﻮﻨﻤﻣ{FFFFFF}: ﻥﺍﺮﻴﻃ/ﺔﻋﺮﺳ ﺕﻼﻳﺪﻌﺗ ﻭﺃ ﻞﻳﺪﻌﺗ ﻢﺋﺍﻮﻗ ﻭﺃ ﺔﻴﻟﺁ ﺐﻳﻮﺼﺗ ﺞﻣﺍﺮﺑ ﻭﺃ ﺕﺎﻗﺍﺮﺘﺧﺍ ﺪﺟﻮﻳ ﻻ.
+{FF4444}No NSFW{FFFFFF}: no adult names, chat, skins or pictures.	{FF4444}ﺪﺟﻮﻳ ﻻ NSFW{FFFFFF}: ﺭﻮﺻ ﻭﺃ ﺮﻫﺎﻈﻣ ﻭﺃ ﺔﺷﺩﺭﺩ ﻭﺃ ﻦﻴﻐﻟﺎﺒﻠﻟ ﺀﺎﻤﺳﺃ ﺪﺟﻮﺗ ﻻ.
+{FFFF00}Respect everyone{FFFFFF}: no insults, racism, threats or harassment.	{FFFF00}ﻊﻴﻤﺠﻟﺍ ﻡﺮﺘﺣﺍ{FFFFFF}: ﺕﺎﻘﻳﺎﻀﻤﻟﺍ ﻭﺃ ﺕﺍﺪﻳﺪﻬﺘﻟﺍ ﻭﺃ ﺔﻳﺮﺼﻨﻌﻟﺍ ﻭﺃ ﺕﺎﻧﺎﻫﻹﺍ ﻉﻮﻨﻤﻣ.
+{FFFF00}No spam{FFFFFF}: no flooding the chat, caps lock or advertising other servers.	{FFFF00}ﺎﻬﻴﻓ ﺏﻮﻏﺮﻣ ﺮﻴﻏ ﻞﺋﺎﺳﺭ ﺪﺟﻮﺗ ﻻ{FFFFFF}: ﻯﺮﺧﺃ ﻡﺩﺍﻮﺧ ﻦﻋ ﻥﻼﻋﻹﺍ ﻭﺃ ﺓﺮﻴﺒﻜﻟﺍ ﻑﺮﺣﻷﺍ ﻞﻔﻗ ﻭﺃ ﺔﺷﺩﺭﺪﻟﺍ ﻕﺍﺮﻏﻹ ﻲﻋﺍﺩ ﻻ.
+{FFFF00}No bug abuse{FFFFFF}: report glitches to an {33CC55}admin{FFFFFF}, don't use them.	{FFFF00}ﺀﺎﻄﺧﻷﺍ ﻡﺍﺪﺨﺘﺳﺍ ﺓﺀﺎﺳﺇ ﻡﺪﻋ{FFFFFF}: ﻰﻟﺇ ﺀﺎﻄﺧﻷﺍ ﻦﻋ ﻍﻼﺑﻹﺎﺑ ﻢﻗ {33CC55}ﻑﺮﺸﻤﻟﺍ{FFFFFF}، ﺎﻬﻣﺪﺨﺘﺴﺗ ﻻﻭ.
+{FFFF00}No spawn killing{FFFFFF} or griefing other players at spawns and safe zones.	{FFFF00}ﺮﺸﻨﻟﺍ ﺪﻨﻋ ﻦﻴﺒﻋﻼﻟﺍ ﻞﺘﻗ ﻉﻮﻨﻤﻣ{FFFFFF} ﺔﻨﻣﻵﺍ ﻖﻃﺎﻨﻤﻟﺍﻭ ﺮﺸﻨﻟﺍ ﺕﺎﻴﻠﻤﻋ ﻲﻓ ﻦﻳﺮﺧﻵﺍ ﻦﻴﺒﻋﻼﻟﺍ ﺝﺎﻋﺯﺇ ﻭﺃ.
+{FFFF00}Don't pretend to be staff{FFFFFF} (admin, moderator or the bot {00BFFF}Broker{FFFFFF}).	{FFFF00}ﻒﻇﻮﻣ ﻚﻧﺄﺑ ﺮﻫﺎﻈﺘﺗ ﻻ{FFFFFF} (ﻲﻟﺁ ﺞﻣﺎﻧﺮﺑ ﻭﺃ ﻑﺮﺸﻣ ﻭﺃ ﻑﺮﺸﻣ {00BFFF}ﻂﻴﺳﻭ{FFFFFF}).
+{FFFF00}Keep the chat friendly{FFFFFF} and in a language the others understand.	{FFFF00}ﺔﻳﺩﻭ ﺔﺷﺩﺭﺪﻟﺍ ﻞﻌﺟﺍ{FFFFFF} ﻥﻭﺮﺧﻵﺍ ﺎﻬﻤﻬﻔﻳ ﺔﻐﻠﺑﻭ.
+{FFFF00}Listen to the {33CC55}admins{FFFF00} and {33CC55}moderators{FFFFFF}: a kick waits {FF9900}4:29{FFFFFF}, a ban is {FF4444}permanent{FFFFFF}.	{FFFF00}ﻰﻟﺇ ﻊﻤﺘﺳﺍ {33CC55}ﻦﻴﻓﺮﺸﻤﻟﺍ{FFFF00} ﻭ{33CC55}ﻦﻴﻓﺮﺸﻤﻟﺍ{FFFFFF}: ﺮﻈﺘﻨﺗ ﺔﻠﻛﺭ {FF9900}4:29{FFFFFF}، ﺮﻈﺤﻟﺍ ﻥﻮﻜﻳﻭ {FF4444}ﺎﻤﺋﺍﺩ{FFFFFF}.
+{33CC55}Have fun{FFFFFF} and play fair.	{33CC55}ﻊﺘﻤﺘﺳﺍ{FFFFFF} ﻒﻴﻈﻨﻟﺍ ﺐﻌﻠﻟﺎﺑ ﻊﺘﻤﺘﺳﺍﻭ.
+This server has no rules set.	.ﺓﺩﺪﺤﻣ ﺪﻋﺍﻮﻗ ﻪﻳﺪﻟ ﺲﻴﻟ ﻡﺩﺎﺨﻟﺍ ﺍﺬﻫ
+SAFE ZONE: %s - nobody can hurt you here, weapons are put away.	.ﺎﺒﻧﺎﺟ ﺔﺤﻠﺳﻷﺍ ﻊﺿﻭ ﻢﺘﻳ ،ﺎﻨﻫ ﻚﻳﺫﺆﻳ ﻥﺃ ﺪﺣﻷ ﻦﻜﻤﻳ ﻻ - %s :ﺔﻨﻣﻵﺍ ﺔﻘﻄﻨﻤﻟﺍ
+You left the safe zone - you can be hurt again.	.ﻯﺮﺧﺃ ﺓﺮﻣ ﻯﺫﺄﺘﺗ ﻥﺃ ﻦﻜﻤﻳ - ﺔﻨﻣﻵﺍ ﺔﻘﻄﻨﻤﻟﺍ ﺕﺭﺩﺎﻏ ﺪﻘﻟ
+SAFE ZONE	ﺔﻨﻣﻵﺍ ﺔﻘﻄﻨﻤﻟﺍ
+SAFE ZONE - weapons away, nobody can hurt you	ﻚﻳﺫﺆﻳ ﻥﺃ ﺪﺣﻷ ﻦﻜﻤﻳ ﻻ ،ﺔﺤﻠﺳﻷﺍ ﻦﻋ ﺍﺪﻴﻌﺑ - ﺔﻨﻣﻵﺍ ﺔﻘﻄﻨﻤﻟﺍ
+Class selection	ﺔﻘﺒﻄﻟﺍ ﺭﺎﻴﺘﺧﺍ
+/class: pick a gang, police or civilian (team + skin)	/class: ﺮﻬﻈﻣ + ﻖﻳﺮﻓ) ﺎﻴﻧﺪﻣ ﻭﺃ ﺔﻃﺮﺷ ﻭﺃ ﺔﺑﺎﺼﻋ ﺮﺘﺧﺍ)
+Turf wars	ﺐﺸﻌﻟﺍ ﺏﻭﺮﺣ
+gang zones on the radar, take them by standing in them (/turf, /teams)	(turf، /teams/) ﺎﻬﻴﻓ ﻑﻮﻗﻮﻟﺎﺑ ﺎﻫﺬﺧ ،ﺭﺍﺩﺍﺮﻟﺍ ﻰﻠﻋ ﺕﺎﺑﺎﺼﻌﻟﺍ ﻖﻃﺎﻨﻣ
+Races	ﺕﺎﻗﺎﺒﺴﻟﺍ
+/race queue: 14 players race a GTA SA race	/race ﻕﺎﺒﺳ ﻲﻓ ﻥﻮﻘﺑﺎﺴﺘﻳ ﺎﺒﻋﻻ 14 :ﺭﺎﻈﺘﻧﻻﺍ ﺔﻤﺋﺎﻗ GTA SA
+Derbies	ﻲﺑﺮﻳﺩ
+/derby: last car standing	/derby: ﺔﻔﻗﺍﻭ ﺓﺭﺎﻴﺳ ﺮﺧﺁ
+Deathmatch	ﺕﻮﻤﻟﺍ ﺓﺍﺭﺎﺒﻣ
+/dm: deathmatch zones with weapons	/dm: ﺔﺤﻠﺳﻷﺎﺑ ﺕﻮﻤﻟﺍ ﻖﻃﺎﻨﻣ
+/job: trucking, quarry, pizza, taxi, medic ...	/job: ﻦﻴﻔﻌﺴﻤﻟﺍﻭ ،ﺓﺮﺟﻷﺍ ﺕﺍﺭﺎﻴﺳﻭ ،ﺍﺰﺘﻴﺒﻟﺍﻭ ،ﺮﺟﺎﺤﻤﻟﺍﻭ ،ﺕﺎﻨﺣﺎﺸﻟﺎﺑ ﻞﻘﻨﻟﺍ ...
+3D text labels	ﺩﺎﻌﺑﻷﺍ ﺔﻴﺛﻼﺛ ﺔﻴﺼﻧ ﺕﺎﻴﻤﺴﺗ
+names floating over the starts	ﺕﺎﻳﺍﺪﺒﻟﺍ ﻕﻮﻓ ﻮﻔﻄﺗ ﺀﺎﻤﺳﺃ
+people standing at the job starts	ﻞﻤﻌﻟﺍ ﺔﻳﺍﺪﺑ ﻲﻓ ﻥﻮﻔﻘﻳ ﺱﺎﻨﻟﺍ
+Home Kit	ﻝﺰﻨﻤﻟﺍ ﻢﻘﻃ
+/create house <name>, /setup, /buyhouse, /edithouse, /edithouseinteriors (real GTA SA buildings + furniture)	/create ﻝﺰﻨﻣ <name>، /setup، /buyhouse، /edithouse، /edithouseinteriors (ﻲﻧﺎﺒﻣ GTA SA ﺙﺎﺛﻷﺍ + ﺔﻴﻘﻴﻘﺤﻟﺍ)
+Survival (DayZ)	(ﺰﻳﺍﺩ) ﺓﺎﻴﺤﻟﺍ ﺪﻴﻗ ﻰﻠﻋ ﺀﺎﻘﺒﻟﺍ
+/survival: thirst, loot crates, zombies at night (Sunset DayZ style)	/survival: ﻂﻤﻧ) ﻞﻴﻠﻟﺍ ﻲﻓ ﻲﺒﻣﻭﺰﻟﺍﻭ ،ﻢﺋﺎﻨﻐﻟﺍ ﻖﻳﺩﺎﻨﺻﻭ ،ﺶﻄﻌﻟﺍ Sunset DayZ)
+Cops and Robbers	ﺹﻮﺼﻠﻟﺍﻭ ﺔﻃﺮﺸﻟﺍ ﻝﺎﺟﺭ
+/cop or /robber: /rob, /arrest, /cuff, wanted stars, /hitlist, /placehit	/cop ﻭﺃ /robber: /rob، /arrest، /cuff، ﺔﺑﻮﻠﻄﻤﻟﺍ ﻡﻮﺠﻨﻟﺍ، /hitlist، /placehit
+Attack / Defend	ﻉﺎﻓﺪﻟﺍ / ﻡﻮﺠﻬﻟﺍ
+/ad: attackers take the base checkpoint, defenders hold it (5 min rounds, /vote, /spec)	/ad: ﺕﻻﻮﺟ ﻖﺋﺎﻗﺩ 5) ﻥﻮﻌﻓﺍﺪﻤﻟﺍ ﺎﻬﺑ ﻆﻔﺘﺤﻳﻭ ،ﺔﻴﺳﺎﺳﻷﺍ ﺶﻴﺘﻔﺘﻟﺍ ﺔﻄﻘﻧ ﻰﻠﻋ ﻥﻮﻟﻮﺘﺴﻳ ﻥﻮﻤﺟﺎﻬﻤﻟﺍ، /vote، /spec)
+Stunt freeroam	ﺓﺮﺣ ﺔﻠﻴﺣ
+/ramp, /jump, /chiliad, /lv, /sf, /ls, /n nitro, /fix, stunt bonus	/ramp، /jump، /chiliad، /lv، /sf، /ls، /n ﻭﺮﺘﻴﻧ، /fix، ﺓﺮﻴﺜﻣ ﺓﺄﻓﺎﻜﻣ
+Drift	ﻑﺍﺮﺠﻧﻻﺍ
+/drift: drift points + combo, /drifttop (RogueDrifterZ style)	/drift: ﺩﺮﺴﻟﺍﻭ ﺮﻳﺮﺤﺘﻟﺍ + ﻑﺍﺮﺠﻧﻻﺍ ﻁﺎﻘﻧ، /drifttop (ﻂﻤﻧ RogueDrifterZ)
+Timber (lumberjack)	(ﺏﺎﻄﺤﻟﺍ) ﺏﺎﺸﺧﻷﺍ
+/timber: cut trees with a chainsaw, load the logs in the pickup, /unloadtimber at the Timber Storage	/timber: ﺔﻨﺣﺎﺸﻟﺍ ﻲﻓ ﺭﺎﺠﺷﻷﺍ ﻉﻭﺬﺟ ﻞﻴﻤﺤﺗﻭ ،ﺭﺎﺸﻨﻤﻟﺎﺑ ﺭﺎﺠﺷﻷﺍ ﻊﻄﻗ، /unloadtimber ﺏﺎﺸﺧﻷﺍ ﻥﺰﺨﻣ ﻲﻓ
+That gamemode	ﺍﺬﻫ ﺔﺒﻌﻠﻟﺍ ﻊﺿﻭ
+%s is off on this server. Its host turns gamemodes on in MP Launcher > Add server > Gamemodes.	%s ﻲﻓ ﺏﺎﻌﻟﻷﺍ ﻉﺎﺿﻭﺃ ﻞﻴﻐﺸﺘﺑ ﻪﻔﻴﻀﻣ ﻡﻮﻘﻳ .ﻡﺩﺎﺨﻟﺍ ﺍﺬﻫ ﻰﻠﻋ ﻒﻗﻮﺘﻣ MP Launcher > ﺏﺎﻌﻟﻷﺍ ﻉﺎﺿﻭﺃ < ﻡﺩﺎﺧ ﺔﻓﺎﺿﺇ.
+Block menu cheats	ﺔﻤﺋﺎﻘﻟﺍ ﺶﻏ ﺮﻈﺣ
+Allow CheatMenu	ﺶﻐﻟﺍ ﺔﻤﺋﺎﻘﻟ ﺡﺎﻤﺴﻟﺍ
+AFK tag	AFK ﺔﻣﻼﻋ
+Show player ids	ﺐﻋﻼﻟﺍ ﺕﺎﻓﺮﻌﻣ ﺭﺎﻬﻇﺇ
+Only %s can change these settings.	.ﺕﺍﺩﺍﺪﻋﻹﺍ ﻩﺬﻫ ﺮﻴﻴﻐﺗ ﻂﻘﻓ %s ـﻟ ﻦﻜﻤﻳ
+the admin and moderators	ﻦﻴﻓﺮﺸﻤﻟﺍﻭ ﻑﺮﺸﻤﻟﺍ
+the server owner	ﻡﺩﺎﺨﻟﺍ ﻚﻟﺎﻣ
+The featured servers keep their gamemodes.	.ﺎﻬﺑ ﺔﺻﺎﺨﻟﺍ ﺐﻌﻠﻟﺍ ﻉﺎﺿﻭﺄﺑ ﺓﺰﻴﻤﻤﻟﺍ ﻡﺩﺍﻮﺨﻟﺍ ﻆﻔﺘﺤﺗ
+Join a server first.	.ﻻﻭﺃ ﻡﺩﺎﺨﻟﺍ ﻰﻟﺇ ﻢﻀﻧﺍ
+This server still runs MP %s: settings are view only until it updates to 3.39 (the 24/7 servers update by themselves).	.(ﺎﻬﺴﻔﻨﺑ ﻉﻮﺒﺳﻷﺍ ﻡﺎﻳﺃ ﻝﺍﻮﻃ ﺔﻋﺎﺳ 24 ﺭﺍﺪﻣ ﻰﻠﻋ ﻡﺩﺍﻮﺨﻟﺍ ﺚﻳﺪﺤﺗ ﻢﺘﻳ) 3.39 ﻰﻟﺇ ﺎﻬﺜﻳﺪﺤﺗ ﻢﺘﻳ ﻰﺘﺣ ﻂﻘﻓ ﺕﺍﺩﺍﺪﻋﻹﺍ ﺽﺮﻋ ﻢﺘﻳ :MP %s ﻞﻐﺸﻳ ﻡﺩﺎﺨﻟﺍ ﺍﺬﻫ ﻝﺍﺰﻳ ﻻ
+(old)	(ﻢﻳﺪﻗ)
+Setting	ﺩﺍﺪﻋﻹﺍ
+State	ﺔﻟﻭﺪﻟﺍ
+{FFFFFF}Gamemode: %s\t%s\n	{FFFFFF}ﺔﺒﻌﻠﻟﺍ ﻊﺿﻭ: %s\t%s\n
+{FFFFFF}Gamemode: %s	{FFFFFF}ﺔﺒﻌﻠﻟﺍ ﻊﺿﻭ: %s
+{FFFFFF}Permission: %s\t%s\n	{FFFFFF}ﻥﺫﻹﺍ: %s\t%s\n
+{FFFFFF}Permission: %s	{FFFFFF}ﻥﺫﻹﺍ: %s
+{FFFFFF}Rules window\t%s\n	{FFFFFF}ﺪﻋﺍﻮﻘﻟﺍ ﺓﺬﻓﺎﻧ\t%s\n
+{FFFFFF}Rules window	{FFFFFF}ﺪﻋﺍﻮﻘﻟﺍ ﺓﺬﻓﺎﻧ
+{FFFFFF}Server settings %s	{FFFFFF}ﻡﺩﺎﺨﻟﺍ ﺕﺍﺩﺍﺪﻋﺇ %s
+{33CC55}(you can change them)	{33CC55}(ﺎﻫﺮﻴﻴﻐﺗ ﻚﻨﻜﻤﻳ)
+{AAAAAA}(view only)	{AAAAAA}(ﻂﻘﻓ ﺽﺮﻌﻠﻟ)
+Name: %s. moderator.txt: %s.	.%s. moderator.txt: %s :ﻢﺳﻻﺍ
+not found (put it in the MP folder)	(MP ﺪﻠﺠﻣ ﻲﻓ ﻪﻌﺿ) ﻪﻴﻠﻋ ﺭﻮﺜﻌﻟﺍ ﻢﺘﻳ ﻢﻟ
+Not on a server right now.	.ﻥﻵﺍ ﻡﺩﺎﺨﻟﺍ ﻰﻠﻋ ﺲﻴﻟ
+Server \"%s\" runs MP %s: you are %s.	.%s ﺖﻧﺃ :MP %s ﻞﻴﻐﺸﺘﺑ \"%s\" ﻡﺩﺎﺨﻟﺍ ﻡﻮﻘﻳ
+[MOD] (moderator permissions)	[MOD] (ﻑﺮﺸﻤﻟﺍ ﺕﺎﻧﻭﺫﺃ)
+NOT [MOD]	[MOD] ﺲﻴﻟ
+This copy of the server is older than MP 3.40.1 and doesn't know the Trunk key. It is hosted by an old phone / a VPS that didn't update - rejoin when it runs 3.50.1.	.3.50.1 ﻪﻠﻴﻐﺸﺗ ﺪﻨﻋ ﻯﺮﺧﺃ ﺓﺮﻣ ﻢﻀﻧﺍ - ﻪﺜﻳﺪﺤﺗ ﻢﺘﻳ ﻢﻟ VPS ﻡﺩﺎﺧ / ﻢﻳﺪﻗ ﻒﺗﺎﻫ ﺔﻄﺳﺍﻮﺑ ﻪﺘﻓﺎﻀﺘﺳﺍ ﻢﺘﻳ .Trunk ﺡﺎﺘﻔﻣ ﻑﺮﻌﺗ ﻻﻭ MP 3.40.1 ﻦﻣ ﻡﺪﻗﺃ ﻡﺩﺎﺨﻟﺍ ﻦﻣ ﺔﺨﺴﻨﻟﺍ ﻩﺬﻫ
+Rejoin the server (Disconnect, then Connect) - the key is sent at the join.	.ﻡﺎﻤﻀﻧﻻﺍ ﺪﻨﻋ ﺡﺎﺘﻔﻤﻟﺍ ﻝﺎﺳﺭﺇ ﻢﺘﻳ - (ﻝﺎﺼﺗﻻﺍ ﻢﺛ ،ﻝﺎﺼﺗﻻﺍ ﻊﻄﻗ) ﻡﺩﺎﺨﻟﺍ ﻰﻟﺇ ﻡﺎﻤﻀﻧﻻﺍ ﺓﺩﺎﻋﺇ
+Only [ADMIN], [MOD] or the host of this server can switch the cheats.	.ﺶﻐﻟﺍ ﺕﺎﻴﻠﻤﻋ ﻞﻳﺪﺒﺗ ﻡﺩﺎﺨﻟﺍ ﺍﺬﻫ ﻒﻴﻀﻣ ﻭﺃ [MOD] ﻭﺃ [ADMIN] ـﻟ ﻂﻘﻓ ﻦﻜﻤﻳ
+MP cheats are %s. Use /cheats on or /cheats off (the CLEO menu + Cheat Menu are always blocked).	.(ﺎﻤﺋﺍﺩ ﺓﺭﻮﻈﺤﻣ ﺶﻐﻟﺍ ﺔﻤﺋﺎﻗ + CLEO ﺔﻤﺋﺎﻗ) ﻑﺎﻘﻳﻺﻟ cheats/ ﻭﺃ ﻞﻴﻐﺸﺘﻠﻟ cheats/ ﻡﺪﺨﺘﺳﺍ .%s ﻲﻫ MP ﺶﻏ
+*** MP cheats disabled for everyone on your server.	.ﻚﺑ ﺹﺎﺨﻟﺍ ﻡﺩﺎﺨﻟﺍ ﻰﻠﻋ ﻊﻴﻤﺠﻠﻟ MP ﺶﻏ ﻞﻴﻄﻌﺗ ﻢﺗ ***
+*** MP cheats allowed again on your server.	.ﻚﺑ ﺹﺎﺨﻟﺍ ﻡﺩﺎﺨﻟﺍ ﻰﻠﻋ ﻯﺮﺧﺃ ﺓﺮﻣ MP ﺶﻐﺑ ﺢﻤﺴﻳ ***
+Moderator: you are [MOD] %s here (kick / ban / mute / freeze: MP menu > Players, server settings: /settings).	.(settings/ :ﻡﺩﺎﺨﻟﺍ ﺕﺍﺩﺍﺪﻋﺇ ،ﻥﻮﺒﻋﻼﻟﺍ < MP ﺔﻤﺋﺎﻗ :ﺪﻴﻤﺠﺗ / ﺕﻮﺼﻟﺍ ﻢﺘﻛ / ﺮﻈﺣ / ﺔﻠﻛﺭ) ﺎﻨﻫ MOD] %s] ﺖﻧﺃ :ﻑﺮﺸﻤﻟﺍ
+moderator.txt: the MP moderator key was read, but this server didn't give [MOD] (it runs an older MP). Type /modcheck to see why.	moderator.txt: ﻂﻴﺳﻭ ﺡﺎﺘﻔﻣ ﺓﺀﺍﺮﻗ ﺖﻤﺗ MP، ﺮﻓﻮﻳ ﻢﻟ ﻡﺩﺎﺨﻟﺍ ﺍﺬﻫ ﻦﻜﻟ [MOD] (ﻞﻐﺸﻳ MP ﺐﺘﻛﺍ .(ﻡﺪﻗﺃ /modcheck ﺐﺒﺴﻟﺍ ﺔﻓﺮﻌﻤﻟ.
+moderator.txt: this key is not the MP moderator key and this server's owner hasn't listed it - ask for the MP moderator key.	moderator.txt: ﻂﻴﺳﻭ ﺡﺎﺘﻔﻣ ﺲﻴﻟ ﺡﺎﺘﻔﻤﻟﺍ ﺍﺬﻫ MP ﻂﻴﺳﻭ ﺡﺎﺘﻔﻣ ﺐﻠﻃﺍ - ﻪﺟﺍﺭﺩﺈﺑ ﻡﺩﺎﺨﻟﺍ ﺍﺬﻫ ﻚﻟﺎﻣ ﻢﻘﻳ ﻢﻟﻭ MP.
+Nothing to redo.	.ﺓﺩﺎﻋﻹ ﺀﻲﺷ ﻻ
+Nothing to undo.	.ﻪﻨﻋ ﻊﺟﺍﺮﺘﻠﻟ ﺀﻲﺷ ﺪﺟﻮﻳ ﻻ
+Could not save files/MP/tde/projects/%s.mptd	files/MP/tde/projects/%s.mptd ﻆﻔﺣ ﻦﻜﻤﻳ ﻻ
+Saved files/MP/tde/projects/%s.mptd (%d textdraws). Add it to your server: Add server > Plugins > Textdraw.	.ﺺﻨﻟﺍ ﻢﺳﺭ < ﺔﻴﻓﺎﺿﻹﺍ ﺕﺎﻧﻮﻜﻤﻟﺍ < ﺎﻣﺩﺎﺧ ﻒﺿﺃ :ﻚﻣﺩﺎﺧ ﻰﻟﺇ ﻪﻔﺿﺃ .(ﺔﻴﺼﻧ ﺕﺎﻣﻮﺳﺭ files/MP/tde/projects/%s.mptd (%d ﻆﻔﺣ ﻢﺗ
+New project %s.	.%s ﺪﻳﺪﺟ ﻉﻭﺮﺸﻣ
+Editing %s. Tap a textdraw to select it, drag to move. /tde close (saves) - /tde help.	.ﺓﺪﻋﺎﺴﻣ tde/ - (ﻆﻔﺣ) ﻕﻼﻏﺇ tde/ .ﻙﺮﺤﺘﻠﻟ ﻪﺒﺤﺳﺍ ﻢﺛ ،ﻩﺪﻳﺪﺤﺘﻟ ﺺﻨﻟﺍ ﻢﺳﺭ ﻰﻠﻋ ﻂﻐﺿﺍ .%s ﺮﻳﺮﺤﺘﻟﺍ
+Editor closed (saved %s.mptd).	.(%s.mptd ﻆﻔﺤﻟﺍ ﻢﺗ) ﺭﺮﺤﻤﻟﺍ ﻕﻼﻏﺇ ﻢﺗ
+1024 textdraws is the limit.	1024 textdraws ﻰﺼﻗﻷﺍ ﺪﺤﻟﺍ ﻮﻫ.
+Moved to the depot (Depo restores it).	.(Depo ﻩﺪﻴﻌﺘﺴﻳ) ﻉﺩﻮﺘﺴﻤﻟﺍ ﻰﻟﺇ ﻪﻠﻘﻧ ﻢﺗ
+Sprite	ﺖﻳﺍﺮﺒﺳ
+Model	ﺝﺫﻮﻤﻧ
+Text	ﺺﻧ
+No textdraws yet: tap New.	.ﺪﻳﺪﺟ ﻰﻠﻋ ﻂﻐﺿﺍ :ﻥﻵﺍ ﻰﺘﺣ ﺔﻴﺼﻧ ﺕﺎﻣﻮﺳﺭ ﺪﺟﻮﺗ ﻻ
+Textdraw	ﺺﻨﻟﺍ ﻢﺳﺭ
+Position	ﻒﻗﻮﻤﻟﺍ
+Textdraws	ﺺﻨﻟﺍ ﺕﺎﻣﻮﺳﺭ
+Textdraw restored.	.ﺺﻨﻟﺍ ﻢﺳﺭ ﺓﺩﺎﻌﺘﺳﺍ ﺖﻤﺗ
+The depot is empty (deleted textdraws go here).	.(ﺎﻨﻫ ﺐﻫﺬﺗ ﺔﻓﻭﺬﺤﻤﻟﺍ ﺹﻮﺼﻨﻟﺍ) ﻍﺭﺎﻓ ﻉﺩﻮﺘﺴﻤﻟﺍ
+Deleted textdraw\tText\tDeleted\n	ﻑﻭﺬﺤﻣ\tﺺﻨﻟﺍ\tﻑﻭﺬﺤﻤﻟﺍ ﺺﻨﻟﺍ ﻢﺳﺭ\n
+Deleted textdraw	ﻑﻭﺬﺤﻤﻟﺍ ﺺﻨﻟﺍ ﻢﺳﺭ
+Deleted	ﻑﺬﺤﻟﺍ ﻢﺗ
+Depo - tap to restore	ﺓﺩﺎﻌﺘﺳﻼﻟ ﺮﻘﻧﺍ - ﻮﺒﻳﺩ
+Restore	ﺓﺩﺎﻌﺘﺳﺍ
+Sprite browser (font 4)	(4 ﻂﺨﻟﺍ) ﺖﻳﺍﺮﺒﺳ ﺢﻔﺼﺘﻣ
+Use	ﻡﺪﺨﺘﺳﺍ
+New textdraw	ﺪﻳﺪﺟ ﺺﻧ ﻢﺳﺭ
+Model id (skins 0-311, objects, vehicles 400-611). Now: %d	%d :ﻥﻵﺍ .(611-400 ﺕﺎﺒﻛﺮﻤﻟﺍ ،ﺀﺎﻴﺷﻷﺍ ،311-0 ﺢﻄﺳﻷﺍ) ﺝﺫﻮﻤﻨﻟﺍ ﻑﺮﻌﻣ
+Preview model	ﺔﻨﻳﺎﻌﻤﻟﺍ ﺝﺫﻮﻤﻧ
+Set	ﻦﻴﻴﻌﺗ
+Rotation X Y Z and zoom. Now: %.0f %.0f %.0f %.2f	%.0f %.0f %.0f %.2f :ﻥﻵﺍ .ﺮﻴﺒﻜﺘﻟﺍﻭ X Y Z ﻥﺍﺭﻭﺩ
+Preview rotation	ﺏﻭﺎﻨﺘﻟﺍ ﺔﻨﻳﺎﻌﻣ
+Vehicle colours: colour1 colour2 (-1 = random). Now: %d %d	%d %d :ﻥﻵﺍ .(ﻲﺋﺍﻮﺸﻋ = color1 color2 (-1 :ﺔﺒﻛﺮﻤﻟﺍ ﻥﺍﻮﻟﺃ
+Preview vehicle colours	ﺓﺭﺎﻴﺴﻟﺍ ﻥﺍﻮﻟﺃ ﺔﻨﻳﺎﻌﻣ
+Preview model (font 5)	(5 ﻂﺨﻟﺍ) ﺔﻨﻳﺎﻌﻤﻟﺍ ﺝﺫﻮﻤﻧ
+Model id\nRotation and zoom\nVehicle colours	ﺯﺍﺮﻄﻟﺍ ﻑﺮﻌﻣ\nﺮﻴﻐﺼﺘﻟﺍ/ﺮﻴﺒﻜﺘﻟﺍﻭ ﺮﻳﻭﺪﺘﻟﺍ\nﺓﺭﺎﻴﺴﻟﺍ ﻥﺍﻮﻟﺃ
+Model id	ﺝﺫﻮﻤﻨﻟﺍ ﻑﺮﻌﻣ
+Rotation and zoom	ﺮﻴﺒﻜﺘﻟﺍﻭ ﺮﻳﻭﺪﺘﻟﺍ
+Vehicle colours	ﺔﺒﻛﺮﻤﻟﺍ ﻥﺍﻮﻟﺃ
+Edit	ﺮﻳﺮﺤﺗ
+That project is open: open another one first.	.ﻻﻭﺃ ﺮﺧﺁ ﺍﺪﺣﺍﻭ ﺢﺘﻓﺍ :ﺡﻮﺘﻔﻣ ﻉﻭﺮﺸﻤﻟﺍ ﺍﺬﻫ
+Deleted %s.mptd.	.%s.mptd ﻑﺬﺣ ﻢﺗ
+Opened %s (%d textdraws).	.(ﺔﻴﺼﻧ ﺕﺎﻣﻮﺳﺭ %s (%d ﺢﺘﻓ ﻢﺗ
+%s.mptd is not an MP textdraw file.	%s.mptd ﻲﺼﻧ ﻢﺳﺭ ﻒﻠﻣ ﺲﻴﻟ MP.
+No textdraws found in that file.	.ﻒﻠﻤﻟﺍ ﺍﺬﻫ ﻲﻓ textdraws ﻰﻠﻋ ﺭﻮﺜﻌﻟﺍ ﻢﺘﻳ ﻢﻟ
+Imported %d textdraws.	.ﺔﻴﺼﻨﻟﺍ ﺕﺎﻣﻮﺳﺮﻟﺍ ﻦﻣ %d ﺩﺍﺮﻴﺘﺳﺍ ﻢﺗ
+New project name	ﺪﻳﺪﺠﻟﺍ ﻉﻭﺮﺸﻤﻟﺍ ﻢﺳﺍ
+No saved projects yet.	.ﻥﻵﺍ ﻰﺘﺣ ﺔﻇﻮﻔﺤﻣ ﻊﻳﺭﺎﺸﻣ ﺪﺟﻮﺗ ﻻ
+Open project	ﺡﻮﺘﻔﻣ ﻉﻭﺮﺸﻣ
+Delete project	ﻉﻭﺮﺸﻤﻟﺍ ﻑﺬﺣ
+Open	ﺡﻮﺘﻔﻣ
+Save as	ﻢﺳﺎﺑ ﻆﻔﺣ
+Exported files/MP/tde/export/%s%s.pwn	files/MP/tde/export/%s%s.pwn ﺮﻳﺪﺼﺘﻟﺍ ﻢﺗ
+Could not write %s	%s ﺔﺑﺎﺘﻜﻟﺍ ﻦﻜﻤﻳ ﻻ
+Put a .mptd, .pwn or .txt export in files/MP/tde/import/ first.	.ﻻﻭﺃ /files/MP/tde/import ﻲﻓ txt. ﻭﺃ pwn. ﻭﺃ mptd. ﺮﻳﺪﺼﺗ ﻊﺿ
+Import textdraws	ﺺﻨﻟﺍ ﺕﺎﻣﻮﺳﺭ ﺩﺍﺮﻴﺘﺳﺍ
+Import	ﺩﺍﺮﻴﺘﺳﺍ
+Projects - %s%s	%s%s - ﻊﻳﺭﺎﺸﻤﻟﺍ
+New project\nOpen project\nSave\nSave as\nExport Pawn (SA-MP)\nExport Pawn (open.mp)\nDelete project\nImport (.mptd / .pwn / .txt)\nClose the editor	ﺪﻳﺪﺟ ﻉﻭﺮﺸﻣ\nﺎﻋﻭﺮﺸﻣ ﺢﺘﻓﺍ\nﻆﻔﺣ\nﻢﺳﺎﺑ ﻆﻔﺣ\n(SA-MP) ﻕﺪﻴﺒﻟﺍ ﺮﻳﺪﺼﺗ\n(open.mp) ﻕﺪﻴﺒﻟﺍ ﺮﻳﺪﺼﺗ\nﻉﻭﺮﺸﻤﻟﺍ ﻑﺬﺣ\n(mptd / .pwn / .txt.) ﺩﺍﺮﻴﺘﺳﺍ\nﺭﺮﺤﻤﻟﺍ ﻖﻠﻏﺃ
+New project	ﺪﻳﺪﺟ ﻉﻭﺮﺸﻣ
+Export Pawn (SA-MP)	(SA-MP) ﻕﺪﻴﺒﻟﺍ ﺮﻳﺪﺼﺗ
+Export Pawn (open.mp)	(open.mp) ﻕﺪﻴﺒﻟﺍ ﺮﻳﺪﺼﺗ
+Import (.mptd / .pwn / .txt)	(mptd / .pwn / .txt.) ﺩﺍﺮﻴﺘﺳﺍ
+Close the editor	ﺭﺮﺤﻤﻟﺍ ﻖﻠﻏﺃ
+Global textdraw array	ﺔﻴﻤﻟﺎﻌﻟﺍ ﺺﻨﻟﺍ ﻢﺳﺭ ﺔﻓﻮﻔﺼﻣ
+Player textdraw array	ﻞﻐﺸﻤﻟﺎﺑ ﺔﺻﺎﺨﻟﺍ ﺺﻨﻟﺍ ﻢﺳﺭ ﺔﻓﻮﻔﺼﻣ
+Own variable (empty = array)	(ﻒﻴﻔﺻ = ﻍﺭﺎﻓ) ﺹﺎﺨﻟﺍ ﺮﻴﻐﺘﻤﻟﺍ
+Grid snap %s.	.%s ﺔﻜﺒﺸﻟﺍ ﻕﺎﺒﻄﻧﺍ
+on (5 px)	(ﻞﺴﻜﻴﺑ 5) ﻰﻠﻋ
+Fine drag %s.	.%s ﺪﻴﺟ ﺐﺤﺳ
+on (1/4 speed)	(ﺔﻋﺮﺳ 1/4) ﻰﻠﻋ
+Global array name\t%s\nPlayer array name\t%s\nThis textdraw's own variable\t%s\nGrid snap\t%s\nFine drag\t%s\nHide the tool bar (tap the corner to show)\t%s	\t%sﺔﻣﺎﻌﻟﺍ ﺔﻓﻮﻔﺼﻤﻟﺍ ﻢﺳﺍ\n\t%sﻞﻐﺸﻤﻟﺍ ﺔﻓﻮﻔﺼﻣ ﻢﺳﺍ\n\t%sﺍﺬﻫ ﺺﻨﻟﺍ ﻢﺳﺮﺑ ﺹﺎﺨﻟﺍ ﺮﻴﻐﺘﻤﻟﺍ\n\t%sﺔﻜﺒﺸﻟﺍ ﺔﻄﻘﻟ\n\t%sﻖﻴﻗﺪﻟﺍ ﺐﺤﺴﻟﺍ\n\t%s(ﺭﺎﻬﻇﻺﻟ ﺔﻳﻭﺍﺰﻟﺍ ﻰﻠﻋ ﻂﻐﺿﺍ) ﺕﺍﻭﺩﻷﺍ ﻂﻳﺮﺷ ﺀﺎﻔﺧﺇ
+Global array name	ﺔﻴﻤﻟﺎﻌﻟﺍ ﺔﻓﻮﻔﺼﻤﻟﺍ ﻢﺳﺍ
+Player array name	ﻦﻴﺒﻋﻼﻟﺍ ﺔﻋﻮﻤﺠﻣ ﻢﺳﺍ
+This textdraw's own variable	ﺍﺬﻫ ﺺﻨﻟﺍ ﻢﺳﺮﺑ ﺹﺎﺨﻟﺍ ﺮﻴﻐﺘﻤﻟﺍ
+Grid snap	ﺔﻜﺒﺸﻟﺍ ﺔﺌﺟﺎﻔﻤﻟﺍ
+Fine drag	ﺔﻣﺍﺮﻏ ﺐﺤﺴﻟﺍ
+Hide the tool bar (tap the corner to show)	(ﻩﺭﺎﻬﻇﻹ ﺔﻳﻭﺍﺰﻟﺍ ﻰﻠﻋ ﻂﻐﺿﺍ) ﺕﺍﻭﺩﻷﺍ ﻂﻳﺮﺷ ﺀﺎﻔﺧﺇ
+On	ﻰﻠﻋ
+Off	ﻑﺎﻘﻳﺇ
+Change	ﺮﻴﻴﻐﺘﻟﺍ
+Select a textdraw first (tap it, or List).	.(ﺔﻤﺋﺎﻗ ﻭﺃ ،ﻪﻴﻠﻋ ﻂﻐﺿﺍ) ﻻﻭﺃ ﺺﻧ ﻢﺳﺭ ﺩﺪﺣ
+Textdraw text (~n~ new line, ~r~ red, _ = space)	(ﺔﻓﺎﺴﻣ = _ ،ﺮﻤﺣﺃ ~r~ ،ﺪﻳﺪﺟ ﺮﻄﺳ ~n~) ﺺﻨﻟﺍ ﻢﺳﺭ ﺺﻧ
+Textsize	ﺺﻨﻟﺍ ﻢﺠﺣ
+Lettersize	ﻑﻭﺮﺤﻟﺍ ﻢﺠﺣ
+%s%s  |  #%d/%d %s  |  %s: pos %.1f, %.1f  letter %.3f, %.3f  size %.1f, %.1f  font %d  colour %08X	%s%s |  #%d/%d %s |  %s: ﻊﺿﻮﻤﻟﺍ %.1f، %.1f ﻑﺮﺤﻟﺍ %.3f، %.3f ﻢﺠﺤﻟﺍ %.1f، %.1f ﻂﺨﻟﺍ %d ﻥﻮﻠﻟﺍ %08X
+%s%s  |  %d textdraws  |  tap New to add one, tap a textdraw to select it	%s%s |  %d ﻩﺪﻳﺪﺤﺘﻟ ﺺﻨﻟﺍ ﻢﺳﺭ ﻰﻠﻋ ﻂﻐﺿﺍ ﻢﺛ ،ﺪﺣﺍﻭ ﺔﻓﺎﺿﻹ "ﺪﻳﺪﺟ" ﻰﻠﻋ ﻂﻐﺿﺍ  | ﺔﻴﺼﻧ ﺕﺎﻣﻮﺳﺭ
+Color	ﻥﻮﻠﻟﺍ
+Background / outline colour	ﻲﻠﻴﺼﻔﺘﻟﺍ ﻂﻄﺨﻤﻟﺍ / ﺔﻴﻔﻠﺨﻟﺍ ﻥﻮﻟ
+Box colour	ﻕﻭﺪﻨﺼﻟﺍ ﻥﻮﻟ
+Colour RRGGBBAA (hex)	(ﻱﺮﺸﻋ ﺖﺳ) RRGGBBAA ﻥﻮﻠﻟﺍ
+/tde [project] opens the editor, /tde close, /tde save, /tde new <name>, /tde open <name>, /tde export [openmp].	/tde [ﺭﺮﺤﻤﻟﺍ ﺢﺘﻔﻳ [ﻉﻭﺮﺸﻣ، /tde ﻕﻼﻏﺇ، /tde ﻆﻔﺣ، /tde <name> ﺪﻳﺪﺟ، /tde ﺢﺘﻓ <name>، /tde ﺮﻳﺪﺼﺗ [openmp].
+Files: files/MP/tde/projects/*.mptd - put it on your server with Add server > Plugins > Textdraw > Import file.	.ﻒﻠﻣ ﺩﺍﺮﻴﺘﺳﺍ < ﺺﻨﻟﺍ ﻢﺳﺭ < ﺔﻴﻓﺎﺿﻹﺍ ﺕﺎﻧﻮﻜﻤﻟﺍ < ﻡﺩﺎﺧ ﺔﻓﺎﺿﺇ ﻡﺍﺪﺨﺘﺳﺎﺑ ﻚﺑ ﺹﺎﺨﻟﺍ ﻡﺩﺎﺨﻟﺍ ﻰﻠﻋ ﻪﻌﺿ - files/MP/tde/projects/*.mptd :ﺕﺎﻔﻠﻤﻟﺍ
+Open the editor first (/tde).	.(tde/) ﻻﻭﺃ ﺭﺮﺤﻤﻟﺍ ﺢﺘﻓﺍ
+Model %d	%d ﻞﻳﺩﻮﻤﻟﺍ
+Could not read the file.	.ﻒﻠﻤﻟﺍ ﺓﺀﺍﺮﻗ ﻦﻜﻤﻳ ﻻ
+Not a textdraw file (	) ﻲﺼﻧ ﻢﺳﺭ ﻒﻠﻣ ﺲﻴﻟ
+Could not write to 	 ﻝ ﺔﺑﺎﺘﻜﻟﺍ ﻦﻜﻤﻳ ﻻ
+%s.mptd added to files/MP/%s/ (%d textdraws)%s	%s(ﺔﻴﺼﻧ ﺕﺎﻣﻮﺳﺭ files/MP/%s/ (%d ﻰﻟﺇ %s.mptd ﺔﻓﺎﺿﺇ ﺖﻤﺗ
+ - live on your server now	ﻥﻵﺍ ﻚﺑ ﺹﺎﺨﻟﺍ ﻡﺩﺎﺨﻟﺍ ﻰﻠﻋ ﺮﺷﺎﺒﻣ - 
+/sdcard/Download/MP Textdraws	/sdcard/ﺔﻴﺼﻧ ﺕﺎﻣﻮﺳﺭ/ﻞﻳﺰﻨﺗ MP
+/sdcard/Download	/sdcard/ﻞﻳﺰﻨﺗ
+Plugins	ﺕﺎﻓﺎﺿﻹﺍ
+Files for your custom server go to files/MP/%s/.	./files/MP/%s ﻰﻟﺇ ﺺﺼﺨﻤﻟﺍ ﻚﻣﺩﺎﺨﺑ ﺔﺻﺎﺨﻟﺍ ﺕﺎﻔﻠﻤﻟﺍ ﻰﻟﺇ ﻞﻘﺘﻧﺍ
+This plugin type is not available yet.	.ﺪﻌﺑ ﺮﻓﻮﺘﻣ ﺮﻴﻏ ﺪﻋﺎﺴﻤﻟﺍ ﺞﻣﺎﻧﺮﺒﻟﺍ ﻦﻣ ﻉﻮﻨﻟﺍ ﺍﺬﻫ
+Textdraw: a .mptd saved by /tde (in game) or the MP Textdraw Editor app. Every player on your server sees them.	Textdraw: ﻒﻠﻣ .mptd ﺔﻄﺳﺍﻮﺑ ﻅﻮﻔﺤﻣ /tde (ﻖﻴﺒﻄﺗ ﻭﺃ (ﺔﺒﻌﻠﻟﺍ ﻲﻓ MP Textdraw Editor. ﻚﺑ ﺹﺎﺨﻟﺍ ﻡﺩﺎﺨﻟﺍ ﻰﻠﻋ ﺐﻋﻻ ﻞﻛ ﺎﻫﺍﺮﻳ.
+Import file	ﻒﻠﻤﻟﺍ ﺩﺍﺮﻴﺘﺳﺍ
+No .mptd files found. Save one with /tde, or put it in Download/MP Textdraws or files/MP/import/.	./files/MP/import ﻭﺃ Download/MP Textdraws ﻲﻓ ﻪﻌﺿ ﻭﺃ ،tde/ ﻡﺍﺪﺨﺘﺳﺎﺑ ﺍﺪﺣﺍﻭ ﻆﻔﺣﺍ .mptd. ﺕﺎﻔﻠﻣ ﻰﻠﻋ ﺭﻮﺜﻌﻟﺍ ﻢﺘﻳ ﻢﻟ
+Import a textdraw file	textdraw ﻒﻠﻣ ﺩﺍﺮﻴﺘﺳﺍ
+No textdraw files on this server yet.	.ﻥﻵﺍ ﻰﺘﺣ ﻡﺩﺎﺨﻟﺍ ﺍﺬﻫ ﻰﻠﻋ textdraw ﺕﺎﻔﻠﻣ ﺪﺟﻮﺗ ﻻ
+Remove	ﺔﻟﺍﺯﺇ
+Make one: /tde in game (files/MP/tde/projects/), or the MP Textdraw Editor app.	.MP Textdraw Editor ﻖﻴﺒﻄﺗ ﻭﺃ ,(/files/MP/tde/projects) ﺔﺒﻌﻠﻟﺍ ﻲﻓ tde/ :ﺓﺪﺣﺍﻭ ﺊﺸﻧﺃ
+Birch Tree	ﻻﻮﺘﺒﻟﺍ ﺓﺮﺠﺷ
+Oak Tree	ﻁﻮﻠﺒﻟﺍ ﺓﺮﺠﺷ
+Yew Tree	ﺱﻮﺴﻘﻄﻟﺍ ﺓﺮﺠﺷ
+Xp	ﻲﺑ ﺲﻛﺇ
+Sold	ﻊﻴﺒﻟﺍ ﻢﺗ
+Trees	ﺭﺎﺠﺷﻷﺍ
+{FFA500}LUMBERJACK: {FFFFFF}You quit the Timber job. Your paycheck stays ($%.2f, /mysalary).	{FFA500}LUMBERJACK: {FFFFFF}ﻚﺒﺗﺍﺭ ﻰﻘﺒﻳ .ﺏﺎﺸﺧﻷﺍ ﺔﻔﻴﻇﻭ ﺖﻛﺮﺗ ﺪﻘﻟ ($%.2f، /mysalary).
+{FFA500}JOBINFO: {FFFFFF}The pickup is full (%d/%d). Drive to the Timber Storage (red marker) and /unloadtimber.	{FFA500}ﺔﻔﻴﻇﻮﻟﺍ ﺕﺎﻣﻮﻠﻌﻣ: {FFFFFF}ﺊﻠﺘﻤﻣ ﻁﺎﻘﺘﻟﻻﺍ (%d/%d). ﻭ (ﺀﺍﺮﻤﺣ ﺔﻣﻼﻋ) ﺏﺎﺸﺧﻷﺍ ﻥﺰﺨﻣ ﻰﻟﺇ ﺓﺩﺎﻴﻘﻟﺎﺑ ﻢﻗ/unloadtimber.
+{FFA500}JOBINFO: {FFFFFF}Mission trees done. Bring the %d timber to the Timber Storage and /unloadtimber.	{FFA500}JOBINFO: {FFFFFF}ﺐﺸﺨﻟﺍ ﺮﻀﺣﺃ .ﻡﺎﻬﻤﻟﺍ ﺓﺮﺠﺷ ﻦﻣ ﺀﺎﻬﺘﻧﻻﺍ ﻢﺗ %d ﻭ ﺏﺎﺸﺧﻷﺍ ﻥﺰﺨﻣ ﻰﻟﺇ/unloadtimber.
+{FFA500}GPSINFO: {FFFFFF}Tree %d/%d: a %s%s{FFFFFF} is marked on your radar.	{FFA500}GPSINFO: {FFFFFF}ﺓﺮﺠﺸﻟﺍ %d/%d: ﺔﻣﻼﻋ ﻊﺿﻭ ﻢﺗ %s%s{FFFFFF} ﻚﻳﺪﻟ ﺭﺍﺩﺍﺮﻟﺍ ﻰﻠﻋ.
+{FFA500}Timber job: {FFFFFF}/timber (start, teleports you to the Timber Storage)  /quitjob  /fixjob  /timbergps	{FFA500}ﺏﺎﺸﺧﻷﺍ ﺔﻤﻬﻣ: {FFFFFF}/timber (ﺏﺎﺸﺧﻷﺍ ﻥﺰﺨﻣ ﻰﻟﺇ ﺎﻳﺭﻮﻓ ﻚﻠﻘﻨﻳ ،ﺀﺪﺒﻟﺍ) /quitjob /fixjob /timbergps
+{FFFFFF}/cut (or hold CUT with the chainsaw)  /loadtimber (at the fallen tree)  /unloadtimber (Timber Storage)	{FFFFFF}/cut (ﺭﺎﺸﻨﻤﻟﺎﺑ ﻊﻄﻘﻟﺍ ﺓﺍﺩﺃ ﻰﻠﻋ ﺭﺍﺮﻤﺘﺳﻻﺍ ﻊﻣ ﻂﻐﺿﺍ ﻭﺃ) /loadtimber (ﺔﻄﻗﺎﺴﺘﻤﻟﺍ ﺓﺮﺠﺸﻟﺍ ﺪﻨﻋ) /unloadtimber (ﺏﺎﺸﺧﻷﺍ ﻦﻳﺰﺨﺗ)
+{FFFFFF}/mysalary  /collectsalary (at the storage)  /timberskill  /checkjobcooldown  /timberhelp	{FFFFFF}/mysalary /collectsalary (ﻥﺰﺨﻤﻟﺍ ﻲﻓ) /timberskill /checkjobcooldown /timberhelp
+You cannot cut trees right now - you are on a cooldown (%d s, /checkjobcooldown).	.(checkjobcooldown/ ،ﺔﻴﻧﺎﺛ %d) ﺔﺋﺪﻬﺗ ﺓﺮﺘﻓ ﻲﻓ ﺖﻧﺃ - ﻥﻵﺍ ﺭﺎﺠﺷﻷﺍ ﻊﻄﻗ ﻚﻨﻜﻤﻳ ﻻ
+{FFA500}LUMBERJACK: {FFFFFF}Tree %d/%d, timber %d/%d, paycheck $%.2f. /quitjob to stop.	{FFA500}LUMBERJACK: {FFFFFF}ﺓﺮﺠﺷ %d/%d، ﺐﺸﺧ %d/%d، ﺐﺗﺍﺮﻟﺍ $%.2f. /quitjob ﻒﻗﻮﺘﻠﻟ.
+{FFA500}LUMBERJACK: {FFFFFF}Welcome to the Timber job (woodcutting level %d). Cut %d trees, load the logs in the pickup, sell them at the storage.	{FFA500}LUMBERJACK: {FFFFFF}ﺏﺎﺸﺧﻷﺍ ﻊﻄﻗ ﻯﻮﺘﺴﻣ) ﺏﺎﺸﺧﻷﺍ ﺔﻤﻬﻣ ﻲﻓ ﻚﺑ ﺎﺒﺣﺮﻣ %d). ﻊﻄﻗ %d ﻥﺰﺨﻤﻟﺍ ﻲﻓ ﺎﻬﻌﻴﺑﻭ ،ﺔﻨﺣﺎﺸﻟﺍ ﻲﻓ ﺭﺎﺠﺷﻷﺍ ﻉﻭﺬﺟ ﻞﻴﻤﺤﺗﻭ ،ﺓﺮﺠﺷ.
+You are not at the Timber Storage (the yellow \"i\" at the barn, /timbergps).	.(timbergps/ ،ﺓﺮﻴﻈﺤﻟﺍ ﻲﻓ \"i\" ﺀﺍﺮﻔﺼﻟﺍ ﺔﻣﻼﻌﻟﺍ) ﺏﺎﺸﺧﻷﺍ ﻥﺰﺨﻣ ﻲﻓ ﺖﺴﻟ ﺖﻧﺃ
+You can sell lumber again in %d s.	.ﺔﻴﻧﺎﺛ %d ﻝﻼﺧ ﻯﺮﺧﺃ ﺓﺮﻣ ﺐﺸﺨﻟﺍ ﻊﻴﺑ ﻚﻨﻜﻤﻳ
+Your pickup has no timber. Cut a tree and /loadtimber first.	.ﻻﻭﺃ loadtimber/ﻭ ﺓﺮﺠﺷ ﻊﻄﻗﺍ .ﺏﺎﺸﺧﺃ ﻰﻠﻋ ﺓﺮﻴﻐﺼﻟﺍ ﻚﺘﻨﺣﺎﺷ ﻱﻮﺘﺤﺗ ﻻ
+Your pickup is gone - the timber went with it. /quitjob, then /timber.	.timber/ ﻢﺛ ،quitjob/ .ﺎﻬﻌﻣ ﺐﺸﺨﻟﺍ ﺐﻫﺫﻭ - ﺓﺮﻴﻐﺼﻟﺍ ﻚﺘﻨﺣﺎﺷ ﺖﻔﺘﺧﺍ ﺪﻘﻟ
+Bring the pickup with the timber to the storage.	.ﻥﺰﺨﻤﻟﺍ ﻰﻟﺇ ﺏﺎﺸﺧﻷﺍ ﻊﻣ ﺔﻨﺣﺎﺸﻟﺍ ﺮﻀﺣﺃ
+{FFA500}STORAGE: {FFFFFF}You've unloaded {FFDD33}%d timber{FFFFFF}, {33CC55}$%.2f{FFFFFF} has been issued to your paycheck.	{FFA500}ﻦﻳﺰﺨﺘﻟﺍ: {FFFFFF}ﻎﻳﺮﻔﺘﺑ ﺖﻤﻗ ﺪﻘﻟ {FFDD33}%d ﺐﺸﺧ{FFFFFF}، ﺭﺍﺪﺻﺇ ﻢﺗﻭ {33CC55}$%.2f{FFFFFF} ﻚﺒﺗﺍﺭ ﻰﻟﺇ.
+{FFA500}SALARY: {FFFFFF}Your salary statement has been updated, please check command '/mysalary'.	{FFA500}ﺐﺗﺍﺮﻟﺍ: {FFFFFF}ﺮﻣﻷﺍ ﻦﻣ ﻖﻘﺤﺘﻟﺍ ﻰﺟﺮﻳ ،ﻚﺒﺗﺍﺭ ﻒﺸﻛ ﺚﻳﺪﺤﺗ ﻢﺗ '/mysalary'.
+Mission complete: %d trees. +$150.00 bonus on your paycheck.	.ﻚﺒﺗﺍﺭ ﻰﻠﻋ ﺍﺭﻻﻭﺩ 150.00 ﺎﻫﺭﺪﻗ ﺓﺄﻓﺎﻜﻣ + .ﺓﺮﺠﺷ %d :ﺔﻤﻬﻤﻟﺍ ﺖﻠﻤﺘﻛﺍ
+{FFA500}LUMBERJACK: {FFFFFF}You feel tired of cutting trees, so you've decided to stop (rest %d s).	{FFA500}LUMBERJACK: {FFFFFF}ﺔﺣﺍﺮﺘﺳﺍ) ﻒﻗﻮﺘﻟﺍ ﺕﺭﺮﻗ ﻚﻟﺬﻟ ،ﺭﺎﺠﺷﻷﺍ ﻊﻄﻗ ﻦﻣ ﺐﻌﺘﻟﺎﺑ ﺮﻌﺸﺗ %d ﺔﻴﻧﺎﺛ).
+{FFA500}..:: Salary statement ::..	{FFA500}..:: ﺐﺗﺍﺮﻟﺍ ﻒﺸﻛ ::..
+Paycheck (not collected): {33CC55}$%.2f{FFFFFF}   Earned in total: $%.2f	%.2f$ :ﺐﺴﺘﻜﻤﻟﺍ ﻎﻠﺒﻤﻟﺍ ﻲﻟﺎﻤﺟﺇ {33CC55}$%.2f{FFFFFF} :(ﻪﻠﻴﺼﺤﺗ ﻢﺘﻳ ﻢﻟ) ﺐﺗﺍﺮﻟﺍ ﻚﻴﺷ
+Timber sold: %d   Trees cut: %d   Woodcutting level %d (%d xp)	(%d (%d xp ﺐﺸﺨﻟﺍ ﻊﻄﻗ ﻯﻮﺘﺴﻣ %d :ﺭﺎﺠﺷﻷﺍ ﻊﻄﻗ %d :ﺔﻋﺎﺒﻤﻟﺍ ﺏﺎﺸﺧﻷﺍ
+Collect it with /collectsalary at the Timber Storage.	.ﺏﺎﺸﺧﻷﺍ ﻥﺰﺨﻣ ﻲﻓ collectsalary/ ﻊﻣ ﺎﻬﻌﻤﺟﺍ
+{FFA500}Woodcutting: {FFFFFF}level %d, %d xp%s.	{FFA500}ﺐﺸﺨﻟﺍ ﻊﻄﻗ: {FFFFFF}ﻯﻮﺘﺴﻤﻟﺍ %d، %d xp%s.
+ (oak trees at 20 xp)	(ﻲﺑ ﺲﻛﺇ 20 ﺪﻨﻋ ﻁﻮﻠﺒﻟﺍ ﺭﺎﺠﺷﺃ) 
+ (yew trees at 60 xp)	(XP 60 ﺪﻨﻋ ﺱﻮﺴﻘﻄﻟﺍ ﺭﺎﺠﺷﺃ) 
+ (max)	(ﻰﺼﻗﻷﺍ ﺪﺤﻟﺍ) 
+{FFA500}..:: Job Cooldowns ::..	{FFA500}..:: ﻡﺎﻬﻤﻟﺍ ﺔﺋﺪﻬﺗ ﺕﺍﺮﺘﻓ ::..
+Wood Cutting Cooldown Time Remaining: %.2f minutes	ﺔﻘﻴﻗﺩ %.2f :ﺐﺸﺨﻟﺍ ﻊﻄﻗ ﺔﺋﺪﻬﺘﻟ ﻲﻘﺒﺘﻤﻟﺍ ﺖﻗﻮﻟﺍ
+Lumber selling: %d s	ﺔﻴﻧﺎﺛ %d :ﺐﺸﺨﻟﺍ ﻊﻴﺑ
+You have no job cooldown timers.	.ﻡﺎﻬﻤﻟﺍ ﺔﺋﺪﻬﺘﻟ ﺕﺎﺘﻗﺆﻣ ﻚﻳﺪﻟ ﺲﻴﻟ
+Collect your paycheck at the Timber Storage (/timbergps).	.(timbergps/) ﺏﺎﺸﺧﻷﺍ ﻥﺰﺨﻣ ﻦﻣ ﻚﺒﺗﺍﺭ ﻊﻤﺟﺍ
+Your paycheck is empty.	.ﻍﺭﺎﻓ ﻚﺒﺗﺍﺭ
+{FFA500}SALARY: {FFFFFF}You collected {33CC55}$%d{FFFFFF} from your paycheck.	{FFA500}ﺐﺗﺍﺮﻟﺍ: {FFFFFF}ﺖﻌﻤﺟ ﺪﻘﻟ {33CC55}$%d{FFFFFF} ﻚﺒﺗﺍﺭ ﻦﻣ.
+Staff only.	.ﻂﻘﻓ ﻦﻴﻔﻇﻮﻤﻟﺍ
+Job state fixed (animation stopped, chainsaw back).	.(ﺭﺎﺸﻨﻤﻟﺍ ﺓﺩﻮﻋ ،ﺔﻛﺮﺤﺘﻤﻟﺍ ﻡﻮﺳﺮﻟﺍ ﻒﻗﻮﺗ) ﺔﻔﻴﻇﻮﻟﺍ ﺔﻟﺎﺣ ﺡﻼﺻﺇ ﻢﺗ
+{FFA500}LUMBERJACK: {FFFFFF}You can now sell lumbers again!	{FFA500}LUMBERJACK: {FFFFFF}ﻯﺮﺧﺃ ﺓﺮﻣ ﺏﺎﺸﺧﻷﺍ ﻊﻴﺑ ﻥﻵﺍ ﻚﻨﻜﻤﻳ!
+{FFA500}LUMBERJACK: {FFFFFF}You died - the Timber job stopped.	{FFA500}LUMBERJACK: {FFFFFF}ﺏﺎﺸﺧﻷﺍ ﺔﻤﻬﻣ ﺖﻔﻗﻮﺗ - ﺖﻣ ﺪﻘﻟ.
+Your pickup is gone (the %d timber too). /quitjob and /timber for a new one.	.ﺓﺪﻳﺪﺟ ﺓﺪﺣﺍﻮﻟ timber/ﻭ quitjob/ .(ﺎﻀﻳﺃ %d ﺐﺸﺨﻟﺍ) ﺓﺮﻴﻐﺼﻟﺍ ﻚﺘﻨﺣﺎﺷ ﺖﻔﺘﺧﺍ ﺪﻘﻟ
+{FFA500}GPSINFO: {FFFFFF}You have arrived!	{FFA500}GPSINFO: {FFFFFF}ﺖﻠﺻﻭ ﺪﻘﻟ!
+You need the chainsaw in your hands (it comes back by itself).	.(ﻪﺴﻔﻧ ﺀﺎﻘﻠﺗ ﻦﻣ ﺩﻮﻌﻳ) ﻚﻳﺪﻳ ﻦﻴﺑ ﺭﺎﺸﻨﻤﻟﺍ ﻰﻟﺇ ﺔﺟﺎﺤﺑ ﺖﻧﺃ
+{C2A2DA}* %s seizes his chainsaw from behind body, then cut the tree.	{C2A2DA}* %s ﺓﺮﺠﺸﻟﺍ ﻊﻄﻘﻳ ﻢﺛ ،ﻢﺴﺠﻟﺍ ﻒﻠﺧ ﻦﻣ ﻩﺭﺎﺸﻨﻣ ﻚﺴﻤﻳ.
+You have chopped down a %s%s{FFFFFF}. TIMBER!	!ﺏﺎﺸﺧﻷﺍ .%s%s{FFFFFF} ﻊﻴﻄﻘﺘﺑ ﺖﻤﻗ ﺪﻘﻟ
+~y~TIMBER!	~y~ﺏﺎﺸﺧﻷﺍ!
+Stand next to the fallen tree.	.ﺔﻄﻗﺎﺴﻟﺍ ﺓﺮﺠﺸﻟﺍ ﺐﻧﺎﺠﺑ ﻒﻗ
+Get out of the car to load the timber.	.ﺏﺎﺸﺧﻷﺍ ﻞﻴﻤﺤﺘﻟ ﺓﺭﺎﻴﺴﻟﺍ ﻦﻣ ﺝﺮﺧﺍ
+You need your pickup here (/quitjob, /timber for a new one).	.(ﺓﺪﻳﺪﺟ ﺓﺭﺎﻴﺳ ﻰﻠﻋ ﻝﻮﺼﺤﻠﻟ quitjob، /timber/) ﺎﻨﻫ ﺓﺮﻴﻐﺼﻟﺍ ﻚﺘﻨﺣﺎﺸﻟ ﺔﺟﺎﺤﺑ ﺖﻧﺃ
+Bring the pickup closer (within 18 m of the log).	.(ﻞﺠﺴﻟﺍ ﻦﻣ ﺍﺮﺘﻣ 18 ﺔﻓﺎﺴﻣ ﻦﻤﺿ) ﺓﺮﻴﻐﺼﻟﺍ ﺔﻨﺣﺎﺸﻟﺍ ﺐﻳﺮﻘﺘﺑ ﻢﻗ
+{C2A2DA}AME: {FFFFFF}loads timber in the back of the pickup truck	{C2A2DA}AME: {FFFFFF}ﺓﺮﻴﻐﺼﻟﺍ ﺔﻨﺣﺎﺸﻟﺍ ﻦﻣ ﻲﻔﻠﺨﻟﺍ ﺀﺰﺠﻟﺍ ﻲﻓ ﺏﺎﺸﺧﻷﺍ ﻞﻴﻤﺤﺘﺑ ﻡﻮﻘﻳ
+{FFA500}JOBINFO: {FFFFFF}You've successfully loaded the timber into the car! (total timber: %d/%d)	{FFA500}JOBINFO: {FFFFFF}ﺏﺎﺸﺧﻷﺍ ﻲﻟﺎﻤﺟﺇ) !ﺓﺭﺎﻴﺴﻟﺍ ﻰﻟﺇ ﺏﺎﺸﺧﻷﺍ ﻞﻴﻤﺤﺗ ﻲﻓ ﺖﺤﺠﻧ ﺪﻘﻟ: %d/%d)
+Woodcutting level %d: %s.	.%d: %s ﺏﺎﺸﺧﻷﺍ ﻊﻄﻗ ﻯﻮﺘﺴﻣ
+you can cut oak trees now	ﻥﻵﺍ ﻁﻮﻠﺒﻟﺍ ﺭﺎﺠﺷﺃ ﻊﻄﻗ ﻚﻨﻜﻤﻳ
+you can cut yew trees now	ﻥﻵﺍ ﺱﻮﺴﻘﻄﻟﺍ ﺭﺎﺠﺷﺃ ﻊﻄﻗ ﻚﻨﻜﻤﻳ
+Timber Storage	ﺏﺎﺸﺧﻷﺍ ﻦﻳﺰﺨﺗ
+use '/unloadtimber' to sell collected timber	ﺔﻌﻤﺠﻤﻟﺍ ﺏﺎﺸﺧﻷﺍ ﻊﻴﺒﻟ 'unloadtimber/' ﻡﺪﺨﺘﺳﺍ
+Lumberjack	ﺏﺎﻄﺣ
+/timberhelp - the job commands	/timberhelp - ﺔﻤﻬﻤﻟﺍ ﺮﻣﺍﻭﺃ
+type '/timber' to start the job	ﺔﻤﻬﻤﻟﺍ ﺀﺪﺒﻟ 'timber/' ﺐﺘﻛﺍ
+TIMBER %d/%d  TREE %d/%d	%d/%d ﺓﺮﺠﺸﻟﺍ %d/%d ﺏﺎﺸﺧﻷﺍ
+Health: %d	%d :ﺔﺤﺼﻟﺍ
+Cutting tree	ﺓﺮﺠﺸﻟﺍ ﻊﻄﻗ
+Loading timber	ﺏﺎﺸﺧﻷﺍ ﻞﻴﻤﺤﺗ
+Broker	ﻂﻴﺳﻭ
+{4DD2FF}%s\n{FFFFFF}/job %s  {33CC55}$%d	{4DD2FF}%s\n{FFFFFF}/job %s {33CC55}$%d
+{FFFFFF}/job %s  {33CC55}$%d	{FFFFFF}/job %s {33CC55}$%d
+{FFE14D}Race: %s\n{FFFFFF}/race  {A9C4E4}(%s, %d players)	{FFE14D}ﻕﺎﺒﺴﻟﺍ: %s\n{FFFFFF}/race {A9C4E4}(%s، %d ﻦﻴﺒﻋﻻ)
+{FFE14D}Race: %s	{FFE14D}ﻕﺎﺒﺴﻟﺍ: %s
+{FFFFFF}/race  {A9C4E4}(%s, %d players)	{FFFFFF}/race {A9C4E4}(%s، %d ﻦﻴﺒﻋﻼﻟﺍ ﻦﻣ)
+%s~n~~r~TURF WAR: ~w~%s %d%%	%s~n~~r~ﺫﻮﻔﻨﻟﺍ ﺏﺮﺣ: ~w~%s %d%%
+%s~n~~w~%s turf - stay to take it%s	%s~n~~w~%s ﻪﻠﺘﺤﺘﻟ ﻖﺑﺍ - ﺐﺸﻌﻟﺍ%s
+ (3.01 server)	(3.01 ﻡﺩﺎﺧ) 
+%s~n~~w~%s turf	%s~n~~w~%s ﺐﺸﻌﻟﺍ
+%s is marked on your radar for 90 seconds.	.ﺔﻴﻧﺎﺛ 90 ﺓﺪﻤﻟ ﻙﺭﺍﺩﺍﺭ ﻰﻠﻋ %s ﻰﻠﻋ ﺔﻣﻼﻋ ﻊﺿﻭ ﻢﺗ
+Owner	ﻚﻟﺎﻤﻟﺍ
+%s\t{%06X}%s\t{FF4444}attacked by %s (%d%%)\n	%s\t{%06X}%s\t{FF4444}ﺔﻄﺳﺍﻮﺑ ﻡﻮﺠﻬﻟ ﺽﺮﻌﺗ %s (%d%%)\n
+{FF4444}attacked by %s (%d%%)	{FF4444}ﺔﻄﺳﺍﻮﺑ ﻡﻮﺠﻬﻟ ﺽﺮﻌﺗ %s (%d%%)
+{FFFFFF}Turf - gang zones	{FFFFFF}ﺕﺎﺑﺎﺼﻌﻟﺍ ﻖﻃﺎﻨﻣ - ﺐﺸﻌﻟﺍ
+Turf	ﺐﺸﻌﻟﺍ
+{FFFFFF}Teams	{FFFFFF}ﻕﺮﻔﻟﺍ
+Skin %d is not in this game.	.ﺔﺒﻌﻠﻟﺍ ﻩﺬﻫ ﻲﻓ ﺩﻮﺟﻮﻣ ﺮﻴﻏ %d ﺮﻬﻈﻤﻟﺍ
+%s~n~~w~class %d/%d  -  skin %d	%s~n~~w~ﺔﺌﻔﻟﺍ %d/%d - ﺪﻠﺠﻟﺍ %d
+Leave the race / derby / job / DM first (/leave).	.(leave/) ﻻﻭﺃ DM / ﺔﻔﻴﻇﻮﻟﺍ / ﻲﺑﺮﻳﺪﻟﺍ / ﻕﺎﺒﺴﻟﺍ ﻙﺮﺗﺍ
+Not during a mission.	.ﺔﻤﻬﻤﻟﺍ ﻝﻼﺧ ﺲﻴﻟ
+(/class) %s is a civilian.	(/class) %s ﻲﻧﺪﻣ.
+(/class) %s joined the %s!	(/class) ﻢﻀﻧﺍ %s ﻰﻟﺇ %s!
+%s hold %d zones. Stand in an enemy zone for 60 s to take it (/turf).	%s ﺪﻘﻋ %d ﺎﻬﻴﻠﻋ ﺀﻼﻴﺘﺳﻼﻟ ﺔﻴﻧﺎﺛ 60 ﺓﺪﻤﻟ ﻭﺪﻌﻟﺍ ﺔﻘﻄﻨﻣ ﻲﻓ ﻒﻗ .ﻖﻃﺎﻨﻤﻟﺍ (/turf).
+*** No gamemodes on this server (its host turns them on: MP Launcher > Add server > Gamemodes).	.(ﺏﺎﻌﻟﻷﺍ ﻉﺎﺿﻭﺃ < ﻡﺩﺎﺧ ﺔﻓﺎﺿﺇ < MP Launcher :ﺎﻬﻠﻴﻐﺸﺘﺑ ﻪﻔﻴﻀﻣ ﻡﻮﻘﻳ) ﻡﺩﺎﺨﻟﺍ ﺍﺬﻫ ﻰﻠﻋ ﺏﺎﻌﻟﺃ ﻉﺎﺿﻭﺃ ﺪﺟﻮﺗ ﻻ ***
+*** Gamemodes here: %s.	.%s :ﺎﻨﻫ ﺐﻌﻠﻟﺍ ﻉﺎﺿﻭﺃ ***
+*** The host turned on: %s.	.%s :ﻒﻴﻀﻤﻟﺍ ﻞﻴﻐﺸﺗ ﻢﺗ ***
+*** The host turned off: %s.	.%s :ﻒﻴﻀﻤﻟﺍ ﻞﻴﻐﺸﺗ ﻑﺎﻘﻳﺇ ﻢﺗ ***
+The host turned this gamemode off.	.ﺍﺬﻫ ﺔﺒﻌﻠﻟﺍ ﻊﺿﻭ ﻞﻴﻐﺸﺗ ﻑﺎﻘﻳﺈﺑ ﻒﻴﻀﻤﻟﺍ ﻡﺎﻗ
+[MP Server] %s\n	MP] %s ﻡﺩﺎﺧ]\n
+[MP Server] %s	MP] %s ﻡﺩﺎﺧ]
+MP Server	ﺐﺋﺎﻨﻟﺍ ﻡﺩﺎﺧ
+Bad login ticket.	.ﺔﺌﻴﺳ ﻝﻮﺧﺪﻟﺍ ﻞﻴﺠﺴﺗ ﺓﺮﻛﺬﺗ
+Login ticket not signed by the MP bot.	.MP bot ﺔﻄﺳﺍﻮﺑ ﺔﻌﻗﻮﻣ ﺮﻴﻏ ﻝﻮﺧﺪﻟﺍ ﻞﻴﺠﺴﺗ ﺓﺮﻛﺬﺗ
+admin key	ﻑﺮﺸﻤﻟﺍ ﺡﺎﺘﻔﻣ
+moderator key	ﻑﺮﺸﻤﻟﺍ ﺡﺎﺘﻔﻣ
+%s %s cheats for everyone.	%s %s ﻊﻴﻤﺠﻠﻟ ﺶﻏ.
+%s was %s by %s	%s ﻥﺎﻛ %s ﺔﻄﺳﺍﻮﺑ %s
+You are muted by the administrator.	.ﻝﻭﺆﺴﻤﻟﺍ ﻞﺒﻗ ﻦﻣ ﻚﺗﻮﺻ ﻢﺘﻛ ﻢﺗ
+%s Administrator: %s  Reason: %s	%s ﻝﻭﺆﺴﻤﻟﺍ: %s ﺐﺒﺴﻟﺍ: %s
+{FFFFFF}[{FFFF00}SERVER{FFFFFF}]: %s got %s by %s	{FFFFFF}[{FFFF00}ﻡﺩﺎﺨﻟﺍ{FFFFFF}]: ﻞﺼﺣ %s ﻰﻠﻋ %s ﺔﻄﺳﺍﻮﺑ %s
+no reason	ﺐﺒﺳ ﺪﺟﻮﻳ ﻻ
+[SERVER]: %s got %s by %s	[SERVER]: ﻞﺼﺣ %s ﻰﻠﻋ %s ﺔﻄﺳﺍﻮﺑ %s
+TURF: %s took %s from %s!	TURF: %s ﺬﺧﺃ %s ﻦﻣ %s!
+Section	ﻢﺴﻘﻟﺍ
+Tap to type	ﺔﺑﺎﺘﻜﻠﻟ ﺮﻘﻧﺍ
+Arial (MP)	(MP) ﻝﺎﻳﺭﺍ
+Pricedown (GTA)	(GTA) ﺮﻌﺴﻟﺍ ﺾﻴﻔﺨﺗ
+Roboto	ﻮﺗﻮﺑﻭﺭ
+Roboto Condensed	ﻒﺜﻜﻤﻟﺍ ﻮﺗﻮﺑﻭﺭ
+Noto Serif	ﻒﻳﺮﺷ ﻮﺗﻮﻧ
+Mono	ﺔﻳﺩﺎﺣﺃ
+Coming Soon	ﺎﺒﻳﺮﻗ
+Dancing Script	ﺺﻗﺮﻟﺍ ﻮﻳﺭﺎﻨﻴﺳ
+Carrois Gothic	ﺔﻴﻃﻮﻘﻟﺍ ﺍﻭﺭﺎﻛ
+Vehicle_%d.png	%d.png_ﺔﺒﻛﺮﻣ
+scrolled up - drag down for new messages	ﺓﺪﻳﺪﺟ ﻞﺋﺎﺳﺭ ﻰﻠﻋ ﻝﻮﺼﺤﻠﻟ ﻞﻔﺳﻷ ﺐﺤﺳﺍ - ﻰﻠﻋﻷ ﺮﻳﺮﻤﺘﻟﺍ ﻢﺗ
+  |  Host: 	 :ﻒﻴﻀﻤﻟﺍ  |  
+  |  Hosting	ﺔﻓﺎﻀﺘﺳﺍ  |  
+MP: Connecting ...	...ﻝﺎﺼﺗﻻﺍ ﻱﺭﺎﺟ :ﺐﺋﺎﻨﻟﺍ
+MP: Disconnected%s	%sﻞﺼﺘﻣ ﺮﻴﻏ :ﺐﺋﺎﻨﻟﺍ
+Shift	ﻝﻮﺤﺘﻟﺍ
+Space	ﺀﺎﻀﻔﻟﺍ
+<- Del	ﻞﻳﺩ ->

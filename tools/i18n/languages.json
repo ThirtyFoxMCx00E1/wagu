@@ -1,0 +1,142 @@
+[
+ {
+  "code": "es",
+  "name": "Español",
+  "english": "Spanish",
+  "font": "",
+  "rtl": 0
+ },
+ {
+  "code": "fil",
+  "name": "Filipino",
+  "english": "Filipino",
+  "font": "",
+  "rtl": 0
+ },
+ {
+  "code": "id",
+  "name": "Bahasa Indonesia",
+  "english": "Indonesian",
+  "font": "",
+  "rtl": 0
+ },
+ {
+  "code": "pt-BR",
+  "name": "Português (Brasil)",
+  "english": "Portuguese (Brazil)",
+  "font": "",
+  "rtl": 0
+ },
+ {
+  "code": "ar",
+  "name": "العربية",
+  "english": "Arabic",
+  "font": "",
+  "rtl": 1
+ },
+ {
+  "code": "ko",
+  "name": "한국어",
+  "english": "Korean",
+  "font": "cjk-kr",
+  "rtl": 0
+ },
+ {
+  "code": "ru",
+  "name": "Русский",
+  "english": "Russian",
+  "font": "",
+  "rtl": 0
+ },
+ {
+  "code": "zh-CN",
+  "name": "简体中文",
+  "english": "Chinese (Simplified)",
+  "font": "cjk-sc",
+  "rtl": 0
+ },
+ {
+  "code": "vi",
+  "name": "Tiếng Việt",
+  "english": "Vietnamese",
+  "font": "",
+  "rtl": 0
+ },
+ {
+  "code": "ja",
+  "name": "日本語",
+  "english": "Japanese",
+  "font": "cjk-jp",
+  "rtl": 0
+ },
+ {
+  "code": "fr",
+  "name": "Français",
+  "english": "French",
+  "font": "",
+  "rtl": 0
+ },
+ {
+  "code": "de",
+  "name": "Deutsch",
+  "english": "German",
+  "font": "",
+  "rtl": 0
+ },
+ {
+  "code": "it",
+  "name": "Italiano",
+  "english": "Italian",
+  "font": "",
+  "rtl": 0
+ },
+ {
+  "code": "tr",
+  "name": "Türkçe",
+  "english": "Turkish",
+  "font": "",
+  "rtl": 0
+ },
+ {
+  "code": "pl",
+  "name": "Polski",
+  "english": "Polish",
+  "font": "",
+  "rtl": 0
+ },
+ {
+  "code": "th",
+  "name": "ไทย",
+  "english": "Thai",
+  "font": "thai",
+  "rtl": 0
+ },
+ {
+  "code": "ms",
+  "name": "Bahasa Melayu",
+  "english": "Malay",
+  "font": "",
+  "rtl": 0
+ },
+ {
+  "code": "uk",
+  "name": "Українська",
+  "english": "Ukrainian",
+  "font": "",
+  "rtl": 0
+ },
+ {
+  "code": "nl",
+  "name": "Nederlands",
+  "english": "Dutch",
+  "font": "",
+  "rtl": 0
+ },
+ {
+  "code": "zh-TW",
+  "name": "繁體中文",
+  "english": "Chinese (Traditional)",
+  "font": "cjk-tc",
+  "rtl": 0
+ }
+]

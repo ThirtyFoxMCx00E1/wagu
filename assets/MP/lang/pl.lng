@@ -1,0 +1,2551 @@
+#mp-lang 1
+#code=pl
+#name=Polski
+#english=Polish
+#font=
+#rtl=0
+no (script fallback)	nie (skrypt awaryjny)
+, its ImGui is not exported: still blocked from every server	, jego ImGui nie jest eksportowane: nadal blokowane przez każdy serwer
+renamed, found by its CheatMenu label	zmieniono nazwę, znaleziono po etykiecie CheatMenu
+Fire	Ogień
+past the map edge, moved back inside	poza krawędź mapy, przesunięty z powrotem do środka
+skipped: position is NaN / inf	pominięto: pozycja to NaN / inf
+skipped: broken bounding box	pominięto: uszkodzone pole ograniczające
+skipped: world node pools are full	pominięto: pule węzłów światowych są pełne
+triangles without vertices 	trójkąty bez wierzchołków 
+spheres 	kule 
+boxes 	pudełka 
+lines 	kwestia 
+MP command	Komenda MP
+that script is stopped there	ten skrypt jest tam zatrzymany
+Rose	Róża
+Paul	Paweł
+Cesar	Cezar
+Claude	Klaudiusz
+The Truth	Prawda
+Emmet	Mrówka
+Jethro	Jetro
+Andre	Andrzej
+A tap   B close   Back cursor	A dotknij B zamknij Wstecz kursor
+server_combat system	system walki serwerowej
+server_player sync	synchronizacja serwera_odtwarzacza
+server_vehicle sync	synchronizacja serwera_pojazdu
+server_weapon sync	synchronizacja broni serwerowej
+server_damage system	system uszkodzeń serwera
+server_death system	system śmierci serwera
+server_kill feed	kanał informacyjny server_kill
+server_chat system	system server_chat
+server_name tags	znaczniki server_name
+server_health bars	paski stanu serwera
+server_armour bars	paski pancerza serwera
+server_radar icons	ikony server_radar
+server_player colors	kolory gracza_serwera
+server_pause system	system pauzy serwera
+server_ping system	system server_ping
+server_spawn system	system odradzania się serwera
+server_teleport system	system teleportacji serwera
+server_skin system	system server_skin
+server_animation sync	synchronizacja animacji serwera
+server_movement sync	synchronizacja ruchu serwera
+server_aim sync	synchronizacja server_aim
+server_shooting sync	synchronizacja serwera
+server_crouch sync	synchronizacja server_crouch
+server_driver sync	synchronizacja sterownika serwera
+server_passenger sync	synchronizacja serwera_pasażera
+server_vehicle health	stan serwera_pojazdu
+server_vehicle colors	kolory pojazdu serwerowego
+server_vehicle spawn	serwer_pojazdu spawn
+server_vehicle respawn	odrodzenie pojazdu serwerowego
+server_weather sync	synchronizacja serwera_pogody
+server_clock sync	synchronizacja zegara serwera
+server_day night cycle	serwer_dzień cykl nocny
+server_world objects	obiekty server_world
+server_world streaming	streaming serwera_świata
+server_map zones	strefy server_map
+server_gang zones	strefy server_gang
+server_turf wars	wojny o serwery
+server_territory system	system serwer_terytorium
+server_police system	system policji serwerowej
+server_wanted level	poziom server_wanted
+server_jail system	system więzienny serwera
+server_hospital respawn	odrodzenie szpitala serwera
+server_money system	system serwer_pieniędzy
+server_bank system	system banku serwerów
+server_shop system	system server_shop
+server_ammu nation	serwer_ammu naród
+server_property system	system właściwości serwera
+server_house system	system serwerowy
+server_business system	serwer_system biznesowy
+server_job system	system zadań serwera
+server_taxi job	zadanie server_taxi
+server_pizza job	zadanie serwera pizzy
+server_trucker job	praca server_trucker
+server_mission system	system misji serwera
+server_race system	system wyścigów serwerów
+server_team deathmatch	serwer_mecz deathmatch drużynowy
+server_capture the flag	server_capture flaga
+server_casino system	system serwer_kasyna
+server_stunt system	system server_stunt
+server_drift system	system server_drift
+server_score board	tablica wyników serwera
+server_stats system	system statystyk serwera
+server_level system	system na poziomie serwera
+server_admin system	system administracyjny serwera
+server_ban system	system banów serwera
+server_kick system	system server_kick
+server_mute system	system server_mute
+server_report system	system raportów serwera
+server_player list	lista graczy na serwerze
+server_region system	system regionu serwera
+server_server list	lista serwerów
+server_lan discovery	wykrywanie sieci LAN serwera
+server_host takeover	przejęcie serwera_host
+server_save system	system zapisywania serwera
+server_account system	system kont serwerowych
+server_login system	system logowania do serwera
+server_audio system	system serwer_audio
+server_connect logo	logo server_connect
+server_virtual keyboard	serwer_wirtualna klawiatura
+server_floating menu	serwer_menu pływające
+server_hud system	system server_hud
+server_world unlock	odblokowanie świata serwera
+server_city unlock	odblokowanie serwera_miasta
+server_safe houses	domy bezpieczne dla serwerów
+server_driving school	serwer_szkoła jazdy
+server_flight school	szkoła lotów serwerowych
+server_bike school	szkoła server_bike
+server_boat school	szkoła serwerowa
+server_race tournaments	turnieje server_race
+server_barber shops	serwer_sklepy fryzjerskie
+server_well stacked pizza	serwer_dobrze ułożona pizza
+server_burger shot	strzał z burgera serwerowego
+server_cluckin bell	dzwonek server_cluckin
+server_tattoo shops	serwer_sklepy tatuażu
+server_gym system	system server_gym
+server_clothing shops	serwer_sklepy odzieżowe
+server_mod garages	garaże server_mod
+server_interior doors	serwer_drzwi wewnętrzne
+server_trucking job	zadanie server_trucking
+server_quarry job	zadanie server_quarry
+server_delivery jobs	zadania związane z dostarczaniem serwerów
+server_vehicle spawner	spawner_serwera_pojazdu
+server_weapon spawner	generator broni serwerowej
+server_teleport events	zdarzenia teleportacji serwera
+server_deathmatch zones	strefy server_deathmatch
+server_kill streaks	serie zabijania serwerów
+server_race checkpoints	punkty kontrolne server_race
+server_race timer	licznik czasu serwera
+server_event announcer	spiker_wydarzeń_serwera
+server_score board hud	tablica wyników serwera HUD
+server_npc world mirror	serwer_lustro świata npc
+server_seat name tags	znaczniki nazw server_seat
+server_home kit	zestaw server_home
+server_house builder	konstruktor serwerów
+server_house doors	drzwi serwerowni
+server_house keys	klucze server_house
+server_furniture objects	obiekty server_furniture
+server_progress save	zapis postępu serwera
+server_hunger system	system głodu serwera
+server_energy system	system energetyczny serwera
+server_needs hud	serwer_potrzebuje hud
+server_rules window	okno reguł serwera
+server_server settings	ustawienia server_server
+server_moderator system	system server_moderator
+server_temp kicks	server_temp kopie
+server_gamemode manager	menedżer trybu gry serwera
+server_gamemode vote	głosowanie w trybie gry serwera
+server_brief case war	server_brief sprawa wojna
+server_modern warfare 3	serwer_modern warfare 3
+server_roleplay jobs	zadania związane z odgrywaniem ról na serwerze
+server_roleplay factions	serwer_roleplay frakcje
+server_roleplay phone	telefon do gry w serwer
+server_roleplay inventory	ekwipunek server_roleplay
+server_roleplay documents	dokumenty server_roleplay
+server_atm machines	serwer_bankomatów
+server_invest system	serwer_inwestycyjny system
+server_marriage system	serwer_system małżeński
+server_pawn shop	serwer_lombard
+server_seatbelt system	system pasów bezpieczeństwa serwera
+server_starter pack	pakiet startowy serwera
+server_info pickups	server_info odbiory
+server_gps system	system server_gps
+server_hotel rooms	serwer_pokoje hotelowe
+server_hotel computer	komputer serwerowy_hotelowy
+server_safe zones	strefy bezpieczne dla serwera
+server_hospital zones	strefy szpitalne serwera
+server_red checkpoints	punkty kontrolne server_red
+server_gate system	system server_gate
+server_mv vehicles	pojazdy server_mv
+server_voice chat	serwer_czat głosowy
+server_voice range	zakres server_voice
+server_clothes sync	synchronizacja server_clothes
+server_ped aim sync	server_ped cel synchronizacja
+server_remote weapons	broń zdalna serwera
+server_jetpack sync	synchronizacja server_jetpack
+server_parachute sync	synchronizacja server_parachute
+server_swim sync	synchronizacja serwera pływackiego
+server_ladder sync	synchronizacja server_ladder
+server_fight styles	style server_fight
+server_drive by sync	server_drive przez synchronizację
+server_trailer sync	synchronizacja server_trailer
+server_train sync	synchronizacja server_train
+server_plane sync	synchronizacja płaszczyzny serwera
+server_heli sync	synchronizacja server_heli
+server_boat sync	synchronizacja serwera_łodzi
+server_bike sync	synchronizacja serwera_bike
+server_radio stations	stacje radiowe serwera
+server_3d labels	etykiety server_3d
+server_class selection	wybór klasy serwera
+server_controller support	obsługa kontrolera serwera
+server_loading screen	ekran ładowania serwera
+server_welcome message	komunikat powitalny serwera
+ resources	 zasoby
+Connected successfully!	Połączenie pomyślne!
+{FFFFFF}Welcome to {38BDF8}%s	{FFFFFF}Witamy w {38BDF8}%s
+the server	serwer
+Receiving Server Info...	Informacje o serwerze odbiorczym...
+Receiving Resources...	Otrzymywanie zasobów...
+Receiving Player Info...	Otrzymywanie informacji o graczu...
+Receiving Vehicle Info...	Otrzymywanie informacji o pojeździe...
+Receiving Weapon Info...	Otrzymywanie informacji o broni...
+Receiving World Data...	Odbieranie danych światowych...
+Connecting	Złączony
+Please Wait, Loading Server Data...	Proszę czekać, ładowanie danych serwera...
+Done - joining %s	Gotowe - dołączono do %s
+Receiving Resources... %s	Odbieranie zasobów... %s
+Connecting to %s...	Łączenie z %s...
+In the Beginning	Na początku
+Tagging Up Turf	Oznaczanie darni
+Cleaning the Hood	Czyszczenie okapu
+Drive-Thru	Przejazd
+Nines and AK's	Dziewiątki i AK
+Drive-By	Przejazd
+Sweet's Girl	Dziewczyna Sweeta
+Los Sepulcros	Grobowce
+Burning Desire	Płonące pożądanie
+Gray Imports	Szary import
+Home Invasion	Włamanie do domu
+Catalyst	Katalizator
+Robbing Uncle Sam	Okradanie Wujka Sama
+Running Dog	Biegnący pies
+Wrong Side of the Tracks	Zła strona torów
+Just Business	Tylko biznes
+Life's a Beach	Życie to plaża
+Madd Dogg's Rhymes	Rymy Madd Dogga
+Management Issues	Zagadnienia zarządzania
+House Party	Domówka
+High Stakes, Low Rider	Wysoka stawka, niski pasażer
+Reuniting the Families	Ponowne zjednoczenie rodzin
+The Green Sabre	Zielona Szabla
+First Date	Pierwsza randka
+First Base / Local Liquor Store	First Base / Lokalny sklep z alkoholem
+Made in Heaven / Small Town Bank	Made in Heaven / Bank w małym mieście
+Tanker Commander	Dowódca tankowca
+Gone Courting / Against All Odds	Zaloty / Wbrew wszelkim przeciwnościom
+King in Exile	Król na wygnaniu
+Body Harvest	Żniwo ciał
+Are You Going to San Fierro?	Wybierasz się do San Fierro?
+Wu Zi Mu / Farewell, My Love...	Wu Zi Mu / Żegnaj, moja miłości...
+Wear Flowers in Your Hair	Noś kwiaty we włosach
+Deconstruction	Dekonstrukcja
+555 We Tip	555 Dajemy napiwki
+Snail Trail	Szlak ślimaków
+Mountain Cloud Boys	Chłopcy z górskich chmur
+Lure	Wabik
+Amphibious Assault	Atak desantowy
+The Da Nang Thang	Da Nang Thang
+Photo Opportunity	Możliwość zrobienia zdjęcia
+Outrider	Foryś
+Ice Cold Killa	Lodowata Zabójczyni
+Toreno's Last Flight	Ostatni lot Toreno
+Pier 69	Molo 69
+Zeroing In	Zerowanie
+Test Drive	Jazda próbna
+Customs Fast Track	Szybka ścieżka celna
+Puncture Wounds	Rany kłute
+Back to School	Powrót do szkoły
+Air Raid	Nalot powietrzny
+Supply Lines...	Linie zaopatrzenia...
+New Model Army	Nowa Armia Modelowa
+Monster	Potwór
+Highjack	Porwanie
+Interdiction	Zakaz
+Verdant Meadows	Zielone łąki
+Stowaway	Pasażer na gapę na statku
+Black Project	Czarny Projekt
+Green Goo	Zielona maź
+Learning to Fly	Nauka latania
+Explosive Situation	Wybuchowa sytuacja
+You've Had Your Chips	Zjadłeś już swoje chipsy
+Fish in a Barrel	Ryba w beczce
+Intensive Care	Intensywna terapia
+The Meat Business	Biznes mięsny
+Freefall	Swobodny spadek
+Saint Mark's Bistro	Bistro Świętego Marka
+Misappropriation	Przywłaszczenie
+High Noon	Samo południe
+Architectural Espionage	Szpiegostwo architektoniczne
+Key to Her Heart	Klucz do jej serca
+Dam and Blast	Tama i wybuch
+Cop Wheels	Koła policyjne
+Up, Up and Away!	W górę, w górę i precz!
+Breaking the Bank at Caligula's	Rozbijanie banku u Kaliguli
+A Home in the Hills	Dom w górach
+Vertical Bird	Ptak pionowy
+Home Coming	Powrót do domu
+Cut Throat Business	Bezlitosny biznes
+Beat Down on B Dup	Zbić B Dup
+Riot	Zamieszki
+Los Desperados	Desperaci
+End of the Line	Koniec linii
+Shooting Range	Strzelnica
+Trucking	Transport ciężarowy
+Quarry	Kamieniołom
+Boat School	Szkoła łodzi
+Bike School	Szkoła rowerowa
+Taxi Driver	Taksówkarz
+Paramedic	Sanitariusz
+Firefighter	Strażak
+Vigilante	Strażnik
+Burglary	Włamanie
+Freight Train	Pociąg towarowy
+Pimping	Podły
+Race Tournament	Turniej wyścigowy
+Lowrider Challenge	Wyzwanie Lowridera
+Pool	Basen
+Beefy Baron	Muskularny Baron
+Blood Ring	Pierścień Krwi
+Beat the Cock!	Bij Koguta!
+Courier	Kurier
+The Chiliad Challenge	Wyzwanie Chiliad
+Stunt Challenge	Wyzwanie kaskaderskie
+Buy Property	Kup nieruchomość
+a mission	misja
+*** %s: other players are hidden until it ends. Your Mission sync group (%d players) stays with you.	*** %s: inni gracze są ukryci do zakończenia misji. Twoja grupa synchronizacji misji (%d graczy) pozostaje z Tobą.
+*** %s: other players are hidden until it ends. %s (Mission sync) stays with you.	*** %s: inni gracze pozostają ukryci aż do zakończenia misji. %s (synchronizacja misji) pozostaje z Tobą.
+your partner	Twój partner
+*** %s: other players are hidden until it ends (your own story).	*** %s: inni gracze pozostają ukryci aż do zakończenia (Twojej własnej historii).
+Cutscene	Scena przerywnikowa
+*** %s is on a mission: %s	*** %s jest na misji: %s
+*** %s finished their mission.	*** %s zakończyło swoją misję.
+%s set by the server - change blocked.	%s ustawione przez serwer - zmiana zablokowana.
+Time and weather are	Czas i pogoda są
+Weather is	Pogoda jest
+Time is	Czas jest
+*** Voice of %s unmuted.	*** Głos %s nie jest wyciszony.
+*** Voice of %s muted (only for you).	*** Głos %s wyciszony (tylko dla Ciebie).
+Voice chat works on a server: connect first, then tap the mic.	Czat głosowy działa na serwerze: najpierw się połącz, a następnie dotknij mikrofonu.
+*** Microphone off.	*** Mikrofon wyłączony.
+Voice chat is not available on this phone (%s).	Czat głosowy nie jest dostępny na tym telefonie (%s).
+Allow the microphone, then tap the mic again.	Włącz mikrofon, a następnie ponownie dotknij mikrofonu.
+Could not turn on the microphone: %s.	Nie można włączyć mikrofonu: %s.
+*** Your GTA SA app can't use the microphone, so the MP Voice app does it for you...	*** Twoja aplikacja GTA SA nie potrafi korzystać z mikrofonu, więc robi to za Ciebie aplikacja MP Voice...
+*** Microphone on: players near you hear you (louder up close, nothing past %d m).	*** Mikrofon włączony: gracze znajdujący się w pobliżu słyszą Cię (głośniej z bliska, nic poza %d m).
+*** Microphone on (MP Voice): players near you hear you (louder up close, nothing past %d m).	*** Mikrofon włączony (MP Voice): gracze znajdujący się w pobliżu słyszą Cię (głośniej z bliska, nic poza %d m).
+MP Voice stopped sending your voice. Open MP Voice and tap Start microphone.	Aplikacja MP Voice przestała wysyłać Twój głos. Otwórz aplikację MP Voice i dotknij opcji „Włącz mikrofon”.
+Install the MP Voice app (MP-Voice.apk in the MP package / on the MP website), open it once, tap Start microphone, then tap the mic here again.	Zainstaluj aplikację MP Voice (MP-Voice.apk w pakiecie MP / na stronie internetowej MP), otwórz ją, dotknij opcji Uruchom mikrofon, a następnie ponownie dotknij mikrofonu tutaj.
+You can still hear the others without it.	Nadal będziesz mógł słyszeć innych bez tego.
+The server was closed by its host.	Serwer został zamknięty przez jego gospodarza.
+Your MP version is too old. Download MP %s: %s	Twoja wersja MP jest za stara. Pobierz MP %s: %s
+This server runs an old MP version (it lets cheaters in). Ask the host to update to MP %s.	Ten serwer działa na starej wersji MP (wpuszcza oszustów). Poproś hosta o aktualizację do MP %s.
+Wrong server password. Edit the server and type the right one (max 16 characters).	Nieprawidłowe hasło serwera. Edytuj serwer i wpisz poprawne (maks. 16 znaków).
+This server runs an old MP (before 3.23.6) - trying your old admin key on it...	Na tym serwerze działa stara wersja MP (przed wersją 3.23.6) - wypróbuj na niej swój stary klucz administratora...
+This server didn't take your first admin key - trying your other key from administrator.txt...	Ten serwer nie przyjął Twojego pierwszego klucza administratora - wypróbowano Twój inny klucz z administrator.txt...
+This server refused your admin key. Your MP %s and administrator.txt are fine: the SERVER runs MP older than 3.23.6 and only knows the old key.	Ten serwer odrzucił Twój klucz administratora. Twoje MP %s i administrator.txt są w porządku: SERWER korzysta z wersji MP starszej niż 3.23.6 i zna tylko stary klucz.
+Quick fix: keep your old key as admin.txt next to administrator.txt (MP folder) - MP %s tries the old key on old servers by itself.	Szybkie rozwiązanie: zachowaj stary klucz jako admin.txt obok administrator.txt (folder MP) — MP %s sam wypróbuje stary klucz na starych serwerach.
+Real fix: update the server. 24/7 VPS: sudo bash /opt/mp/kit/update.sh (or: curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/update.sh | sudo bash). Termux: mp-server update.	Rozwiązanie problemu: aktualizacja serwera. VPS 24/7: sudo bash /opt/mp/kit/update.sh (lub: curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/update.sh | sudo bash). Termux: aktualizacja mp-server.
+This server refused your moderator key for %s: it runs MP older than 3.40.1 (it updates by itself) or the key in moderator.txt is wrong.	Ten serwer odrzucił Twój klucz moderatora dla %s: używa wersji MP starszej niż 3.40.1 (aktualizuje się automatycznie) lub klucz w moderator.txt jest błędny.
+You are banned from the server!	Zostałeś wykluczony z serwera!
+You were kicked from the server!	Zostałeś wyrzucony z serwera!
+Server is full.	Serwer jest pełny.
+Server uses a different MP version.	Serwer używa innej wersji MP.
+Could not connect to %s (no response).	Nie można połączyć się z %s (brak odpowiedzi).
+Lost connection to the server. (Timeout)	Utracono połączenie z serwerem. (Przekroczono limit czasu)
+*** %s joined the server.	*** %s dołączył do serwera.
+*** %s left the server.%s	*** %s opuścił serwer.%s
+ (Timeout)	 (Przekroczenie limitu czasu)
+ (Kicked)	 (Kopnięty)
+*** Cheats were disabled on this server (MP cheats).	*** Na tym serwerze kody są wyłączone (kody MP).
+*** The host allowed cheats again.	*** Gospodarz znów pozwolił na oszustwa.
+*** The host turned off Mission sync.	*** Gospodarz wyłączył synchronizację misji.
+*** Mission sync is allowed here (MP menu > Players online).	*** Synchronizacja misji jest tutaj dozwolona (menu MP > Gracze online).
+*** %s wants Mission sync with you: Accept or Decline.	*** %s chce, aby misja była zsynchronizowana z Tobą: Akceptuj lub Odrzuć.
+*** Mission sync with %s (group: %d/%d): you see each other and each other's mission markers on missions now.	*** Synchronizacja misji z %s (grupa: %d/%d): teraz widzicie siebie nawzajem i swoje znaczniki misji na misjach.
+*** Mission sync with %s ended.	*** Synchronizacja misji z %s zakończona.
+*** %s declined Mission sync.	*** %s odrzucił synchronizację misji.
+The player	Gracz
+*** Could not start Mission sync (the player left, didn't ask you, or the group is full: 16 max).	*** Nie udało się rozpocząć synchronizacji misji (gracz odszedł, nie zapytał o szczegóły lub grupa jest pełna: maksymalnie 16 osób).
+*** Mission sync is turned off on this server.	*** Synchronizacja misji jest wyłączona na tym serwerze.
+*** %s pulled you out of your car.	*** %s wyciągnął cię z samochodu.
+That car is full.	Ten samochód jest pełny.
+NPC sync isn't available on this game version.	Synchronizacja NPC nie jest dostępna w tej wersji gry.
+NPCs around you come from %s.	NPC-e wokół ciebie pochodzą z %s.
+You are the NPC host for %d player%s near you.	Jesteś gospodarzem NPC dla %d gracza%s w Twojej okolicy.
+On a mission: your own NPCs.	Na misji: Twoje własne postacie niezależne.
+Wanted: your own NPCs and police.	Poszukiwani: twoi NPC-e i policjanci.
+Nobody near you: your own NPCs.	Nikogo w pobliżu: twoich własnych NPC-ów.
+Sync status shows here while you are on a server.	Tutaj wyświetlany jest status synchronizacji, gdy jesteś na serwerze.
+Animations: off (switch on above).	Animacje: wyłączone (włączone powyżej).
+Animations: not available on this game version.	Animacje: niedostępne w tej wersji gry.
+Animations: on (no player near you).	Animacje: włączone (brak gracza w pobliżu).
+Animations: %d of %d players near you send their full animations.	Animacje: %d z %d graczy w Twojej okolicy wysyła swoje pełne animacje.
+Players on an older MP version only send walk / run / basic moves.	Gracze w starszych wersjach trybu wieloosobowego wysyłają tylko ruchy chodu, biegu i podstawowe ruchy.
+%d player%s shown as story characters.	%d gracz%s pokazany jako postać z opowieści.
+Server modes stay on here - only the server owner, [ADMIN] or [MOD] can change them.	Tryby serwera pozostają aktywne – tylko właściciel serwera, [ADMIN] lub [MOD] może je zmienić.
+Trailers like the Tug Stairs can't be driven in MP (they fly off). Use the Tug to pull it.	Przyczepy takie jak Schody Holownicze nie mogą być prowadzone w trybie MP (odlatują). Użyj Holownika, aby je pociągnąć.
+You are offline. Turn on Wi-Fi or mobile data.	Jesteś offline. Włącz Wi-Fi lub dane mobilne.
+this server	ten serwer
+Sorry, this server doesn't allow cheat menus. %s is loaded in your game: remove it from your mods folder and restart the game.	Przepraszamy, ten serwer nie obsługuje menu cheatów. %s jest załadowany w Twojej grze: usuń go z folderu modów i uruchom grę ponownie.
+That online server is gone. Tap Connect / Join again.	Ten serwer online zniknął. Kliknij ponownie „Połącz/Dołącz”.
+Invalid server address.	Nieprawidłowy adres serwera.
+SERVER RULES	ZASADY SERWERA
+%s is hosted by the 24/7 bot - waiting for it (only the admin / moderators can host it).	%s jest hostowany przez bota 24/7 - czeka na niego (tylko administratorzy/moderatorzy mogą go hostować).
+Could not start the server on port %d	Nie można uruchomić serwera na porcie %d
+Plugins: %d textdraws from files/MP/%s/	Wtyczki: %d textdraws z files/MP/%s/
+Disconnected. Your server stays online for the others.	Rozłączono. Twój serwer pozostaje online dla pozostałych.
+Disconnected from the server.	Rozłączono z serwerem.
+Please wait...	Proszę czekać...
+You are already connected to %s.	Jesteś już połączony z %s.
+Already connecting to %s...	Już łączysz się z %s...
+%s's server	Serwer %s
+Player	Odtwarzacz
+Server name: \"%s\" (change it in Host your own server).	Nazwa serwera: \"%s\" (zmień ją w opcji Hostuj własny serwer).
+Port %d is the default server's, your server uses port %d.	Port %d jest domyślnym portem serwera, Twój serwer używa portu %d.
+Server stopped.	Serwer zatrzymany.
+Reconnecting to \"%s\" (host: 	Ponowne łączenie z \"%s\" (host: 
+The other copy of \"%s\" did not answer - you host it again.	Druga kopia \"%s\" nie odpowiedziała - hostujesz ją ponownie.
+The host left - moving to the 24/7 server (you keep playing)...	Gospodarz odszedł - przeniósł się na serwer 24/7 (grasz dalej)...
+Connection to \"%s\" lost - you host it now (nobody else was on it)...	Połączenie z \"%s\" zostało utracone — teraz jesteś jego gospodarzem (nikt inny z niego nie korzystał)...
+The host left - moving to the new host...	Gospodarz odszedł - przeniósł się do nowego gospodarza...
+\"%s\" is already online on another phone - joining it. Pick another name to host your own.	\"%s\" jest już online na innym telefonie – łączy się z nim. Wybierz inną nazwę, aby hostować swoją własną.
+Your server \"%s\" is online (port %d).	Twój serwer \"%s\" jest online (port %d).
+Looking for the 24/7 server again...	Znów szukam serwera 24/7...
+\"%s\" isn't online and uses port %d (reserved for the default server). Edit it to port %d or higher.	\"%s\" nie jest online i używa portu %d (zarezerwowanego dla serwera domyślnego). Zmień go na port %d lub wyższy.
+Same server on another phone - moving there (you stay connected).	Ten sam serwer na innym telefonie - przenosimy się tam (pozostajesz połączony).
+*** Broker standby #%d/%d: \"%s\" was offline - this phone hosts it in the background until the 24/7 host is back.	*** Broker rezerwowy nr %d/%d: \"%s\" był offline — ten telefon hostował go w tle do czasu powrotu hosta pracującego 24/7.
+Region set to %s (lowest ping, %d ms). Change it in the Server menu.	Region ustawiony na %s (najniższy ping, %d ms). Zmień to w menu Serwer.
+You are online again.	Jesteś znowu online.
+The 24/7 server is online - moving there (you keep playing).	Serwer jest dostępny 24/7 - przenieś się tam (możesz kontynuować grę).
+Not connected.	Nie połączono.
+Name	Nazwa
+Host	Gospodarz
+Skin	Skóra
+Girlfriends	Dziewczyny
+Rule%d	Zasada%d
+Actors	Aktorzy
+Team	Zespół
+/Android_unprotected/	/Android_niezabezpieczony/
+/storage/emulated/0/Android/data/%s/files/MP/admin.txt	/storage/emulowane/0/Android/dane/%s/files/MP/admin.txt
+/storage/emulated/0/Android/media/%s/MP/admin.txt	/storage/emulowane/0/Android/media/%s/MP/admin.txt
+/storage/emulated/0/Android/data/%s/mods/admin.txt	/storage/emulowane/0/Android/dane/%s/mods/admin.txt
+/storage/emulated/0/Android/data/%s/files/admin.txt	/storage/emulowane/0/Android/dane/%s/pliki/admin.txt
+key=	klucz=
+The name SENJI is reserved for the administrator. No valid administrator.txt found.	Nazwa SENJI jest zarezerwowana dla administratora. Nie znaleziono prawidłowego administrator.txt.
+Put administrator.txt here: %s/administrator.txt	Wpisz administrator.txt tutaj: %s/administrator.txt
+The name %s is reserved for moderators. moderator.txt was found (%s) but it has no valid moderator key.	Nazwa %s jest zarezerwowana dla moderatorów. Znaleziono moderator.txt (%s), ale nie ma on prawidłowego klucza moderatora.
+The name %s is reserved for moderators. No moderator.txt found.	Nazwa %s jest zarezerwowana dla moderatorów. Nie znaleziono moderator.txt.
+Put moderator.txt (one line: the moderator key) here: %s/moderator.txt	Wpisz tutaj moderator.txt (jeden wiersz: klucz moderatora): %s/moderator.txt
+Reserved name	Zastrzeżona nazwa
+Reserved (moderator)	Zarezerwowany (moderator)
+Not allowed	Niedozwolony
+No [ ] in names	Brak [ ] w nazwach
+Names can't have [ or ]. Use only your name - [TAGS] are for staff, factions and clans (Mega Vil: /createfaction).	Nazwy nie mogą zawierać znaków [ ani ]. Użyj tylko swojego imienia – [TAGS] są przeznaczone dla personelu, frakcji i klanów (Mega Vil: /createfaction).
+Names can't start with [ADMIN] or [MOD].	Nazwy nie mogą zaczynać się od [ADMIN] lub [MOD].
+moderator.txt found: you are [MOD] %s on every MP server (name tag, chat, kill feed, kick / mute).	Znaleziono moderator.txt: jesteś [MOD] %s na każdym serwerze MP (nazwa, czat, kanał zabójstw, wyrzucenie/wyciszenie).
+administrator.txt found: you are the administrator. On the default server you show as [ADMIN] SENJI.	Znaleziono administrator.txt: jesteś administratorem. Na serwerze domyślnym wyświetlasz się jako [ADMIN] SENJI.
+Type the IP and the port (1-65535).	Wpisz adres IP i port (1-65535).
+Connecting to %s:%d ...	Łączenie z %s:%d ...
+English	Angielski
+Filipino	Filipiński
+Tagalog / English	Tagalski / Angielski
+Hindi	Hinduski
+Indonesian	Indonezyjski
+Russian	Rosyjski
+Spanish	Hiszpański
+Portuguese	Portugalski
+Arabic	Arabski
+%s  %d ms\n%d online	%s %d ms\n%d online
+Lobby: lowest ping region	Lobby: region o najniższym pingu
+Lobby broker: %s%s. Servers of other regions are joined through their own broker.	Broker lobby: %s%s. Do serwerów z innych regionów można dołączyć za pośrednictwem własnego brokera.
+ (auto)	 (automatyczny)
+Lobby broker: public (regional brokers not reachable)	Broker lobbystyczny: publiczny (brokerzy regionalni niedostępni)
+Server icon (tap it for the next one)	Ikona serwera (kliknij ją, aby przejść do następnej)
+Default (main_df_icon.png)	Domyślne (main_df_icon.png)
+Custom icon	Niestandardowa ikona
+Default	Domyślny
+The default MP LAN Server always shows the default icon.	Domyślny serwer MP LAN zawsze wyświetla domyślną ikonę.
+Your own pictures: icon_1.png ... icon_250.png inside files/MP/Icons.jar (or loose in files/MP, max 256x256).	Twoje własne zdjęcia: icon_1.png ... icon_250.png wewnątrz files/MP/Icons.jar (lub luzem w files/MP, maks. 256x256).
+Offline: turn on Wi-Fi or mobile data	Offline: włącz Wi-Fi lub dane mobilne
+Connected  |  %d/%d  |  %d ms	Połączono | %d/%d | %d ms
+Online  |  host: 	Online | gospodarz: 
+Online at %s  |  %d/%d  |  %d ms	Online w %s | %d/%d | %d ms
+Always online  |  tap Connect	Zawsze online | dotknij Połącz
+Connect	Łączyć
+Cancel	Anulować
+Leave	Wyjechać
+Search...	Szukaj...
+%s  (default)  -  port %d	%s (domyślnie) - port %d
+Offline: turn on Wi-Fi or mobile data.	Offline: włącz Wi-Fi lub dane mobilne.
+Internet lobby: ONLINE via %s (%d ms)  |  %d internet + %d Wi-Fi servers	Lobby internetowe: ONLINE przez %s (%d ms) | %d internet + %d serwery Wi-Fi
+Internet lobby: NOT connected - other networks can't see servers yet	Lobby internetowe: NIE połączono – inne sieci jeszcze nie widzą serwerów
+Hide lobby details	Ukryj szczegóły lobby
+Lobby details	Szczegóły lobby
+Custom server permissions	Niestandardowe uprawnienia serwera
+Mission sync with somebody	Synchronizacja misji z kimś
+On: two players can sync up: they see each other on missions and share their mission markers.	Włączone: dwaj gracze mogą się synchronizować: widzą się nawzajem podczas misji i dzielą się swoimi znacznikami misji.
+Off: everyone is alone on missions; running mission syncs end.	Wyłączone: wszyscy wykonują misje sami; synchronizacja misji zostaje zakończona.
+Cheat Menu	Menu oszustw
+On: players may use Cheat Menu (libCheatMenu.so / libCheatMenu64.so) on your server.	Włączone: gracze mogą używać Cheat Menu (libCheatMenu.so / libCheatMenu64.so) na twoim serwerze.
+Off: players with Cheat Menu (libCheatMenu.so / libCheatMenu64.so) can't join.	Wyłączone: gracze z Cheat Menu (libCheatMenu.so / libCheatMenu64.so) nie mogą dołączyć.
+Never on the default server. \"Disable cheats\" (Settings > Cheats) switches it off too.	Nigdy na domyślnym serwerze. Opcja \"Wyłącz kody\" (Ustawienia > Kody) również ją wyłącza.
+AFK (too long without moving)	AFK (zbyt długi czas bez ruchu)
+On: after 3 minutes without moving players get an AFK tag; after 20 minutes their seat is freed.	Włączone: po 3 minutach bezczynności gracze otrzymują etykietę AFK; po 20 minutach ich miejsce zostaje zwolnione.
+Off: nobody is marked AFK on your server.	Wyłączone: nikt na Twoim serwerze nie jest oznaczony jako AFK.
+Damage indicator	Wskaźnik uszkodzeń
+On: a hit shows \"-25.00\" and \"<shooter> hit the head / torso / arm / leg\" over the name tag (4 s).	Włączone: trafienie pokazuje \"-25.00\" i \"<shooter> uderza w głowę / tułów / ramię / nogę\" nad identyfikatorem (4 s).
+Off: no damage numbers over the name tags.	Wył.: brak numerów uszkodzeń nad etykietami z nazwiskami.
+Player IDs (name tags + player list)	Identyfikatory graczy (etykiety + lista graczy)
+On: name tags and the player list show \"name (id)\".	Włączono: etykiety nazw i lista graczy wyświetlają \"nazwa (id)\".
+Off: names only.	Wyłączone: tylko imiona.
+Hunger + energy HUD	HUD głodu i energii
+On: a hunger and energy box (bottom right) - eat with /eat, rest standing still or /sleep in a house.	Włączone: pudełko głodu i energii (prawy dolny róg) - jedz z /eat, odpoczywaj stojąc lub /sleep w domu.
+Off: no hunger / energy (the default server always has it, Mega Vil Futuristic has its own).	Wyłączone: brak głodu / energii (domyślny serwer zawsze je ma, Mega Vil Futuristic ma swoje własne).
+/stats and /char work on custom servers that have the Authentication system (login with Discord).	/stats i /char działają na serwerach niestandardowych, które mają system uwierzytelniania (logowanie za pomocą Discorda).
+(The default server always allows Mission sync.)	(Domyślny serwer zawsze pozwala na synchronizację misji.)
+Applied to \"%s\" now.	Zastosowano do \"%s\" teraz.
+Used for every custom server you create or host.	Używany dla każdego niestandardowego serwera, który tworzysz lub hostujesz.
+Server cheats	Oszustwa serwerowe
+Disable cheats	Wyłącz oszustwa
+*** MP cheats disabled for everyone on your server (the CLEO menu is always blocked).	*** Kody do trybu MP są wyłączone dla wszystkich na Twoim serwerze (menu CLEO jest zawsze zablokowane).
+*** Cheats allowed again on your server.	*** Na twoim serwerze znów będzie można oszukiwać.
+On: nobody can use MP cheat commands (/fly, /god, /tp, /wh, ...).	Włączone: nikt nie może używać komend oszukujących MP (/fly, /god, /tp, /wh, ...).
+Off: MP cheat commands (/fly, /god, /tp, /wh, ...) work as usual.	Wyłączone: komendy oszukiwania MP (/fly, /god, /tp, /wh, ...) działają normalnie.
+CLEO menu + Cheat Menu: allowed by this server's Cheat Menu permission.	Menu CLEO + Cheat Menu: dozwolone na mocy uprawnień Cheat Menu tego serwera.
+CLEO menu + Cheat Menu (libCheatMenu.so / libCheatMenu64.so): always blocked (custom servers: Cheat Menu permission).	Menu CLEO + Cheat Menu (libCheatMenu.so / libCheatMenu64.so): zawsze blokowane (serwery niestandardowe: uprawnienie Cheat Menu).
+(CLEO menu: no CLEO Android found on this phone - only MP cheats are blocked here.)	(Menu CLEO: na tym telefonie nie znaleziono aplikacji CLEO na Androida - tutaj zablokowane są tylko kody do MP.)
+You are %s: this applies to every player on the server (until everybody left).	Jesteś %s: dotyczy to każdego gracza na serwerze (aż do momentu opuszczenia serwera).
+You are the host of \"%s\": this applies to every player.	Jesteś gospodarzem \"%s\": dotyczy to każdego gracza.
+On the default server only [ADMIN] SENJI and the moderators ([MOD], moderator.txt) can change this.	Na serwerze domyślnym tylko [ADMIN] SENJI i moderatorzy ([MOD], moderator.txt) mogą to zmienić.
+Only the host of this server can change this.	Tylko host tego serwera może to zmienić.
+Host your own server to change this. On the default server only [ADMIN] SENJI and [MOD] can.	Aby to zmienić, utwórz własny serwer. Na serwerze domyślnym mogą to zrobić tylko [ADMIN] SENJI i [MOD].
+Default server	Serwer domyślny
+Online now - %d server%s (internet + Wi-Fi)%s	Teraz online - serwer %d %s (internet + Wi-Fi) %s
+  (searching...)	  (badawczy...)
+Searching...	Badawczy...
+No other server online right now. Tap Connect to host the default one.	Aktualnie nie ma innego serwera online. Kliknij „Połącz”, aby hostować serwer domyślny.
+internet  |  %d/%d  |  ~%d ms	internet | %d/%d | ~%d ms
+on Wi-Fi  |  %d/%d  |  %d ms	przez Wi-Fi | %d/%d | %d ms
+Join	Dołączyć
+Left the server.	Opuścił serwer.
+Custom servers in %s  (%d / %d)	Serwery niestandardowe w %s (%d / %d)
+   [password]	   [hasło]
+IP hidden  |  connected  |  %d/%d  |  %d ms	Ukryty adres IP | połączony | %d/%d | %d ms
+online  |  host: 	online | gospodarz: 
+IP hidden  |  online (you host it)  |  %d/%d	Ukryty adres IP | online (hostujesz go) | %d/%d
+IP hidden  |  online %d/%d  |  %d ms	Ukryty adres IP | online %d/%d | %d ms
+IP hidden  |  online %s %d/%d  |  %d ms	Ukryty adres IP | online %s %d/%d | %d ms
+(internet)	(Internet)
+on Wi-Fi	na Wi-Fi
+IP hidden  |  you are offline (Wi-Fi/data off)	Ukryty adres IP | jesteś offline (Wi-Fi/dane wyłączone)
+IP hidden  |  always active  |  tap Join	Ukryty adres IP | zawsze aktywny | dotknij Dołącz
+Joining...	Łączący...
+No custom servers in this region yet. Add one below.	W tym regionie nie ma jeszcze serwerów niestandardowych. Dodaj jeden poniżej.
+Refresh	Odświeżać
+Delete selected	Usuń wybrane
+Tap a server to select it, tap Join to play on it.	Kliknij serwer, aby go wybrać, a następnie kliknij Dołącz, aby na nim grać.
+Custom servers are always active: if nobody runs it, Join hosts it.	Serwery niestandardowe są zawsze aktywne: jeśli nikt ich nie obsługuje, Join je hostuje.
+Gamemodes	Tryby gry
+\"%s\" (the default server): every gamemode is ON (fixed).	\"%s\" (serwer domyślny): każdy tryb gry jest WŁĄCZONY (stały).
+The default server has all of them. A custom server starts with none: turn on the ones you want.	Domyślny serwer ma je wszystkie. Serwer niestandardowy zaczyna się od zera: włącz te, które chcesz.
+Map icons and Chat bubbles are each player's own switches: Settings > Display / Chat.	Ikony mapy i dymki czatu to osobne przełączniki każdego gracza: Ustawienia > Wyświetlanie / Czat.
+All on	Wszystko na
+All off	Wszystko wyłączone
+Only for a NEW server you create (Host). Servers that already exist keep their gamemodes - the one you are on is not changed.	Tylko dla NOWEGO serwera, który utworzysz (host). Serwery, które już istnieją, zachowują swoje tryby gry – ten, na którym jesteś, nie ulega zmianie.
+This phone runs \"%s\": %s (fixed).	Ten telefon działa w systemie \"%s\": %s (stałym).
+every gamemode	każdy tryb gry
+no gamemodes	brak trybów gry
+24/7 server (mp_server): --gamemodes %s	Serwer 24/7 (mp_server): --gamemodes %s
+Anti-cheat	Anty-oszustwa
+Nex-AC checks on the server. Always on (every check) on the default server, Mega Vil Futuristic, Brief Case War and MW3.	Sprawdzanie Nex-AC na serwerze. Zawsze włączone (przy każdym sprawdzaniu) na serwerze domyślnym, Mega Vil Futuristic, Brief Case War i MW3.
+Staff (you, admins, moderators) only get the warning. Checks marked (cheat) are skipped while menu cheats are allowed.	Personel (Ty, admini, moderatorzy) otrzymują tylko ostrzeżenie. Zaznaczone pola wyboru (oszustwa) są pomijane, natomiast oszukiwanie w menu jest dozwolone.
+Anti-cheat on my custom server	Ochrona przed oszustwami na moim niestandardowym serwerze
+ (cheat)	 (oszukiwać)
+All checks on	Wszystkie kontrole włączone
+All checks off	Wszystkie zaznaczenia wyłączone
+This phone runs \"%s\": anti-cheat %s (%u warnings so far).	Na tym telefonie działa \"%s\": program anty-oszukiwawczy %s (na razie %u ostrzeżeń).
+24/7 server (mp_server): --anticheat %llX  (or --no-anticheat)	Serwer 24/7 (mp_server): --anticheat %llX (lub --no-anticheat)
+another app on this phone	inna aplikacja na tym telefonie
+Port %d is free.	Port %d jest wolny.
+Port %d is taken (%s). This port needs a new one.	Port %d jest zajęty (%s). Ten port wymaga nowego.
+Use free port %d	Użyj wolnego portu %d
+Rules	Zasady
+A RULES window after the login on your server (players read it again with /rules).	Okno ZASAD wyświetlane po zalogowaniu się na serwerze (gracze czytają je ponownie za pomocą /rules).
+Show the rules	Pokaż zasady
+Title	Tytuł
+Rules title	Tytuł zasad
+Rule %d	Zasada %d
+Colours work like SA-MP: {FF0000}red {FFFF00}yellow {33CC55}green. Empty lines are skipped.	Kolory działają jak w SA-MP: {FF0000}czerwony {FFFF00}żółty {33CC55}zielony. Puste linie są pomijane.
+Custom server  -  %s	Serwer niestandardowy - %s
+Server name	Nazwa serwera
+Host / IP  (empty = host it on this phone)	Host/IP (pusty = hostuj na tym telefonie)
+e.g. ggwar or net.ggwar.org	np. ggwar lub net.ggwar.org
+Password (optional, max 16)	Hasło (opcjonalne, maks. 16)
+Password (max 16)	Hasło (maks. 16)
+Language	Język
+Language (e.g. English)	Język (np. angielski)
+Max players	Maksymalna liczba graczy
+%d players	%d graczy
+Server list full (%d/%d)	Pełna lista serwerów (%d/%d)
+Add server  (%d/%d)	Dodaj serwer (%d/%d)
+Add server  (hosted on this phone)	Dodaj serwer (hostowany na tym telefonie)
+Add server  (starting...)	Dodaj serwer (rozpoczyna się...)
+Add server  (host on this phone)	Dodaj serwer (host na tym telefonie)
+Brief Case War is a private gamemode server - it is always in the Internet list, just tap it.	Brief Case War to prywatny serwer trybu gry - zawsze znajduje się na liście internetowej, wystarczy go dotknąć.
+Modern Warfare 3 is a 24/7 featured server - it is always in the Internet list, just tap it.	Modern Warfare 3 to serwer dostępny 24 godziny na dobę, 7 dni w tygodniu — zawsze znajduje się na liście serwerów internetowych, wystarczy go dotknąć.
+Mega Vil Futuristic is a 24/7 featured Roleplay server - it is always in the Internet list, just tap it.	Mega Vil Futuristic to serwer Roleplay dostępny 24 godziny na dobę, 7 dni w tygodniu — zawsze znajduje się na liście serwerów w Internecie, wystarczy go dotknąć.
+Port %d is for the default server. Use %d or higher for a custom server.	Port %d jest przeznaczony dla serwera domyślnego. W przypadku serwera niestandardowego użyj portu %d lub wyższego.
+Port %d is taken - it needs a new port. Free port: %d (tap \"Use free port %d\").	Port %d jest zajęty – potrzebny jest nowy port. Wolny port: %d (dotknij \"Użyj wolnego portu %d\").
+Port %d is taken - type another port.	Port %d jest zajęty - wpisz inny port.
+That is the default server - it is always on top, just tap Connect.	To jest serwer domyślny, który zawsze jest na górze, wystarczy kliknąć Połącz.
+Port %d is taken by another server - it needs a new port (see \"Use free port\").	Port %d jest zajęty przez inny serwer — potrzebny jest nowy port (patrz \"Użyj wolnego portu\").
+That server is already in your list.	Ten serwer już znajduje się na Twojej liście.
+Added server \"%s\" (%s). Its IP stays hidden.	Dodano serwer \"%s\" (%s). Jego adres IP pozostaje ukryty.
+Enter a host/IP and a port (1-65535).	Wprowadź hosta/adres IP i port (1-65535).
+\"%s\" is hosted by 	\"%s\" jest hostowany przez 
+ (24/7 bot), %d/%d online	 (bot 24/7), %d/%d online
+Hosting \"%s\"  (IP hidden, %d/%d online)	Hosting \"%s\" (ukryty adres IP, %d/%d online)
+Listed in the internet lobby: players on mobile data can join.	W lobby internetowym znajdują się informacje: mogą dołączyć gracze korzystający z danych mobilnych.
+Not in the internet lobby yet (Wi-Fi/hotspot players only).	Jeszcze nie w lobby internetowym (tylko gracze z Wi-Fi/hotspotem).
+Stays online when you disconnect. If you leave the game, another player takes over.	Pozostaje online po rozłączeniu. Jeśli opuścisz grę, inny gracz przejmie kontrolę.
+Join my server	Dołącz do mojego serwera
+Leave + join my server	Opuść + dołącz do mojego serwera
+Stopping...	Zatrzymanie...
+Stop my server	Zatrzymaj mój serwer
+Checking online + Wi-Fi for \"%s\"...	Sprawdzanie online + Wi-Fi dla \"%s\"...
+Add server = save it to your server list.	Dodaj serwer = zapisz na liście serwerów.
+No Host / IP: Add server runs it on this phone. If it already runs on another phone, you join it.	Brak hosta/IP: Dodaj serwer, który uruchamia go na tym telefonie. Jeśli działa już na innym telefonie, dołącz go.
+Local IP	Lokalny adres IP
+Your local IP: %s  (port %d when you host)	Twój lokalny adres IP: %s (port %d w przypadku hostowania)
+Disconnect	Odłączyć
+Same Wi-Fi / hotspot: type the host's local IP and port, then Connect.	Ta sama sieć Wi-Fi/hotspot: wpisz lokalny adres IP i port hosta, a następnie Połącz.
+This phone: %s - port %d	Ten telefon: %s - port %d
+Hotspot: turn on your phone hotspot, host a server, friends join 192.168.43.1.	Hotspot: włącz hotspot w telefonie, utwórz serwer, znajomi dołączą 192.168.43.1.
+Authentication system	System uwierzytelniania
+Login with Discord	Zaloguj się za pomocą Discorda
+Login system %s on \"%s\" (players who join from now on).	System logowania %s w dniu \"%s\" (gracze, którzy dołączą od tej chwili).
+On: a new player gets a code, types /gen CODE in #verification on Discord, then creates an account (user, password, gender, age). Next time: login only.	Włączone: nowy gracz otrzymuje kod, wpisuje /gen CODE w polu #verification na Discordzie, a następnie tworzy konto (nazwa użytkownika, hasło, płeć, wiek). Następnym razem: tylko logowanie.
+Off: players spawn right away (no account).	Wyłączone: gracze pojawiają się od razu (brak konta).
+Discord: %s  (accounts are kept by the MP bot, never by the host, never shown to the others)	Discord: %s (konta są przechowywane przez bota MP, nigdy przez gospodarza, nigdy nie są pokazywane innym)
+The default server and Brief Case War always use it. Needs MP %s or newer on every phone.	Domyślny serwer i Brief Case War zawsze z niego korzystają. Wymagany jest MP %s lub nowszy na każdym telefonie.
+\"%s\": login %s	\"%s\": logowanie %s
+administrator.txt OK - this is how everyone sees you (name tag, chat, kill feed).	administrator.txt OK – tak wszyscy Cię widzą (imię, czat, kanał śmierci).
+Connect  -  %s (default)	Połącz - %s (domyślnie)
+Connecting...  (tap to cancel)	Łączenie... (dotknij, aby anulować)
+Connected  -  tap to Disconnect	Połączono – dotknij, aby rozłączyć
+Searching online + Wi-Fi...	Wyszukiwanie online + Wi-Fi...
+On \"%s\"  (%s)	W dniu \"%s\" (%s)
+internet, direct UDP	internet, bezpośredni UDP
+IP hidden	Ukryty adres IP
+Offline: turn on Wi-Fi or mobile data to play.	Offline: włącz Wi-Fi lub dane mobilne, aby grać.
+Host left - reconnecting to \"%s\"...	Host opuścił witrynę - ponowne łączenie z \"%s\"...
+Connect = the default server, always online.	Connect = serwer domyślny, zawsze online.
+Custom servers: Servers tab -> Join.	Serwery niestandardowe: Karta Serwery -> Dołącz.
+Players online: %d/%d	Gracze online: %d/%d
+Sound effects	Efekty dźwiękowe
+Hitsound effect	Efekt dźwiękowy uderzenia
+Enabled: a hit sound plays when you hit a player (guns, fists, melee, drive-by, cars).	Włączone: dźwięk trafienia jest odtwarzany, gdy trafisz gracza (broń palna, pięści, broń biała, przejeżdżający samochód, samochód).
+Disabled: no hit sound.	Wyłączone: brak dźwięku uderzenia.
+Test hit sound	Dźwięk uderzenia testowego
+sound_010.mp3 is missing from the MP folder (assets/MP).	W folderze MP (assets/MP) brakuje pliku sound_010.mp3.
+Voice chat	Czat głosowy
+Voice chat (hear players near you)	Czat głosowy (słyszysz graczy w pobliżu)
+Only on a server. Turn your mic on/off with the mic button next to Chat at the top. Players within 40 m hear you: louder up close, quieter further away.	Tylko na serwerze. Włącz/wyłącz mikrofon przyciskiem mikrofonu obok czatu u góry. Gracze w promieniu 40 m słyszą Cię: głośniej z bliska, ciszej z daleka.
+Voice volume	Głośność głosu
+Microphone boost	Wzmocnienie mikrofonu
+Voice pitch (how the others hear you)	Wysokość głosu (jak inni cię słyszą)
+Turn microphone off	Wyłącz mikrofon
+Turn microphone on	Włącz mikrofon
+Mic level	Poziom mikrofonu
+Connect to a server to turn on your microphone.	Połącz się z serwerem, aby włączyć mikrofon.
+Muted players: %d	Wyciszeni gracze: %d
+Unmute everybody	Wyłącz wyciszenie wszystkich
+          Microphone (connect to a server first)	          Mikrofon (najpierw połącz się z serwerem)
+          Microphone ON - tap to turn off	          Mikrofon WŁĄCZONY – dotknij, aby wyłączyć
+          Microphone OFF - tap to turn on	          Mikrofon WYŁĄCZONY – dotknij, aby włączyć
+Sending your voice...	Wysyłam Twój głos...
+Listening - talk and the bar turns green.	Słuchanie - zacznij mówić, a pasek zmieni kolor na zielony.
+Microphone: MP Voice app (working)	Mikrofon: aplikacja MP Voice (działa)
+Waiting for the MP Voice app...	Czekam na aplikację MP Voice...
+Open MP Voice	Otwórz MP Voice
+Hear voice chat	Słuchaj czatu głosowego
+Mute everybody (only for you)	Wycisz wszystkich (tylko dla siebie)
+Voice volume (what you hear)	Głośność głosu (to, co słyszysz)
+Deep	Głęboko
+Normal	Normalna
+High	Wysoki
+Chipmunk	Wiewiórka
+Crazy	Zwariowany
+Hear myself (test the pitch, use earphones)	Słyszę siebie (testuję wysokość dźwięku, używam słuchawek)
+Muted in the player list: %d	Wyciszono na liście graczy: %d
+Unmute all	Wyłącz wyciszenie wszystkich
+Like real life: players right next to you are loud, further away they get quieter, past %d m you can't hear them. Walk closer to hear someone.	Jak w prawdziwym życiu: gracze tuż obok ciebie są głośni, dalej cichną, po %d m ich nie słychać. Podejdź bliżej, żeby kogoś usłyszeć.
+Name tag size	Rozmiar identyfikatora
+Name tag distance	Odległość od identyfikatora
+Name tag: show yourself	Etykieta z imieniem: pokaż się
+On: your own name tag shows above you (only on your screen).	Włączone: Twoja etykieta z imieniem wyświetla się nad Tobą (tylko na Twoim ekranie).
+Off: you don't see your own name tag (the others still see it).	Wyłączone: nie widzisz swojego imiennego identyfikatora (inni nadal go widzą).
+Font	Chrzcielnica
+  (not on this phone)	  (nie na tym telefonie)
+None	Nic
+Outline	Zarys
+Bold outline	Pogrubiony kontur
+Shadow	Cień
+Text effect	Efekt tekstowy
+Font scale	Skala czcionki
+UI scale	Skala interfejsu użytkownika
+No camera shake	Brak drgań aparatu
+Health bars	Paski zdrowia
+Player radar icons	Ikony radaru gracza
+Chat	Pogawędzić
+Kill feed	Zabij kanał
+Server modes are locked on this server (only the owner, [ADMIN] or [MOD]).	Tryby serwera są zablokowane na tym serwerze (tylko właściciel, [ADMIN] lub [MOD]).
+Sync player animations	Synchronizuj animacje gracza
+Sync explosions, fire, weapons	Synchronizuj eksplozje, ogień, broń
+Sync NPCs (people + traffic)	Synchronizuj NPC (ludzie + ruch)
+Broker standby #%d/100 (host offline featured servers)	Broker rezerwowy nr %d/100 (hostowanie serwerów wyróżnionych w trybie offline)
+Open world (cities, shops, food, gyms, garages)	Otwarty świat (miasta, sklepy, jedzenie, siłownie, garaże)
+Girlfriend houses (optional)	Domy dla dziewczyn (opcjonalnie)
+[Race] / [DM] / [Job] tips in the chat	Porady dotyczące [Rasy] / [DM] / [Pracy] na czacie
+3D text labels (job / race / derby starts)	Etykiety tekstowe 3D (starty w zawodach / wyścigach / derbach)
+Map icons (jobs, races, derbies, DM)	Ikony mapy (zawody, wyścigi, derby, DM)
+Actors (people at the job starts)	Aktorzy (osoby rozpoczynające pracę)
+Gang zones on the radar + map	Strefy gangów na radarze + mapa
+Mega Vil radar	Radar Mega Vil
+Game radar	Radar gier
+Google map 2D	Mapa Google 2D
+Google map 3D	Mapa Google 3D
+MW3: PUBG compass on top	MW3: kompas PUBG na górze
+Chat position + chat box	Pozycja czatu + pole czatu
+Show chat background (strip behind the lines)	Pokaż tło czatu (pasek za liniami)
+Show chat box background	Pokaż tło pola czatu
+Show chat box label (\"Tap to chat\")	Pokaż etykietę pola czatu (\"Dotknij, aby czatować\")
+Tap the chat box to type	Kliknij pole czatu, aby pisać
+Only the Chat button opens the keyboard - taps on the box go to the game.	Tylko przycisk Czat otwiera klawiaturę - stuknięcie w pole powoduje przejście do gry.
+Chat lines position X / Y	Pozycja linii czatu X/Y
+Chat box right under the chat lines	Pole czatu tuż pod liniami czatu
+Chat box position X / Y	Pozycja pola czatu X / Y
+Reset chat position	Zresetuj pozycję czatu
+Chat scale (chat lines + chat box)	Skala czatu (linie czatu + pole czatu)
+Small	Mały
+Big	Duży
+Huge	Ogromny
+Player: preview of the chat size	Odtwarzacz: podgląd rozmiaru czatu
+Chat timestamps [HH:MM:SS]	Znaczniki czasu czatu [GG:MM:SS]
+On: every chat line starts with the time it arrived, like [18:02:48].	Włączone: każda linia czatu zaczyna się od czasu nadejścia wiadomości, np. [18:02:48].
+Off: no time in front of the chat lines (turn on to see [18:02:48]).	Wyłączone: brak czasu przed liniami czatu (włącz, aby zobaczyć [18:02:48]).
+Lines shown (0 = only while typing)	Wyświetlane wiersze (0 = tylko podczas pisania)
+%d lines	%d wierszy
+Text size	Rozmiar tekstu
+Width (long lines wrap)	Szerokość (zawijanie długich linii)
+%d %% of the screen	%d %% ekranu
+Fade out after	Wycisz po
+%d seconds	%d sekund
+Chat bubbles (text over the head)	Dymki czatu (tekst nad głową)
+Small chat (4 lines, 70 %)	Krótki czat (4 linijki, 70%)
+Reset chat layout	Zresetuj układ czatu
+Clear chat	Wyczyść czat
+Chat commands: /chatscale /pagesize /fontsize /chatwidth /chatfade /chatbg /clearchat	Polecenia czatu: /chatscale /pagesize /fontsize /chatwidth /chatfade /chatbg /clearchat
+Name color	Nazwa koloru
+Shows on your name tag, chat, kill feed and radar icon.	Wyświetla się na Twojej plakietce, czacie, kanale zabójstw i ikonie radaru.
+Custom color (R / G / B)	Kolor niestandardowy (R / G / B)
+Automatic (server color)	Automatyczny (kolor serwera)
+Avatar skin (how others see you as CJ)	Skórka awatara (jak inni widzą Cię jako CJ)
+Big Smoke	Wielki Dym
+Sweet	Słodki
+Aztecas 1	Aztekowie 1
+Aztecas 2	Aztekowie 2
+Aztecas 3	Aztekowie 3
+Triads 1	Triady 1
+Triads 2	Triady 2
+Triad boss	Szef triady
+Country cop	Policjant wiejski
+Biker cop	Policjant motocyklowy
+Army	Armia
+Show my real model (skin mods, story characters, CJ's clothes)	Pokaż mój prawdziwy model (modyfikacje skóry, postacie fabularne, ubrania CJ)
+Others see you as: %s	Inni widzą Cię jako: %s
+Others see you as: ped model %d	Inni widzą cię jako: modelkę pedofilską %d
+Teleport to Grove Street	Teleportacja na Grove Street
+100% progress on the default server	100% ppostępu na domyślnym serwerze
+All missions done while you play on the default server. Leaving it loads your own latest save again (your saves are backed up and put back). Custom servers always use your own progress.	Wszystkie misje wykonane podczas gry na serwerze domyślnym. Pozostawienie go powoduje ponowne załadowanie Twojego najnowszego zapisu (Twoje zapisy są archiwizowane i przywracane). Serwery niestandardowe zawsze korzystają z Twoich własnych postępów.
+Connection	Połączenie
+Servers	Serwery
+Display	Wyświetlacz
+Sound	Dźwięk
+Voice	Głos
+Cheats	Oszustwa
+User	Użytkownik
+Password	Hasło
+Age	Wiek
+Male	Mężczyzna
+Female	Kobieta
+Other	Inny
+# the game logs you in by itself. Delete it (or log out) to use another account.\nuser=%s\n	# gra loguje się sama. Usuń ją (lub wyloguj się), aby użyć innego konta.\nuser=%s\n
+# the game logs you in by itself. Delete it (or log out) to use another account.	# Gra loguje się sama. Usuń ją (lub wyloguj się), aby użyć innego konta.
+user=%s	użytkownik=%s
+Your account was created successfully. Welcome, %s.	Twoje konto zostało pomyślnie utworzone. Witaj, %s.
+Logged in as %s.	Zalogowano jako %s.
+user=	użytkownik=
+discord=	niezgoda=
+tap to type	dotknij, aby pisać
+your account	Twoje konto
+Logging in as %s	Logowanie jako %s
+Connecting to the login server	Łączenie z serwerem logowania
+Code authentication	Uwierzytelnianie kodem
+Welcome	Powitanie
+MEGA VIL FUTURISTIC  |  	MEGA VIL FUTURYSTYCZNY |  
+MODERN WARFARE 3  |  	MODERN WARFARE 3 |  
+BRIEF CASE WAR  |  	WOJNA W SPRAWIE KRÓTKOMETRAŻOWEJ |  
+MP  |  	Poseł |  
+Logging in	Logowanie
+This server uses accounts. Verify with Discord first:	Ten serwer korzysta z kont. Najpierw zweryfikuj na Discordzie:
+1.  Join the Discord server:	1. Dołącz do serwera Discord:
+2.  In the #verification channel type:	2. W kanale #verification wpisz:
+Waiting for /gen...  (code works %d:%02d more)	Czekam na /gen... (kod działa %d:%02d więcej)
+Open Discord	Otwórz Discorda
+New code	Nowy kod
+I have an account: Login	Mam konto: Zaloguj się
+Leave server	Opuść serwer
+Discord verified: %s	Zweryfikowano na Discordzie: %s
+Gender	Płeć
+User 3-20 letters / numbers / _   Password 6-32   Age 10-24	Użytkownik 3-20 liter / cyfr / _ Hasło 6-32 Wiek 10-24
+Create	Tworzyć
+Age must be 10-24.	Wiek musi mieścić się w przedziale 10-24.
+Welcome back. Log in to play.	Witamy ponownie. Zaloguj się, aby zagrać.
+New account (Discord code)	Nowe konto (kod Discord)
+Your account was created successfully	Twoje konto zostało pomyślnie utworzone
+Welcome, %s	Witamy, %s
+Login failed.	Logowanie nieudane.
+Try again	Spróbuj ponownie
+Log in first.	Najpierw się zaloguj.
+No account here: this server has no login system (the default server and Brief Case War have it).	Brak konta: ten serwer nie ma systemu logowania (domyślny serwer i Brief Case War go mają).
+My account  (only you see this)	Moje konto (tylko Ty to widzisz)
+Loading...	Załadunek...
+Could not load your account.	Nie udało się załadować Twojego konta.
+Discord	Niezgoda
+Created	Stworzony
+Logins	Logowania
+Last login	Ostatnie logowanie
+Score here	Wynik tutaj
+Server	Serwer
+Close	Zamknąć
+ [Leader]	 [Lider]
+%s STOLE THE %s BRIEFCASE	%s SKRADŁ %s TAKTORKĘ
+%s stole the %s briefcase!	%s ukradł %s teczkę!
+THE %s BRIEFCASE WAS DROPPED	%s Teczka została upuszczona
+The %s briefcase was dropped%s%s.	%sTeczka została upuszczona%s%s.
+ by 	 przez 
+%s PICKED UP THE %s BRIEFCASE	%s PODNIOSŁ %s TAKTORKĘ
+%s picked up the %s briefcase.	%s podniósł %s teczkę.
+THE %s BRIEFCASE IS BACK HOME	%s TECZKA WRÓCIŁA DO DOMU
+The %s briefcase is back in its base%s%s.	%s Aktówka wróciła do swojej bazy%s%s.
+ - returned by 	 - zwrócone przez 
+%s VICTORY	%s ZWYCIĘSTWO
+GUSTAV TEAM	Zespół Gustav
+SCHELAPZ TEAM	ZESPÓŁ SCHELAPZ
+%s wins the Brief Case War!%s	%s wygrywa wojnę w teczkach!%s
+ (Victory)	 (Zwycięstwo)
+ (Defeat)	 (Pokonać)
+WAR! STEAL THE ENEMY BRIEFCASE	WOJNA! UKRADNIJ TABLICZKĘ WROGA
+Brief Case War started on %s. Steal the enemy briefcase and bring it to your base.	Wojna o walizkę rozpoczęła się %s. Ukradnij walizkę przeciwnika i przynieś ją do swojej bazy.
+NEXT MAP: %s	NASTĘPNA MAPA: %s
+Next map: %s. Pick your team.	Następna mapa: %s. Wybierz swoją drużynę.
+Put war_ambient.mp3 in files/MP to hear the war music.	Wpisz war_ambient.mp3 w files/MP, aby usłyszeć muzykę wojenną.
+You are in %s. Steal the %s briefcase!	Jesteś w %s. Ukradnij teczkę %s!
+Gustav	Gustaw
+Wait %d s for the next vehicle.	Poczekaj %d s na następny pojazd.
+/%s is not available in Brief Case War.	/%s nie jest dostępny w Brief Case War.
+%s BASE	%s BAZA
+%s BRIEFCASE  %ds	%s TECZKA %ds
+GUSTAV %d	GUSTAW %d
+STEALING THE %s BRIEFCASE  %d%%	KRADZIEŻ %s TECZNICY %d%%
+YOUR BRIEFCASE IS BEING STOLEN!	TWOJA TECZKA ZOSTAJE SKRADZIONA!
+YOU HAVE THE BRIEFCASE - BRING IT TO YOUR BASE!	MASZ TABLICZKĘ - PRZYNIEŚ JĄ DO SWOJEJ BAZY!
+YOUR BRIEFCASE IS STOLEN TOO - KILL THEIR CARRIER FIRST!	TWOJA TEŻ TEŻ ZOSTAŁA SKRADZIONA - NAJPIERW ZABIJ ICH NOSICIELA!
+WORLD BARRIER	ŚWIATOWA BARIERA
+BRIEF CASE WAR	KRÓTKA WOJNA
+YOU DIED	UMARŁEŚ
+%s - you will spawn in your safe zone	%s - pojawisz się w swojej bezpiecznej strefie
+Respawn in %d.%02d	Odrodzenie za %d.%02d
+WAITING FOR PLAYERS  %d/%d	CZEKAMY NA GRACZY %d/%d
+PICK YOUR TEAM  -  %d/%d IN THE QUEUE	WYBIERZ SWOJĄ DRUŻYNĘ - %d/%d W KOLEJCE
+You are in %s - the war starts at %d/%d players	Jesteś w %s - wojna zaczyna się od %d/%d graczy
+A WAR IS RUNNING - JOIN A TEAM WITH A FREE SLOT	WOJNA TRWA – DOŁĄCZ DO DRUŻYNY Z WOLNYM MIEJSCEM
+Gustav Team  %d/%d	Zespół Gustav %d/%d
+Schelapz Team  %d/%d	Zespół Schelapz %d/%d
+PICKING TEAM LEADERS	WYBÓR LIDERÓW ZESPOŁU
+GUSTAV TEAM LEADER	GUSTAV LIDER ZESPOŁU
+SCHELAPZ TEAM LEADER	LIDER ZESPOŁU SCHELAPZ
+LEADER!	LIDER!
+GUSTAV TEAM VICTORY	ZWYCIĘSTWO DRUŻYNY GUSTAVA
+SCHELAPZ TEAM VICTORY	ZWYCIĘSTWO DRUŻYNY SCHELAPZ
+Cooldown - resetting the war zone  %d.%02d	Odnowienie – resetowanie strefy wojny %d.%02d
+briefcases, objects and war vehicles cleared  -  scoreboard and map vote next	usunięto teczki, przedmioty i pojazdy wojenne – teraz głosowanie na tablicę wyników i mapę
+BRIEF CASE WAR  -  %s	KRÓTKA SPRAWA WOJENNA - %s
+%d kills  -  %d score	%d zabójstw - %d wynik
+Gustav Team [%s]	Zespół Gustav [%s]
+Victory	Zwycięstwo
+Defeat	Pokonać
+Schelapz Team [%s]	Zespół Schelapz [%s]
+Steal	Ukraść
+Cap	Czapka
+Ret	Gnić
+Dmg	Obrażenia
+Score	Wynik
+map vote in %d s	głosowanie na mapę za %d s
+VOTE THE NEXT WAR MAP  -  %d s	GŁOSUJ NA NASTĘPNĄ MAPĘ WOJENNĄ - %d s
+VOTE THE NEXT WAR MAP  -  opens in %d s	GŁOSUJ NA NASTĘPNĄ MAPĘ WOJENNĄ – otwiera się za %d s
+%d vote%s	%d głosów%s
+last map	ostatnia mapa
+Patriot	Patriota
+Barracks	Koszary
+Rhino (tank)	Rhino (czołg)
+Hunter (fighter helicopter)	Hunter (śmigłowiec myśliwski)
+Vehicle	Pojazd
+Left Brief Case War.	Lewa krótka sprawa wojny.
+teleport, e.g. /tp :grove_street	teleportacja, np. /tp :grove_street
+name tags through walls, any distance (on foot + in a car)	plakietki z nazwiskami przez ściany, na dowolną odległość (pieszo i samochodem)
+no fall damage, soft landings (on foot + in a car)	brak uszkodzeń spowodowanych upadkiem, miękkie lądowania (na piechotę i w samochodzie)
+no damage at all (on foot + in a car)	żadnych uszkodzeń (pieszo i samochodem)
+freeze in place (on foot)	zastygnąć w miejscu (na nogach)
+nobody sees you (on foot)	nikt cię nie widzi (na piechotę)
+fly where the camera looks, joystick = move (on foot + in a car)	latać tam, gdzie patrzy kamera, joystick = poruszać się (pieszo + samochodem)
+run super fast (on foot)	biegać bardzo szybko (pieszo)
+go behind the nearest player / player id after 3 2 1 (30 s cooldown)	przejdź za najbliższego gracza/id gracza po 3 2 1 (30 s odnowienia)
+gravity, 1 = normal (on foot + in a car)	grawitacja, 1 = normalna (pieszo + w samochodzie)
+chat lines shown (0 = only while typing)	wyświetlane linie czatu (0 = tylko podczas pisania)
+chat text size in %	rozmiar tekstu czatu w %
+scale the whole chat (lines + chat box) in %	skaluj cały czat (linie + pole czatu) w %
+seconds before chat lines fade (0 = never)	sekund przed zniknięciem linii czatu (0 = nigdy)
+chat background on / off	włączanie/wyłączanie tła czatu
+clear your chat	wyczyść swój czat
+your account (user, Discord, gender, age, logins)	Twoje konto (użytkownik, Discord, płeć, wiek, logowania)
+same as /stats	tak samo jak /stats
+list the commands	wypisz polecenia
+player left	gracz po lewej stronie
+no position from them yet	nie ma jeszcze od nich żadnego stanowiska
+they are paused	są wstrzymane
+they are on a mission / in a cutscene	są na misji / w przerywniku filmowym
+their position is too old	ich stanowisko jest za stare
+they are in another interior	są w innym wnętrzu
+Go behind cancelled%s%s.	Przejdź za anulowane%s%s.
+tapped again	stuknął ponownie
+Go behind again in %d s.	Wróć ponownie za %d s.
+Can't go behind %s: %s.	Nie można wyjść za %s: %s.
+Can't go behind as a passenger.	Nie mogę jechać z tyłu jako pasażer.
+Going behind %s in 3... (tap Cancel to stop)	Zbliżam się do %s za 3... (dotknij Anuluj, aby zatrzymać)
+Behind %s.	Za %s.
+you died	umarłeś
+Going behind %s	Idąc za %s
+No player to go behind%s.	Żaden gracz nie zostanie w tyle%s.
+ (wrong id)	 (błędny identyfikator)
+Usage: /tp :place  -  %s	Użycie: /tp :place - %s
+Teleported to %s.	Teleportowano do %s.
+No player with id %d.	Brak gracza o identyfikatorze %d.
+Unknown place \"%s\". Type /tp to list them.	Nieznane miejsce \"%s\". Wpisz /tp, aby je wyświetlić.
+Gravity: %.2f%s	Grawitacja: %.2f%s
+ (normal)	 (normalna)
+Unknown command /%s. Type /help.	Nieznane polecenie /%s. Wpisz /help.
+Mission sync request	Prośba o synchronizację misji
+wants to Mission sync with you: you see each other on missions and share the mission.	chce, aby Misja była z Tobą zsynchronizowana: widujecie się na misjach i dzielicie się misją.
+Closes in %d s	Zamyka się za %d s
+Accept	Przyjąć
+*** Mission sync with %s...	*** Synchronizacja misji z %s...
+Decline	Spadek
+*** You declined Mission sync with %s.	*** Odrzuciłeś synchronizację misji z %s.
+Unsync mission	Misja niezsynchronizowana
+Accept Mission sync	Zaakceptuj synchronizację misji
+Group full (16)	Grupa pełna (16)
+Asked... (waiting)	Zapytał... (czekając)
+Mission sync	Synchronizacja misji
+*** Asked %s for Mission sync. Waiting for them to accept...	*** Poproszono %s o synchronizację misji. Czekam na akceptację...
+*** %s is no longer in your Mission sync.	*** %s nie jest już synchronizowany z Twoją misją.
+Player list	Lista graczy
+Not connected	Nie połączony
+Players: %d	Gracze: %d
+Not connected. Server > Connect, or join a custom server.	Brak połączenia. Serwer > Połącz lub dołącz do niestandardowego serwera.
+%s: on mission %s	%s: na misji %s
+%s: in a cutscene	%s: w scenie przerywnikowej
+%s  |  HP %d  |  armour %d	%s | HP %d | pancerz %d
+Mission sync is off on this server	Synchronizacja misji jest wyłączona na tym serwerze
+Go behind (%d s)	Idź za (%d s)
+Go behind (3 2 1)	Idź za (3 2 1)
+      Unmute voice	      Włącz wyciszenie głosu
+      Mute voice	      Wycisz głos
+Mission sync (%d/%d): you, %s	Synchronizacja misji (%d/%d): ty, %s
+Leave Mission sync	Opuść synchronizację misji
+*** You left Mission sync.	*** Opuściłeś synchronizację misji.
+Tap a player, then Mission sync (up to 16 together). They get Accept / Decline.	Dotknij gracza, a następnie zsynchronizuj misję (do 16 jednocześnie). Otrzymają oni opcje Akceptuj/Odrzuć.
+Settings	Ustawienia
+Help	Pomoc
+MP 2.37 - multiplayer for GTA SA	MP 2.37 - tryb wieloosobowy dla GTA SA
+Top bar: the dots open Help, Server and Player list. Chat opens the chat box (type / for the commands). Drag the bar to move it.	Pasek górny: kropki otwierają Pomoc, Serwer i Listę Graczy. Czat otwiera okno czatu (wpisz /, aby wprowadzić komendy). Przeciągnij pasek, aby go przesunąć.
+Server: connect to the default server, join or add custom servers (with an optional password, max 16 characters), host your own.	Serwer: połącz się z domyślnym serwerem, dołącz do własnych serwerów lub dodaj je (z opcjonalnym hasłem, maks. 16 znaków), hostuj swój własny.
+Player list: tap a player, then Mission sync. They get a popup with Accept / Decline. Synced players see each other on every mission (also in mission scenes) and share markers.	Lista graczy: dotknij gracza, a następnie Synchronizuj misję. Pojawi się okno z opcjami Akceptuj/Odrzuć. Zsynchronizowani gracze widzą się nawzajem podczas każdej misji (również w scenach misji) i dzielą się znacznikami.
+Chat commands	Polecenia czatu
+Games (2.21)	Gry (2.21)
+/spawn [id|name] (or /v) any vehicle 400-611, /w [id|name|all] weapons, /fix, /flip, /heal, /armour	/spawn [id|nazwa] (lub /v) dowolny pojazd 400-611, /w [id|nazwa|wszystkie] bronie, /fix, /flip, /heal, /armour
+/race 1-8 races with checkpoints and times, /job trucking|quarry|pizza|burger|cluckin|taxi|medic|firetruck, /dm war|grove|airport|minigun|sniper, /leave, /scores	/race 1-8 wyścigów z punktami kontrolnymi i czasami, /job ciężarówki|kamieniołom|pizza|burger|cluckin|taksówka|medyk|wóz strażacki, /dm wojna|gaj|lotnisko|minigun|snajper, /leave, /scores
+Teleports everybody sees: /ls /sf /lv /chiliad /lsairport /sfairport /lvairport /desert /beach /strip /dam /area51 /pizza /burger /cluckin /barber /tattoo /gym /gymsf /gymlv /clothes /prolaps /victim /ammu /spray /transfender /locolow /waa /school /flightschool /boatschool /truck /quarry /emmet /home /gf /casino	Teleporty, które każdy widzi: /ls /sf /lv /chiliad /lsairport /sfairport /lvairport /desert /beach /strip /dam /area51 /pizza /burger /cluckin /barber /tattoo /gym /gymsf /gymlv /clothes /prolaps /victim /ammu /spray /transfender /locolow /waa /school /flightschool /boatschool /truck /quarry /emmet /home /gf /casino
+Open world: /unlock (all cities, shops, food, gyms, barbers, tattoo, clothes, Ammu-Nation, Pay 'n' Spray, mod garages, schools, safe houses), /girlfriends	Otwarty świat: /unlock (wszystkie miasta, sklepy, jedzenie, siłownie, fryzjerzy, studia tatuażu, ubrania, Ammu-Nation, Pay 'n' Spray, garaże modów, szkoły, bezpieczne domy), /girlfriends
+Places for /tp :place	Miejsca dla /tp :place
+Say	Mowić
+Tap to chat  -  type / for commands	Dotknij, aby rozmawiać – wpisz /, aby uzyskać polecenia
+Chat button to type  -  / for commands	Przycisk czatu do wpisywania - / dla poleceń
+Spawn	Ikra
+You are back (not AFK any more).	Wróciłeś (już nie jesteś AFK).
+You are AFK (3 minutes without moving). Move to come back.	Jesteś AFK (3 minuty bez ruchu). Rusz się, żeby wrócić.
+AFK: you leave the server in 1 minute if you don't move.	AFK: jeśli się nie ruszysz, opuścisz serwer w ciągu 1 minuty.
+AFK for 20 minutes: you left the server so somebody else can play.	AFK przez 20 minut: opuściłeś serwer, aby ktoś inny mógł zagrać.
+right arm	prawe ramię
+left arm	lewe ramię
+right torso	prawy tułów
+left torso	lewy tułów
+right leg	prawa noga
+left leg	lewa noga
+%s hit the %s	%s uderz w %s
+Landstalker	Łowca Ziemi
+Bravura	Brawura
+Buffalo	Bawół
+Perennial	Bylina
+Sentinel	Posterunek
+Dumper	Wywrotka
+Firetruck	Wóz strażacki
+Trashmaster	Śmieciarz
+Stretch	Rozciągać się
+Infernus	Piekło
+Voodoo	Wiara w czary
+Pony	Kucyk
+Mule	Muł
+Cheetah	Gepard
+Ambulance	Ambulans
+Leviathan	Lewiatan
+Moonbeam	Promień księżyca
+Washington	Waszyngton
+Bobcat	Ryś amerykański
+Mr Whoopee	Pan Whoopee
+BF Injection	Wstrzyknięcie BF
+Enforcer	Egzekutor
+Predator	Drapieżnik
+Bus	Autobus
+Rhino	Nosorożec
+Hotknife	Gorący nóż
+Trailer 1	Przyczepa 1
+Previon	Poprzedni
+Coach	Trener
+Cabbie	Taksówkarz
+Stallion	Ogier
+Packer	Pakowacz
+Admiral	Admirał
+Seasparrow	Wróbel morski
+Tram	Tramwajowy
+Trailer 2	Zwiastun 2
+Turismo	Turystyka
+Speeder	Śmigacz
+Reefer	Aspirant w marynarce
+Tropic	Zwrotnik
+Flatbed	Platforma
+Yankee	Jankes
+Caddy	Nosiciel kijów golfowych
+Solair	Solar
+Skimmer	Cedzidło
+Freeway	Autostrada
+Oceanic	Oceaniczny
+Sparrow	Wróbel
+Quad	Kwadrat
+Coastguard	Ochrona wybrzeża
+Dinghy	Łódka
+Sabre	Szabla
+Rustler	Koniokrad
+Comet	Kometa
+Camper	Obozowicz
+Marquis	Markiz
+Baggage	Bagaż
+Dozer	Spychacz
+Maverick	Politycznie niezależny
+News Chopper	Wiadomości Chopper
+Rancher	Farmer
+FBI Rancher	Ranczer FBI
+Virgo	Panna
+Hotring	Pierścień grzewczy
+Police Maverick	Policja Maverick
+RC Goblin	Goblin RC
+Bloodring Banger	Krwawy Banger
+Rancher Lure	Przynęta Rancher
+Elegant	Elegancki
+Journey	Podróż
+Bike	Rower
+Mountain Bike	Rower górski
+Beagle	Pies gończy
+Cropduster	Opryskiwacz
+Stunt	Popis kaskaderski
+Tanker	Zbiornikowiec
+Roadtrain	Pociąg drogowy
+Nebula	Mgławica
+Majestic	Majestatyczny
+Buccaneer	Pirat
+Shamal	Szamal
+Cement Truck	Ciężarówka do przewozu cementu
+Tow Truck	Holownik
+Fortune	Fortuna
+FBI Truck	Ciężarówka FBI
+Forklift	Podnośnik widłowy
+Tractor	Ciągnik
+Combine	Łączyć
+Blade	Ostrze
+Freight	Fracht
+Streak	Pasemko
+Vortex	Wir
+Bullet	Kula
+Clover	Koniczyna
+Firetruck LA	Wóz strażacki LA
+Hustler	Człowiek przedsiębiorczy
+Intruder	Intruz
+Sunrise	Wschód słońca
+Merit	Zasługa
+Utility	Pożytek
+Monster A	Potwór A
+Monster B	Potwór B
+Uranus	Uran
+Jester	Błazen
+Sultan	Sułtan
+Stratum	Warstwa
+Elegy	Elegia
+Raindance	Taniec deszczu
+Flash	Błysk
+Savanna	Sawanna
+Bandito	Bandyta
+Freight Flat	Towarowy płaski
+Streak Carriage	Powóz smugowy
+Kart	Gokart
+Mower	Kosiarka
+Sweeper	Zamiatarka
+Newsvan	Wóz informacyjny
+Tug	Holownik
+Trailer 3	Zwiastun 3
+Emperor	Cesarz
+Wayfarer	Wędrowiec
+Euros	Euro
+Hotdog	Hot dog
+Club	Klub
+Freight Box	Skrzynia ładunkowa
+Article Trailer 3	Zwiastun artykułu 3
+Dodo	Dront
+RC Cam	Kamera RC
+Launch	Początek
+Police LSPD	Policja LSPD
+Police SFPD	Policja SFPD
+Police LVPD	Policja LVPD
+Police Ranger	Policjant Ranger
+Picador	Pikador
+Alpha	Alfa
+Phoenix	Feniks
+Baggage Trailer A	Przyczepa bagażowa A
+Baggage Trailer B	Przyczepa bagażowa B
+Tug Stairs	Schody holownicze
+Boxville Black	Boxville Czarny
+Farm Trailer	Przyczepa rolnicza
+Utility Trailer	Przyczepa użytkowa
+Could not spawn that vehicle here.	Nie można utworzyć tutaj tego pojazdu.
+Spawned %s (%d).	Powstał %s (%d).
+/spawn [id or name]  e.g. /spawn 411  or  /spawn infernus  (400 - 611)	/spawn [id lub nazwa] np. /spawn 411 lub /spawn infernus (400 - 611)
+Popular: 411 Infernus, 522 NRG-500, 560 Sultan, 541 Bullet, 451 Turismo, 487 Maverick, 520 Hydra, 432 Rhino, 556 Monster, 468 Sanchez	Popularne: 411 Infernus, 522 NRG-500, 560 Sultan, 541 Bullet, 451 Turismo, 487 Maverick, 520 Hydra, 432 Rhino, 556 Monster, 468 Sanchez
+No vehicle \"%s\". Use an id 400 - 611 or a name (/spawn infernus).	Brak pojazdu \"%s\". Użyj identyfikatora 400–611 lub nazwy (/spawn infernus).
+%s (%d) can't be spawned (rail / camera vehicle or trailer).	%s (%d) nie może zostać wygenerowany (pojazd szynowy/kamerowy lub przyczepa).
+/w [id or name]  or  /w all  (pack: deagle, m4, spas, sniper, grenades)	/w [id lub nazwa] lub /w wszystkie (pakiet: deagle, m4, spas, snajper, granaty)
+Weapon pack given.	Podano pakiet broni.
+No weapon \"%s\". Type /w for the list.	Brak broni \"%s\". Wpisz /w, aby wyświetlić listę.
+Weapon: %s (%d).	Broń: %s (%d).
+Mount Chiliad	Góra Chiliad
+Los Santos Airport	Lotnisko Los Santos
+Easter Bay Airport	Lotnisko Easter Bay
+Las Venturas Airport	Lotnisko Las Venturas
+Verdant Meadows Airstrip	Pas startowy Verdant Meadows
+Santa Maria Beach	Plaża Santa Maria
+The Strip	Pasek
+Sherman Dam	Zapora Shermana
+Area 69 gate	Brama Strefy 69
+Cluckin' Bell	Dzwonek Cluckin'
+Reece's Barber Shop	Salon fryzjerski Reece'a
+Ganton Gym	Siłownia Ganton
+Cobra Martial Arts	Sztuki walki Cobra
+Below the Belt Gym	Siłownia Below the Belt
+Victim	Ofiara
+Pay 'n' Spray	Zapłać i spryskaj
+Wheel Arch Angels	Anioły nadkoli
+Driving School	Szkoła jazdy
+Flight School	Szkoła lotnicza
+RS Haul (trucking)	RS Haul (transport ciężarowy)
+Hunter Quarry	Kamieniołom Hunter
+Emmet's	Emmeta
+CJ's safe house	Bezpieczny dom CJ
+Denise's house	Dom Denise
+Caligula's Casino	Kasyno Kaliguli
+Leave the race / job / DM first (/leave).	Najpierw opuść wyścig / zadanie / DM (/leave).
+(/%s) %s teleported to %s!	(/%s) %s teleportował się do %s!
+Trucking: RS Haul -> Las Venturas	Transport ciężarowy: RS Haul -> Las Venturas
+Quarry: haul the rocks	Kamieniołom: transport kamieni
+Pizza Delivery: Idlewood	Dostawa pizzy: Idlewood
+Burger Shot Delivery	Dostawa Burger Shot
+Cluckin' Bell Delivery	Dostawa dzwonka Cluckin' Bell
+Taxi: downtown fares	Taksówka: ceny w centrum miasta
+Paramedic: hospital run	Ratownik medyczny: bieganie po szpitalu
+Firefighter: Ganton call	Strażak: Wezwanie Gantona
+War Zone DM	Strefa Wojny DM
+LV Airport DM	DM lotniska LV
+Minigun Madness	Szaleństwo minigunów
+Verdant Meadows Derby	Zielone Łąki Derby
+[Job] %s started %s (/job %s)	[Praca] %s rozpoczęta %s (/job %s)
+Connect to a server first.	Najpierw połącz się z serwerem.
+This server can't run races yet: it needs the 3.01 server (HiveMQ console option 7, or mp-server update).	Na tym serwerze nie można jeszcze organizować wyścigów: wymagany jest serwer 3.01 (konsola HiveMQ, opcja 7 lub aktualizacja mp-server).
+Finish (or /leave) your race / derby / job / DM first.	Najpierw zakończ (lub /leave) swój wyścig / derby / pracę / DM.
+You are in the race queue: %d/%d players. The race starts at %d. /leave to leave.	Jesteś w kolejce wyścigu: %d/%d graczy. Wyścig rozpoczyna się o %d. /leave, aby wyjść.
+[Race] %s is waiting for a race - type /race to join (starts with %d players, or %d s after 2 players join).	[Wyścig] %s czeka na wyścig — wpisz /race, aby dołączyć (rozpoczyna się z %d graczami lub %d po dołączeniu 2 graczy).
+You left the race queue.	Opuściłeś kolejkę wyścigową.
+Could not spawn the race vehicle.	Nie udało się utworzyć pojazdu wyścigowego.
+~y~%s~n~~w~%d racers	~y~%s~n~~w~%d zawodników
+[Race] %s (%s, %s, %d checkpoints) - grid place %d of %d. /leave to quit.	[Wyścig] %s (punkty kontrolne %s, %s, %d) - miejsce na siatce %d z %d. /leave, aby zrezygnować.
+RACE: %s finished %s in %d%s place! (%s%s)	WYŚCIG: %s ukończył %s na %d%s miejscu! (%s%s)
+ - best	 - to, co najlepsze
+~y~%d%s place!~n~~w~%s  ~g~+$%d	~y~%d%s miejsce!~n~~w~%s ~g~+$%d
+JOB: %s completed %s! (+$%d, %s)	ZADANIE: %s ukończone %s! (+$%d, %s)
+~g~Job complete!~n~~w~+$%d	~g~Zadanie wykonane!~n~~w~+$%d
+(/dm %s) %s teleported to %s!	(/dm %s) %s teleportował się do %s!
+[Derby] %s joined %s (/derby %s)	[Derby] %s dołączył(a) do %s (/derby %s)
+DERBY: %s %s in %s! (%d left)	DERBY: %s %s w %s! (pozostało %d)
+DERBY: %s survived %s!	DERBY: %s przetrwał %s!
+DERBY: %s won %s! (last car standing of %d)	DERBY: %s wygrał %s! (ostatni samochód z %d)
+~y~Survived!~n~~g~+$%d	~y~Przeżyłem!~n~~g~+$%d
+~y~Winner!~n~~g~+$%d	~y~Zwycięzca!~n~~g~+$%d
+Job	Stanowisko
+Pay	Płacić
+Best	To, co najlepsze
+%s is inside the stadium (interior %d): the race takes you there.	%s znajduje się wewnątrz stadionu (wnętrze %d): wyścig cię tam zaprowadzi.
+%s start is marked on your radar for 90 seconds.	%s start zostanie oznaczony na Twoim radarze na 90 sekund.
+Race	Wyścig
+Where	Gdzie
+{FFE14D}GTA SA races - /race to queue (%d players)	{FFE14D}Wyścigi GTA SA – /race do kolejki (%d graczy)
+Mark	Ocena
+Zone	Strefa
+Weapons	Broń
+Go	Iść
+Prize	Nagroda
+ in)	 W)
+{FF8C1E}Derbies - last car standing	{FF8C1E}Derbies - ostatni stojący samochód
+  best %s	  najlepszy %s
+/job %s  -  %s  (%s, $%d)%s	/job %s - %s (%s, $%d)%s
+/spawn [id|name] vehicle  /v = same  /w [id|name|all] weapons  /fix  /flip  /heal  /armour	/spawn [id|nazwa] pojazd /v = ta sama /w [id|nazwa|wszystkie] broń /fix /flip /heal /armour
+/race (queue: %d players start a GTA SA race)  /races (the 27 tracks)	/race (kolejka: %d graczy rozpoczyna wyścig GTA SA) /races (27 torów)
+/derby [bloodbowl|monster|docks|desert|sumo]  /job [trucking|quarry|pizza|burger|cluckin|taxi|medic|firetruck]  /dm [war|grove|airport|minigun|sniper]  /leave	/derby [bloodbowl|potwór|doki|pustynia|sumo] /job [transport ciężarowy|kamieniołom|pizza|burger|cluckin|taksówka|medyk|wóz strażacki] /dm [wojna|gaj|lotnisko|minigun|snajper] /leave
+/class (gang / police / civilian)  /turf (gang zones)  /teams  /bubbles  /labels  /icons  /actors  /zones	/class (gang / policja / cywil) /turf (strefy gangów) /teams /bubbles /labels /icons /actors /zones
+Teleports:	Teleporty:
+/scores  /unlock (open world on/off)  /girlfriends  /tips	/scores /unlock (otwarty świat włączony/wyłączony) /girlfriends /tips
+Get in a car first.	Najpierw wsiądź do samochodu.
+No repairs in a derby.	Żadnych napraw w derbach.
+Vehicle repaired.	Pojazd naprawiony.
+No job %s. Type /job.	Brak zadania %s. Wpisz /job.
+No derby %s. Type /derby.	Brak derbów %s. Wpisz /derby.
+No DM %s. Type /dm.	Brak DM %s. Wpisz /dm.
+You are not in a race / derby / job / DM.	Nie bierzesz udziału w wyścigu / derbach / pracy / DM.
+DEATHMATCH: %s left %s.	DEATHMATCH: Pozostało %s %s.
+Left the event.	Opuścił wydarzenie.
+[id|name]  -  spawn a vehicle (/spawn 411, /spawn nrg)	[id|name] – tworzy pojazd (/spawn 411, /spawn nrg)
+[id|name|all]  -  weapons	[id|nazwa|wszystkie] - broń
+queue for a GTA SA race (14 players)	kolejka do wyścigu GTA SA (14 graczy)
+the 27 race tracks (mark on radar)	27 torów wyścigowych (oznaczenie na radarze)
+[arena]  -  last car standing wins	[arena] - wygrywa ostatni samochód na placu
+[name]  -  trucking, quarry, pizza, taxi...	[nazwa] - transport ciężarowy, kamieniołom, pizza, taksówka...
+[zone]  -  deathmatch zones	[strefa] – strefy deathmatchów
+leave the race / derby / job / DM	opuścić wyścig / derby / pracę / DM
+teleports everybody sees	teleportuje się, każdy widzi
+pick a gang, police or civilian (SA-MP class selection)	wybierz gang, policję lub cywila (wybór klasy SA-MP)
+gang zones + who owns them	strefy gangów + kto jest ich właścicielem
+turf count per gang	liczba oddziałów na gang
+repair your vehicle	napraw swój pojazd
+flip your vehicle	obróć swój pojazd
+your DM / race / job score	Twój wynik DM / rasy / pracy
+chat bubbles on / off (off by default)	włącz/wyłącz dymki czatu (domyślnie wyłączone)
+3D text labels on / off	Włączanie/wyłączanie etykiet tekstowych 3D
+map icons on / off	włączanie/wyłączanie ikon mapy
+actors at the job starts on / off	aktorzy w pracy zaczynają się / wyłączają
+gang zones on the radar on / off	strefy gangów na radarze wł./wył.
+open world on / off	otwarty świat włączony / wyłączony
+girlfriend houses on / off	domy dziewczyny włączone / wyłączone
+teleport: 	teleportacja: 
+DEATHMATCH: %s has %d kills in a row in %s!	DEATHMATCH: %s ma %d zabójstw z rzędu w %s!
+[Race] Type /race to queue for a GTA SA race. It waits for players: it starts with 14 players, or 45 s after the 2nd player is in (15 s more for every new player). Never alone.	[Wyścig] Wpisz /race, aby ustawić się w kolejce do wyścigu GTA SA. Czeka na graczy: startuje z 14 graczami, czyli 45 sekund po dołączeniu drugiego gracza (15 sekund za każdego nowego gracza). Nigdy nie jest sam.
+[Derby] Type /derby for Blood Bowl, Monster, Docks, Desert or Chiliad Sumo. Last car standing wins.	[Derby] Wpisz /derby dla Blood Bowl, Monster, Docks, Desert lub Chiliad Sumo. Wygrywa ostatni samochód na placu boju.
+[DM] Type /dm war for the War Zone DM. Kill streaks are announced to everyone.	[DM] Wpisz /dm wojna dla DM-a Strefy Wojny. Serie zabójstw są ogłaszane wszystkim.
+[Job] Type /job trucking, /job quarry or /job pizza to earn money.	[Praca] Wpisz /job transport ciężarowy, /job kamieniołom lub /job pizzeria, aby zarobić pieniądze.
+[Turf] Type /class to join a gang, then stand in an enemy zone (/turf) for 60 s to take it.	[Teren] Wpisz /class, aby dołączyć do gangu, a następnie stań w strefie wroga (/turf) przez 60 s, aby ją przejąć.
+[Spawn] Type /spawn infernus (or any id 400 - 611) for a vehicle, /w all for weapons.	[Spown] Wpisz /spawn infernus (lub dowolny id 400 - 611) dla pojazdu, /w all dla broni.
+[Teleport] /ls /sf /lv /chiliad /desert /beach /pizza /gym /ammu /emmet /home ... (/t for all)	[Teleportacja] /ls /sf /lv /chiliad /desert /beach /pizza /gym /ammu /emmet /home ... (/t dla wszystkich)
+[World] All cities, shops, gyms, barbers, tattoo, clothes, Pay 'n' Spray and mod garages are open.	[Świat] Wszystkie miasta, sklepy, siłownie, fryzjerzy, salony tatuażu, odzieżowe, Pay 'n' Spray i warsztaty modowe są otwarte.
+~g~GO!	~g~START!
+Race over: you died.	Koniec wyścigu: umarłeś.
+Get back in your vehicle within 20 seconds.	Wróć do pojazdu w ciągu 20 sekund.
+Left the vehicle: race over.	Opuszczamy pojazd: ścigamy się.
+Job failed: you died.	Zadanie nie powiodło się: umarłeś.
+Left the vehicle: event over.	Opuszczenie pojazdu: wydarzenie zakończone.
+was wrecked	został zniszczony
+Get back in your car within %d seconds!	Wróć do swojego samochodu w ciągu %d sekund!
+was out of the car	był poza samochodem
+fell off	spadł
+Back into the arena within %d seconds! (follow the red ring)	Wróć na arenę w ciągu %d sekund! (podążaj za czerwonym pierścieniem)
+left the arena	opuścił arenę
+You left the DM zone: go back within 10 seconds (/leave to quit).	Opuściłeś strefę DM: wróć w ciągu 10 sekund (/leave, aby wyjść).
+Left the DM zone.	Opuszcza strefę DM.
+DM SCORE: %d	WYNIK DM: %d
+RACE SCORE: %d	WYNIK WYŚCIGU: %d
+JOB SCORE: %d	WYNIK PRACY: %d
+SCORE: %d	WYNIK: %d
+~y~RACE QUEUE~n~~w~Waiting for players (%d/%d)  -  /leave	~y~KOLEJKA WYŚCIGÓW~n~~w~Oczekiwanie na graczy (%d/%d) - /leave
+~y~RACE QUEUE~n~~w~%d/%d players - starts soon  -  /leave	~y~KOLEJKA WYŚCIGÓW~n~~w~%d/%d graczy – wkrótce się rozpocznie – /leave
+~y~%s~n~~w~GO in %d  -  %d racers	~y~%s~n~~w~GO w %d - %d zawodnikach
+~y~%s~n~~w~starts in %d  -  %d car%s	~y~%s~n~~w~rozpoczyna się w samochodzie %d - %d%s
+POS ~y~%d~w~/%d   CP ~y~%d~w~/%d   TIME ~y~%s	POS ~y~%d~w~/%d CP ~y~%d~w~/%d CZAS ~y~%s
+~b~~h~%s~w~   CP ~y~%d~w~/%d   TIME ~y~%s	~b~~h~%s~w~ CP ~y~%d~w~/%d CZAS ~y~%s
+~r~~h~DERBY~w~   CARS ~y~%d~w~/%d   TIME ~y~%s	~r~~h~DERBY~w~ SAMOCHODY ~y~%d~w~/%d CZAS ~y~%s
+%s  -  kills %d  -  streak %d  -  /leave to quit	%s - zabija %d - seria %d - /leave, aby zrezygnować
+Gate	Brama
+Area 69 North Gate	Obszar 69 Brama Północna
+Area 69 East Gate	Obszar 69 Brama Wschodnia
+gates.txt line:  %.2f %.2f %.2f %.0f 11 My Gate	gates.txt linia: %.2f %.2f %.2f %.0f 11 Moja Brama
+Stand in the middle of the gate, facing through it. Put the line in files/MP/gates.txt, then /gates reload.	Stań na środku bramy, twarzą do niej. Włóż linkę w files/MP/gates.txt,, a następnie przeładuj /gates.
+%d gate teleport(s):	%d teleportacja bramy:
+No house called \"%s\" (/houses lists them).	Nie ma domu o nazwie \"%s\" (/houses je wymienia).
+Stand at a house (or type its name).	Stań przy domu (lub wpisz jego nazwę).
+~r~Locked	~r~Zablokowany
+%s has no interior yet (owner: /edithouseinteriors).	%s nie ma jeszcze wnętrza (właściciel: /edithouseinteriors).
+Get out of the vehicle first.	Najpierw wysiądź z pojazdu.
+You need $%d (you have $%d).	Potrzebujesz $%d (masz $%d).
+{FFFFFF}House: {00BFFF}%s {FFFFFF}[H:%u]\n	{FFFFFF}Dom: {00BFFF}%s {FFFFFF}[H:%u]\n
+{FFFFFF}House: {00BFFF}%s {FFFFFF}[H:%u]	{FFFFFF}Dom: {00BFFF}%s {FFFFFF}[H:%u]
+{FFFFFF}Owner: {FFFF00}%s\n	{FFFFFF}Właściciel: {FFFF00}%s\n
+{FFFFFF}Owner: {FFFF00}%s	{FFFFFF}Właściciel: {FFFF00}%s
+{FFFFFF}Slot: {33CC55}%dx%d {FFFFFF}squares   Objects: {33CC55}%u\n	{FFFFFF}Gniazdo: {33CC55}%dx%d {FFFFFF}kwadratów Obiekty: {33CC55}%u\n
+{FFFFFF}Slot: {33CC55}%dx%d {FFFFFF}squares   Objects: {33CC55}%u	{FFFFFF}Gniazdo: {33CC55}%dx%d {FFFFFF}kwadratów Obiekty: {33CC55}%u
+Nobody (the server)	Nikt (serwer)
+{33CC55}For sale	{33CC55}Na sprzedaż
+{FFFFFF}Price: {33CC55}$	{FFFFFF}Cena: {33CC55}$
+\n{A9C4E4}Tap Buy or type /buyhouse	\n{A9C4E4}Dotknij Kup lub wpisz /buyhouse
+{A9C4E4}Tap Buy or type /buyhouse	{A9C4E4}Dotknij Kup lub wpisz /buyhouse
+{A9C4E4}Tap Enter to go in (/exithouse to leave)	{A9C4E4}Naciśnij Enter, aby wejść (/exithouse aby wyjść)
+{A9C4E4}No interior yet	{A9C4E4}Jeszcze nie ma wnętrza
+{FFFFFF}House {00BFFF}[H:%u]	{FFFFFF}Dom {00BFFF}[H:%u]
+Buy	Kupić
+Enter	Wchodzić
+~g~House created	~g~Dom stworzony
+{00BFFF}[H:%u]\n{FFFF00}Owner: {FFFFFF}%s\n{FFFFFF}%s\n{33CC55}For sale: ${FFFFFF}%d {A9C4E4}/buyhouse	{00BFFF}[H:%u]\n{FFFF00}Właściciel: {FFFFFF}%s\n{FFFFFF}%s\n{33CC55}Na sprzedaż: {FFFFFF}%d {A9C4E4}/buyhouse
+{FFFF00}Owner: {FFFFFF}%s	{FFFF00}Właściciel: {FFFFFF}%s
+{33CC55}For sale: ${FFFFFF}%d {A9C4E4}/buyhouse	{33CC55}Na sprzedaż: {FFFFFF}%d {A9C4E4}/buyhouse
+{00BFFF}[H:%u]\n{FFFF00}Owner: {FFFFFF}%s\n{FFFFFF}%s%s	{00BFFF}[H:%u]\n{FFFF00}Właściciel: {FFFFFF}%s\n{FFFFFF}%s%s
+{FFFFFF}Exit	{FFFFFF}Wyjście
+Setup %s: pick the slot size (1x1 - 16x16, each square 2x2 m). Tap a square to light it on the ground. Green = fine, red = over the limit / taken.	Konfiguracja %s: wybierz rozmiar pola (1x1 - 16x16, każdy kwadrat 2x2 m). Dotknij kwadratu, aby podświetlić go na ziemi. Zielony = prawidłowa, czerwony = przekroczona granica / zajęta.
+Red squares: make the slot 16x16 or smaller and keep it off other houses.	Czerwone kwadraty: zrób szczelinę o wymiarach 16x16 cali lub mniejszą i oddziel ją od innych domów.
+SETUP  [H:%u] %s	USTAWIENIA [H:%u] %s
+Each square = %.0fx%.0f m. Limit %dx%d.	Każdy kwadrat = %.0fx%.0f m. Granica %dx%d.
+Width	Szerokość
+Height	Wysokość
+Turn -15	Tura -15
+Turn +15	Tura +15
+Move here	Przenieś się tutaj
+Square %d,%d %s	Kwadrat %d,%d %s
+(red: not allowed)	(czerwony: niedozwolone)
+(green: fine)	(zielony: dobry)
+Tap a square to light it up on the ground.	Dotknij kwadratu na ziemi, aby go podświetlić.
+Building: %s	Budynek: %s
+None (build your own)	Brak (zbuduj własny)
+Red squares: 16x16 is the limit / another house is there.	Czerwone kwadraty: 16x16 to limit / jest tam inny dom.
+Save	Ratować
+Pick an interior first (top of the editor).	Najpierw wybierz wnętrze (góra edytora).
+Pick an interior first.	Najpierw wybierz wnętrze.
+EDIT HOUSE	DOM EDYCJI
+Objects %d/%d (outside %d, inside %d)	Obiekty %d/%d (na zewnątrz %d, wewnątrz %d)
+Interior: %s	Wnętrze: %s
+Go inside	Wejdź do środka
+Add in front of me	Dodaj przede mną
+No object picked	Nie wybrano żadnego obiektu
+Turn	Zakręt
+Delete	Usuwać
+Door here	Drzwi tutaj
+Pick an interior first (/edithouseinteriors).	Najpierw wybierz wnętrze (/edithouseinteriors).
+Furniture on its way - move it with /edithouseinteriors.	Meble są już w drodze - przenieś je za pomocą /edithouseinteriors.
+Home Kit: /create house <name>  /setup <name>  /buyhouse  /sellhouse <price>  /cancelsale  /edithouse  /edithouseinteriors	Zestaw domowy: /create dom <nazwa> /setup <nazwa> /buyhouse /sellhouse <cena> /cancelsale /edithouse /edithouseinteriors
+/enterhouse  /exithouse  /lockhouse  /renamehouse <new>  /deletehouse  /homedelete <name>  /myhouses  /houses  /houseinfo  /hometp <name>	/enterhouse /exithouse /lockhouse /renamehouse <nowy> /deletehouse /homedelete <nazwa> /myhouses /houses /houseinfo /hometp <nazwa>
+/addobject <model>  /removeobject  /objects  /clearobjects  /furnish <low|med|swank>  /prefab <model|0>  /setentrance  /givehouse <id>  /housekey <id>	/addobject <model> /removeobject /objects /clearobjects /furnish <niski|średni|wytworny> /prefab <model|0> /setentrance /givehouse <id> /housekey <id>
+%s is not your house.	%s nie jest twoim domem.
+Use: /create house <name>  (2-23 letters, numbers, _ - .)	Użycie: /create dom <nazwa> (2-23 litery, cyfry, _ - .)
+You need the house key.	Potrzebny Ci klucz do domu.
+Stand at the red marker of a house for sale.	Stań przy czerwonym znaczniku domu wystawionego na sprzedaż.
+%s is not for sale.	%s nie jest na sprzedaż.
+Use: /sellhouse <price>  (at your house)	Użyj: /sellhouse <price> (w Twoim domu)
+Use: /homedelete <home name>  (your houses: /myhouses)	Użyj: /homedelete <nazwa domu> (Twoje domy: /myhouses)
+No house called \"%s\" (your houses: /myhouses).	Nie ma domu o nazwie \"%s\" (twoje domy: /myhouses).
+{FFFFFF}Delete the house {FFFF00}%s{FFFFFF} with all its buildings and furniture?\n{FF4444}This can't be undone.	{FFFFFF}Usunąć dom {FFFF00}%s{FFFFFF} ze wszystkimi budynkami i meblami?\n{FF4444}Tej czynności nie można cofnąć.
+{FFFFFF}Delete the house {FFFF00}%s{FFFFFF} with all its buildings and furniture?	{FFFFFF}Usunąć dom {FFFF00}%s{FFFFFF} ze wszystkimi budynkami i meblami?
+{FF4444}This can't be undone.	{FF4444}Tego nie można cofnąć.
+{FFFFFF}Delete house	{FFFFFF}Usuń dom
+Use: /renamehouse <new name>  (at your house)	Użyj: /renamehouse <nowa nazwa> (w Twoim domu)
+Stand at a house door.	Stań przy drzwiach domu.
+You are not in a house.	Nie jesteś w domu.
+[H:%u] %s  %dx%d  %u objects%s	[H:%u] %s %dx%d %u obiektów%s
+  (for sale)	  (na sprzedaż)
+You have no house. Go to an empty field and type /create house <name>.	Nie masz domu. Przejdź do pustego pola i wpisz /create dom <nazwa>.
+ - for sale	 - na sprzedaż
+%d houses on this server.	%d domów na tym serwerze.
+Use: /hometp <home name>	Użycie: /hometp <nazwa domu>
+  (key)	  (klawisz)
+You have no house yet: /create house <name>	Nie masz jeszcze domu: /create dom <nazwa>
+That house is still loading, try again.	Ten dom nadal się ładuje, spróbuj ponownie.
+%s is not your house (you need to own it or have its key).	%s nie jest twoim domem (musisz być jego właścicielem lub mieć do niego klucz).
+Wait %d s.	Poczekaj %d s.
+Only to your own house (or one you have a key for).	Tylko do Twojego domu (lub takiego, do którego masz klucz).
+Stand at your house.	Stań w swoim domu.
+Use: /addobject <GTA SA model id>  (or pick from the /edithouse list)	Użyj: /addobject <identyfikator modelu GTA SA> (lub wybierz z listy /edithouse)
+Stand next to an object of your house.	Stań obok dowolnego obiektu w swoim domu.
+No object of your house within 6 m.	W promieniu 6 m nie ma żadnych obiektów w pobliżu Twojego domu.
+%d objects.	%d obiektów.
+Use it at (or in) your house: /furnish <low|med|swank>	Używaj go w domu (lub u siebie): /furnish <niski|średni|swank>
+Buildings: %s0 = none	Budynki: %s0 = brak
+Use it at your house: /%s <player id>	Użyj go w swoim domu: /%s <id gracza>
+Legendary Motorsport	Legendarny sport motorowy
+Docktease	Podniecający
+Cars, vans and trucks for every budget	Samochody osobowe, dostawcze i ciężarowe na każdą kieszeń
+Sports and luxury cars	Samochody sportowe i luksusowe
+Motorbikes, quads and bicycles	Motocykle, quady i rowery
+Planes and helicopters	Samoloty i helikoptery
+Boats and yachts	Łodzie i jachty
+Jefferson Motel	Motel Jefferson
+Four Dragons Casino	Kasyno Four Dragons
+Caligula's Palace	Pałac Kaliguli
+[EYEFIND] Your new %s is here.	[EYEFIND] Twój nowy %s jest tutaj.
+Welcome to your room. The computer is on the desk.	Witamy w Twoim pokoju. Komputer stoi na biurku.
+The hotel room did not load - try again.	Pokój hotelowy nie załadował się - spróbuj ponownie.
+Not enough money: the %s costs %s.	Za mało pieniędzy: %s kosztuje %s.
+Your garage is full - sell one in the Garage app first.	Twój garaż jest pełny - najpierw sprzedaj swój egzemplarz w aplikacji Garage.
+[EYEFIND] You bought a %s for %s.	[EYEFIND] Kupiłeś %s za %s.
+Search vehicles (name or site)...	Wyszukaj pojazdy (nazwa lub lokalizacja)...
+eyefind.info search	wyszukiwanie eyefind.info
+%s  -  %s  (%d vehicles)	%s - %s (%d pojazdów)
+Exclusive cars for exclusive people	Ekskluzywne samochody dla ekskluzywnych ludzi
+Search results	Wyniki wyszukiwania
+\"%s\" - tap to search again	\"%s\" – dotknij, aby wyszukać ponownie
+Nothing found - try another word.	Nic nie znaleziono — spróbuj innego słowa.
+  -  not enough money	  - za mało pieniędzy
+Hotel room	Pokój hotelowy
+Going to your room...	Idę do twojego pokoju...
+Leave room	Opuść miejsce
+Computer	Komputer
+Grove Street	Ulica Grove
+East Beach	Plaża Wschodnia
+Pershing Square (LSPD)	Plac Pershinga (LSPD)
+Conference Center	Centrum Konferencyjne
+Market	Rynek
+Downtown Los Santos	Centrum Los Santos
+El Corona	Korona
+Angel Pine	Sosna Anioła
+Downtown San Fierro	Centrum San Fierro
+Juniper Hill	Wzgórze Jałowca
+Avispa Country Club	Klub wiejski Avispa
+The Strip (Pyramid)	The Strip (Piramida)
+Royal Casino	Kasyno Królewskie
+The Visage	Oblicze
+Come-A-Lot	Przyjdź-dużo
+Las Venturas Hospital	Szpital Las Venturas
+LV Airport	Lotnisko LV
+Emerald Isle	Szmaragdowa Wyspa
+V-Rock Hotel	Hotel V-Rock
+Spawned at %s.	Powstał w %s.
+All	Wszystko
+briefcase war	wojna na teczki
+modern warfare	nowoczesna wojna
+Region: Auto (lowest ping)%s%s. All regions are listed.	Region: Auto (najniższy ping)%s%s. Wyświetlane są wszystkie regiony.
+Region: %s (%d ms). The lobby moves to the %s broker; only %s servers are listed.	Region: %s (%d ms). Lobby przenosi się do brokera %s; na liście znajduje się tylko %s serwerów.
+Region: %s. Only %s servers are listed.	Region: %s. Na liście znajduje się tylko %s serwerów.
+Auto	Automatyczny
+%s  |  %d servers	%s | %d serwerów
+lowest ping  |  %d	najniższy ping | %d
+%d ms  |  %d servers	%d ms | %d serwerów
+-- ms	-- SM
+Players	Gracze
+Ping	Świst
+Mode	Tryb
+  (default)	  (domyślny)
+  (gamemode)	  (tryb gry)
+  (Roleplay 24/7)	  (Odgrywanie ról 24/7)
+  (yours)	  (twój)
+Freeroam %s%s	Swobodna jazda %s%s
+(all)	(Wszystko)
+ (LAN)	 (SIEĆ)
+Brief Case War	Wojna w sprawach krótkich
+MW3 Team DM	Zespół MW3 DM
+No server matches \"%s\".	Żaden serwer nie pasuje do \"%s\".
+No favourite servers yet. Tap + to add one.	Nie ma jeszcze ulubionych serwerów. Kliknij +, aby dodać serwer.
+  Nobody on your server yet.	  Nikogo jeszcze nie ma na twoim serwerze.
+  Join to see who is playing.	  Dołącz i zobacz, kto gra.
+  Select a server.	  Wybierz serwer.
+Rule	Reguła
+Value	Wartość
+default (always on)	domyślne (zawsze włączone)
+internet lobby	lobby internetowe
+always active	zawsze aktywny
+server synced	serwer zsynchronizowany
+24/7 featured (always on, VPS + Broker)	Usługa dostępna 24/7 (zawsze włączona, VPS + Broker)
+Roleplay RP (only)	Odgrywanie ról RP (tylko)
+Mega Vil (Los Santos of the future)	Mega Vil (Los Santos przyszłości)
+20 jobs, payday every 30 min	20 prac, wypłata co 30 minut
+calls, SMS, bank, GPS, shop, games...	połączenia, SMS-y, bank, GPS, sklepy, gry...
+peaceful: only police / military on duty	pokojowo: na służbie tylko policja/wojsko
+off (MP + CLEO menu)	wył. (menu MP + CLEO)
+24/7 featured (always on, VPS)	Dostępny 24/7 (zawsze włączony, VPS)
+Call Of Duty: Modern Warfare 3	Call of Duty: Modern Warfare 3
+Eurasia, Arabia, Soviet, USA, Australia, Brazil, Taliban, France	Eurazja, Arabia, ZSRR, USA, Australia, Brazylia, Talibowie, Francja
+34 capture zones + 8 bases	34 strefy przejęcia + 8 baz
+6 DM arenas, duels, events, hourly tournament	6 aren DM, pojedynki, wydarzenia, turnieje co godzinę
+private gamemode (always on)	prywatny tryb gry (zawsze włączony)
+starts at	zaczyna się o
+20 players	20 graczy
+Bone County, San Fierro Bay	Hrabstwo Bone, zatoka San Fierro
+not allowed	niedozwolony
+This server   |   Moderator: 	Ten serwer | Moderator: 
+Default server   |   Administrator: 	Serwer domyślny | Administrator: 
+  Nobody else on the default server right now.	  Nikogo innego nie ma teraz na serwerze domyślnym.
+Reason	Powód
+Reason (kick / ban)	Powód (wyrzucenie/zablokowanie)
+Cheating	Oszukiwanie
+Spamming	Spamowanie
+Insulting	Obraźliwy
+Griefing	Żałoba
+Bug abuse	Nadużywanie owadów
+Kick	Rzut
+Ban	Zakaz
+Mute	Niemy
+Unmute	Wyłącz wyciszenie
+Tap a player, pick a reason, then Kick / Ban / Mute. The 24/7 server keeps its ban list.	Kliknij gracza, wybierz powód, a następnie Wyrzuć/Zablokuj/Wycisz. Serwer jest aktywny 24/7 i prowadzi listę banów.
+Server settings (gamemodes / permissions / rules)	Ustawienia serwera (tryby gry / uprawnienia / zasady)
+moderator.txt has the MP moderator key, but this server didn't give you [MOD] (older MP copy). Type /modcheck, then rejoin.	moderator.txt ma klucz moderatora MP, ale ten serwer nie dał Ci [MOD] (starszej kopii MP). Wpisz /modcheck, a następnie dołącz ponownie.
+Player management	Zarządzanie graczami
+The default server has one administrator: [ADMIN] SENJI. Joining first (or hosting it) doesn't make you the host.	Domyślny serwer ma jednego administratora: [ADMIN] SENJI. Dołączenie jako pierwszy (lub hostowanie) nie czyni Cię hostem.
+Want your own rules? Add a server with your own name (Add server -> Host this server).	Chcesz mieć własne zasady? Dodaj serwer z własną nazwą (Dodaj serwer -> Hostuj ten serwer).
+Go to Add server	Przejdź do Dodaj serwer
+Only the administrator can kick and ban: the phone that hosts the server.	Tylko administrator może wyrzucić i zablokować: telefon, na którym znajduje się serwer.
+Host a server first (Add server -> Host this server), then your players show up here.	Najpierw utwórz serwer (Dodaj serwer -> Utwórz serwer), a następnie Twoi gracze będą wyświetlani w tym miejscu.
+Server: %s   |   Administrator: %s   |   %d/%d players	Serwer: %s | Administrator: %s | %d/%d graczy
+Phone id	Identyfikator telefonu
+Online	W sieci
+  (you, administrator)	  (ty, administratorze)
+old version	stara wersja
+%llu min	%llu minut
+Kick %s	Kopnij %s
+Kicked %s.	Kopnięto %s.
+Ban %s	Zakaz %s
+Banned %s.	Zablokowano %s.
+That is you (the administrator).	To Ty (administrator).
+Tap a player, type or pick a reason, then Kick or Ban. Banned players see the date, you as administrator and the reason.	Kliknij gracza, wpisz lub wybierz powód, a następnie wybierz opcję Wyrzuć lub Zablokuj. Zablokowani gracze zobaczą datę, Ciebie jako administratora oraz powód.
+Ban list  (%d)   |   Administrator: %s	Lista banów (%d) | Administrator: %s
+Saved in files/MP/bans.txt, used by every server this phone hosts.	Zapisano w files/MP/bans.txt, używanym przez każdy serwer, na którym znajduje się ten telefon.
+Ban date	Data zakazu
+  Nobody is banned.	  Nikt nie jest zbanowany.
+Unban selected	Odblokowano wybrane
+Ban a name (also when that player is offline)	Zablokuj nazwę (również wtedy, gdy dany gracz jest offline)
+Player name	Nazwa gracza
+Ban name	Nazwa bana
+Banned the name %s.	Zablokowano nazwę %s.
+%s is already banned.	%s jest już zbanowany.
+Guest	Gość
+Not logged in	Nie zalogowano
+Logged in	Zalogowany
+Log in on a server	Zaloguj się na serwerze
+MP Launcher	Program uruchamiający MP
+powered by HiveMQ/ThirtyFoxMC	zasilane przez HiveMQ/ThirtyFoxMC
+MP Launcher  v	MP Launcher v
+Search server	Serwer wyszukiwania
+Nickname	Przydomek
+Favorites	Ulubione
+Add server	Dodaj serwer
+Bans	Zakazy
+Server:	Serwer:
+Ban date:	Data zakazu:
+Kick date:	Data rozpoczęcia:
+Reason:	Powód:
+No reason given	Nie podano powodu
+If you think this is a mistake, ask the administrator (the host) to unban you.	Jeśli uważasz, że to błąd, poproś administratora (gospodarza) o odblokowanie konta.
+You can join again in %d:%02d.	Możesz dołączyć ponownie za %d:%02d.
+You can join again now. Follow the server rules.	Możesz dołączyć ponownie już teraz. Postępuj zgodnie z regulaminem serwera.
+This server doesn't allow cheat menus	Ten serwer nie zezwala na menu cheatowe
+%s is loaded in your game right now. To keep it fair for everyone, 	%s jest właśnie załadowany w Twojej grze. Aby zapewnić sprawiedliwą rozgrywkę dla wszystkich, 
+cheat menus aren't allowed on %s.	menu cheat nie są dozwolone na %s.
+Cheat Menu works only on custom servers whose host turned on \"Cheat Menu\" (Add server > permissions). 	Cheat Menu działa tylko na serwerach niestandardowych, których host włączył \"Cheat Menu\" (Dodaj serwer > uprawnienia). 
+For the default server, remove it from your AML mods folder and restart the game - once it is not loaded any more you can join right away.	W przypadku serwera domyślnego usuń go z folderu modów AML i uruchom grę ponownie. Gdy serwer nie będzie już załadowany, będziesz mógł od razu do niego dołączyć.
+We check this every time you join, so it can't be switched off while playing.	Sprawdzamy tę opcję za każdym razem, gdy do nas dołączasz, więc nie możesz jej wyłączyć podczas gry.
+Got it	Zrozumiałem
+JOB: %s	PRACA: %s
+%s - starting...	%s - rozpoczynanie...
+GET BACK IN YOUR CAR	WSIĄDŹ Z POWROTEM DO SAMOCHODU
+BACK INTO THE ARENA	POWRÓT NA ARENĘ
+BACK INTO THE DM ZONE  %d	POWRÓT DO STREFY DM %d
+GET BACK IN YOUR VEHICLE  %d	WRÓĆ DO SWOJEGO POJAZDU %d
+Wanted players can't join the police.	Poszukiwani gracze nie mogą wstąpić do policji.
+You are a COP: /cuff <id> and /arrest <id> wanted players ($500 a star).	Jesteś COP: /cuff <id> i /arrest <id> poszukiwani gracze (500 USD za gwiazdkę).
+You are a ROBBER: /rob <id> players for cash (it makes you wanted).	Jesteś ZŁODZIEJEM: /rob <id> graczy dla pieniędzy (to sprawia, że ​​jesteś pożądany).
+You are a civilian.	Jesteś cywilem.
+Only robbers can rob (/robber).	Tylko rabusie mogą rabować (/robber).
+Use: /rob <id> standing next to them.	Użyj: /rob <id> stojąc obok nich.
+Wait a minute before the next robbery.	Poczekaj chwilę przed następnym napadem.
+You rob %s... (wanted %d)	Okradłeś %s... (poszukiwany %d)
+Only cops (/cop).	Tylko policjanci (/cop).
+Use: /%s <id> standing next to them.	Użyj: /%s <id> stojąc obok nich.
+%s is not wanted.	%s nie jest pożądany.
+%s is cuffed for 10 seconds - /arrest %d.	%s zostaje zakuty w kajdanki na 10 sekund - /arrest %d.
+Use: /placehit <id> <amount $100+>	Użyj: /placehit <id> <kwota $100+>
+You don't have $%d.	Nie masz $%d.
+Hit placed on %s: $%d (whoever kills them gets it).	Trafienie zadane %s: $%d (ktokolwiek go zabije, otrzymuje je).
+No hits. /placehit <id> <amount>	Brak wyników. /placehit <id> <kwota>
+%s robbed you: -$%d.	%s cię okradł: -$%d.
+Robbery done: +$%d. Cops are after you.	Dokonano napadu: +$%d. Policja cię ściga.
+Officer %s cuffed you.	Policjant %s założył ci kajdanki.
+Officer %s arrested you: %d seconds in jail.	Policjant %s aresztował cię: %d sekund w więzieniu.
+Hit done on %s: +$%d.	Trafienie wykonane w %s: +$%d.
+You are free. Behave.	Jesteś wolny. Zachowuj się.
+JAIL %d	WIĘZIENIE %d
+LS Docks	Doki LS
+Bayside Marina	Marina Bayside
+A/D round: %s. Attackers: stand 20 s in the checkpoint. Defenders: hold it 5 minutes.	Runda A/D: %s. Atakujący: stań 20 s na punkcie kontrolnym. Obrońcy: utrzymaj pozycję przez 5 minut.
+~r~Attackers win	~r~Atakujący wygrywają
+~b~Defenders win	~b~Obrońcy wygrywają
+Your team won: +$1000.	Twoja drużyna wygrała: +1000$.
+You left A/D.	Opuściłeś A/D.
+You are a %s. /vote <1-%d> picks the base, /ad start starts a round, /ad leave.	Jesteś %s. /vote <1-%d> wybiera bazę, /ad start rozpoczyna rundę, /ad wychodzi.
+A round is on (%s).	Rozpoczęła się runda (%s).
+Voted %s (2 votes start it).	Zagłosowano %s (2 głosy rozpoczęły głosowanie).
+%s voted %s.	%s zagłosowało %s.
+CAPTURE %d%%	PRZECHWYĆ %d%%
+LV airport stunts	Akrobacje na lotnisku LV
+SF airport	Lotnisko w San Francisco
+Big Ear	Duże ucho
+Stunt park (LV)	Park kaskaderski (LV)
+Not during an event.	Nie w trakcie wydarzenia.
+Ramp ahead of you. Go.	Rampa przed tobą. Jedź.
+Could not place the ramp (try again).	Nie udało się umieścić rampy (spróbuj ponownie).
+~y~Stunt bonus ~w~$%d	~y~Bonus za akrobację ~w~$%d
+~r~Drift lost	~r~Drift zgubiony
+New best drift: %d.	Nowy najlepszy dryf: %d.
+DRIFT %d x%d	DRYFT %d x%d
+Survival on: find loot crates (yellow arrows), keep your thirst up (/drink $15), zombies come at night (21:00-06:00).	Przetrwanie: znajdź skrzynie z łupami (żółte strzałki), zaspokajaj pragnienie (/drink $15), zombie przychodzą nocą (21:00-06:00).
+Survival off.	Przetrwanie wyłączone.
+A drink is $15.	Napój kosztuje 15 dolarów.
+Thirst %d%%.	Pragnienie %d%%.
+~b~Water	~b~Woda
+~g~Medkit	~g~Apteczka
+~y~Weapon	~y~Broń
+~w~Armour	~w~Zbroja
+THIRST %d%%  KILLS %d	PRAGNIENIE %d%% ZABIJA %d
+My Vehicles is empty: sit in a car and type /savecar (up to %d).	Mój pojazd jest pusty: usiądź w samochodzie i wpisz /savecar (maks. %d).
+#\tVehicle Model\tStatus\tDistance\n	#\tModel pojazdu\tStatus\tOdległość\n
+Vehicle Model	Model pojazdu
+Distance	Dystans
+{FFFFFF}My Vehicles (%d/%d):	{FFFFFF}Moje pojazdy (%d/%d):
+Select	Wybierać
+Could not spawn the %s here (try again near it).	Nie udało się utworzyć %s w tym miejscu (spróbuj ponownie w jego pobliżu).
+Your %s is spawned (%.0f m away).	Twój %s został stworzony (%.0f m stąd).
+Somebody is driving it.	Ktoś tym kieruje.
+%s despawned (parked here for next time).	%s zniknął (zaparkowany tutaj na następny raz).
+Your %s is marked on the radar (%.0f m).	Twój %s jest zaznaczony na radarze (%.0f m).
+Spawn it first.	Najpierw go uruchom.
+Parking spot saved.	Miejsce parkingowe zostało zapisane.
+%s removed from My Vehicles.	%s usunięto z Moich pojazdów.
+%s\n%s\n{FFFF00}Locate\n{FFFFFF}Park here\n{FF3333}Remove	%s\n%s\n{FFFF00}Zlokalizuj\n{FFFFFF}Zaparkuj tutaj\n{FF3333}Usuń
+{FFFFFF}Park here	{FFFFFF}Zaparkuj tutaj
+{FFFFFF}Unlock	{FFFFFF}Odblokuj
+Back	Z powrotem
+Sit in the car you want to keep, then /savecar.	Usiądź w samochodzie, który chcesz zatrzymać, następnie /savecar.
+It is already in My Vehicles.	Jest już w Moich pojazdach.
+My Vehicles is full (%d) - /mv > Remove one first.	Mój pojazd jest pełny (%d) - /mv > Najpierw usuń jeden.
+%s saved to My Vehicles (%d/%d). /mv to manage.	%s zapisano w Moich pojazdach (%d/%d). /mv do zarządzania.
+Human	Człowiek
+CAPTURING %s	PRZECHWYTYWANIE %s
+CAPTURE FAILED	NIEUDANE PRZECHWYCANIE
+%s CAPTURED	%s ZŁAPANO
+[EVENT] You are in the %s team.	[EVENT] Jesteś w zespole %s.
+[EVENT] You are the first zombie. Infect the humans with the chainsaw.	[EVENT] Jesteś pierwszym zombie. Zarażaj ludzi piłą łańcuchową.
+DUEL VS %s	POJEDYNEK VS %s
+PROMOTED: %s	AWANSOWANO: %s
+YOU ARE A ZOMBIE	JESTEŚ ZOMBIE
+{3CFF6A}MW3 - Help	{3CFF6A}MW3 - Pomoc
+{FFFFFF}Capture zones: stand in a zone checkpoint (on foot) for 25 s.\n	{FFFFFF}Strefy przejęcia: stań na punkcie kontrolnym strefy (pieszo) przez 25 s.\n
+{FFFFFF}Capture zones: stand in a zone checkpoint (on foot) for 25 s.	{FFFFFF}Strefy przejęcia: stań na punkcie kontrolnym strefy (pieszo) przez 25 s.
+Kills: +2 score, $1500. Captures: +5 score, $5000. Owned zones pay every 10 min.\n	Zabójstwa: +2 do wyniku, 1500 $. Zdobycie: +5 do wyniku, 5000 $. Posiadane strefy płacą co 10 min.\n
+Kills: +2 score, $1500. Captures: +5 score, $5000. Owned zones pay every 10 min.	Zabójstwa: +2 do punktów, 1500 $. Zdobyte przedmioty: +5 do punktów, 5000 $. Posiadane strefy płacą co 10 minut.
+Kill 2+ players within 6 s for a badge. Every 5 kills = a killing spree bonus.\n\n	Zabij 2 lub więcej graczy w ciągu 6 s, aby zdobyć odznakę. Każde 5 zabójstw = premia za serię zabójstw.\n\n
+Kill 2+ players within 6 s for a badge. Every 5 kills = a killing spree bonus.	Zabij 2 lub więcej graczy w ciągu 6 s, aby zdobyć odznakę. Każde 5 zabójstw = premia za serię zabójstw.
+{3CFF6A}/dm /sdm /mdm /chdm /cbdm /hsdm{FFFFFF} - deathmatch arenas, {3CFF6A}/qdm{FFFFFF} - leave\n	{3CFF6A}/dm /sdm /mdm /chdm /cbdm /hsdm{FFFFFF} - areny deathmatchów, {3CFF6A}/qdm{FFFFFF} - opuść\n
+{3CFF6A}/dm /sdm /mdm /chdm /cbdm /hsdm{FFFFFF} - deathmatch arenas, {3CFF6A}/qdm{FFFFFF} - leave	{3CFF6A}/dm /sdm /mdm /chdm /cbdm /hsdm{FFFFFF} - areny deathmatchów, {3CFF6A}/qdm{FFFFFF} - opuść
+{3CFF6A}/duel <id> [weapon]{FFFFFF}, {3CFF6A}/accept{FFFFFF} - 1 vs 1 duel\n	{3CFF6A}/duel <id> [broń]{FFFFFF}, {3CFF6A}/accept{FFFFFF} - pojedynek 1 na 1\n
+{3CFF6A}/duel <id> [weapon]{FFFFFF}, {3CFF6A}/accept{FFFFFF} - 1 vs 1 duel	{3CFF6A}/duel <id> [broń]{FFFFFF}, {3CFF6A}/accept{FFFFFF} - pojedynek 1 na 1
+{3CFF6A}/join /leave{FFFFFF} - events (every 15 min at the LS Docks)\n	{3CFF6A}/join /leave{FFFFFF} – wydarzenia (co 15 minut w LS Docks)\n
+{3CFF6A}/join /leave{FFFFFF} - events (every 15 min at the LS Docks)	{3CFF6A}/join /leave{FFFFFF} - wydarzenia (co 15 minut w LS Docks)
+{3CFF6A}/team /class{FFFFFF} - change (back to the docks screen)\n	{3CFF6A}/team /class{FFFFFF} - zmiana (powrót do ekranu doków)\n
+{3CFF6A}/team /class{FFFFFF} - change (back to the docks screen)	{3CFF6A}/team /class{FFFFFF} - zmiana (powrót do ekranu doków)
+{3CFF6A}/jp{FFFFFF} JetTrooper  {3CFF6A}/heal{FFFFFF} Medic  {3CFF6A}/tank{FFFFFF} Engineer  {3CFF6A}/air{FFFFFF} Pilot\n	{3CFF6A}/jp{FFFFFF} JetTrooper {3CFF6A}/heal{FFFFFF} Medyk {3CFF6A}/tank{FFFFFF} Inżynier {3CFF6A}/air{FFFFFF} Pilot\n
+{3CFF6A}/jp{FFFFFF} JetTrooper  {3CFF6A}/heal{FFFFFF} Medic  {3CFF6A}/tank{FFFFFF} Engineer  {3CFF6A}/air{FFFFFF} Pilot	{3CFF6A}/jp{FFFFFF} JetTrooper {3CFF6A}/heal{FFFFFF} Medyk {3CFF6A}/tank{FFFFFF} Inżynier {3CFF6A}/air{FFFFFF} Pilot
+Rank	Stopień
+{3CFF6A}MW3 - Ranks	{3CFF6A}MW3 - Rangi
+Class	Klasa
+{3CFF6A}MW3 - Classes	{3CFF6A}MW3 - Zajęcia
+{FFFFFF}Rank: {3CFF6A}%s (%d){FFFFFF}\nScore: %d   Next rank: %s\nXP: %d\nCash: $%d\n\nKills: %d\nDeaths: %d\nRatio: %.2f\nZone captures: %d\nDeagle kills: %d\nBest killing spree: %d\nKilling spree now: %d	{FFFFFF}Ranga: {3CFF6A}%s (%d){FFFFFF}\nWynik: %d Następna ranga: %s\nPD: %d\nGotówka: $%d\n\nZabójstwa: %d\nZgony: %d\nStosunek: %.2f\nZdobycie strefy: %d\nZabójstwa Deagle'a: %d\nNajlepsza seria zabójstw: %d\nAktualna seria zabójstw: %d
+{FFFFFF}Rank: {3CFF6A}%s (%d){FFFFFF}	{FFFFFF}Ranking: {3CFF6A}%s (%d){FFFFFF}
+Score: %d   Next rank: %s	Wynik: %d Następna pozycja: %s
+XP: %d	PD: %d
+Cash: $%d	Gotówka: %d
+Kills: %d	Zabójstwa: %d
+Deaths: %d	Zgony: %d
+Ratio: %.2f	Współczynnik: %.2f
+Zone captures: %d	Przechwycenia strefy: %d
+Deagle kills: %d	Deagle zabija: %d
+Best killing spree: %d	Najlepsza seria zabójstw: %d
+Killing spree now: %d	Teraz trwa seria zabójstw: %d
+{3CFF6A}MW3 - Stats	{3CFF6A}MW3 - Statystyki
+/startevent 1 TDM, 2 DM, 3 Zombie, 4 Last Man Standing	/startevent 1 TDM, 2 DM, 3 Zombie, 4 Ostatni stojący
+Only the JetTrooper class has a jetpack (rank %d).	Tylko klasa JetTrooper ma plecak odrzutowy (ranga %d).
+Jetpack ready in %d s.	Plecak odrzutowy będzie gotowy za %d s.
+Only the Engineer class can drive the tank.	Tylko klasa Inżyniera może prowadzić czołg.
+Only the Pilot class can fly.	Tylko klasa Pilot może latać.
+Only in your own base.	Tylko we własnej bazie.
+Next vehicle in %d s.	Następny pojazd za %d s.
+{3CFF6A}MW3 - Aircraft	{3CFF6A}MW3 - Samolot
+Leave the arena / event / duel first.	Najpierw opuść arenę / wydarzenie / pojedynek.
+/%s is not available on Modern Warfare 3. Type /help.	/%s nie jest dostępny w Modern Warfare 3. Wpisz /help.
+%s capturing  %d%%	%s przechwytywanie %d%%
+%s %s BASE	%s %s BAZA
+%s %s (%d%%)   Score: %d   XP: %d	%s %s (%d%%) Wynik: %d XP: %d
+%s %s   Score: %d   XP: %d	%s %s Wynik: %d XP: %d
+Kills: %d   Deaths: %d   K/D: %.2f   Spree: %d   Caps: %d	Zabójstwa: %d Zgony: %d K/D: %.2f Seria: %d Limity: %d
++%d score  	+%d wynik  
+TOURNAMENT: %s  %02d:%02d  -  Leader: %s (%d)	TURNIEJ: %s %02d:%02d - Lider: %s (%d)
+EVENT: %s  -  sign-up %d s  -  /join  (%d)	WYDARZENIE: %s - rejestracja %d s - /join (%d)
+EVENT: %s  -  RED %d : %d BLUE  -  %02d:%02d	WYDARZENIE: %s - CZERWONY %d : %d NIEBIESKI - %02d:%02d
+EVENT: %s  -  %d humans / %d zombies  -  %02d:%02d	WYDARZENIE: %s - %d ludzie / %d zombie - %02d:%02d
+EVENT: %s  -  %d alive  -  %02d:%02d	WYDARZENIE: %s - %d żywy - %02d:%02d
+Next event: %s in %02d:%02d	Następne wydarzenie: %s w %02d:%02d
+Event	Wydarzenie
+Duel	Pojedynek
+  -  /qdm to leave	  - /qdm wyjść
+CAPTURING %s  %d%%	PRZECHWYTYWANIE %s %d%%
+MODERN WARFARE 3	Modern Warfare 3
+CALL OF DUTY  -  24/7  -  LOS SANTOS DOCKS & WAREHOUSES	CALL OF DUTY - 24/7 - DOKI I MAGAZYNY W LOS SANTOS
+TAP A TEAM TO DEPLOY	WYBIERZ ZESPÓŁ DO WDROŻENIA
+CLASS >	KLASA >
+No waiting: tap a team and you spawn in its base. /class changes your class.	Bez czekania: dotknij drużyny, a pojawisz się w jej bazie. /class zmienia twoją klasę.
+%s %s  -  CHOOSE YOUR CLASS	%s %s - WYBIERZ SWOJĄ KLASĘ
+%s\nRank %d	%s\nRanking %d
+Rank %d	Ranga %d
+Your rank: %s (%d)  -  score %d	Twoja ranga: %s (%d) - wynik %d
+< TEAM	< ZESPÓŁ
+Left Modern Warfare 3.	Pozostawiono Modern Warfare 3.
+You slept well: energy 100%%.	Dobrze spałeś: energia 100%%.
+You are hungry: /eat ($25 a meal).	Jesteś głodny: /eat (25 dolarów za posiłek).
+You are tired: stand still to rest, or /sleep in your house.	Jesteś zmęczony: stań nieruchomo, aby odpocząć, lub /sleep w domu.
+You are not hungry.	Nie jesteś głodny.
+A meal is $25.	Posiłek kosztuje 25 dolarów.
+You ate a meal ($25). Hunger %d%%.	Zjadłeś posiłek (25$). Głód %d%%.
+Resting... (move to stop)	Odpoczywam... (przesuń, aby się zatrzymać)
+Hunger %d%%  Energy %d%%  (/eat, /sleep, /rest)	Głód %d%% Energia %d%% (/eat, /sleep, /rest)
+Your progress is back: your place, $%d, %d weapon%s, health and hunger.	Twoje postępy powróciły: twoje miejsce, $%d, %d broń%s, zdrowie i głód.
+Log in first - your progress is saved to your account.	Najpierw się zaloguj, a Twoje postępy zostaną zapisane na Twoim koncie.
+This server can't save progress (it needs MP 3.39.1).	Ten serwer nie potrafi zapisywać postępu (wymaga wersji MP 3.39.1).
+Your saved progress is still loading...	Twój zapisany postęp jest nadal ładowany...
+Progress saved (it also saves by itself every 15 s and when you leave).	Postęp zapisany (zapisuje się również automatycznie co 15 s i po wyjściu z programu).
+Name Tag	Etykieta z imieniem
+Name Tag: Show Yourself	Etykieta z imieniem: Pokaż się
+Damage Indicator	Wskaźnik uszkodzeń
+Kill Feed	Zabij kanał
+Chat Bubble	Bańka czatu
+Voice Chat	Czat głosowy
+Hit Sound	Dźwięk uderzenia
+Chat Timestamp	Znak czasu czatu
+Radar Player Icons	Ikony gracza radarowego
+Global Chat (OOC)	Czat globalny (OOC)
+Google Map Radar	Radar Map Google
+PUBG Compass	Kompas PUBG
+Username	Nazwa użytkownika
+Not linked (verify on Discord)	Niepowiązane (sprawdź na Discordzie)
+Enable	Włączać
+Disable	Wyłączyć
+Your own switches (this phone). Mega Vil: Global chat hides (( [OOC] )) lines, Google map = /googlemap on|off.	Twoje własne przełączniki (ten telefon). Mega Vil: Czat globalny ukrywa linie (( [OOC] )), Mapa Google = /googlemap wł.|wył.
+Your own switches (this phone). Server modes can only be changed by the owner, [ADMIN] or [MOD].	Twoje własne przełączniki (ten telefon). Tryby serwera może zmieniać tylko właściciel, [ADMIN] lub [MOD].
+Toggle	Dźwignia kolankowa
+Lowrider Race	Wyścig Lowriderów
+Little Loop	Mała Pętla
+Backroad Wanderer	Wędrowiec z bocznych dróg
+City Circuit	Obwód miejski
+Into the Country	Do kraju
+Dirtbike Danger	Niebezpieczeństwo na motocyklu terenowym
+Bandito County	Hrabstwo Bandito
+San Fierro Hills	Wzgórza San Fierro
+Country Endurance	Wytrzymałość w kraju
+SF to LV	SF do LV
+Dam Rider	Jeździec na tamie
+Desert Tricks	Pustynne sztuczki
+LV Ringroad	Obwodnica LV
+World War Ace	As II wojny światowej
+Air race	Wyścig powietrzny
+Barnstorming	Burza mózgów
+Military Service	Służba wojskowa
+Chopper Checkpoint	Punkt kontrolny śmigłowca
+Whirly Bird Waypoint	Punkt kontrolny Whirly Bird
+8-Track	8-ścieżkowy
+Stadium	Stadion
+Dirt Track	Tor żużlowy
+Citizen	Obywatel
+New Citizen - %s	Nowy obywatel - %s
+%s%s - Lv %d	%s%s - Poziom %d
+ (duty)	 (obowiązek)
+[GPS] Route set: %s.	[GPS] Zestaw tras: %s.
+Hey there, citizen. Beautiful neon night in Mega Vil, isn't it?	Hej, obywatelu. Piękna neonowa noc w Mega Vil, prawda?
+Oh! You startled me. Can I help you?	Och! Przestraszyłeś mnie. Mogę ci pomóc?
+Welcome to the future, friend. What do you need?	Witaj w przyszłości, przyjacielu. Czego potrzebujesz?
+Hi! Don't mind me, just waiting for my hover bus.	Cześć! Nie zwracajcie na mnie uwagi, czekam tylko na mój hoverbus.
+Good to see a friendly face. The city's busy today.	Miło widzieć przyjazną twarz. W mieście dziś tłoczno.
+Yo. You new around here? I can tell.	Hej. Jesteś tu nowy? Widać.
+Careful, the holo ads are loud today. What's up?	Uważaj, holo-reklamy są dziś głośne. Co tam?
+Hello! My drone is charging, so I've got a minute.	Cześć! Mój dron się ładuje, więc mam chwilę.
+Ask about the city	Zapytaj o miasto
+Mega Vil used to be Los Santos. Then the towers went up and the holograms came on.	Mega Vil to było kiedyś Los Santos. Potem wyrosły wieże i pojawiły się hologramy.
+City Hall has the Job Center. Everyone starts there - taxi, trucker, police, even pilot.	W ratuszu znajduje się Job Center. Wszyscy zaczynają tam pracę – taksówkarze, kierowcy ciężarówek, policjanci, a nawet pilotowie.
+Paydays every half hour, straight to your bank. The Mega Bank pays interest too.	Wypłaty co pół godziny, prosto na Twoje konto. Mega Bank również płaci odsetki.
+Stay in the greenzones if you want peace. Nobody can hurt you in there.	Jeśli chcesz pokoju, trzymaj się stref zielonych. Nikt nie może cię tam skrzywdzić.
+Ask for directions	Poproś o wskazówki
+Let me put it on your GPS. Follow the sky blue marker.	Pozwól, że wpiszę to w Twój GPS. Podążaj za niebieskim znacznikiem.
+It's not far. I'll send the route to your phone.	To niedaleko. Wyślę Ci trasę na telefon.
+Easy. Check your GPS, I marked it.	Łatwo. Sprawdź GPS, zaznaczyłem to.
+Head that way. Your phone has the route now.	Jedź w tamtą stronę. Twój telefon już zna trasę.
+Ask for a job tip	Poproś o wskazówkę dotyczącą pracy
+Truckers make good money. Long routes pay the most.	Kierowcy ciężarówek dobrze zarabiają. Najwięcej płacą za długie trasy.
+Pilots get the biggest pay, but you need level 2 first.	Piloci zarabiają najwięcej, ale najpierw trzeba mieć drugi poziom.
+Police need level 3 and two hours in the city. Then you can wear the badge.	Policja potrzebuje poziomu 3 i dwóch godzin w mieście. Wtedy możesz nosić odznakę.
+Double Pay Hour comes with the city events. Work then - everything pays twice.	Podwójna Godzina Płacy jest częścią wydarzeń miejskich. Pracuj wtedy – wszystko płacisz dwa razy.
+Compliment them	Zrób im komplement
+Aww, thank you! You made my day.	Och, dziękuję! Uczyniłeś mój dzień wyjątkowym.
+Ha! You're too kind. Nice outfit yourself.	Ha! Jesteś zbyt miły. Sam masz ładny strój.
+Thanks, citizen. Mega Vil needs more people like you.	Dzięki, obywatelu. Mega Vil potrzebuje więcej takich ludzi jak ty.
+Oh stop it. ...No, keep going.	Och, przestań. ...Nie, kontynuuj.
+Ask about the news	Zapytaj o nowości
+Did you hear? A Holo Cash Drop hits the streets every so often. Free money!	Słyszałeś? Holo Cash Drop co jakiś czas pojawia się na ulicach. Darmowa kasa!
+The Neon Night Festival at the Plaza is the best party in the city.	Festiwal Neon Night w Plaza to najlepsza impreza w mieście.
+Lottery tickets are $500. I never win, but you might.	Losy na loterię kosztują 500 dolarów. Ja nigdy nie wygrywam, ale Ty możesz.
+They say the holo towers pay $2,500 to whoever reaches them first.	Twierdzą, że wieże holograficzne płacą 2500 dolarów temu, kto dotrze do nich pierwszy.
+Take care out there!	Uważajcie na siebie!
+See you around, citizen.	Do zobaczenia, obywatelu.
+Stay safe in the neon.	Uważaj na siebie w neonach.
+Bye! Watch out for drones.	Pa! Uważajcie na drony.
+Talk	Rozmawiać
+Nevermind	Nieważne
+Goodbye	Do widzenia
+[MEGA VIL] Welcome home - %s.	[MEGA VIL] Witamy w domu - %s.
+[MEGA VIL] You arrived at the Lobby Hub (Mega Vil Plaza). Buy a house and you will always spawn at home.	[MEGA VIL] Dotarłeś do Lobby Hub (Mega Vil Plaza). Kup dom, a zawsze będziesz się pojawiać w domu.
+YOU ARE CUFFED	JESTEŚ SKUTOWANY
+[PHONE] Connected with %s - talk with the voice chat (mic button).	[PHONE] Połączono z %s - rozmawiaj za pomocą czatu głosowego (przycisk mikrofonu).
+Call ended.	Połączenie zakończone.
+%s treated you.	%s cię leczył.
+[MECHANIC] Vehicle repaired.	[MECHANIC] Pojazd naprawiony.
+Sit in the vehicle to get it repaired.	Wsiądź do pojazdu, aby dokonać naprawy.
+JAILED  -  %d:%02d	WIĘZIONY - %d:%02d
+[GARAGE] Your %s is here.	[GARAGE] Twój %s jest tutaj.
+[MEGA VIL] You woke up at home.	[MEGA VIL] Obudziłeś się w domu.
+[MEGA VIL] Weapons are for on-duty police and soldiers only. Mega Vil is peaceful.	[MEGA VIL] Broń jest przeznaczona wyłącznie dla policjantów i żołnierzy na służbie. Mega Vil jest pokojowo nastawione.
+{38BDF8}MEGA VIL FUTURISTIC - Help	{38BDF8}MEGA VIL FUTURISTIC - Pomoc
+{FFFFFF}Roleplay only: be your character. Mega Vil is peaceful - only on-duty police and soldiers may use force.\n	{FFFFFF}Tylko odgrywanie ról: wciel się w swoją postać. Mega Vil jest pokojowe – tylko policjanci i żołnierze na służbie mogą używać siły.\n
+{FFFFFF}Roleplay only: be your character. Mega Vil is peaceful - only on-duty police and soldiers may use force.	{FFFFFF}Tylko odgrywanie ról: wciel się w swoją postać. Mega Vil jest pokojowe – tylko policjanci i żołnierze na służbie mogą używać siły.
+Open the phone: PANEL > Phone or {38BDF8}/phone{FFFFFF}.\n	Otwórz telefon: PANEL > Telefon lub {38BDF8}/phone{FFFFFF}.\n
+Open the phone: PANEL > Phone or {38BDF8}/phone{FFFFFF}.	Otwórz telefon: PANEL > Telefon lub {38BDF8}/phone{FFFFFF}.
+PANEL (the 4-square icon on the right, or {38BDF8}/panel{FFFFFF}): vehicle, documents, player info + bag, phone.\n\n	PANEL (ikona 4 kwadratów po prawej stronie lub {38BDF8}/panel{FFFFFF}): pojazd, dokumenty, informacje o graczu + torba, telefon.\n\n
+PANEL (the 4-square icon on the right, or {38BDF8}/panel{FFFFFF}): vehicle, documents, player info + bag, phone.	PANEL (ikona 4 kwadratów po prawej stronie lub {38BDF8}/panel{FFFFFF}): pojazd, dokumenty, informacje o graczu + torba, telefon.
+{38BDF8}Talk:{FFFFFF} normal chat (20 m), /me /do /ame /try /b /s /l /w /o /n /ad /feed /r /d /m /gov\n	{38BDF8}Dyskusja:{FFFFFF} normalny czat (20 min), /me /do /ame /try /b /s /l /w /o /n /ad /feed /r /d /m /gov\n
+{38BDF8}Talk:{FFFFFF} normal chat (20 m), /me /do /ame /try /b /s /l /w /o /n /ad /feed /r /d /m /gov	{38BDF8}Dyskusja:{FFFFFF} normalny czat (20 min), /me /do /ame /try /b /s /l /w /o /n /ad /feed /r /d /m /gov
+{38BDF8}Money:{FFFFFF} /pay /deposit /withdraw /transfer /balance /atm\n	{38BDF8}Pieniądze:{FFFFFF} /pay /deposit /withdraw /transfer /balance /atm\n
+{38BDF8}Money:{FFFFFF} /pay /deposit /withdraw /transfer /balance /atm	{38BDF8}Pieniądze:{FFFFFF} /pay /deposit /withdraw /transfer /balance /atm
+{38BDF8}Jobs:{FFFFFF} /jobs /job /quitjob /work /stopwork /duty /myjob\n	{38BDF8}Praca:{FFFFFF} /jobs /job /quitjob /work /stopwork /duty /myjob\n
+{38BDF8}Jobs:{FFFFFF} /jobs /job /quitjob /work /stopwork /duty /myjob	{38BDF8}Praca:{FFFFFF} /jobs /job /quitjob /work /stopwork /duty /myjob
+{38BDF8}Phone:{FFFFFF} /call /sms /answer /hangup /number /contacts /911 /taxi\n	{38BDF8}Telefon:{FFFFFF} /call /sms /answer /hangup /number /contacts /911 /taxi\n
+{38BDF8}Phone:{FFFFFF} /call /sms /answer /hangup /number /contacts /911 /taxi	{38BDF8}Telefon:{FFFFFF} /call /sms /answer /hangup /number /contacts /911 /taxi
+{38BDF8}Home:{FFFFFF} /houses /buyhouse /sellhouse /home /setspawn /myhouse\n	{38BDF8}Strona główna:{FFFFFF} /houses /buyhouse /sellhouse /home /setspawn /myhouse\n
+{38BDF8}Home:{FFFFFF} /houses /buyhouse /sellhouse /home /setspawn /myhouse	{38BDF8}Strona główna:{FFFFFF} /houses /buyhouse /sellhouse /home /setspawn /myhouse
+{38BDF8}Shops:{FFFFFF} /shop /food /clothes /cars /tech /ammu /lotto   {38BDF8}Bag:{FFFFFF} /inv /docs /panel\n	{38BDF8}Sklepy:{FFFFFF} /shop /food /clothes /cars /tech /ammu /lotto {38BDF8}Torba:{FFFFFF} /inv /docs /panel\n
+{38BDF8}Shops:{FFFFFF} /shop /food /clothes /cars /tech /ammu /lotto   {38BDF8}Bag:{FFFFFF} /inv /docs /panel	{38BDF8}Sklepy:{FFFFFF} /shop /food /clothes /cars /tech /ammu /lotto {38BDF8}Torba:{FFFFFF} /inv /docs /panel
+{38BDF8}Garage & pets:{FFFFFF} /garage /v [n] /sellveh [n] /pets /pet [n] /petoff /jetpack\n	{38BDF8}Garaż i zwierzęta:{FFFFFF} /garage /v [n] /sellveh [n] /pets /pet [n] /petoff /jetpack\n
+{38BDF8}Garage & pets:{FFFFFF} /garage /v [n] /sellveh [n] /pets /pet [n] /petoff /jetpack	{38BDF8}Garaż i zwierzęta:{FFFFFF} /garage /v [n] /sellveh [n] /pets /pet [n] /petoff /jetpack
+{38BDF8}Police:{FFFFFF} /cuff /uncuff /arrest /fine /su /frisk /mdc   {38BDF8}Medic:{FFFFFF} /heal   {38BDF8}Mechanic:{FFFFFF} /repair   {38BDF8}Lawyer:{FFFFFF} /defend\n	{38BDF8}Policja:{FFFFFF} /cuff /uncuff /arrest /fine /su /frisk /mdc {38BDF8}Medyk:{FFFFFF} /heal {38BDF8}Mechanik:{FFFFFF} /repair {38BDF8}Prawnik:{FFFFFF} /defend\n
+{38BDF8}Police:{FFFFFF} /cuff /uncuff /arrest /fine /su /frisk /mdc   {38BDF8}Medic:{FFFFFF} /heal   {38BDF8}Mechanic:{FFFFFF} /repair   {38BDF8}Lawyer:{FFFFFF} /defend	{38BDF8}Policja:{FFFFFF} /cuff /uncuff /arrest /fine /su /frisk /mdc {38BDF8}Medyk:{FFFFFF} /heal {38BDF8}Mechanik:{FFFFFF} /repair {38BDF8}Prawnik:{FFFFFF} /defend
+{38BDF8}Fun:{FFFFFF} /e [emote] /emotes /e c /dance /accept /flip /dice /games /event /joinevent\n	{38BDF8}Zabawa:{FFFFFF} /e [emotikonka] /emotes /e c /dance /accept /flip /dice /games /event /joinevent\n
+{38BDF8}Fun:{FFFFFF} /e [emote] /emotes /e c /dance /accept /flip /dice /games /event /joinevent	{38BDF8}Zabawa:{FFFFFF} /e [emotikonka] /emotes /e c /dance /accept /flip /dice /games /event /joinevent
+{38BDF8}Info:{FFFFFF} /stats /id /time /gps /places /rules /levels /players /greenzones /talk /rp	{38BDF8}Informacje:{FFFFFF} /stats /id /time /gps /places /rules /levels /players /greenzones /talk /rp
+{38BDF8}Mega Vil - Rules	{38BDF8}Mega Vil - Zasady
+{FFFFFF}1. Roleplay at all times. Out of character only with /b or /o.\n	{FFFFFF}1. Odgrywaj role przez cały czas. Poza postacią tylko z /b lub /o.\n
+{FFFFFF}1. Roleplay at all times. Out of character only with /b or /o.	{FFFFFF}1. Odgrywaj role przez cały czas. Poza postacią tylko z /b lub /o.
+2. No deathmatch: the city is peaceful. Police / soldiers on duty use force only when the roleplay needs it.\n	2. Brak deathmatchu: miasto jest spokojne. Policja/żołnierze na służbie używają siły tylko wtedy, gdy wymaga tego gra fabularna.\n
+2. No deathmatch: the city is peaceful. Police / soldiers on duty use force only when the roleplay needs it.	2. Brak deathmatchu: miasto jest spokojne. Policja/żołnierze na służbie używają siły tylko wtedy, gdy wymaga tego gra fabularna.
+3. No cheats, no mods that give an advantage, no bug abuse.\n	3. Żadnych oszustw, żadnych modów dających przewagę, żadnego wykorzystywania błędów.\n
+3. No cheats, no mods that give an advantage, no bug abuse.	3. Żadnych oszustw, żadnych modów dających przewagę, żadnego wykorzystywania błędów.
+4. Respect everyone - new citizens too. Help them in /n.\n	4. Szanuj wszystkich – również nowych obywateli. Pomóż im w /n.\n
+4. Respect everyone - new citizens too. Help them in /n.	4. Szanuj wszystkich – również nowych obywateli. Pomagaj im w /n.
+5. No powergaming / metagaming. Your character only knows what it saw.\n	5. Żadnego powergamingu / metagamingu. Twoja postać wie tylko to, co widziała.\n
+5. No powergaming / metagaming. Your character only knows what it saw.	5. Nie stosuj powergamingu ani metagamingu. Twoja postać wie tylko to, co widziała.
+6. Greenzones (green squares on the radar) are safe for everyone.\n	6. Strefy zielone (zielone kwadraty na radarze) są bezpieczne dla wszystkich.\n
+6. Greenzones (green squares on the radar) are safe for everyone.	6. Strefy zielone (zielone kwadraty na radarze) są bezpieczne dla wszystkich.
+7. Have fun in the city of the future.	7. Baw się dobrze w mieście przyszłości.
+Route	Trasa
+Command	Rozkaz
+Emote	Emotikona
+Type	Typ
+{38BDF8}Emotes & dances (rpemotes)	{38BDF8}Emotikony i tańce (rpemotki)
+Type something after the command.	Wpisz coś po poleceniu.
+/w [id] [text]	/w [id] [tekst]
+/deposit [amount] (at an ATM or the bank)	/deposit [kwota] (w bankomacie lub banku)
+/withdraw [amount] (at an ATM or the bank)	/withdraw [kwota] (w bankomacie lub banku)
+[BANK] Cash $%d  |  Bank $%d  |  Payday in %d:%02d	[BANK] Gotówka $%d | Bank $%d | Wypłata w %d:%02d
+[PHONE] Your number: %d	[PHONE] Twój numer: %d
+Help needed!	Potrzebna pomoc!
+Stand at a house door (Houses app shows them on the GPS).	Stań przy drzwiach domu (aplikacja Domy pokazuje je w GPS-ie).
+You don't own a house yet (/houses).	Nie posiadasz jeszcze domu (/houses).
+Buy a house first - then /setspawn inside or at it.	Najpierw kup dom - potem /setspawn w nim lub na jego terenie.
+Stand at your house (within 30 m, on foot) to set the spawn point.	Stań przy swoim domu (w promieniu 30 m, pieszo), aby ustawić punkt odradzania.
+[HOME] Spawn point set. You will always spawn here - never at the Lobby Hub.	[HOME] Ustawiono punkt odradzania. Zawsze będziesz się pojawiać tutaj – nigdy w lobby.
+No vehicles yet (/cars).	Brak pojazdów (/cars).
+/sellveh [slot 1-6] (Garage app shows them)	/sellveh [slot 1-6] (Pokazuje je aplikacja Garage)
+[MDC] %s (%d) - WANTED	[MDC] %s (%d) - POSZUKIWANY
+[MDC] Nobody is wanted. A quiet day in Mega Vil.	[MDC] Nikt nie jest poszukiwany. Spokojny dzień w Mega Vil.
+No emote \"%s\" (/emotes)	Brak emotikonki \"%s\" (/emotes)
+/e %s [player id] - a shared emote	/e %s [id gracza] – współdzielona emotka
+[EVENT] %s - %d s left. /joinevent for the GPS.	Pozostało [EVENT] %s - %d s. /joinevent dla GPS.
+[EVENT] Next city event in %d:%02d. Lottery jackpot $%d.	[EVENT] Następne wydarzenie w mieście za %d:%02d. Główna wygrana w loterii $%d.
+Walk up to someone in the street - they stop and you can talk.	Podejdź do kogoś na ulicy - zatrzyma się i możesz z nim porozmawiać.
+[LEVEL] You are level %d: %d / %d respect. +1 every 10 min played, +2 every payday, +1 every 3 job tasks.	[LEVEL] Twój poziom %d: %d / %d szacunku. +1 co 10 minut gry, +2 za każdą wypłatę, +1 co 3 zadania służbowe.
+Google map radar ON (pause map too). /googlemap off = the original radar.	Radar Google Map WŁĄCZONY (wstrzymaj także mapę). /googlemap wyłączony = oryginalny radar.
+Original GTA SA radar ON. /googlemap on = the Google map radar again.	Oryginalny radar GTA SA WŁĄCZONY. /googlemap włączone = ponownie radar na mapie Google.
+[GREENZONE] Lobby Hub (Plaza), City Hall, both hospitals and the Mega Bank: nobody can be hurt there.	[GREENZONE] Lobby Hub (Plaza), Ratusz, oba szpitale i Mega Bank: nikt nie może tam ucierpieć.
+Mega Vil time %02d:%02d - your time %s	Czas Mega Vil %02d:%02d - Twój czas %s
+Your id: %d	Twój identyfikator: %d
+%s: id %d, phone %d	%s: identyfikator %d, telefon %d
+MEGA VIL FUTURISTIC - Roleplay 24/7, %d citizens max. The future awaits.	MEGA VIL FUTURISTIC - Odgrywanie ról 24/7, maks. %d mieszkańców. Przyszłość czeka.
+/%s is not available on Mega Vil Futuristic (no cheats / other gamemodes). /help	/%s nie jest dostępny na Mega Vil Futuristic (brak kodów / innych trybów gry). /help
+Futuristic	Futurystyczny
+%d  |  Lv %d	%d | Poziom %d
+Payday in %d:%02d	Dzień wypłaty za %d:%02d
+VOICE: %s%s	GŁOS: %s%s
+PHONE CALL	ROZMOWA TELEFONICZNA
+  (talking)	  (rozmawiając)
+EVENT: %s  %d:%02d  /joinevent	WYDARZENIE: %s %d:%02d /joinevent
+YOU ARE A NEW CITIZEN	JESTEŚ NOWYM OBYWATELEM
+%02d:%02d:%02d left  -  /n for help	%02d:%02d:%02d lewe - /n po pomoc
+YOU ARE IN A GREENZONE	JESTEŚ W ZIELONEJ STREFIE
+JAIL: %d:%02d	WIĘZIENIE: %d:%02d
+WANTED LEVEL %d	POZIOM POSZUKIWANIA %d
+%s: marker %d m  |  tasks %u	%s: znacznik %d m | zadania %u
+ON CALL: %s  %d:%02d  /h	NA DYŻUR: %s %d:%02d /h
+YOUR HOME\n%s	TWÓJ DOM\n%s
+YOUR HOME	TWÓJ DOM
+%s\nFOR SALE  $%d  /buyhouse	%s\nNA SPRZEDAŻ $%d /buyhouse
+FOR SALE  $%d  /buyhouse	NA SPRZEDAŻ $%d /buyhouse
+Going home: %s	Idę do domu: %s
+LOBBY HUB  -  MEGA VIL PLAZA	LOBBY HUB - MEGA VIL PLAZA
+Level %d  |  Cash $%d  |  Bank $%d  |  Phone %d	Poziom %d | Gotówka $%d | Bank $%d | Telefon %d
+Roleplay only - peaceful city - no cheats. Own a house and you always spawn at home.	Tylko odgrywanie ról – spokojne miasto – bez kodów. Posiadaj dom, a zawsze będziesz się tam pojawiać.
+Left Mega Vil Futuristic.	Lewy Mega Vil Futurystyczny.
+Enter an amount first.	Najpierw wprowadź kwotę.
+Withdrawing %s - please take your cash.	Wypłata %s - proszę zabrać gotówkę.
+Depositing %s into your account.	Wpłata %s na Twoje konto.
+FAST CASH $100	SZYBKA GOTÓWKA 100$
+OTHER AMOUNT	INNA KWOTA
+ALL CASH	WSZYSTKIE GOTÓWKI
+BUY %s	KUP %s
+SELL ALL	SPRZEDAJ WSZYSTKO
+SEND MONEY	WYŚLIJ PIENIĄDZE
+Bank %s  -  cash %s	Bank %s - gotówka %s
+Withdraw amount	Wypłać kwotę
+You have no cash on you.	Nie masz przy sobie gotówki.
+Deposit amount	Kwota depozytu
+Buying %s of %s...	Kupuję %s z %s...
+Selling all of %s...	Sprzedaję wszystkie %s...
+Phone number	Numer telefonu
+Now press BUY next to a plan.	Teraz naciśnij KUP obok planu.
+Type an amount, then press BUY.	Wpisz kwotę i naciśnij KUP.
+Pick WITHDRAWAL or DEPOSIT first.	Najpierw wybierz WYPŁATA lub WPŁATA.
+Please select a transaction.	Proszę wybrać transakcję.
+24 HOUR BANKING	BANKOWOŚĆ 24H
+CASH  -  DEPOSIT  -  INVEST  -  TRANSFER	GOTÓWKA - WPŁATA - INWESTOWANIE - PRZELEW
+WELCOME, %s	WITAMY, %s
+Please select a transaction	Proszę wybrać transakcję
+Select an amount, or type it on the keypad and press ENTER	Wybierz kwotę lub wpisz ją na klawiaturze i naciśnij ENTER
+One city market - prices move every 5 minutes	Rynek miejski – ceny zmieniają się co 5 minut
+Send bank money to a phone number	Wyślij pieniądze bankowe na numer telefonu
+ENTER AMOUNT	WPROWADŹ KWOTĘ
+Available: %s	Dostępne: %s
+Cash on you: %s	Gotówka na Ciebie: %s
+%d (%+.1f%%)  yours %s	%d (%+.1f%%) Twoje %s
+Typed: %s - BUY uses it	Wpisano: %s - KUPUJ, używa tego
+Your number: %d	Twój numer: %d
+Next payday in %d:%02d	Następna wypłata za %d:%02d
+Works anywhere too: /transfer [number] [amount]	Działa wszędzie: /transfer [liczba] [kwota]
+CASH %s	GOTÓWKA %s
+INSERT CARD	WŁÓŻ KARTĘ
+UPPER BODY	GÓRNA CZĘŚĆ CIAŁA
+[MEGA VIL] CJ outfit saved. Press Spawn.	[MEGA VIL] Strój CJ zapisany. Naciśnij Spawn.
+[MEGA VIL] Outfit saved: %s. Press Spawn.	[MEGA VIL] Strój zapisany: %s. Naciśnij Spawn.
+skin %d	skóra %d
+take it off	zdejmij to
+CJ's own	Własność CJ-a
+FULL VIEW	PEŁNY WIDOK
+FACTIONS  %d / %d	FRAKCJE %d / %d
+No factions yet. Create the first one.	Nie ma jeszcze frakcji. Stwórz pierwszą.
+  (member)	  (członek)
+%d / %d players   -   owner %s	%d / %d graczy - właściciel %s
+Players %d / %d   -   Owner %s	Gracze %d / %d - Właściciel %s
+SET RULES	USTAL ZASADY
+Faction rules	Zasady frakcji
+CLOSE IT	ZAMKNIJ TO
+Pick a faction on the left.	Wybierz frakcję po lewej stronie.
+CREATE FACTION  ($%d)	UTWÓRZ FRAKCJĘ ($%d)
+TAG (2-5 letters)	TAG (2-5 liter)
+(tap to type)	(dotknij, aby pisać)
+PLAYER LIMIT	LIMIT GRACZA
+CREATE  ($%d)	UTWÓRZ ($%d)
+R ARM	Ramię R
+L LEG	Noga L
+R LEG	Prawa noga
+[BAG] Tap an item first.	[BAG] Najpierw dotknij elementu.
+Give to player id (nearest: %s)	Podaj identyfikator gracza (najbliższy: %s)
+Give to player id (stand next to them)	Podaj graczowi identyfikator (stań obok niego)
+Food  -  fills %d hunger	Jedzenie - zaspokaja %d głód
+Drink  -  fills %d thirst	Napój - zaspokaja %d pragnienie
+Heals %d health	Leczy %d zdrowia
+Repairs the car you sit in	Naprawia samochód, w którym siedzisz
+Opens your phone	Otwiera Twój telefon
+Starter pack  -  open it to unpack	Pakiet startowy – otwórz, aby rozpakować
+Item	Przedmiot
+MEGA VIL QUICK MENU	SZYBKIE MENU MEGA VIL
+PLAYER ID	ID GRACZA
+%d  (%d XP)	%d (%d PD)
+  (on duty)	  (na służbie)
+%uh %02um	godz. %u %02u min
+Body parts: white = fine, amber = hurt, red = badly hurt	Części ciała: białe = w porządku, bursztynowe = zranione, czerwone = poważnie zranione
+PLAYER INFO	INFORMACJE O GRACZU
+drag to turn	przeciągnij, aby obrócić
+%d.%d / %d.%d Kg	%d.%d / %d.%d kg
+Opening the bag...	Otwieranie torby...
+AMOUNT: %d	KWOTA: %d
+Amount	Kwota
+CITIZEN IDENTITY CARD	DOWÓD TOŻSAMOŚCI OBYWATELA
+No. %06d	Nie. %06d
+%s%s (lv %d)	%s%s (poziom %d)
+, on duty	, na służbie
+Lobby Hub	Centrum lobby
+%u h %02u min	%u godz. %02u min
+TIME IN CITY	CZAS W MIEŚCIE
+SHOW ID	POKAŻ ID
+shows a Mega Vil Citizen ID: %s, phone %d, %s.	pokazuje identyfikator obywatela Mega Vil: %s, telefon %d, %s.
+Received %dx	Otrzymano %dx
+Use ATM	Użyj bankomatu
+Pick up %s	Odbierz %s
+WELCOME TO MEGA VIL	WITAMY W MEGA VIL
+Futuristic Roleplay 24/7\nRoleplay only - no DM, no cheats\nBe a citizen: work, earn, live	Futurystyczna gra fabularna 24/7\nTylko gra fabularna – bez MG, bez oszustw\nBądź obywatelem: pracuj, zarabiaj, żyj
+Futuristic Roleplay 24/7	Futurystyczna gra fabularna 24/7
+Roleplay only - no DM, no cheats	Tylko odgrywanie ról – bez DM-a i oszustw
+Be a citizen: work, earn, live	Bądź obywatelem: pracuj, zarabiaj, żyj
+/rules - roleplay, don't fail it\n/b OOC  /me /do  /n newbie help\nGreenzones: nobody gets hurt	/rules - odgrywanie ról, nie zawal tego\n/b OOC /me /do /n pomoc dla nowicjuszy\nZielone strefy: nikt nie ucierpi
+/rules - roleplay, don't fail it	/rules - odgrywanie ról, nie zawiedź jej
+/b OOC  /me /do  /n newbie help	/b OOC /me /do /n pomoc dla nowicjuszy
+Greenzones: nobody gets hurt	Strefy zielone: ​​nikt nie ucierpi
+/jobs - pick one at the Job Center\n/duty  /work  then follow the GPS\nPayday every 30 min of play	/jobs - wybierz jeden w Job Center\n/dyżur /work, a następnie postępuj zgodnie z GPS-em\nWypłata co 30 minut gry
+/jobs - pick one at the Job Center	/jobs - wybierz jeden w Job Center
+/duty  /work  then follow the GPS	/duty /work następnie podążaj za GPS-em
+Payday every 30 min of play	Wypłata co 30 minut gry
+MONEY & INVEST	PIENIĄDZE I INWESTOWANIE
+ATM: walk into the ring - Use ATM\n/invest  /sellinvest  /market\n/pawn at a 24/7 - /lotto 1-60	Bankomat: wejdź na ring - Użyj ATM\n/inwestuj /sellinvest /market\n/zastaw 24/7 - /lotto 1-60
+ATM: walk into the ring - Use ATM	Bankomat: wejdź na ring - Skorzystaj z bankomatu
+/invest  /sellinvest  /market	/invest /sellinvest /market
+/pawn at a 24/7 - /lotto 1-60	/pawn 24/7 - /lotto 1-60
+PHONE & PANEL	TELEFON I PANEL
+PANEL button: bag, documents\n/phone  /sms  /call  /taxi  /911\n/gps - every place in the city	Przycisk PANEL: torba, dokumenty\n/telefon /sms /call /taxi /911\n/gps - każde miejsce w mieście
+PANEL button: bag, documents	Przycisk PANEL: torba, dokumenty
+/phone  /sms  /call  /taxi  /911	/phone /sms /call /taxi /911
+/gps - every place in the city	/gps - każde miejsce w mieście
+/buyhouse  /home  /pet  /emotes\n/propose /divorce  /seatbelt\n/joinevent - city events	/buyhouse /home /pet /emotes\n/propose /divorce /seatbelt\n/joinevent - wydarzenia miejskie
+/buyhouse  /home  /pet  /emotes	/buyhouse /home /pet /emotes
+/propose /divorce  /seatbelt	/propose /divorce /seatbelt
+/joinevent - city events	/joinevent - wydarzenia miejskie
+Welcome to Mega Vil Futuristic Roleplay Server	Witamy na serwerze Mega Vil Futuristic Roleplay
+24/7 roleplay city - stay in character, no DM, no cheats	Miasto z funkcją odgrywania ról 24/7 – pozostań w roli, bez MG, bez oszustw
+/jobs work  -  /gps places  -  /phone  -  PANEL: bag + documents  -  /rules	/jobs praca - /gps miejsca - /phone - PANEL: torba + dokumenty - /rules
+________ Welcome to Mega Vil Futuristic Roleplay ________	________ Witamy w futurystycznej grze fabularnej Mega Vil ________
+Hello %s, you are a citizen of Mega Vil now. This is a 24/7 roleplay city: stay in character.	Witaj %s, jesteś teraz mieszkańcem Mega Vil. To miasto z grą fabularną 24/7: pozostań w swojej roli.
+Start: /jobs for work, the PANEL button for your bag + documents, /phone, /gps for every place.	Start: /jobs do pracy, przycisk PANEL do torby i dokumentów, /phone, /gps do każdego miejsca.
+Money: walk into an ATM ring and tap Use ATM - deposit, withdraw, transfer, /invest.	Pieniądze: podejdź do bankomatu i dotknij przycisku Użyj bankomatu - wpłata, wypłata, przelew, /invest.
+Rules: /rules  ·  help: /n [question] (newbie chat)  ·  all commands: /help	Zasady: /rules · pomoc: /n [pytanie] (czat nowicjuszy) · wszystkie polecenia: /help
+/propose [id]  ($500 wedding, they /accept marry)	/propose [id] (ślub za 500 dolarów, /accept biorą ślub)
+______ MEGA VIL RULES ______	______ ZASADY MEGA VIL ______
+1. Roleplay: act like a real citizen. No deathmatch, no random killing.	1. Odgrywanie ról: zachowuj się jak prawdziwy obywatel. Żadnych deathmatchów ani losowych zabójstw.
+2. No cheats, no hacks, no bug abuse. Greenzones: nobody can be hurt.	2. Żadnych cheatów, żadnych hacków, żadnego wykorzystywania błędów. Strefy zielone: ​​nikomu nie można zrobić krzywdy.
+3. Police / military: force only on duty. Respect /fine and /arrest.	3. Policja / wojsko: siła tylko na służbie. Szanuj /fine i /arrest.
+[TAXI] No passenger in your taxi - pick them up first (yellow marker).	[TAXI] W taksówce nie może być pasażerów - zabierz ich najpierw (żółty znacznik).
+[TAXI] Passenger: \"Thanks, keep the change.\"	[TAXI] Pasażer: \"Dziękuję, proszę zatrzymać resztę.\"
+[TAXI] A passenger is waiting (yellow marker). Stop next to them, then drive to the fare marker.	[TAXI] Pasażer czeka (żółty znacznik). Zatrzymaj się obok niego, a następnie jedź do znacznika biletu.
+[TAXI] Your passenger got hurt - a new one is waiting.	[TAXI] Twój pasażer został ranny - czeka nowy.
+[TAXI] Your car is full.	[TAXI] Twój samochód jest pełny.
+[TAXI] Passenger: \"Where is your taxi?\" (get in a car)	[TAXI] Pasażer: \"Gdzie jest twoja taksówka?\" (wsiadaj do samochodu)
+[TAXI] Passenger in. Drive to the fare marker and stop there.	[TAXI] Pasażer wsiada. Podjedź do znacznika opłat i zatrzymaj się tam.
+[TAXI] Your passenger is out of the car - pick them up again.	[TAXI] Twój pasażer wypadł z samochodu. Zabierz go z powrotem.
+Home	Dom
+Contacts	Łączność
+Messages	Wiadomości
+Phone	Telefon
+Jobs	Praca
+Shop	Sklep
+Garage	Garaż
+Houses	Domy
+Pets	Zwierzęta domowe
+Emotes	Emotki
+Vil Feed	Kanał Vil
+Games	Zawody sportowe
+News	Aktualności
+Amount to send	Kwota do wysłania
+Snake	Wąż
+Tic-Tac-Toe	Kółko i krzyżyk
+%s   (best %d%s)	%s (najlepszy %d%s)
+ wins	 wygrywa
+Score %d   Best %d%s	Wynik %d Najlepszy %d%s
+   GAME OVER	   KONIEC GRY
+Play	Grać
+Tap to play  -  best %d	Dotknij, aby odtworzyć – najlepsze %d
+%s   Wins %d	%s Wygrane %d
+You win!	Wygrywasz!
+The phone wins.	Telefon wygrywa.
+Draw.	Rysować.
+You are X.	Jesteś X.
+Again	Ponownie
+< Games	< Gry
+My number: %d	Mój numer: %d
+New message to a number	Nowa wiadomość na numer
+%d  -  %s, Lv %d%s	%d - %s, poziom %d%s
+  (busy)	  (zajęty)
+Call	Dzwonić
+Message	Wiadomość
+New message	Nowa wiadomość
+Unknown	Nieznany
+No messages yet.	Brak wiadomości.
+Reply	Odpowiedź
+< All messages	< Wszystkie wiadomości
+Dial a number	Wybierz numer
+Number to call	Numer do zadzwonienia
+911 = emergency, the Taxi app calls a taxi.	911 = nagły wypadek, aplikacja Taxi zamawia taksówkę.
+Recent calls	Ostatnie połączenia
+Missed:	Pominięty:
+Out:	Na zewnątrz:
+In:	W:
+Bank balance  -  cash $%d	Saldo bankowe - gotówka $%d
+Payday in %d:%02d (salary + 0.1%% interest)	Dzień wypłaty w %d:%02d (wynagrodzenie + 0,1%% odsetek)
+Deposit	Depozyt
+Deposit amount (at an ATM)	Kwota depozytu (w bankomacie)
+Withdraw	Wycofać
+Withdraw amount (at an ATM)	Wypłać kwotę (w bankomacie)
+Transfer to a phone number	Przekieruj na numer telefonu
+Their phone number	Ich numer telefonu
+Nearest ATM on GPS	Najbliższy bankomat w GPS
+Deposits and withdrawals work at ATMs and the Mega Bank. Transfers work anywhere.	Wpłaty i wypłaty działają w bankomatach i Mega Banku. Przelewy działają wszędzie.
+Job Center	Centrum Pracy
+Your job: %s%s  -  tasks done %u	Twoje zadanie: %s%s - wykonane zadania %u
+ (on duty)	 (na służbie)
+Stop shift	Zmiana biegu
+Start shift	Rozpocznij zmianę
+Off duty	Po służbie
+On duty	Na służbie
+Quit job	Rzucić pracę
+%s  Pay ~$%d / task. Level %d.	%s Zapłać ~$%d / zadanie. Poziom %d.
+Locked	Zamknięty
+Take this job	Podejmij tę pracę
+Clear route	Wyczyść trasę
+My home	Mój dom
+At the store counter: normal price. Anywhere else: drone delivery (+10%). Weapons only at the Licensed Ammu-Nation.	Przy ladzie: cena standardowa. W innych miejscach: dostawa dronem (+10%). Broń tylko w licencjonowanym sklepie Ammu-Nation.
+Cash $%d  |  Bank $%d	Gotówka $%d | Bank $%d
+   (owned)	   (własność)
+< Categories	< Kategorie
+No vehicles yet. Shop - Vehicles, or the dealerships on the GPS.	Brak pojazdów. Sklep - Pojazdy, czyli salony sprzedaży w GPS.
+Deliver here	Dostarcz tutaj
+Sell (50%)	Sprzedaj (50%)
+Mega Realty	Mega Nieruchomości
+Your home: %s	Twój dom: %s
+You always spawn at home. /setspawn at your house sets the exact point.	Zawsze pojawiasz się w domu. /setspawn w twoim domu ustawia dokładny punkt.
+GPS home	GPS domowy
+Sell (60%)	Sprzedaj (60%)
+Buy a house: you will always spawn there instead of the Lobby Hub.	Kup dom: zawsze będziesz pojawiać się tam, a nie w Lobby Hub.
+Tap a house for the GPS, then /buyhouse at the door (paid from the bank first).	Kliknij dom, aby włączyć GPS, a następnie /buyhouse przy drzwiach (najpierw zapłać z banku).
+Send my pet home	Odeślij mojego zwierzaka do domu
+  (with you)	  (z tobą)
+  - call	  - dzwonić
+ in the Shop	 w sklepie
+Emotes & Dances	Emotki i tańce
+Stop (/e c)	Zatrzymaj (/e c)
+Shared emote: /e %s [player id]	Wspólna emotka: /e %s [id gracza]
+New post	Nowy post
+Post to Vil Feed	Opublikuj w kanale Vil
+Advert ($100)	Reklama (100$)
+Advert text	Tekst reklamy
+%d min ago	%d min temu
+Nothing posted yet. Be the first.	Jeszcze nic nie opublikowano. Bądź pierwszy.
+Mega Vil News	Wiadomości Mega Vil
+LIVE: %s	NA ŻYWO: %s
+%d:%02d left	%d:%02d pozostało
+Go there (GPS)	Idź tam (GPS)
+Next city event in %d:%02d	Następne wydarzenie w mieście za %d:%02d
+Mega Lottery jackpot: $%d	Jackpot w Mega Lottery: %d dolarów
+Your ticket: %d	Twój bilet: %d
+No ticket yet ($500, numbers 1-60).	Biletów jeszcze nie ma (500$, numery 1-60).
+Buy a ticket	Kup bilet
+Your number (1-60)	Twój numer (1-60)
+City events (every 15 minutes):	Wydarzenia miejskie (co 15 minut):
+Sky Blue	Błękitny
+Sunset	Zachód słońca
+Matrix	Matryca
+  (on)	  (NA)
+  (Shop)	  (Sklep)
+Phone number %d  |  MegaVil OS %s	Numer telefonu %d | System operacyjny MegaVil %s
+incoming call...	połączenie przychodzące...
+Voice chat goes to this call. Hold the mic button to talk.	Czat głosowy jest przenoszony do tego połączenia. Przytrzymaj przycisk mikrofonu, aby rozmawiać.
+Answer	Odpowiedź
+End call	Zakończ połączenie
+MegaVil 6G  100%	MegaVil 6G 100%
+911 - what happened?	911 - co się stało?
+Taxi - where to? (optional)	Taxi - dokąd? (opcjonalnie)
+Cash $%d  |  Bank $%d  |  Lv %d	Gotówka $%d | Bank $%d | Poziom %d
+911 Emergency	911 Pogotowie ratunkowe
+Police, paramedics and firefighters on duty get your location.	Policjanci, ratownicy medyczni i strażacy są na służbie i mogą ustalić Twoją lokalizację.
+Call 911	Zadzwoń pod numer 911
+Taxi drivers get your location.	Kierowcy taksówek znają Twoją lokalizację.
+Call a taxi	Zadzwoń po taksówkę
+{FF4444}No cheating{FFFFFF}: no hacks, aimbots, mod menus or speed / fly mods.	{FF4444}Bez oszukiwania{FFFFFF}: żadnych hacków, aimbotów, menu modów ani modów zwiększających prędkość/latanie.
+{FF4444}No NSFW{FFFFFF}: no adult names, chat, skins or pictures.	{FF4444}Zakaz treści NSFW{FFFFFF}: żadnych nazw, czatów, skórek ani obrazków dla dorosłych.
+{FFFF00}Respect everyone{FFFFFF}: no insults, racism, threats or harassment.	{FFFF00}Szanuj każdego{FFFFFF}: nie stosuj obelg, nie stosuj rasizmu, gróźb ani nękania.
+{FFFF00}No spam{FFFFFF}: no flooding the chat, caps lock or advertising other servers.	{FFFF00}Bez spamu{FFFFFF}: nie zaśmiecaj czatu, nie pisz wielkimi literami ani nie reklamuj innych serwerów.
+{FFFF00}No bug abuse{FFFFFF}: report glitches to an {33CC55}admin{FFFFFF}, don't use them.	{FFFF00}Nie nadużywaj błędów{FFFFFF}: zgłaszaj usterki {33CC55}administratorowi{FFFFFF}, nie używaj ich.
+{FFFF00}No spawn killing{FFFFFF} or griefing other players at spawns and safe zones.	{FFFF00}Zakaz zabijania{FFFFFF} graczy w miejscach odradzania się i w strefach bezpiecznych.
+{FFFF00}Don't pretend to be staff{FFFFFF} (admin, moderator or the bot {00BFFF}Broker{FFFFFF}).	{FFFF00}Nie podszywaj się pod pracownika{FFFFFF} (administratora, moderatora ani bota {00BFFF}Brokera{FFFFFF}).
+{FFFF00}Keep the chat friendly{FFFFFF} and in a language the others understand.	{FFFF00}Prowadź rozmowę w przyjaznej atmosferze{FFFFFF} i w języku zrozumiałym dla innych.
+{FFFF00}Listen to the {33CC55}admins{FFFF00} and {33CC55}moderators{FFFFFF}: a kick waits {FF9900}4:29{FFFFFF}, a ban is {FF4444}permanent{FFFFFF}.	{FFFF00}Posłuchajcie {33CC55}administratorów{FFFF00} i {33CC55}moderatorów{FFFFFF}: wykopanie czeka {FF9900}4:29{FFFFFF}, ban jest {FF4444}trwały{FFFFFF}.
+{33CC55}Have fun{FFFFFF} and play fair.	{33CC55}Baw się dobrze{FFFFFF} i graj uczciwie.
+This server has no rules set.	Na tym serwerze nie ma ustalonych zasad.
+SAFE ZONE: %s - nobody can hurt you here, weapons are put away.	STREFA BEZPIECZEŃSTWA: %s - nikt nie może cię tu skrzywdzić, broń jest odłożona.
+You left the safe zone - you can be hurt again.	Opuściłeś strefę bezpieczeństwa, znów możesz zostać zraniony.
+SAFE ZONE	STREFA BEZPIECZEŃSTWA
+SAFE ZONE - weapons away, nobody can hurt you	STREFA BEZPIECZEŃSTWA - broń w bezpiecznej odległości, nikt nie może cię zranić
+Class selection	Wybór klasy
+/class: pick a gang, police or civilian (team + skin)	/class: wybierz gang, policję lub cywila (drużynę + skórę)
+Turf wars	Wojny o terytorium
+gang zones on the radar, take them by standing in them (/turf, /teams)	strefy gangów na radarze, zajmij je, stając w nich (/turf, /teams)
+Races	Wyścigi
+/race queue: 14 players race a GTA SA race	Kolejka /race: 14 graczy ściga się w wyścigu GTA SA
+Derbies	Derby
+/derby: last car standing	/derby: ostatni stojący samochód
+/dm: deathmatch zones with weapons	/dm: strefy deathmatch z bronią
+/job: trucking, quarry, pizza, taxi, medic ...	/job: transport ciężarowy, kamieniołom, pizza, taksówka, medyk...
+3D text labels	Etykiety tekstowe 3D
+names floating over the starts	imiona unoszące się nad gwiazdami
+people standing at the job starts	ludzie stojący przy pracy zaczynają
+Home Kit	Zestaw domowy
+/create house <name>, /setup, /buyhouse, /edithouse, /edithouseinteriors (real GTA SA buildings + furniture)	/create dom <nazwa>, /setup, /buyhouse, /edithouse, /edithouseinteriors (prawdziwe budynki GTA SA + meble)
+Survival (DayZ)	Przetrwanie (DayZ)
+/survival: thirst, loot crates, zombies at night (Sunset DayZ style)	/survival: pragnienie, skrzynie z łupami, zombie w nocy (w stylu Sunset DayZ)
+Cops and Robbers	Policjanci i złodzieje
+/cop or /robber: /rob, /arrest, /cuff, wanted stars, /hitlist, /placehit	/cop lub /robber: /rob, /arrest, /cuff, poszukiwane gwiazdy, /hitlist, /placehit
+Attack / Defend	Atak / Obrona
+/ad: attackers take the base checkpoint, defenders hold it (5 min rounds, /vote, /spec)	/ad: atakujący zajmują punkt kontrolny bazy, obrońcy go utrzymują (rundy 5-minutowe, /vote, /spec)
+/ramp, /jump, /chiliad, /lv, /sf, /ls, /n nitro, /fix, stunt bonus	/ramp, /jump, /chiliad, /lv, /sf, /ls, /n nitro, /fix, bonus kaskaderski
+Drift	Dryf
+/drift: drift points + combo, /drifttop (RogueDrifterZ style)	/drift: punkty driftu + combo, /drifttop (w stylu RogueDrifterZ)
+Timber (lumberjack)	Drewno (drwal)
+/timber: cut trees with a chainsaw, load the logs in the pickup, /unloadtimber at the Timber Storage	/timber: ścinanie drzew piłą łańcuchową, ładowanie kłód na pickup, /unloadtimber w magazynie drewna
+That gamemode	Ten tryb gry
+%s is off on this server. Its host turns gamemodes on in MP Launcher > Add server > Gamemodes.	%s jest wyłączony na tym serwerze. Jego host włącza tryby gry w MP Launcher > Dodaj serwer > Tryby gry.
+Block menu cheats	Blokuj menu oszustw
+Allow CheatMenu	Zezwalaj na CheatMenu
+AFK tag	Tag AFK
+Show player ids	Pokaż identyfikatory graczy
+Only %s can change these settings.	Tylko %s może zmienić te ustawienia.
+the admin and moderators	administratorzy i moderatorzy
+the server owner	właściciel serwera
+The featured servers keep their gamemodes.	Polecane serwery zachowują swoje tryby gry.
+Join a server first.	Najpierw dołącz do serwera.
+This server still runs MP %s: settings are view only until it updates to 3.39 (the 24/7 servers update by themselves).	Na tym serwerze nadal działa MP %s: ustawienia są dostępne tylko do wglądu, dopóki nie zostanie zaktualizowana do wersji 3.39 (serwery 24/7 aktualizują się same).
+(old)	(stary)
+Setting	Ustawienie
+State	Państwo
+{FFFFFF}Gamemode: %s\t%s\n	{FFFFFF}Tryb gry: %s\t%s\n
+{FFFFFF}Gamemode: %s	{FFFFFF}Tryb gry: %s
+{FFFFFF}Permission: %s\t%s\n	{FFFFFF}Uprawnienia: %s\t%s\n
+{FFFFFF}Permission: %s	{FFFFFF}Uprawnienia: %s
+{FFFFFF}Rules window\t%s\n	{FFFFFF}Okno reguł\t%s\n
+{FFFFFF}Rules window	{FFFFFF}Okno reguł
+{FFFFFF}Server settings %s	{FFFFFF}Ustawienia serwera %s
+{33CC55}(you can change them)	{33CC55}(możesz je zmienić)
+{AAAAAA}(view only)	{AAAAAA}(tylko do przeglądania)
+Name: %s. moderator.txt: %s.	Imię: %s. moderator.txt: %s.
+not found (put it in the MP folder)	nie znaleziono (umieszczono w folderze MP)
+Not on a server right now.	Aktualnie nie ma go na serwerze.
+Server \"%s\" runs MP %s: you are %s.	Serwer \"%s\" uruchamia MP %s: jesteś %s.
+[MOD] (moderator permissions)	[MOD] (uprawnienia moderatora)
+NOT [MOD]	NIE [MOD]
+This copy of the server is older than MP 3.40.1 and doesn't know the Trunk key. It is hosted by an old phone / a VPS that didn't update - rejoin when it runs 3.50.1.	Ta kopia serwera jest starsza niż MP 3.40.1 i nie zna klucza Trunk. Jest hostowana na starym telefonie / serwerze VPS, który nie został zaktualizowany – dołącz ponownie, gdy będzie działał z wersją 3.50.1.
+Rejoin the server (Disconnect, then Connect) - the key is sent at the join.	Ponowne dołączenie do serwera (rozłączenie, a następnie połączenie) — klucz jest wysyłany podczas dołączenia.
+Only [ADMIN], [MOD] or the host of this server can switch the cheats.	Tylko [ADMIN], [MOD] lub host tego serwera może zmieniać kody.
+MP cheats are %s. Use /cheats on or /cheats off (the CLEO menu + Cheat Menu are always blocked).	Kody do MP to %s. Użyj /cheats włączonego lub /cheats wyłączonego (menu CLEO + menu kodów są zawsze zablokowane).
+*** MP cheats disabled for everyone on your server.	*** Kody do MP są wyłączone dla wszystkich na Twoim serwerze.
+*** MP cheats allowed again on your server.	*** Na twoim serwerze ponownie dozwolone są cheaty MP.
+Moderator: you are [MOD] %s here (kick / ban / mute / freeze: MP menu > Players, server settings: /settings).	Moderator: jesteś tutaj [MOD] %s (wyrzucanie / banowanie / wyciszanie / zamrażanie: menu MP > Gracze, ustawienia serwera: /settings).
+moderator.txt: the MP moderator key was read, but this server didn't give [MOD] (it runs an older MP). Type /modcheck to see why.	moderator.txt: klucz moderatora MP został odczytany, ale ten serwer nie podał [MOD] (działa na starszym serwerze MP). Wpisz /modcheck, aby dowiedzieć się dlaczego.
+moderator.txt: this key is not the MP moderator key and this server's owner hasn't listed it - ask for the MP moderator key.	moderator.txt: ten klucz nie jest kluczem moderatora MP i właściciel tego serwera go nie umieścił na liście - poproś o klucz moderatora MP.
+Nothing to redo.	Nie ma czego poprawiać.
+Nothing to undo.	Nie ma nic do cofnięcia.
+Could not save files/MP/tde/projects/%s.mptd	Nie udało się zapisać files/MP/tde/projects/%s.mptd
+Saved files/MP/tde/projects/%s.mptd (%d textdraws). Add it to your server: Add server > Plugins > Textdraw.	Zapisano files/MP/tde/projects/%s.mptd (%d textdraws). Dodaj do swojego serwera: Dodaj serwer > Wtyczki > Textdraw.
+New project %s.	Nowy projekt %s.
+Editing %s. Tap a textdraw to select it, drag to move. /tde close (saves) - /tde help.	Edycja %s. Dotknij rysunku tekstu, aby go zaznaczyć, przeciągnij, aby przenieść. /tde Zamknij (zapisuje) - /tde Pomoc.
+Editor closed (saved %s.mptd).	Edytor zamknięty (zapisano %s.mptd).
+1024 textdraws is the limit.	Limit wynosi 1024 rysunki tekstu.
+Moved to the depot (Depo restores it).	Przeniesiony do składu (Depo go przywraca).
+Sprite	Krasnoludek
+Text	Tekst
+No textdraws yet: tap New.	Brak jeszcze rysunków tekstowych: kliknij Nowy.
+Textdraw	Rysowanie tekstu
+Position	Pozycja
+Textdraws	Teksty rysowane
+Textdraw restored.	Przywrócono Textdraw.
+The depot is empty (deleted textdraws go here).	Magazyn jest pusty (tutaj należy wstawić usunięte teksty).
+Deleted textdraw\tText\tDeleted\n	Usunięto tekst\tTekst\tUsunięto\n
+Deleted textdraw	Usunięto rysowanie tekstu
+Deleted	Usunięto
+Depo - tap to restore	Depo - dotknij, aby przywrócić
+Restore	Przywrócić
+Sprite browser (font 4)	Przeglądarka Sprite (czcionka 4)
+Use	Używać
+New textdraw	Nowy textdraw
+Model id (skins 0-311, objects, vehicles 400-611). Now: %d	Identyfikator modelu (skórki 0-311, obiekty, pojazdy 400-611). Teraz: %d
+Preview model	Podgląd modelu
+Set	Ustawić
+Rotation X Y Z and zoom. Now: %.0f %.0f %.0f %.2f	Obrót XYZ i powiększenie. Teraz: %.0f %.0f %.0f %.2f
+Preview rotation	Podgląd obrotu
+Vehicle colours: colour1 colour2 (-1 = random). Now: %d %d	Kolory pojazdów: kolor1 kolor2 (-1 = losowo). Teraz: %d %d
+Preview vehicle colours	Podgląd kolorów pojazdów
+Preview model (font 5)	Podgląd modelu (czcionka 5)
+Model id\nRotation and zoom\nVehicle colours	Identyfikator modelu\nObrót i powiększenie\nKolory pojazdu
+Model id	Identyfikator modelu
+Rotation and zoom	Obrót i powiększenie
+Vehicle colours	Kolory pojazdów
+Edit	Redagować
+That project is open: open another one first.	Ten projekt jest otwarty: najpierw otwórz inny.
+Deleted %s.mptd.	Usunięto %s.mptd.
+Opened %s (%d textdraws).	Otwarto %s (%d textdraws).
+%s.mptd is not an MP textdraw file.	%s.mptd nie jest plikiem MP textdraw.
+No textdraws found in that file.	Nie znaleziono żadnych rysunków tekstowych w tym pliku.
+Imported %d textdraws.	Zaimportowano %d rysunków tekstu.
+New project name	Nowa nazwa projektu
+No saved projects yet.	Nie zapisano jeszcze żadnych projektów.
+Open project	Otwórz projekt
+Delete project	Usuń projekt
+Open	Otwarte
+Save as	Zapisz jako
+Exported files/MP/tde/export/%s%s.pwn	Wyeksportowano files/MP/tde/export/%s%s.pwn
+Could not write %s	Nie można zapisać %s
+Put a .mptd, .pwn or .txt export in files/MP/tde/import/ first.	Najpierw umieść eksport .mptd, .pwn lub .txt w files/MP/tde/import/.
+Import textdraws	Importuj textdraws
+Projects - %s%s	Projekty - %s%s
+New project\nOpen project\nSave\nSave as\nExport Pawn (SA-MP)\nExport Pawn (open.mp)\nDelete project\nImport (.mptd / .pwn / .txt)\nClose the editor	Nowy projekt\nOtwórz projekt\nZapisz\nZapisz jako\nEksportuj pionek (SA-MP)\nEksportuj pionek (open.mp)\nUsuń projekt\nImportuj (.mptd / .pwn / .txt)\nZamknij edytor
+New project	Nowy projekt
+Export Pawn (SA-MP)	Pionek eksportowy (SA-MP)
+Export Pawn (open.mp)	Eksport pionka (open.mp)
+Import (.mptd / .pwn / .txt)	Importuj (.mptd / .pwn / .txt)
+Close the editor	Zamknij edytor
+Global textdraw array	Globalna tablica textdraw
+Player textdraw array	Tablica tekstu gracza
+Own variable (empty = array)	Własna zmienna (pusta = tablica)
+Grid snap %s.	Przyciąganie do siatki %s.
+on (5 px)	włączony (5 pikseli)
+Fine drag %s.	Delikatne przeciąganie %s.
+on (1/4 speed)	włączony (1/4 prędkości)
+Global array name\t%s\nPlayer array name\t%s\nThis textdraw's own variable\t%s\nGrid snap\t%s\nFine drag\t%s\nHide the tool bar (tap the corner to show)\t%s	Nazwa tablicy globalnej\t%s\nNazwa tablicy gracza\t%s\nWłasna zmienna tego obiektu textdraw\t%s\nPrzyciąganie do siatki\t%s\nPrecyzyjne przeciąganie\t%s\nUkryj pasek narzędzi (dotknij rogu, aby go wyświetlić)\t%s
+Global array name	Nazwa tablicy globalnej
+Player array name	Nazwa tablicy graczy
+This textdraw's own variable	Własna zmienna tego textdraw
+Grid snap	Przyciąganie siatki
+Fine drag	Drobne przeciąganie
+Hide the tool bar (tap the corner to show)	Ukryj pasek narzędzi (dotknij rogu, aby go wyświetlić)
+On	NA
+Off	Wyłączony
+Change	Zmiana
+Select a textdraw first (tap it, or List).	Najpierw wybierz rysunek tekstu (dotknij go lub wybierz listę).
+Textdraw text (~n~ new line, ~r~ red, _ = space)	Narysuj tekst (~n~ nowa linia, ~r~ czerwony, _ = spacja)
+Textsize	Rozmiar tekstu
+Lettersize	Rozmiar literowy
+%s%s  |  #%d/%d %s  |  %s: pos %.1f, %.1f  letter %.3f, %.3f  size %.1f, %.1f  font %d  colour %08X	%s%s | #%d/%d %s | %s: pozycja %.1f, %.1f litera %.3f, %.3f rozmiar %.1f, %.1f czcionka %d kolor %08X
+%s%s  |  %d textdraws  |  tap New to add one, tap a textdraw to select it	%s%s | %d textdraws | dotknij Nowy, aby dodać jeden, dotknij textdraw, aby go wybrać
+Color	Kolor
+Background / outline colour	Kolor tła/konturu
+Box colour	Kolor pudełka
+Colour RRGGBBAA (hex)	Kolor RRGGBBAA (szesnastkowy)
+/tde [project] opens the editor, /tde close, /tde save, /tde new <name>, /tde open <name>, /tde export [openmp].	/tde [projekt] otwiera edytor, /tde zamyka, /tde zapisuje, /tde nowy <nazwa>, /tde otwiera <nazwa>, /tde eksportuje [openmp].
+Files: files/MP/tde/projects/*.mptd - put it on your server with Add server > Plugins > Textdraw > Import file.	Pliki: files/MP/tde/projects/*.mptd - umieść je na swoim serwerze za pomocą Dodaj serwer > Wtyczki > Textdraw > Importuj plik.
+Open the editor first (/tde).	Najpierw otwórz edytor (/tde).
+Could not read the file.	Nie można odczytać pliku.
+Not a textdraw file (	Nie jest to plik textdraw (
+Could not write to 	Nie można pisać do 
+%s.mptd added to files/MP/%s/ (%d textdraws)%s	%s.mptd dodano do files/MP/%s/ (%d textdraws)%s
+ - live on your server now	 - już teraz na Twoim serwerze
+/sdcard/Download/MP Textdraws	/sdcard/Pobierz/MP Textdraws
+/storage/emulated/0/Download/MP Textdraws	/storage/emulated/0/Pobierz/MP Textdraws
+/sdcard/Download	/sdcard/Pobierz
+Plugins	Wtyczki
+Files for your custom server go to files/MP/%s/.	Pliki dla Twojego serwera niestandardowego znajdziesz w files/MP/%s/.
+This plugin type is not available yet.	Ten typ wtyczki nie jest jeszcze dostępny.
+Textdraw: a .mptd saved by /tde (in game) or the MP Textdraw Editor app. Every player on your server sees them.	Textdraw: plik .mptd zapisany przez /tde (w grze) lub aplikację MP Textdraw Editor. Każdy gracz na Twoim serwerze je widzi.
+Import file	Importuj plik
+No .mptd files found. Save one with /tde, or put it in Download/MP Textdraws or files/MP/import/.	Nie znaleziono plików .mptd. Zapisz jeden za pomocą /tde lub umieść go w Download/MP Textdraws lub files/MP/import/.
+Import a textdraw file	Importuj plik textdraw
+No textdraw files on this server yet.	Na tym serwerze nie ma jeszcze plików textdraw.
+Remove	Usunąć
+Make one: /tde in game (files/MP/tde/projects/), or the MP Textdraw Editor app.	Utwórz jeden: /tde w grze (files/MP/tde/projects/), lub aplikacji MP Textdraw Editor.
+Birch Tree	Brzoza
+Oak Tree	Dąb
+Yew Tree	Cis
+Xp	Doświadczenie
+Sold	Sprzedany
+Trees	Drzewa
+{FFA500}LUMBERJACK: {FFFFFF}You quit the Timber job. Your paycheck stays ($%.2f, /mysalary).	{FFA500}DRWALA: {FFFFFF}Zwalniasz się z pracy jako drwal. Twoja wypłata zostaje ($%.2f, /mysalary).
+{FFA500}JOBINFO: {FFFFFF}The pickup is full (%d/%d). Drive to the Timber Storage (red marker) and /unloadtimber.	{FFA500}INFORMACJE O ZLECENIU: {FFFFFF}Odbiór jest pełny (%d/%d). Jedź do magazynu drewna (czerwony znacznik) i /unloadtimber.
+{FFA500}JOBINFO: {FFFFFF}Mission trees done. Bring the %d timber to the Timber Storage and /unloadtimber.	{FFA500}INFORMACJE O PRACY: {FFFFFF}Drzewa misji wykonane. Przynieś %d drewno do składu drewna i /unloadtimber.
+{FFA500}GPSINFO: {FFFFFF}Tree %d/%d: a %s%s{FFFFFF} is marked on your radar.	{FFA500}GPSINFO: {FFFFFF}Drzewo %d/%d: na radarze zaznaczone jest %s%s{FFFFFF}.
+{FFA500}Timber job: {FFFFFF}/timber (start, teleports you to the Timber Storage)  /quitjob  /fixjob  /timbergps	{FFA500}Praca z drewnem: {FFFFFF}/timber (start, teleportuje cię do składu drewna) /quitjob /fixjob /timbergps
+{FFFFFF}/cut (or hold CUT with the chainsaw)  /loadtimber (at the fallen tree)  /unloadtimber (Timber Storage)	{FFFFFF}/cut (lub przytrzymaj CUT piłą łańcuchową) /loadtimber (przy powalonym drzewie) /unloadtimber (Magazyn drewna)
+{FFFFFF}/mysalary  /collectsalary (at the storage)  /timberskill  /checkjobcooldown  /timberhelp	{FFFFFF}/mysalary /collectsalary (w magazynie) /timberskill /checkjobcooldown /timberhelp
+You cannot cut trees right now - you are on a cooldown (%d s, /checkjobcooldown).	Nie możesz teraz ścinać drzew – masz czas odnowienia (%d s, /checkjobcooldown).
+{FFA500}LUMBERJACK: {FFFFFF}Tree %d/%d, timber %d/%d, paycheck $%.2f. /quitjob to stop.	{FFA500}DRWARZ: {FFFFFF}Drzewo %d/%d, drewno %d/%d, pensja %.2f. /quitjob aby zatrzymać.
+{FFA500}LUMBERJACK: {FFFFFF}Welcome to the Timber job (woodcutting level %d). Cut %d trees, load the logs in the pickup, sell them at the storage.	{FFA500}DRWALA: {FFFFFF}Witamy w pracy drwala (poziom ścinki %d). Ścinamy %d drzew, ładujemy kłody na pickupa i sprzedajemy je w magazynie.
+You are not at the Timber Storage (the yellow \"i\" at the barn, /timbergps).	Nie jesteś w składzie drewna (żółty \"i\" przy stodole, /timbergps).
+You can sell lumber again in %d s.	Możesz ponownie sprzedać drewno za %d s.
+Your pickup has no timber. Cut a tree and /loadtimber first.	W Twoim pickupie nie ma drewna. Najpierw ściąć drzewo i /loadtimber.
+Your pickup is gone - the timber went with it. /quitjob, then /timber.	Twój pickup zniknął, a wraz z nim drewno. /quitjob, następnie /timber.
+Bring the pickup with the timber to the storage.	Dostarcz samochód dostawczy z drewnem do magazynu.
+{FFA500}STORAGE: {FFFFFF}You've unloaded {FFDD33}%d timber{FFFFFF}, {33CC55}$%.2f{FFFFFF} has been issued to your paycheck.	{FFA500}MAGAZYN: {FFFFFF}Rozładowałeś {FFDD33}%d drewna{FFFFFF}, kwota {33CC55}$%.2f{FFFFFF} została wypłacona na Twoją wypłatę.
+{FFA500}SALARY: {FFFFFF}Your salary statement has been updated, please check command '/mysalary'.	{FFA500}WYNAGRODZENIE: {FFFFFF}Twoje zestawienie wynagrodzenia zostało zaktualizowane, sprawdź polecenie „/mysalary”.
+Mission complete: %d trees. +$150.00 bonus on your paycheck.	Misja ukończona: %d drzew. Premia w wysokości 150,00 USD do Twojej wypłaty.
+{FFA500}LUMBERJACK: {FFFFFF}You feel tired of cutting trees, so you've decided to stop (rest %d s).	{FFA500}DRWARZ: {FFFFFF}Czujesz się zmęczony ścinaniem drzew, więc postanowiłeś przestać (odpoczynek %d s).
+{FFA500}..:: Salary statement ::..	{FFA500}..:: Oświadczenie o wynagrodzeniu ::..
+Paycheck (not collected): {33CC55}$%.2f{FFFFFF}   Earned in total: $%.2f	Wypłata (niepobrana): {33CC55}$%.2f{FFFFFF} Łącznie zarobione: $%.2f
+Timber sold: %d   Trees cut: %d   Woodcutting level %d (%d xp)	Sprzedane drewno: %d Ścięte drzewa: %d Poziom drwala %d (%d PD)
+Collect it with /collectsalary at the Timber Storage.	Odbierz w punkcie /collectsalary w Timber Storage.
+{FFA500}Woodcutting: {FFFFFF}level %d, %d xp%s.	{FFA500}Drwalnictwo: {FFFFFF}poziom %d, %d PD%s.
+ (oak trees at 20 xp)	 (dęby za 20 PD)
+ (yew trees at 60 xp)	 (cisy przy 60 PD)
+ (max)	 (maks.)
+{FFA500}..:: Job Cooldowns ::..	{FFA500}..:: Czasy odnowienia zadań ::..
+Wood Cutting Cooldown Time Remaining: %.2f minutes	Pozostały czas odnowienia cięcia drewna: %.2f minut
+Lumber selling: %d s	Sprzedaż drewna: %d s
+You have no job cooldown timers.	Nie masz limitów czasowych na odnowienie zadania.
+Collect your paycheck at the Timber Storage (/timbergps).	Odbierz wypłatę w Timber Storage (/timbergps).
+Your paycheck is empty.	Twoja wypłata jest pusta.
+{FFA500}SALARY: {FFFFFF}You collected {33CC55}$%d{FFFFFF} from your paycheck.	{FFA500}WYNAGRODZENIE: {FFFFFF}Otrzymano {33CC55}$%d{FFFFFF} z wypłaty.
+Staff only.	Tylko dla personelu.
+Saved \"%s\" to timber.txt (%d trees in the file now; built-in spots are used until there are %d).	Zapisano \"%s\" do timber.txt (%d drzew w pliku; wbudowane punkty są używane, dopóki nie będzie %d).
+Job state fixed (animation stopped, chainsaw back).	Stan zadania naprawiony (animacja zatrzymana, piła łańcuchowa cofnięta).
+{FFA500}LUMBERJACK: {FFFFFF}You can now sell lumbers again!	{FFA500}DRWARZ: {FFFFFF}Teraz znowu możesz sprzedawać drewno!
+{FFA500}LUMBERJACK: {FFFFFF}You died - the Timber job stopped.	{FFA500}DRWARZ: {FFFFFF}Zmarłeś - prace przy drewnie zostały przerwane.
+Your pickup is gone (the %d timber too). /quitjob and /timber for a new one.	Twój pickup zniknął (drewno %d również). /quitjob i /timber za nowy.
+{FFA500}GPSINFO: {FFFFFF}You have arrived!	{FFA500}INFOGPS: {FFFFFF}Dotarłeś!
+You need the chainsaw in your hands (it comes back by itself).	Musisz trzymać piłę łańcuchową w rękach (powróci sama).
+{C2A2DA}* %s seizes his chainsaw from behind body, then cut the tree.	{C2A2DA}* %s chwyta piłę łańcuchową zza ciała i ścina drzewo.
+You have chopped down a %s%s{FFFFFF}. TIMBER!	Ściąłeś %s%s{FFFFFF}. DREWNO!
+~y~TIMBER!	~y~DREWNO!
+Stand next to the fallen tree.	Stań obok powalonego drzewa.
+Get out of the car to load the timber.	Wysiądź z samochodu, aby załadować drewno.
+You need your pickup here (/quitjob, /timber for a new one).	Tutaj potrzebujesz swojego odbioru (/quitjob, /timber jeśli chcesz zamówić nowy).
+Bring the pickup closer (within 18 m of the log).	Podjedź bliżej (na odległość 18 m od kłody).
+{C2A2DA}AME: {FFFFFF}loads timber in the back of the pickup truck	{C2A2DA}AME: {FFFFFF}ładuje drewno na tył pickupa
+{FFA500}JOBINFO: {FFFFFF}You've successfully loaded the timber into the car! (total timber: %d/%d)	{FFA500}INFORMACJE O ZLECENIU: {FFFFFF}Załadowałeś drewno do samochodu! (łączna ilość drewna: %d/%d)
+Woodcutting level %d: %s.	Poziom ścinania drewna %d: %s.
+you can cut oak trees now	teraz możesz ścinać dęby
+you can cut yew trees now	teraz możesz ścinać cisy
+Timber Storage	Przechowywanie drewna
+use '/unloadtimber' to sell collected timber	użyj '/unloadtimber', aby sprzedać zebrane drewno
+Lumberjack	Drwal
+/timberhelp - the job commands	/timberhelp - polecenia zadania
+type '/timber' to start the job	wpisz '/timber' aby rozpocząć zadanie
+TIMBER %d/%d  TREE %d/%d	DREWNO %d/%d DRZEWO %d/%d
+Health: %d	Zdrowie: %d
+Cutting tree	Ścinanie drzewa
+Loading timber	Załadunek drewna
+Broker	Pośrednik
+{4DD2FF}%s\n{FFFFFF}/job %s  {33CC55}$%d	{4DD2FF}%s\n{FFFFFF}/job %s {33CC55}$%d
+{FFFFFF}/job %s  {33CC55}$%d	{FFFFFF}/job %s {33CC55}$%d
+{FFE14D}Race: %s\n{FFFFFF}/race  {A9C4E4}(%s, %d players)	{FFE14D}Rasa: %s\n{FFFFFF}/race {A9C4E4}(%s, %d graczy)
+{FFE14D}Race: %s	{FFE14D}Rasa: %s
+{FFFFFF}/race  {A9C4E4}(%s, %d players)	{FFFFFF}/race {A9C4E4}(%s, %d graczy)
+%s~n~~r~TURF WAR: ~w~%s %d%%	%s~n~~r~WOJNA O TEREN: ~w~%s %d%%
+%s~n~~w~%s turf - stay to take it%s	%s~n~~w~%s murawa - zostań, żeby ją zdobyć%s
+ (3.01 server)	 (serwer 3.01)
+%s~n~~w~%s turf	%s~n~~w~%s darń
+%s is marked on your radar for 90 seconds.	%s zostanie oznaczone na Twoim radarze na 90 sekund.
+Owner	Właściciel
+%s\t{%06X}%s\t{FF4444}attacked by %s (%d%%)\n	%s\t{%06X}%s\t{FF4444}zaatakowany przez %s (%d%%)\n
+{FF4444}attacked by %s (%d%%)	{FF4444}zaatakowany przez %s (%d%%)
+{FFFFFF}Turf - gang zones	{FFFFFF}Strefy gangów
+Turf	Darń
+{FFFFFF}Teams	{FFFFFF}Zespoły
+Skin %d is not in this game.	Skórka %d nie występuje w tej grze.
+%s~n~~w~class %d/%d  -  skin %d	%s~n~~w~klasa %d/%d - skóra %d
+Leave the race / derby / job / DM first (/leave).	Najpierw opuść wyścig / derby / pracę / DM (/leave).
+Not during a mission.	Nie podczas misji.
+(/class) %s is a civilian.	(/class) %s jest cywilem.
+(/class) %s joined the %s!	(/class) %s dołączył(a) do %s!
+%s hold %d zones. Stand in an enemy zone for 60 s to take it (/turf).	%s utrzymaj %d stref. Stań w strefie wroga przez 60 s, aby ją przejąć (/turf).
+*** No gamemodes on this server (its host turns them on: MP Launcher > Add server > Gamemodes).	*** Na tym serwerze nie ma trybów gry (jego gospodarz włącza je: MP Launcher > Dodaj serwer > Tryby gry).
+*** Gamemodes here: %s.	*** Tryby gry tutaj: %s.
+*** The host turned on: %s.	*** Gospodarz włączył: %s.
+*** The host turned off: %s.	*** Gospodarz wyłączył: %s.
+The host turned this gamemode off.	Gospodarz wyłączył ten tryb gry.
+[MP Server] %s\n	[Serwer MP] %s\n
+[MP Server] %s	[Serwer MP] %s
+MP Server	Serwer MP
+Bad login ticket.	Nieprawidłowy bilet logowania.
+Login ticket not signed by the MP bot.	Bilet logowania nie został podpisany przez bota MP.
+admin key	klucz administratora
+moderator key	klucz moderatora
+%s %s cheats for everyone.	%s %s kodów dla każdego.
+%s was %s by %s	%s było %s przez %s
+You are muted by the administrator.	Administrator wyciszył Twój dźwięk.
+%s Administrator: %s  Reason: %s	%s Administrator: %s Powód: %s
+{FFFFFF}[{FFFF00}SERVER{FFFFFF}]: %s got %s by %s	{FFFFFF}[{FFFF00}SERWER{FFFFFF}]: %s otrzymał %s od %s
+no reason	bez powodu
+[SERVER]: %s got %s by %s	[SERVER]: %s otrzymał %s od %s
+TURF: %s took %s from %s!	TURF: %s zabrał %s %s!
+Section	Sekcja
+Tap to type	Dotknij, aby pisać
+Pricedown (GTA)	Obniżka cen (GTA)
+Mono	Mononukleoza
+Coming Soon	Już wkrótce
+Dancing Script	Scenariusz do tańca
+Carrois Gothic	Gotyk Carrois
+Vehicle_%d.png	Pojazd_%d.png
+scrolled up - drag down for new messages	przewijane w górę - przeciągnij w dół, aby zobaczyć nowe wiadomości
+MP: Connected to %s  |  %s  |  Players: %d/%d  |  Ping: %d ms%s	MP: Połączono z %s | %s | Gracze: %d/%d | Ping: %d ms%s
+  |  Host: 	  | Gospodarz: 
+  |  Hosting	  | Hosting
+MP: Connecting ...	MP: Łączenie ...
+MP: Disconnected%s	MP: Odłączony%s
+Shift	Zmiana
+Space	Przestrzeń

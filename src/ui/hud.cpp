@@ -23,6 +23,7 @@
 #define STBI_NO_STDIO_FAILURE_STRINGS
 #include "../../imgui/stb_image.h"
 #include "emoji.h"
+#include "i18n.h"
 
 // ---- timings for the connected logo -------------------------------------------------
 #define LOGO_TOTAL_MS     7000   // logo is gone at 7 s
@@ -32,6 +33,7 @@
 void ImGui_ImplRenderWare_RenderDrawData(ImDrawData* draw_data);
 bool ImGui_ImplRenderWare_Init();
 void ImGui_ImplRenderWare_NewFrame();
+void ImGui_ImplRenderWare_DestroyFontTexture();   // 3.52
 
 static ImFont*   s_pFont = nullptr;
 static ImFont*   s_pPricedown = nullptr;   // 3.00
@@ -164,22 +166,73 @@ static ImFont* LoadSystemFont(ImFontAtlas* atlas, const char* const* names, floa
 
 bool HUD::IsInitialised() { return s_bInit; }
 
-bool HUD::Init()
+// 3.52: the phone font that has the chosen language's script (CJK / Thai), merged into the font before it
+static bool MergePhoneFont(ImFontAtlas* atlas, const char* kind, float size, const ImWchar* ranges)
 {
-    if(s_bInit) return true;
-    if(!RsGlobal || RsGlobal->maximumHeight <= 0) return false;
+    struct C { const char* file; int no; };
+    C list[8]; int n = 0;
+    const int ttcNo = !strcmp(kind, "cjk-jp") ? 0 : !strcmp(kind, "cjk-kr") ? 1 : !strcmp(kind, "cjk-sc") ? 2 : 3;   // NotoSansCJK.ttc order
+    if(!strncmp(kind, "cjk", 3))
+    {
+        list[n++] = { "NotoSansCJK-Regular.ttc", ttcNo };
+        list[n++] = { !strcmp(kind, "cjk-jp") ? "NotoSansJP-Regular.otf" : !strcmp(kind, "cjk-kr") ? "NotoSansKR-Regular.otf" : !strcmp(kind, "cjk-sc") ? "NotoSansSC-Regular.otf" : "NotoSansTC-Regular.otf", 0 };
+        list[n++] = { "NotoSerifCJK-Regular.ttc", ttcNo };
+        list[n++] = { "DroidSansFallbackFull.ttf", 0 };
+        list[n++] = { "DroidSansFallback.ttf", 0 };
+    }
+    else if(!strcmp(kind, "thai"))
+    {
+        list[n++] = { "NotoSansThai-Regular.ttf", 0 };
+        list[n++] = { "NotoSansThaiUI-Regular.ttf", 0 };
+        list[n++] = { "DroidSansThai.ttf", 0 };
+    }
+    for(int i = 0; i < n; ++i)
+    {
+        char path[256]; snprintf(path, sizeof(path), "/system/fonts/%s", list[i].file);
+        FILE* f = fopen(path, "rb"); if(!f) continue;
+        fseek(f, 0, SEEK_END); long len = ftell(f); fseek(f, 0, SEEK_SET);
+        if(len < 1024 || len > 40 * 1024 * 1024) { fclose(f); continue; }
+        unsigned char* buf = (unsigned char*)IM_ALLOC((size_t)len);
+        bool ok = fread(buf, 1, (size_t)len, f) == (size_t)len; fclose(f);
+        bool font = ok && len > 16;
+        if(font && !memcmp(buf, "ttcf", 4)) font = (int)((buf[8] << 24) | (buf[9] << 16) | (buf[10] << 8) | buf[11]) > list[i].no;   // fonts in the collection
+        else if(font) font = list[i].no == 0 && ((buf[0] == 0 && buf[1] == 1 && buf[2] == 0 && buf[3] == 0) || !memcmp(buf, "OTTO", 4) || !memcmp(buf, "true", 4));
+        if(!font) { IM_FREE(buf); continue; }
+        ImFontConfig fc; fc.FontDataOwnedByAtlas = true; fc.OversampleH = 1; fc.OversampleV = 1; fc.MergeMode = true; fc.FontNo = list[i].no;
+        if(atlas->AddFontFromMemoryTTF(buf, (int)len, size, &fc, ranges)) { logger->Info("3.52: language font %s #%d", path, list[i].no); return true; }
+    }
+    logger->Info("3.52: no phone font for %s - those texts stay English", kind);
+    return false;
+}
 
-    s_fScale = RsGlobal->maximumHeight / 1080.0f;
-    ImGui::CreateContext();
+static ImVector<ImWchar> s_Ranges, s_Script;   // must live as long as the atlas
+static uint32_t s_nFontGen = 0;
+static int s_nFontMerged = -1;   // the font list entry that also got the phone font (the one picked in Settings > Display)
+static void BuildFonts()
+{
     ImGuiIO& io = ImGui::GetIO();
-    io.IniFilename = nullptr;
-    io.LogFilename = nullptr;
-    io.ConfigFlags |= ImGuiConfigFlags_IsTouchScreen;
-    ImGui_ImplRenderWare_Init();
-
-    static const ImWchar ranges[] = { 0x0020, 0x00FF, 0x0400, 0x045F, 0x2010, 0x2040, 0 };
+    s_nFontGen = I18n::Generation(); s_nFontMerged = s_nFont;
+    // the base set + every character the chosen language uses (Arial has Latin, Vietnamese, Cyrillic, Greek, Arabic forms)
+    s_Ranges.clear(); s_Script.clear();
+    {
+        static const ImWchar base[] = { 0x0020, 0x00FF, 0x0400, 0x045F, 0x2010, 0x2040, 0 };
+        ImFontGlyphRangesBuilder b; b.AddRanges(base);
+        ImFontGlyphRangesBuilder sc;
+        const std::string& g = I18n::Glyphs();
+        const char* p = g.c_str(); const char* e = p + g.size();
+        while(p < e)
+        {
+            unsigned int c = 0; int k = ImTextCharFromUtf8(&c, p, e); if(k <= 0) break; p += k;
+            if(c >= 0xE000 && c < 0xF900) continue;   // the emoji area
+            if((c >= 0x0E00 && c <= 0x0E7F) || (c >= 0x1100 && c <= 0x11FF) || (c >= 0x2E80 && c <= 0xD7FF) || (c >= 0xF900 && c <= 0xFAFF) || (c >= 0xFF00 && c <= 0xFFEF)) sc.AddChar((ImWchar)c);
+            else b.AddChar((ImWchar)c);
+        }
+        b.BuildRanges(&s_Ranges);
+        if(I18n::FontKind()[0]) { sc.AddText("0123456789"); sc.BuildRanges(&s_Script); }
+    }
     ImFontConfig fc; fc.FontDataOwnedByAtlas = false; fc.OversampleH = 2; fc.OversampleV = 2;
-    s_pFont = io.Fonts->AddFontFromMemoryTTF((void*)arialData, sizeof(arialData), UI::S(34.0f), &fc, ranges);
+    s_pFont = io.Fonts->AddFontFromMemoryTTF((void*)arialData, sizeof(arialData), UI::S(34.0f), &fc, s_Ranges.Data);
+    if(s_Script.Size > 1) MergePhoneFont(io.Fonts, I18n::FontKind(), UI::S(34.0f), s_Script.Data);
     io.FontDefault = s_pFont;
     // 2.19: coloured emoji glyphs (chat / keyboard)
     UI::EmojiAddGlyphs(io.Fonts, s_pFont, UI::S(34.0f));
@@ -194,8 +247,28 @@ bool HUD::Init()
         static const char* const k7[] = { "DancingScript-Regular.ttf", "DancingScript-Bold.ttf", nullptr };
         static const char* const k8[] = { "CarroisGothicSC-Regular.ttf", nullptr };
         const char* const* lists[] = { k2, k3, k4, k5, k6, k7, k8 };
-        for(int i = 0; i < 7; ++i) s_pFonts[2 + i] = LoadSystemFont(io.Fonts, lists[i], UI::S(34.0f));
+        for(int i = 0; i < 7; ++i)
+        {
+            s_pFonts[2 + i] = LoadSystemFont(io.Fonts, lists[i], UI::S(34.0f));
+            if(s_pFonts[2 + i] && 2 + i == s_nFont && s_Script.Size > 1) MergePhoneFont(io.Fonts, I18n::FontKind(), UI::S(34.0f), s_Script.Data);   // 3.52
+        }
     }
+}
+
+bool HUD::Init()
+{
+    if(s_bInit) return true;
+    if(!RsGlobal || RsGlobal->maximumHeight <= 0) return false;
+
+    s_fScale = RsGlobal->maximumHeight / 1080.0f;
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO();
+    io.IniFilename = nullptr;
+    io.LogFilename = nullptr;
+    io.ConfigFlags |= ImGuiConfigFlags_IsTouchScreen;
+    ImGui_ImplRenderWare_Init();
+
+    BuildFonts();
     io.Fonts->Build();
     UI::EmojiBake(io.Fonts, s_pFont);
 
@@ -943,6 +1016,15 @@ void HUD::Render()
 
     ImGuiIO& io = ImGui::GetIO();
     io.DisplaySize = ImVec2((float)RsGlobal->maximumWidth, (float)RsGlobal->maximumHeight);
+    if(s_nFontGen != I18n::Generation() || (I18n::FontKind()[0] && s_nFontMerged != s_nFont))   // 3.52: a new language: its characters (and phone font) in the atlas
+    {
+        io.Fonts->Clear();
+        BuildFonts();
+        io.Fonts->Build();
+        UI::EmojiBake(io.Fonts, s_pFont);
+        ImGui_ImplRenderWare_DestroyFontTexture();   // NewFrame makes the new one
+        UI::SetLook(s_nFont, s_nFontFx, s_fFontScale, s_fUiScale);
+    }
     ImGui_ImplRenderWare_NewFrame();
     ImGui::NewFrame();
 

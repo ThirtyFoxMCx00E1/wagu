@@ -33,6 +33,7 @@
 #include "audio/voice.h"   // 3.11
 #include <set>
 #include <time.h>
+#include "ui/i18n.h"
 #include "ui/hud.h"
 #include "ui/floatmenu.h"
 #include "ui/vkeyboard.h"
@@ -194,9 +195,15 @@ int  MP::OnlineMax()
     return settings.maxPlayers;
 }
 
+static bool s_bChatTranslated = false;
 static void PushChat(const ChatLine& l)
 {
     chat.push_back(l);
+    if(l.prefix.empty() && I18n::Current() && !s_bChatTranslated)   // 3.52: server / system lines in the chosen language (player chat stays as typed)
+    {
+        std::string tr;
+        if(I18n::Message(chat.back().text, tr)) chat.back().text.swap(tr);
+    }
     chat.back().t = MP_NowMs();   // 2.19.6: for the chat fade
     {   // 3.11: chat time stamp (local clock)
         time_t tt = time(nullptr); struct tm lt; localtime_r(&tt, &lt);
@@ -212,9 +219,12 @@ void MP::AddSystemMessage(uint32_t rgba, const char* text)
 
 static void SysMsg(uint32_t col, const char* fmt, ...)
 {
-    char buf[256];
-    va_list ap; va_start(ap, fmt); vsnprintf(buf, sizeof(buf), fmt, ap); va_end(ap);
+    char buf[768];
+    const char* tf = I18n::Fmt(fmt);   // 3.52: translated format, same specs in the same order (checked when loaded)
+    va_list ap; va_start(ap, fmt); vsnprintf(buf, sizeof(buf), tf, ap); va_end(ap);
+    s_bChatTranslated = tf != fmt;   // already translated: PushChat doesn't look it up again
     MP::AddSystemMessage(col, buf);
+    s_bChatTranslated = false;
 }
 
 static void ServerLog(const char* msg) { logger->Info("[Server] %s", msg); }
@@ -3203,6 +3213,21 @@ static int      s_nNpcHostId = -1;          // who I show NPCs from (UI)
 static int      s_nNpcFollowers = 0;        // players I send NPCs to (UI)
 static uint64_t s_nNpcNoHostSince = 0, s_nNpcLastRole = 0, s_nNpcLastSend = 0, s_nNpcLastClear = 0;
 static uint8_t  s_nNpcSeq = 0;
+// 3.52: one world per area, stable when players join / leave. Before, the lowest player id nearby was
+// always the host: a player joining with a lower id took the area over and every other phone's people /
+// traffic vanished and came back as the newcomer's (and again on the next join / leave). Now:
+//  - a newcomer never hosts in its first seconds (it follows the host that is already there)
+//  - a follower stays with its host while that host is around (no switching to a lower id)
+//  - two hosts that meet: after 4 s the higher id gives way (old rule, only now delayed)
+//  - what was already on my phone before I joined is never sent as "mine" (that showed it twice)
+#define NPC_JOIN_GRACE_MS   5000
+static uint64_t s_nNpcJoinAt = 0;                  // first NpcProcess after connecting
+static uint64_t s_nNpcHostSince = 0;               // when I became host
+static uint64_t s_nNpcFollowSince = 0;             // when I started following s_nNpcHostId
+static uint64_t s_NpcPktFrom[MP_MAX_PLAYERS];      // last PKT_NPC from that player (any kind)
+static uint64_t s_NpcAmbFrom[MP_MAX_PLAYERS];      // last PKT_NPC from that player with its people / traffic
+static uint64_t s_NpcBothHosts[MP_MAX_PLAYERS];    // since when that player and I are both hosts in range
+static uint64_t s_NpcNotServing[MP_MAX_PLAYERS];   // until: that host sends me nothing (older MP) - don't follow it
 
 static bool NpcIsHost() { return s_bNpcHost; }
 
@@ -3359,6 +3384,9 @@ static void NpcStop()
     if(s_bNpcFollow || s_bNpcHost) { NpcClearCopies(); Game::SetAmbientPopulation(true); }
     else if(Game::IsAmbientPopulationOff()) Game::SetAmbientPopulation(true);
     s_bNpcFollow = s_bNpcHost = false; s_nNpcHostId = -1; s_nNpcFollowers = 0;
+    s_nNpcJoinAt = 0; s_nNpcHostSince = 0;   // 3.52
+    memset(s_NpcPktFrom, 0, sizeof(s_NpcPktFrom)); memset(s_NpcAmbFrom, 0, sizeof(s_NpcAmbFrom));
+    memset(s_NpcBothHosts, 0, sizeof(s_NpcBothHosts)); memset(s_NpcNotServing, 0, sizeof(s_NpcNotServing));
 }
 
 // who is the NPC host here? (every 500 ms)
@@ -3371,22 +3399,37 @@ static void NpcDecideRole(int ped, uint64_t now)
     // and come back each time the host got / lost stars); cops are shared like everyone else
     bool wanted = false;
     int area = Game::GetAreaVisible();
-    // a lower-id NPC host near me (in the same interior, in the shared world)?
-    int host = -1; float best = 1e18f;
+    // 3.52: the NPC host near me (in the same interior, in the shared world) - see s_nNpcJoinAt
+    int host = -1; float best = 1e18f; bool keepHost = false;
     const float r = s_bNpcFollow ? MP_NPC_RANGE_M : MP_NPC_SHOW_M;   // hysteresis
+    const bool newcomer = !s_nNpcJoinAt || now - s_nNpcJoinAt < NPC_JOIN_GRACE_MS;
     s_nNpcFollowers = 0;
     for(int i = 0; eligible && i < MP_MAX_PLAYERS; ++i)
     {
         const RemotePlayer& p = players[i];
-        if(i == myId || !p.active) continue;
-        Vec3 at; if(!NpcRemotePos(p, at) || NpcRemoteInOwnWorld(p)) continue;
+        if(i == myId || !p.active) { s_NpcBothHosts[i] = 0; continue; }
+        Vec3 at; if(!NpcRemotePos(p, at) || NpcRemoteInOwnWorld(p)) { s_NpcBothHosts[i] = 0; continue; }
         float dx = at.x - me.x, dy = at.y - me.y, d = dx * dx + dy * dy;
-        if(d > MP_NPC_RANGE_M * MP_NPC_RANGE_M) continue;
-        if(p.hasX2 && p.interior != area) continue;
-        bool isHost = p.hasX2 && (p.x2flags & X2_NPCHOST);
-        if(i < myId && isHost && d < r * r && d < best) { best = d; host = i; }
-        if(i > myId) ++s_nNpcFollowers;
+        if(d > MP_NPC_RANGE_M * MP_NPC_RANGE_M || (p.hasX2 && p.interior != area)) { s_NpcBothHosts[i] = 0; continue; }
+        const bool isHost = p.hasX2 && (p.x2flags & X2_NPCHOST);
+        if(!isHost) { ++s_nNpcFollowers; s_NpcBothHosts[i] = 0; continue; }   // a player of my area I send to when I host
+        if(d >= r * r) { s_NpcBothHosts[i] = 0; continue; }
+        // a host I can follow: a lower id (every MP version serves those), or one that sends to me
+        // (3.52 hosts serve everybody near). An older higher-id host sends nothing to me: not that one.
+        const bool serves = i < myId || (now - s_NpcPktFrom[i] < 2500 && now >= s_NpcNotServing[i]);
+        if(!serves) continue;
+        if(s_bNpcFollow && i == s_nNpcHostId) { keepHost = true; host = i; best = -1; }   // stay with my host
+        if(s_bNpcHost && !newcomer)
+        {   // two hosts meet: the higher id gives way, but only after 4 s together (passing by changes nothing)
+            if(!s_NpcBothHosts[i]) s_NpcBothHosts[i] = now;
+            if(!(i < myId && now - s_NpcBothHosts[i] >= 4000)) continue;
+        }
+        if(!keepHost && d < best) { best = d; host = i; }
     }
+    // a host I follow that never sends its people / traffic (older MP, higher id): leave it for 30 s
+    if(s_bNpcFollow && s_nNpcHostId >= 0 && s_nNpcHostId > myId && s_nNpcFollowSince && now - s_nNpcFollowSince > 4000 &&
+       now - s_NpcAmbFrom[s_nNpcHostId] > 4000)
+    { s_NpcNotServing[s_nNpcHostId] = now + 30000; if(host == s_nNpcHostId) host = -1; }
     bool follow = eligible && !wanted && host >= 0;
     if(!follow && s_bNpcFollow && eligible && !wanted)
     {
@@ -3395,10 +3438,12 @@ static void NpcDecideRole(int ped, uint64_t now)
         if(now - s_nNpcNoHostSince < 2000) follow = true;
     }
     else s_nNpcNoHostSince = 0;
-    bool hostNow = eligible && !wanted && !follow;
+    bool hostNow = eligible && !wanted && !follow && !newcomer;
+    if(hostNow && !s_bNpcHost) s_nNpcHostSince = now;
 
     if(follow && !s_bNpcFollow)
     {
+        s_nNpcFollowSince = now;              // 3.52
         Game::SetAmbientPopulation(false);    // my own people / traffic off
         Game::ClearAmbient(me, MP_NPC_RANGE_M, s_nLastLocalCar, true);
         s_nNpcLastClear = now;
@@ -3407,6 +3452,12 @@ static void NpcDecideRole(int ped, uint64_t now)
     {
         NpcClearCopies(true);                 // 2.28: spawned copies stay (they're not the host's)
         Game::SetAmbientPopulation(true);     // back to my own world
+    }
+    if(follow && s_bNpcFollow && host >= 0 && s_nNpcHostId >= 0 && host != s_nNpcHostId)
+    {   // 3.52: a new host for my area: its copies replace the old host's (spawned ones stay)
+        for(auto& c : s_NpcPed) if(c.used && !c.spawned && c.owner == s_nNpcHostId) NpcDeletePed(c);
+        for(auto& c : s_NpcCar) if(c.used && !c.spawned && c.owner == s_nNpcHostId) NpcDeleteCar(c);
+        s_nNpcFollowSince = now;
     }
     s_bNpcFollow = follow; s_bNpcHost = hostNow;
     if(follow && host >= 0) s_nNpcHostId = host; else if(!follow) s_nNpcHostId = -1;
@@ -3430,6 +3481,9 @@ static bool NpcIsMine(int h, bool car, const Vec3& pos, const Vec3& me, int myCa
     float dx = pos.x - me.x, dy = pos.y - me.y, dz = pos.z - me.z;
     float r = car ? 30.0f : 25.0f;
     bool mine = dx * dx + dy * dy + dz * dz < r * r;
+    // 3.52: what was around me before I joined (my single-player world) is not "mine": every phone has
+    // its own copy of it, sharing it showed the same car / person twice and they blinked against each other
+    if(s_nNpcJoinAt && now - s_nNpcJoinAt < NPC_JOIN_GRACE_MS) mine = false;
     if(s_nOwn >= 192)
     {   // forget the oldest / gone ones
         int k = 0;
@@ -3611,14 +3665,19 @@ static void NpcReceive(const PktNpc& m, bool mission)
     // 2.21: only my chosen NPC host's people / traffic. With 3+ players two hosts' frames used to
     // mix here and the copies jumped between both worlds (visible / invisible flicker)
     // 2.28: a spawned entity (*_SPAWNED) is taken from ANY player - it exists only on their phone
-    const bool fromMyHost = s_bNpcFollow && m.h.id < myId && (s_nNpcHostId < 0 || m.h.id == s_nNpcHostId);
+    uint64_t tnow = MP_NowMs();
+    if(!mission) s_NpcPktFrom[m.h.id] = tnow;   // 3.52: this player sends to me
+    if(!mission) for(int i = 0; i < m.h.nPeds && i < MP_NPC_PEDS_MAX; ++i) if(!(m.peds[i].flags & NPCF_SPAWNED)) { s_NpcAmbFrom[m.h.id] = tnow; break; }
+    if(!mission) for(int i = 0; i < m.h.nCars && i < MP_NPC_CARS_MAX; ++i) if(!(m.cars[i].flags & NCARF_SPAWNED)) { s_NpcAmbFrom[m.h.id] = tnow; break; }
+    // 3.52: from my host whatever its id (it used to have to be a lower id)
+    const bool fromMyHost = s_bNpcFollow && (s_nNpcHostId < 0 ? m.h.id < myId : m.h.id == s_nNpcHostId);
     const bool takeSpawned = mission || (settings.syncNpcs && !s_bLocalMission && !s_bLocalCutscene && !s_bLocalSeparate);
     if(!fromMyHost && !takeSpawned) return;
     if(m.h.interior != (uint8_t)Game::GetAreaVisible()) return;
     Vec3 ownerCar = { 0, 0, 0 }; bool hasOwnerCar = players[m.h.id].car && Game::GetCarPos(players[m.h.id].car, ownerCar);
     int lp = Game::LocalPed(); Vec3 me; if(!Game::GetCharPos(lp, me)) return;
     uint64_t now = MP_NowMs();
-    const float show2 = MP_NPC_SHOW_M * MP_NPC_SHOW_M;
+    const float show2 = MP_NPC_SHOW_M * MP_NPC_SHOW_M, keep2 = MP_NPC_RANGE_M * MP_NPC_RANGE_M;
     for(int i = 0; i < m.h.nPeds && i < MP_NPC_PEDS_MAX; ++i)
     {
         NpcPed e; memcpy(&e, &m.peds[i], sizeof(e));
@@ -3626,9 +3685,10 @@ static void NpcReceive(const PktNpc& m, bool mission)
         if(sp ? !takeSpawned : !fromMyHost) continue;
         float p[3]; memcpy(p, e.pos, sizeof(p));
         if(!(p[0] == p[0])) continue;
-        float dx = p[0] - me.x, dy = p[1] - me.y; if(dx * dx + dy * dy > show2) continue;
+        float dx = p[0] - me.x, dy = p[1] - me.y, d2 = dx * dx + dy * dy; if(d2 > keep2) continue;
         NpcPedCopy* c = nullptr; NpcPedCopy* fr = nullptr;
         for(auto& x : s_NpcPed) { if(x.used && x.owner == m.h.id && x.uid == e.uid) { c = &x; break; } if(!x.used && !fr) fr = &x; }
+        if(!c && d2 > show2) continue;   // 3.52: a copy that exists is kept a bit further out (no blink at the edge)
         // 2.32: a player (avatar on their phone), not an NPC. 2.34: only checked before a copy is made -
         // an NPC that walks / drives past a player used to be deleted and re-made every packet (flicker)
         if(!c && !mission && NpcLooksLikePlayer(p, e.model)) continue;   // 3.02: a mission's people walk with the player (Sweet, Smoke ...)
@@ -3650,9 +3710,10 @@ static void NpcReceive(const PktNpc& m, bool mission)
         if(sp ? !takeSpawned : !fromMyHost) continue;
         float p[3]; memcpy(p, e.pos, sizeof(p));
         if(!(p[0] == p[0]) || e.model < 400 || e.model > 611) continue;
-        float dx = p[0] - me.x, dy = p[1] - me.y; if(dx * dx + dy * dy > show2) continue;
+        float dx = p[0] - me.x, dy = p[1] - me.y, d2 = dx * dx + dy * dy; if(d2 > keep2) continue;
         NpcCarCopy* c = nullptr; NpcCarCopy* fr = nullptr;
         for(auto& x : s_NpcCar) { if(x.used && x.owner == m.h.id && x.uid == e.uid) { c = &x; break; } if(!x.used && !fr) fr = &x; }
+        if(!c && d2 > show2) continue;   // 3.52
         if(sp && hasOwnerCar)
         {   // the owner's avatar car is still here (just got out / I ride in it): that IS this car
             // 2.34: an existing copy is only dropped when it is really the same spot (owner sits in it);
@@ -3872,6 +3933,7 @@ static void NpcUpdateCopies(int lp, uint64_t now)
 
 static void NpcProcess(int ped, uint64_t now)
 {
+    if(!s_nNpcJoinAt) s_nNpcJoinAt = now;   // 3.52
     if(now - s_nNpcLastRole >= 500) { s_nNpcLastRole = now; NpcDecideRole(ped, now); }
     NpcSend(ped, now);   // 2.28: host traffic and / or my spawned entities
     if(!s_bNpcFollow && NpcHasSpawnedCopies()) NpcUpdateCopies(ped, now);   // 2.28: other players' spawned ones
@@ -5084,7 +5146,7 @@ void MP::SaveConfig()
     I("ChatFade", settings.chatFade); B("ChatBackground", settings.chatBg);
     B("ChatBoxBackground", settings.chatBoxBg); B("ChatBoxLabel", settings.chatBoxLabel); B("ChatBoxTap", settings.chatBoxTap);   // 2.22
     F("ChatBoxX", settings.chatBoxX); F("ChatBoxY", settings.chatBoxY); B("RealSkin", settings.realSkin);
-    I("Region", settings.region); B("LobbyAuto", settings.lobbyAuto); B("RegionPicked", settings.regionPicked); I("NameColor", (int)settings.nameColor); I("MaxPlayers", settings.maxPlayers); I("HostGamemodes", settings.hostModes); I("ServerIcon", settings.serverIcon); S("ServerLang", settings.serverLang); S("DeviceId", settings.deviceId);
+    I("Region", settings.region); B("LobbyAuto", settings.lobbyAuto); B("RegionPicked", settings.regionPicked); I("NameColor", (int)settings.nameColor); I("MaxPlayers", settings.maxPlayers); I("HostGamemodes", settings.hostModes); I("ServerIcon", settings.serverIcon); S("ServerLang", settings.serverLang); S("DeviceId", settings.deviceId); S("UiLanguage", settings.uiLanguage);   // 3.52
     B("FullProgressDefault", settings.fullProgressDefault);
     B("UnlockWorld", settings.unlockWorld); B("Girlfriends", settings.girlfriends); B("EventTips", settings.eventTips);   // 2.21
     B("PermAfk", settings.permAfk); B("PermDmgInd", settings.permDmgInd); B("PermShowIds", settings.permShowIds); B("PermNeeds", settings.permNeeds); B("RulesOn", settings.rulesOn); S("RulesTitle", settings.rulesTitle);
@@ -5191,6 +5253,7 @@ static void LoadConfig()
     settings.hostModes       = ::cfg->GetInt("HostGamemodes", 0, "MP") & GM_ALL;   // 3.02: none until the host turns them on
     settings.serverIcon      = ::cfg->GetInt("ServerIcon", 0, "MP");   // 2.24
     ::cfg->GetString(settings.serverLang, sizeof(settings.serverLang), "ServerLang", "English", "MP");   // 2.25
+    ::cfg->GetString(settings.uiLanguage, sizeof(settings.uiLanguage), "UiLanguage", "en", "MP");   // 3.52
     MP_CleanLang(settings.serverLang);
     ::cfg->GetString(settings.deviceId, sizeof(settings.deviceId), "DeviceId", "", "MP");
     LoadAdminFile();   // 2.37: admin.txt = proof you are SENJI
@@ -6623,6 +6686,44 @@ static void SectionChat(void*)
     if(dirty && !ImGui::IsAnyItemActive()) { dirty = false; SaveConfig(); }
 }
 
+// 3.52: Settings > Language. Every text MP draws is looked up in the chosen table as it is drawn (src/ui/i18n.*).
+static bool FontCanShow(const char* s)
+{
+    ImFont* f = ImGui::GetFont();
+    for(const char* p = s; *p;)
+    {
+        unsigned int c = (unsigned char)*p;
+        if(c < 0x80) { ++p; continue; }
+        int n = ImTextCharFromUtf8(&c, p, nullptr); if(n <= 0) return false; p += n;
+        if(!f->FindGlyphNoFallback((ImWchar)c)) return false;
+    }
+    return true;
+}
+static void SectionLanguage(void*)
+{
+    ImGui::TextUnformatted("Language");
+    ImGui::TextDisabled("Menus, the launcher, the HUD and server messages change at once. Player chat stays as it was typed.");
+    const int cur = I18n::Current();
+    static char s_szMsg[200] = "";
+    GImTrSuspend++;   // the names below are shown as they are, in every language
+    for(int i = 0; i < I18n::Count(); ++i)
+    {
+        const I18n::LangInfo& L = I18n::Info(i);
+        char label[160];
+        const bool native = strcmp(L.native, L.english) && FontCanShow(L.native);
+        if(native) snprintf(label, sizeof(label), "%s%s  -  %s##lang%d", i == cur ? "> " : "", L.english, L.native, i);
+        else       snprintf(label, sizeof(label), "%s%s##lang%d", i == cur ? "> " : "", L.english, i);
+        if(FloatMenu::BigButton(label, i == cur ? 0xFFD08A2Bu : 0) && i != cur)
+        {
+            if(I18n::Set(L.code)) { MP_CopyStr(settings.uiLanguage, L.code, sizeof(settings.uiLanguage)); SaveConfig(); s_szMsg[0] = 0; }
+            else snprintf(s_szMsg, sizeof(s_szMsg), "%s is not installed: files/MP/lang/%s.lng is missing (it comes with the MP full / client zip).", L.english, L.code);
+        }
+    }
+    GImTrSuspend--;
+    if(s_szMsg[0]) ImGui::TextColored(ImVec4(1.0f, 0.55f, 0.45f, 1.0f), "%s", s_szMsg);
+    if(cur) ImGui::TextDisabled("Machine translated (%d texts). Chinese, Japanese, Korean and Thai use your phone's own font.", I18n::Entries());
+}
+
 // Name colour: used for your name tag, your chat name, kill feed and your radar icon on everyone's screen.
 static void NameColorPicker()
 {
@@ -6751,6 +6852,9 @@ void MP::Init(const char* dataDir)
 {
     MP_CopyStr(s_szDataDir, dataDir, sizeof(s_szDataDir));
     LoadConfig();
+    I18n::SetDataDir(s_szDataDir);   // 3.52: languages
+    GImTrText = I18n::Text; GImTrFmt = I18n::Fmt;
+    if(strcmp(settings.uiLanguage, "en") && !I18n::Set(settings.uiLanguage)) logger->Info("Language %s: %s", settings.uiLanguage, I18n::LastError());
     Game::SetEnvCallbacks(OnLocalExplosion, OnLocalFire, OnForeignEnv);   // 2.13
     Game::SetShotCallback(OnLocalShot);        // 2.17: every bullet / rocket
     Game::SetMapMarkerProvider(MapMarkers);    // 2.17: players on the pause-menu map
@@ -6770,6 +6874,7 @@ void MP::Init(const char* dataDir)
     FloatMenu::AddSection("Voice", SectionVoice);  // 3.11
     FloatMenu::AddSection("Player", SectionPlayer);
     FloatMenu::AddSection("Cheats", SectionCheats);   // 2.35
+    FloatMenu::AddSection("Language", SectionLanguage);   // 3.52
     // 2.19 TopbarPlus bar: [ ... ] (Help / Server / Player list) + [ Chat ] (chat box)
     FloatMenu::AddDotsButton();
     FloatMenu::AddBarButton("Chat", BubbleChat, nullptr, &s_bChatBox);

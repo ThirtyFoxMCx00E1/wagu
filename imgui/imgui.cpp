@@ -1097,6 +1097,9 @@ static void             UpdateViewportsNewFrame();
 // - DLL users: read comments above.
 #ifndef GImGui
 ImGuiContext*   GImGui = NULL;
+const char* (*GImTrText)(const ImFont*, const char*, const char*, const char**) = NULL; // MP languages
+const char* (*GImTrFmt)(const char*) = NULL;
+int GImTrSuspend = 0;
 #endif
 
 // Memory Allocator functions. Use SetAllocatorFunctions() to change them.
