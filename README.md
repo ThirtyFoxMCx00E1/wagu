@@ -41,39 +41,6 @@ animations and combat.
 
 ![Screenshot](assets/MP/Screenshot_20261017-115103.png)
 
-### Screenshots
-
-<p align="center">
-<a href="Screenshots/Screenshot_20261024-160306.png"><img src="Screenshots/thumbs/Screenshot_20261024-160306.jpg" width="24%" alt="MP screenshot 20261024-160306"></a>
-<a href="Screenshots/Screenshot_20261025-152458.png"><img src="Screenshots/thumbs/Screenshot_20261025-152458.jpg" width="24%" alt="MP screenshot 20261025-152458"></a>
-<a href="Screenshots/Screenshot_20261025-170655.png"><img src="Screenshots/thumbs/Screenshot_20261025-170655.jpg" width="24%" alt="MP screenshot 20261025-170655"></a>
-<a href="Screenshots/Screenshot_20261025-195004.png"><img src="Screenshots/thumbs/Screenshot_20261025-195004.jpg" width="24%" alt="MP screenshot 20261025-195004"></a>
-<a href="Screenshots/Screenshot_20261025-212621.png"><img src="Screenshots/thumbs/Screenshot_20261025-212621.jpg" width="24%" alt="MP screenshot 20261025-212621"></a>
-<a href="Screenshots/Screenshot_20261025-230417.png"><img src="Screenshots/thumbs/Screenshot_20261025-230417.jpg" width="24%" alt="MP screenshot 20261025-230417"></a>
-<a href="Screenshots/Screenshot_20261026-084456.png"><img src="Screenshots/thumbs/Screenshot_20261026-084456.jpg" width="24%" alt="MP screenshot 20261026-084456"></a>
-<a href="Screenshots/Screenshot_20261026-084503.png"><img src="Screenshots/thumbs/Screenshot_20261026-084503.jpg" width="24%" alt="MP screenshot 20261026-084503"></a>
-<a href="Screenshots/Screenshot_20261026-084514.png"><img src="Screenshots/thumbs/Screenshot_20261026-084514.jpg" width="24%" alt="MP screenshot 20261026-084514"></a>
-<a href="Screenshots/Screenshot_20261026-124349.png"><img src="Screenshots/thumbs/Screenshot_20261026-124349.jpg" width="24%" alt="MP screenshot 20261026-124349"></a>
-<a href="Screenshots/Screenshot_20261026-140540.png"><img src="Screenshots/thumbs/Screenshot_20261026-140540.jpg" width="24%" alt="MP screenshot 20261026-140540"></a>
-<a href="Screenshots/Screenshot_20261026-140546.png"><img src="Screenshots/thumbs/Screenshot_20261026-140546.jpg" width="24%" alt="MP screenshot 20261026-140546"></a>
-<a href="Screenshots/Screenshot_20261026-142827.png"><img src="Screenshots/thumbs/Screenshot_20261026-142827.jpg" width="24%" alt="MP screenshot 20261026-142827"></a>
-<a href="Screenshots/Screenshot_20261030-173842.png"><img src="Screenshots/thumbs/Screenshot_20261030-173842.jpg" width="24%" alt="MP screenshot 20261030-173842"></a>
-<a href="Screenshots/Screenshot_20261030-173954.png"><img src="Screenshots/thumbs/Screenshot_20261030-173954.jpg" width="24%" alt="MP screenshot 20261030-173954"></a>
-<a href="Screenshots/Screenshot_20261030-181211.png"><img src="Screenshots/thumbs/Screenshot_20261030-181211.jpg" width="24%" alt="MP screenshot 20261030-181211"></a>
-<a href="Screenshots/Screenshot_20261030-190305.png"><img src="Screenshots/thumbs/Screenshot_20261030-190305.jpg" width="24%" alt="MP screenshot 20261030-190305"></a>
-<a href="Screenshots/Screenshot_20261031-115611.png"><img src="Screenshots/thumbs/Screenshot_20261031-115611.jpg" width="24%" alt="MP screenshot 20261031-115611"></a>
-<a href="Screenshots/Screenshot_20261031-182151.png"><img src="Screenshots/thumbs/Screenshot_20261031-182151.jpg" width="24%" alt="MP screenshot 20261031-182151"></a>
-<a href="Screenshots/Screenshot_20261031-182503.png"><img src="Screenshots/thumbs/Screenshot_20261031-182503.jpg" width="24%" alt="MP screenshot 20261031-182503"></a>
-<a href="Screenshots/Screenshot_20261031-184424.png"><img src="Screenshots/thumbs/Screenshot_20261031-184424.jpg" width="24%" alt="MP screenshot 20261031-184424"></a>
-<a href="Screenshots/Screenshot_20261031-184428.png"><img src="Screenshots/thumbs/Screenshot_20261031-184428.jpg" width="24%" alt="MP screenshot 20261031-184428"></a>
-<a href="Screenshots/Screenshot_20261031-184514.png"><img src="Screenshots/thumbs/Screenshot_20261031-184514.jpg" width="24%" alt="MP screenshot 20261031-184514"></a>
-<a href="Screenshots/Screenshot_20261031-184517.png"><img src="Screenshots/thumbs/Screenshot_20261031-184517.jpg" width="24%" alt="MP screenshot 20261031-184517"></a>
-<a href="Screenshots/Screenshot_20261031-213839.png"><img src="Screenshots/thumbs/Screenshot_20261031-213839.jpg" width="24%" alt="MP screenshot 20261031-213839"></a>
-<a href="Screenshots/gta3_2018-06-12_15-36-30-089.jpg"><img src="Screenshots/thumbs/gta3_2018-06-12_15-36-30-089.jpg" width="24%" alt="MP screenshot gta3_2018-06-12_15-36-30-089"></a>
-</p>
-
-<p align="center"><sub>Tap a picture for the full size. All screenshots: <a href="Screenshots">Screenshots/</a></sub></p>
-
 Prebuilt binaries:
 
 | File | ABI | Target |
