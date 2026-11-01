@@ -90,7 +90,7 @@ static const Vec3 kRpLobbyCam  = { 1463.4f, -1673.4f, 20.5f };   // 3.29: low ov
 static const Vec3 kRpLobbyLook = { 1481.6f, -1692.0f, 15.2f };
 // 3.34: the wardrobe room (mp_rp_cos.inc)
 // 3.34: factions (mp_rp_fac.inc)
-static void RpFacOnPacket(const uint8_t* d, int len); static void RpFacReset(); static void RpFacOpen(); static void RpFacDraw(); static uint32_t RpFacPinColor(int id);
+static void RpFacOnPacket(const uint8_t* d, int len); static void RpFacReset(); static void RpFacOpen(); static void RpFacOpenCreate(); static void RpFacDraw(); static uint32_t RpFacPinColor(int id);
 static bool RpCosActive(); static void RpCosOpen(); static void RpCosDraw(float now); static void RpCosTick(int ped, uint64_t now); static void RpCosAbort(); static void RpApplyMySkin(int fallback = 0);
 static const Vec3 kRpJailCell  = { 264.0f, 77.6f, 1001.04f };    // LSPD cells (interior 6)
 #define RP_JAIL_AREA 6
@@ -1231,6 +1231,7 @@ static bool RpCommand(const char* cmd, const char* arg)
     if(IS("help") || IS("cmds") || IS("commands") || IS("rphelp")) { RpShowHelp(); return true; }
     if(IS("rules")) { RpShowRules(); return true; }
     if(IS("faction") || IS("factions") || IS("fac")) { RpFacOpen(); return true; }   // 3.34
+    if(IS("createfaction") || IS("fcreate") || IS("clan")) { RpFacOpenCreate(); return true; }   // 3.51: [TAG] = a faction (names can't have [ ])
     if(IS("stats") || IS("me2") || IS("profile")) { RpShowStatsLocal(); return true; }
     if(IS("levels") || IS("level")) { int into = 0, need = RpXpForNext(s_Rp.me.xp, &into); SysMsg(RP_SKY, "[LEVEL] You are level %d: %d / %d respect. +1 every 10 min played, +2 every payday, +1 every 3 job tasks.", s_Rp.me.level, into, need); return true; }
     if(IS("googlemap") || IS("gmap"))   // 3.35: /googlemap on|off - Google radar or the game's own radar

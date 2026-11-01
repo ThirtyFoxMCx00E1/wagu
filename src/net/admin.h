@@ -44,6 +44,18 @@ inline bool MP_IsReservedName(const char* name)
 }
 
 // a name that pretends to be staff ("[ADMIN] Bob") -> strip the tag
+// 3.51: "[" and "]" are for tags only ([ADMIN] / [MOD] / faction and clan tags the server adds) -
+// a player name can't have them. Removes every bracket (and the spaces left at the start / end).
+inline void MP_StripBrackets(char* name)
+{
+    if(!name) return;
+    char* w = name;
+    for(const char* r = name; *r; ++r) if(*r != '[' && *r != ']') *w++ = *r;
+    *w = 0;
+    while(*name == ' ') memmove(name, name + 1, strlen(name));
+    for(size_t n = strlen(name); n > 0 && name[n - 1] == ' '; --n) name[n - 1] = 0;
+}
+inline bool MP_HasBrackets(const char* name) { return name && (strchr(name, '[') || strchr(name, ']')); }
 inline void MP_StripAdminTag(char* name)
 {
     for(bool again = true; name && again; )

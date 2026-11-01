@@ -920,6 +920,7 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
                 MP_CopyStr(s.name, j->name[0] ? j->name : "Player", MP_NAME_LEN);
                 s.name[MP_NAME_LEN - 1] = 0;
                 MP_StripAdminTag(s.name);                 // 2.37: nobody can fake the [ADMIN] tag
+                MP_StripBrackets(s.name);                 // 3.51: no [ ] in player names (tags = staff / factions / clans)
                 if(!s.name[0]) MP_CopyStr(s.name, "Player", MP_NAME_LEN);
                 s.admin = isAdmin;
                 s.authed = !AuthOn();   // 3.21.6

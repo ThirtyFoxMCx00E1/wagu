@@ -31,6 +31,7 @@ static const GameModeInfo kGameModes[] =
     { GM_AD,      "Attack / Defend", "ad",      "/ad: attackers take the base checkpoint, defenders hold it (5 min rounds, /vote, /spec)" },
     { GM_STUNT,   "Stunt freeroam",  "stunt",   "/ramp, /jump, /chiliad, /lv, /sf, /ls, /n nitro, /fix, stunt bonus" },
     { GM_DRIFT,   "Drift",           "drift",   "/drift: drift points + combo, /drifttop (RogueDrifterZ style)" },
+    { GM_TIMBER,  "Timber (lumberjack)", "timber", "/timber: cut trees with a chainsaw, load the logs in the pickup, /unloadtimber at the Timber Storage" },
 };
 #define MP_GAMEMODE_COUNT ((int)(sizeof(kGameModes) / sizeof(kGameModes[0])))
 static const char* GameModeName(uint16_t bit) { for(auto& g : kGameModes) if(g.bit == bit) return g.name; return "That gamemode"; }

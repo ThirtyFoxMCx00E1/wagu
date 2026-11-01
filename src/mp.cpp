@@ -4211,6 +4211,7 @@ static void PSettingsPopup();
 #include "mp_srvset.inc"    // 3.39: server settings / management page
 #include "mp_progress.inc"  // 3.39.1: saved progress (place, money, weapons, health, hunger)
 #include "mp_modes2.inc"    // 3.39: survival, CnR, A/D, stunt, drift
+#include "mp_timber.inc"    // 3.51: the Timber job + the Broker MQQ title
 #include "mp_tdeplug.inc"   // 3.50: Add server > Plugins (Textdraw .mptd files)
 #include "mp_tde.inc"       // 3.50: in-game MP Textdraw Editor (/tde)
 
@@ -5192,6 +5193,7 @@ static void LoadConfig()
     MP_StripAdminTag(settings.name);
     if(MP_IsReservedName(settings.name) && !settings.adminKey[0]) MP_CopyStr(settings.name, "Player", sizeof(settings.name));   // no admin.txt: the name is not yours
     if(MP_IsModReservedName(settings.name) && !HaveModKey()) MP_CopyStr(settings.name, "Player", sizeof(settings.name));   // 3.40.1: no moderator.txt: Trunk is not yours
+    if(MP_HasBrackets(settings.name)) { MP_StripAdminTag(settings.name); MP_StripBrackets(settings.name); if(!settings.name[0]) MP_CopyStr(settings.name, "Player", sizeof(settings.name)); }   // 3.51: no [ ] in names
     if(strlen(settings.deviceId) != MP_UID_LEN)   // 2.25: first start -> make this phone's id
     {
         srand((unsigned)(time(nullptr) ^ (uintptr_t)&settings));
@@ -5408,6 +5410,7 @@ static const char* NameBlocked(const char* t)
     if(MP_IsReservedName(t) && !HaveAdminKey()) return "Reserved name";
     if(MP_IsModReservedName(t) && !HaveModKey()) return "Reserved (moderator)";   // 3.40.1
     if(!strncasecmp(t, "[ADMIN]", 7) || !strncasecmp(t, "[MOD]", 5)) return "Not allowed";
+    if(MP_HasBrackets(t)) return "No [ ] in names";   // 3.51: [ ] = tags (staff, factions, clans)
     return nullptr;
 }
 static void OnName(const char* t, void*)
@@ -5417,7 +5420,9 @@ static void OnName(const char* t, void*)
     if(MP_IsModReservedName(t) && !HaveModKey()) LoadModFile();    // 3.40.1: moderator.txt just copied in?
     if(NameBlocked(t))
     {
-        if(MP_IsReservedName(t)) SenjiBlockedMsg(); else if(MP_IsModReservedName(t)) TrunkBlockedMsg(); else SysMsg(COL_RED, "Names can't start with [ADMIN] or [MOD].");
+        if(MP_IsReservedName(t)) SenjiBlockedMsg(); else if(MP_IsModReservedName(t)) TrunkBlockedMsg();
+        else if(MP_HasBrackets(t)) SysMsg(COL_RED, "Names can't have [ or ]. Use only your name - [TAGS] are for staff, factions and clans (Mega Vil: /createfaction).");
+        else SysMsg(COL_RED, "Names can't start with [ADMIN] or [MOD].");
         return;
     }
     if(MP_IsModReservedName(t)) { MP_CopyStr(settings.name, MP_MOD_RESERVED_SHOW, sizeof(settings.name)); SaveConfig(); SysMsg(COL_GREEN, "moderator.txt found: you are [MOD] %s on every MP server (name tag, chat, kill feed, kick / mute).", MP_MOD_RESERVED_SHOW); return; }

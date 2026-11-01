@@ -58,6 +58,7 @@ static uint32_t RpFacPinColor(int id) { const RpFacC* f = RpFacOf(id); return f 
 
 static void RpFacSend(int a, int b, const char* text) { RpSend(RPC_FACTION, (uint8_t)a, (uint8_t)b, 0, text); }
 static void RpFacOpen() { s_Fac.open = true; s_Fac.form = false; s_Fac.openAt = MP_NowMs(); RpFacSend(0, 0, nullptr); }
+static void RpFacOpenCreate() { RpFacOpen(); s_Fac.form = true; }   // 3.51: /createfaction
 
 // keyboard fields of the create form
 enum { RFK_TAG = 1, RFK_TITLE, RFK_DESC, RFK_RULES, RFK_LIMIT, RFK_SETRULES };

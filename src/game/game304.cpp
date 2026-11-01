@@ -16,6 +16,7 @@ DEFOPCODE(0108, DELETE_OBJECT_304, i);
 DEFOPCODE(03CA, DOES_OBJECT_EXIST_304, i);
 DEFOPCODE(0382, SET_OBJECT_COLLISION_304, ib);
 DEFOPCODE(069B, ATTACH_OBJECT_TO_CHAR_304, iiffffff);
+DEFOPCODE(0681, ATTACH_OBJECT_TO_CAR_351, iiffffff);   // 3.51: Timber logs in the pickup bed
 DEFOPCODE(01BC, SET_OBJECT_COORDINATES_304, ifff);
 DEFOPCODE(0453, SET_OBJECT_ROTATION_304, ifff);
 DEFOPCODE(0110, CLEAR_WANTED_LEVEL_304, i);
@@ -68,6 +69,12 @@ void Game::AttachObjectToChar(int obj, int ped, const Vec3& off)
 {
     if(!WorldObjectExists(obj) || ped <= 0 || !PedPtr(ped)) return;
     CALLSCM(ATTACH_OBJECT_TO_CHAR_304, obj, ped, off.x, off.y, off.z, 0.0f, 0.0f, 0.0f);
+}
+// 3.51: object glued to a vehicle (offset + rotation in the car's own space), e.g. the Timber logs
+void Game::AttachObjectToCar(int obj, int car, const Vec3& off, const Vec3& rot)
+{
+    if(!WorldObjectExists(obj) || car <= 0 || !CarExists(car)) return;
+    CALLSCM(ATTACH_OBJECT_TO_CAR_351, obj, car, off.x, off.y, off.z, rot.x, rot.y, rot.z);
 }
 void Game::ClearWanted()
 {

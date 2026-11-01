@@ -494,27 +494,29 @@ static void Modes2OnEvent(const uint8_t* d, int len)
     else if(e.mode == GM_AD) AdOnEvent(e);
     else if(e.mode == GM_DRIFT && e.op == GMO_SCORE && e.from < MP_MAX_PLAYERS) { s_Dr.others[e.from] = e.val; }
 }
+static bool TimberCommand(const char* cmd, const char* arg); static void TimberProcess(int ped, uint64_t now, float dt);   // 3.51: mp_timber.inc
+static void TimberRender(ImDrawList* bg, ImDrawList* fg, float& y, float now); static void TimberReset(); static void DefaultLogoRender();
 static bool Modes2Command(const char* cmd, const char* arg)
 {
-    return CnrCommand(cmd, arg) || AdCommand(cmd, arg) || StuntCommand(cmd, arg) || DriftCommand(cmd, arg) || SvCommand(cmd, arg);
+    return TimberCommand(cmd, arg) || CnrCommand(cmd, arg) || AdCommand(cmd, arg) || StuntCommand(cmd, arg) || DriftCommand(cmd, arg) || SvCommand(cmd, arg);
 }
 static void Modes2Process(int ped, uint64_t now)
 {
     static uint64_t s_nLast = 0;
     float dt = s_nLast ? (now - s_nLast) / 1000.0f : 0.0f; s_nLast = now;
     if(dt < 0 || dt > 1.0f) dt = 0;
-    CnrProcess(ped, now); AdProcess(ped, now, dt); StuntProcess(ped, now, dt); DriftProcess(ped, now, dt); SvProcess(ped, now, dt);
+    CnrProcess(ped, now); AdProcess(ped, now, dt); StuntProcess(ped, now, dt); DriftProcess(ped, now, dt); SvProcess(ped, now, dt); TimberProcess(ped, now, dt);
 }
 static void Modes2Render()
 {
     if(client.GetState() != NET_CONNECTED || Game::IsPaused() || !myDrawValid) return;
     ImDrawList* bg = ImGui::GetBackgroundDrawList(); ImDrawList* fg = ImGui::GetForegroundDrawList();
     float y = UI::S(170); const float now = (float)ImGui::GetTime();
-    CnrRender(fg, y); AdRender(bg, fg, y, now); DriftRender(fg, y); SvRender(bg, fg, y, now);
+    CnrRender(fg, y); AdRender(bg, fg, y, now); DriftRender(fg, y); SvRender(bg, fg, y, now); TimberRender(bg, fg, y, now); DefaultLogoRender();
 }
 static void Modes2Reset()
 {
-    SvClear(); s_Sv.on = false;
+    SvClear(); s_Sv.on = false; TimberReset();
     memset(s_Cnr.teams, 0, sizeof(s_Cnr.teams)); memset(s_Cnr.wantedOf, 0, sizeof(s_Cnr.wantedOf)); memset(s_Cnr.hit, 0, sizeof(s_Cnr.hit));
     memset(s_Ad.teams, 0, sizeof(s_Ad.teams)); s_Ad.base = -1; memset(s_Dr.others, 0, sizeof(s_Dr.others));
     if(s_St.ramp > 0) Game::DeleteWorldObject(s_St.ramp); s_St.ramp = 0;

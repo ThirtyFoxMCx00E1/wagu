@@ -13,10 +13,10 @@
 // phones refuse servers older than that too (they would let old phones in).
 // 3.10: build 31000. MP_MIN_BUILD stays 30406 and the lobby stays thirtyfox/mp5/: 3.04.6 (no cheats)
 // and 3.10 phones play together on the same servers; only 3.04.5 and older (mp4) stay shut out.
-#define MP_BUILD 35010   // 3.50.1
+#define MP_BUILD 35100   // 3.51
 #define MP_MIN_BUILD       30406
 #define MP_AUTH_MIN_BUILD  32106   // 3.21.6: servers with the login system refuse older phones (they could not log in)
-#define MP_VERSION_STR     "3.50.1"
+#define MP_VERSION_STR     "3.51"
 #define MP_VOICE_BUILD     31100   // 3.11: phones from this build on get voice packets
 #define MP_DOWNLOAD_URL    "thirtyfoxmcx00e1.github.io/wagu"   // 3.37: the website is back in the wagu repo (one repo for everything)
 #define MP_DEFAULT_HOST    "127.0.0.1"
@@ -470,7 +470,8 @@ enum eGameMode : uint16_t
     GM_LABELS = 64,    // 3D text labels at the starts
     GM_ICONS = 128,    // 3.03: unused (map icons = a player setting)
     GM_ACTORS = 256,   // people standing at the job starts
-    GM_BUBBLES = 512,  // 3.03: unused (chat bubbles = a player setting)
+    GM_TIMBER = 512,   // 3.51: Timber (lumberjack) job (was GM_BUBBLES, unused since 3.03)
+    GM_BUBBLES = GM_TIMBER,
     GM_HOME = 1024,    // 3.39: Home Kit - /createhouse /setup /buyhouse /edithouse /edithouseinteriors (real GTA SA models)
     GM_SURVIVAL = 2048,// 3.39: PvP & PvE survival (Discordia / Sunset DayZ style): hunger, thirst, loot, zombies at night
     GM_CNR = 4096,     // 3.39: Cops and Robbers (Project Open style): /cop /robber, wanted level, /rob /arrest /cuff /hitlist

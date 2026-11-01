@@ -172,7 +172,7 @@ int main(int argc, char** argv)
             {
                 { "class", GM_CLASS }, { "turf", GM_TURF }, { "race", GM_RACE }, { "derby", GM_DERBY }, { "dm", GM_DM },
                 { "jobs", GM_JOBS }, { "labels", GM_LABELS }, { "actors", GM_ACTORS },
-                { "home", GM_HOME }, { "survival", GM_SURVIVAL }, { "cnr", GM_CNR }, { "ad", GM_AD }, { "stunt", GM_STUNT }, { "drift", GM_DRIFT },   // 3.39
+                { "home", GM_HOME }, { "survival", GM_SURVIVAL }, { "cnr", GM_CNR }, { "ad", GM_AD }, { "stunt", GM_STUNT }, { "drift", GM_DRIFT }, { "timber", GM_TIMBER },   // 3.39 (3.51 timber)
                 { "icons", 0 }, { "bubbles", 0 },   // 3.03: player settings now, accepted and ignored
             };
             uint16_t m = 0;
@@ -183,15 +183,15 @@ int main(int argc, char** argv)
                 if(!strcasecmp(t, "none")) { m = 0; continue; }
                 bool found = false;
                 for(auto& k : kModes) if(!strcasecmp(t, k.n)) { m |= k.m; found = true; }
-                if(!found) printf("[MP Server] --gamemodes: unknown \"%s\" (class turf race derby dm jobs labels actors home survival cnr ad stunt drift)\n", t);
+                if(!found) printf("[MP Server] --gamemodes: unknown \"%s\" (class turf race derby dm jobs labels actors home survival cnr ad stunt drift timber)\n", t);
             }
             server.SetModes(m);
         }
     if(server.IsDefaultServer()) printf("[MP Server] Gamemodes: all (default server).\n");
     else
     {
-        static const char* kNames[] = { "class", "turf", "race", "derby", "dm", "jobs", "labels", "icons", "actors", "bubbles", "home", "survival", "cnr", "ad", "stunt", "drift" };
-        std::string on; for(int b = 0; b < 16; ++b) if((server.GetModes() & (1 << b)) && (1 << b) != GM_ICONS && (1 << b) != GM_BUBBLES) { if(!on.empty()) on += ","; on += kNames[b]; }
+        static const char* kNames[] = { "class", "turf", "race", "derby", "dm", "jobs", "labels", "icons", "actors", "timber", "home", "survival", "cnr", "ad", "stunt", "drift" };
+        std::string on; for(int b = 0; b < 16; ++b) if((server.GetModes() & (1 << b)) && (1 << b) != GM_ICONS) { if(!on.empty()) on += ","; on += kNames[b]; }
         printf("[MP Server] Gamemodes: %s%s\n", on.empty() ? "none" : on.c_str(), on.empty() ? " (add --gamemodes all, or a list)" : "");
     }
     // 2.25: language, administrator name (shown to kicked / banned players), ban list

@@ -341,6 +341,7 @@ namespace Game
     void  SetNoCamShake(bool on);             // 3.34: block CCamera::CamShake / CamShakeNoPos (default on)
     int   DeleteAllMpObjects();               // 3.34: before a save load - every object MP made goes
     void  AttachObjectToChar(int obj, int ped, const Vec3& off);
+    void  AttachObjectToCar(int obj, int car, const Vec3& off, const Vec3& rot);   // 3.51 (opcode 0681)
     void  ClearWanted();
     void  SetMaxWanted(int stars);
     void  ReleaseNpc(int handle, bool car);
