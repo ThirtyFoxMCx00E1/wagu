@@ -159,10 +159,11 @@ def svg(servers, players, now, hist=None):
         o.append('<text x="%d" y="%d" %s font-size="11" fill="%s">%s</text>' % (lx + 22, yy, F, INK, e(names[k])))
     # note paragraph + source
     slots = sum(s["max"] for s in servers)
-    tops = ", ".join(["%s %d" % (s["name"] if len(s["name"]) <= 18 else s["name"][:17] + "\u2026", s["players"]) for s in servers if s["players"] > 0][:5])
+    tops = ", ".join(["%s %d" % (s["name"] if len(s["name"]) <= 18 else s["name"][:17] + "\u2026", s["players"]) for s in sorted(servers, key=lambda q: -q["players"]) if s["players"] > 0][:5])
     first = hist[0]["t"][:16].replace("T", " ") if hist else now.strftime("%Y-%m-%d %H:%M")
     pp = hist[-2]["players"] if len(hist) > 1 else None
-    trend = "" if pp is None else (" (%+d in the last 10 minutes)" % (players - pp) if players != pp else " (no change in the last 10 minutes)")
+    mins = int(round((ts(hist[-1]) - ts(hist[-2])).total_seconds() / 60)) if len(hist) > 1 else 10
+    trend = "" if pp is None else (" (%+d in the last %d minutes)" % (players - pp, mins) if players != pp else " (no change in the last %d minutes)" % mins)
     note = ["Note: right now %d players%s on %d servers with %d player slots; %d servers have players." % (players, trend, len(servers), slots, sum(1 for s in servers if s["players"] > 0)),
             ("Busiest servers: %s." % tops) if tops else "No server has players right now. Open GTA SA, MP MENU, Join, or Host your own server.",
             "Bars use the left axis (number), lines the right axis (percent). %s." % ("Each bar is the peak of that hour" if hourly else "Each bar is one 10-minute reading; hourly peaks start once a day of data is collected"),

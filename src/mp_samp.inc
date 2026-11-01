@@ -108,7 +108,7 @@ struct SampDialog
     int  id = 0, style = 0, sel = 0, user = 0;
     std::string caption, b1, b2, header;
     std::vector<std::string> lines, rows;
-    char input[64] = "";
+    char input[256] = "";   // 3.41: 256 (textdraw text in /tde); a server gets the first 63
     SampDialogFn fn = nullptr;
     uint64_t openedAt = 0;
 };
@@ -300,9 +300,10 @@ static void RenderDialog()
 }
 
 // ---- textdraws --------------------------------------------------------------------------------
-// ids 0..63 = server textdraws (PKT_TEXTDRAW), 64..95 = this phone's own (GameText, race box...)
-#define SAMP_TD_MAX   96
-#define SAMP_TD_LOCAL 64
+// ids 0..255 = server textdraws (PKT_TEXTDRAW; 3.41: was 0..63, 64..255 = Plugins > Textdraw),
+// 256..287 = this phone's own (GameText, race box...)
+#define SAMP_TD_MAX   288
+#define SAMP_TD_LOCAL 256
 enum { TD_GAMETEXT_1 = SAMP_TD_LOCAL, TD_GAMETEXT_3, TD_GAMETEXT_4, TD_GAMETEXT_6, TD_EVENT_BOX, TD_EVENT_TOP, TD_TURF, TD_CLASS };
 struct SampTd { bool used = false; PktTextDraw d; uint64_t until = 0; };
 static SampTd s_Td[SAMP_TD_MAX];
@@ -377,49 +378,95 @@ static void SampTildeLines(const char* s, ImU32 base, std::vector<std::vector<Sa
     }
     flush();
 }
+// 3.41: one textdraw on a 640x448 canvas at (ox, oy) scaled (kx, ky) - the HUD and the in-game
+// Textdraw Editor (/tde) draw with this. Font 4 = sprite ("LIB:name", letterX/letterY = width /
+// height), 5 = preview model (same size, bgColor behind). SA-MP box: align 1 from x to boxX (the
+// textsize X), 2 = centred, boxX - x = width, 3 = from boxX to x; boxX 0 = as wide as the text.
+static inline ImU32 TdCol(uint32_t c) { return IM_COL32(c >> 24, (c >> 16) & 0xFF, (c >> 8) & 0xFF, c & 0xFF); }
+static ImVec4 TdDrawOne(ImDrawList* dl, const PktTextDraw& d, float ox, float oy, float kx, float ky)
+{   // returns the rectangle it covers (x0, y0, x1, y1) in screen pixels
+    float x = ox + d.x * kx, y = oy + d.y * ky;
+    if(d.font == 4 || d.font == 5)
+    {
+        float w = d.letterX * kx, h = d.letterY * ky;
+        ImVec2 a(fminf(x, x + w), fminf(y, y + h)), b(fmaxf(x, x + w), fmaxf(y, y + h));
+        if(d.font == 5)
+        {
+            dl->AddRectFilled(a, b, TdCol(d.bgColor));
+            uint32_t c = d.color; dl->AddRect(a, b, TdCol((c & 0xFFFFFF00) | 0x60), 0, 0, 1.0f);
+            float fs = fmaxf(8.0f, fminf(b.y - a.y, b.x - a.x) * 0.16f);
+            ImVec2 ts = UI::Font()->CalcTextSizeA(fs, FLT_MAX, 0, d.text);
+            dl->AddText(UI::Font(), fs, ImVec2((a.x + b.x - ts.x) * 0.5f, (a.y + b.y - ts.y) * 0.5f), IM_COL32(255, 255, 255, 170), d.text);
+        }
+        else
+        {
+            const char* c = strchr(d.text, ':'); const char* n = c ? c + 1 : d.text;
+            bool solid = !strcasecmp(n, "white") || !strcasecmp(n, "black") || !strcasecmp(n, "tvbase") || !strcasecmp(n, "blkdot") || !strcasecmp(n, "bg") || !strcasecmp(n, "backgroundbox");
+            if(solid) dl->AddRectFilled(a, b, TdCol(!strcasecmp(n, "black") || !strcasecmp(n, "blkdot") ? (d.color & 0xFF) : d.color));
+            else
+            {   // the real TXD picture is not in MP: a tinted card with the sprite name
+                uint32_t col = d.color; uint32_t al = (col & 0xFF) * 2 / 5;
+                dl->AddRectFilled(a, b, TdCol((col & 0xFFFFFF00) | al), fminf(b.x - a.x, b.y - a.y) * 0.08f);
+                dl->AddRect(a, b, TdCol((col & 0xFFFFFF00) | (col & 0xFF)), fminf(b.x - a.x, b.y - a.y) * 0.08f, 0, 1.5f);
+                float fs = fmaxf(7.0f, fminf(18.0f * ky / 1.6f, (b.y - a.y) * 0.22f));
+                ImVec2 ts = UI::Font()->CalcTextSizeA(fs, b.x - a.x, b.x - a.x, d.text);
+                dl->PushClipRect(a, b, true);
+                dl->AddText(UI::Font(), fs, ImVec2((a.x + b.x - ts.x) * 0.5f, (a.y + b.y - ts.y) * 0.5f), IM_COL32(255, 255, 255, 200), d.text, nullptr, b.x - a.x);
+                dl->PopClipRect();
+            }
+        }
+        return ImVec4(a.x, a.y, b.x, b.y);
+    }
+    std::vector<std::vector<SampSeg>> lines;
+    ImFont* f = (d.font == 3 || d.font == 0) && UI::PricedownFont() ? UI::PricedownFont() : UI::Font();
+    float fs = fmaxf(6.0f, d.letterY * 9.0f * ky * (f == UI::PricedownFont() ? 1.35f : 1.15f));
+    SampTildeLines(d.text, TdCol(d.color), lines);
+    float lh = fs * 1.05f, maxW = 0;
+    std::vector<float> lw;
+    for(auto& l : lines) { float w = SampSegsWidth(f, fs, l); lw.push_back(w); maxW = fmaxf(maxW, w); }
+    float tx0 = d.align == 2 ? x - maxW * 0.5f : d.align == 3 ? x - maxW : x;
+    ImVec4 r(tx0, y, tx0 + maxW, y + lh * lines.size());
+    if(d.useBox)
+    {
+        float bx = ox + d.boxX * kx;
+        float b0, b1;
+        if(d.boxX <= 0) { b0 = tx0; b1 = tx0 + maxW; }
+        else if(d.align == 2) { float bw = fabsf(bx - x); b0 = x - bw * 0.5f; b1 = x + bw * 0.5f; }
+        else if(d.align == 3) { b0 = fminf(bx, x); b1 = fmaxf(bx, x); }
+        else { b0 = fminf(x, bx); b1 = fmaxf(x, bx); }
+        const float pad = 2.0f * kx;
+        ImVec2 a(fminf(b0, tx0) - pad, y - 1.0f * ky), b(fmaxf(b1, tx0 + maxW) + pad, y + lh * lines.size() + 2.0f * ky);
+        dl->AddRectFilled(a, b, TdCol(d.boxColor));
+        r = ImVec4(a.x, a.y, b.x, b.y);
+    }
+    for(size_t li = 0; li < lines.size(); ++li)
+    {
+        float lx = d.align == 2 ? x - lw[li] * 0.5f : d.align == 3 ? x - lw[li] : x;
+        float ly = y + lh * li;
+        if(d.outline || d.shadow)
+        {
+            float o = fmaxf(1.0f, fs * 0.06f) * (d.outline ? d.outline : 1);
+            // SA-MP: the outline / shadow has the background colour (0 = older servers: black)
+            const ImU32 shc = d.bgColor ? TdCol(d.bgColor) : IM_COL32(0, 0, 0, 255);
+            std::vector<SampSeg> sh = lines[li]; for(auto& s : sh) s.col = shc;
+            if(d.outline) { for(int dx = -1; dx <= 1; ++dx) for(int dy = -1; dy <= 1; ++dy) if(dx || dy) SampDrawSegs(dl, f, fs, ImVec2(lx + dx * o, ly + dy * o), sh); }
+            else { o = fmaxf(1.0f, fs * 0.06f) * d.shadow; SampDrawSegs(dl, f, fs, ImVec2(lx + o, ly + o), sh); }
+        }
+        SampDrawSegs(dl, f, fs, ImVec2(lx, ly), lines[li]);
+    }
+    return r;
+}
 static void RenderTextDraws(ImDrawList* dl)
 {
     const ImVec2 ds = ImGui::GetIO().DisplaySize;
     const float kx = ds.x / 640.0f, ky = ds.y / 448.0f;
     const uint64_t now = MP_NowMs();
-    std::vector<std::vector<SampSeg>> lines;
     for(int i = 0; i < SAMP_TD_MAX; ++i)
     {
         SampTd& t = s_Td[i];
         if(!t.used) continue;
         if(t.until && now >= t.until) { t.used = false; continue; }
-        const PktTextDraw& d = t.d;
-        ImFont* f = (d.font == 3 || d.font == 0) && UI::PricedownFont() ? UI::PricedownFont() : UI::Font();
-        float fs = fmaxf(6.0f, d.letterY * 9.0f * ky * (f == UI::PricedownFont() ? 1.35f : 1.15f));
-        uint32_t c = d.color;
-        ImU32 base = IM_COL32(c >> 24, (c >> 16) & 0xFF, (c >> 8) & 0xFF, c & 0xFF);
-        SampTildeLines(d.text, base, lines);
-        float lh = fs * 1.05f, maxW = 0;
-        std::vector<float> lw;
-        for(auto& l : lines) { float w = SampSegsWidth(f, fs, l); lw.push_back(w); maxW = fmaxf(maxW, w); }
-        float x = d.x * kx, y = d.y * ky;
-        float bx0 = d.align == 2 ? x - maxW * 0.5f : d.align == 3 ? x - maxW : x;
-        if(d.useBox)
-        {
-            float bw = d.boxX > 0 ? fabsf(d.boxX * kx - x) : maxW;
-            float b0 = d.align == 2 ? x - bw * 0.5f : d.align == 3 ? x - bw : x;
-            uint32_t bc = d.boxColor;
-            dl->AddRectFilled(ImVec2(b0 - UI::S(10), y - UI::S(6)), ImVec2(b0 + fmaxf(bw, maxW) + UI::S(10), y + lh * lines.size() + UI::S(6)), IM_COL32(bc >> 24, (bc >> 16) & 0xFF, (bc >> 8) & 0xFF, bc & 0xFF));
-        }
-        for(size_t li = 0; li < lines.size(); ++li)
-        {
-            float lx = d.align == 2 ? x - lw[li] * 0.5f : d.align == 3 ? x - lw[li] : x;
-            float ly = y + lh * li;
-            if(d.outline || d.shadow)
-            {
-                float o = fmaxf(1.0f, fs * 0.06f) * (d.outline ? d.outline : 1);
-                std::vector<SampSeg> sh = lines[li]; for(auto& s : sh) s.col = IM_COL32(0, 0, 0, 255);
-                if(d.outline) { for(int dx = -1; dx <= 1; ++dx) for(int dy = -1; dy <= 1; ++dy) if(dx || dy) SampDrawSegs(dl, f, fs, ImVec2(lx + dx * o, ly + dy * o), sh); }
-                else SampDrawSegs(dl, f, fs, ImVec2(lx + o * d.shadow, ly + o * d.shadow), sh);
-            }
-            SampDrawSegs(dl, f, fs, ImVec2(lx, ly), lines[li]);
-        }
-        (void)bx0;
+        TdDrawOne(dl, t.d, 0, 0, kx, ky);
     }
 }
 

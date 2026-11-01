@@ -1745,6 +1745,22 @@ void MPServer::SetMotd(const char* caption, const char* text)
     MP_CopyStr(m_szMotdCaption, caption && *caption ? caption : m_szName, sizeof(m_szMotdCaption));
     MP_CopyStr(m_szMotd, text ? text : "", sizeof(m_szMotd));
 }
+void MPServer::SetPluginTextdraws(const std::vector<PktTextDraw>& tds)
+{
+    std::vector<PktTextDraw> old; size_t n = 0;
+    {
+        std::lock_guard<std::mutex> lk(m_Mutex);
+        old.swap(m_PluginTd);
+        m_PluginTd = tds;
+        if(m_PluginTd.size() > 192) m_PluginTd.resize(192);
+        for(size_t i = 0; i < m_PluginTd.size(); ++i) { m_PluginTd[i].type = PKT_TEXTDRAW; m_PluginTd[i].tdId = (uint16_t)(64 + i); m_PluginTd[i].text[255] = 0; }
+        n = m_PluginTd.size();
+    }
+    if(!m_bRunning) return;
+    for(size_t i = n; i < old.size(); ++i) { PktTextDraw h = old[i]; h.show = 0; Broadcast(&h, sizeof(h)); }
+    std::vector<PktTextDraw> cur; { std::lock_guard<std::mutex> lk(m_Mutex); cur = m_PluginTd; }
+    for(auto& t : cur) Broadcast(&t, sizeof(t));
+}
 void MPServer::SetBanner(const char* text)
 {
     std::lock_guard<std::mutex> lk(m_Mutex);
@@ -1870,6 +1886,10 @@ void MPServer::SendJoinExtras(int slot, bool fresh)
         t.color = 0xFFFFFFC8; t.bgColor = 0x000000FF; t.font = 1; t.align = 3; t.outline = 1; t.proportional = 1;
         MP_CopyStr(t.text, m_szBanner, sizeof(t.text));
         SendTo(slot, &t, sizeof(t));
+    }
+    {   // 3.41: Plugins > Textdraw
+        std::vector<PktTextDraw> tds; { std::lock_guard<std::mutex> lk(m_Mutex); tds = m_PluginTd; }
+        for(auto& t : tds) SendTo(slot, &t, sizeof(t));
     }
 }
 
