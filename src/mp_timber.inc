@@ -8,7 +8,7 @@
 // hands working on the log (BOMBER BOM_Plant_Loop), the log goes into the pickup's bed as real log
 // objects (7 a load), the Timber Storage with the yellow "i" and its floating text, /unloadtimber, the
 // paycheck and /mysalary.
-// Spots: built-in (Angel Pine sawmill + the Shady Creeks forest), or files/MP/timber.txt
+// Spots: built-in (the Flint County Timber Storage barn + the pine forest around it, 3.51.1), or files/MP/timber.txt
 // ("storage x y z", "start x y z h", "tree x y z" lines; /timberpos adds your position, staff only).
 
 #define TB_MISSION   16      // trees in one mission
@@ -29,7 +29,8 @@ static struct
 {
     bool     on = false;
     int      phase = TB_OFF;
-    Vec3     storage = { -1971.5f, -2433.5f, 30.6f }, start = { -1958.0f, -2446.0f, 30.6f }; float startH = 90.0f;
+    Vec3     storage = { -535.02f, -177.67f, 78.40f }, start = { -547.96f, -181.22f, 78.41f }; float startH = 270.0f;   // 3.51.1: the barn of the screenshot (samp-rvrp Timber Storage)
+    uint8_t  anchorOf[TB_POOL] = {};
     Vec3     pool[TB_POOL]; int nPool = 0; bool spotsLoaded = false;
     int      mission[TB_MISSION]; uint8_t mType[TB_MISSION]; int idx = 0, done = 0;
     float    health = 100.0f, prog = 0.0f; bool holding = false; uint64_t lastHold = 0;
@@ -40,7 +41,7 @@ static struct
     float    paycheck = 0.0f, earned = 0.0f; int sold = 0, trees = 0;
     int      xp = 0; uint64_t tiredUntil = 0, sellAgainAt = 0; bool sellMsgDue = false;
     int      icon[2] = {}; uint64_t iconTry = 0;
-    bool     chainsawDue = false, truckDue = false, tpDue = false, loaded = false;
+    bool     builtIn = false, chainsawDue = false, truckDue = false, tpDue = false, loaded = false;
 } s_Tb;
 
 static int  TbLevel() { return s_Tb.xp >= 60 ? 3 : (s_Tb.xp >= 20 ? 2 : 1); }
@@ -85,19 +86,31 @@ static void TbLoadSpots()
         }
         fclose(f);
     }
+    s_Tb.builtIn = false;
     if(s_Tb.nPool >= TB_MISSION) return;
-    // built-in: the Shady Creeks pine forest east of the Angel Pine sawmill (z = the ground, found later)
+    // built-in (3.51.1): the Flint County pine forest around the Timber Storage barn. The anchors are the
+    // samp-rvrp lumber trees (revitali_rp.sql `tree`) near the barn; around each one 5 more spots, 18-42 m away.
+    static const Vec3 kAnchor[] = {
+        { -540.57f, -206.31f, 77.47f }, { -565.08f, -203.65f, 77.70f }, { -581.23f, -195.23f, 78.20f }, { -649.89f, -662.14f, 40.59f },
+        { -529.42f, -623.96f, 12.75f }, { -506.71f, -1000.80f, 24.05f }, { -526.23f, -977.15f, 23.52f }, { -908.49f, -506.00f, 25.01f } };
+    const int nA = (int)(sizeof(kAnchor) / sizeof(kAnchor[0]));
     s_Tb.nPool = 0;
-    for(int i = 0; i < TB_POOL; ++i)
+    for(int a = 0; a < nA && s_Tb.nPool < TB_POOL; ++a)
     {
-        const int gx = i % 8, gy = i / 8;
-        const float jx = (float)((i * 37) % 11) - 5.0f, jy = (float)((i * 53) % 13) - 6.0f;
-        s_Tb.pool[s_Tb.nPool++] = { -1810.0f + gx * 42.0f + jx, -2330.0f + gy * 48.0f + jy, -1000.0f };
+        s_Tb.anchorOf[s_Tb.nPool] = (uint8_t)a; s_Tb.pool[s_Tb.nPool++] = kAnchor[a];
+        for(int k = 0; k < 5 && s_Tb.nPool < TB_POOL; ++k)
+        {
+            const float ang = (a * 61 + k * 72) * 0.0174533f, r = 18.0f + (float)((a * 7 + k * 11) % 25);
+            s_Tb.anchorOf[s_Tb.nPool] = (uint8_t)a;
+            const float sy = kAnchor[a].y > -250.0f ? -fabsf(sinf(ang)) : sinf(ang);   // next to the barn: only to the south, into the trees
+            s_Tb.pool[s_Tb.nPool++] = { kAnchor[a].x + cosf(ang) * r, kAnchor[a].y + sy * r, kAnchor[a].z };
+        }
     }
+    s_Tb.builtIn = true;
 }
 static Vec3 TbGround(Vec3 p)
 {
-    if(p.z > -500.0f) { float g = Game::GroundZ(p.x, p.y, p.z + 3.0f); if(g > -100.0f && fabsf(g - p.z) < 6.0f) p.z = g; return p; }
+    if(p.z > -500.0f) { float g = Game::GroundZ(p.x, p.y, p.z + 30.0f); if(g > -100.0f && fabsf(g - p.z) < 30.0f) p.z = g; return p; }
     float g = Game::GroundZ(p.x, p.y, 200.0f);
     p.z = g > -100.0f ? g : 30.0f;
     return p;
@@ -105,12 +118,28 @@ static Vec3 TbGround(Vec3 p)
 static void TbPickMission()
 {
     TbLoadSpots();
-    int order[TB_POOL]; for(int i = 0; i < s_Tb.nPool; ++i) order[i] = i;
-    for(int i = s_Tb.nPool - 1; i > 0; --i) { int j = rand() % (i + 1); std::swap(order[i], order[j]); }
+    // random order, no spot twice, and each next tree in a different place: at least 55 m from the last one
+    // (and from the one before) when the pool allows it, so the marker always moves to another part of the forest
+    bool used[TB_POOL] = {}; int n = 0;
+    Vec3 last = s_Tb.start, prev = s_Tb.start;
+    for(int i = 0; i < TB_MISSION && i < s_Tb.nPool; ++i)
+    {
+        int cand[TB_POOL], nc = 0;
+        for(float need : { 55.0f, 30.0f, 0.0f })
+        {
+            nc = 0;
+            for(int j = 0; j < s_Tb.nPool; ++j)
+                if(!used[j] && TbDist2D(s_Tb.pool[j], last) >= need && (i < 2 || TbDist2D(s_Tb.pool[j], prev) >= need * 0.5f)) cand[nc++] = j;
+            if(nc) break;
+        }
+        if(!nc) break;
+        const int pick = cand[rand() % nc];
+        used[pick] = true; s_Tb.mission[n++] = pick; prev = last; last = s_Tb.pool[pick];
+    }
+    for(int i = n; i < TB_MISSION; ++i) s_Tb.mission[i] = n ? s_Tb.mission[i % n] : -1;
     const int lv = TbLevel();
     for(int i = 0; i < TB_MISSION; ++i)
     {
-        s_Tb.mission[i] = i < s_Tb.nPool ? order[i] : -1;
         int t = rand() % 100; s_Tb.mType[i] = (uint8_t)(t < 50 ? 0 : (t < 82 ? 1 : 2));
         if(s_Tb.mType[i] + 1 > lv) s_Tb.mType[i] = (uint8_t)(lv - 1);   // WW-RP: oak needs woodcutting level 2, yew level 3
     }
@@ -192,7 +221,7 @@ static void TbNextTarget()
 // ---- commands -------------------------------------------------------------------------------------------
 static void TbHelp()
 {
-    SysMsg(COL_YELLOW, "{FFA500}Timber job: {FFFFFF}/timber (start, teleports you to the sawmill)  /quitjob  /fixjob  /timbergps");
+    SysMsg(COL_YELLOW, "{FFA500}Timber job: {FFFFFF}/timber (start, teleports you to the Timber Storage)  /quitjob  /fixjob  /timbergps");
     SysMsg(COL_YELLOW, "{FFFFFF}/cut (or hold CUT with the chainsaw)  /loadtimber (at the fallen tree)  /unloadtimber (Timber Storage)");
     SysMsg(COL_YELLOW, "{FFFFFF}/mysalary  /collectsalary (at the storage)  /timberskill  /checkjobcooldown  /timberhelp");
 }
@@ -213,7 +242,7 @@ static void TbUnload()
 {
     const int ped = Game::LocalPed(); Vec3 me; if(ped <= 0 || !Game::GetCharPos(ped, me)) return;
     const uint64_t now = MP_NowMs();
-    if(!TbAtStorage(me)) { SysMsg(COL_RED, "You are not at the Timber Storage (the yellow \"i\" at the sawmill, /timbergps)."); return; }
+    if(!TbAtStorage(me)) { SysMsg(COL_RED, "You are not at the Timber Storage (the yellow \"i\" at the barn, /timbergps)."); return; }
     if(now < s_Tb.sellAgainAt) { SysMsg(COL_RED, "You can sell lumber again in %d s.", (int)((s_Tb.sellAgainAt - now) / 1000)); return; }
     if(s_Tb.timber <= 0) { SysMsg(COL_RED, "Your pickup has no timber. Cut a tree and /loadtimber first."); return; }
     if(!s_Tb.truck || !Game::CarExists(s_Tb.truck)) { SysMsg(COL_RED, "Your pickup is gone - the timber went with it. /quitjob, then /timber."); s_Tb.timber = 0; return; }
@@ -334,7 +363,13 @@ static void TimberProcess(int ped, uint64_t now, float dt)
 
     // the standing tree: our own object at the marked spot (no collision, so it can fall freely)
     if((s_Tb.phase == TB_GO || s_Tb.phase == TB_CUT) && s_Tb.tree <= 0 && TbDist2D(me, s_Tb.treeAt) < 180.0f)
-    { s_Tb.treeAt = TbGround(s_Tb.treeAt); s_Tb.tree = Game::CreateWorldObject(669, s_Tb.treeAt); if(s_Tb.tree > 0) Game::PlaceMapObject(s_Tb.tree, s_Tb.treeAt, 0, 0, (float)(s_Tb.idx * 47 % 360)); }
+    {
+        s_Tb.treeAt = TbGround(s_Tb.treeAt);
+        // a spot of the built-in pool in the river / on the road below: use its anchor tree instead (always on land)
+        if(s_Tb.builtIn && s_Tb.treeAt.z < 3.0f && s_Tb.mission[s_Tb.idx] >= 0)
+        { TbLoadSpots(); const int ai = s_Tb.anchorOf[s_Tb.mission[s_Tb.idx]]; for(int j = 0; j < s_Tb.nPool; ++j) if(s_Tb.anchorOf[j] == ai) { s_Tb.treeAt = s_Tb.pool[j]; break; } TbSetBlip(s_Tb.treeAt); }
+        s_Tb.tree = Game::CreateWorldObject(669, s_Tb.treeAt); if(s_Tb.tree > 0) Game::PlaceMapObject(s_Tb.tree, s_Tb.treeAt, 0, 0, (float)(s_Tb.idx * 47 % 360));
+    }
 
     const int type = s_Tb.mType[std::min(s_Tb.idx, TB_MISSION - 1)];
     const float dTree = TbDist2D(me, s_Tb.treeAt);

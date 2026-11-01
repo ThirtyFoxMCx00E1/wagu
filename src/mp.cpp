@@ -2406,7 +2406,7 @@ public:
         if(!MP::IsOnDefault() && !MP_IsBcwServerName(client.GetServerName()) && !MP_IsMw3ServerName(client.GetServerName()) && !MP_IsRpServerName(client.GetServerName()) && client.GetServerName()[0])
             SrvCmPut(client.GetServerName(), client.GetPort(), (m.perms & PERM_CHEAT_MENU) != 0);
         GamemodesChanged(m.modesMagic == MP_MODES_MAGIC ? m.modes : 0);   // 3.02   // 3.00: allowed -> you just play; not allowed -> Process() refuses at once
-        if(nc1 && !nc0) SysMsg(COL_YELLOW, "*** The host disabled cheats on this server (MP cheats + CLEO menu).");
+        if(nc1 && !nc0) SysMsg(COL_YELLOW, "*** Cheats were disabled on this server (MP cheats).");
         else if(!nc1 && nc0 && IsConnected()) SysMsg(COL_SYSTEM, "*** The host allowed cheats again.");
         if(was && !now) { ResetPairs(); SysMsg(COL_YELLOW, "*** The host turned off Mission sync."); }
         else if(!was && now && IsConnected()) SysMsg(COL_SYSTEM, "*** Mission sync is allowed here (MP menu > Players online).");
@@ -3971,7 +3971,11 @@ void MP::Process()
                       client.GetState() == NET_CONNECTED && !MP::IsOnDefault(),
                       Game::IsReady() && !paused && !s_bLocalSeparate && s_nFeedStep < 0);
     ApplyWorld(now);
-    CleoBlock::Process(MP::CheatsBlocked());   // 2.35
+    // 3.51.1: the CLEO menu (and its touch / swipe cheat scripts) is blocked automatically on every server,
+    // like CheatMenu (libCheatMenu.so / libCheatMenu64.so); only a custom server with the "Cheat Menu"
+    // permission on allows them. The MP cheats (/fly, /god, ...) stay allowed until the host / [ADMIN] /
+    // [MOD] switches "Disable cheats" on.
+    CleoBlock::Process(MP::CheatsBlocked() || (client.GetState() == NET_CONNECTED && !MP::CheatMenuAllowed()));
     ExpireKillPredictions(now);                // 2.37
     {   // 2.37 / 3.00: CheatMenu installed -> allowed only where the server says so (PERM_CHEAT_MENU)
         static uint64_t s_nCmT = 0, s_nConnT = 0;
@@ -5730,18 +5734,20 @@ static void SectionCheats(void*)
         else
         {
             settings.disableCheats = on; ApplyServerPerms(); SaveConfig();
-            SysMsg(on ? COL_YELLOW : COL_SYSTEM, on ? "*** Cheats disabled for everyone on your server (MP cheats + CLEO menu)." : "*** Cheats allowed again on your server.");
+            SysMsg(on ? COL_YELLOW : COL_SYSTEM, on ? "*** MP cheats disabled for everyone on your server (the CLEO menu is always blocked)." : "*** Cheats allowed again on your server.");
         }
     }
     if(!host) ImGui::EndDisabled();
-    ImGui::TextDisabled(on ? "On: nobody can use MP cheat commands (/fly, /god, /tp, /wh, ...) or open the CLEO menu / CLEO touch menus (swipe)."
-                           : "Off: MP cheat commands and the CLEO menu work as usual.");
+    ImGui::TextDisabled(on ? "On: nobody can use MP cheat commands (/fly, /god, /tp, /wh, ...)."
+                           : "Off: MP cheat commands (/fly, /god, /tp, /wh, ...) work as usual.");
+    ImGui::TextDisabled(MP::CheatMenuAllowed() ? "CLEO menu + Cheat Menu: allowed by this server's Cheat Menu permission."
+                                               : "CLEO menu + Cheat Menu (libCheatMenu.so / libCheatMenu64.so): always blocked (custom servers: Cheat Menu permission).");
     if(on && !CleoBlock::Available()) ImGui::TextDisabled("(CLEO menu: no CLEO Android found on this phone - only MP cheats are blocked here.)");
-    if(admin) ImGui::TextColored(kGreenTxt, "You are [ADMIN] SENJI: this applies to every player on the default server (until everybody left).");
+    if(admin) ImGui::TextColored(kGreenTxt, "You are %s: this applies to every player on the server (until everybody left).", MP::IsLocalMod() && !MP::IsDefaultAdmin() ? "[MOD]" : "[ADMIN] SENJI");
     else if(host) ImGui::TextColored(kGreenTxt, "You are the host of \"%s\": this applies to every player.", s_Server.GetName());
-    else if(MP::IsOnDefault()) ImGui::TextColored(kYellowTxt, "On the default server only the administrator ([ADMIN] SENJI) can change this.");
+    else if(MP::IsOnDefault()) ImGui::TextColored(kYellowTxt, "On the default server only [ADMIN] SENJI and the moderators ([MOD], moderator.txt) can change this.");
     else if(client.GetState() == NET_CONNECTED) ImGui::TextColored(kYellowTxt, "Only the host of this server can change this.");
-    else ImGui::TextDisabled("Host your own server to change this. On the default server only [ADMIN] SENJI can.");
+    else ImGui::TextDisabled("Host your own server to change this. On the default server only [ADMIN] SENJI and [MOD] can.");
 }
 
 static void SectionServers(void*)

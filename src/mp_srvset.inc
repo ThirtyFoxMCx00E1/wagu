@@ -101,8 +101,23 @@ static void ModCheckReport()
         SysMsg(COL_RED, "This copy of the server is older than MP 3.40.1 and doesn't know the Trunk key. It is hosted by an old phone / a VPS that didn't update - rejoin when it runs 3.50.1.");
     else if(!mod && s_bModMaster) SysMsg(COL_RED, "Rejoin the server (Disconnect, then Connect) - the key is sent at the join.");
 }
-static bool SrvSettingsCommand(const char* cmd, const char*)
+static bool SrvSettingsCommand(const char* cmd, const char* arg)
 {
+    // 3.51.1: /cheats on|off - [ADMIN] / [MOD] (default + featured servers) or the host of a custom server
+    // switch the MP cheats for everyone. The CLEO menu + Cheat Menu stay blocked either way.
+    if(!strcmp(cmd, "cheats") || !strcmp(cmd, "togglecheats"))
+    {
+        const bool staff = MP::IsDefaultAdmin() || MP::IsLocalMod() || MP::IsLocalAdmin();
+        const bool host = s_Server.IsRunning() && !MP::IsHostingDefault();
+        if(client.GetState() != NET_CONNECTED || (!staff && !host)) { SysMsg(COL_RED, "Only [ADMIN], [MOD] or the host of this server can switch the cheats."); return true; }
+        bool off;
+        if(arg && (!strcasecmp(arg, "on") || !strcasecmp(arg, "enable"))) off = false;
+        else if(arg && (!strcasecmp(arg, "off") || !strcasecmp(arg, "disable"))) off = true;
+        else { SysMsg(COL_YELLOW, "MP cheats are %s. Use /cheats on or /cheats off (the CLEO menu + Cheat Menu are always blocked).", MP::CheatsBlocked() ? "OFF" : "ON"); return true; }
+        if(staff) SendAdminCmd(ADMIN_CHEATS, -1, off ? 1 : 0, "");
+        else { settings.disableCheats = off; ApplyServerPerms(); SaveConfig(); SysMsg(COL_YELLOW, off ? "*** MP cheats disabled for everyone on your server." : "*** MP cheats allowed again on your server."); }
+        return true;
+    }
     if(!strcmp(cmd, "modcheck") || !strcmp(cmd, "whyamimod")) { ModCheckReport(); return true; }
     if(strcmp(cmd, "settings") && strcmp(cmd, "srvsettings") && strcmp(cmd, "ss") && strcmp(cmd, "serversettings")) return false;
     SrvSettingsShow();
