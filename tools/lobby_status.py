@@ -69,111 +69,105 @@ def is_default(s):
 
 
 def svg(servers, players, now, hist=None):
-    """3.41: a central-bank research style chart (like the BSP "exports and imports of services"
-    figure): grouped bars on the left axis (players, servers, servers with players), lines on the
-    right axis (% of slots in use, % of servers with players, % of players on the biggest server),
-    a legend, labels on the latest values, then a note paragraph and the source.
-    hist = [{"t": iso, "players", "servers", "active", "slots", "top"}] (oldest first, now last)."""
-    W, H = 880, 660
+    """3.41: a Eurostat style figure (like "Principal extra-EU trade partners for transport services,
+    EU, 2014 and 2024"): two stacked panels with grouped vertical bars, two periods each (light = peak
+    of the last 24 hours, dark = now). Top panel (gold): players per server. Bottom panel (blue):
+    player slots in use per server (%). The 9 biggest servers, then "Other servers". A legend under
+    each panel, notes, the source line and the logo at the bottom right.
+    hist = [{"t", "players", "servers", "active", "slots", "top", "s": [[name, players, max], ...]}]."""
+    W, H = 760, 800
     e = lambda x: html.escape(str(x), quote=True)
     F = 'font-family="Arial,Helvetica,DejaVu Sans,sans-serif"'
-    INK, GREY, GRID = "#1f1f1f", "#5c5c5c", "#e3e3e3"
-    BAR = ("#4472c4", "#e0504a", "#9bbb59")          # blue, red, green (bars, LHS)
-    LIN = ("#8064a2", "#4bacc6", "#f79646")          # purple, cyan, orange (lines, RHS)
+    INK, GREY, GRID, AX = "#000000", "#404040", "#d9d9d9", "#7f7f7f"
+    GOLD = ("#ecdc9c", "#b0901e")      # light (peak 24 h), dark (now)  - like Exports 2014 / 2024
+    BLUE = ("#6f8be0", "#2a3fa8")      # light (peak 24 h), dark (now)  - like Imports 2014 / 2024
     hist = list(hist or [])
-    # 10-minute slots while the history is short, hourly peaks once there is a day of it
     def ts(h): return datetime.datetime.fromisoformat(h["t"])
-    span = (ts(hist[-1]) - ts(hist[0])).total_seconds() if len(hist) > 1 else 0
-    hourly = span >= 20 * 3600
-    pts = []
-    if hourly:
-        buck = {}
-        for h in hist:
-            k = ts(h).replace(minute=0, second=0, microsecond=0)
-            if now - k > datetime.timedelta(hours=24): continue
-            c = buck.get(k)
-            if c is None or h["players"] > c["players"]: buck[k] = h
-        for k in sorted(buck): pts.append((k.strftime("%H:00"), buck[k]))
-    else:
-        for h in hist[-24:]: pts.append((ts(h).strftime("%H:%M"), h))
-    n = max(1, len(pts))
+    day = [h for h in hist if now - ts(h) <= datetime.timedelta(hours=24) and h.get("s")]
+    # per server: peak players / peak % of slots over the last 24 hours, and now
+    peak, peakp, mx = {}, {}, {}
+    for h in day:
+        for nm, pl, m in h["s"]:
+            peak[nm] = max(peak.get(nm, 0), pl); mx[nm] = m or mx.get(nm, 0)
+            peakp[nm] = max(peakp.get(nm, 0.0), 100.0 * pl / m if m else 0.0)
+    cur = {}
+    for s in servers:
+        cur[s["name"]] = s["players"]; mx[s["name"]] = s["max"]
+        peak[s["name"]] = max(peak.get(s["name"], 0), s["players"])
+        peakp[s["name"]] = max(peakp.get(s["name"], 0.0), 100.0 * s["players"] / s["max"] if s["max"] else 0.0)
+    order = sorted(peak, key=lambda k: (-peak[k], -cur.get(k, 0), k.lower()))
+    main_, rest = order[:9], order[9:]
     pct = lambda a, b: 100.0 * a / b if b else 0.0
-    bars = [[p[1]["players"] for p in pts], [p[1]["servers"] for p in pts], [p[1]["active"] for p in pts]]
-    lines = [[pct(p[1]["players"], p[1]["slots"]) for p in pts],
-             [pct(p[1]["active"], p[1]["servers"]) for p in pts],
-             [pct(p[1].get("top", 0), p[1]["players"]) for p in pts]]
-    names = ["Players online (number, LHS)", "Servers online (number, LHS)", "Servers with players (number, LHS)",
-             "Player slots in use (% of slots, RHS)", "Servers with players (% of servers, RHS)", "Players on the biggest server (% of players, RHS)"]
+    cats = [(k, peak[k], cur.get(k, 0), peakp.get(k, 0.0), pct(cur.get(k, 0), mx.get(k, 0))) for k in main_]
+    if rest or not cats:
+        rp = sum(peak[k] for k in rest); rn = sum(cur.get(k, 0) for k in rest); rm = sum(mx.get(k, 0) for k in rest)
+        cats.append(("Other servers", rp, rn, pct(rp, rm), pct(rn, rm)))
+    hourly = len(day) > 1
     o = ['<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d" viewBox="0 0 %d %d" role="img" aria-label="MP Multiplayer: %d players online on %d servers">' % (W, H, W, H, players, len(servers))]
     o.append('<title>MP Multiplayer: %d players online on %d servers</title>' % (players, len(servers)))
-    o.append('<rect width="%d" height="%d" fill="#ffffff" stroke="#cfcfcf"/>' % (W, H))
-    o.append('<text x="28" y="36" %s font-size="18" font-weight="700" fill="%s">MP Multiplayer: players and servers online, %s</text>' % (F, INK, "last 24 hours" if hourly else "latest readings"))
-    o.append('<text x="28" y="57" %s font-size="12.5" fill="%s">(%s; updated %s UTC, %s)</text>' % (F, GREY, "hourly peaks" if hourly else "every 10 minutes", now.strftime("%H:%M"), now.strftime("%d %B %Y")))
+    o.append('<rect width="%d" height="%d" fill="#ffffff"/>' % (W, H))
+    o.append('<text x="12" y="28" %s font-size="19" font-weight="700" fill="%s">Principal MP servers by players, last 24 hours and now</text>' % (F, INK))
+    o.append('<text x="12" y="50" %s font-size="15" fill="%s">(number of players and %% of player slots; updated %s UTC, %s)</text>' % (F, INK, now.strftime("%H:%M"), now.strftime("%d %B %Y")))
     dot = "#2e9d43" if servers else "#c9a227"
-    o.append('<circle cx="%d" cy="31" r="6" fill="%s"><animate attributeName="opacity" values="1;.35;1" dur="1.6s" repeatCount="indefinite"/></circle>' % (W - 34, dot))
-    x0, x1, top, base = 62, W - 58, 134, 480
-    o.append('<rect x="%d" y="%d" width="%d" height="%d" fill="none" stroke="#bfbfbf"/>' % (x0, top, x1 - x0, base - top))
-    def nice(v, ticks=5):
-        for st in (1, 2, 5, 10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000, 5000):
-            if v / st <= ticks: return st, ((int(v) + st - 1) // st) * st or st
-        return 10000, ((int(v) + 9999) // 10000) * 10000
-    lstep, lmax = nice(max([1] + [v for b in bars for v in b]))
-    rmax = max([5.0] + [v for l in lines for v in l]); rstep = 5 if rmax <= 25 else 10 if rmax <= 50 else 20; rmax = min(100, ((int(rmax) + rstep - 1) // rstep) * rstep) or 100
-    v = 0
-    while v <= lmax:
-        yy = base - (base - top) * v / lmax
-        o.append('<line x1="%d" y1="%.1f" x2="%d" y2="%.1f" stroke="%s"/>' % (x0, yy, x1, yy, GRID))
-        o.append('<text x="%d" y="%.1f" %s font-size="11" fill="%s" text-anchor="end">%d</text>' % (x0 - 6, yy + 4, F, GREY, v)); v += lstep
-    v = 0
-    while v <= rmax:
-        yy = base - (base - top) * v / rmax
-        o.append('<text x="%d" y="%.1f" %s font-size="11" fill="%s">%d</text>' % (x1 + 6, yy + 4, F, GREY, v)); v += rstep
-    o.append('<text x="18" y="%d" %s font-size="11" fill="%s" transform="rotate(-90 18 %d)" text-anchor="middle">Number</text>' % ((top + base) // 2, F, GREY, (top + base) // 2))
-    o.append('<text x="%d" y="%d" %s font-size="11" fill="%s" transform="rotate(90 %d %d)" text-anchor="middle">Percent</text>' % (W - 16, (top + base) // 2, F, GREY, W - 16, (top + base) // 2))
-    gw = (x1 - x0) / (n + 0.9); bw = max(2.0, min(14.0, gw * 0.24))
-    for i, (lab, _) in enumerate(pts):
-        cx = x0 + gw * (i + 0.5)
-        for k in range(3):
-            val = bars[k][i]; bh = (base - top) * val / lmax
-            bx = cx + (k - 1.5) * bw
-            o.append('<rect x="%.1f" y="%.1f" width="%.1f" height="%.1f" fill="%s"/>' % (bx, base - bh, bw - 0.6, bh, BAR[k]))
-        o.append('<text x="%.1f" y="%d" %s font-size="10.5" fill="%s" text-anchor="end" transform="rotate(-90 %.1f %d)">%s</text>' % (cx + 4, base + 8, F, INK, cx + 4, base + 8, e(lab)))
-    for k in range(3):
-        if not pts: break
-        xy = [(x0 + gw * (i + 0.5), base - (base - top) * min(rmax, lines[k][i]) / rmax) for i in range(len(pts))]
-        o.append('<polyline points="%s" fill="none" stroke="%s" stroke-width="2"/>' % (" ".join("%.1f,%.1f" % p for p in xy), LIN[k]))
-        for (px, py) in xy: o.append('<circle cx="%.1f" cy="%.1f" r="2.2" fill="%s"/>' % (px, py, LIN[k]))
-    if pts:   # labels on the latest values (in a column right of the last bars, like the BSP chart)
-        lxl = x0 + gw * n + 4
-        lab = [(base - (base - top) * bars[k][-1] / lmax, "%d" % bars[k][-1], BAR[k]) for k in range(3)] + \
-              [(base - (base - top) * min(rmax, lines[k][-1]) / rmax, "%.1f" % lines[k][-1], LIN[k]) for k in range(3)]
-        last = top - 2
-        for (yy, t, col) in sorted(lab, key=lambda q: q[0]):   # top to bottom, 12 px apart
-            yy = max(last + 12, min(base - 2, yy + 4)); last = yy
-            o.append('<text x="%.1f" y="%.1f" %s font-size="10.5" font-weight="700" fill="%s">%s</text>' % (lxl, yy, F, col, t))
-    # legend (two columns between the subtitle and the plot)
-    for k in range(6):
-        lx = 70 + (k // 3) * 400; yy = 82 + 16 * (k % 3)
-        if k < 3: o.append('<rect x="%d" y="%d" width="16" height="9" fill="%s"/>' % (lx, yy - 8, BAR[k]))
-        else: o.append('<line x1="%d" y1="%d" x2="%d" y2="%d" stroke="%s" stroke-width="2.2"/><circle cx="%d" cy="%d" r="2.4" fill="%s"/>' % (lx, yy - 4, lx + 16, yy - 4, LIN[k - 3], lx + 8, yy - 4, LIN[k - 3]))
-        o.append('<text x="%d" y="%d" %s font-size="11" fill="%s">%s</text>' % (lx + 22, yy, F, INK, e(names[k])))
-    # note paragraph + source
+    o.append('<circle cx="%d" cy="22" r="6" fill="%s"><animate attributeName="opacity" values="1;.35;1" dur="1.6s" repeatCount="indefinite"/></circle>' % (W - 20, dot))
+    def label_lines(t):
+        if len(t) > 26: t = t[:25] + "\u2026"
+        if len(t) <= 11: return [t]
+        w = t.split(" "); a, b = "", ""
+        for x in w:
+            if not b and len((a + " " + x).strip()) <= 12: a = (a + " " + x).strip()
+            else: b = (b + " " + x).strip()
+        if not a: a, b = t[:11], t[11:]
+        if len(b) > 13: b = b[:12] + "\u2026"
+        return [a, b] if b else [a]
+    def panel(title, y0, vals, cols, fmt, unit_max):
+        x0, x1, top, base = 46, W - 14, y0 + 32, y0 + 222
+        o.append('<text x="%d" y="%d" %s font-size="14" font-weight="700" fill="%s" text-anchor="middle">%s</text>' % ((x0 + x1) // 2, y0 + 14, F, INK, e(title)))
+        vmax = max([0.0] + [v for pair in vals for v in pair])
+        if unit_max: vmax = max(vmax, 1.0)
+        step = 1
+        for st in (1, 2, 5, 10, 20, 25, 50, 100, 200, 500, 1000):
+            if vmax / st <= 8: step = st; break
+        top_v = max(step, ((int(vmax) + step - 1) // step) * step)
+        if top_v - vmax < step * 0.25: top_v += step   # a little headroom above the tallest bar
+        v = 0
+        while v <= top_v:
+            yy = base - (base - top) * v / top_v
+            o.append('<line x1="%d" y1="%.1f" x2="%d" y2="%.1f" stroke="%s" stroke-width="1"/>' % (x0, yy, x1, yy, GRID if v else AX))
+            o.append('<text x="%d" y="%.1f" %s font-size="12" fill="%s" text-anchor="end">%d</text>' % (x0 - 6, yy + 4, F, INK, v))
+            v += step
+        n = max(1, len(cats)); gw = (x1 - x0) / n; bw = min(20.0, gw * 0.24)
+        for i, c in enumerate(cats):
+            cx = x0 + gw * (i + 0.5)
+            for k in range(2):
+                val = vals[i][k]; bh = (base - top) * val / top_v
+                bx = cx - bw - 3 + k * (bw + 6)
+                if bh > 0: o.append('<rect x="%.1f" y="%.1f" width="%.1f" height="%.1f" fill="%s"><title>%s: %s</title></rect>' % (bx, base - bh, bw, bh, cols[k], e(c[0]), fmt(val)))
+            o.append('<line x1="%.1f" y1="%d" x2="%.1f" y2="%d" stroke="%s"/>' % (x0 + gw * i, base, x0 + gw * i, base + 5, AX))
+            for j, ln in enumerate(label_lines(c[0])):
+                o.append('<text x="%.1f" y="%d" %s font-size="12" fill="%s" text-anchor="middle">%s</text>' % (cx, base + 18 + 14 * j, F, INK, e(ln)))
+        o.append('<line x1="%d" y1="%d" x2="%d" y2="%d" stroke="%s"/>' % (x1, base, x1, base + 5, AX))
+        ly = base + 58; lx = (x0 + x1) // 2 - 92
+        for k, nm in enumerate(("Peak, last 24 h", "Now")):
+            o.append('<rect x="%d" y="%d" width="9" height="9" fill="%s"/>' % (lx + k * 118, ly - 9, cols[k]))
+            o.append('<text x="%d" y="%d" %s font-size="12" font-weight="700" fill="%s">%s</text>' % (lx + 14 + k * 118, ly, F, INK, nm))
+    panel("Players", 64, [(c[1], c[2]) for c in cats], GOLD, lambda v: "%d players" % v, True)
+    panel("Player slots in use (%)", 360, [(c[3], c[4]) for c in cats], BLUE, lambda v: "%.1f%%" % v, True)
     slots = sum(s["max"] for s in servers)
-    tops = ", ".join(["%s %d" % (s["name"] if len(s["name"]) <= 18 else s["name"][:17] + "\u2026", s["players"]) for s in sorted(servers, key=lambda q: -q["players"]) if s["players"] > 0][:5])
-    first = hist[0]["t"][:16].replace("T", " ") if hist else now.strftime("%Y-%m-%d %H:%M")
     pp = hist[-2]["players"] if len(hist) > 1 else None
     mins = int(round((ts(hist[-1]) - ts(hist[-2])).total_seconds() / 60)) if len(hist) > 1 else 10
     trend = "" if pp is None else (" (%+d in the last %d minutes)" % (players - pp, mins) if players != pp else " (no change in the last %d minutes)" % mins)
     note = ["Note: right now %d players%s on %d servers with %d player slots; %d servers have players." % (players, trend, len(servers), slots, sum(1 for s in servers if s["players"] > 0)),
-            ("Busiest servers: %s." % tops) if tops else "No server has players right now. Open GTA SA, MP MENU, Join, or Host your own server.",
-            "Bars use the left axis (number), lines the right axis (percent). %s." % ("Each bar is the peak of that hour" if hourly else "Each bar is one 10-minute reading; hourly peaks start once a day of data is collected"),
-            "Every MP server announces itself to the lobby on the HiveMQ broker; the chart is redrawn every 10 minutes (data since %s UTC)." % first]
-    y = 562
+            "Servers are sorted by their peak in the last 24 hours (%s); the rest are added up in \"Other servers\"." % ("%d readings, one every 10 minutes" % len(day) if hourly else "the first readings are still being collected"),
+            "Player slots in use = players / the server's maximum players."]
+    y = 692
     for ln in note:
-        o.append('<text x="28" y="%d" %s font-size="11.5" fill="%s">%s</text>' % (y, F, GREY, e(ln))); y += 16
-    o.append('<text x="28" y="%d" %s font-size="11.5" fill="%s">Source: MP lobby (live), github.com/ThirtyFoxMCx00E1/wagu</text>' % (H - 12, F, GREY))
-    o.append('<text x="%d" y="%d" %s font-size="13" font-weight="700" fill="#b09120" text-anchor="end">MULTIPLAYER</text>' % (W - 28, H - 12, F))
-    o.append('<text x="%d" y="%d" %s font-size="13" font-weight="700" fill="#2644a8" text-anchor="end">MP</text>' % (W - 124, H - 12, F))
+        o.append('<text x="12" y="%d" %s font-size="12" fill="%s">%s</text>' % (y, F, INK, e(ln))); y += 17
+    o.append('<text x="12" y="%d" %s font-size="12" fill="%s"><tspan font-style="italic">Source:</tspan> MP lobby (online data code: live-status, github.com/ThirtyFoxMCx00E1/wagu)</text>' % (y + 2, F, INK))
+    # logo: "mp lobby" + a small blue badge (bottom right, like the Eurostat mark)
+    o.append('<text x="%d" y="%d" %s font-size="22" font-weight="700" fill="%s" text-anchor="end">mplobby</text>' % (W - 44, H - 14, F, "#7a7a7a"))
+    o.append('<rect x="%d" y="%d" width="28" height="19" fill="#2a3fa8"/>' % (W - 38, H - 31))
+    o.append('<text x="%d" y="%d" %s font-size="11" font-weight="700" fill="#ffd617" text-anchor="middle">MP</text>' % (W - 24, H - 17, F))
     o.append("</svg>")
     return "\n".join(o)
 
@@ -211,7 +205,8 @@ def main():
         except Exception as ex:
             print("previous status: %s" % ex, file=sys.stderr)
     hist.append({"t": now.isoformat(timespec="seconds"), "players": players, "servers": len(servers), "active": sum(1 for s in servers if s["players"] > 0),
-                 "slots": sum(s["max"] for s in servers), "top": max([0] + [s["players"] for s in servers])})
+                 "slots": sum(s["max"] for s in servers), "top": max([0] + [s["players"] for s in servers]),
+                 "s": [[s["name"], s["players"], s["max"]] for s in servers][:60]})
     cut = now - datetime.timedelta(days=8)
     hist = [h for h in hist if datetime.datetime.fromisoformat(h["t"]) >= cut][-1200:]
     json.dump({"readings": hist}, open(os.path.join(out, "history.json"), "w"))
