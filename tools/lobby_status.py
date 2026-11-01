@@ -68,49 +68,85 @@ def is_default(s):
     return s["port"] == 1922 and s["name"].lower() == "mp lan server"
 
 
-def svg(servers, players, now):
-    W, rowh = 840, 30
-    rows = servers[:8]
-    H = 150 + max(1, len(rows)) * rowh + 34
+def svg(servers, players, now, prev=None):
+    """3.40.2: a statistics-office style chart (white page, title + unit line, two bar panels,
+    a note paragraph and the source line) - like the Eurostat trade charts."""
+    W = 840
     e = lambda x: html.escape(str(x), quote=True)
-    o = ['<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d" viewBox="0 0 %d %d" role="img" aria-label="MP Multiplayer: %d players online on %d servers">' % (W, H, W, H, players, len(servers), )]
-    o.append('<title>MP Multiplayer: %d players online on %d servers</title>' % (players, len(servers)))
-    o.append('<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1b1b1b"/><stop offset="1" stop-color="#0d0d0d"/></linearGradient></defs>')
-    o.append('<rect width="%d" height="%d" rx="14" fill="url(#g)" stroke="#2a2a2a"/>' % (W, H))
-    F = 'font-family="Verdana,DejaVu Sans,Segoe UI,sans-serif"'
-    M = 'font-family="DejaVu Sans Mono,Consolas,monospace"'
-    o.append('<text x="28" y="44" %s font-size="22" font-weight="700" fill="#e9e4d8">MP <tspan fill="#f0a830">MULTIPLAYER</tspan> · LIVE LOBBY</text>' % F)
-    dot = "#5fd16f" if servers else "#e8b931"
-    o.append('<circle cx="%d" cy="37" r="7" fill="%s"><animate attributeName="opacity" values="1;.35;1" dur="1.6s" repeatCount="indefinite"/></circle>' % (W - 40, dot))
-    o.append('<text x="%d" y="43" %s font-size="13" fill="#8d877a" text-anchor="end">%s</text>' % (W - 56, F, "online" if servers else "quiet"))
-    # big numbers
-    o.append('<text x="28" y="104" %s font-size="44" font-weight="700" fill="#5fd16f">%d</text>' % (F, players))
-    o.append('<text x="28" y="126" %s font-size="13" fill="#8d877a">PLAYERS ONLINE</text>' % F)
-    o.append('<text x="250" y="104" %s font-size="44" font-weight="700" fill="#f0a830">%d</text>' % (F, len(servers)))
-    o.append('<text x="250" y="126" %s font-size="13" fill="#8d877a">SERVERS ONLINE</text>' % F)
+    F = 'font-family="Arial,Helvetica,DejaVu Sans,sans-serif"'
+    INK, GREY, GRID = "#1f1f1f", "#5c5c5c", "#d9d9d9"
+    GOLD, OLIVE, BLUE, LBLUE = "#b09120", "#e0cf7a", "#2644a8", "#a9b8e8"
+    rows = servers[:10]
     slots = sum(s["max"] for s in servers)
-    o.append('<text x="470" y="104" %s font-size="44" font-weight="700" fill="#e9e4d8">%d</text>' % (F, slots))
-    o.append('<text x="470" y="126" %s font-size="13" fill="#8d877a">PLAYER SLOTS</text>' % F)
-    y = 150
-    o.append('<line x1="28" y1="%d" x2="%d" y2="%d" stroke="#2a2a2a"/>' % (y - 8, W - 28, y - 8))
-    if not rows:
-        o.append('<text x="28" y="%d" %s font-size="14" fill="#8d877a">No server is hosting right now. Open GTA SA, MP MENU → Host to start one.</text>' % (y + 18, F))
-        y += rowh
-    for s in rows:
-        full = s["max"] and s["players"] >= s["max"]
-        name = s["name"] if len(s["name"]) <= 34 else s["name"][:33] + "…"
-        tag = ' <tspan fill="#f0a830" font-size="11">DEFAULT</tspan>' if is_default(s) else ""
-        o.append('<text x="28" y="%d" %s font-size="14" fill="#e9e4d8">%s%s</text>' % (y + 18, F, e(name), tag))
-        reg = REG[s["region"]] if 0 <= s["region"] < 4 else "—"
-        o.append('<text x="560" y="%d" %s font-size="13" fill="#8d877a">%s</text>' % (y + 18, M, e(reg)))
-        o.append('<text x="%d" y="%d" %s font-size="14" fill="%s" text-anchor="end">%d / %d</text>' % (W - 28, y + 18, M, "#e2554b" if full else "#5fd16f", s["players"], s["max"]))
-        y += rowh
+    prev = prev or {}
+    pserv = prev.get("servers") or []
+    pmap = {}
+    for s in pserv: pmap[(s.get("name"), s.get("port"))] = pmap.get((s.get("name"), s.get("port")), 0) + int(s.get("players", 0))
+    def reg(lst):
+        r4 = [0, 0, 0, 0]
+        for s in lst:
+            r = s.get("region", 0); r = r if 0 <= r < 4 else 0
+            r4[r] += int(s.get("players", 0))
+        return r4
+    regp, regq = reg(servers), reg(pserv)
+    pwhen = (prev.get("updated") or "")[11:16]
+    la = "%s UTC (10 min before)" % pwhen if pwhen else "10 min before"
+    lb = "%s UTC (now)" % now.strftime("%H:%M")
+    H = 760
+    o = ['<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d" viewBox="0 0 %d %d" role="img" aria-label="MP Multiplayer: %d players online on %d servers">' % (W, H, W, H, players, len(servers))]
+    o.append('<title>MP Multiplayer: %d players online on %d servers</title>' % (players, len(servers)))
+    o.append('<rect width="%d" height="%d" fill="#ffffff" stroke="#cfcfcf"/>' % (W, H))
+    o.append('<text x="28" y="40" %s font-size="19" font-weight="700" fill="%s">Players online on MP Multiplayer servers, live lobby, %s</text>' % (F, INK, now.strftime("%d %B %Y")))
+    o.append('<text x="28" y="62" %s font-size="13" fill="%s">(number of players; updated %s UTC)</text>' % (F, GREY, now.strftime("%H:%M")))
+    dot = "#2e9d43" if servers else "#c9a227"
+    o.append('<circle cx="%d" cy="34" r="6" fill="%s"><animate attributeName="opacity" values="1;.35;1" dur="1.6s" repeatCount="indefinite"/></circle>' % (W - 34, dot))
+
+    def panel(y0, h, title, cats, a, b, ca, cb, la, lb):
+        x0, x1 = 70, W - 28
+        o.append('<text x="%d" y="%d" %s font-size="14" font-weight="700" fill="%s" text-anchor="middle">%s</text>' % ((x0 + x1) // 2, y0, F, INK, e(title)))
+        top, base = y0 + 18, y0 + h
+        vmax = max([1] + a + b)
+        step = 1
+        for st in (1, 2, 5, 10, 20, 25, 50, 100, 200, 500, 1000):
+            if vmax / st <= 6: step = st; break
+        vtop = ((vmax + step - 1) // step) * step
+        v = 0
+        while v <= vtop:
+            yy = base - (base - top) * v / vtop
+            o.append('<line x1="%d" y1="%.1f" x2="%d" y2="%.1f" stroke="%s" stroke-width="1"/>' % (x0, yy, x1, yy, GRID))
+            o.append('<text x="%d" y="%.1f" %s font-size="11" fill="%s" text-anchor="end">%d</text>' % (x0 - 6, yy + 4, F, GREY, v))
+            v += step
+        n = max(1, len(cats)); gw = (x1 - x0) / n; bw = min(26, gw * 0.32)
+        for i, c in enumerate(cats):
+            cx = x0 + gw * (i + 0.5)
+            for k, (val, col) in enumerate(((a[i], ca), (b[i], cb))):
+                bh = (base - top) * val / vtop
+                bx = cx - bw - 1 if k == 0 else cx + 1
+                o.append('<rect x="%.1f" y="%.1f" width="%.1f" height="%.1f" fill="%s"/>' % (bx, base - bh, bw, bh, col))
+                if k == 1 or val: o.append('<text x="%.1f" y="%.1f" %s font-size="10.5" fill="%s" text-anchor="middle">%d</text>' % (bx + bw / 2, base - bh - 4, F, INK if k == 1 else GREY, val))
+            nm = c if len(c) <= 16 else c[:15] + "\u2026"
+            o.append('<text x="%.1f" y="%d" %s font-size="11" fill="%s" text-anchor="end" transform="rotate(-30 %.1f %d)">%s</text>' % (cx + 4, base + 16, F, INK, cx + 4, base + 16, e(nm)))
+        o.append('<line x1="%d" y1="%d" x2="%d" y2="%d" stroke="%s" stroke-width="1.2"/>' % (x0, base, x1, base, GREY))
+        ly = base + 70
+        o.append('<rect x="%d" y="%d" width="12" height="12" fill="%s"/><text x="%d" y="%d" %s font-size="12" fill="%s">%s</text>' % (W // 2 - 190, ly - 10, ca, W // 2 - 173, ly, F, INK, e(la)))
+        o.append('<rect x="%d" y="%d" width="12" height="12" fill="%s"/><text x="%d" y="%d" %s font-size="12" fill="%s">%s</text>' % (W // 2 + 20, ly - 10, cb, W // 2 + 37, ly, F, INK, e(lb)))
+
+    if rows:
+        panel(98, 200, "Servers", [s["name"] for s in rows], [pmap.get((s["name"], s["port"]), 0) for s in rows], [s["players"] for s in rows], OLIVE, GOLD, la, lb)
+    else:
+        o.append('<text x="%d" y="200" %s font-size="14" fill="%s" text-anchor="middle">No server is hosting right now. Open GTA SA, MP MENU, Host to start one.</text>' % (W // 2, F, GREY))
+    panel(408, 170, "Regions", REG, regq, regp, LBLUE, BLUE, la, lb)
     more = len(servers) - len(rows)
-    foot = "Updated %s UTC · refreshes every 10 min" % now.strftime("%Y-%m-%d %H:%M")
-    if more > 0:
-        foot = "+%d more servers · " % more + foot
-    o.append('<text x="28" y="%d" %s font-size="12" fill="#8d877a">%s</text>' % (H - 16, F, e(foot)))
-    o.append('<text x="%d" y="%d" %s font-size="12" fill="#8d877a" text-anchor="end">thirtyfoxmcx00e1.github.io/wagu</text>' % (W - 28, H - 16, F))
+    pp = prev.get("players")
+    trend = "" if pp is None else (" (%+d since %s UTC)" % (players - int(pp), pwhen) if players != int(pp) else " (no change since %s UTC)" % pwhen)
+    note = ["Note: %d players%s on %d servers with %d player slots%s." % (players, trend, len(servers), slots, "; +%d smaller servers not shown" % more if more > 0 else ""),
+            "Every MP server announces itself to the lobby on the HiveMQ broker; this chart is redrawn every 10 minutes.",
+            "Join from GTA SA on Android: MP MENU, Join, or host your own server (MP MENU, Host)."]
+    y = 688
+    for ln in note:
+        o.append('<text x="28" y="%d" %s font-size="11.5" fill="%s">%s</text>' % (y, F, GREY, e(ln))); y += 16
+    o.append('<text x="28" y="%d" %s font-size="11.5" fill="%s">Source: MP lobby (%s)</text>' % (H - 10, F, GREY, "live"))
+    o.append('<text x="%d" y="%d" %s font-size="13" font-weight="700" fill="%s" text-anchor="end">MP <tspan fill="%s">MULTIPLAYER</tspan></text>' % (W - 28, H - 10, F, BLUE, GOLD))
     o.append("</svg>")
     return "\n".join(o)
 
@@ -131,7 +167,14 @@ def main():
     servers = sorted(live.values(), key=lambda s: (not is_default(s), -s["players"], s["name"].lower()))
     players = sum(s["players"] for s in servers)
     now = datetime.datetime.now(datetime.timezone.utc)
-    open(os.path.join(out, "players.svg"), "w").write(svg(servers, players, now))
+    prev = None   # 3.40.2: the last run's status.json (live-status branch) = the "10 min before" bars
+    try:
+        import urllib.request
+        rq = urllib.request.Request("https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/live-status/status.json?t=%d" % time.time(), headers={"User-Agent": "wagu-live-status"})
+        prev = json.load(urllib.request.urlopen(rq, timeout=15))
+    except Exception as ex:
+        print("previous status: %s" % ex, file=sys.stderr)
+    open(os.path.join(out, "players.svg"), "w").write(svg(servers, players, now, prev))
     color = "brightgreen" if players else ("yellow" if servers else "lightgrey")
     json.dump({"schemaVersion": 1, "label": "players online", "message": str(players), "color": color, "cacheSeconds": 600},
               open(os.path.join(out, "players.json"), "w"))
