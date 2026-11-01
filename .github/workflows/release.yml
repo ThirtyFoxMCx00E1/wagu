@@ -7,6 +7,14 @@ on:
       version:
         description: "Version (e.g. 3.32)"
         required: true
+      ref:
+        description: "3.40.1: commit with that version's bin/libMP*.so (empty = main)"
+        required: false
+        default: ""
+      latest:
+        description: "Mark as the latest release"
+        type: boolean
+        default: true
 permissions:
   contents: write
 jobs:
@@ -14,10 +22,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Libraries of an older version (3.40.1)
+        if: inputs.ref != ''
+        run: |
+          git show "${{ inputs.ref }}:bin/libMP32.so" > bin/libMP32.so
+          git show "${{ inputs.ref }}:bin/libMP64.so" > bin/libMP64.so
+          strings bin/libMP64.so | grep -qx "${{ inputs.version }}"
       - name: Publish
         env:
           GH_TOKEN: ${{ github.token }}
           V: ${{ inputs.version }}
+          REF: ${{ inputs.ref }}
+          LATEST: ${{ inputs.latest }}
         run: |
           set -e
           for f in bin/libMP64.so bin/libMP32.so release/MP-$V-client.zip release/MP-$V-full.zip release/HiveMQ-kit-$V.zip; do test -f "$f"; done
@@ -28,5 +46,6 @@ jobs:
           print(r[a:b if b > 0 else None])
           PY
           gh release delete "v$V" -y --cleanup-tag 2>/dev/null || true
-          gh release create "v$V" -t "MP Multiplayer $V" -F notes.md --latest \
+          TGT=$(git rev-parse "${REF:-HEAD}")
+          gh release create "v$V" -t "MP Multiplayer $V" -F notes.md --target "$TGT" --latest="$LATEST" \
             bin/libMP64.so bin/libMP32.so release/MP-$V-client.zip release/MP-$V-full.zip release/HiveMQ-kit-$V.zip
