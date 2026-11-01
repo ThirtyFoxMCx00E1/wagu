@@ -1,11 +1,13 @@
 {
-"latest": "3.40",
+"latest": "3.40.1",
 "supported": [
+"3.40.1",
 "3.40",
 "3.39.3",
 "3.39.2",
 "3.39.1",
 "3.39",
+"3.38",
 "3.37",
 "3.36.1",
 "3.36",
@@ -55,24 +57,44 @@
 ],
 "versions": [
 {
+"v": "3.40.1",
+"summary": "**Trunk = the reserved moderator name, and moderator.txt fixed.** The name **Trunk** (also TRUNK, trunk, T_r_u_n_k, 7runk, \"[MOD] Trunk\"...) is now reserved for moderators like SENJI is for the admin: only a phone whose `moderator.txt` holds an MP moderator key can use it. Everyone else gets \"Reserved (moderator)\" in the name box, the join is blocked on the phone and every 3.40.1 server refuses it (REJECT_NAME_RESERVED). With the key the player is **[MOD] Trunk** on every MP server: the [MOD] name tag over the head, [MOD] Trunk in chat, in the kill feed and in the player list, and the moderator permissions (kick / mute / freeze / cheats on-off / staff-only hosting) on the 4 default servers.",
+"items": [
+"Fixed: moderator.txt sometimes did nothing on the default server. The moderator check only ran when the phone got a brand-new slot - a re-join from a phone that still had its old slot (game restarted, Wi-Fi to mobile data, 24/7 bot / host broker relay) kept the old rank without [MOD]. Now every join packet is checked again, the old slot gets the [MOD] tag and all players see it right away.",
+"Fixed: a key with a space, CR or LF around it (Notepad / Termux editors) no longer fails. A server owner's moderator.txt line `Trunk MOD:<key>` works too. A second MP moderator key is accepted (both keys work).",
+"New `test/trunk_test.cpp`: on the default server Trunk is refused without a key and with a wrong key, [MOD] Trunk joins, the other players see the tag, kick + cheats switch work, and a re-join leaves no Trunk_2 ghost.",
+"Website: the version history works again (3.39.1 - 3.40 had no item list, so the page showed \"Could not load the version history\"); the Assets download list points at the right release (HiveMQ 4.56 + OpenJDK 21 + Android NDK r30 + open.mp + MapAndreas + YSI).",
+"README: live \"players online\" card (refreshes every 10 minutes from the MP lobby), release / stars / followers / forks badges, Discord button, screenshot gallery, every changelog from 3.38 to 3.40.1."
+]
+},
+{
 "v": "3.40",
-"summary": "**Loading window**: joining any server now shows a \"Please Wait, Loading Server Data...\" window (Liberty Unleashed style) instead of the resource lines in the chat - the step (Server Info, Resources with each name, Player, Vehicle, Weapon Info, World Data) with its own bar + count and a green bar for everything, animated. **189 server resources** (64 new: Home Kit, progress save, needs, rules, settings, BCW, MW3, Mega Vil roleplay parts, voice, sync parts, controller...), so the loading takes a bit longer. After the join the chat says **Welcome to {server name}** on every server."
+"summary": "**Loading window**: joining any server now shows a \"Please Wait, Loading Server Data...\" window (Liberty Unleashed style) instead of the resource lines in the chat - the step (Server Info, Resources with each name, Player, Vehicle, Weapon Info, World Data) with its own bar + count and a green bar for everything, animated. **189 server resources** (64 new: Home Kit, progress save, needs, rules, settings, BCW, MW3, Mega Vil roleplay parts, voice, sync parts, controller...), so the loading takes a bit longer. After the join the chat says **Welcome to {server name}** on every server.",
+"items": []
 },
 {
 "v": "3.39.3",
-"summary": "The hunger + energy HUD is back to the 3.39.1 look (two squares in the bottom-right corner). Everything else from 3.39.2 stays: controller support, /hometp, the info pickups in the Mega Vil lobby."
+"summary": "The hunger + energy HUD is back to the 3.39.1 look (two squares in the bottom-right corner). Everything else from 3.39.2 stays: controller support, /hometp, the info pickups in the Mega Vil lobby.",
+"items": []
 },
 {
 "v": "3.39.2",
-"summary": "**Controller support**: play MP's screens with a gamepad - Back turns the MP cursor on/off (hold it: MP menu), left stick / D-pad moves it, A taps (hold + move drags), B closes, right stick scrolls; the spawn picker uses D-pad + A; the cursor turns on by itself on the launcher, login and keyboard. **Hunger + energy HUD** now looks like the screenshot: one dark box at the right edge with fork + spoon and bowl icons and green values. **/hometp <home_name>** teleports you to your house door (or one you have a key for; no name = your only house). Mega Vil Futuristic lobby: the 5 info spots (Rules, Jobs, Money & Invest, Phone & Panel, Life) are the real spinning yellow info \"i\" pickup now; the welcome stays medium-big floating text."
+"summary": "**Controller support**: play MP's screens with a gamepad - Back turns the MP cursor on/off (hold it: MP menu), left stick / D-pad moves it, A taps (hold + move drags), B closes, right stick scrolls; the spawn picker uses D-pad + A; the cursor turns on by itself on the launcher, login and keyboard. **Hunger + energy HUD** now looks like the screenshot: one dark box at the right edge with fork + spoon and bowl icons and green values. **/hometp <home_name>** teleports you to your house door (or one you have a key for; no name = your only house). Mega Vil Futuristic lobby: the 5 info spots (Rules, Jobs, Money & Invest, Phone & Panel, Life) are the real spinning yellow info \"i\" pickup now; the welcome stays medium-big floating text.",
+"items": []
 },
 {
 "v": "3.39.1",
-"summary": "**Saved progress**: on the default server (after the login) and on custom servers your place, money, weapons + ammo, health, armour, hunger and energy are saved every 15 s and when you leave, and come back on the next join - also after a game or server restart (/save saves now). **Houses come back** after leaving and rejoining (lost pages are asked again, the owner is matched by account, phone or name). **/homedelete <name>** deletes your house (asks first). House door marker and floating text now sit on the ground, not in the air. **Rules window opens by itself** after the login on the default and custom servers (no need to type /rules). **Server settings** open right away (no more long 'asking the server'). **moderator.txt** is found in any data folder and any spelling, so the [MOD] tag shows on the default server. Mega Vil Futuristic: the white welcome board is now medium-big floating text."
+"summary": "**Saved progress**: on the default server (after the login) and on custom servers your place, money, weapons + ammo, health, armour, hunger and energy are saved every 15 s and when you leave, and come back on the next join - also after a game or server restart (/save saves now). **Houses come back** after leaving and rejoining (lost pages are asked again, the owner is matched by account, phone or name). **/homedelete <name>** deletes your house (asks first). House door marker and floating text now sit on the ground, not in the air. **Rules window opens by itself** after the login on the default and custom servers (no need to type /rules). **Server settings** open right away (no more long 'asking the server'). **moderator.txt** is found in any data folder and any spelling, so the [MOD] tag shows on the default server. Mega Vil Futuristic: the white welcome board is now medium-big floating text.",
+"items": []
 },
 {
 "v": "3.39",
 "summary": "**HOME KIT** gamemode (on the default server automatically, on custom servers with Add server > Gamemodes > Home Kit): **/create house <name>**, **/setup <name>** (slot window: 16x16 or any size up to the limit, the tapped square glows on the ground, green = OK, red = over the limit), **/buyhouse**, **/sellhouse**, **/edithouse**, **/edithouseinteriors** with real GTA SA buildings, furniture and interiors, house doors with white floating text and a red marker, 19+ commands. **/mv** My Vehicles list (model, status, distance; Select / Close). **Hunger + energy HUD** bottom-right (/eat /sleep /rest /needs; default server always, custom servers by permission, never on Mega Vil). **RULES** window after the login (default: 10 rules; custom: Add server > Rules with title + 1)-10)), /rules. **Server settings** page (/settings): everyone sees the gamemodes, permissions and rules; the host owner changes them on a custom server, only the admin and moderators on the 4 featured servers. Kicks are not bans any more: **{FFFFFF}[{FFFF00}SERVER{FFFFFF}]: name got kicked by reason** for everyone and a **4:29 wait** before joining again. Only the admin or a moderator phone can host the 4 featured servers (the 24/7 bot hosts them). New gamemodes from the open.mp forum: **Cops and Robbers**, **Attack / Defend**, **Survival (DayZ)**, **Stunt freeroam**, **Drift**. Fixes: the login screen always shows on the 4 servers after a rejoin or game restart, moderator.txt accepts any layout, SA-MP dialog buttons are black with white text, chat colour codes, the pause-menu map image now matches the radar blips (right size), other players' arms come up when they aim any gun (no restart of the aim every 250 ms, aiming while walking).",
+"items": []
+},
+{
+"v": "3.38",
+"summary": "(servers only - phones stay on 3.37): **the 24/7 bot hosts the 4 servers everywhere.** `install.sh` runs all 4 featured servers (Default, Brief Case War, MW3, Mega Vil Futuristic) as a 24/7 bot host on Termux or any Linux, with a Railway Dockerfile for the cloud. The Termux web console shows which of the 4 servers are hosted by the bot and which by a phone. Every VPS runs `mp-bridge`: a public lobby mirror that lists the region's 24/7 servers on broker.hivemq.com and carries their game, and `server/run_24_7.sh` keeps a server up on any always-on machine.",
 "items": []
 },
 {

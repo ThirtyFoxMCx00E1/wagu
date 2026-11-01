@@ -1,6 +1,37 @@
-![Screenshot](assets/MP/title_logo_connected.png)
+<p align="center">
+  <img src="assets/MP/title_logo_connected.png" alt="MP Multiplayer" width="720">
+</p>
 
 # MP – Multiplayer for GTA San Andreas Mobile
+
+<p align="center">
+  <a href="https://github.com/ThirtyFoxMCx00E1/wagu/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/ThirtyFoxMCx00E1/wagu?style=for-the-badge&labelColor=3a3a3a&label=release&color=f0a830&display_name=tag"></a>
+  <a href="https://thirtyfoxmcx00e1.github.io/wagu/"><img alt="Players online" src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/live-status/players.json&style=for-the-badge&labelColor=3a3a3a"></a>
+  <a href="https://thirtyfoxmcx00e1.github.io/wagu/"><img alt="Servers online" src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/live-status/servers.json&style=for-the-badge&labelColor=3a3a3a"></a>
+  <a href="https://github.com/ThirtyFoxMCx00E1/wagu/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/ThirtyFoxMCx00E1/wagu/total?style=for-the-badge&labelColor=3a3a3a&label=downloads&color=2ea043"></a>
+  <br>
+  <a href="https://github.com/ThirtyFoxMCx00E1?tab=followers"><img alt="Followers" src="https://img.shields.io/github/followers/ThirtyFoxMCx00E1?style=for-the-badge&labelColor=3a3a3a&label=followers&color=0b7dbe"></a>
+  <a href="https://github.com/ThirtyFoxMCx00E1/wagu/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/ThirtyFoxMCx00E1/wagu?style=for-the-badge&labelColor=3a3a3a&label=stars&color=0b7dbe"></a>
+  <a href="https://github.com/ThirtyFoxMCx00E1/wagu/forks"><img alt="Forks" src="https://img.shields.io/github/forks/ThirtyFoxMCx00E1/wagu?style=for-the-badge&labelColor=3a3a3a&label=forks&color=0b7dbe"></a>
+  <a href="https://github.com/ThirtyFoxMCx00E1/wagu/commits"><img alt="Last commit" src="https://img.shields.io/github/last-commit/ThirtyFoxMCx00E1/wagu?style=for-the-badge&labelColor=3a3a3a&label=last%20commit&color=0b7dbe"></a>
+  <a href="https://github.com/ThirtyFoxMCx00E1/wagu"><img alt="Repo size" src="https://img.shields.io/github/repo-size/ThirtyFoxMCx00E1/wagu?style=for-the-badge&labelColor=3a3a3a&label=repo%20size&color=0b7dbe"></a>
+  <br>
+  <a href="https://thirtyfoxmcx00e1.github.io/wagu/"><img alt="GTA SA Android" src="https://img.shields.io/badge/GTA%20SA-Android-e2554b?style=for-the-badge&labelColor=3a3a3a"></a>
+  <a href="https://github.com/ThirtyFoxMCx00E1/AndroidModLoader"><img alt="AML" src="https://img.shields.io/badge/AML-AndroidModLoader-8a5cf6?style=for-the-badge&labelColor=3a3a3a"></a>
+  <a href="https://discord.gg/tbsDknk34y"><img alt="Discord" src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/live-status/discord.json&style=for-the-badge&labelColor=3a3a3a"></a>
+</p>
+
+<p align="center">
+  <a href="https://thirtyfoxmcx00e1.github.io/wagu/"><img src="https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/live-status/players.svg" alt="MP live lobby: players and servers online right now" width="840"></a>
+  <br>
+  <sub>Live from the MP lobby - players and servers online right now (refreshes every 10 minutes)</sub>
+</p>
+
+<p align="center">
+  <a href="https://discord.gg/tbsDknk34y" title="Join the MP Discord"><img src="Screenshots/discord.png" alt="Join us on Discord" width="300"></a>
+  <br>
+  <sub>Tap the Discord logo to open the server in the Discord app: <a href="https://discord.gg/tbsDknk34y">discord.gg/tbsDknk34y</a></sub>
+</p>
 
 MP is an AML (AndroidModLoader) mod that brings multiplayer to GTA San Andreas Mobile. Players meet
 and play together in the same game world, with real-time player synchronization of movement,
@@ -10,12 +41,79 @@ animations and combat.
 
 ![Screenshot](assets/MP/Screenshot_20261017-115103.png)
 
+### Screenshots
+
+<p align="center">
+<a href="Screenshots/Screenshot_20261024-160306.png"><img src="Screenshots/thumbs/Screenshot_20261024-160306.jpg" width="24%" alt="MP screenshot 20261024-160306"></a>
+<a href="Screenshots/Screenshot_20261025-152458.png"><img src="Screenshots/thumbs/Screenshot_20261025-152458.jpg" width="24%" alt="MP screenshot 20261025-152458"></a>
+<a href="Screenshots/Screenshot_20261025-170655.png"><img src="Screenshots/thumbs/Screenshot_20261025-170655.jpg" width="24%" alt="MP screenshot 20261025-170655"></a>
+<a href="Screenshots/Screenshot_20261025-195004.png"><img src="Screenshots/thumbs/Screenshot_20261025-195004.jpg" width="24%" alt="MP screenshot 20261025-195004"></a>
+<a href="Screenshots/Screenshot_20261025-212621.png"><img src="Screenshots/thumbs/Screenshot_20261025-212621.jpg" width="24%" alt="MP screenshot 20261025-212621"></a>
+<a href="Screenshots/Screenshot_20261025-230417.png"><img src="Screenshots/thumbs/Screenshot_20261025-230417.jpg" width="24%" alt="MP screenshot 20261025-230417"></a>
+<a href="Screenshots/Screenshot_20261026-084456.png"><img src="Screenshots/thumbs/Screenshot_20261026-084456.jpg" width="24%" alt="MP screenshot 20261026-084456"></a>
+<a href="Screenshots/Screenshot_20261026-084503.png"><img src="Screenshots/thumbs/Screenshot_20261026-084503.jpg" width="24%" alt="MP screenshot 20261026-084503"></a>
+<a href="Screenshots/Screenshot_20261026-084514.png"><img src="Screenshots/thumbs/Screenshot_20261026-084514.jpg" width="24%" alt="MP screenshot 20261026-084514"></a>
+<a href="Screenshots/Screenshot_20261026-124349.png"><img src="Screenshots/thumbs/Screenshot_20261026-124349.jpg" width="24%" alt="MP screenshot 20261026-124349"></a>
+<a href="Screenshots/Screenshot_20261026-140540.png"><img src="Screenshots/thumbs/Screenshot_20261026-140540.jpg" width="24%" alt="MP screenshot 20261026-140540"></a>
+<a href="Screenshots/Screenshot_20261026-140546.png"><img src="Screenshots/thumbs/Screenshot_20261026-140546.jpg" width="24%" alt="MP screenshot 20261026-140546"></a>
+<a href="Screenshots/Screenshot_20261026-142827.png"><img src="Screenshots/thumbs/Screenshot_20261026-142827.jpg" width="24%" alt="MP screenshot 20261026-142827"></a>
+<a href="Screenshots/Screenshot_20261030-173842.png"><img src="Screenshots/thumbs/Screenshot_20261030-173842.jpg" width="24%" alt="MP screenshot 20261030-173842"></a>
+<a href="Screenshots/Screenshot_20261030-173954.png"><img src="Screenshots/thumbs/Screenshot_20261030-173954.jpg" width="24%" alt="MP screenshot 20261030-173954"></a>
+<a href="Screenshots/Screenshot_20261030-181211.png"><img src="Screenshots/thumbs/Screenshot_20261030-181211.jpg" width="24%" alt="MP screenshot 20261030-181211"></a>
+<a href="Screenshots/Screenshot_20261030-190305.png"><img src="Screenshots/thumbs/Screenshot_20261030-190305.jpg" width="24%" alt="MP screenshot 20261030-190305"></a>
+<a href="Screenshots/Screenshot_20261031-115611.png"><img src="Screenshots/thumbs/Screenshot_20261031-115611.jpg" width="24%" alt="MP screenshot 20261031-115611"></a>
+<a href="Screenshots/Screenshot_20261031-182151.png"><img src="Screenshots/thumbs/Screenshot_20261031-182151.jpg" width="24%" alt="MP screenshot 20261031-182151"></a>
+<a href="Screenshots/Screenshot_20261031-182503.png"><img src="Screenshots/thumbs/Screenshot_20261031-182503.jpg" width="24%" alt="MP screenshot 20261031-182503"></a>
+<a href="Screenshots/Screenshot_20261031-184424.png"><img src="Screenshots/thumbs/Screenshot_20261031-184424.jpg" width="24%" alt="MP screenshot 20261031-184424"></a>
+<a href="Screenshots/Screenshot_20261031-184428.png"><img src="Screenshots/thumbs/Screenshot_20261031-184428.jpg" width="24%" alt="MP screenshot 20261031-184428"></a>
+<a href="Screenshots/Screenshot_20261031-184514.png"><img src="Screenshots/thumbs/Screenshot_20261031-184514.jpg" width="24%" alt="MP screenshot 20261031-184514"></a>
+<a href="Screenshots/Screenshot_20261031-184517.png"><img src="Screenshots/thumbs/Screenshot_20261031-184517.jpg" width="24%" alt="MP screenshot 20261031-184517"></a>
+<a href="Screenshots/Screenshot_20261031-213839.png"><img src="Screenshots/thumbs/Screenshot_20261031-213839.jpg" width="24%" alt="MP screenshot 20261031-213839"></a>
+<a href="Screenshots/gta3_2018-06-12_15-36-30-089.jpg"><img src="Screenshots/thumbs/gta3_2018-06-12_15-36-30-089.jpg" width="24%" alt="MP screenshot gta3_2018-06-12_15-36-30-089"></a>
+</p>
+
+<p align="center"><sub>Tap a picture for the full size. All screenshots: <a href="Screenshots">Screenshots/</a></sub></p>
+
 Prebuilt binaries:
 
 | File | ABI | Target |
 |---|---|---|
 | `bin/libMP32.so` | armeabi-v7a | GTA SA 2.00 (32-bit), AML 1.4.0, works alongside FLA 7.6 |
 | `bin/libMP64.so` | arm64-v8a | 64-bit GTA SA builds (2.10+) |
+
+## Downloads and packages
+
+| Download | What | Size |
+|---|---|---|
+| [**MP 3.40.1 client**](https://github.com/ThirtyFoxMCx00E1/wagu/releases/latest) | The mod for your phone (libMP32.so + libMP64.so, MP folder, voice APK) | ~19 MB |
+| [**MP full**](https://github.com/ThirtyFoxMCx00E1/wagu/releases/latest) | Client + 24/7 server + HiveMQ kit | ~21 MB |
+| [All versions / changelogs](https://thirtyfoxmcx00e1.github.io/wagu/#versions) | Every release with its changelog on the website | |
+
+**Package: HiveMQ + OpenJDK Java 21 + Android NDK r30 linux + more** (release [`Assets-1-2-3`](https://github.com/ThirtyFoxMCx00E1/wagu/releases/tag/Assets-1-2-3), about 1.8 GB in total)
+
+| File | What | Size |
+|---|---|---|
+| [`android-ndk-r30-linux.zip`](https://github.com/ThirtyFoxMCx00E1/wagu/releases/download/Assets-1-2-3/android-ndk-r30-linux.zip) | Android NDK r30 for Linux (build libMP32.so / libMP64.so) | 704 MB |
+| [`hivemq-4.56.0.zip`](https://github.com/ThirtyFoxMCx00E1/wagu/releases/download/Assets-1-2-3/hivemq-4.56.0.zip) | HiveMQ 4.56.0 (the MP lobby broker for your own VPS) | 726 MB |
+| [`OpenJDK21U-jdk_x64_linux_hotspot_21.0.13_9.tar.gz`](https://github.com/ThirtyFoxMCx00E1/wagu/releases/download/Assets-1-2-3/OpenJDK21U-jdk_x64_linux_hotspot_21.0.13_9.tar.gz) | OpenJDK 21.0.13+9 x64 Linux (Java for HiveMQ) | 198 MB |
+| [`open.mp-win-x86.zip`](https://github.com/ThirtyFoxMCx00E1/wagu/releases/download/Assets-1-2-3/open.mp-win-x86.zip) | open.mp server for Windows x86 | 34 MB |
+| [`MapAndreas-linux-x86.zip`](https://github.com/ThirtyFoxMCx00E1/wagu/releases/download/Assets-1-2-3/MapAndreas-linux-x86.zip) | MapAndreas for Linux x86 | 32 MB |
+| [`YSI-Includes.zip`](https://github.com/ThirtyFoxMCx00E1/wagu/releases/download/Assets-1-2-3/YSI-Includes.zip) | YSI includes (Pawn) | 3.3 MB |
+
+## Built with
+
+| Repo | Used for |
+|---|---|
+| [termux-app](https://github.com/ThirtyFoxMCx00E1/termux-app) | Termux (terminal for Android) - runs the 24/7 server and the Termux web console on a phone |
+| [Termius-SSH](https://github.com/ThirtyFoxMCx00E1/Termius-SSH) | Termius SSH and server tools - managing the VPS / Oracle / Debian 24/7 servers |
+| [Psdk-aml](https://github.com/ThirtyFoxMCx00E1/Psdk-aml) | Plugin SDK for AML (game_sa, gta_base, RenderWare headers) |
+| [AndroidModLoader](https://github.com/ThirtyFoxMCx00E1/AndroidModLoader) | AML - loads libMP32.so / libMP64.so into GTA SA |
+| [SAUtils](https://github.com/ThirtyFoxMCx00E1/SAUtils) | Mod library for GTA SA mods (menus, settings) |
+| [ARMPatch](https://github.com/ThirtyFoxMCx00E1/ARMPatch) | Hooks and patches for ARM / ARM64 code |
+| [AML_PrecompiledLibs](https://github.com/ThirtyFoxMCx00E1/AML_PrecompiledLibs) | Precompiled libraries for AML mods |
+| [AArchASMHelper](https://github.com/ThirtyFoxMCx00E1/AArchASMHelper) | AArch32 / AArch64 assembly helpers |
+| [AML_ImGui](https://github.com/ThirtyFoxMCx00E1/AML_ImGui) | Dear ImGui (graphical user interface) for AML mods |
+| [mysql-server](https://github.com/ThirtyFoxMCx00E1/mysql-server) | MySQL Server (database for the server side) |
 
 ## Features
 
@@ -56,6 +154,18 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **3.40.1**: **Trunk = the reserved moderator name, and moderator.txt fixed.** The name **Trunk** (also TRUNK, trunk, T_r_u_n_k, 7runk, "[MOD] Trunk"...) is now reserved for moderators like SENJI is for the admin: only a phone whose `moderator.txt` holds an MP moderator key can use it. Everyone else gets "Reserved (moderator)" in the name box, the join is blocked on the phone and every 3.40.1 server refuses it (REJECT_NAME_RESERVED). With the key the player is **[MOD] Trunk** on every MP server: the [MOD] name tag over the head, [MOD] Trunk in chat, in the kill feed and in the player list, and the moderator permissions (kick / mute / freeze / cheats on-off / staff-only hosting) on the 4 default servers.
+  - Fixed: moderator.txt sometimes did nothing on the default server. The moderator check only ran when the phone got a brand-new slot - a re-join from a phone that still had its old slot (game restarted, Wi-Fi to mobile data, 24/7 bot / host broker relay) kept the old rank without [MOD]. Now every join packet is checked again, the old slot gets the [MOD] tag and all players see it right away.
+  - Fixed: a key with a space, CR or LF around it (Notepad / Termux editors) no longer fails. A server owner's moderator.txt line `Trunk MOD:<key>` works too. A second MP moderator key is accepted (both keys work).
+  - New `test/trunk_test.cpp`: on the default server Trunk is refused without a key and with a wrong key, [MOD] Trunk joins, the other players see the tag, kick + cheats switch work, and a re-join leaves no Trunk_2 ghost.
+  - Website: the version history works again (3.39.1 - 3.40 had no item list, so the page showed "Could not load the version history"); the Assets download list points at the right release (HiveMQ 4.56 + OpenJDK 21 + Android NDK r30 + open.mp + MapAndreas + YSI).
+  - README: live "players online" card (refreshes every 10 minutes from the MP lobby), release / stars / followers / forks badges, Discord button, screenshot gallery, every changelog from 3.38 to 3.40.1.
+- **3.40**: **Loading window**: joining any server now shows a "Please Wait, Loading Server Data..." window (Liberty Unleashed style) instead of the resource lines in the chat - the step (Server Info, Resources with each name, Player, Vehicle, Weapon Info, World Data) with its own bar + count and a green bar for everything, animated. **189 server resources** (64 new: Home Kit, progress save, needs, rules, settings, BCW, MW3, Mega Vil roleplay parts, voice, sync parts, controller...), so the loading takes a bit longer. After the join the chat says **Welcome to {server name}** on every server.
+- **3.39.3**: The hunger + energy HUD is back to the 3.39.1 look (two squares in the bottom-right corner). Everything else from 3.39.2 stays: controller support, /hometp, the info pickups in the Mega Vil lobby.
+- **3.39.2**: **Controller support**: play MP's screens with a gamepad - Back turns the MP cursor on/off (hold it: MP menu), left stick / D-pad moves it, A taps (hold + move drags), B closes, right stick scrolls; the spawn picker uses D-pad + A; the cursor turns on by itself on the launcher, login and keyboard. **Hunger + energy HUD** now looks like the screenshot: one dark box at the right edge with fork + spoon and bowl icons and green values. **/hometp <home_name>** teleports you to your house door (or one you have a key for; no name = your only house). Mega Vil Futuristic lobby: the 5 info spots (Rules, Jobs, Money & Invest, Phone & Panel, Life) are the real spinning yellow info "i" pickup now; the welcome stays medium-big floating text.
+- **3.39.1**: **Saved progress**: on the default server (after the login) and on custom servers your place, money, weapons + ammo, health, armour, hunger and energy are saved every 15 s and when you leave, and come back on the next join - also after a game or server restart (/save saves now). **Houses come back** after leaving and rejoining (lost pages are asked again, the owner is matched by account, phone or name). **/homedelete <name>** deletes your house (asks first). House door marker and floating text now sit on the ground, not in the air. **Rules window opens by itself** after the login on the default and custom servers (no need to type /rules). **Server settings** open right away (no more long 'asking the server'). **moderator.txt** is found in any data folder and any spelling, so the [MOD] tag shows on the default server. Mega Vil Futuristic: the white welcome board is now medium-big floating text.
+- **3.39**: **HOME KIT** gamemode (on the default server automatically, on custom servers with Add server > Gamemodes > Home Kit): **/create house <name>**, **/setup <name>** (slot window: 16x16 or any size up to the limit, the tapped square glows on the ground, green = OK, red = over the limit), **/buyhouse**, **/sellhouse**, **/edithouse**, **/edithouseinteriors** with real GTA SA buildings, furniture and interiors, house doors with white floating text and a red marker, 19+ commands. **/mv** My Vehicles list (model, status, distance; Select / Close). **Hunger + energy HUD** bottom-right (/eat /sleep /rest /needs; default server always, custom servers by permission, never on Mega Vil). **RULES** window after the login (default: 10 rules; custom: Add server > Rules with title + 1)-10)), /rules. **Server settings** page (/settings): everyone sees the gamemodes, permissions and rules; the host owner changes them on a custom server, only the admin and moderators on the 4 featured servers. Kicks are not bans any more: **{FFFFFF}[{FFFF00}SERVER{FFFFFF}]: name got kicked by reason** for everyone and a **4:29 wait** before joining again. Only the admin or a moderator phone can host the 4 featured servers (the 24/7 bot hosts them). New gamemodes from the open.mp forum: **Cops and Robbers**, **Attack / Defend**, **Survival (DayZ)**, **Stunt freeroam**, **Drift**. Fixes: the login screen always shows on the 4 servers after a rejoin or game restart, moderator.txt accepts any layout, SA-MP dialog buttons are black with white text, chat colour codes, the pause-menu map image now matches the radar blips (right size), other players' arms come up when they aim any gun (no restart of the aim every 250 ms, aiming while walking).
+- **3.38** (servers only - phones stay on 3.37): **the 24/7 bot hosts the 4 servers everywhere.** `install.sh` runs all 4 featured servers (Default, Brief Case War, MW3, Mega Vil Futuristic) as a 24/7 bot host on Termux or any Linux, with a Railway Dockerfile for the cloud. The Termux web console shows which of the 4 servers are hosted by the bot and which by a phone. Every VPS runs `mp-bridge`: a public lobby mirror that lists the region's 24/7 servers on broker.hivemq.com and carries their game, and `server/run_24_7.sh` keeps a server up on any always-on machine.
 - **3.37**: **WARDROBE CLOTHES** (Mega Vil lobby > T-shirt button): a new **CLOTHES** tab next to OUTFITS dresses CJ in the real game clothes, piece by piece - **TOPS** (T-shirts, shirts, hoodies, jackets, vests), **HAIR** (32 cuts + beards), **PANTS**, **HATS** (caps, berets, cowboy, helmets, bandanas), **SHOES**, **GLASSES**, **CHAINS**, **WATCHES** and full **OUTFITS** (cop, medic, valet, pimp, racing suit, ski mask...). 287 pieces, scroll with a drag. Tapping a part or a piece **flies the camera close** to that part of the body (head, face, neck, chest, wrist, legs, shoes) with a slow sway and focus corners; **FULL VIEW** zooms back out. SAVE keeps the outfit (files/MP/outfit.txt) and puts it back on every spawn; the other players see your clothes.
 - **3.36.1**: **PLAYER INFO** (PANEL > STATUS and BAG) shows a **man figure texture** instead of the real character (no camera on you, no freezing): every body part is tinted by its condition, with your floating name tag (`[MOD]` name, ID, health + armour) over its head.
 - **3.36**: **hotel rooms with a computer** on every server (Jefferson Motel, Four Dragons, Caligula's + `files/MP/hotels.txt`): walk to the desk, tap the computer button, browse **eyefind.info** (Southern San Andreas Super Autos, Legendary Motorsport, Pedal and Metal, Elitas Travel, Docktease, search) and buy from a scrolling grid of vehicle pictures; **PANEL > STATUS** has its own page with your real character, your floating name tag and your stats; **races wait for players** (never start alone); server icons moved into **`files/MP/Icons.jar`**, vehicle pictures in **`files/MP/Vehicles.jar`**.

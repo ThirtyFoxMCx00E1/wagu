@@ -34,6 +34,13 @@ Server owner (VPS / Termux / Oracle): make moderator.txt next to mp_server, one 
 Moderator (phone): put the same key in Android/data/com.rockstargames.gtasa/files/MP/moderator.txt
 (just the key on one line) and join with that player name. You get "[MOD] name" in the name tag,
 chat and kill feed, and can kick / mute players and switch cheats on that server (ban = admin only).
+
+3.40.1: the name Trunk is reserved for moderators (like SENJI for the admin).
+Only a phone with moderator.txt holding an MP moderator key (or a key the server owner
+listed for Trunk: "Trunk  MOD:<key>" or "Trunk  <key>") can join as Trunk. It shows as
+"[MOD] Trunk" in the name tag, chat, kill feed and player list, with the moderator permissions
+on the 4 default servers. Without the key the name box says "Reserved (moderator)" and every
+3.40.1 server refuses the join. Spaces / line breaks around the key don't matter any more.
 """
 kit_skip = ("oracle/", "cloud/")   # the kit zip keeps the 3.33 file set; the full repo has everything
 with zf("release/MP-%s-client.zip" % V) as z:

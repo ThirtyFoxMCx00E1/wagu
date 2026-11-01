@@ -78,7 +78,11 @@ public:
     // 3.23.5: the 3 featured servers (default 100, Brief Case War 20, MW3 64) always have the bot
     // "Broker" in them (id MP_BOT_ID): 1/100, 1/20, 1/64 with nobody else, on the VPS or a phone copy
     bool HasBot() const { return IsDefaultServer() || IsBcwServer() || IsMw3Server() || IsRpServer(); }
+#ifdef MP_AUTH_OFF_FOR_TESTS   // 3.40.1: unit tests only (they have no login bot)
+    bool AuthOn() const { return false; }
+#else
     bool AuthOn() const { return IsDefaultServer() || IsBcwServer() || IsMw3Server() || IsRpServer() || m_bAuthCustom; }
+#endif
     bool AccountOf(int id, char* out, size_t n);   // the logged in account of player id (false = none)
     // 3.04.6: refuse + track old MP versions
     void SetMinBuild(uint32_t b) { m_nMinBuild = b; }

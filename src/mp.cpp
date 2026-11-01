@@ -682,6 +682,8 @@ static void LoadAdminFile();
 static void LoadModFile();   // 3.39.1
 static bool HaveAdminKey();
 static bool s_bModMaster = false;   // 3.39: moderator.txt holds the MP moderator key
+static bool HaveModKey();        // 3.40.1: Trunk = reserved moderator name
+static void TrunkBlockedMsg();   // 3.40.1
 static void SenjiBlockedMsg();   // 3.11.2
 static std::vector<std::string> s_AdminKeys;   // 3.11.3: every valid key found (old + new admin key)
 static size_t s_nAdminKeyIdx = 0;
@@ -2330,6 +2332,11 @@ public:
                 SysMsg(COL_RED, "This server refused your admin key. Your MP %s and administrator.txt are fine: the SERVER runs MP older than 3.23.6 and only knows the old key.", MP_VERSION_STR);
                 SysMsg(COL_YELLOW, "Quick fix: keep your old key as admin.txt next to administrator.txt (MP folder) - MP %s tries the old key on old servers by itself.", MP_VERSION_STR);
                 SysMsg(COL_YELLOW, "Real fix: update the server. 24/7 VPS: sudo bash /opt/mp/kit/update.sh (or: curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/update.sh | sudo bash). Termux: mp-server update.");
+            }
+            else if(MP_IsModReservedName(settings.name))   // 3.40.1
+            {
+                if(HaveModKey()) SysMsg(COL_RED, "This server refused your moderator key for %s: it runs MP older than 3.40.1 (it updates by itself) or the key in moderator.txt is wrong.", MP_MOD_RESERVED_SHOW);
+                else TrunkBlockedMsg();
             }
             else SenjiBlockedMsg();
             if(s_AdminKeys.size() > 1) { s_nAdminKeyIdx = 0; MP_CopyStr(settings.adminKey, s_AdminKeys[0].c_str(), sizeof(settings.adminKey)); client.SetAdminKey(settings.adminKey); }
@@ -4216,6 +4223,8 @@ static void DoConnect(const char* host, int port)
         if(!HaveAdminKey()) LoadAdminFile();
         if(!HaveAdminKey()) { JoinOverlayCancel(); SenjiBlockedMsg(); return; }
     }
+    if(MP_IsModReservedName(settings.name) && !HaveModKey())   // 3.40.1: Trunk without moderator.txt never reaches the server
+    { JoinOverlayCancel(); TrunkBlockedMsg(); return; }
     MP_CopyStr(s_szLastConnHost, host, sizeof(s_szLastConnHost)); s_nLastConnPort = port;   // 3.11.3: retry with the other admin key
     AuthReset();   // 3.21.6: a new connection = a new login challenge
     HotelPcReset();   // 3.36
@@ -5160,6 +5169,7 @@ static void LoadConfig()
     LoadAdminFile();   // 2.37: admin.txt = proof you are SENJI
     MP_StripAdminTag(settings.name);
     if(MP_IsReservedName(settings.name) && !settings.adminKey[0]) MP_CopyStr(settings.name, "Player", sizeof(settings.name));   // no admin.txt: the name is not yours
+    if(MP_IsModReservedName(settings.name) && !HaveModKey()) MP_CopyStr(settings.name, "Player", sizeof(settings.name));   // 3.40.1: no moderator.txt: Trunk is not yours
     if(strlen(settings.deviceId) != MP_UID_LEN)   // 2.25: first start -> make this phone's id
     {
         srand((unsigned)(time(nullptr) ^ (uintptr_t)&settings));
@@ -5363,22 +5373,33 @@ static void SenjiBlockedMsg()   // 3.11.2: say exactly where admin.txt has to go
     SysMsg(COL_YELLOW, "Put administrator.txt here: %s/administrator.txt", s_szDataDir);
 }
 static bool HaveAdminKey() { return settings.adminKey[0] && (MP_AdminKeyOk(settings.adminKey) || MP_AdminKeyLegacyOk(settings.adminKey)); }   // 3.21: + the old key (old servers only)
+// 3.40.1: the reserved moderator name Trunk needs moderator.txt (an MP moderator key, or a key the server lists for Trunk)
+static bool HaveModKey() { return s_bModMaster || client.HasModKey(); }
+static void TrunkBlockedMsg()
+{
+    if(s_bModFileSeen && !HaveModKey()) SysMsg(COL_RED, "The name %s is reserved for moderators. moderator.txt was found (%s) but it has no valid moderator key.", MP_MOD_RESERVED_SHOW, s_szModFound);
+    else SysMsg(COL_RED, "The name %s is reserved for moderators. No moderator.txt found.", MP_MOD_RESERVED_SHOW);
+    SysMsg(COL_YELLOW, "Put moderator.txt (one line: the moderator key) here: %s/moderator.txt", s_szDataDir);
+}
 static const char* NameBlocked(const char* t)
 {
     if(!t || !*t) return nullptr;
     if(MP_IsReservedName(t) && !HaveAdminKey()) return "Reserved name";
-    if(!strncasecmp(t, "[ADMIN]", 7)) return "Not allowed";
+    if(MP_IsModReservedName(t) && !HaveModKey()) return "Reserved (moderator)";   // 3.40.1
+    if(!strncasecmp(t, "[ADMIN]", 7) || !strncasecmp(t, "[MOD]", 5)) return "Not allowed";
     return nullptr;
 }
 static void OnName(const char* t, void*)
 {
     if(!*t) return;
     if(MP_IsReservedName(t) && !HaveAdminKey()) LoadAdminFile();   // admin.txt just copied in? read it again
+    if(MP_IsModReservedName(t) && !HaveModKey()) LoadModFile();    // 3.40.1: moderator.txt just copied in?
     if(NameBlocked(t))
     {
-        if(MP_IsReservedName(t)) SenjiBlockedMsg(); else SysMsg(COL_RED, "Names can't start with [ADMIN].");
+        if(MP_IsReservedName(t)) SenjiBlockedMsg(); else if(MP_IsModReservedName(t)) TrunkBlockedMsg(); else SysMsg(COL_RED, "Names can't start with [ADMIN] or [MOD].");
         return;
     }
+    if(MP_IsModReservedName(t)) { MP_CopyStr(settings.name, MP_MOD_RESERVED_SHOW, sizeof(settings.name)); SaveConfig(); SysMsg(COL_GREEN, "moderator.txt found: you are [MOD] %s on every MP server (name tag, chat, kill feed, kick / mute).", MP_MOD_RESERVED_SHOW); return; }
     if(MP_IsReservedName(t)) { MP_CopyStr(settings.name, MP_ADMIN_NAME, sizeof(settings.name)); SaveConfig(); SysMsg(COL_GREEN, "administrator.txt found: you are the administrator. On the default server you show as [ADMIN] SENJI."); return; }
     MP_CopyStr(settings.name, t, sizeof(settings.name)); SaveConfig();
 }

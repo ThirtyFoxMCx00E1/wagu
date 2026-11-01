@@ -57,6 +57,37 @@ inline void MP_StripAdminTag(char* name)
     }
 }
 
+// 3.40.1: reserved MODERATOR name. "Trunk" can only be used by a phone whose moderator.txt holds an MP
+// moderator key (or a key the server owner listed for Trunk in the server's moderator.txt). Everyone else
+// is refused (REJECT_NAME_RESERVED) and the name can't be typed in. With the key the player is
+// "[MOD] Trunk" on every MP server: [MOD] name tag, chat, kill feed and the moderator permissions.
+#define MP_MOD_RESERVED_NAME "TRUNK"
+#define MP_MOD_RESERVED_SHOW "Trunk"
+// "Trunk", "TRUNK", " trunk ", "[MOD] Trunk", "T_R_U_N_K", "7runk", "Trvnk"... -> true
+inline bool MP_IsModReservedName(const char* name)
+{
+    if(!name) return false;
+    const char* p = name;
+    for(bool again = true; again; )
+    {
+        again = false;
+        while(*p == ' ') ++p;
+        if(!strncasecmp(p, "[MOD]", 5)) { p += 5; again = true; }
+        else if(!strncasecmp(p, "[ADMIN]", 7)) { p += 7; again = true; }
+    }
+    char t[64]; int n = 0;
+    for(; *p && n < 63; ++p)
+    {
+        unsigned char c = (unsigned char)*p;
+        if(c == ' ' || c == '_' || c == '-' || c == '.' || c == '*' || c == '|' || c == '~') continue;   // T_R_U_N_K
+        if(c == '7' || c == '+') c = 'T';
+        if(c == 'v' || c == 'V') c = 'U';
+        t[n++] = (char)toupper(c);
+    }
+    t[n] = 0;
+    return !strcmp(t, MP_MOD_RESERVED_NAME);
+}
+
 // 3.35: moderators. The server owner lists them in moderator.txt (next to mp_server, NOT admin.txt):
 //   <name> <key>        one per line, # = comment, the key at least 8 characters
 // The player puts the same key in files/MP/moderator.txt on the phone and joins with that name ->
@@ -75,7 +106,9 @@ inline bool MP_ModKeyOk(const char* file, const char* name, const char* key)
         if(*p == '#' || !*p) continue;
         char n[64] = {0}, k[MP_ADMIN_KEY_LEN + 1] = {0};
         if(sscanf(p, "%63s %128s", n, k) != 2) continue;
-        if(!strcasecmp(n, name) && !strcmp(k, key)) ok = true;
+        if(!strncasecmp(n, "MOD:", 4)) memmove(n, n + 4, strlen(n + 4) + 1);
+        if(!strncasecmp(k, "MOD:", 4)) memmove(k, k + 4, strlen(k + 4) + 1);
+        if((!strcasecmp(n, name) || (MP_IsModReservedName(n) && MP_IsModReservedName(name))) && !strcmp(k, key)) ok = true;
     }
     fclose(f);
     return ok;
@@ -83,16 +116,23 @@ inline bool MP_ModKeyOk(const char* file, const char* name, const char* key)
 
 // 3.35.2: the MP moderator key. A phone with files/MP/moderator.txt holding THIS key is "[MOD] name" on
 // every MP server (any name, no per-server list needed). Only the SHA-256 of "wagu-mod-v1:" + key is here.
-#define MP_MOD_KEY_HASH "2acf313da4bdca869ada4694bb940ad8ad5d746bbda9205f2db75c8cab76fc6c"
+#define MP_MOD_KEY_HASH  "2acf313da4bdca869ada4694bb940ad8ad5d746bbda9205f2db75c8cab76fc6c"
+// 3.40.1: a second MP moderator key (the "Trunk" moderator.txt). Both keys are accepted.
+#define MP_MOD_KEY_HASH2 "2d0a5eb6ac0c519c318bf98575906863f265bc69b3ae347a17f64435094665bb"
 inline bool MP_ModMasterOk(const char* key)
 {
-    if(!key || strlen(key) < 8) return false;
-    char buf[200]; snprintf(buf, sizeof(buf), "wagu-mod-v1:%s", key);
+    if(!key) return false;
+    while(*key == ' ' || *key == '\t') ++key;          // 3.40.1: stray spaces / CR / LF around the key
+    char k[MP_ADMIN_KEY_LEN + 1]; snprintf(k, sizeof(k), "%s", key);
+    for(size_t n = strlen(k); n && (k[n - 1] == ' ' || k[n - 1] == '\t' || k[n - 1] == '\r' || k[n - 1] == '\n'); ) k[--n] = 0;
+    if(strlen(k) < 8) return false;
+    char buf[200]; snprintf(buf, sizeof(buf), "wagu-mod-v1:%s", k);
     unsigned char h[32]; char hex[65];
     mbedtls_sha256((const unsigned char*)buf, strlen(buf), h, 0);
     for(int i = 0; i < 32; ++i) snprintf(hex + i * 2, 3, "%02x", h[i]);
-    return !strcasecmp(hex, MP_MOD_KEY_HASH);
+    return !strcasecmp(hex, MP_MOD_KEY_HASH) || !strcasecmp(hex, MP_MOD_KEY_HASH2);
 }
+
 
 inline void MP_AdminKeyHash(const char* key, char out[65])
 {

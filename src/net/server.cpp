@@ -822,30 +822,55 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
                 }
             }
             // 2.37: the name SENJI is reserved - only the phone with the admin key may use it
-            bool isAdmin = false, isMod = false;
-            if(slot < 0)
+            // 3.40.1: the check runs on EVERY join packet (also when the phone still has a slot from a
+            // dropped connection), so moderator.txt copied in later / a re-join gives [MOD] right away.
+            // The name Trunk is reserved for moderators: only a valid moderator key may use it.
+            bool isAdmin = false, isMod = false, rankChanged = false;
             {
                 char jn[MP_NAME_LEN]; MP_CopyStr(jn, j->name, MP_NAME_LEN);
+                char key[MP_ADMIN_KEY_LEN + 1] = {0};
+                if(len >= (int)sizeof(PktJoin4)) memcpy(key, ((const PktJoin4*)data)->adminKey, MP_ADMIN_KEY_LEN);
                 if(MP_IsReservedName(jn))
                 {
-                    char key[MP_ADMIN_KEY_LEN + 1] = {0};
-                    if(len >= (int)sizeof(PktJoin4)) memcpy(key, ((const PktJoin4*)data)->adminKey, MP_ADMIN_KEY_LEN);
                     if(!MP_AdminKeyOk(key, m_szAdminHash))
                     {
                         PktReject rj; rj.type = PKT_REJECT; rj.reason = REJECT_NAME_RESERVED; SendRaw(from, &rj, sizeof(rj));
                         Log("Join refused: \"%s\" is a reserved name (no admin key)", jn);
+                        if(slot >= 0 && !m_Slots[slot].admin) Drop(slot, LEAVE_KICK);
                         return;
                     }
                     for(int i = 0; i < MP_MAX_PLAYERS; ++i)   // already on (another phone / ghost slot)? the new one wins
-                        if(m_Slots[i].used && m_Slots[i].admin) Drop(i, LEAVE_TIMEOUT);
+                        if(i != slot && m_Slots[i].used && m_Slots[i].admin) Drop(i, LEAVE_TIMEOUT);
                     isAdmin = true;
                 }
-                else if(len >= (int)sizeof(PktJoin4))   // 3.35: moderator key "MOD:<key>"
+                else
                 {
-                    char key[MP_ADMIN_KEY_LEN + 1] = {0};
-                    memcpy(key, ((const PktJoin4*)data)->adminKey, MP_ADMIN_KEY_LEN);
                     char bare[MP_NAME_LEN]; MP_CopyStr(bare, jn, sizeof(bare)); MP_StripAdminTag(bare);
-                    if(!strncmp(key, MP_MOD_PREFIX, 4) && (MP_ModMasterOk(key + 4) || MP_ModKeyOk(m_szModFile, bare, key + 4))) isMod = true;   // 3.35.2: the phone's moderator.txt alone is enough
+                    const char* mk = !strncmp(key, MP_MOD_PREFIX, 4) ? key + 4 : nullptr;   // 3.35: "MOD:<key>"
+                    if(mk && (MP_ModMasterOk(mk) || MP_ModKeyOk(m_szModFile, bare, mk))) isMod = true;   // 3.35.2: the phone's moderator.txt alone is enough
+                    if(MP_IsModReservedName(bare))
+                    {
+                        if(!isMod)
+                        {
+                            PktReject rj; rj.type = PKT_REJECT; rj.reason = REJECT_NAME_RESERVED; SendRaw(from, &rj, sizeof(rj));
+                            Log("Join refused: \"%s\" is a reserved moderator name (no moderator key)", jn);
+                            if(slot >= 0 && !m_Slots[slot].mod) Drop(slot, LEAVE_KICK);
+                            return;
+                        }
+                        for(int i = 0; i < MP_MAX_PLAYERS; ++i)   // a ghost "[MOD] Trunk" of the same moderator: the new one wins
+                            if(i != slot && m_Slots[i].used && m_Slots[i].mod && MP_IsModReservedName(m_Slots[i].name)) Drop(i, LEAVE_TIMEOUT);
+                    }
+                }
+                if(slot >= 0 && !isAdmin && m_Slots[slot].mod != isMod)   // 3.40.1: the old slot learns the new rank
+                {
+                    Slot& o = m_Slots[slot];
+                    char base[MP_NAME_LEN]; MP_CopyStr(base, o.name, sizeof(base));
+                    if(!strncmp(base, MP_MOD_TAG, 6)) memmove(base, base + 6, strlen(base + 6) + 1);
+                    o.mod = isMod; rankChanged = true;
+                    if(isMod && MP_IsModReservedName(base)) MP_CopyStr(base, MP_MOD_RESERVED_SHOW, sizeof(base));
+                    if(isMod) { char tmp[MP_NAME_LEN]; snprintf(tmp, sizeof(tmp), MP_MOD_TAG "%.17s", base); MP_CopyStr(o.name, tmp, MP_NAME_LEN); }
+                    else MP_CopyStr(o.name, base, MP_NAME_LEN);
+                    Log("%s (id %d): moderator %s", o.name, slot, isMod ? "on (moderator.txt)" : "off");
                 }
             }
             bool fresh = false;
@@ -877,6 +902,7 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
                 s.mod = isMod && !isAdmin;
                 s.owner = m_szOwnerUid[0] && juid[0] && !strcmp(juid, m_szOwnerUid) && !IsDefaultServer() && !IsBcwServer() && !IsMw3Server() && !IsRpServer();   // 3.39
                 s.hkLastCmd = 0;
+                if(s.mod && MP_IsModReservedName(s.name)) MP_CopyStr(s.name, MP_MOD_RESERVED_SHOW, MP_NAME_LEN);   // 3.40.1: "trunk" / "TRUNK" -> "Trunk"
                 if(s.mod) { char tmp[MP_NAME_LEN]; snprintf(tmp, sizeof(tmp), MP_MOD_TAG "%.17s", s.name); MP_CopyStr(s.name, tmp, MP_NAME_LEN); Log("%s is a moderator (moderator.txt)", s.name); }
                 if(isAdmin) MP_CopyStr(s.name, MP_ADMIN_TAG MP_ADMIN_NAME, MP_NAME_LEN);   // 2.37: the rank shows on every server (admin powers: default server only)
                 // make the name unique
@@ -952,7 +978,7 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             Mw3OnJoin(slot, fresh);        // 3.23: MW3 state
             RpOnJoin(slot, fresh);         // 3.25: Mega Vil Futuristic
             if(!s.authed) AuthBegin(slot);              // 3.21.6: log in first (the others see you after that)
-            else if(fresh) AnnounceJoin(slot);
+            else if(fresh || rankChanged) AnnounceJoin(slot);   // 3.40.1: everyone sees the new [MOD] tag
             break;
         }
 

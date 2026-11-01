@@ -1,39 +1,45 @@
 {
- "tag_name": "v3.40",
- "name": "MP Multiplayer 3.40",
- "published_at": "2026-10-31",
- "also_supported": "v3.39.3, v3.39.2, v3.39.1, v3.39, v3.37, v3.36.1, v3.36, v3.35.2, v3.35.1, v3.35, v3.34, v3.32, v3.31, v3.30, v3.29, v3.28.2, v3.28.1, v3.28, v3.27, v3.26, v3.25, v3.24, v3.23.6, v3.23.5, v3.23.4, v3.23.3, v3.23.2, v3.23.1, v3.23, v3.22.1, v3.22, v3.21.9, v3.21.8, v3.21.7, v3.21.6, v3.21.5, v3.21.4, v3.21.3, v3.21.2, v3.21.1, v3.21, v3.11.6, v3.11.5, v3.11.4, v3.11.3, v3.11.2, v3.11.1, v3.11, v3.10, v3.04.6",
+ "tag_name": "v3.40.1",
+ "name": "MP Multiplayer 3.40.1",
+ "published_at": "2026-11-01",
+ "also_supported": "v3.40, v3.39.3, v3.39.2, v3.39.1, v3.39.3, v3.39.2, v3.39.1, v3.39, v3.37, v3.36.1, v3.36, v3.35.2, v3.35.1, v3.35, v3.34, v3.32, v3.31, v3.30, v3.29, v3.28.2, v3.28.1, v3.28, v3.27, v3.26, v3.25, v3.24, v3.23.6, v3.23.5, v3.23.4, v3.23.3, v3.23.2, v3.23.1, v3.23, v3.22.1, v3.22, v3.21.9, v3.21.8, v3.21.7, v3.21.6, v3.21.5, v3.21.4, v3.21.3, v3.21.2, v3.21.1, v3.21, v3.11.6, v3.11.5, v3.11.4, v3.11.3, v3.11.2, v3.11.1, v3.11, v3.10, v3.04.6",
  "assets": [
   {
    "name": "bin/libMP32.so",
-   "size": 4697512,
+   "size": 4699920,
    "download_count": 0
   },
   {
    "name": "bin/libMP64.so",
-   "size": 5693392,
+   "size": 5696472,
    "download_count": 0
   },
   {
-   "name": "release/MP-3.40-full.zip",
-   "size": 21221687,
+   "name": "release/MP-3.40.1-full.zip",
+   "size": 21226060,
    "download_count": 0
   },
   {
-   "name": "release/MP-3.40-client.zip",
-   "size": 19537347,
+   "name": "release/MP-3.40.1-client.zip",
+   "size": 19540322,
    "download_count": 0
   },
   {
-   "name": "release/HiveMQ-kit-3.40.zip",
-   "size": 80613,
+   "name": "release/HiveMQ-kit-3.40.1.zip",
+   "size": 80630,
    "download_count": 0
   }
  ],
  "packages": [
   {
-   "tag": "Assets-1-2",
+   "tag": "Assets-1-2-3",
+   "name": "HiveMQ + OpenJDK Java 21 + Android NDK r30 linux + more",
    "assets": [
+    {
+     "name": "android-ndk-r30-linux.zip",
+     "size": 738633529,
+     "download_count": 0
+    },
     {
      "name": "hivemq-4.56.0.zip",
      "size": 761147467,
@@ -42,6 +48,21 @@
     {
      "name": "OpenJDK21U-jdk_x64_linux_hotspot_21.0.13_9.tar.gz",
      "size": 207858352,
+     "download_count": 0
+    },
+    {
+     "name": "open.mp-win-x86.zip",
+     "size": 35597296,
+     "download_count": 0
+    },
+    {
+     "name": "MapAndreas-linux-x86.zip",
+     "size": 33600770,
+     "download_count": 0
+    },
+    {
+     "name": "YSI-Includes.zip",
+     "size": 3502627,
      "download_count": 0
     }
    ]

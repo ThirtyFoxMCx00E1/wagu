@@ -1,0 +1,41 @@
+# 3.40.1: live "players online" card + badges for the README.
+# Every 10 minutes: listen to the MP lobby (MQTT, the same topic the game and the website read),
+# draw players.svg and the shields.io badge files, and force-push them to the `live-status` branch
+# (one commit, so main's history stays clean). README images point at that branch.
+name: live-status
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: live-status
+  cancel-in-progress: true
+jobs:
+  status:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: tools/lobby_status.py
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install --quiet paho-mqtt
+      - run: python3 tools/lobby_status.py out 20
+      - name: Push to live-status
+        run: |
+          cd out
+          cat > README.md <<'MD'
+          Live MP lobby status, made every 10 minutes by `.github/workflows/live-status.yml` on main.
+          Files: players.svg (README card), players.json / servers.json / discord.json (shields.io endpoint badges), status.json.
+          MD
+          git init -q -b live-status
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -qm "live status $(date -u +%Y-%m-%dT%H:%MZ)"
+          git push -qf "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" live-status
