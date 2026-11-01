@@ -200,6 +200,14 @@
       p('m', '  Debian 12 (no sudo / curl): log in as root, then  wget -qO- https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/vps-setup.sh | bash -s europe');
       p('m', '  Debian 12 installer (677 MB): cdimage.debian.org/cdimage/archive/12.15.0/amd64/iso-cd/');
     },
+    'git-helper': function () {   // 3.40.2: Git helper - removes only Claude from a repo's history
+      var G = 'curl -fsSL https://thirtyfoxmcx00e1.github.io/wagu/git-helper.sh | bash -s -- ';
+      p('m', 'Git helper: removes ONLY Claude (author + Co-authored-by lines) from a GitHub repo, everything else stays.');
+      print('  1. <span class="g">' + esc(G + 'scan ThirtyFoxMCx00E1/REPO') + '</span>  <span class="m">which commits mention Claude</span>');
+      print('  2. <span class="g">' + esc(G + 'clean ThirtyFoxMCx00E1/REPO') + '</span>  <span class="m">dry run + backup .bundle</span>');
+      print('  3. <span class="g">' + esc(G + 'clean ThirtyFoxMCx00E1/REPO --push') + '</span>  <span class="m">rewrite + force-push</span>');
+      p('m', '  run it in Termux (pkg install gh git) after gh auth login. wagu itself is already clean.');
+    },
     'clear': function () { out.innerHTML = ''; }
   };
   // what the bot types -> which command runs
@@ -210,7 +218,7 @@
     'cat $MP_DATA/broker.txt': 'cat-broker',
     'cat $MP_DATA/regions.txt': 'cat-regions',
     'mp-server status': 'status', 'mp-server list': 'list', 'mp-server log': 'log', 'mp-server doctor': 'doctor', 'mp-server vps-update': 'vps-update', 'mp-server vps-setup': 'vps-setup', 'curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/update.sh | sudo bash': 'vps-update',
-    'ping -c 2 $BROKERS': 'ping', 'curl -s $MP/release.json': 'release', 'clear': 'clear'
+    'git-helper': 'git-helper', 'git-helper scan': 'git-helper', 'ping -c 2 $BROKERS': 'ping', 'curl -s $MP/release.json': 'release', 'clear': 'clear'
   };
   function run(line) {
     print('<span class="g">~ $</span> ' + esc(line));

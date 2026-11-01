@@ -85,7 +85,7 @@ Prebuilt binaries:
 
 | Download | What | Size |
 |---|---|---|
-| [**MP 3.40.1 client**](https://github.com/ThirtyFoxMCx00E1/wagu/releases/latest) | The mod for your phone (libMP32.so + libMP64.so, MP folder, voice APK) | ~19 MB |
+| [**MP 3.40.2 client**](https://github.com/ThirtyFoxMCx00E1/wagu/releases/latest) | The mod for your phone (libMP32.so + libMP64.so, MP folder, voice APK) | ~19 MB |
 | [**MP full**](https://github.com/ThirtyFoxMCx00E1/wagu/releases/latest) | Client + 24/7 server + HiveMQ kit | ~21 MB |
 | [All versions / changelogs](https://thirtyfoxmcx00e1.github.io/wagu/#versions) | Every release with its changelog on the website | |
 
@@ -154,6 +154,9 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **3.40.2**: **Home Kit: /setup houses stand on the ground.** Picking a building with < > in `/setup <home_name>` put the house model with its middle at the ground, so half of it (the ground floor) was under the ground or under water. The house is now raised by the model's real bottom (read from the game's model size) and stands on the lowest ground under the slot, so you walk in on the ground floor.
+  - `/hometp <home_name>`: if the house model and its floor load a moment after you arrive and you end up under it, you are put back on the door step (6 s guard).
+  - Web Termux console: new `git-helper` command (Git helper that removes only Claude from a repo's history; wagu is already clean).
 - **3.40.1**: **Trunk = the reserved moderator name, and moderator.txt fixed.** The name **Trunk** (also TRUNK, trunk, T_r_u_n_k, 7runk, "[MOD] Trunk"...) is now reserved for moderators like SENJI is for the admin: only a phone whose `moderator.txt` holds an MP moderator key can use it. Everyone else gets "Reserved (moderator)" in the name box, the join is blocked on the phone and every 3.40.1 server refuses it (REJECT_NAME_RESERVED). With the key the player is **[MOD] Trunk** on every MP server: the [MOD] name tag over the head, [MOD] Trunk in chat, in the kill feed and in the player list, and the moderator permissions (kick / mute / freeze / cheats on-off / staff-only hosting) on the 4 default servers.
   - Fixed: moderator.txt sometimes did nothing on the default server. The moderator check only ran when the phone got a brand-new slot - a re-join from a phone that still had its old slot (game restarted, Wi-Fi to mobile data, 24/7 bot / host broker relay) kept the old rank without [MOD]. Now every join packet is checked again, the old slot gets the [MOD] tag and all players see it right away.
   - Fixed: a key with a space, CR or LF around it (Notepad / Termux editors) no longer fails. A server owner's moderator.txt line `Trunk MOD:<key>` works too. A second MP moderator key is accepted (both keys work).

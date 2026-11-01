@@ -7,6 +7,7 @@
 #include <mod/amlmod.h>
 #include <mod/logger.h>
 #include <set>
+#include <map>
 
 DEFOPCODE(0247, REQUEST_MODEL_304, i);
 DEFOPCODE(0248, HAS_MODEL_LOADED_304, i);
@@ -20,6 +21,10 @@ DEFOPCODE(0453, SET_OBJECT_ROTATION_304, ifff);
 DEFOPCODE(0110, CLEAR_WANTED_LEVEL_304, i);
 DEFOPCODE(01F0, SET_MAX_WANTED_LEVEL_304, i);
 DEFOPCODE(0249, MARK_MODEL_AS_NO_LONGER_NEEDED_304, i);
+DEFOPCODE(07E4, GET_MODEL_DIMENSIONS_304, ivvvvvv);   // 3.40.2
+#ifndef F2U
+#define F2U(f) ((uint32_t*)&(f))
+#endif
 
 // 3.34: every object MP makes is remembered, so a save load can free them all first. The two
 // crash logs in BugReports/ (CPools::LoadObjectPool / CFileLoader::LoadObjectInstance -> CPlaceable /
@@ -106,6 +111,19 @@ void Game::PlaceMapObject(int obj, const Vec3& p, float rx, float ry, float rz)
     CALLSCM(SET_OBJECT_COORDINATES_304, obj, p.x, p.y, p.z);
     CALLSCM(SET_OBJECT_ROTATION_304, obj, rx, ry, rz);
 }
+// 3.40.2: how far below its own origin a model goes (the bottom of its bounding box, <= 0).
+// GTA SA buildings have the origin in the middle of the model, so placing one at the ground
+// put half of it under the ground. Only valid while the model is loaded. 1 = unknown.
+float Game::ModelBottom(int model)
+{
+    static std::map<int, float> s_cache;
+    auto it = s_cache.find(model); if(it != s_cache.end()) return it->second;
+    if(!IsReady() || model <= 0 || model >= 20000 || !CALLSCM(HAS_MODEL_LOADED_304, model)) return 1.0f;
+    float a = 0, b = 0, c = 0, d = 0, e = 0, f = 0;
+    CALLSCM(GET_MODEL_DIMENSIONS_304, model, F2U(a), F2U(b), F2U(c), F2U(d), F2U(e), F2U(f));
+    if(!(c == c) || c < -200.0f || c > 50.0f || !(f > c)) return 1.0f;
+    s_cache[model] = c; return c;
+}
 int Game::CreateMapObject(int model, const Vec3& p, float rx, float ry, float rz)
 {
     if(!IsReady() || model <= 0 || model >= 20000) return 0;
@@ -115,6 +133,7 @@ int Game::CreateMapObject(int model, const Vec3& p, float rx, float ry, float rz
     if(!CALLSCM(HAS_MODEL_LOADED_304, model)) { CALLSCM(REQUEST_MODEL_304, model); return 0; }
     uint32_t obj = 0;
     CALLSCM(CREATE_OBJECT_304, model, p.x, p.y, p.z, &obj);
+    ModelBottom(model);   // 3.40.2: read the size while it is surely loaded (cached)
     CALLSCM(MARK_MODEL_AS_NO_LONGER_NEEDED_304, model);
     if(!obj || !CALLSCM(DOES_OBJECT_EXIST_304, (int)obj)) return -1;
     CALLSCM(SET_OBJECT_COORDINATES_304, (int)obj, p.x, p.y, p.z);   // exact z (no ground snap)

@@ -26,6 +26,7 @@ struct HkHomeC
 static std::map<uint16_t, HkHomeC> s_Hk;
 static std::vector<uint16_t> s_HkWant;     // ids to ask for (HC_GET)
 static uint64_t s_nHkWantAt = 0, s_nHkStreamAt = 0;
+static struct { uint16_t id = 0; Vec3 at{}; float hd = 0; uint64_t until = 0; } s_HkTpGuard;   // 3.40.2
 static uint16_t s_nHkInside = 0;           // the house whose interior I am in
 static Vec3     s_HkOutPos = { 0, 0, 0 };
 static uint16_t s_nHkDoorShown = 0;        // door dialog shown for this house (until I walk away)
@@ -189,7 +190,24 @@ static void HkReconcile(HkHomeC& c, bool near, bool inside, int& budget)
         --budget;
         Vec3 p = HkCentre(c.h);
         int h = Game::CreateMapObject(c.h.prefab, p, 0, 0, c.h.heading);
-        if(h > 0) { c.prefabInst = h; c.prefabModel = c.h.prefab; memcpy(c.prefabAt, at, sizeof(at)); }
+        if(h > 0)
+        {   // 3.40.2: stand the building ON the ground (its origin is in the middle of the model:
+            // at the ground it was half under it). Lowest ground under the slot = the floor level.
+            const float bot = Game::ModelBottom(c.h.prefab);
+            if(bot < 0.0f)
+            {
+                float lo = c.h.z;
+                for(int k = 0; k < 4; ++k)
+                {
+                    float wx, wy; HkLocalToWorld(c.h.x, c.h.y, c.h.heading, (k & 1) ? c.h.w * HK_TILE : 0.0f, (k & 2) ? c.h.h * HK_TILE : 0.0f, wx, wy);
+                    float g = Game::GroundZBelow(wx, wy, c.h.z + 3.0f);
+                    if(g > -999.0f && g > c.h.z - 4.0f && g < lo) lo = g;
+                }
+                p.z = lo - bot - 0.05f;
+                Game::PlaceMapObject(h, p, 0, 0, c.h.heading);
+            }
+            c.prefabInst = h; c.prefabModel = c.h.prefab; memcpy(c.prefabAt, at, sizeof(at));
+        }
     }
 }
 
@@ -375,6 +393,18 @@ static void HkProcess(int ped, uint64_t now)
             const bool near = !s_nHkInside && d < (c.inst.empty() && !c.prefabInst ? 180.0f : 220.0f);
             if(!near && !inside && c.prefabInst == 0) { bool any = false; for(int i : c.inst) if(i > 0) { any = true; break; } if(!any) continue; }
             HkReconcile(c, near, inside, budget);
+        }
+    }
+    // 3.40.2: after /hometp the house model + its floor stream in a moment later: if that left me
+    // under the floor / in the ground, put me back on the door step (above the ground found there)
+    if(s_HkTpGuard.until)
+    {
+        if(now > s_HkTpGuard.until || s_nHkInside || Game::IsCharInAnyCar(ped)) s_HkTpGuard.until = 0;
+        else if(myDrawPos.z < s_HkTpGuard.at.z - 1.8f)
+        {
+            Vec3 a = s_HkTpGuard.at; float g = Game::GroundZBelow(a.x, a.y, a.z + 3.0f);
+            a.z = (g > -999.0f && g > a.z - 3.0f) ? g + 1.0f : a.z + 0.4f;
+            Game::Teleport(ped, a, s_HkTpGuard.hd);
         }
     }
     // the door markers: walk in -> the house dialog
@@ -919,6 +949,7 @@ static bool HkCommand(const char* cmd, const char* arg)
         Vec3 d = HkDoor(h->h); float r = (h->h.heading + 180.0f) * 0.0174533f; d.x += -sinf(r) * 2.0f; d.y += cosf(r) * 2.0f;
         if(s_nHkInside) { s_nHkInside = 0; Game::EnterArea(0); }
         Game::TeleportGround(ped, d, h->h.heading + 180.0f); s_nHkDoorShown = h->h.id;
+        s_HkTpGuard.id = h->h.id; s_HkTpGuard.at = d; s_HkTpGuard.hd = h->h.heading + 180.0f; s_HkTpGuard.until = now + 6000;   // 3.40.2
         SysMsg(COL_GREEN, "Teleported to %s.", h->h.name);
         return true;
     }

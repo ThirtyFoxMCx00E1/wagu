@@ -334,6 +334,7 @@ namespace Game
     bool  WorldObjectExists(int obj);
     void  MoveWorldObject(int obj, const Vec3& p, float spinDeg);
     int   CreateMapObject(int model, const Vec3& p, float rx, float ry, float rz);   // 3.23: solid map object (0 = loading, -1 = no room)
+    float ModelBottom(int model);   // 3.40.2: bounding box min z (<= 0), 1 = unknown (model must be loaded)
     void  PlaceMapObject(int obj, const Vec3& p, float rx, float ry, float rz);   // 3.39: Home Kit editor (move / turn)
     void  InitMapObjects(void* gameHandle);   // 3.23.2: object pool reading
     int   FreeObjectSlots();                  // 3.23.2: free slots in the game's object pool (-1 = unknown)
