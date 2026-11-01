@@ -3,7 +3,7 @@
 // Standalone MP server (Linux / Windows / Termux). Same core as the in-game "Host LAN server".
 //   g++ -O2 -std=c++17 -pthread -I../src mp_server.cpp ../src/net/server.cpp ../src/net/lan.cpp ../src/net/online.cpp -o mp_server
 //   ./mp_server [port] [server name] [max players 1-100] [region: Asia|Europe|NA|Oceania] [--persistent] [--no-online]
-//               [--broker-file broker.txt] [--password pw] [--admin-hash sha256hex] [--no-safezones] [--auth]
+//               [--broker-file broker.txt] [--password pw] [--admin-hash sha256hex] [--no-safezones] [--auth] [--anticheat [hexmask]] [--no-anticheat]
 //               3.04: Brief Case War 24/7: ./mp_server 1930 "Brief Case War" 20 Asia --persistent [--bcw-min 20]
 //               3.25: Mega Vil Futuristic (Roleplay) 24/7: ./mp_server 1932 "Mega Vil Futuristic" 250 Asia --persistent [--rp-file rp_citizens.txt]
 //               3.23: MW3 24/7: ./mp_server 1931 "Call Of Duty: Modern Warfare 3" 64 Asia --persistent [--mw3-file mw3_stats.txt]
@@ -92,6 +92,18 @@ int main(int argc, char** argv)
     // 3.21.6: --auth = login system (Discord verification + account) on a custom server too.
     // The default server and Brief Case War always have it.
     for(int i = 1; i < argc; ++i) if(!strcasecmp(argv[i], "--auth")) server.SetAuth(true);
+    // 3.50: --anticheat [checks] = Nex-AC anti-cheat on a custom server (all checks, or a hex mask of
+    // eAcCheck bits); --no-anticheat = off. Always on for the default, Mega Vil, Brief Case War and MW3.
+    for(int i = 1; i < argc; ++i)
+    {
+        if(!strcasecmp(argv[i], "--anticheat"))
+        {
+            uint64_t mask = AC_ALL_MASK;
+            if(i + 1 < argc && argv[i + 1][0] != '-') mask = strtoull(argv[i + 1], nullptr, 16);
+            server.SetAntiCheat(true, mask);
+        }
+        else if(!strcasecmp(argv[i], "--no-anticheat")) server.SetAntiCheat(false);
+    }
     for(int i = 1; i + 1 < argc; ++i) if(!strcasecmp(argv[i], "--password")) server.SetPassword(argv[i + 1]);   // 2.19 (max 16 chars)
     if(!server.Start((uint16_t)port, name, nullptr, maxPlayers, region)) return 1;
     server.SetIcon(icon);   // 2.24

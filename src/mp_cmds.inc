@@ -245,6 +245,7 @@ static bool HandleCommand(const char* text)
     cmd[n] = 0;
     while(*arg == ' ') ++arg;
     if(GatesCommand(cmd, arg)) return true;   // 3.04.2: /gatepos, /gates
+    if(TdeCommand(cmd, arg)) return true;     // 3.50: /tde Textdraw Editor
     if(RulesCommand(cmd, arg) || SrvSettingsCommand(cmd, arg) || ProgCommand(cmd, arg) || MvCommand(cmd, arg) || HkCommand(cmd, arg) || NeedsCommand(cmd, arg) || Modes2Command(cmd, arg)) return true;   // 3.39
     if(Mw3Command(cmd, arg)) return true;   // 3.23: MW3 commands (others blocked)
     if(RpCommand(cmd, arg)) return true;    // 3.25: Mega Vil Futuristic RP commands (others blocked)
@@ -992,6 +993,7 @@ static void Render219(void*)
     RenderMarkers();           // 3.21: red checkpoint beams
     RenderGates();             // 3.04.2: gate fade (over everything)
     RenderStats();             // 3.21.6: /stats  /char
+    TdeRender();               // 3.50: /tde Textdraw Editor
     RenderAuth();              // 3.21.6: login screens (over the join view)
     RenderLoadWindow();        // 3.40: Please Wait, Loading Server Data...
 }

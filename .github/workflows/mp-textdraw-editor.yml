@@ -1,0 +1,64 @@
+name: MP Textdraw Editor
+# 3.50: builds the MP Textdraw Editor APK (textdraweditor/, no Gradle: aapt2 + javac + d8 + apksigner).
+# Signing key: repository secrets MPTDE_KEYSTORE (base64 of a .jks / .p12) + MPTDE_KEYPASS. Without
+# them a new key is made for that run (fine for testing; an update then needs an uninstall first).
+# The APK is an artifact of the run; with "release" set it is also added to that GitHub release.
+on:
+  workflow_dispatch:
+    inputs:
+      release:
+        description: "Also attach the APK to this release tag (e.g. v3.50, empty = no)"
+        required: false
+        default: ""
+  push:
+    paths:
+      - 'textdraweditor/**'
+      - '.github/workflows/mp-textdraw-editor.yml'
+permissions:
+  contents: write
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Android SDK parts
+        run: |
+          set -e
+          SM=$(ls -d $ANDROID_HOME/cmdline-tools/*/bin | tail -1)/sdkmanager
+          yes | $SM --licenses > /dev/null || true
+          $SM "platforms;android-34" "build-tools;34.0.0" > /dev/null
+      - name: Signing key
+        env:
+          KS_B64: ${{ secrets.MPTDE_KEYSTORE }}
+          KS_PASS: ${{ secrets.MPTDE_KEYPASS }}
+        run: |
+          set -e
+          if [ -n "$KS_B64" ] && [ -n "$KS_PASS" ]; then
+            echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/mptde.jks"; echo "KEYPASS=$KS_PASS" >> "$GITHUB_ENV"
+          else
+            echo "::warning::No MPTDE_KEYSTORE secret: signing with a new key made for this run"
+            P=$(openssl rand -hex 16)
+            keytool -genkeypair -keystore "$RUNNER_TEMP/mptde.jks" -storepass "$P" -keypass "$P" -alias mptde \
+              -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=MP Textdraw Editor, O=ThirtyFox" > /dev/null
+            echo "::add-mask::$P"; echo "KEYPASS=$P" >> "$GITHUB_ENV"
+          fi
+          echo "KEYSTORE=$RUNNER_TEMP/mptde.jks" >> "$GITHUB_ENV"
+      - name: Build
+        run: |
+          SDK=$ANDROID_HOME bash textdraweditor/build.sh
+          mv textdraweditor/MP-Textdraw-Editor.apk .
+          unzip -l MP-Textdraw-Editor.apk | grep -E "classes.dex|assets/www/editor.html"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MP-Textdraw-Editor
+          path: MP-Textdraw-Editor.apk
+          if-no-files-found: error
+      - name: Attach to the release
+        if: inputs.release != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ inputs.release }}" MP-Textdraw-Editor.apk --clobber

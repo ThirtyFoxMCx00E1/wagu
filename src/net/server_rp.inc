@@ -284,6 +284,23 @@ void MPServer::RpEv(int slot, uint8_t ev, uint8_t a, uint8_t b, uint8_t who, int
     e.type = PKT_RP_EVENT; e.ev = ev; e.a = a; e.b = b; e.who = who; e.val = val;
     if(f) memcpy(e.fval, f, sizeof(e.fval));
     if(text) MP_CopyStr(e.text, text, sizeof(e.text));
+    // 3.50: the server moves / heals / jails / pays the player itself: tell the anti-cheat
+    for(int i = slot >= 0 ? slot : 0; i < (slot >= 0 ? slot + 1 : MP_MAX_PLAYERS); ++i)
+    {
+        if(!m_Slots[i].used) continue;
+        switch(ev)
+        {
+            case RPV_TELE:    if(f) AcServerTeleport(i, f); else AcGrace(i, 10000); break;
+            case RPV_JETPACK: AcServerJetpack(i); break;
+            case RPV_HEAL:    AcServerHeal(i); break;
+            case RPV_JAIL:    AcServerFreeze(i, val > 0); AcGrace(i, 10000); break;
+            case RPV_CUFF:    AcServerFreeze(i, a != 0); break;
+            case RPV_VEHICLE: case RPV_REPAIR: AcGrace(i, 5000); break;
+            case RPV_PAY:     AcServerMoney(i); break;
+            case RPV_WEAPON:  m_Ac[i].magN = 0; break;
+            default: break;
+        }
+    }
     if(slot >= 0) SendTo(slot, &e, sizeof(e)); else Broadcast(&e, sizeof(e));
 }
 

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width,initial-scale=1">
+	<title>Reset Password - MP Textdraw Editor</title>
+	<link href="css/bootstrap.min.css" rel="stylesheet">
+	<link href="css/app.css" rel="stylesheet">
+</head>
+<body class="auth">
+	<section class="wrap">
+		<div class="card shadow-lg">
+			<div class="card-body">
+				<h1 class="fs-4 card-title fw-bold mb-3">Reset Password</h1>
+				<form class="needs-validation" novalidate autocomplete="off">
+					<div class="mb-2"><span class="badge bg-success" id="who"></span></div>
+					<div class="mb-3">
+						<label class="mb-2 text-muted" for="password">New Password</label>
+						<input id="password" type="password" class="form-control" required minlength="6" autofocus>
+						<div class="invalid-feedback">At least 6 characters</div>
+					</div>
+					<div class="mb-3">
+						<label class="mb-2 text-muted" for="password2">Confirm Password</label>
+						<input id="password2" type="password" class="form-control" required>
+						<div class="invalid-feedback">The passwords are not the same</div>
+					</div>
+					<div class="d-flex align-items-center">
+						<div class="form-check">
+							<input type="checkbox" id="logout" class="form-check-input" checked>
+							<label for="logout" class="form-check-label">Log out all devices</label>
+						</div>
+						<button type="submit" class="btn btn-primary ms-auto">Reset Password</button>
+					</div>
+					<div id="status" class="status mt-2"></div>
+				</form>
+			</div>
+			<div class="card-footer py-3 border-0">
+				<div class="text-center"><a href="index.html" class="text-dark">Back to Login</a></div>
+			</div>
+		</div>
+		<div class="side d-none d-md-block">
+			<div class="brand"><img src="img/logo.png" alt="MP"><span>MP Textdraw Editor</span></div>
+			<h2>Design textdraws for your MP server.</h2>
+			<p>Same tools as the in-game /tde editor. Save a .mptd file, then import it in MP Launcher &gt; Add server &gt; Plugins &gt; Textdraw.</p>
+		</div>
+	</section>
+	<script src="js/mpauth.js"></script>
+	<script src="js/app.js"></script>
+	<script>
+	(function () {
+		var A = MPApp, r = null, t = 0;
+		try { r = JSON.parse(sessionStorage.getItem('mptde_reset') || 'null'); } catch (e) {}
+		if (!r || !r.vtoken) { location.replace('forgot.html'); return; }
+		A.$('who').textContent = 'Account ' + r.user + (r.dname ? ' (Discord ' + r.dname + ')' : '');
+		var c = A.connect({ reset: function (a) {
+			clearTimeout(t); A.busy(false);
+			if (a.ok === '1') { sessionStorage.removeItem('mptde_reset'); A.status('Password changed. Log in with the new one.', 'ok'); setTimeout(function () { location.replace('index.html'); }, 2000); }
+			else A.status(a.err || 'The password was not changed.', 'bad');
+		} });
+		var p2 = A.$('password2');
+		p2.oninput = function () { p2.setCustomValidity(p2.value === A.$('password').value ? '' : 'diff'); };
+		A.forms(function () {
+			A.busy(true); A.status('Changing the password...');
+			c.send({ op: 'reset', vtoken: r.vtoken, user: r.user, pass: A.$('password').value, logout: A.$('logout').checked ? '1' : '0' });
+			t = setTimeout(function () { A.busy(false); A.status('The account server did not answer. Ask the staff in the MP Discord to reset it.', 'bad'); }, 20000);
+		});
+	})();
+	</script>
+</body>
+</html>

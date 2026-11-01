@@ -11,6 +11,7 @@
 #include "bcw.h"
 #include "mw3.h"   // 3.23
 #include "rp.h"    // 3.25: Mega Vil Futuristic
+#include "anticheat.h"   // 3.50
 #include <string>
 #include <map>
 
@@ -69,6 +70,9 @@ public:
     void SetRpFile(const char* path);           // 3.25: citizens (money, bank, job, house...) + house owners (default rp_citizens.txt)
     void SetProgressFile(const char* path);     // 3.39.1: saved progress of every player (default progress.txt)
     void SetHomeFile(const char* path);         // 3.39: Home Kit houses (default homes.txt)
+    // 3.50: Plugins > Textdraw (.mptd files from the MP Textdraw Editor): shown to every player
+    // (ids 64..255, max 192; phones before 3.50 ignore ids >= 64). Live: joined players get them too.
+    void SetPluginTextdraws(const std::vector<PktTextDraw>& tds);
     void SetRules(bool on, const char* title, const char* const lines[10]);   // 3.39: rules window (custom servers)
     void SetOwnerUid(const char* uid) { std::lock_guard<std::mutex> lk(m_Mutex); MP_CopyStr(m_szOwnerUid, uid ? uid : "", sizeof(m_szOwnerUid)); }   // 3.39: the host phone = the owner
     bool HomesOn() const;                       // 3.39: GM_HOME on (always on Mega Vil Futuristic)
@@ -83,6 +87,11 @@ public:
 #else
     bool AuthOn() const { return IsDefaultServer() || IsBcwServer() || IsMw3Server() || IsRpServer() || m_bAuthCustom; }
 #endif
+    // 3.50: anti-cheat (Nex-AC checks). Always on (every check) on the default server, Mega Vil
+    // Futuristic, Brief Case War and MW3. Custom servers: Add server -> Gamemode -> Anti-cheat.
+    void SetAntiCheat(bool on, uint64_t mask = AC_ALL_MASK) { m_bAcCustom = on; m_nAcMask = mask & AC_ALL_MASK; }
+    bool AntiCheatOn() const { return AcIsOn(); }
+    uint32_t AntiCheatEvents() const { return m_nAcEvents.load(); }
     bool AccountOf(int id, char* out, size_t n);   // the logged in account of player id (false = none)
     // 3.04.6: refuse + track old MP versions
     void SetMinBuild(uint32_t b) { m_nMinBuild = b; }
@@ -249,6 +258,7 @@ private:
     char    m_szMotdCaption[64] = {0};
     char    m_szMotd[MP_DIALOG_INFO_LEN] = {0};
     char    m_szBanner[128] = {0};
+    std::vector<PktTextDraw> m_PluginTd;   // 3.50 (guarded by m_Mutex)
     char    m_szTurfFile[256] = {0};
     struct NetPickup { bool used; uint16_t uid; uint8_t weapon; uint16_t ammo; float pos[3]; uint64_t born; };
     NetPickup m_Pickups[MP_MAX_PICKUPS];
@@ -424,6 +434,63 @@ private:
     int  RpFindNumber(int32_t number) const;
     int  RpTarget(int slot, int id, float range, const char* what);
     int  RpCallPartner(int slot) const { return (slot >= 0 && slot < MP_MAX_PLAYERS && m_Rp[slot].callWith < MP_MAX_PLAYERS) ? m_Rp[slot].callWith : -1; }
+    // ---- 3.50: anti-cheat (server_ac.inc), m_Mutex held ----
+    #define AC_FLOOD_TYPES 12
+    struct AcSlot
+    {
+        uint64_t joinAt, graceUntil, firstSyncAt, lastSyncAt, deadAt;
+        int      lastSeat;
+        bool     hasAnchor, hasZ;
+        uint8_t  flags[AC_COUNT]; uint64_t flagAt[AC_COUNT];
+        uint64_t floodAt[AC_FLOOD_TYPES]; uint8_t floodN[AC_FLOOD_TYPES];
+        uint8_t  lastFlags; int lastInterior;
+        uint64_t seatWin; int seatN;
+        uint32_t clkBase, clkPrev; uint64_t clkBaseNow, clkPrevNow;
+        bool     pauseAnchor; float pausePos[3];
+        int      styleSkin; bool styleSeen;
+        uint64_t healGrace, gmAt; uint16_t gmHp; float gmAmt;
+        int      health, armour;
+        bool     jetOk; uint64_t invisSince;
+        bool     frozen, freezeAnchor; uint64_t frozenAt; float freezePos[3];
+        bool     tpPending; uint64_t tpAt; float tpPos[3];
+        float    vel[3]; uint64_t velAt;
+        float    anchor[3]; uint64_t anchorAt; int overN;
+        float    zMin; uint64_t zAt;
+        uint8_t  shotWeapon; uint64_t shotWin; int shotN, magN; uint64_t lastShot;
+        uint8_t  dmgHead; int hitBy[4]; uint64_t hitAt[4]; uint8_t hitHead;
+        uint16_t modsModel; uint16_t mods[17];
+        bool     dlgOpen; uint16_t dlgId;
+        int      pingBad;
+        int32_t  money; uint64_t moneyAt, moneyGrace; bool hasMoney;
+    };
+    struct AcAddr { uint32_t ip; uint16_t port; uint64_t seenAt, winAt; uint32_t pkts; uint64_t blockUntil; int keyFails; uint64_t keyWin, keyBlockUntil; int joins; uint64_t joinWin; };
+    struct AcUid  { char uid[MP_UID_LEN + 1]; uint64_t winAt; int n; uint64_t blockUntil; };
+    AcSlot               m_Ac[MP_MAX_PLAYERS];
+    std::vector<AcAddr>  m_AcAddrs;
+    std::vector<AcUid>   m_AcUids;
+    std::atomic<bool>    m_bAcCustom{false};
+    std::atomic<uint64_t> m_nAcMask{AC_ALL_MASK};
+    std::atomic<uint32_t> m_nAcEvents{0};
+    bool AcIsOn() const; uint64_t AcMask() const; bool AcCheck(int c) const; bool AcExempt(int slot) const;
+    void AcReset(int slot); void AcGrace(int slot, uint32_t ms); void AcStaffNotice(const char* text);
+    bool AcFlag(int slot, int check, int kickAt, const char* fmt, ...);
+    AcAddr* AcAddrOf(const sockaddr_in& from, bool portToo); bool AcBlocked(const sockaddr_in& from);
+    bool AcPacket(const sockaddr_in& from, int slot, const uint8_t* data, int len);
+    bool AcJoin(const sockaddr_in& from, const char* name, const char* uid, uint32_t build, int proto);
+    void AcKeyFail(const sockaddr_in& from, const char* what); bool AcKeyBlocked(const sockaddr_in& from);
+    bool AcSync(int slot, const PktSync& p, const uint8_t* raw, int rawLen);
+    bool AcShot(int slot, const PktShot& m);
+    bool AcDamage(int from, const PktDamage& d);
+    void AcDeath(int victim, PktDeath& d);
+    bool AcPickup(int slot, const float pos[3]);
+    bool AcJack(int slot, int victim);
+    bool AcVehState(int slot, const PktVehState& v);
+    bool AcDialog(int slot, PktDialogResp& r); void AcDialogShown(int slot, uint16_t id);
+    void AcPing(int slot, int ping); void AcPause(int slot, bool paused);
+    bool AcMoney(int slot, int32_t money);
+    void AcServerTeleport(int slot, const float pos[3]); void AcServerFreeze(int slot, bool on);
+    void AcServerHeal(int slot); void AcServerMoney(int slot); void AcServerJetpack(int slot);
+    void AcTick(uint64_t now);
     void Log(const char* fmt, ...);
     void FillWorld(PktWorld& w);
 

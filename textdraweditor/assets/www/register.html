@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width,initial-scale=1">
+	<title>Register - MP Textdraw Editor</title>
+	<link href="css/bootstrap.min.css" rel="stylesheet">
+	<link href="css/app.css" rel="stylesheet">
+</head>
+<body class="auth">
+	<section class="wrap">
+		<div class="card shadow-lg">
+			<div class="card-body">
+				<h1 class="fs-4 card-title fw-bold mb-3">Register</h1>
+				<div id="step1">
+					<p class="text-muted mb-2">1. Join the <a href="#" onclick="MPApp.openUrl('https://discord.gg/tbsDknk34y');return false">MP Discord server</a>.<br>2. In the #verification channel type:</p>
+					<div id="code" class="code mb-2">/gen ........</div>
+					<div class="d-flex"><button type="button" class="btn btn-outline-secondary btn-sm" id="again">New code</button>
+					<button type="button" class="btn btn-primary btn-sm ms-auto" onclick="MPApp.openUrl('https://discord.gg/tbsDknk34y')">Open Discord</button></div>
+				</div>
+				<form id="step2" class="needs-validation d-none" novalidate autocomplete="off">
+					<div class="mb-2"><span class="badge bg-success" id="dname"></span></div>
+					<div class="mb-3">
+						<label class="mb-2 text-muted" for="user">Account name</label>
+						<input id="user" type="text" class="form-control" required minlength="3" maxlength="24" pattern="[A-Za-z0-9_\[\].$=@()]+">
+						<div class="invalid-feedback">3-24 letters, digits or _</div>
+					</div>
+					<div class="row">
+						<div class="col mb-3">
+							<label class="mb-2 text-muted" for="password">Password</label>
+							<input id="password" type="password" class="form-control" required minlength="6">
+							<div class="invalid-feedback">At least 6 characters</div>
+						</div>
+						<div class="col mb-3">
+							<label class="mb-2 text-muted" for="password2">Repeat</label>
+							<input id="password2" type="password" class="form-control" required>
+							<div class="invalid-feedback">The passwords are not the same</div>
+						</div>
+					</div>
+					<div class="row">
+						<div class="col mb-3">
+							<label class="mb-2 text-muted" for="gender">Gender</label>
+							<select id="gender" class="form-select"><option value="male">Male</option><option value="female">Female</option></select>
+						</div>
+						<div class="col mb-3">
+							<label class="mb-2 text-muted" for="age">Age</label>
+							<input id="age" type="number" class="form-control" required min="13" max="99" value="18">
+							<div class="invalid-feedback">13-99</div>
+						</div>
+					</div>
+					<p class="form-text text-muted mb-2">The same account works in the game on every MP server.</p>
+					<div class="d-flex"><button type="submit" class="btn btn-primary ms-auto">Register</button></div>
+				</form>
+				<div id="status" class="status mt-2"></div>
+			</div>
+			<div class="card-footer py-3 border-0">
+				<div class="text-center">Already have an account? <a href="index.html" class="text-dark">Login</a></div>
+			</div>
+		</div>
+		<div class="side d-none d-md-block">
+			<div class="brand"><img src="img/logo.png" alt="MP"><span>MP Textdraw Editor</span></div>
+			<h2>Design textdraws for your MP server.</h2>
+			<p>Same tools as the in-game /tde editor. Save a .mptd file, then import it in MP Launcher &gt; Add server &gt; Plugins &gt; Textdraw.</p>
+		</div>
+	</section>
+	<script src="js/mpauth.js"></script>
+	<script src="js/app.js"></script>
+	<script>
+	(function () {
+		var A = MPApp, vtoken = '', flow;
+		var c = A.connect({
+			link: function () { if (!flow) { flow = A.codeFlow(c, verified); A.$('again').onclick = flow.again; } },
+			gen: function (a) { flow && flow.gen(a); },
+			verified: function (a) { flow && flow.verified(a); },
+			signup: function (a) {
+				A.busy(false);
+				if (a.ok === '1') { A.setUser(a.user || A.$('user').value.trim()); A.status('Account created.', 'ok'); location.replace('editor.html'); }
+				else A.status(a.err || 'Sign up failed.', 'bad');
+			}
+		});
+		function verified(a) {
+			if (a.vtoken === vtoken) return; vtoken = a.vtoken;
+			if (a.has === '1') { A.status('Discord verified (' + (a.dname || '') + '). You already have the account ' + a.user + ': log in.', 'ok');
+				setTimeout(function () { location.replace('index.html'); }, 2500); return; }
+			A.$('step1').classList.add('d-none'); A.$('step2').classList.remove('d-none');
+			A.$('dname').textContent = 'Discord verified: ' + (a.dname || 'ok'); A.status('');
+		}
+		var p2 = A.$('password2');
+		p2.oninput = function () { p2.setCustomValidity(p2.value === A.$('password').value ? '' : 'diff'); };
+		A.forms(function () {
+			A.busy(true); A.status('Creating the account...');
+			c.send({ op: 'signup', vtoken: vtoken, user: A.$('user').value.trim(), pass: A.$('password').value,
+				gender: A.$('gender').value, age: String(A.$('age').value | 0), chal: MPAuth.Client.chal(), srv: A.SRV });
+		});
+	})();
+	</script>
+</body>
+</html>

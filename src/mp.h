@@ -74,6 +74,8 @@ struct MPSettings
     char  hostedPassword[MP_PASSWORD_LEN + 1] = "";   // 2.19: password of the server this phone hosted last
     bool  disableCheats     = false;   // 2.35: host setting: no MP chat cheats + no CLEO menu for everyone
     int   hostModes         = 0;       // 3.02: gamemodes (GM_*) of the custom server I host; new custom servers: none
+    bool  hostAc            = false;   // 3.50: Add server > Gamemodes > Anti-cheat (custom servers; featured servers: always on)
+    unsigned long long hostAcMask = 0xFFFFFFFFFFull;   // 3.50: which anti-cheat checks (eAcCheck bits)
     bool  hostAuth          = false;   // 3.21.6: Add server > Authentication system (login with Discord) for a NEW server you host
     bool  allowCheatMenu    = false;   // 3.00: host permission (custom servers): players may use CheatMenu (libCheatMenu.so / libCheatMenu64.so)
     bool  hitSound          = true;    // 3.00: play sound_010.mp3 when your shot hits a player

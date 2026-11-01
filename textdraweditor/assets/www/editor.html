@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+	<title>MP Textdraw Editor</title>
+	<link href="css/bootstrap.min.css" rel="stylesheet">
+	<link href="css/editor.css" rel="stylesheet">
+</head>
+<body>
+	<div id="tools"></div>
+	<div id="stage"><canvas id="cv" width="640" height="448"></canvas><div id="hint"></div></div>
+	<div id="panel">
+		<div class="d-flex align-items-center mb-1">
+			<b id="pname" class="text-truncate">Untitled</b>
+			<span id="dirty" class="ms-1 text-warning d-none">*</span>
+			<a href="index.html?logout=1" class="ms-auto small text-secondary" id="who"></a>
+		</div>
+		<div id="props"></div>
+	</div>
+	<div id="modal" class="d-none"><div class="box"><div class="hd"><b id="mtitle"></b><button class="btn-close btn-close-white ms-auto" id="mclose"></button></div><div id="mbody"></div></div></div>
+	<input type="file" id="file" class="d-none" accept=".mptd,.json,.pwn,.txt,.inc">
+	<script src="js/tdedata.js"></script>
+	<script src="js/editor.js"></script>
+</body>
+</html>

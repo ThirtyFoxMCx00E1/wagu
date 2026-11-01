@@ -1,0 +1,18 @@
+/* MP Textdraw Editor - pages styled after bootstrap-5-login-page (MIT, Muhamad Nauval Azhar) */
+html, body { height: 100%; }
+body.auth { background: #0b0f14 url(../img/bg.jpg) center / cover no-repeat fixed; color: #222; }
+body.auth::before { content: ''; position: fixed; inset: 0; background: linear-gradient(90deg, rgba(5,8,12,.82) 0%, rgba(5,8,12,.45) 55%, rgba(5,8,12,.15) 100%); }
+.auth .wrap { position: relative; min-height: 100%; display: flex; align-items: center; padding: 18px 4vw; }
+.auth .card { width: 100%; max-width: 440px; border: 0; border-radius: 12px; }
+.auth .card-body { padding: 26px 30px; }
+.auth .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.auth .brand img { height: 46px; }
+.auth .brand span { color: #fff; font-weight: 700; font-size: 1.15rem; text-shadow: 0 1px 3px #000; }
+.auth .side { position: relative; color: #fff; max-width: 420px; margin-left: 5vw; text-shadow: 0 1px 4px #000; }
+.auth .side h2 { font-weight: 800; }
+.auth .code { font: 700 2rem/1.2 ui-monospace, Menlo, Consolas, monospace; letter-spacing: 3px; text-align: center;
+  border: 2px solid #0d6efd; border-radius: 8px; padding: 8px; background: #f3f7ff; user-select: all; }
+.auth .status { font-size: .85rem; color: #6c757d; }
+.auth .status.ok { color: #198754; } .auth .status.bad { color: #dc3545; }
+@media (max-height: 480px) { .auth .card-body { padding: 16px 22px; } .auth .mb-3 { margin-bottom: .55rem !important; } .auth .brand { margin-bottom: 8px; } }
+@media (max-width: 760px) { .auth .side { display: none; } }

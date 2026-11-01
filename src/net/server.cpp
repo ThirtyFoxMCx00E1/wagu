@@ -256,7 +256,12 @@ void MPServer::SendRaw(const sockaddr_in& a, const void* data, int len)
 
 void MPServer::SendTo(int slot, const void* data, int len)
 {
-    if(slot >= 0 && slot < MP_MAX_PLAYERS && m_Slots[slot].used) SendRaw(m_Slots[slot].addr, data, len);
+    if(slot >= 0 && slot < MP_MAX_PLAYERS && m_Slots[slot].used)
+    {
+        if(len >= 4 && ((const uint8_t*)data)[0] == PKT_DIALOG)   // 3.50: anti-cheat (dialog hack)
+        { uint16_t id; memcpy(&id, (const uint8_t*)data + offsetof(PktDialog, dialogId), sizeof(id)); AcDialogShown(slot, id); }
+        SendRaw(m_Slots[slot].addr, data, len);
+    }
 }
 
 void MPServer::Broadcast(const void* data, int len, int except)
@@ -543,6 +548,7 @@ void MPServer::AuthHandle(int slot, const uint8_t* data, int len)
         res.ok = 0; MP_CopyStr(res.msg, fail, sizeof(res.msg));
         SendTo(slot, &res, sizeof(res));
         Log("Login refused for id %d: %s", slot, fail);
+        AcKeyFail(s.addr, "login");   // 3.50
         if(++s.authFails >= 8) Drop(slot, LEAVE_KICK);
         return;
     }
@@ -660,6 +666,7 @@ void MPServer::Loop()
         {
             lastCheck = now;
             std::lock_guard<std::mutex> lk(m_Mutex);
+            AcTick(now);   // 3.50: anti-cheat (sandbox)
 #ifdef MP_MMSG
             OutBatch ob((int)m_Sock);
 #endif
@@ -699,6 +706,8 @@ void MPServer::AdTick(uint64_t now)
 void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
 {
     int slot = FindSlot(from);
+    if(len < 1) return;
+    if(!AcPacket(from, slot, data, len)) return;   // 3.50: anti-cheat (DoS, callback flood)
     if(slot >= 0) m_Slots[slot].lastSeen = MP_NowMs();
     // 3.21.6: not logged in yet: only joining, ping, leaving and the login itself
     if(slot >= 0 && !m_Slots[slot].authed)
@@ -788,6 +797,13 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
                 }
             }
             if(slot < 0)
+            {   // 3.50: anti-cheat (invalid version, fake NPC, reconnect / slot flood, key brute force)
+                uint32_t jb = 0;
+                if(len >= (int)sizeof(PktJoin5)) memcpy(&jb, data + offsetof(PktJoin5, build), sizeof(jb));
+                char jn[MP_NAME_LEN]; MP_CopyStr(jn, j->name, MP_NAME_LEN);
+                if(!AcJoin(from, jn, juid, jb, j->proto)) return;
+            }
+            if(slot < 0)
             {   // 3.39: kicked (not banned): wait MP_KICK_WAIT_SEC (4 min 29 s) before joining again
                 const uint32_t nowU = (uint32_t)time(nullptr);
                 char jn[MP_NAME_LEN]; MP_CopyStr(jn, j->name, MP_NAME_LEN);
@@ -830,10 +846,16 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
                 char jn[MP_NAME_LEN]; MP_CopyStr(jn, j->name, MP_NAME_LEN);
                 char key[MP_ADMIN_KEY_LEN + 1] = {0};
                 if(len >= (int)sizeof(PktJoin4)) memcpy(key, ((const PktJoin4*)data)->adminKey, MP_ADMIN_KEY_LEN);
+                if((MP_IsReservedName(jn) || key[0]) && AcKeyBlocked(from))   // 3.50: anti-cheat (key brute force)
+                {
+                    PktReject rj; rj.type = PKT_REJECT; rj.reason = REJECT_KICKED; SendRaw(from, &rj, sizeof(rj));
+                    return;
+                }
                 if(MP_IsReservedName(jn))
                 {
                     if(!MP_AdminKeyOk(key, m_szAdminHash))
                     {
+                        AcKeyFail(from, "admin key");
                         PktReject rj; rj.type = PKT_REJECT; rj.reason = REJECT_NAME_RESERVED; SendRaw(from, &rj, sizeof(rj));
                         Log("Join refused: \"%s\" is a reserved name (no admin key)", jn);
                         if(slot >= 0 && !m_Slots[slot].admin) Drop(slot, LEAVE_KICK);
@@ -852,6 +874,7 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
                     {
                         if(!isMod)
                         {
+                            AcKeyFail(from, "moderator key");
                             PktReject rj; rj.type = PKT_REJECT; rj.reason = REJECT_NAME_RESERVED; SendRaw(from, &rj, sizeof(rj));
                             Log("Join refused: \"%s\" is a reserved moderator name (no moderator key)", jn);
                             if(slot >= 0 && !m_Slots[slot].mod) Drop(slot, LEAVE_KICK);
@@ -888,6 +911,7 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
                 fresh = true;
                 Slot& s = m_Slots[slot];
                 memset(&s, 0, sizeof(s));
+                AcReset(slot);   // 3.50
                 s.used = true; s.addr = from; s.lastSeen = MP_NowMs();
                 s.pair = s.pairReq = MP_INVALID_ID;
                 MP_CopyStr(s.uid, juid, sizeof(s.uid)); s.joinedMs = MP_NowMs();   // 2.25
@@ -993,6 +1017,7 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             PktSync p; memcpy(&p, data, sizeof(p));   // packed + unaligned: never read it in place
             p.id = (uint8_t)slot;
             raw[offsetof(PktSync, id)] = (uint8_t)slot;
+            if(!AcSync(slot, p, raw, rawLen)) return;   // 3.50: anti-cheat (movement, health, weapons...)
             {
                 Slot& me = m_Slots[slot];
                 memcpy(me.pos, (p.d.flags & SYNC_IN_CAR) ? (const void*)p.d.carPos : (const void*)p.d.pos, sizeof(me.pos));
@@ -1093,6 +1118,7 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             for(int i = 0; i < MP_MAX_PICKUPS; ++i)
             {
                 if(!m_Pickups[i].used || m_Pickups[i].uid != t.uid) continue;
+                if(!AcPickup(slot, m_Pickups[i].pos)) break;   // 3.50
                 m_Pickups[i].used = false;   // first one wins
                 PktPickupRemove r; r.type = PKT_PICKUP_REMOVE; r.uid = t.uid; r.takenBy = (uint8_t)slot;
                 Broadcast(&r, sizeof(r));
@@ -1126,6 +1152,7 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             if((p.paused == 1) != m_Slots[slot].paused)
             {
                 m_Slots[slot].paused = p.paused == 1;
+                AcPause(slot, p.paused == 1);   // 3.50
                 Log("%s %s", m_Slots[slot].name, p.paused == 1 ? "paused" : "resumed");
             }
             Broadcast(&p, sizeof(p), slot);
@@ -1256,6 +1283,7 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             uint64_t t = MP_NowMs();
             if(t - s_LastAnn[slot] < 500) return;
             s_LastAnn[slot] = t;
+            AcGrace(slot, 5000);   // 3.50: races / DM / teleports move the player
             const PktAnnounce& a = *(const PktAnnounce*)data;
             PktServerMsg m; memset(&m, 0, sizeof(m));
             m.type = PKT_SERVER_MSG;
@@ -1273,6 +1301,8 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             PktDeath p = *(const PktDeath*)data;
             p.victim = (uint8_t)slot;
             if(p.killer >= MP_MAX_PLAYERS || !m_Slots[p.killer].used) p.killer = MP_INVALID_ID;
+            AcDeath(slot, p);   // 3.50: fake kill -> no kill credit
+            if(!m_Slots[slot].used) return;
             BcwOnDeath(slot, p.killer == MP_INVALID_ID ? -1 : p.killer);   // 3.04
             RpOnDeath(slot, p.killer == MP_INVALID_ID ? -1 : p.killer);    // 3.25
             Mw3OnDeath(slot, p.killer == MP_INVALID_ID ? -1 : p.killer, p.weapon);   // 3.23
@@ -1285,6 +1315,7 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             if(slot < 0 || len < (int)sizeof(PktDamage)) return;
             PktDamage p = *(const PktDamage*)data;
             p.from = (uint8_t)slot;
+            if(!AcDamage(slot, p)) return;   // 3.50: pro aim
             // paused players and players on a mission / in a cutscene can't be hurt (or hurt others)
             // 2.19: mission-sync partners share one story world: they can hurt each other on a mission
             if(p.target < MP_MAX_PLAYERS && p.target != slot && m_Slots[p.target].used && !m_Slots[p.target].paused
@@ -1319,6 +1350,7 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
         {
             if(slot < 0 || len < (int)sizeof(PktProgress) || !m_Slots[slot].used) return;
             PktProgress p; memcpy(&p, data, sizeof(p));
+            if(!AcMoney(slot, p.money)) return;   // 3.50: money hack (the save is refused)
             OnProgress(slot, p);
             break;
         }
@@ -1390,6 +1422,7 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             if(m.count > MP_SHOT_MAX) m.count = MP_SHOT_MAX;
             if(!m.count) return;
             m.id = (uint8_t)slot;
+            if(!AcShot(slot, m)) return;   // 3.50: rapid fire, no reload
             float sp[3]; memcpy(sp, m.e[0].a, sizeof(sp));       // aligned copy (see PKT_EXPLOSION)
             RelayNearOrPartner(slot, sp, &m, MP_PKT_SHOT_HDR + m.count * (int)sizeof(ShotEntry));
             break;
@@ -1399,6 +1432,7 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             if(slot < 0 || len < (int)sizeof(PktVehState)) return;
             PktVehState v; memcpy(&v, data, sizeof(v));
             v.id = (uint8_t)slot;
+            if(!AcVehState(slot, v)) return;   // 3.50: tuning hack / crashers
             float vp[3]; memcpy(vp, v.pos, sizeof(vp));
             RelayNearOrPartner(slot, vp, &v, sizeof(v));
             break;
@@ -1464,6 +1498,8 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             if(slot < 0 || len < (int)sizeof(PktPlayerInfo)) return;
             PktPlayerInfo pi; memcpy(&pi, data, sizeof(pi));
             pi.id = (uint8_t)slot;
+            AcPing(slot, pi.ping);   // 3.50: high ping
+            if(!m_Slots[slot].used) return;
             Broadcast(&pi, sizeof(pi), slot);
             break;
         }
@@ -1509,6 +1545,8 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
         case PKT_DIALOG_RESPONSE:   // 3.01: SA-MP dialog answer (only the welcome dialog for now)
         {
             if(slot < 0 || len < (int)sizeof(PktDialogResp)) return;
+            PktDialogResp r; memcpy(&r, data, sizeof(r));
+            AcDialog(slot, r);   // 3.50: dialog hack
             break;
         }
         case PKT_JACK:   // 2.19: carjack another player
@@ -1516,6 +1554,7 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             if(slot < 0 || len < (int)sizeof(PktJack)) return;
             PktJack j; memcpy(&j, data, sizeof(j));
             if(j.victim >= MP_MAX_PLAYERS || j.victim == slot || !m_Slots[j.victim].used || m_Slots[j.victim].paused) return;
+            if(!AcJack(slot, j.victim)) return;   // 3.50: carjack from far away
             if((m_Slots[j.victim].status || m_Slots[slot].status) && !IsPartner(slot, j.victim)) return;
             if(SafeZoneBlocks(slot, j.victim)) return;   // 3.21: nobody is pulled out of a car in a safe zone
             j.from = (uint8_t)slot;
@@ -1745,6 +1784,17 @@ void MPServer::SetMotd(const char* caption, const char* text)
     MP_CopyStr(m_szMotdCaption, caption && *caption ? caption : m_szName, sizeof(m_szMotdCaption));
     MP_CopyStr(m_szMotd, text ? text : "", sizeof(m_szMotd));
 }
+void MPServer::SetPluginTextdraws(const std::vector<PktTextDraw>& tds)
+{
+    std::lock_guard<std::mutex> lk(m_Mutex);
+    std::vector<PktTextDraw> old; old.swap(m_PluginTd);
+    m_PluginTd = tds;
+    if(m_PluginTd.size() > 192) m_PluginTd.resize(192);
+    for(size_t i = 0; i < m_PluginTd.size(); ++i) { m_PluginTd[i].type = PKT_TEXTDRAW; m_PluginTd[i].tdId = (uint16_t)(64 + i); m_PluginTd[i].text[255] = 0; }
+    if(!m_bRunning) return;
+    for(size_t i = m_PluginTd.size(); i < old.size(); ++i) { PktTextDraw h = old[i]; h.show = 0; Broadcast(&h, sizeof(h)); }   // removed ones
+    for(const auto& t : m_PluginTd) Broadcast(&t, sizeof(t));
+}
 void MPServer::SetBanner(const char* text)
 {
     std::lock_guard<std::mutex> lk(m_Mutex);
@@ -1871,6 +1921,9 @@ void MPServer::SendJoinExtras(int slot, bool fresh)
         MP_CopyStr(t.text, m_szBanner, sizeof(t.text));
         SendTo(slot, &t, sizeof(t));
     }
+    {   // 3.50: Plugins > Textdraw
+        for(const auto& t : m_PluginTd) SendTo(slot, &t, sizeof(t));   // m_Mutex is held here (Handle)
+    }
 }
 
 // 3.01: race queue. Players type /race and wait (anywhere on the map); when MP_RACE_PLAYERS are in
@@ -1922,6 +1975,7 @@ void MPServer::RaceQueueTick(uint64_t now, bool changed)
 #include "server_mw3.inc"   // 3.23: Call Of Duty: Modern Warfare 3
 #include "server_rp.inc"    // 3.25: Mega Vil Futuristic (Roleplay)
 #include "server_home.inc"  // 3.39: Home Kit, rules, live settings
+#include "server_ac.inc"    // 3.50: anti-cheat (Nex-AC)
 
 // 3.04.6: an old MP version tried to join: log it once per phone every 10 minutes (console + the
 // --outdated-log file of the 24/7 server) and count it

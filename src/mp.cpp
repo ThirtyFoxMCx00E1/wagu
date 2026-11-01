@@ -742,6 +742,8 @@ static void NeedsRender();
 static void RulesProcess(uint64_t now);
 static bool RulesCommand(const char* cmd, const char* arg);
 static bool SrvSettingsCommand(const char* cmd, const char* arg);
+static bool TdeCommand(const char* cmd, const char* arg);   // 3.50 (mp_tde.inc)
+static void TdeRender();
 static void ModCheckProcess(uint64_t now);
 static void ProgProcess(int ped, uint64_t now);
 static void ProgOnPacket(const PktProgress& m);
@@ -4195,6 +4197,8 @@ static void PSettingsPopup();
 #include "mp_srvset.inc"    // 3.39: server settings / management page
 #include "mp_progress.inc"  // 3.39.1: saved progress (place, money, weapons, health, hunger)
 #include "mp_modes2.inc"    // 3.39: survival, CnR, A/D, stunt, drift
+#include "mp_tdeplug.inc"   // 3.50: Add server > Plugins (Textdraw .mptd files)
+#include "mp_tde.inc"       // 3.50: in-game MP Textdraw Editor (/tde)
 
 // 2.37: CheatMenu (libCheatMenu.so / libCheatMenu64.so) is not allowed on any server - the default
 // server and every custom server. Detected with aml->HasMod() in ON_ALL_MODS_LOAD (+ a re-check of
@@ -4443,6 +4447,7 @@ static bool StartLocalServer(const char* name, int port)
         snprintf(hf, sizeof(hf), "%s/progress_%d.txt", s_szDataDir, port); s_Server.SetProgressFile(hf);   // 3.39.1
         s_Server.SetOwnerUid(settings.deviceId);
     }
+    s_Server.SetAntiCheat(settings.hostAc, settings.hostAcMask);   // 3.50 (featured servers: always on, every check)
     if(!s_Server.Start((uint16_t)port, name, ServerLog, maxp, settings.region))
     {
         SysMsg(COL_RED, "Could not start the server on port %d", port);
@@ -4451,6 +4456,7 @@ static bool StartLocalServer(const char* name, int port)
     }
     MP_CopyStr(settings.hostedName, name, sizeof(settings.hostedName));
     settings.hostedPort = port;
+    { const int ntd = PluginApply(name); if(ntd > 0) SysMsg(COL_SYSTEM, "Plugins: %d textdraws from files/MP/%s/", ntd, PluginFolderName(name).c_str()); }   // 3.50
     if(s_Server.IsMw3Server()) { char mp_[512]; snprintf(mp_, sizeof(mp_), "%s/mw3_stats.txt", s_szDataDir); s_Server.SetMw3File(mp_); }   // 3.23.1
     if(s_Server.IsRpServer()) { char rp_[512]; snprintf(rp_, sizeof(rp_), "%s/rp_citizens.txt", s_szDataDir); s_Server.SetRpFile(rp_); }   // 3.25
     {   // 3.03: the gamemodes of this server
@@ -5053,7 +5059,7 @@ void MP::SaveConfig()
     F("NametagSize", settings.nametagSize); F("NametagDistance", settings.nametagDistance);
     B("ShowOwnNametag", settings.showOwnTag); B("ShowHealthBars", settings.showHealthBars); B("ShowRadarIcons", settings.showRadarIcons);
     B("ShowChat", settings.showChat); B("ShowKillFeed", settings.showKillFeed); B("ShowStatus", settings.showStatus);
-    B("SyncAnims", settings.syncAnims); B("BrokerStandby", settings.brokerStandby); B("SyncEnv", settings.syncEnv); B("SyncNPCs", settings.syncNpcs); B("AllowMissionPair", settings.allowMissionPair); B("AllowCheatMenu", settings.allowCheatMenu); B("HostAuth", settings.hostAuth); B("HitSound", settings.hitSound); B("DisableCheats", settings.disableCheats);
+    B("SyncAnims", settings.syncAnims); B("BrokerStandby", settings.brokerStandby); B("SyncEnv", settings.syncEnv); B("SyncNPCs", settings.syncNpcs); B("AllowMissionPair", settings.allowMissionPair); B("AllowCheatMenu", settings.allowCheatMenu); B("HostAuth", settings.hostAuth); B("HostAntiCheat", settings.hostAc); { char m[24]; snprintf(m, sizeof(m), "%llX", settings.hostAcMask); S("HostAntiCheatMask", m); } B("HitSound", settings.hitSound); B("DisableCheats", settings.disableCheats);
     F("ChatX", settings.chatX); F("ChatY", settings.chatY); I("Skin", settings.skin);
     I("ChatLines", settings.chatLines); F("ChatSize", settings.chatSize); F("ChatScale", settings.chatScale); F("ChatWidth", settings.chatWidth);   // 2.19.6
     I("ChatFade", settings.chatFade); B("ChatBackground", settings.chatBg);
@@ -5101,6 +5107,8 @@ static void LoadConfig()
     settings.allowMissionPair = ::cfg->GetBool("AllowMissionPair", true, "MP");
     settings.allowCheatMenu = ::cfg->GetBool("AllowCheatMenu", false, "MP");   // 3.00
     settings.hostAuth        = ::cfg->GetBool("HostAuth", false, "MP");   // 3.21.6
+    settings.hostAc          = ::cfg->GetBool("HostAntiCheat", false, "MP");   // 3.50
+    { char m[24] = ""; ::cfg->GetString(m, sizeof(m), "HostAntiCheatMask", "FFFFFFFFFF", "MP"); settings.hostAcMask = strtoull(m, nullptr, 16) & AC_ALL_MASK; }
     settings.hitSound = ::cfg->GetBool("HitSound", true, "MP");               // 3.00
     settings.chatBubbles = ::cfg->GetBool("ChatBubbles", false, "MP");   // 3.01: off by default
     settings.chatTimestamps = ::cfg->GetBool("ChatTimestamps", false, "MP");   // 3.11: off until the player turns it on
@@ -5867,6 +5875,10 @@ static void RunHostRequest()
 
 // 3.02: Add server > Gamemodes. The default server always has all of them; a custom server you
 // create starts with none, and you turn on the ones you want. Sent to the players (PKT_PERMS).
+static int  PluginApply(const char* serverName);   // 3.50 (mp_tdeplug.inc)
+static std::string PluginFolderName(const char* name);
+static void AntiCheatSection();
+static void PluginsSection(const char* typedName);
 static void GamemodeSwitches()
 {
     ImGui::PushID("gamemodes");
@@ -5896,6 +5908,41 @@ static void GamemodeSwitches()
     }
     std::string cl = GameModeList((uint16_t)settings.hostModes, ",", true);
     ImGui::TextDisabled("24/7 server (mp_server): --gamemodes %s", cl.empty() ? "none" : ((settings.hostModes & every) == every ? "all" : cl.c_str()));
+    ImGui::PopID();
+    AntiCheatSection();   // 3.50: scroll down in Gamemodes
+}
+// 3.50: Anti-cheat (Nex-AC checks, server side). Always on with every check on the default server,
+// Mega Vil Futuristic, Brief Case War and MW3. A custom server: the master switch + each check.
+static void AntiCheatSection()
+{
+    ImGui::PushID("anticheat");
+    ImGui::Spacing(); ImGui::Separator(); ImGui::Spacing();
+    ImGui::TextUnformatted("Anti-cheat");
+    ImGui::TextDisabled("Nex-AC checks on the server. Always on (every check) on the default server, Mega Vil Futuristic, Brief Case War and MW3.");
+    ImGui::TextDisabled("Staff (you, admins, moderators) only get the warning. Checks marked (cheat) are skipped while menu cheats are allowed.");
+    bool changed = FloatMenu::ToggleSwitch("Anti-cheat on my custom server", &settings.hostAc);
+    if(settings.hostAc)
+    {
+        for(int i = 0; i < AC_COUNT; ++i)
+        {
+            bool on = AcMaskHas(settings.hostAcMask, i);
+            char lbl[96]; snprintf(lbl, sizeof(lbl), "%s%s", g_AcInfo[i].name, g_AcInfo[i].cheat ? " (cheat)" : "");
+            if(FloatMenu::ToggleSwitch(lbl, &on)) { if(on) settings.hostAcMask |= 1ull << i; else settings.hostAcMask &= ~(1ull << i); changed = true; }
+            ImGui::TextDisabled("%s", g_AcInfo[i].desc);
+        }
+        float w = (ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ItemSpacing.x) * 0.5f;
+        if(ImGui::Button("All checks on", ImVec2(w, UI::S(70)))) { settings.hostAcMask = AC_ALL_MASK; changed = true; }
+        ImGui::SameLine();
+        if(ImGui::Button("All checks off", ImVec2(w, UI::S(70)))) { settings.hostAcMask = 0; changed = true; }
+    }
+    if(changed)
+    {
+        SaveConfig();
+        if(s_Server.IsRunning() && !MP::IsHostingDefault()) s_Server.SetAntiCheat(settings.hostAc, settings.hostAcMask);   // live
+    }
+    if(s_Server.IsRunning())
+        ImGui::TextDisabled("This phone runs \"%s\": anti-cheat %s (%u warnings so far).", s_Server.GetName(), s_Server.AntiCheatOn() ? "on" : "off", s_Server.AntiCheatEvents());
+    ImGui::TextDisabled("24/7 server (mp_server): --anticheat %llX  (or --no-anticheat)", (unsigned long long)(settings.hostAcMask & AC_ALL_MASK));
     ImGui::PopID();
 }
 
@@ -6015,8 +6062,9 @@ static void SectionAddServer(void*)
         s_Server.SetMaxPlayers(settings.maxPlayers);
     if(ImGui::IsItemDeactivatedAfterEdit()) SaveConfig();
     PermissionSwitches("add");   // 2.37: once (was on Hosted + here)
-    GamemodeSwitches();          // 3.02
+    GamemodeSwitches();          // 3.02 (+ 3.50 Anti-cheat)
     RulesSection();              // 3.39
+    PluginsSection(s_szNewName);   // 3.50: Plugins > Textdraw
     ImGui::Separator();
 
     bool hasHost = s_szNewHost[0] != 0;

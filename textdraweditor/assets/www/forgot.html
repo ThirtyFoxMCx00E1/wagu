@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width,initial-scale=1">
+	<title>Forgot Password - MP Textdraw Editor</title>
+	<link href="css/bootstrap.min.css" rel="stylesheet">
+	<link href="css/app.css" rel="stylesheet">
+</head>
+<body class="auth">
+	<section class="wrap">
+		<div class="card shadow-lg">
+			<div class="card-body">
+				<h1 class="fs-4 card-title fw-bold mb-3">Forgot Password</h1>
+				<p class="text-muted mb-2">Prove that the account is yours with the Discord account it was made with.
+				In the #verification channel of the <a href="#" onclick="MPApp.openUrl('https://discord.gg/tbsDknk34y');return false">MP Discord server</a> type:</p>
+				<div id="code" class="code mb-2">/gen ........</div>
+				<div class="d-flex"><button type="button" class="btn btn-outline-secondary btn-sm" id="again">New code</button>
+				<button type="button" class="btn btn-primary btn-sm ms-auto" onclick="MPApp.openUrl('https://discord.gg/tbsDknk34y')">Open Discord</button></div>
+				<div id="status" class="status mt-2"></div>
+			</div>
+			<div class="card-footer py-3 border-0">
+				<div class="text-center">Remember your password? <a href="index.html" class="text-dark">Login</a></div>
+			</div>
+		</div>
+		<div class="side d-none d-md-block">
+			<div class="brand"><img src="img/logo.png" alt="MP"><span>MP Textdraw Editor</span></div>
+			<h2>Design textdraws for your MP server.</h2>
+			<p>Same tools as the in-game /tde editor. Save a .mptd file, then import it in MP Launcher &gt; Add server &gt; Plugins &gt; Textdraw.</p>
+		</div>
+	</section>
+	<script src="js/mpauth.js"></script>
+	<script src="js/app.js"></script>
+	<script>
+	(function () {
+		var A = MPApp, flow;
+		var c = A.connect({
+			link: function () { if (!flow) { flow = A.codeFlow(c, verified); A.$('again').onclick = flow.again; } },
+			gen: function (a) { flow && flow.gen(a); },
+			verified: function (a) { flow && flow.verified(a); }
+		});
+		function verified(a) {
+			if (a.has !== '1') { A.status('This Discord account has no MP account yet. Create one.', 'bad'); setTimeout(function () { location.replace('register.html'); }, 2500); return; }
+			sessionStorage.setItem('mptde_reset', JSON.stringify({ vtoken: a.vtoken, user: a.user, dname: a.dname || '' }));
+			location.replace('reset.html');
+		}
+	})();
+	</script>
+</body>
+</html>
