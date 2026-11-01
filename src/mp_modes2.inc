@@ -323,12 +323,26 @@ static void DriftBank(bool crashed)
     }
     s_Dr.pts = 0; s_Dr.combo = 1; s_Dr.comboT = 0;
 }
+// 3.50.1: drift is for cars on the road only: no planes, helicopters, RC aircraft, boats or trains
+static bool DriftModelOk(int m)
+{
+    static const int kNo[] = { 460, 476, 511, 512, 513, 519, 520, 553, 577, 592, 593,       // planes
+                               417, 425, 447, 469, 487, 488, 497, 548, 563,                 // helicopters
+                               464, 465, 501,                                               // RC aircraft
+                               430, 446, 452, 453, 454, 472, 473, 484, 493, 595, 539,       // boats, Vortex
+                               449, 537, 538, 569, 570, 590 };                              // tram / trains
+    if(m < 400 || m > 611) return false;
+    for(int k : kNo) if(k == m) return false;
+    return true;
+}
 static void DriftProcess(int ped, uint64_t now, float dt)
 {
     (void)now;
     if(!GmOn(GM_DRIFT) || ped <= 0 || !Game::IsCharInAnyCar(ped)) { if(s_Dr.pts > 0) DriftBank(false); s_Dr.lastHp = 0; return; }
     const int veh = Game::GetCarCharIsIn(ped);
+    if(!DriftModelOk(Game::GetCarModel(veh))) { if(s_Dr.pts > 0) DriftBank(false); s_Dr.lastHp = 0; return; }
     Vec3 v; if(!Game::GetMoveSpeed(veh, true, v)) return;
+    if(fabsf(v.z) > 4.0f) return;   // in the air (jump / falling): no drift points
     const float spd = sqrtf(v.x * v.x + v.y * v.y);
     const float hd = Game::GetCarHeading(veh) * 0.0174533f;
     const float fx = -sinf(hd), fy = cosf(hd);
@@ -346,7 +360,7 @@ static void DriftProcess(int ped, uint64_t now, float dt)
 static bool DriftCommand(const char* cmd, const char*)
 {
     if(!GmOn(GM_DRIFT)) return false;
-    if(!strcmp(cmd, "drift")) { SysMsg(COL_YELLOW, "Drift: slide sideways over 30 km/h. Best %d, total %d. /drifttop", s_Dr.best, s_Dr.total); return true; }
+    if(!strcmp(cmd, "drift")) { SysMsg(COL_YELLOW, "Drift: slide a car sideways over 30 km/h (no planes, helicopters or boats). Best %d, total %d. /drifttop", s_Dr.best, s_Dr.total); return true; }
     if(!strcmp(cmd, "drifttop"))
     {
         std::vector<std::pair<int, std::string>> t; t.push_back({ s_Dr.best, settings.name });

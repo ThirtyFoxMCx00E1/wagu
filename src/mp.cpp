@@ -681,6 +681,7 @@ static bool IsBusy();
 static void LoadAdminFile();
 static void LoadModFile();   // 3.39.1
 static bool HaveAdminKey();
+static bool s_bModFileSeen = false; static char s_szModFound[256] = "";   // 3.50.1: moved up (/modcheck)
 static bool s_bModMaster = false;   // 3.39: moderator.txt holds the MP moderator key
 static bool HaveModKey();        // 3.40.1: Trunk = reserved moderator name
 static void TrunkBlockedMsg();   // 3.40.1
@@ -1602,6 +1603,7 @@ static uint64_t s_nKillPredMs[MP_MAX_PLAYERS] = {};
 static std::string MyFeedName()
 {
     if(MP::IsLocalAdmin()) return "[ADMIN] SENJI";
+    if(const char* mn = MP::LocalModName()) return mn;   // 3.50.1
     return (myId < MP_MAX_PLAYERS && players[myId].active) ? players[myId].name : settings.name;
 }
 static void PushKillEntry(KillEntry& k)
@@ -2510,6 +2512,7 @@ public:
         if(c.id >= MP_MAX_PLAYERS) return;
         const RemotePlayer& p = players[c.id];
         std::string nm = p.active ? p.name : "?"; uint32_t nc = p.active ? p.color : COL_WHITE;
+        if(c.id == myId) { if(const char* mn = MP::LocalModName()) nm = mn; }   // 3.50.1: my own lines keep the [MOD] look
         BcwDecorateStr(c.id, nm, nc);   // 3.04: Brief Case War team tag + colour (admins unchanged)
         PushChat({ nm, nc, c.text, COL_WHITE });
         SampOnChat(c.id, c.text);   // 3.01: chat bubble (only drawn when Settings > Chat > Chat bubbles is on)
@@ -2534,6 +2537,7 @@ public:
             else if(d.killer < MP_MAX_PLAYERS && players[d.killer].active) { k.killer = players[d.killer].name; k.killerColor = players[d.killer].color; }
             else { k.killerColor = 0; }
             if(d.victim == myId && MP::IsLocalAdmin()) k.victim = "[ADMIN] SENJI";
+            else if(d.victim == myId && MP::LocalModName()) k.victim = MP::LocalModName();   // 3.50.1
             k.weapon = (d.killer == MP_INVALID_ID) ? 255 : d.weapon;
             k.time = MP_NowMs();   // 2.16: fades out after 12 s
             k.victimId = d.victim;
@@ -4132,6 +4136,16 @@ bool MP::CheatMenuAllowed()
     return (s_nServerPerms & PERM_CHEAT_MENU) && !(s_nServerPerms & PERM_NO_CHEATS);
 }
 bool MP::IsLocalAdmin() { return MP_IsReservedName(settings.name) && HaveAdminKey(); }
+// 3.50.1: moderator.txt holds the MP moderator key -> my own name tag / kill feed / chat always show "[MOD] name"
+// (like the admin look), even before / without the server's answer. The rights stay checked by the server.
+const char* MP::LocalModName()
+{
+    static char b[MP_NAME_LEN + 8];
+    if(!s_bModMaster || MP_IsReservedName(settings.name)) return nullptr;
+    if(myId < MP_MAX_PLAYERS && players[myId].active && UI::IsModName(players[myId].name)) return players[myId].name;
+    snprintf(b, sizeof(b), "%s%s", MP_MOD_TAG, settings.name);
+    return b;
+}
 // 3.35: the server gave me "[MOD] name" (moderator.txt)
 bool MP::IsLocalMod() { return client.GetState() == NET_CONNECTED && myId < MP_MAX_PLAYERS && players[myId].active && UI::IsModName(players[myId].name); }
 bool MP::IsDefaultAdmin()
@@ -5035,7 +5049,7 @@ void MP::SendChat(const char* text)
     if(text[0] == '/' && HandleCommand(text)) return;   // 2.19 commands (work offline too)
     if(!IsConnected())
     {
-        std::string mn = MP::IsLocalAdmin() ? "[ADMIN] SENJI" : settings.name; uint32_t mc = settings.nameColor ? settings.nameColor : COL_WHITE;
+        std::string mn = MP::IsLocalAdmin() ? "[ADMIN] SENJI" : MP::LocalModName() ? MP::LocalModName() : settings.name; uint32_t mc = settings.nameColor ? settings.nameColor : COL_WHITE;
         BcwDecorateStr(myId, mn, mc);   // 3.04
         PushChat({ mn, mc, text, COL_WHITE });   // 2.37: my own chat shows the admin look too
         SysMsg(COL_RED, "Not connected.");
@@ -5240,7 +5254,6 @@ static void AdminCandidates(std::vector<std::string>& v)
     for(auto& p : v) both.push_back(p);
     v.swap(both);
 }
-static bool s_bModFileSeen = false; static char s_szModFound[256] = "";
 static void LoadModFile()
 {   // 3.35: files/MP/moderator.txt = my moderator key. 3.35.2: the MP moderator key (MP_MOD_KEY_HASH) gives "[MOD] name" on every server by itself
         // 3.39: any layout works now - "key", "name key", "MOD:key", a BOM, Windows line ends, quotes -
@@ -5879,11 +5892,25 @@ static int  PluginApply(const char* serverName);   // 3.50 (mp_tdeplug.inc)
 static std::string PluginFolderName(const char* name);
 static void AntiCheatSection();
 static void PluginsSection(const char* typedName);
-static void GamemodeSwitches()
+static void GamemodeSwitches(const char* typedName)
 {
     ImGui::PushID("gamemodes");
     ImGui::Spacing();
     ImGui::TextUnformatted("Gamemodes");
+    // 3.50.1: the default server ("MP LAN Server") always runs every gamemode: show them all ON (fixed)
+    if((typedName && !strcasecmp(typedName, MP_DEFAULT_SERVER_NAME)) || ((!typedName || !*typedName) && MP::IsOnDefault()))
+    {
+        ImGui::TextColored(kGreenTxt, "\"%s\" (the default server): every gamemode is ON (fixed).", MP_DEFAULT_SERVER_NAME);
+        for(int i = 0; i < MP_GAMEMODE_COUNT; ++i)
+        {
+            bool on = true;
+            ImGui::BeginDisabled(); FloatMenu::ToggleSwitch(kGameModes[i].name, &on); ImGui::EndDisabled();
+            ImGui::TextDisabled("%s", kGameModes[i].desc);
+        }
+        ImGui::PopID();
+        AntiCheatSection();
+        return;
+    }
     ImGui::TextDisabled("The default server has all of them. A custom server starts with none: turn on the ones you want.");
     ImGui::TextDisabled("Map icons and Chat bubbles are each player's own switches: Settings > Display / Chat.");
     bool changed = false;
@@ -6062,7 +6089,7 @@ static void SectionAddServer(void*)
         s_Server.SetMaxPlayers(settings.maxPlayers);
     if(ImGui::IsItemDeactivatedAfterEdit()) SaveConfig();
     PermissionSwitches("add");   // 2.37: once (was on Hosted + here)
-    GamemodeSwitches();          // 3.02 (+ 3.50 Anti-cheat)
+    GamemodeSwitches(s_szNewName);   // 3.02 (+ 3.50 Anti-cheat; 3.50.1 the default server: all ON)
     RulesSection();              // 3.39
     PluginsSection(s_szNewName);   // 3.50: Plugins > Textdraw
     ImGui::Separator();

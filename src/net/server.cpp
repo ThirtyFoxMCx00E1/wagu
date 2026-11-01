@@ -1226,7 +1226,7 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             if(slot < 0 || len < (int)sizeof(PktAdminCmd)) return;
             if(featured ? !(m_Slots[slot].admin || m_Slots[slot].mod) : !m_Slots[slot].owner) return;
             PktAdminCmd c = *(const PktAdminCmd*)data;
-            if(featured && !m_Slots[slot].admin && c.cmd == ADMIN_BAN) c.cmd = ADMIN_KICK;   // 3.35: moderators kick, only the admin bans
+            if(featured && !IsDefaultServer() && !m_Slots[slot].admin && c.cmd == ADMIN_BAN) c.cmd = ADMIN_KICK;   // 3.35: moderators kick, only the admin bans (3.50.1: on the default server moderators have the admin permissions, ban too)
             if(!m_Slots[slot].admin && c.cmd != ADMIN_CHEATS && c.target < MP_MAX_PLAYERS && m_Slots[c.target].used && (m_Slots[c.target].admin || m_Slots[c.target].mod)) return;   // no staff vs staff
             c.reason[MP_REASON_LEN - 1] = 0;
             char who[MP_NAME_LEN]; MP_CopyStr(who, m_Slots[slot].name, sizeof(who));

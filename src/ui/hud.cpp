@@ -677,6 +677,7 @@ static void DrawNameTags(ImDrawList* dl)
     {
         const char* nm = (MP::myId < MP_MAX_PLAYERS && MP::players[MP::myId].active) ? MP::players[MP::myId].name : MP::settings.name;
         if(MP::IsLocalAdmin()) nm = "[ADMIN] SENJI";   // 2.37: admin.txt + name SENJI: my own tag always has the RGB rank
+        else if(const char* mn = MP::LocalModName()) nm = mn;   // 3.50.1: moderator.txt: my own tag always has the [MOD] look
         char bn[80]; uint32_t bc = MP::BcwDecorate(MP::myId, nm, MP::myColor, bn, sizeof(bn));   // 3.04
         MP::NameTagId(MP::myId, bn, sizeof(bn));   // 3.34
         char sb[64]; bool hasSub = MP::Mw3SubTag(MP::myId, sb, sizeof(sb)) || MP::RpSubTag(MP::myId, sb, sizeof(sb));

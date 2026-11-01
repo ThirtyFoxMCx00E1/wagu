@@ -69,6 +69,10 @@ static void SrvSettingsShow()
         snprintf(b, sizeof(b), "%u.%02u", sb / 10000, (sb / 100) % 100);
         SysMsg(COL_YELLOW, "This server still runs MP %s: settings are view only until it updates to 3.39 (the 24/7 servers update by themselves).", sb ? b : "(old)");
     }
+    // 3.50.1: the default server always runs every gamemode (whatever an older copy reported), and its
+    // staff ([MOD] Trunk / the admin) manage it even before the server's answer arrives
+    if(MP::IsOnDefault()) s_SrvSet.s.modes = (uint16_t)GM_ALL;
+    if((MP::IsOnDefault() || BcwOnServer() || Mw3OnServer() || RpOnServer()) && (MP::IsLocalMod() || MP::IsLocalAdmin()) && newSrv) s_SrvSet.s.can = 1;
     const PktSrvSettings& s = s_SrvSet.s;
     std::string body = "Setting\tState\n";
     for(int i = 0; i < MP_GAMEMODE_COUNT; ++i)
@@ -83,8 +87,23 @@ static void SrvSettingsShow()
     char cap[96]; snprintf(cap, sizeof(cap), "{FFFFFF}Server settings %s", s.can ? "{33CC55}(you can change them)" : "{AAAAAA}(view only)");
     ShowDialog(0, DIALOG_STYLE_TABLIST_HEADERS, cap, body.c_str(), s.can ? "Toggle" : "OK", "Close", SrvSettingsDlg, 0x5353);
 }
+static void ModCheckReport()
+{   // 3.50.1: /modcheck - why am I (not) [MOD] here?
+    LoadModFile();
+    SysMsg(COL_YELLOW, "Name: %s. moderator.txt: %s.", settings.name, s_bModFileSeen ? s_szModFound : "not found (put it in the MP folder)");
+    if(s_bModFileSeen) SysMsg(COL_YELLOW, "Key: %s.", s_bModMaster ? "the MP moderator key (valid on every server)" : client.HasModKey() ? "not the MP moderator key (only servers that list it)" : "empty / unreadable");
+    if(client.GetState() != NET_CONNECTED) { SysMsg(COL_YELLOW, "Not on a server right now."); return; }
+    unsigned sb = client.GetServerBuild();
+    char b[16]; snprintf(b, sizeof(b), "%u.%02u", sb / 10000, (sb / 100) % 100);
+    const bool mod = myId < MP_MAX_PLAYERS && players[myId].active && UI::IsModName(players[myId].name);
+    SysMsg(mod ? COL_GREEN : COL_YELLOW, "Server \"%s\" runs MP %s: you are %s.", s_szCurServer, sb ? b : "(old)", mod ? "[MOD] (moderator permissions)" : "NOT [MOD]");
+    if(!mod && s_bModMaster && sb < 34010)
+        SysMsg(COL_RED, "This copy of the server is older than MP 3.40.1 and doesn't know the Trunk key. It is hosted by an old phone / a VPS that didn't update - rejoin when it runs 3.50.1.");
+    else if(!mod && s_bModMaster) SysMsg(COL_RED, "Rejoin the server (Disconnect, then Connect) - the key is sent at the join.");
+}
 static bool SrvSettingsCommand(const char* cmd, const char*)
 {
+    if(!strcmp(cmd, "modcheck") || !strcmp(cmd, "whyamimod")) { ModCheckReport(); return true; }
     if(strcmp(cmd, "settings") && strcmp(cmd, "srvsettings") && strcmp(cmd, "ss") && strcmp(cmd, "serversettings")) return false;
     SrvSettingsShow();
     return true;
@@ -99,8 +118,8 @@ static void ModCheckProcess(uint64_t now)
     if(s_Said || now - s_At < 5000 || myId >= MP_MAX_PLAYERS || !players[myId].active) return;
     s_Said = true;
     if(MP_IsReservedName(settings.name) || UI::IsAdminName(players[myId].name)) return;
-    if(UI::IsModName(players[myId].name)) { SysMsg(COL_GREEN, "Moderator: you are [MOD] %s here (kick / mute: MP menu > Players).", settings.name); return; }
+    if(UI::IsModName(players[myId].name)) { SysMsg(COL_GREEN, "Moderator: you are [MOD] %s here (kick / ban / mute / freeze: MP menu > Players, server settings: /settings).", settings.name); return; }
     if(client.HasModKey())
-        SysMsg(COL_YELLOW, s_bModMaster ? "moderator.txt: the MP moderator key was read, but this server didn't give [MOD] - it still runs an older MP (it updates by itself)."
+        SysMsg(COL_YELLOW, s_bModMaster ? "moderator.txt: the MP moderator key was read, but this server didn't give [MOD] (it runs an older MP). Type /modcheck to see why."
                                          : "moderator.txt: this key is not the MP moderator key and this server's owner hasn't listed it - ask for the MP moderator key.");
 }

@@ -792,6 +792,8 @@ static void LPagePlayers()
     // 3.39: admin + moderators manage the 4 featured servers only; a custom server is managed by its host owner
     const bool onFeatured = client.GetState() == NET_CONNECTED && (MP::IsOnDefault() || BcwOnServer() || Mw3OnServer() || RpOnServer());
     if(client.GetState() == NET_CONNECTED && FloatMenu::BigButton("Server settings (gamemodes / permissions / rules)")) { s_bLauncherCloseReq = true; SrvSettingsShow(); }
+    if(onFeatured && !MP::IsLocalMod() && !MP::IsDefaultAdmin() && MP::LocalModName())   // 3.50.1
+    { ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 0.85f, 0.2f, 1)); ImGui::TextWrapped("moderator.txt has the MP moderator key, but this server didn't give you [MOD] (older MP copy). Type /modcheck, then rejoin."); ImGui::PopStyleColor(); }
     if((MP::IsDefaultAdmin() || MP::IsLocalMod()) && onFeatured) { LPagePlayersAdmin(); return; }   // 3.35: [MOD] kicks / mutes too   // 2.37
     if(MP::IsHostingDefault())
     {

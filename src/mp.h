@@ -249,6 +249,7 @@ namespace MP
     bool IsOnDefault();
     bool CheatMenuAllowed();   // 3.00: on a custom server whose host turned Cheat Menu on
     bool IsLocalAdmin();     // 2.37: this phone has a valid admin.txt and the name SENJI
+    const char* LocalModName();   // 3.50.1: "[MOD] name" when moderator.txt has the MP moderator key (else nullptr)
     bool IsLocalMod();       // 3.35: connected with "[MOD] name" (moderator.txt)
     bool IsDefaultAdmin();   // 2.37: I am [ADMIN] SENJI on the default server (the server gave me the tag)
     bool AddResource(const char* name);  // ": server_example" -> listed in the chat on join (90 built in, +32)
