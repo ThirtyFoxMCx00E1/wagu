@@ -69,9 +69,6 @@ public:
     void SetRpFile(const char* path);           // 3.25: citizens (money, bank, job, house...) + house owners (default rp_citizens.txt)
     void SetProgressFile(const char* path);     // 3.39.1: saved progress of every player (default progress.txt)
     void SetHomeFile(const char* path);         // 3.39: Home Kit houses (default homes.txt)
-    // 3.41: Plugins > Textdraw (.mptd files from the MP Textdraw Editor): shown to every player
-    // (ids 64..255, max 192; phones before 3.41 ignore ids >= 64). Live: joined players get them too.
-    void SetPluginTextdraws(const std::vector<PktTextDraw>& tds);
     void SetRules(bool on, const char* title, const char* const lines[10]);   // 3.39: rules window (custom servers)
     void SetOwnerUid(const char* uid) { std::lock_guard<std::mutex> lk(m_Mutex); MP_CopyStr(m_szOwnerUid, uid ? uid : "", sizeof(m_szOwnerUid)); }   // 3.39: the host phone = the owner
     bool HomesOn() const;                       // 3.39: GM_HOME on (always on Mega Vil Futuristic)
@@ -252,7 +249,6 @@ private:
     char    m_szMotdCaption[64] = {0};
     char    m_szMotd[MP_DIALOG_INFO_LEN] = {0};
     char    m_szBanner[128] = {0};
-    std::vector<PktTextDraw> m_PluginTd;   // 3.41 (guarded by m_Mutex)
     char    m_szTurfFile[256] = {0};
     struct NetPickup { bool used; uint16_t uid; uint8_t weapon; uint16_t ammo; float pos[3]; uint64_t born; };
     NetPickup m_Pickups[MP_MAX_PICKUPS];

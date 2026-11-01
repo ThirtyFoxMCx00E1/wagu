@@ -26,3 +26,4 @@ administrator.txt
 moderator.txt
 moderators_server.txt
 _site/
+__pycache__/
