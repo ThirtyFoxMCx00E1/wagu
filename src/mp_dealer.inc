@@ -48,6 +48,110 @@ static void DealerApplyColour(int car, int model)
     Game::SetCarColours(car, kDealerCol[it->second].id, kDealerCol[it->second].id);
 }
 
+
+// ---- 3.55.1: never inside a wall ---------------------------------------------------------------
+// The table spots are only a first guess. When you come near a dealership (its collision is loaded
+// then) the receptionist spot, the lot spot and the showroom camera are tested against the world:
+//   receptionist: ground within 2.5 m of the guess, nothing solid from 0.3 m to 2.3 m over it, and a
+//                 clear line 0.6 m out in 8 directions at chest height (not in / against a wall);
+//   car:          flat ground in a 3 m circle (it turns in the showroom), 2.4 m of headroom, clear
+//                 lines from the middle to 12 points on that circle, 4 m+ away from her;
+//   camera:       a clear line to the car, not inside anything.
+// Failing spots move to the nearest place that passes (rings of 1.5 m out to 20 m). Retried while
+// the collision streams in; /dealerspot shows where they ended up.
+struct DealerSpot { bool done = false; int tries = 0; uint64_t nextTry = 0; bool movedPed = false, movedCar = false;
+                    Vec3 ped = { 0, 0, 0 }; float pedH = 0; Vec3 car = { 0, 0, 0 }; float carH = 0; Vec3 cam = { 0, 0, 0 }; };
+static DealerSpot s_DlSpot[DEALER_SITE_COUNT];
+
+static bool DlClear(const Vec3& a, const Vec3& b) { return Game::LineOfSightClear(a, b); }
+static bool DlPedOk(float x, float y, float zHint, float& gz)
+{
+    float g = Game::GroundBelow(x, y, zHint + 1.5f);
+    if(g < -999.0f || fabsf(g - zHint) > 2.5f) return false;
+    float over = Game::GroundBelow(x, y, g + 2.3f);
+    if(over > g + 0.3f) return false;                              // something solid at body height
+    const Vec3 c = { x, y, g + 1.0f };
+    if(!DlClear(c, { x, y, g + 2.0f })) return false;
+    for(int k = 0; k < 8; ++k)
+    {
+        float a = k * 0.785398f;
+        if(!DlClear(c, { x + cosf(a) * 0.6f, y + sinf(a) * 0.6f, g + 1.0f })) return false;
+    }
+    gz = g; return true;
+}
+static bool DlCarOk(float x, float y, float zHint, float& gz)
+{
+    float g = Game::GroundBelow(x, y, zHint + 2.0f);
+    if(g < -999.0f || fabsf(g - zHint) > 3.0f) return false;
+    if(Game::GroundBelow(x, y, g + 2.4f) > g + 0.3f) return false;   // roof / beam too low
+    const Vec3 c = { x, y, g + 0.8f };
+    if(!DlClear(c, { x, y, g + 2.2f })) return false;
+    for(int k = 0; k < 12; ++k)
+    {
+        float a = k * 0.523599f, px = x + cosf(a) * 3.0f, py = y + sinf(a) * 3.0f;
+        float pg = Game::GroundBelow(px, py, g + 1.5f);
+        if(pg < -999.0f || fabsf(pg - g) > 0.7f) return false;    // a kerb / slope / drop
+        if(Game::GroundBelow(px, py, g + 2.0f) > g + 0.8f) return false;
+        if(!DlClear(c, { px, py, g + 0.8f }) || !DlClear({ x, y, g + 0.4f }, { px, py, pg + 0.4f })) return false;
+    }
+    gz = g; return true;
+}
+// nearest passing spot to (x, y) on rings of 1.5 m; minAway: keep that far from 'away'
+template<class F> static bool DlSearch(float x, float y, float z, float maxR, F ok, Vec3& out, const Vec3* away = nullptr, float minAway = 0)
+{
+    for(float r = 0; r <= maxR; r += 1.5f)
+    {
+        const int n = r < 0.1f ? 1 : (int)(r * 4.2f) + 6;
+        for(int k = 0; k < n; ++k)
+        {
+            float a = k * 6.2831853f / n, px = x + cosf(a) * r, py = y + sinf(a) * r, g;
+            if(away) { float dx = px - away->x, dy = py - away->y; if(dx * dx + dy * dy < minAway * minAway) continue; }
+            if(ok(px, py, z, g)) { out = { px, py, g }; return true; }
+        }
+    }
+    return false;
+}
+static float DlFace(const Vec3& from, const Vec3& to) { float h = atan2f(-(to.x - from.x), to.y - from.y) * 57.29578f; return h < 0 ? h + 360.0f : h; }
+static void DealerFixSpot(int i, const Vec3& me, uint64_t now)
+{
+    DealerSpot& S = s_DlSpot[i]; const DealerSite& d = g_DealerSites[i];
+    if(S.done || now < S.nextTry) return;
+    if(!S.tries) { S.ped = { d.x, d.y, d.z }; S.pedH = d.h; S.car = { d.cx, d.cy, d.cz }; S.carH = d.ch; }
+    float dx = me.x - d.x, dy = me.y - d.y;
+    if(dx * dx + dy * dy > 70.0f * 70.0f) return;                  // collision is only there close by
+    S.nextTry = now + 1500; ++S.tries;
+    float tz; Game::OpenGround(d.x, d.y, d.z, tz); Game::OpenGround(d.cx, d.cy, d.cz, tz);   // request the collision
+    Vec3 p, c;
+    const bool pOk = DlSearch(d.x, d.y, d.z, 20.0f, DlPedOk, p);
+    const Vec3 pp = pOk ? p : Vec3{ d.x, d.y, d.z };
+    const bool cOk = DlSearch(d.cx, d.cy, d.cz, 20.0f, DlCarOk, c, &pp, 4.5f);
+    if((!pOk || !cOk) && S.tries < 6) return;                       // still streaming in: again soon
+    S.ped = pp; S.movedPed = pOk && (fabsf(p.x - d.x) > 0.1f || fabsf(p.y - d.y) > 0.1f);
+    S.car = cOk ? c : Vec3{ d.cx, d.cy, d.cz }; S.movedCar = cOk && (fabsf(c.x - d.cx) > 0.1f || fabsf(c.y - d.cy) > 0.1f);
+    S.pedH = DlFace(S.ped, S.car);                                    // she looks at the lot
+    S.carH = d.ch;
+    // the camera: around the car, 7.5 m out (then closer), 2.6 m up, with a clear view
+    const Vec3 look = { S.car.x, S.car.y, S.car.z + 0.8f };
+    bool camOk = false;
+    static const float kAng[] = { 35, 0, 70, -35, 105, -70, 140, -105, 180, -140 };
+    for(float dist : { 7.5f, 6.0f, 4.8f })
+    {
+        for(float off : kAng)
+        {
+            float r = (S.carH + off) * 0.0174533f;
+            Vec3 cp = { S.car.x - sinf(r) * dist, S.car.y + cosf(r) * dist, S.car.z + 2.6f };
+            float under = Game::GroundBelow(cp.x, cp.y, cp.z + 0.6f);
+            if(under > cp.z - 0.8f) continue;                          // inside / on top of something
+            if(!DlClear(cp, look) || !DlClear(cp, { look.x, look.y, look.z + 1.2f })) continue;
+            S.cam = cp; camOk = true; break;
+        }
+        if(camOk) break;
+    }
+    if(!camOk) S.cam = { S.car.x + 0.5f, S.car.y - 0.5f, S.car.z + 9.0f };   // from above
+    S.done = true;
+}
+static const DealerSpot& DlSpot(int i) { return s_DlSpot[i]; }
+
 static bool DealerServerOn(bool& rp)
 {
     rp = RpOnServer();
@@ -56,7 +160,7 @@ static bool DealerServerOn(bool& rp)
     return MP::IsOnDefault();
 }
 static bool DealerSiteOk(int i, bool rp) { return i >= 0 && i < DEALER_SITE_COUNT && (rp ? g_DealerSites[i].rp : g_DealerSites[i].def); }
-static float DealerDist2(const Vec3& me, int i) { float dx = me.x - g_DealerSites[i].x, dy = me.y - g_DealerSites[i].y; return dx * dx + dy * dy; }
+static float DealerDist2(const Vec3& me, int i) { const Vec3& p = s_DlSpot[i].done ? s_DlSpot[i].ped : Vec3{ g_DealerSites[i].x, g_DealerSites[i].y, g_DealerSites[i].z }; float dx = me.x - p.x, dy = me.y - p.y; return dx * dx + dy * dy; }
 
 static void DealerDropCar() { if(s_Dl.car > 0) Game::DeleteCar(s_Dl.car); s_Dl.car = 0; s_Dl.carModel = 0; }
 static void DealerEndShowroom()
@@ -78,7 +182,7 @@ static void DealerOpenCat(int cat)
     s_Dl.rows.clear();
     for(int i = 0; i < DEALER_VEH_COUNT; ++i) if(g_DealerVeh[i].cat == cat && Game::IsKnownCarModel(g_DealerVeh[i].model)) s_Dl.rows.push_back(i);
     if(s_Dl.rows.empty()) return;
-    s_Dl.cat = cat; s_Dl.idx = 0; s_Dl.col = 0; s_Dl.spin = g_DealerSites[s_Dl.site].ch; s_Dl.stage = 2;
+    s_Dl.cat = cat; s_Dl.idx = 0; s_Dl.col = 0; s_Dl.spin = DlSpot(s_Dl.site).carH; s_Dl.stage = 2;
 }
 
 static void DealerReceptionist(bool want, int site, uint64_t now)
@@ -86,10 +190,10 @@ static void DealerReceptionist(bool want, int site, uint64_t now)
     if(s_Dl.ped && (!want || site != s_Dl.pedSite)) { Game::DeleteChar(s_Dl.ped); s_Dl.ped = 0; s_Dl.pedSite = -1; }
     if(!want || s_Dl.ped || now < s_Dl.pedTry) return;
     s_Dl.pedTry = now + 500;
-    const DealerSite& d = g_DealerSites[site];
+    const DealerSpot& S = DlSpot(site);
+    if(!S.done) return;                                   // 3.55.1: only once her spot was checked
     int skin = Game::IsSafePedModel(150) ? 150 : 141;   // office worker
-    float z = Game::GroundZ(d.x, d.y, d.z + 1.0f); if(z < d.z - 3.0f || z > d.z + 3.0f) z = d.z;
-    s_Dl.ped = Game::CreateNpcPed(skin, { d.x, d.y, z + 1.0f }, d.h);
+    s_Dl.ped = Game::CreateNpcPed(skin, { S.ped.x, S.ped.y, S.ped.z + 1.0f }, S.pedH);
     if(s_Dl.ped) { Game::SetCharGodMode(s_Dl.ped, true); Game::FreezeChar(s_Dl.ped, true); s_Dl.pedSite = site; }
 }
 
@@ -105,17 +209,18 @@ static void DealerProcess(int ped, uint64_t now)
         float best = 120.0f * 120.0f;
         for(int i = 0; i < DEALER_SITE_COUNT; ++i) if(DealerSiteOk(i, rp)) { float d2 = DealerDist2(me, i); if(d2 < best) { best = d2; site = i; } }
     }
+    if(site >= 0) DealerFixSpot(site, me, now);
     DealerReceptionist(site >= 0, site, now);
     if(s_Dl.stage && (site < 0 || site != s_Dl.site || (!s_Dl.cam && DealerDist2(me, site) > 6.0f * 6.0f))) DealerClose();
     if(s_Dl.stage != 2) { if(s_Dl.cam) DealerEndShowroom(); return; }
     // the showroom: the car on the lot, turning slowly, the camera on it
-    const DealerSite& d = g_DealerSites[s_Dl.site];
+    const DealerSpot& S = DlSpot(s_Dl.site);
     const DealerVeh& v = g_DealerVeh[s_Dl.rows[s_Dl.idx]];
     if(s_Dl.car > 0 && (s_Dl.carModel != v.model || !Game::CarExists(s_Dl.car))) DealerDropCar();
-    float gz = Game::GroundZ(d.cx, d.cy, d.cz + 2.0f); if(gz < d.cz - 4.0f || gz > d.cz + 4.0f) gz = d.cz;
+    const float gz = S.car.z;
     if(!s_Dl.car)
     {
-        int car = Game::CreateCar(v.model, { d.cx, d.cy, gz + 1.0f }, false);   // 0 while it streams in
+        int car = Game::CreateCar(v.model, { S.car.x, S.car.y, gz + 1.0f }, false);   // 0 while it streams in
         if(car > 0)
         {
             s_Dl.car = car; s_Dl.carModel = v.model;
@@ -126,9 +231,7 @@ static void DealerProcess(int ped, uint64_t now)
     if(s_Dl.car > 0) { s_Dl.spin += 0.35f; if(s_Dl.spin >= 360.0f) s_Dl.spin -= 360.0f; Game::SetCarHeading(s_Dl.car, s_Dl.spin); }
     if(!s_Dl.cam)
     {
-        const float r = (d.ch + 35.0f) * 0.0174533f;
-        Vec3 cp = { d.cx - sinf(r) * 7.5f, d.cy + cosf(r) * 7.5f, gz + 2.6f };
-        Game::SetFixedCamera(cp, { d.cx, d.cy, gz + 0.6f });
+        Game::SetFixedCamera(S.cam, { S.car.x, S.car.y, gz + 0.6f });
         Game::SetPlayerControl(false); s_Dl.cam = true;
     }
 }
@@ -236,7 +339,7 @@ static void DealerSellList(bool rp)
 static void DealerPurchase(bool rp)
 {
     const DealerVeh& v = g_DealerVeh[s_Dl.rows[s_Dl.idx]];
-    const DealerSite& d = g_DealerSites[s_Dl.site];
+    const DealerSpot& S = DlSpot(s_Dl.site);
     const int ci = s_Dl.col;
     if(rp)
     {
@@ -247,7 +350,7 @@ static void DealerPurchase(bool rp)
     DealerRememberColour(v.model, ci);
     DealerClose();
     int ped = Game::LocalPed();
-    if(ped > 0) Game::TeleportGround(ped, { d.cx, d.cy, d.cz }, d.ch);   // the new car comes on the lot
+    if(ped > 0) Game::TeleportGround(ped, S.car, S.carH);   // the new car comes on the lot
     if(rp) { RpSend(RPC_BUY, 3, (uint8_t)ci, v.model); return; }
     Game::AddMoney(-v.price);
     int car = SpawnVehicleForMe(v.model, false);
@@ -344,21 +447,37 @@ static void DealerRender()
     // the sign over her
     if(s_Dl.ped > 0 && s_Dl.pedSite >= 0 && !s_Dl.cam)
     {
-        const DealerSite& d = g_DealerSites[s_Dl.pedSite];
+        const Vec3& q = DlSpot(s_Dl.pedSite).ped;
         if(DealerDist2(me, s_Dl.pedSite) < 30.0f * 30.0f)
         {
             ImDrawList* bg = ImGui::GetBackgroundDrawList();
-            BcwLabel3D(bg, { d.x, d.y, d.z + 1.35f }, "RECEPTIONIST", RP_SKY, 30.0f, 8.0f);
-            BcwLabel3D(bg, { d.x, d.y, d.z + 1.05f }, "Cardealer", 0xFFFFFFFF, 22.0f, 8.0f);
+            BcwLabel3D(bg, { q.x, q.y, q.z + 2.35f }, "RECEPTIONIST", RP_SKY, 30.0f, 8.0f);
+            BcwLabel3D(bg, { q.x, q.y, q.z + 2.05f }, "Cardealer", 0xFFFFFFFF, 22.0f, 8.0f);
         }
     }
     if(s_Dl.stage == 1) { DealerDrawList(rp); return; }
     if(s_Dl.stage == 2) { DealerDrawShowroom(rp); return; }
     if(s_Dl.stage == 3) { DealerSellList(rp); return; }
     // walk up to her: "Access Showroom" (outlined, right of centre, like the ATM)
-    if(s_Dl.pedSite < 0 || Game::IsCharInAnyCar(ped) || DealerDist2(me, s_Dl.pedSite) > 3.2f * 3.2f || fabsf(me.z - g_DealerSites[s_Dl.pedSite].z) > 3.0f) return;
+    if(s_Dl.pedSite < 0 || Game::IsCharInAnyCar(ped) || DealerDist2(me, s_Dl.pedSite) > 3.2f * 3.2f || fabsf(me.z - DlSpot(s_Dl.pedSite).ped.z) > 3.0f) return;
     if(rp && (RpInvOpen() || s_Rp.phone || s_Rp.talkStage || s_Atm.open)) return;
     ImVec2 ds = ImGui::GetIO().DisplaySize;
     const char* L[1] = { "Access Showroom##dlacc" };
     if(RpOutlineColumn("##DealerBtn", L, 1, UI::S(330), UI::S(62), 0, ds.y * 0.42f) == 0) { s_Dl.site = s_Dl.pedSite; s_Dl.stage = 1; s_Dl.sel = 0; }
+}
+
+// 3.55.1: /dealerspot - where the receptionist, the lot and the camera ended up (and if they moved)
+static bool DealerCommand(const char* cmd, const char*)
+{
+    if(strcmp(cmd, "dealerspot")) return false;
+    bool rp = false; if(!DealerServerOn(rp)) { SysMsg(COL_RED, "Only on the default server and Mega Vil."); return true; }
+    for(int i = 0; i < DEALER_SITE_COUNT; ++i)
+    {
+        if(!DealerSiteOk(i, rp)) continue;
+        const DealerSpot& S = s_DlSpot[i];
+        if(!S.done) { SysMsg(COL_SYSTEM, "%s: not checked yet (go there).", g_DealerSites[i].name); continue; }
+        SysMsg(COL_SYSTEM, "%s: receptionist %.1f %.1f %.1f%s, car %.1f %.1f %.1f%s", g_DealerSites[i].name,
+               S.ped.x, S.ped.y, S.ped.z, S.movedPed ? " (moved off a wall)" : "", S.car.x, S.car.y, S.car.z, S.movedCar ? " (moved off a wall)" : "");
+    }
+    return true;
 }

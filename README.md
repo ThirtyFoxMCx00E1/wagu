@@ -121,6 +121,11 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **3.55.1**: Dealership spots never inside walls: the receptionist, car lot and showroom camera are checked against the world and moved to the nearest clear place
+  - Receptionist spot: ground, nothing solid at body height, clear 0.6 m around her; else the nearest clear spot (up to 20 m)
+  - Car spot: flat ground in a 3 m circle (the car turns), 2.4 m headroom, clear lines to the edge, 4.5 m+ from her; she faces the lot
+  - Showroom camera: picked around the car with a clear view (never inside a wall), from above as a last resort
+  - /dealerspot shows where the spots ended up and if they were moved
 - **3.55**: Car dealership receptionist + showroom (default server, Mega Vil), chat fade on/off, hexagon HUD labels, new GTA-style system font, bigger Broker MQQ logo, [INFO] tips every 35 min 20 s, green/red mission chat
   - Receptionist at Coutt and Schutz (Jefferson, LS) on the default server and Mega Vil, plus Otto's Autos (SF) on the default server: Access Showroom, Cardealer list (Light Truck & Vans, Heavy Truck, SUV & Wagon, Motorbike & Bike, Lowriders, 2 Doors & Compact, 4 Doors & Luxury, Sports & Super, red Sell Vehicle)
   - Showroom preview: the car on the lot under a fixed camera, 06/20 index, name - price, trunk capacity, 9 colour circles, Cancel / PURCHASE / < / >; controller: D-pad + A, LB / RB browse, B back

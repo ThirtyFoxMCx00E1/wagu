@@ -1,6 +1,7 @@
 {
-"latest": "3.55",
+"latest": "3.55.1",
 "supported": [
+"3.55.1",
 "3.55",
 "3.54",
 "3.53.2",
@@ -67,6 +68,16 @@
 "3.04.6"
 ],
 "versions": [
+{
+"v": "3.55.1",
+"summary": "Dealership spots never inside walls: the receptionist, car lot and showroom camera are checked against the world and moved to the nearest clear place",
+"items": [
+"Receptionist spot: ground, nothing solid at body height, clear 0.6 m around her; else the nearest clear spot (up to 20 m)",
+"Car spot: flat ground in a 3 m circle (the car turns), 2.4 m headroom, clear lines to the edge, 4.5 m+ from her; she faces the lot",
+"Showroom camera: picked around the car with a clear view (never inside a wall), from above as a last resort",
+"/dealerspot shows where the spots ended up and if they were moved"
+]
+},
 {
 "v": "3.55",
 "summary": "Car dealership receptionist + showroom (default server, Mega Vil), chat fade on/off, hexagon HUD labels, new GTA-style system font, bigger Broker MQQ logo, [INFO] tips every 35 min 20 s, green/red mission chat",

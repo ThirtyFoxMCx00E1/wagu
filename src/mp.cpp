@@ -749,6 +749,7 @@ static void Modes2Process(int ped, uint64_t now);
 static void Modes2Render();
 static void DealerProcess(int ped, uint64_t now);
 static void DealerRender();
+static bool DealerCommand(const char* cmd, const char* arg);
 static void DealerRememberColour(int model, int ci);
 static void DealerApplyColour(int car, int model);
 static bool MvCommand(const char* cmd, const char* arg);
