@@ -5203,7 +5203,7 @@ void MP::SaveConfig()
     I("ChatFade", settings.chatFade); B("ChatBackground", settings.chatBg);
     B("ChatBoxBackground", settings.chatBoxBg); B("ChatBoxLabel", settings.chatBoxLabel); B("ChatBoxTap", settings.chatBoxTap);   // 2.22
     F("ChatBoxX", settings.chatBoxX); F("ChatBoxY", settings.chatBoxY); B("RealSkin", settings.realSkin);
-    I("Region", settings.region); B("LobbyAuto", settings.lobbyAuto); B("RegionPicked", settings.regionPicked); I("NameColor", (int)settings.nameColor); I("MaxPlayers", settings.maxPlayers); I("HostGamemodes", settings.hostModes); I("ServerIcon", settings.serverIcon); S("ServerLang", settings.serverLang); S("DeviceId", settings.deviceId); S("UiLanguage", settings.uiLanguage);   // 3.52
+    I("Region", settings.region); B("LobbyAuto", settings.lobbyAuto); B("RegionPicked", settings.regionPicked); I("NameColor", (int)settings.nameColor); I("ServerChatColor", (int)settings.serverChatColor); I("PlayerChatColor", (int)settings.playerChatColor); I("MaxPlayers", settings.maxPlayers); I("HostGamemodes", settings.hostModes); I("ServerIcon", settings.serverIcon); S("ServerLang", settings.serverLang); S("DeviceId", settings.deviceId); S("UiLanguage", settings.uiLanguage);   // 3.52
     B("FullProgressDefault", settings.fullProgressDefault);
     B("UnlockWorld", settings.unlockWorld); B("Girlfriends", settings.girlfriends); B("EventTips", settings.eventTips);   // 2.21
     B("PermAfk", settings.permAfk); B("PermDmgInd", settings.permDmgInd); B("PermShowIds", settings.permShowIds); B("PermNeeds", settings.permNeeds); B("RulesOn", settings.rulesOn); S("RulesTitle", settings.rulesTitle);
@@ -5306,6 +5306,8 @@ static void LoadConfig()
     if(settings.team < 0 || settings.team >= 8) settings.team = 0;
     settings.regionPicked    = ::cfg->GetBool("RegionPicked", false, "MP");
     settings.nameColor       = (uint32_t)::cfg->GetInt("NameColor", 0, "MP");
+    settings.serverChatColor = (uint32_t)::cfg->GetInt("ServerChatColor", 0, "MP");   // 3.53.1
+    settings.playerChatColor = (uint32_t)::cfg->GetInt("PlayerChatColor", 0, "MP");
     settings.maxPlayers      = ::cfg->GetInt("MaxPlayers", MP_STD_MAX_PLAYERS, "MP");
     settings.hostModes       = ::cfg->GetInt("HostGamemodes", 0, "MP") & GM_ALL;   // 3.02: none until the host turns them on
     settings.serverIcon      = ::cfg->GetInt("ServerIcon", 0, "MP");   // 2.24
@@ -6550,6 +6552,45 @@ static void RenderVoicePanel(void*)
 
 static bool ChatPlacementOptions(const char* id);   // 2.22
 static bool ChatScaleOptions(const char* id);   // 3.04.5 (below)
+// 3.53.1: chat colours (Settings > Display): "Default" + swatches + any R / G / B colour
+static bool ChatColorPicker(const char* title, const char* id, uint32_t* col, const char* defText, uint32_t defCol)
+{
+    bool changed = false;
+    ImGui::PushID(id);
+    ImGui::TextUnformatted(title);
+    ImGui::SameLine();
+    ImGui::TextColored(ImGui::ColorConvertU32ToFloat4(UI::FromRGBA((*col ? *col : defCol) | 0xFF)), "  %s", *col ? "Example text" : defText);
+    static const uint32_t sw[] = { 0xFFFFFFFF, 0xFF4444FF, 0xFF8C13FF, 0xFFDD33FF, 0x33CC55FF, 0x20B2AAFF, 0x0FD9FAFF, 0x6495EDFF,
+                                   0x4949FFFF, 0xC715FFFF, 0xFF1493FF, 0xEE82EEFF, 0xA9C4E4FF, 0x778899FF, 0x7289DAFF, 0xFFD21EFF };
+    const int n = (int)(sizeof(sw) / sizeof(sw[0])), perRow = 8;
+    float sp = ImGui::GetStyle().ItemSpacing.x;
+    float w = (ImGui::GetContentRegionAvail().x - sp * (perRow - 1)) / perRow;
+    for(int i = 0; i < n; ++i)
+    {
+        if(i % perRow) ImGui::SameLine();
+        ImGui::PushID(i);
+        bool sel = *col == sw[i];
+        if(sel) { ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, UI::S(4)); ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(1, 1, 1, 1)); }
+        if(ImGui::ColorButton("##sw", ImGui::ColorConvertU32ToFloat4(UI::FromRGBA(sw[i])), ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoAlpha, ImVec2(w, w * 0.6f))) { *col = sw[i]; changed = true; }
+        if(sel) { ImGui::PopStyleColor(); ImGui::PopStyleVar(); }
+        ImGui::PopID();
+    }
+    float rgb[3] = { 1, 1, 1 };
+    uint32_t c = *col ? *col : defCol;
+    rgb[0] = ((c >> 24) & 0xFF) / 255.f; rgb[1] = ((c >> 16) & 0xFF) / 255.f; rgb[2] = ((c >> 8) & 0xFF) / 255.f;
+    ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.62f);
+    if(ImGui::SliderFloat3("##rgb", rgb, 0.0f, 1.0f, "%.2f"))
+    {
+        *col = ((uint32_t)(rgb[0] * 255 + 0.5f) << 24) | ((uint32_t)(rgb[1] * 255 + 0.5f) << 16) | ((uint32_t)(rgb[2] * 255 + 0.5f) << 8) | 0xFF;
+        if(!*col) *col = 0x000001FF;
+        changed = true;
+    }
+    ImGui::SameLine();
+    if(ImGui::Button("Default", ImVec2(-FLT_MIN, 0))) { *col = 0; changed = true; }
+    ImGui::PopID();
+    return changed;
+}
+
 static void SectionDisplay(void*)
 {
     bool changed = false;
@@ -6595,6 +6636,14 @@ static void SectionDisplay(void*)
     changed |= FloatMenu::ToggleSwitch("Player radar icons", &settings.showRadarIcons);
     changed |= FloatMenu::ToggleSwitch("Chat", &settings.showChat);
     changed |= ChatScaleOptions("dispsc");   // 3.04.5
+    {   // 3.53.1: chat colours (only on your screen)
+        ImGui::Separator();
+        changed |= ChatColorPicker("Server chat color", "srvchatcol", &settings.serverChatColor, "Default (the server's own colors)", 0xA9C4E4FF);
+        ImGui::TextDisabled("Server and system messages (welcome, rules, jobs, kills ...). Default keeps the colors the server sends.");
+        changed |= ChatColorPicker("Player chat color", "plchatcol", &settings.playerChatColor, "Default (white)", 0xFFFFFFFF);
+        ImGui::TextDisabled("The text players type (their name keeps its own color). Only on your screen.");
+        ImGui::Separator();
+    }
     changed |= FloatMenu::ToggleSwitch("Kill feed", &settings.showKillFeed);
     // 3.34: "Connection status" switch removed (the status line is gone)
     const bool lockModes = ModesLocked();   // 3.35

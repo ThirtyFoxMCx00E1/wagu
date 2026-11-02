@@ -50,6 +50,8 @@ struct MPSettings
     bool  lobbyAuto         = true;    // 2.20: regional brokers: lobby on the lowest-ping region
     bool  regionPicked      = false;   // 2.20: the player chose a region (else it follows the lowest ping once)
     uint32_t nameColor      = 0;       // RGBA; 0 = automatic (server palette)
+    uint32_t serverChatColor = 0;      // 3.53.1: RGBA of server / system chat lines, 0 = the server's own colours
+    uint32_t playerChatColor = 0;      // 3.53.1: RGBA of players' chat text, 0 = white
     int   maxPlayers        = 100;     // limit for your hosted LAN server (1..100)
     int   serverIcon        = 0;       // 2.24: icon of the server you host: 0 = default (main_df_icon.png), 1..250 = icon_N.png
     bool  fullProgressDefault = true;  // 100% save while on the default server (2.10)

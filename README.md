@@ -121,6 +121,9 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **3.53.2**: **Chat colors in Settings > Display, Mega Vil taxi passengers always there.**
+  - Settings > Display: Server chat color (server and system messages) and Player chat color (the text players type), with color swatches, R / G / B sliders and Default. Only on your screen.
+  - Mega Vil taxi job: the passenger is made as soon as the fare starts (up to 300 m away), stands on the street (not under it or on a roof), and if the game can't make one, the passenger gets in anyway when you stop at the yellow marker - no more waiting for a ped.
 - **3.53.1**: **One RULES window, Broker MQQ title on join, live player count, timber yard roof fix, Chinese / Japanese / Korean text.**
   - The small "Welcome to MP LAN Server" box is gone: the RULES window with the 10 rules is the only one when you join the default server.
   - The Broker MQQ title shows from the moment you connect to the default server (connecting screen, spawn picker, under the RULES window), not only after every window was closed.

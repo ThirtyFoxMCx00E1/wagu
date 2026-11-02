@@ -1024,6 +1024,8 @@ static void DrawChat(ImDrawList* dl)
             {   // 3.39: the colour in effect where this row starts (codes before it)
                 ImU32 rc = UI::FromRGBA(l.textColor), nc;
                 for(const char* q = t.c_str(); q < s; ++q) if(*q == '{' && ChatColCode(q, e, nc)) { rc = nc; q += 7; }
+                const uint32_t ov = l.prefix.empty() ? st.serverChatColor : st.playerChatColor;   // 3.53.1: Settings > Display chat colours
+                if(ov) rc = UI::FromRGBA(ov);
                 mine.push_back({ &l, first, std::string(s, cut), alpha, rc });
             }
             s = cut; while(s < e && *s == ' ') ++s;
@@ -1063,7 +1065,15 @@ static void DrawChat(ImDrawList* dl)
             cx += f->CalcTextSizeA(fs, FLT_MAX, 0, pre.c_str()).x;
         }
         else if(!r.first) cx += UI::S(14) * st.chatSize * st.chatScale;   // wrapped rest: small indent
-        if(r.text.find('{') != std::string::npos) ChatColText(dl, f, fs, ImVec2(cx, y), r.col ? r.col : UI::FromRGBA(r.l->textColor), r.text, r.alpha);   // 3.39
+        const uint32_t ov = r.l->prefix.empty() ? st.serverChatColor : st.playerChatColor;   // 3.53.1
+        if(ov)
+        {   // one colour for the whole line: the {RRGGBB} codes are left out
+            std::string plain; plain.reserve(r.text.size()); ImU32 dummy;
+            const char* q = r.text.c_str(); const char* qe = q + r.text.size();
+            for(; q < qe; ++q) { if(*q == '{' && ChatColCode(q, qe, dummy)) { q += 7; continue; } plain += *q; }
+            UI::OutlinedText(dl, fs, ImVec2(cx, y), UI::FromRGBA(ov), plain.c_str(), r.alpha);
+        }
+        else if(r.text.find('{') != std::string::npos) ChatColText(dl, f, fs, ImVec2(cx, y), r.col ? r.col : UI::FromRGBA(r.l->textColor), r.text, r.alpha);   // 3.39
         else UI::OutlinedText(dl, fs, ImVec2(cx, y), r.col ? r.col : UI::FromRGBA(r.l->textColor), r.text.c_str(), r.alpha);
         y -= rowH;
     }

@@ -434,7 +434,7 @@ static void RpLifeProcess(int ped, uint64_t now, bool engaged)
 // your taxi and get in as a passenger. Drive to the marker and stop: they get out, walk away, you
 // get paid. No passenger in the car = no arrival (the fare can't be done without them).
 enum { TX_IDLE = 0, TX_WAIT, TX_ENTER, TX_RIDE, TX_LEAVE, TX_GONE };
-struct RpTaxi { int phase; int npc; int car; int blip; int cp; Vec3 pick; float dest[3]; uint64_t t, lastTry, lastMsg; };
+struct RpTaxi { int phase; int npc; int car; int blip; int cp; Vec3 pick; float dest[3]; uint64_t t, lastTry, lastMsg; int skin; uint64_t skinAt, nearAt; bool grounded; };   // 3.53.1: + skin chosen once, arrival time at the spot
 static RpTaxi s_Taxi = {};
 static const int kTaxiSkins[] = { 7, 9, 12, 15, 19, 20, 40, 41, 55, 56, 69, 72, 93, 98, 141, 150, 170, 184, 187, 240 };
 
@@ -473,7 +473,12 @@ static void RpTaxiPickSpot(const Vec3& me)
     }
     if(best >= 0) s_Taxi.pick = { g_RpStreet[best][0], g_RpStreet[best][1], g_RpStreet[best][2] };
     else s_Taxi.pick = { me.x + 40.0f, me.y, me.z };
-    s_Taxi.pick.z = Game::GroundZ(s_Taxi.pick.x, s_Taxi.pick.y, s_Taxi.pick.z + 2.0f);
+    // 3.53.1: the street table already has the height. GroundZ from far away (collision not loaded) gave a
+    // roof or nothing, so the passenger was put under the road / on a building and never seen.
+    float g = Game::GroundZBelow(s_Taxi.pick.x, s_Taxi.pick.y, s_Taxi.pick.z + 1.5f);
+    if(g > -999.0f && fabsf(g - s_Taxi.pick.z) < 3.0f) { s_Taxi.pick.z = g; s_Taxi.grounded = true; }
+    s_Taxi.skin = kTaxiSkins[rand() % (int)(sizeof(kTaxiSkins) / sizeof(kTaxiSkins[0]))]; s_Taxi.skinAt = MP_NowMs();
+    Game::ModelReady(s_Taxi.skin);   // start loading the model now, not when you are there
 }
 
 // called by the arrival check: true = send RPC_ARRIVE now
@@ -488,6 +493,7 @@ static bool RpTaxiArrive(int ped)
     int car = Game::GetCarCharIsIn(ped);
     Vec3 v = {}; if(car) Game::GetMoveSpeed(car, true, v);
     if(v.x * v.x + v.y * v.y > 3.0f * 3.0f) return false;   // stop the car first
+    if(!s_Taxi.npc) { SysMsg(COL_GREEN, "[TAXI] Passenger: \"Thanks, keep the change.\""); RpTaxiReset(true); return true; }   // 3.53.1
     Game::TaskLeaveCar(s_Taxi.npc, s_Taxi.car);
     s_Taxi.phase = TX_LEAVE; s_Taxi.t = MP_NowMs();
     SysMsg(COL_GREEN, "[TAXI] Passenger: \"Thanks, keep the change.\"");
@@ -533,15 +539,42 @@ static void RpTaxiTick(int ped, uint64_t now)
     float px = s_Taxi.pick.x - me.x, py = s_Taxi.pick.y - me.y, dPick = sqrtf(px * px + py * py);
     if(s_Taxi.phase == TX_WAIT)
     {
-        if(!s_Taxi.npc && dPick < 140.0f)
-        {
-            int skin = kTaxiSkins[rand() % (int)(sizeof(kTaxiSkins) / sizeof(kTaxiSkins[0]))];
-            if(!Game::ModelReady(skin)) return;
-            float h = atan2f(-px, -py) * 57.2958f;   // looking at the road (towards me)
-            s_Taxi.npc = Game::CreateNpcPed(skin, s_Taxi.pick, h < 0 ? h + 360.0f : h);
+        if(!s_Taxi.npc)
+        {   // 3.53.1: the passenger is there when you arrive - made as soon as the model is loaded (up to 300 m)
+            if(!s_Taxi.skin) { s_Taxi.skin = kTaxiSkins[rand() % (int)(sizeof(kTaxiSkins) / sizeof(kTaxiSkins[0]))]; s_Taxi.skinAt = now; }
+            bool ready = Game::ModelReady(s_Taxi.skin);
+            if(!ready && now - s_Taxi.skinAt > 3000)
+            {   // this model doesn't load (not on this phone / not allowed): another one
+                s_Taxi.skin = kTaxiSkins[rand() % (int)(sizeof(kTaxiSkins) / sizeof(kTaxiSkins[0]))]; s_Taxi.skinAt = now;
+            }
+            if(ready && dPick < 300.0f)
+            {
+                if(!s_Taxi.grounded && dPick < 120.0f)
+                {
+                    float g = Game::GroundZBelow(s_Taxi.pick.x, s_Taxi.pick.y, s_Taxi.pick.z + 1.5f);
+                    if(g > -999.0f && fabsf(g - s_Taxi.pick.z) < 3.0f) s_Taxi.pick.z = g;
+                    s_Taxi.grounded = true;
+                }
+                float h = atan2f(-px, -py) * 57.2958f;   // looking at the road (towards me)
+                Vec3 at = s_Taxi.pick; at.z += 1.0f;      // CreateNpcPed puts the feet 1 m below
+                s_Taxi.npc = Game::CreateNpcPed(s_Taxi.skin, at, h < 0 ? h + 360.0f : h);
+                if(s_Taxi.npc) return;
+            }
+            // still nobody when you are at the marker: the passenger gets in anyway (no waiting for a ped)
+            if(dPick < 14.0f) { if(!s_Taxi.nearAt) s_Taxi.nearAt = now; } else s_Taxi.nearAt = 0;
+            int car = Game::GetCarCharIsIn(ped);
+            if(s_Taxi.nearAt && now - s_Taxi.nearAt > 2500 && car && Game::GetDriverOfCar(car) == ped)
+            {
+                s_Taxi.car = car; s_Taxi.phase = TX_RIDE; s_Taxi.t = now;
+                RpTaxiMarkers(false);
+                SysMsg(COL_GREEN, "[TAXI] Passenger in. Drive to the fare marker and stop there.");
+            }
             return;
         }
-        if(!s_Taxi.npc) return;
+        {   // 3.53.1: fell under the road (collision loaded late): back on the street
+            Vec3 np; Game::GetCharPos(s_Taxi.npc, np);
+            if(dPick < 80.0f && np.z < s_Taxi.pick.z - 2.0f) Game::Teleport(s_Taxi.npc, s_Taxi.pick, 0.0f);
+        }
         Vec3 np; Game::GetCharPos(s_Taxi.npc, np);
         float nx = np.x - me.x, ny = np.y - me.y, dN = sqrtf(nx * nx + ny * ny);
         if(dN < 25.0f && now - s_Taxi.lastMsg > 1500) Game::TaskLookAtChar(s_Taxi.npc, ped, 1500);
@@ -581,7 +614,7 @@ static void RpTaxiTick(int ped, uint64_t now)
         }
         return;
     }
-    if(s_Taxi.phase == TX_RIDE && !Game::IsCharInCar(s_Taxi.npc, s_Taxi.car))
+    if(s_Taxi.phase == TX_RIDE && s_Taxi.npc && !Game::IsCharInCar(s_Taxi.npc, s_Taxi.car))
     {   // the car is gone / they got out: wait there for the taxi again
         Game::GetCharPos(s_Taxi.npc, s_Taxi.pick);
         s_Taxi.phase = TX_WAIT; RpTaxiMarkers(true);
