@@ -313,6 +313,7 @@ uint32_t Generation() { return g_nGen.load(); }
 int Entries() { Table* t = g_Table.load(); return t ? (int)t->keys.size() : 0; }
 const std::string& Glyphs() { Table* t = g_Table.load(); return t ? t->glyphs : g_Empty; }
 const char* FontKind() { Table* t = g_Table.load(); return t ? t->font.c_str() : ""; }
+void ResetFontCache() { Table* t = g_Table.load(); if(t) t->fontOk.assign(t->fontOk.size(), { nullptr, -1 }); }   // 3.53
 
 static void PathOf(const char* code, char* out, size_t n) { snprintf(out, n, "%s/lang/%s.lng", g_szDir, code); }
 bool FileExists(const char* code)

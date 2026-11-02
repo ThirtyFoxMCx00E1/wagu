@@ -516,6 +516,7 @@ private:
     std::atomic<uint32_t> m_nStartUnix{0};
     std::atomic<uint8_t> m_nPerms{PERM_MISSION_PAIR};
     std::atomic<uint16_t> m_nModes{0};   // 3.02: custom servers start with no gamemodes
+    std::atomic<bool>     m_bStaffModes{false};   // 3.53: the default server's staff picked the gamemodes (else all)
     void MakePerms(PktPerms& p, uint8_t perms) const;
     char               m_szPassword[MP_PASSWORD_LEN + 1] = {0};
     bool IsPartner(int a, int b) const { return a >= 0 && b >= 0 && a < MP_MAX_PLAYERS && b < MP_MAX_PLAYERS && a != b && m_Slots[a].used && m_Slots[b].used && m_Slots[a].pair != MP_INVALID_ID && m_Slots[a].pair == m_Slots[b].pair; }

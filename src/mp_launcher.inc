@@ -12,7 +12,7 @@
 // The administrator is the one who hosts the server (this phone's player name).
 // =============================================================================================
 
-enum { LT_INTERNET = 0, LT_FAVORITES, LT_HOSTED, LT_ADD, LT_PLAYERS, LT_BANS, LT_SECTIONS };
+enum { LT_INTERNET = 0, LT_FAVORITES, LT_HOSTED, LT_ADD, LT_PLAYERS, LT_BANS, LT_SRVMGMT, LT_SECTIONS };   // 3.53: + Server Management
 static int   s_nLTab = LT_INTERNET;
 static bool  s_bLauncherCloseReq = false;   // 3.39: close the launcher (e.g. Server settings opens a dialog in game)
 static int   s_nLSel = -1;                         // selected row
@@ -225,12 +225,12 @@ static void LBuildRows(int tab, const std::vector<LanServer>& nearby, std::vecto
         r.on = IsOnDefault();
         int found = -1;
         for(int i = 0; i < (int)nearby.size(); ++i)   // 2.29: the 24/7 copy first
-            if(IsDefaultServer(nearby[i].name, nearby[i].port) && (found < 0 || (nearby[i].dedicated && !nearby[found].dedicated))) found = i;
+            if(IsDefaultServer(nearby[i].name, nearby[i].port) && nearby[i].dedicated && found < 0) found = i;   // 3.53: only the 24/7 Broker copy counts
         if(r.on && IsConnected())  { r.players = OnlineCount(); r.maxp = OnlineMax(); r.ping = MP::DisplayPing(); r.live = true; }
         else if(IsHostingDefault()) { r.players = s_Server.GetPlayerCount(); r.maxp = s_Server.GetMaxPlayers(); r.ping = 0; r.live = true; r.mine = true; }
         else if(found >= 0)        { r.players = nearby[found].players; r.maxp = nearby[found].maxPlayers; r.ping = nearby[found].ping; r.live = true; r.internet = nearby[found].token != 0; }
         else                       { r.players = 0; r.maxp = MP_STD_MAX_PLAYERS; r.live = true; }   // 2.29: always there, 0/100 - Join starts it
-        MP_CopyStr(r.lang, (found >= 0 && nearby[found].lang[0]) ? nearby[found].lang : "All", sizeof(r.lang));
+        MP_CopyStr(r.lang, "All", sizeof(r.lang));   // 3.53: the 4 featured servers are always "All" (nobody can change it)
         if(LMatch(r.name)) rows.push_back(r);
         {   // 3.04: Brief Case War - pinned under the default server, always there (0/20) like it
             LRow w; memset(&w, 0, sizeof(w));
@@ -239,7 +239,7 @@ static void LBuildRows(int tab, const std::vector<LanServer>& nearby, std::vecto
             w.on = MP::IsOnBcw();
             int bf = -1;
             for(int i = 0; i < (int)nearby.size(); ++i)
-                if(nearby[i].port == MP_BCW_PORT && MP_IsBcwServerName(nearby[i].name) && (bf < 0 || (nearby[i].dedicated && !nearby[bf].dedicated))) bf = i;
+                if(nearby[i].port == MP_BCW_PORT && MP_IsBcwServerName(nearby[i].name) && nearby[i].dedicated && bf < 0) bf = i;   // 3.53: 24/7 copy only
             bool hosting = s_Server.IsRunning() && s_Server.IsBcwServer();
             if(w.on && IsConnected())  { w.players = OnlineCount(); w.maxp = OnlineMax(); w.ping = MP::DisplayPing(); }
             else if(hosting)           { w.players = s_Server.GetPlayerCount(); w.maxp = MP_BCW_MAX_PLAYERS; w.ping = 0; w.mine = true; }
@@ -255,7 +255,7 @@ static void LBuildRows(int tab, const std::vector<LanServer>& nearby, std::vecto
             w.on = MP::IsOnMw3();
             int bf = -1;
             for(int i = 0; i < (int)nearby.size(); ++i)
-                if(MP_IsMw3ServerName(nearby[i].name) && (bf < 0 || (nearby[i].dedicated && !nearby[bf].dedicated))) bf = i;
+                if(MP_IsMw3ServerName(nearby[i].name) && nearby[i].dedicated && bf < 0) bf = i;   // 3.53: 24/7 copy only
             bool hosting = s_Server.IsRunning() && s_Server.IsMw3Server();   // 3.23.1: a phone keeps it up when the VPS is down
             if(w.on && IsConnected())  { w.players = OnlineCount(); w.maxp = OnlineMax(); w.ping = MP::DisplayPing(); }
             else if(hosting)           { w.players = s_Server.GetPlayerCount(); w.maxp = MP_MW3_MAX_PLAYERS; w.ping = 0; w.mine = true; }
@@ -271,7 +271,7 @@ static void LBuildRows(int tab, const std::vector<LanServer>& nearby, std::vecto
             w.on = MP::IsOnRp();
             int bf = -1;
             for(int i = 0; i < (int)nearby.size(); ++i)
-                if(MP_IsRpServerName(nearby[i].name) && (bf < 0 || (nearby[i].dedicated && !nearby[bf].dedicated))) bf = i;
+                if(MP_IsRpServerName(nearby[i].name) && nearby[i].dedicated && bf < 0) bf = i;   // 3.53: 24/7 copy only
             bool hosting = s_Server.IsRunning() && s_Server.IsRpServer();
             if(w.on && IsConnected())  { w.players = OnlineCount(); w.maxp = OnlineMax(); w.ping = MP::DisplayPing(); }
             else if(hosting)           { w.players = s_Server.GetPlayerCount(); w.maxp = MP_RP_MAX_PLAYERS; w.ping = 0; w.mine = true; }
@@ -728,6 +728,97 @@ static void LRightPanel(const LRow* r, float w, float h)
 
 // ---- admin pages: players (kick / ban) + ban list -------------------------------------------------
 // 2.37: [ADMIN] SENJI manages the default server from his phone (the server checks the admin key)
+// ---- 3.53: Server Management page --------------------------------------------------------------
+// Only there while you are ON a server (it goes away when you leave). Everybody can look; who can change:
+//   the 4 featured servers (default, Brief Case War, MW3, Mega Vil) -> [ADMIN] SENJI + moderators
+//   (moderator.txt + the name Trunk) - also with many players on it, the first joiner is nobody special;
+//   a custom server -> only its host owner (the phone that hosts it).
+static bool LSrvMgmtAvailable() { return client.GetState() == NET_CONNECTED; }
+static bool LSrvFeatured() { return MP::IsOnDefault() || BcwOnServer() || Mw3OnServer() || RpOnServer(); }
+static void LSrvHeader(const char* t) { ImGui::Dummy(ImVec2(0, UI::S(10))); ImGui::TextColored(ImVec4(1.0f, 0.65f, 0.15f, 1), "%s", t); ImGui::Separator(); }
+static void LPageServerMgmt()
+{
+    if(!LSrvMgmtAvailable()) { s_nLTab = LT_INTERNET; return; }
+    static uint64_t s_nAskAt = 0;
+    const uint64_t now = MP_NowMs();
+    const bool newSrv = client.GetServerBuild() >= 33900;
+    // ask the server for the live state (at most every 4 s while the page is open)
+    if(newSrv && now - s_nAskAt > 4000) { s_nAskAt = now; PktSrvSettings q; memset(&q, 0, sizeof(q)); q.type = PKT_SRV_SETTINGS; q.op = 0; client.Send(&q, sizeof(q)); }
+    if(!s_SrvSet.have)
+    {
+        memset(&s_SrvSet.s, 0, sizeof(s_SrvSet.s));
+        s_SrvSet.s.type = PKT_SRV_SETTINGS; s_SrvSet.s.modes = s_nServerModes; s_SrvSet.s.perms = s_nServerPerms;
+        s_SrvSet.s.rulesOn = MP::IsOnDefault() ? 1 : 0;
+    }
+    const bool featured = LSrvFeatured();
+    const bool staff = MP::IsLocalAdmin() || MP::IsLocalMod();
+    const bool canEdit = newSrv && (s_SrvSet.s.can || (featured && staff) || (!featured && IsHosting()));
+    PktSrvSettings& st = s_SrvSet.s;
+
+    ImGui::SetWindowFontScale(1.15f);
+    ImGui::TextColored(ImVec4(1, 1, 1, 1), "Server Management");
+    ImGui::SetWindowFontScale(1.0f);
+    ImGui::TextDisabled("%s", client.GetServerName()[0] ? client.GetServerName() : "...");
+
+    LSrvHeader("SERVER");
+    if(featured)
+    {
+        ImGui::TextWrapped("Hosted by: " MP_BOT_NAME " (24/7 bot)  &  [MOD] Trunk (moderator)  &  [ADMIN] SENJI (admin)");
+        ImGui::TextDisabled("Online 24/7 on the MP console - it never needs a player to start it.");
+    }
+    else if(IsHosting()) ImGui::TextWrapped("Hosted by: you (this phone is the host owner)");
+    else ImGui::TextWrapped("Hosted by: the host owner's phone / VPS");
+    ImGui::Text("Players: %d/%d     Ping: %d ms", MP::OnlineCount(), MP::OnlineMax(), MP::DisplayPing());
+    if(featured) ImGui::Text("Language: All  (fixed - nobody can change it on the featured servers)");
+    else ImGui::Text("Language: %s", settings.serverLang[0] ? settings.serverLang : "All");
+    if(canEdit) ImGui::TextColored(ImVec4(0.3f, 0.85f, 0.4f, 1), "You can change these settings (%s).", MP::IsLocalAdmin() ? "[ADMIN]" : MP::IsLocalMod() ? "[MOD]" : "host owner");
+    else if(!newSrv) ImGui::TextColored(ImVec4(1, 0.8f, 0.2f, 1), "This server runs an old MP: view only until it updates.");
+    else ImGui::TextColored(ImVec4(1, 0.8f, 0.2f, 1), "View only - %s.", featured ? "only the admin and the moderators change the featured servers" : "only the host owner changes this server");
+    if(featured && !staff && MP::LocalModName()) ImGui::TextColored(ImVec4(1, 0.4f, 0.4f, 1), "moderator.txt was not accepted here - type /modcheck in the chat to see why.");
+
+    bool send = false;
+    LSrvHeader("GAMEMODES");
+    const bool modesFixed = featured && !MP::IsOnDefault();
+    if(modesFixed) ImGui::TextDisabled("This featured server runs only its own gamemode.");
+    if(!canEdit || modesFixed) ImGui::BeginDisabled();
+    for(int i = 0; i < MP_GAMEMODE_COUNT; ++i)
+    {
+        bool on = (st.modes & kGameModes[i].bit) != 0;
+        if(FloatMenu::ToggleSwitch(kGameModes[i].name, &on)) { st.modes ^= kGameModes[i].bit; send = true; }
+    }
+    if(!canEdit || modesFixed) ImGui::EndDisabled();
+
+    LSrvHeader("PERMISSIONS");
+    if(!canEdit) ImGui::BeginDisabled();
+    for(int i = 0; i < SRV_PERM_ROWS; ++i)
+    {
+        bool on = (st.perms & kSrvPerms[i].bit) != 0;
+        if(FloatMenu::ToggleSwitch(kSrvPerms[i].name, &on)) { st.perms ^= kSrvPerms[i].bit; send = true; }
+    }
+    { bool on = st.rulesOn != 0; if(FloatMenu::ToggleSwitch("Rules window after the login", &on)) { st.rulesOn = on ? 1 : 0; send = true; } }
+    if(!canEdit) ImGui::EndDisabled();
+    if(send && canEdit) { SrvSettingsSend(); s_SrvSet.at = now; s_nAskAt = now; }
+
+    LSrvHeader("MORE");
+    if(FloatMenu::BigButton("Players (kick / ban / spectate)")) s_nLTab = LT_PLAYERS;
+    if(FloatMenu::BigButton("Ban list")) s_nLTab = LT_BANS;
+    if(FloatMenu::BigButton("Refresh")) { s_nAskAt = 0; }
+}
+
+// 3.53: controller LB / RB - the pages in the order of the side bar
+bool MP::LauncherPadPage(int dir)
+{
+    if(!FloatMenu::IsModal()) return false;
+    int order[64]; int n = 0;
+    order[n++] = LT_INTERNET; order[n++] = LT_FAVORITES; order[n++] = LT_ADD; order[n++] = LT_PLAYERS; order[n++] = LT_BANS;
+    if(LSrvMgmtAvailable()) order[n++] = LT_SRVMGMT;
+    for(int i = 0; i < FloatMenu::SectionCount() && n < 64; ++i) order[n++] = LT_SECTIONS + i;
+    int at = 0; for(int i = 0; i < n; ++i) if(order[i] == s_nLTab) { at = i; break; }
+    at = (at + dir + n) % n;
+    s_nLTab = order[at];
+    return true;
+}
+
 static void LPagePlayersAdmin()
 {
     ImGui::Text(MP::IsLocalMod() ? "This server   |   Moderator: " : "Default server   |   Administrator: ");
@@ -791,7 +882,7 @@ static void LPagePlayers()
 {
     // 3.39: admin + moderators manage the 4 featured servers only; a custom server is managed by its host owner
     const bool onFeatured = client.GetState() == NET_CONNECTED && (MP::IsOnDefault() || BcwOnServer() || Mw3OnServer() || RpOnServer());
-    if(client.GetState() == NET_CONNECTED && FloatMenu::BigButton("Server settings (gamemodes / permissions / rules)")) { s_bLauncherCloseReq = true; SrvSettingsShow(); }
+    if(client.GetState() == NET_CONNECTED && FloatMenu::BigButton("Server Management (gamemodes / permissions / rules)")) s_nLTab = LT_SRVMGMT;   // 3.53
     if(onFeatured && !MP::IsLocalMod() && !MP::IsDefaultAdmin() && MP::LocalModName())   // 3.50.1
     { ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 0.85f, 0.2f, 1)); ImGui::TextWrapped("moderator.txt has the MP moderator key, but this server didn't give you [MOD] (older MP copy). Type /modcheck, then rejoin."); ImGui::PopStyleColor(); }
     if((MP::IsDefaultAdmin() || MP::IsLocalMod()) && onFeatured) { LPagePlayersAdmin(); return; }   // 3.35: [MOD] kicks / mutes too   // 2.37
@@ -1122,6 +1213,8 @@ static void RenderLauncher(void* openPtr)
         LGroupLabel("ADMIN");
         if(LSideItem("pl",   IC_USERS, "Players",   s_nLTab == LT_PLAYERS,   iw, ih)) { s_nLTab = LT_PLAYERS; }
         if(LSideItem("bans", IC_BAN,   "Bans",      s_nLTab == LT_BANS,      iw, ih)) { s_nLTab = LT_BANS; }
+        if(LSrvMgmtAvailable()) { if(LSideItem("srvm", IC_SLIDERS, "Server Management", s_nLTab == LT_SRVMGMT, iw, ih)) { s_nLTab = LT_SRVMGMT; } }   // 3.53: only while joined
+        else if(s_nLTab == LT_SRVMGMT) s_nLTab = LT_INTERNET;
         LGroupLabel("SETTINGS");
         for(int i = 0; i < FloatMenu::SectionCount(); ++i)
         {
@@ -1163,6 +1256,7 @@ static void RenderLauncher(void* openPtr)
         case LT_ADD:     SectionAddServer(nullptr); break;
         case LT_PLAYERS: LPagePlayers(); break;
         case LT_BANS:    LPageBans(); break;
+        case LT_SRVMGMT: LPageServerMgmt(); break;   // 3.53
         default:
             if(s_nLTab >= LT_SECTIONS && s_nLTab - LT_SECTIONS < FloatMenu::SectionCount()) FloatMenu::DrawSection(s_nLTab - LT_SECTIONS);
             else s_nLTab = LT_INTERNET;

@@ -175,7 +175,23 @@ void MPClient::Poll(INetEvents* ev)
         sockaddr_in from; socklen_t fl = sizeof(from);
         int r = (int)recvfrom(m_Sock, buf, sizeof(buf), 0, (sockaddr*)&from, &fl);
         if(r <= 0) break;
-        if(from.sin_addr.s_addr != m_Server.sin_addr.s_addr || from.sin_port != m_Server.sin_port) continue;
+        if(from.sin_addr.s_addr != m_Server.sin_addr.s_addr || from.sin_port != m_Server.sin_port)
+        {
+            // 3.53 hotspot fix: a phone that is a Wi-Fi hotspot AND on Wi-Fi / mobile data has several
+            // addresses. Typed or found on one of them, its server answers from the hotspot address, so every
+            // answer was thrown away: the friend hung on the black "Connecting..." screen. While connecting,
+            // an answer to our join from the same port on a private (LAN / hotspot) address = that server.
+            auto priv = [](uint32_t be) { const uint32_t a = ntohl(be); return (a >> 24) == 10 || (a >> 20) == 0xAC1 || (a >> 16) == 0xC0A8 || (a >> 22) == 0x191; };   // 10/8 172.16/12 192.168/16 100.64/10
+            if(m_eState == NET_CONNECTING && from.sin_port == m_Server.sin_port && (buf[0] == PKT_WELCOME || buf[0] == PKT_REJECT)
+               && priv(from.sin_addr.s_addr) && priv(m_Server.sin_addr.s_addr))
+            {
+                char oldIp[32], newIp[32];
+                inet_ntop(AF_INET, &m_Server.sin_addr, oldIp, sizeof(oldIp)); inet_ntop(AF_INET, &from.sin_addr, newIp, sizeof(newIp));
+                { std::lock_guard<std::mutex> lk(m_SockMutex); m_Server.sin_addr = from.sin_addr; }
+                if(!strcmp(m_szHost, oldIp)) MP_CopyStr(m_szHost, newIp, sizeof(m_szHost));
+            }
+            else continue;
+        }
         m_nLastRecv = now;
         m_bGotReply = true;
 

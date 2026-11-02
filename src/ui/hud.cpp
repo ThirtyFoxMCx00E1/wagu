@@ -2,6 +2,9 @@
 #include <ctype.h>
 #include <dirent.h>
 #include <mutex>
+#include <thread>
+#include <atomic>
+#include <string>
 #include <vector>
 // In-game HUD for MP, drawn with Dear ImGui through the RenderWare backend.
 #include <mod/amlmod.h>
@@ -205,20 +208,32 @@ static bool MergePhoneFont(ImFontAtlas* atlas, const char* kind, float size, con
     return false;
 }
 
-static ImVector<ImWchar> s_Ranges, s_Script;   // must live as long as the atlas
+// 3.53: the font atlas is built on a worker thread. Before, picking Chinese / Japanese / Korean rebuilt it
+// right inside the frame: reading the phone's 20-40 MB CJK font and drawing ~1,400 CJK glyphs (twice: Arial +
+// the chosen list font) froze the screen for seconds (or for good on weaker phones). Now the game keeps
+// running with the old atlas (texts stay English a moment) and the new one is swapped in when it is ready.
+struct FontBuild
+{
+    ImFontAtlas* atlas = nullptr;
+    ImVector<ImWchar> ranges, script;   // must live as long as the atlas
+    ImFont* font = nullptr; ImFont* pricedown = nullptr; ImFont* fonts[UI_FONT_COUNT] = {};
+    std::string glyphs, kind; int fontIdx = 0; uint32_t gen = 0;
+    std::atomic<bool> done{false};
+};
+static FontBuild* s_pCurFonts = nullptr;    // the atlas in use (io.Fonts)
+static FontBuild* s_pNextFonts = nullptr;   // being built on the worker
 static uint32_t s_nFontGen = 0;
 static int s_nFontMerged = -1;   // the font list entry that also got the phone font (the one picked in Settings > Display)
-static void BuildFonts()
+static void BuildFontsInto(FontBuild& fb)
 {
-    ImGuiIO& io = ImGui::GetIO();
-    s_nFontGen = I18n::Generation(); s_nFontMerged = s_nFont;
+    ImFontAtlas* at = fb.atlas;
     // the base set + every character the chosen language uses (Arial has Latin, Vietnamese, Cyrillic, Greek, Arabic forms)
-    s_Ranges.clear(); s_Script.clear();
+    fb.ranges.clear(); fb.script.clear();
     {
         static const ImWchar base[] = { 0x0020, 0x00FF, 0x0400, 0x045F, 0x2010, 0x2040, 0 };
         ImFontGlyphRangesBuilder b; b.AddRanges(base);
         ImFontGlyphRangesBuilder sc;
-        const std::string& g = I18n::Glyphs();
+        const std::string& g = fb.glyphs;
         const char* p = g.c_str(); const char* e = p + g.size();
         while(p < e)
         {
@@ -227,18 +242,17 @@ static void BuildFonts()
             if((c >= 0x0E00 && c <= 0x0E7F) || (c >= 0x1100 && c <= 0x11FF) || (c >= 0x2E80 && c <= 0xD7FF) || (c >= 0xF900 && c <= 0xFAFF) || (c >= 0xFF00 && c <= 0xFFEF)) sc.AddChar((ImWchar)c);
             else b.AddChar((ImWchar)c);
         }
-        b.BuildRanges(&s_Ranges);
-        if(I18n::FontKind()[0]) { sc.AddText("0123456789"); sc.BuildRanges(&s_Script); }
+        b.BuildRanges(&fb.ranges);
+        if(fb.kind[0]) { sc.AddText("0123456789"); sc.BuildRanges(&fb.script); }
     }
     ImFontConfig fc; fc.FontDataOwnedByAtlas = false; fc.OversampleH = 2; fc.OversampleV = 2;
-    s_pFont = io.Fonts->AddFontFromMemoryTTF((void*)arialData, sizeof(arialData), UI::S(34.0f), &fc, s_Ranges.Data);
-    if(s_Script.Size > 1) MergePhoneFont(io.Fonts, I18n::FontKind(), UI::S(34.0f), s_Script.Data);
-    io.FontDefault = s_pFont;
+    fb.font = at->AddFontFromMemoryTTF((void*)arialData, sizeof(arialData), UI::S(34.0f), &fc, fb.ranges.Data);
+    if(fb.script.Size > 1) MergePhoneFont(at, fb.kind.c_str(), UI::S(34.0f), fb.script.Data);
     // 2.19: coloured emoji glyphs (chat / keyboard)
-    UI::EmojiAddGlyphs(io.Fonts, s_pFont, UI::S(34.0f));
-    s_pPricedown = LoadPricedown(io.Fonts, UI::S(40.0f));   // 3.00: score bar
+    UI::EmojiAddGlyphs(at, fb.font, UI::S(34.0f));
+    fb.pricedown = LoadPricedown(at, UI::S(40.0f));   // 3.00: score bar
     {   // 3.34: the font list (Settings > Display)
-        s_pFonts[0] = s_pFont; s_pFonts[1] = s_pPricedown;
+        fb.fonts[0] = fb.font; fb.fonts[1] = fb.pricedown;
         static const char* const k2[] = { "Roboto-Regular.ttf", "Roboto-Medium.ttf", nullptr };
         static const char* const k3[] = { "RobotoCondensed-Regular.ttf", "RobotoCondensed-Bold.ttf", nullptr };
         static const char* const k4[] = { "NotoSerif-Regular.ttf", "DroidSerif-Regular.ttf", nullptr };
@@ -249,9 +263,70 @@ static void BuildFonts()
         const char* const* lists[] = { k2, k3, k4, k5, k6, k7, k8 };
         for(int i = 0; i < 7; ++i)
         {
-            s_pFonts[2 + i] = LoadSystemFont(io.Fonts, lists[i], UI::S(34.0f));
-            if(s_pFonts[2 + i] && 2 + i == s_nFont && s_Script.Size > 1) MergePhoneFont(io.Fonts, I18n::FontKind(), UI::S(34.0f), s_Script.Data);   // 3.52
+            fb.fonts[2 + i] = LoadSystemFont(at, lists[i], UI::S(34.0f));
+            if(fb.fonts[2 + i] && 2 + i == fb.fontIdx && fb.script.Size > 1) MergePhoneFont(at, fb.kind.c_str(), UI::S(34.0f), fb.script.Data);   // 3.52
         }
+    }
+    at->Build();
+    UI::EmojiBake(at, fb.font);
+}
+static FontBuild* NewFontBuild()
+{
+    FontBuild* fb = new FontBuild();
+    fb->atlas = IM_NEW(ImFontAtlas)();
+    fb->glyphs = I18n::Glyphs(); fb->kind = I18n::FontKind(); fb->fontIdx = s_nFont; fb->gen = I18n::Generation();
+    return fb;
+}
+static void UseFontBuild(FontBuild* fb)
+{
+    ImGuiIO& io = ImGui::GetIO();
+    s_pFont = fb->font; s_pPricedown = fb->pricedown;
+    for(int i = 0; i < UI_FONT_COUNT; ++i) s_pFonts[i] = fb->fonts[i];
+    io.FontDefault = s_pFont;
+    s_nFontGen = fb->gen; s_nFontMerged = fb->fontIdx;
+}
+bool UI::FontsLoading() { return s_pNextFonts != nullptr; }
+static void BuildFonts()   // the first atlas (HUD::Init): built right here
+{
+    ImGuiIO& io = ImGui::GetIO();
+    FontBuild* fb = new FontBuild();
+    fb->atlas = io.Fonts;   // the context's own atlas
+    fb->glyphs = I18n::Glyphs(); fb->kind = I18n::FontKind(); fb->fontIdx = s_nFont; fb->gen = I18n::Generation();
+    BuildFontsInto(*fb);
+    fb->done = true;
+    s_pCurFonts = fb;
+    UseFontBuild(fb);
+}
+// render thread, between frames: start a background build / swap a finished one in
+static void FontsUpdate()
+{
+    ImGuiIO& io = ImGui::GetIO();
+    if(s_pNextFonts)
+    {
+        if(!s_pNextFonts->done.load()) return;   // still building - the old atlas keeps drawing
+        FontBuild* nf = s_pNextFonts; s_pNextFonts = nullptr;
+        if(!nf->atlas->IsBuilt() || !nf->font)
+        {   // failed (out of memory?): keep the old one, don't try again for this generation
+            logger->Info("3.53: font atlas build failed - keeping the old one");
+            s_nFontGen = nf->gen; s_nFontMerged = nf->fontIdx;
+            IM_DELETE(nf->atlas); delete nf; return;
+        }
+        ImGui_ImplRenderWare_DestroyFontTexture();   // the old raster (NewFrame makes the new one)
+        FontBuild* old = s_pCurFonts;
+        io.Fonts = nf->atlas;
+        s_pCurFonts = nf;
+        UseFontBuild(nf);
+        I18n::ResetFontCache();   // new ImFont pointers: "can this font show it" again
+        UI::SetLook(s_nFont, s_nFontFx, s_fFontScale, s_fUiScale);
+        if(old) { if(old->atlas) IM_DELETE(old->atlas); delete old; }
+        logger->Info("3.53: new font atlas in use (%s)", nf->kind.empty() ? "latin" : nf->kind.c_str());
+    }
+    if(s_nFontGen != I18n::Generation() || (I18n::FontKind()[0] && s_nFontMerged != s_nFont))
+    {
+        FontBuild* fb = NewFontBuild();
+        s_nFontGen = fb->gen; s_nFontMerged = fb->fontIdx;   // no new build every frame meanwhile
+        s_pNextFonts = fb;
+        std::thread([fb]() { BuildFontsInto(*fb); fb->done = true; }).detach();
     }
 }
 
@@ -269,8 +344,6 @@ bool HUD::Init()
     ImGui_ImplRenderWare_Init();
 
     BuildFonts();
-    io.Fonts->Build();
-    UI::EmojiBake(io.Fonts, s_pFont);
 
     FloatMenu::ApplyStyle();
     s_bInit = true;
@@ -1016,15 +1089,7 @@ void HUD::Render()
 
     ImGuiIO& io = ImGui::GetIO();
     io.DisplaySize = ImVec2((float)RsGlobal->maximumWidth, (float)RsGlobal->maximumHeight);
-    if(s_nFontGen != I18n::Generation() || (I18n::FontKind()[0] && s_nFontMerged != s_nFont))   // 3.52: a new language: its characters (and phone font) in the atlas
-    {
-        io.Fonts->Clear();
-        BuildFonts();
-        io.Fonts->Build();
-        UI::EmojiBake(io.Fonts, s_pFont);
-        ImGui_ImplRenderWare_DestroyFontTexture();   // NewFrame makes the new one
-        UI::SetLook(s_nFont, s_nFontFx, s_fFontScale, s_fUiScale);
-    }
+    FontsUpdate();   // 3.52 / 3.53: a new language = its characters (and phone font) in a new atlas, built in the background
     ImGui_ImplRenderWare_NewFrame();
     ImGui::NewFrame();
 

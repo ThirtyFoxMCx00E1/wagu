@@ -348,6 +348,27 @@ static bool EnsureBlock(const char* name)
     return false;
 }
 
+// 3.53 timber: is the ped swinging a chainsaw right now (the game's attack button)? = a one-shot
+// (not looped, 0x2) anim from the chainsaw block, e.g. CSAW_1/2/3/G.
+bool Game::IsCharSawing(int ped)
+{
+    if(!s_bAnimReady) return false;
+    void* clump = ClumpOf(ped);
+    if(!clump) return false;
+    void* a = ClumpFirstAssoc(clump);
+    for(int guard = 0; a && guard < 48; ++guard, a = NextAssoc(a))
+    {
+        if(At<float>(a, AS_BLEND) < 0.25f || (At<uint16_t>(a, AS_FLAGS) & 0x2)) continue;
+        const int group = At<int16_t>(a, AS_GROUP);
+        void* hier = At<void*>(a, AS_HIER);
+        char blk[16] = { 0 };
+        if(hier) { int blockId = At<int32_t>(hier, AH_BLOCK); if(s_pAnimBlocks && blockId >= 0 && blockId < MAX_BLOCKS) memcpy(blk, s_pAnimBlocks + blockId * AB_SIZE, 15); }
+        if(!blk[0] && group >= 0 && group < NUM_GROUPS) { const char* bn = GetAnimBlockName(group); if(bn) strncpy(blk, bn, 15); }
+        if(!strncasecmp(blk, "chainsaw", 8)) return true;
+    }
+    return false;
+}
+
 int Game::GetPedAnims(int ped, PedAnim* out, int maxOut, bool full)
 {
     if(!s_bAnimReady || maxOut <= 0) return 0;

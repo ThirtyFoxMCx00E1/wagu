@@ -121,6 +121,14 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **3.53**: **Friends can join, Server Management, 24/7 Broker servers, controller, timber.**
+  - Joining a private server on a hotspot no longer freezes: the phone accepts the host's reply from its hotspot address, and the connecting screen gives up after 25 s with a message instead of staying black.
+  - New Server Management page in the launcher (only while you are on a server): hosted by Broker (24/7 bot), [MOD] Trunk and [ADMIN] SENJI on the 4 featured servers; gamemodes, permissions, rules, players and bans. The admin and moderators can change them on the featured servers even when other players joined first; on a custom server only the host owner can.
+  - The 4 featured servers (MP LAN Server, Brief Case War, Call Of Duty: Modern Warfare 3, Mega Vil Futuristic) are only joined on the Broker 24/7 copy: an old phone can no longer host them, so the moderator / admin permissions always work. Their language is fixed to All and can't be changed.
+  - Broker 24/7: the featured servers run non stop on GitHub Actions (workflow MP 24/7 featured servers, like the Discord bot runner): every shift starts the next one before it stops, so there is no offline gap. The standby Broker on phones is gone (no more 'standby # broker may offline').
+  - Language page: a dropdown instead of buttons; Chinese, Japanese, Korean and Thai fonts load in the background, so the screen no longer freezes.
+  - Full controller support: D-pad / left stick move between buttons, A press, B back / close, X cursor, Y menu, LB / RB switch pages, LT / RT and right stick scroll, Start closes.
+  - Timber: the truck after /timber spawns on the ground, not in the air; the tree has a hitbox and the chainsaw cuts it (attack or CUT button) once you are inside the circle.
 - **3.52**: **Languages.** Settings > Language (in the launcher and the in-game menu) with 21 languages: English, Spanish, Filipino, Indonesian, Portuguese (Brazil), Arabic, Korean, Russian, Chinese (Simplified), Vietnamese, Japanese, French, German, Italian, Turkish, Polish, Thai, Malay, Ukrainian, Dutch and Chinese (Traditional).
   - Everything MP draws changes at once, no restart: the launcher, every menu and dialog, the HUD, tooltips, buttons, sliders and the server / system chat lines (player chat stays as it was typed, and what you type is never touched). All 2786 texts of the mod are translated (machine translation, files/MP/lang/<code>.lng), numbers and names inside a text are kept.
   - Fonts: Latin with accents, Vietnamese, Cyrillic and Arabic come from the built-in Arial (Arabic is shaped and drawn right to left). Chinese, Japanese, Korean and Thai use the phone's own font (Noto Sans CJK / Noto Sans Thai / Droid Sans Fallback), added to the UI font when you pick the language. A text the font can't show stays English instead of showing boxes.

@@ -53,6 +53,7 @@ int Game::CreateWorldObject(int model, const Vec3& p)
     TrackObj((int)obj);
     return (int)obj;
 }
+void Game::SetObjectCollision(int obj, bool on) { if(obj > 0 && CALLSCM(DOES_OBJECT_EXIST_304, obj)) CALLSCM(SET_OBJECT_COLLISION_304, obj, on ? 1 : 0); }   // 3.53
 void Game::DeleteWorldObject(int obj)
 {
     if(obj > 0 && CALLSCM(DOES_OBJECT_EXIST_304, obj)) CALLSCM(DELETE_OBJECT_304, obj);

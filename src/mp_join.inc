@@ -82,11 +82,12 @@ static void SpotCamera(int i, Vec3& cam, Vec3& look)
     look = { s.x, s.y, s.z + 0.6f };
 }
 
+static uint64_t s_nJoinStartMs = 0;   // 3.53: watchdog of the black connecting screen
 static void JoinOverlayStart()
 {
     if(s_nJoinPhase != JP_NONE) return;
     if(!Game::IsReady()) return;               // still on the loading screen: plain join
-    s_nJoinPhase = JP_COVER; s_nJoinT0 = MP_NowMs();
+    s_nJoinPhase = JP_COVER; s_nJoinT0 = MP_NowMs(); s_nJoinStartMs = s_nJoinT0;
     s_bJoinConnected = false; s_bJoinCamSet = false; s_bSpawnNow = false; s_nSpawnStep = 0;
     s_nSpawnSel = 0;
     FloatMenu::CloseAll();
@@ -135,6 +136,14 @@ static void JoinFlowProcess(int ped, uint64_t now)
     else if(now % 1000 < 40) { Game::ShowGameHud(false); Game::SetPlayerControl(false); }   // scripts may switch them back
     if(client.GetState() == NET_DISCONNECTED && !MP::IsSearching() && s_nFeedStep < 0 && s_nFeedRes < 0 && !s_bTakeoverPending)
     { JoinOverlayCancel(); return; }   // join failed / left: give the game back
+    // 3.53: never hang on the black "Connecting..." screen (a friend on a hotspot looked frozen): no answer
+    // within 25 s = give the game back; the join keeps trying in the background and finishes without it
+    if((s_nJoinPhase == JP_COVER || s_nJoinPhase == JP_BLACK) && !s_bJoinConnected && client.GetState() != NET_CONNECTED && now - s_nJoinStartMs > 25000)
+    {
+        JoinOverlayCancel();
+        SysMsg(COL_YELLOW, "Still connecting - you can move meanwhile. On a hotspot: the host should keep the game open and the screen on.");
+        return;
+    }
 
     switch(s_nJoinPhase)
     {

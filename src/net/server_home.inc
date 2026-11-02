@@ -461,8 +461,11 @@ void MPServer::SendSrvSettings(int slot)
 void MPServer::OnSrvSettings(int slot, const PktSrvSettings& p)
 {
     if(!CanManage(slot)) return;
-    if(IsDefaultServer() || IsBcwServer() || IsMw3Server() || IsRpServer()) { SendSrvSettings(slot); return; }   // featured: fixed gamemodes
-    m_nModes = p.modes & GM_ALL;
+    // 3.53: on the 4 featured servers the admin + moderators really change the settings now (before, every
+    // change was thrown away: "couldn't apply"). Permissions + rules on all 4; gamemodes on the default
+    // server (Brief Case War / MW3 / Mega Vil run only their own gamemode).
+    if(IsDefaultServer()) { m_nModes = p.modes & GM_ALL; m_bStaffModes = true; }
+    else if(!(IsBcwServer() || IsMw3Server() || IsRpServer())) m_nModes = p.modes & GM_ALL;
     m_nPerms = p.perms; m_nBasePerms = p.perms;
     m_bRulesOn = p.rulesOn != 0;
     Log("%s changed the server settings (gamemodes 0x%04X, permissions 0x%02X)", m_Slots[slot].name, (unsigned)m_nModes.load(), (unsigned)m_nPerms.load());

@@ -42,6 +42,7 @@ static struct
     int      xp = 0; uint64_t tiredUntil = 0, sellAgainAt = 0; bool sellMsgDue = false;
     int      icon[2] = {}; uint64_t iconTry = 0;
     bool     builtIn = false, chainsawDue = false, truckDue = false, tpDue = false, loaded = false;
+    uint64_t truckAt = 0; int truckTries = 0; uint64_t treeSnapAt = 0; int treeSnap = 0; bool sawing = false;   // 3.53: the pickup waits for the ground collision (no more mid-air)
 } s_Tb;
 
 static int  TbLevel() { return s_Tb.xp >= 60 ? 3 : (s_Tb.xp >= 20 ? 2 : 1); }
@@ -110,7 +111,13 @@ static void TbLoadSpots()
 }
 static Vec3 TbGround(Vec3 p)
 {
-    if(p.z > -500.0f) { float g = Game::GroundZ(p.x, p.y, p.z + 30.0f); if(g > -100.0f && fabsf(g - p.z) < 30.0f) p.z = g; return p; }
+    // 3.53: the first ground just BELOW the point first (GroundZ starts 40 m up = tree tops / the barn roof)
+    if(p.z > -500.0f)
+    {
+        float g = Game::GroundZBelow(p.x, p.y, p.z + 3.0f);
+        if(g > -999.0f && p.z - g < 30.0f) { p.z = g; return p; }
+        g = Game::GroundZ(p.x, p.y, p.z + 30.0f); if(g > -100.0f && fabsf(g - p.z) < 30.0f) p.z = g; return p;
+    }
     float g = Game::GroundZ(p.x, p.y, 200.0f);
     p.z = g > -100.0f ? g : 30.0f;
     return p;
@@ -232,7 +239,7 @@ static void TbStart()
     if(s_Tb.tiredUntil > now) { SysMsg(COL_RED, "You cannot cut trees right now - you are on a cooldown (%d s, /checkjobcooldown).", (int)((s_Tb.tiredUntil - now) / 1000)); return; }
     if(s_Tb.on) { SysMsg(COL_YELLOW, "{FFA500}LUMBERJACK: {FFFFFF}Tree %d/%d, timber %d/%d, paycheck $%.2f. /quitjob to stop.", s_Tb.idx + 1, TB_MISSION, s_Tb.timber, TB_CAP, s_Tb.paycheck); return; }
     TbLoadSpots();
-    s_Tb.on = true; s_Tb.tpDue = true; s_Tb.chainsawDue = true; s_Tb.truckDue = true; s_Tb.timber = 0;
+    s_Tb.on = true; s_Tb.tpDue = true; s_Tb.chainsawDue = true; s_Tb.truckDue = true; s_Tb.truckAt = MP_NowMs() + 900; s_Tb.truckTries = 0; s_Tb.timber = 0;
     TbPickMission();
     SysMsg(COL_YELLOW, "{FFA500}LUMBERJACK: {FFFFFF}Welcome to the Timber job (woodcutting level %d). Cut %d trees, load the logs in the pickup, sell them at the storage.", TbLevel(), TB_MISSION);
     TbHelp();
@@ -334,13 +341,24 @@ static bool TimberCommand(const char* cmd, const char* arg)
 // ---- the job (game thread) ------------------------------------------------------------------------------
 static void TbSpawnTruck(int ped)
 {
-    Vec3 at = TbGround(s_Tb.start);
+    // 3.53: the pickup used to be created in the same frame as the teleport, before the collision of the
+    // barn was streamed in, 70 m up (GroundZ from 40 m above the tree tops) = it hung in mid-air. Now it
+    // waits until the ground right under ITS OWN spot is loaded and is put on that surface.
+    const uint64_t now = MP_NowMs();
+    if(now < s_Tb.truckAt) return;
     const float r = s_Tb.startH * 0.0174533f;
-    Vec3 cp = { at.x + cosf(r) * 4.0f, at.y + sinf(r) * 4.0f, at.z + 0.8f };
+    Vec3 cp = { s_Tb.start.x + cosf(r) * 4.0f, s_Tb.start.y + sinf(r) * 4.0f, s_Tb.start.z };
+    if(s_Tb.truckTries == 0) Game::PreloadArea(cp, true);
+    float g = Game::GroundZBelow(cp.x, cp.y, s_Tb.start.z + 3.0f);
+    if(g < -999.0f || s_Tb.start.z - g > 20.0f) g = Game::GroundZBelow(cp.x, cp.y, s_Tb.start.z + 8.0f);
+    if((g < -999.0f || s_Tb.start.z - g > 20.0f) && ++s_Tb.truckTries < 40) { s_Tb.truckAt = now + 100; return; }   // not streamed yet: try again (max 4 s)
+    if(g < -999.0f || s_Tb.start.z - g > 20.0f) g = TbGround(s_Tb.start).z;
+    cp.z = g + 0.15f;
     int car = Game::CreateCar(TB_TRUCK, cp, true);
-    if(car <= 0) return;
+    if(car <= 0) { s_Tb.truckAt = now + 250; return; }
     Game::SetCarHeading(car, s_Tb.startH); Game::SetCarColours(car, 1, 1);
-    s_Tb.truck = car; s_Tb.truckDue = false; (void)ped;
+    Game::SetMoveSpeed(car, true, { 0, 0, 0 });
+    s_Tb.truck = car; s_Tb.truckDue = false; s_Tb.truckTries = 0; (void)ped;
 }
 static void TimberProcess(int ped, uint64_t now, float dt)
 {
@@ -368,14 +386,30 @@ static void TimberProcess(int ped, uint64_t now, float dt)
         // a spot of the built-in pool in the river / on the road below: use its anchor tree instead (always on land)
         if(s_Tb.builtIn && s_Tb.treeAt.z < 3.0f && s_Tb.mission[s_Tb.idx] >= 0)
         { TbLoadSpots(); const int ai = s_Tb.anchorOf[s_Tb.mission[s_Tb.idx]]; for(int j = 0; j < s_Tb.nPool; ++j) if(s_Tb.anchorOf[j] == ai) { s_Tb.treeAt = s_Tb.pool[j]; break; } TbSetBlip(s_Tb.treeAt); }
-        s_Tb.tree = Game::CreateWorldObject(669, s_Tb.treeAt); if(s_Tb.tree > 0) Game::PlaceMapObject(s_Tb.tree, s_Tb.treeAt, 0, 0, (float)(s_Tb.idx * 47 % 360));
+        s_Tb.tree = Game::CreateWorldObject(669, s_Tb.treeAt);
+        if(s_Tb.tree > 0) { Game::PlaceMapObject(s_Tb.tree, s_Tb.treeAt, 0, 0, (float)(s_Tb.idx * 47 % 360)); Game::SetObjectCollision(s_Tb.tree, true); s_Tb.treeSnap = 0; }   // 3.53: a real hitbox while it stands
+    }
+    // 3.53: made from far away the ground under it was not streamed in yet (tree in the air / sunk): snap it again
+    // once we are close, a few times, and keep its trunk solid while it stands
+    if((s_Tb.phase == TB_GO || s_Tb.phase == TB_CUT) && s_Tb.tree > 0 && s_Tb.treeSnap < 4 && TbDist2D(me, s_Tb.treeAt) < 60.0f && now - s_Tb.treeSnapAt > 700)
+    {
+        s_Tb.treeSnapAt = now; ++s_Tb.treeSnap;
+        const float g = Game::GroundZBelow(s_Tb.treeAt.x, s_Tb.treeAt.y, me.z + 25.0f);
+        if(g > -999.0f && fabsf(g - s_Tb.treeAt.z) > 0.25f && fabsf(g - me.z) < 25.0f) { s_Tb.treeAt.z = g; Game::PlaceMapObject(s_Tb.tree, s_Tb.treeAt, 0, 0, (float)(s_Tb.idx * 47 % 360)); TbSetBlip(s_Tb.treeAt); }
+        Game::SetObjectCollision(s_Tb.tree, true);
     }
 
     const int type = s_Tb.mType[std::min(s_Tb.idx, TB_MISSION - 1)];
     const float dTree = TbDist2D(me, s_Tb.treeAt);
     if(s_Tb.phase == TB_GO || s_Tb.phase == TB_CUT)
     {
-        const bool want = (s_Tb.holding || s_Tb.cutReq || now - s_Tb.lastHold < 350) && dTree < 3.2f && !Game::IsCharInAnyCar(ped);
+        // 3.53: the game's own attack button with the chainsaw cuts too (before only the CUT button did, so swinging
+        // the saw inside the circle did nothing), and the reach is the whole marker circle around the trunk
+        const bool inRange = dTree < 3.8f && fabsf(me.z - s_Tb.treeAt.z) < 4.0f;
+        const bool saw = inRange && Game::GetCharWeapon(ped) == 9 && (Game::IsCharShooting(ped) || Game::IsCharSawing(ped));
+        if(saw) { s_Tb.lastHold = now; if(!s_Tb.sawing) { s_Tb.sawing = true; } }
+        else if(s_Tb.sawing && now - s_Tb.lastHold > 600) s_Tb.sawing = false;
+        const bool want = (s_Tb.holding || s_Tb.cutReq || saw || now - s_Tb.lastHold < 350) && inRange && !Game::IsCharInAnyCar(ped);
         s_Tb.cutReq = false;
         if(want && Game::GetCharWeapon(ped) != 9) { s_Tb.chainsawDue = true; if(now - s_Tb.lastHold < 400) SysMsg(COL_RED, "You need the chainsaw in your hands (it comes back by itself)."); s_Tb.lastHold = 0; return; }
         if(want && s_Tb.phase == TB_GO)
@@ -397,7 +431,7 @@ static void TimberProcess(int ped, uint64_t now, float dt)
                 {   // TIMBER: it falls away from you
                     s_Tb.health = 0; TbStopAnim(ped); Game::SetCurrentWeapon(ped, 9);
                     s_Tb.fallH = atan2f(-(s_Tb.treeAt.x - me.x), s_Tb.treeAt.y - me.y) * 57.29578f;
-                    s_Tb.ang = 2.0f; s_Tb.vel = 0.0f; s_Tb.bounces = 0; s_Tb.phase = TB_FALL;
+                    s_Tb.ang = 2.0f; s_Tb.vel = 0.0f; s_Tb.bounces = 0; s_Tb.phase = TB_FALL; Game::SetObjectCollision(s_Tb.tree, false);   // 3.53: it falls freely (no push)
                     SysMsg(COL_YELLOW, "You have chopped down a %s%s{FFFFFF}. TIMBER!", kTbTypeC[type], kTbType[type]);
                     GameText("~y~TIMBER!", 1500, 3);
                 }
@@ -499,7 +533,7 @@ static void TimberRender(ImDrawList* bg, ImDrawList* fg, float& y, float now)
     }
     const float dTree = TbDist2D(myDrawPos, s_Tb.treeAt);
     ImVec2 ds = ImGui::GetIO().DisplaySize;
-    bool showCut = (s_Tb.phase == TB_GO || s_Tb.phase == TB_CUT) && dTree < 3.2f;
+    bool showCut = (s_Tb.phase == TB_GO || s_Tb.phase == TB_CUT) && dTree < 3.8f;
     bool showLoad = s_Tb.phase == TB_FALL && s_Tb.ang >= 89.0f && s_Tb.vel == 0.0f && dTree < 10.0f;
     if(s_Tb.phase == TB_CUT) TbBar(fg, "Cutting tree", s_Tb.prog);
     if(s_Tb.phase == TB_LOAD) TbBar(fg, "Loading timber", s_Tb.loadProg);

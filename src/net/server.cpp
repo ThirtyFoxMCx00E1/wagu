@@ -475,7 +475,7 @@ void MPServer::MakePerms(PktPerms& p, uint8_t perms) const
     p.type = PKT_PERMS; p.perms = perms | PERM_V219;
     p.modesMagic = MP_MODES_MAGIC; p.modes = GetModes();
 }
-uint16_t MPServer::GetModes() const { if(IsRpServer()) return GM_HOME; if(IsBcwServer() || IsMw3Server()) return 0; return IsDefaultServer() ? (uint16_t)GM_ALL : (uint16_t)(m_nModes & GM_ALL); }   // 3.04: Brief Case War runs only its own gamemode
+uint16_t MPServer::GetModes() const { if(IsRpServer()) return GM_HOME; if(IsBcwServer() || IsMw3Server()) return 0; return IsDefaultServer() ? (m_bStaffModes ? (uint16_t)(m_nModes & GM_ALL) : (uint16_t)GM_ALL) : (uint16_t)(m_nModes & GM_ALL); }   // 3.53: + staff choice   // 3.04: Brief Case War runs only its own gamemode
 void MPServer::SetModes(uint16_t modes)
 {
     std::lock_guard<std::mutex> lk(m_Mutex);

@@ -141,6 +141,7 @@ static char                   s_szJobResolved[16] = "";      // that host resolv
 static QueuedJob              s_Queued;                      // waits for a background scan to finish
 static char                   s_szLostServerName[32] = "";
 static bool OnLostServer();   // defined below; true when a takeover search was scheduled
+static int  s_nFeatWaitTries = 0;   // 3.53
 static bool DupFallBack();    // 3.23.5
 static void ProcessLan(uint64_t now);
 static void RunHostRequest();   // 3.21.2: host / stop from the Add server page, run on the game frame
@@ -4497,10 +4498,10 @@ static bool StartLocalServer(const char* name, int port)
     // A phone may only keep them up when it is the administrator's or a moderator's (moderator.txt).
     {
         const bool featured = MP::IsDefaultServer(name, port) || MP_IsBcwServerName(name) || MP_IsMw3ServerName(name) || MP_IsRpServerName(name) || port == MP_MW3_PORT || port == MP_RP_PORT;
-        if(featured && !HaveAdminKey() && !s_bModMaster)
+        if(featured)   // 3.53: no phone at all (admin / moderators too): the 24/7 console hosts them
         {
             static uint64_t s_nSaidAt = 0;
-            if(MP_NowMs() - s_nSaidAt > 30000) { s_nSaidAt = MP_NowMs(); SysMsg(COL_YELLOW, "%s is hosted by the 24/7 bot - waiting for it (only the admin / moderators can host it).", name); }
+            if(MP_NowMs() - s_nSaidAt > 30000) { s_nSaidAt = MP_NowMs(); SysMsg(COL_YELLOW, "%s is hosted by the 24/7 bot " MP_BOT_NAME " only - waiting for it.", name); }
             if(settings.hostLan && !strcasecmp(settings.hostedName, name)) { settings.hostLan = false; SaveConfig(); }
             return false;
         }
@@ -4719,6 +4720,16 @@ static bool OnLostServer()
     // our own server (127.0.0.1) or an internet server: nothing to take over
     const bool wasDedicated = s_bOnDedicated; s_bOnDedicated = false;
     if(wasDedicated) s_nDedicatedSeenAt = MP_NowMs();   // 3.21: the 24/7 copy only dropped us / restarts: wait for it first
+    // 3.53: a featured server (24/7 console) went away = its shift change / restart: wait for it and rejoin
+    if(!IsHosting() && FeaturedName(client.GetServerName(), client.GetPort()) && (LAN::HasNetwork() || Online::IsConnected()))
+    {
+        MP_CopyStr(s_szLostServerName, client.GetServerName(), sizeof(s_szLostServerName));
+        s_nLostPort = client.GetPort();
+        s_nFeatWaitTries = 0;
+        s_bTakeoverPending = true; s_nTakeoverAt = MP_NowMs() + 3000; s_bQuietRejoin = true;
+        SysMsg(COL_YELLOW, "\"%s\" restarts on its 24/7 console (" MP_BOT_NAME ") - rejoining by itself...", s_szLostServerName);
+        return true;
+    }
     if(IsHosting() || IsLocalHost(client.GetHost()) || !LAN::IsPrivateAddress(client.GetHost()) || !LAN::HasNetwork()) return false;
     if(DupFallBack()) return true;
     int rank = 0, others = 0;
@@ -4759,8 +4770,41 @@ static bool IpLess(const char* a, const char* b)
 // exact server: same name and port
 static int FindExact(const std::vector<LanServer>& list, const char* name, int port)
 {
+    // 3.53: a featured server (default / Brief Case War / MW3 / Mega Vil) = only its 24/7 Broker copy.
+    // Copies hosted by phones (old MP versions, standby) are skipped: there the moderator key and the
+    // staff permissions did not work, and the language could be anything.
+    if(FeaturedName(name, port))
+    {
+        int best = -1;
+        for(int i = 0; i < (int)list.size(); ++i)
+        {
+            const LanServer& sv = list[i];
+            if(!sv.dedicated || sv.proto != MP_PROTO_VERSION || strcasecmp(sv.name, name)) continue;
+            if(best < 0 || (sv.port == port && list[best].port != port) || (!Online::IsRelayIp(sv.ip) && Online::IsRelayIp(list[best].ip))) best = i;
+        }
+        return best;
+    }
     int best = LAN::PickBest(list, name, (uint16_t)port);
     return (best >= 0 && !strcasecmp(list[best].name, name)) ? best : -1;
+}
+
+// 3.53: the featured server is not listed by the 24/7 console right now (shift change ~1 min every few
+// hours, or a restart): keep looking every 5 s for up to 3 minutes instead of hosting a phone copy.
+static bool FeaturedWait(const char* name, int port)
+{
+    if(!FeaturedName(name, port)) return false;
+    if(++s_nFeatWaitTries > 36)
+    {
+        s_nFeatWaitTries = 0; s_bTakeoverPending = false;
+        SysMsg(COL_RED, "\"%s\" is offline right now: its 24/7 console (" MP_BOT_NAME ") is not running. Try again in a few minutes.", name);
+        return true;
+    }
+    if(s_nFeatWaitTries == 1) SysMsg(COL_YELLOW, "\"%s\" is hosted 24/7 by " MP_BOT_NAME " - waiting for it to come online...", name);
+    if(name != s_szLostServerName) MP_CopyStr(s_szLostServerName, name, sizeof(s_szLostServerName));
+    s_nLostPort = port;
+    s_bTakeoverPending = true;
+    s_nTakeoverAt = MP_NowMs() + 5000;
+    return true;
 }
 
 static void FinishJob(int job, std::vector<LanServer>& list)
@@ -4798,9 +4842,11 @@ static void FinishJob(int job, std::vector<LanServer>& list)
             int best = FindExact(list, name, port);
             if(best >= 0)
             {
+                s_nFeatWaitTries = 0;
                 JoinFound(list[best], true);
                 return;
             }
+            if(FeaturedWait(name, port)) return;   // 3.53: never a phone copy
             // 3.21: the 24/7 copy was online a moment ago (restart / update / short drop): look again
             // before this phone starts its own copy (a phone copy = "restart" for everybody later)
             if(WaitForDedicated(name, port))
@@ -4834,6 +4880,7 @@ static void FinishJob(int job, std::vector<LanServer>& list)
                 DoConnect(list[best].ip, list[best].port);
                 return;
             }
+            if(FeaturedWait(name, port)) return;   // 3.53
             if(port == MP_DEFAULT_PORT && !IsDefaultServer(name, port))
             {
                 SysMsg(COL_RED, "\"%s\" isn't online and uses port %d (reserved for the default server). Edit it to port %d or higher.", name, MP_DEFAULT_PORT, MP_DEFAULT_PORT + 1);
@@ -4848,9 +4895,11 @@ static void FinishJob(int job, std::vector<LanServer>& list)
             int best = FindExact(list, s_szLostServerName, s_nLostPort);
             if(best >= 0)
             {
+                s_nFeatWaitTries = 0;
                 JoinFound(list[best], true);
                 return;
             }
+            if(FeaturedWait(s_szLostServerName, s_nLostPort)) return;   // 3.53: the 24/7 console comes back (shift change)
             if(WaitForDedicated(s_szLostServerName, s_nLostPort))   // 3.21: the 24/7 copy comes back: don't start a phone copy yet
             {
                 s_bTakeoverPending = true;
@@ -4947,6 +4996,12 @@ static void ProcessBrokerStandby(uint64_t now)
     if(now - lastCheck < 1000) return;
     lastCheck = now;
     if(s_bStandbyHost && !s_Server.IsRunning()) s_bStandbyHost = false;
+    // 3.53: no more phone standby copies. The 4 featured servers are hosted ONLY by the 24/7 Broker console
+    // (the MP 24/7 cloud runner, like the Discord bot): a phone copy split the players into 2 servers, showed
+    // "Broker standby ... was offline" and, hosted by an old MP, did not know the moderator key.
+    if(s_bStandbyHost && s_Server.IsRunning()) { logger->Info("Broker standby: closed (3.53: featured servers are 24/7-console only)"); s_Server.Stop(); s_bStandbyHost = false; }
+    (void)missing; (void)onlineSince;
+    return;
     if(!Online::IsConnected()) { onlineSince = 0; missing[0] = missing[1] = missing[2] = missing[3] = 0; return; }
     if(!onlineSince) onlineSince = now;
     if(now - onlineSince < 20000) return;   // the lobby needs a moment before "not listed" means anything
@@ -5006,6 +5061,7 @@ static void ProcessLan(uint64_t now)
                 int k = ServerList::FindByNamePort(s_Server.GetName(), s_Server.GetPort());
                 if(ServerEntry* e = ServerList::Get(k)) if(e->lang[0]) lg = e->lang;
             }
+            if(run && FeaturedName(s_Server.GetName(), s_Server.GetPort())) lg = "";   // 3.53: featured = always "All"
             static char lastLg[MP_LANG_LEN] = "\x01";
             if(strcmp(lastLg, lg)) { MP_CopyStr(lastLg, lg, sizeof(lastLg)); s_Server.SetLang(lg); Online::SetHostLang(lg); }
         }
@@ -6344,7 +6400,7 @@ static void SectionConnection(void*)
     if(!s_bHasNetwork)
         ImGui::TextColored(kRedTxt, "Offline: turn on Wi-Fi or mobile data to play.");
     else if(s_bTakeoverPending)
-        ImGui::TextColored(kYellowTxt, "Host left - reconnecting to \"%s\"...", s_szLostServerName);
+        ImGui::TextColored(kYellowTxt, FeaturedName(s_szLostServerName, s_nLostPort) ? "Waiting for the 24/7 host of \"%s\"..." : "Host left - reconnecting to \"%s\"...", s_szLostServerName);
     { std::vector<LanServer> nb; { std::lock_guard<std::mutex> lk(s_LanMutex); nb = s_Nearby; } LobbyStatus(nb); }
     ImGui::TextDisabled("Connect = the default server, always online.");
     ImGui::TextDisabled("Custom servers: Servers tab -> Join.");
@@ -6546,10 +6602,7 @@ static void SectionDisplay(void*)
     changed |= FloatMenu::ToggleSwitch("Sync explosions, fire, weapons", &settings.syncEnv);
     changed |= FloatMenu::ToggleSwitch("Sync NPCs (people + traffic)", &settings.syncNpcs);
     if(lockModes) ImGui::EndDisabled();
-    {   // 3.24
-        char lb[96]; snprintf(lb, sizeof(lb), "Broker standby #%d/100 (host offline featured servers)", MP::BrokerStandbyRank());
-        changed |= FloatMenu::ToggleSwitch(lb, &settings.brokerStandby);
-    }
+    // 3.53: the Broker standby switch is gone - the featured servers run on the 24/7 console only
     if(lockModes) ImGui::BeginDisabled();
     changed |= FloatMenu::ToggleSwitch("Open world (cities, shops, food, gyms, garages)", &settings.unlockWorld);   // 2.21
     if(lockModes) ImGui::EndDisabled();
@@ -6706,19 +6759,33 @@ static void SectionLanguage(void*)
     const int cur = I18n::Current();
     static char s_szMsg[200] = "";
     GImTrSuspend++;   // the names below are shown as they are, in every language
-    for(int i = 0; i < I18n::Count(); ++i)
-    {
+    // 3.53: a dropdown (no more one big button per language)
+    auto langLabel = [&](int i, char* out, size_t n) {
         const I18n::LangInfo& L = I18n::Info(i);
-        char label[160];
         const bool native = strcmp(L.native, L.english) && FontCanShow(L.native);
-        if(native) snprintf(label, sizeof(label), "%s%s  -  %s##lang%d", i == cur ? "> " : "", L.english, L.native, i);
-        else       snprintf(label, sizeof(label), "%s%s##lang%d", i == cur ? "> " : "", L.english, i);
-        if(FloatMenu::BigButton(label, i == cur ? 0xFFD08A2Bu : 0) && i != cur)
+        if(native) snprintf(out, n, "%s  -  %s", L.english, L.native); else snprintf(out, n, "%s", L.english);
+    };
+    int pick = -1;
+    char curLb[160]; langLabel(cur, curLb, sizeof(curLb));
+    ImGui::SetNextItemWidth(-FLT_MIN);
+    if(ImGui::BeginCombo("##uilang", curLb, ImGuiComboFlags_HeightLarge))
+    {
+        for(int i = 0; i < I18n::Count(); ++i)
         {
-            if(I18n::Set(L.code)) { MP_CopyStr(settings.uiLanguage, L.code, sizeof(settings.uiLanguage)); SaveConfig(); s_szMsg[0] = 0; }
-            else snprintf(s_szMsg, sizeof(s_szMsg), "%s is not installed: files/MP/lang/%s.lng is missing (it comes with the MP full / client zip).", L.english, L.code);
+            char label[180], lb[160]; langLabel(i, lb, sizeof(lb));
+            snprintf(label, sizeof(label), "%s##lang%d", lb, i);
+            if(ImGui::Selectable(label, i == cur, 0, ImVec2(0, UI::S(64)))) pick = i;
+            if(i == cur) ImGui::SetItemDefaultFocus();
         }
+        ImGui::EndCombo();
     }
+    if(pick >= 0 && pick != cur)
+    {
+        const I18n::LangInfo& L = I18n::Info(pick);
+        if(I18n::Set(L.code)) { MP_CopyStr(settings.uiLanguage, L.code, sizeof(settings.uiLanguage)); SaveConfig(); s_szMsg[0] = 0; }
+        else snprintf(s_szMsg, sizeof(s_szMsg), "%s is not installed: files/MP/lang/%s.lng is missing (it comes with the MP full / client zip).", L.english, L.code);
+    }
+    if(UI::FontsLoading()) ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.3f, 1.0f), "Loading the font for %s... (the game keeps running)", I18n::Info(I18n::Current()).english);
     GImTrSuspend--;
     if(s_szMsg[0]) ImGui::TextColored(ImVec4(1.0f, 0.55f, 0.45f, 1.0f), "%s", s_szMsg);
     if(cur) ImGui::TextDisabled("Machine translated (%d texts). Chinese, Japanese, Korean and Thai use your phone's own font.", I18n::Entries());

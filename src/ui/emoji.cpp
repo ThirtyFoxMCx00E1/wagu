@@ -38,7 +38,7 @@ int UI::Utf8Decode(const char* s, uint32_t* cp)
 
 void UI::EmojiAddGlyphs(ImFontAtlas* atlas, ImFont* font, float fontSize)
 {
-    for(int i = 0; i < kEmojiCount; ++i) { s_Utf8[i].clear(); PutUtf8(s_Utf8[i], kEmojiCodepoints[i]); }
+    for(int i = 0; i < kEmojiCount; ++i) if(s_Utf8[i].empty()) PutUtf8(s_Utf8[i], kEmojiCodepoints[i]);   // 3.53: once (atlas built on a worker thread, the UI reads these)
     s_nPx = (int)(fontSize * 0.92f + 0.5f); if(s_nPx < 12) s_nPx = 12; if(s_nPx > 96) s_nPx = 96;
     for(int i = 0; i < kEmojiCount; ++i)
         s_nRect[i] = atlas->AddCustomRectFontGlyph(font, (ImWchar)(0xE000 + i), s_nPx, s_nPx, s_nPx + fontSize * 0.08f, ImVec2(fontSize * 0.04f, (fontSize - s_nPx) * 0.5f + fontSize * 0.04f));

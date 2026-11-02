@@ -149,7 +149,8 @@ namespace Game
     struct PedAnim { uint32_t hash; int16_t group, id; float time, speed, blend; uint16_t flags; char block[16]; };
     struct AppliedAnims { int n = 0; int16_t group[4], id[4]; void* hier[4]; };
     // full = the whole blend tree incl. walk/run/idle (2.15); otherwise only non-walking anims
-    int   GetPedAnims(int ped, PedAnim* out, int maxOut, bool full = false);   // strongest first
+    int   GetPedAnims(int ped, PedAnim* out, int maxOut, bool full = false);
+    bool  IsCharSawing(int ped);   // 3.53: a chainsaw attack anim plays (timber job)   // strongest first
     void  ApplyPedAnims(int ped, const PedAnim* in, int n, AppliedAnims& state, bool moving = false);   // 2.13 senders
     // 2.15 senders. moveSpeed (2.17) = how fast the avatar really moves (m/s): any movement gets
     // real walking legs, and the pose always adds up to 100 % (no T-pose from missing anims)
@@ -331,6 +332,7 @@ namespace Game
     // 3.04 (game304.cpp): Brief Case War
     int   CreateWorldObject(int model, const Vec3& p);   // 0 = model still loading (call again)
     void  DeleteWorldObject(int obj);
+    void  SetObjectCollision(int obj, bool on);   // 3.53
     bool  WorldObjectExists(int obj);
     void  MoveWorldObject(int obj, const Vec3& p, float spinDeg);
     int   CreateMapObject(int model, const Vec3& p, float rx, float ry, float rz);   // 3.23: solid map object (0 = loading, -1 = no room)

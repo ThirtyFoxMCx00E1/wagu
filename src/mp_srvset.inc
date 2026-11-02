@@ -37,7 +37,7 @@ static void SrvSettingsDlg(int resp, int item, const char*, int)
     const bool featured = MP::IsOnDefault() || BcwOnServer() || Mw3OnServer() || RpOnServer();
     if(item < MP_GAMEMODE_COUNT)
     {
-        if(featured) { SysMsg(COL_YELLOW, "The featured servers keep their gamemodes."); SrvSettingsShow(); return; }
+        if(featured && !MP::IsOnDefault()) { SysMsg(COL_YELLOW, "This featured server runs only its own gamemode."); SrvSettingsShow(); return; }   // 3.53: the default server's staff can
         s_SrvSet.s.modes ^= kGameModes[item].bit;
     }
     else if(item < MP_GAMEMODE_COUNT + SRV_PERM_ROWS) s_SrvSet.s.perms ^= kSrvPerms[item - MP_GAMEMODE_COUNT].bit;
@@ -71,7 +71,6 @@ static void SrvSettingsShow()
     }
     // 3.50.1: the default server always runs every gamemode (whatever an older copy reported), and its
     // staff ([MOD] Trunk / the admin) manage it even before the server's answer arrives
-    if(MP::IsOnDefault()) s_SrvSet.s.modes = (uint16_t)GM_ALL;
     if((MP::IsOnDefault() || BcwOnServer() || Mw3OnServer() || RpOnServer()) && (MP::IsLocalMod() || MP::IsLocalAdmin()) && newSrv) s_SrvSet.s.can = 1;
     const PktSrvSettings& s = s_SrvSet.s;
     std::string body = "Setting\tState\n";

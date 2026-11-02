@@ -1,0 +1,93 @@
+# MP 24/7 featured servers (3.53): the 4 featured servers (MP LAN Server, Brief Case War,
+# Call Of Duty: Modern Warfare 3, Mega Vil Futuristic) hosted by the Broker bot non stop, the same way
+# the Discord bot ("MP Railway cloud runner") stays online: each run is one ~5 h 40 min shift and
+# queues the next shift itself. The next shift starts BEFORE the old one stops (overlap), so the servers
+# never go offline between shifts; players on the old copy are moved to the new copy automatically.
+# The hourly cron is only a safety net that restarts the chain if a shift ever failed.
+# Server data (homes, turf, progress, MW3 stats, RP citizens, bans) is kept on the mp247-data branch.
+# Turn it off (e.g. when a VPS runs server/run_24_7.sh): repository variable MP247_RUNNER = off.
+name: MP 24/7 featured servers
+
+on:
+  workflow_dispatch:
+    inputs:
+      handoff:
+        description: 'Started by the previous shift (internal)'
+        required: false
+        default: 'false'
+  push:
+    branches: [main]
+    paths: ['.github/workflows/mp-247-servers.yml', 'server/**', 'src/net/**']
+  schedule:
+    - cron: '7 * * * *'
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  servers:
+    if: vars.MP247_RUNNER != 'off'
+    runs-on: ubuntu-latest
+    timeout-minutes: 358
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      REGION: ${{ vars.MP247_REGION || 'Asia' }}
+      SHIFT_MIN: 340        # queue the next shift after this many minutes
+      OVERLAP_MIN: 6        # keep serving this long after the next shift was queued
+    steps:
+      - name: Skip if a shift is already running
+        id: guard
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.handoff }}" = "true" ]; then
+            echo "run=1" >> "$GITHUB_OUTPUT"; exit 0; fi
+          n=$(gh run list -R "$GITHUB_REPOSITORY" -w mp-247-servers.yml -s in_progress --json databaseId \
+               --jq "[.[] | select(.databaseId != ${{ github.run_id }})] | length" || echo 0)
+          if [ "${n:-0}" -gt 0 ]; then echo "A shift is already online - nothing to do."; echo "run=0" >> "$GITHUB_OUTPUT"
+          else echo "run=1" >> "$GITHUB_OUTPUT"; fi
+
+      - uses: actions/checkout@v4
+        if: steps.guard.outputs.run == '1'
+
+      - name: Cache server build
+        if: steps.guard.outputs.run == '1'
+        uses: actions/cache@v4
+        with:
+          path: server/obj
+          key: mp-server-obj-${{ hashFiles('server/Makefile', 'src/net/**', 'server/*.cpp', 'mbedtls/**') }}
+          restore-keys: mp-server-obj-
+
+      - name: Build mp_server
+        if: steps.guard.outputs.run == '1'
+        run: make -C server -j"$(nproc)"
+
+      - name: Load saved server data
+        if: steps.guard.outputs.run == '1'
+        run: |
+          if git fetch -q --depth 1 origin mp247-data 2>/dev/null; then
+            for f in bans.txt homes.txt homes_rp.txt mw3_stats.txt progress.txt rp_citizens.txt turf.txt; do
+              git show "FETCH_HEAD:$f" > "server/$f" 2>/dev/null || rm -f "server/$f"; done
+            echo "data restored"; else echo "no saved data yet"; fi
+
+      - name: Run the 4 servers (one shift)
+        if: steps.guard.outputs.run == '1'
+        run: |
+          cd server
+          ./run_24_7.sh "$REGION"
+          save() {
+            mkdir -p /tmp/d && cp -f bans.txt homes.txt homes_rp.txt mw3_stats.txt progress.txt rp_citizens.txt turf.txt /tmp/d/ 2>/dev/null
+            ( cd /tmp/d && [ -n "$(ls)" ] && rm -rf .git && git init -q -b mp247-data && git add -A &&
+              git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+                  commit -qm "server data $(date -u +%F' '%H:%M)" &&
+              git push -qf "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" mp247-data ) || true
+          }
+          end=$(( $(date +%s) + SHIFT_MIN * 60 ))
+          while [ "$(date +%s)" -lt "$end" ]; do
+            sleep 600; save
+            tail -n 2 logs/*.log 2>/dev/null | tail -n 12
+          done
+          echo "Queueing the next shift"
+          gh workflow run mp-247-servers.yml -R "$GITHUB_REPOSITORY" --ref "${GITHUB_REF_NAME}" -f handoff=true || true
+          sleep $(( OVERLAP_MIN * 60 ))
+          save
+          ./run_24_7.sh stop

@@ -288,6 +288,7 @@ namespace MP
     void SpawnConfirm();
     float SpawnPickerAlpha();
     bool AuthScreenShown();    // 3.21.6: login screen on top
+    bool LauncherPadPage(int dir);   // 3.53: controller LB / RB = previous / next launcher page (false = launcher not open)
     bool JoinScreenActive();   // 2.19.1: join screen / connection view / spawn picker on screen
     // 3.04: Brief Case War (private 24/7 gamemode server, pinned in the Internet list)
     void JoinMw3();            // 3.23: Call Of Duty: Modern Warfare 3 24/7 (join it, or leave it when you are on it)

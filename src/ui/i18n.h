@@ -30,4 +30,5 @@ namespace I18n
     const std::string& Glyphs();
     const char* FontKind();                // "", "cjk-sc", "cjk-tc", "cjk-jp", "cjk-kr", "thai"
     uint32_t Generation();                 // +1 every Set() (the HUD rebuilds its font atlas when it changes)
+    void ResetFontCache();                 // 3.53: a new font atlas is in use (render thread)
 }
