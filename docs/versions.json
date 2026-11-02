@@ -1,6 +1,7 @@
 {
-"latest": "3.53.2",
+"latest": "3.54",
 "supported": [
+"3.54",
 "3.53.2",
 "3.53.1",
 "3.53",
@@ -65,6 +66,19 @@
 "3.04.6"
 ],
 "versions": [
+{
+"v": "3.54",
+"summary": "**Admin and moderator chat commands.**",
+"items": [
+"New staff commands for [ADMIN], [MOD] and the server owner: /kick, /ban, /unban, /bans, /warn (3 warnings = kick), /mute, /unmute, /sethealth, /setarmour, /fine, /givecash, /reportmute, /goto, /gethere, /makevip, /makeadmin, /resetstats and /givecookie. Type /acmds for the list. A player can be picked by id or by part of the name.",
+"/report [id] [what happened] for every player: it goes to the staff online; /reportmute [id] [minutes] blocks it for a player.",
+"/givecash and /fine use the server money on Mega Vil (cash first, then the bank) and MW3 cash on MW3; /resetstats also clears the saved progress, Mega Vil money / level and MW3 stats.",
+"/makeadmin gives the [MOD] tag and moderator rights, /makevip gives the [VIP] tag; both are kept in ranks.txt and stay after a re-join (the 24/7 servers save it).",
+"Same rules as before: moderators can't use commands on other staff, and on Brief Case War / MW3 / Mega Vil a moderator's /ban is a kick. On a custom server the owner can do everything.",
+"Server Management page: new Warn, Go to, Get here and Heal buttons.",
+"/fine (Mega Vil police) and /goto [place] still work as before for players who are not staff."
+]
+},
 {
 "v": "3.53.2",
 "summary": "**Chat colors in Settings > Display, Mega Vil taxi passengers always there.**",

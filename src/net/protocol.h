@@ -13,10 +13,10 @@
 // phones refuse servers older than that too (they would let old phones in).
 // 3.10: build 31000. MP_MIN_BUILD stays 30406 and the lobby stays thirtyfox/mp5/: 3.04.6 (no cheats)
 // and 3.10 phones play together on the same servers; only 3.04.5 and older (mp4) stay shut out.
-#define MP_BUILD 35302   // 3.53.2
+#define MP_BUILD 35400   // 3.54
 #define MP_MIN_BUILD       30406
 #define MP_AUTH_MIN_BUILD  32106   // 3.21.6: servers with the login system refuse older phones (they could not log in)
-#define MP_VERSION_STR     "3.53.2"
+#define MP_VERSION_STR     "3.54"
 #define MP_VOICE_BUILD     31100   // 3.11: phones from this build on get voice packets
 #define MP_DOWNLOAD_URL    "thirtyfoxmcx00e1.github.io/wagu"   // 3.37: the website is back in the wagu repo (one repo for everything)
 #define MP_DEFAULT_HOST    "127.0.0.1"
@@ -131,6 +131,7 @@ enum ePacket : uint8_t
     PKT_RULES,          // S->C          3.39: server rules (title + 10 lines), shown after the login
     PKT_GM_EVENT,       // S<->C         3.39: new gamemodes (CnR, A/D, survival, stunt, drift) - scores / rounds / notices
     PKT_PROGRESS,       // S<->C         3.39.1: my saved progress (place, money, weapons, health, hunger) on the default + custom servers
+    PKT_ADMIN_ACT,      // S->C          3.54: an admin / moderator command for this phone (health, armour, cash, teleport, warn, reset...)
 };
 
 enum eRegion : uint8_t { REGION_ASIA = 0, REGION_EUROPE, REGION_NA, REGION_OCEANIA, REGION_COUNT };
@@ -426,8 +427,15 @@ inline bool MP_IsTrailerModel(int m) { return m == 435 || m == 450 || m == 584 |
 #define MP_RAM_WEAPON      49      // WEAPONTYPE_RAMMEDBYCAR
 #define MP_RAM_MAX_DAMAGE  20.0f   // 2.37: one ram can't take more than 20 HP
 #define MP_RAM_COOLDOWN_MS 700     // 2.37: and only one ram per attacker every 0.7 s
-enum eAdminCmd : uint8_t { ADMIN_KICK = 1, ADMIN_BAN = 2, ADMIN_MUTE = 3, ADMIN_UNMUTE = 4, ADMIN_CHEATS = 5 };
+enum eAdminCmd : uint8_t { ADMIN_KICK = 1, ADMIN_BAN = 2, ADMIN_MUTE = 3, ADMIN_UNMUTE = 4, ADMIN_CHEATS = 5,
+    // 3.54: chat commands (PktAdminCmd2: + amount + text)
+    ADMIN_WARN = 6, ADMIN_SETHEALTH = 7, ADMIN_SETARMOUR = 8, ADMIN_FINE = 9, ADMIN_REPORTMUTE = 10, ADMIN_GOTO = 11,
+    ADMIN_GETHERE = 12, ADMIN_UNBAN = 13, ADMIN_GIVECASH = 14, ADMIN_MAKEVIP = 15, ADMIN_MAKEADMIN = 16, ADMIN_RESETSTATS = 17,
+    ADMIN_GIVECOOKIE = 18, ADMIN_REPORT = 19, ADMIN_BANS = 20 };
 struct PktAdminCmd    { uint8_t type; uint8_t cmd; uint8_t target; uint8_t value; char reason[MP_REASON_LEN]; };   // 2.37, value: ADMIN_CHEATS 1 = cheats off
+struct PktAdminCmd2   { uint8_t type; uint8_t cmd; uint8_t target; uint8_t value; char reason[MP_REASON_LEN]; int32_t amount; };   // 3.54 (older servers read the first part)
+enum eAdminAct : uint8_t { AACT_HEALTH = 1, AACT_ARMOUR = 2, AACT_MONEY = 3, AACT_TELEPORT = 4, AACT_RESET = 5, AACT_WARN = 6, AACT_COOKIE = 7 };
+struct PktAdminAct    { uint8_t type; uint8_t act; uint8_t from; uint8_t pad; int32_t amount; float pos[3]; float heading; char text[MP_CHAT_LEN]; };   // 3.54 S->C
 struct PktKicked      { uint8_t type; uint8_t banned; uint32_t when; char admin[MP_NAME_LEN]; char reason[MP_REASON_LEN]; };   // 2.25, when = unix time
 struct PktKicked2     { PktKicked k; uint16_t waitSec; };   // 3.39: a kick (not a ban) = wait waitSec (4 min 29 s) before joining again
 #define MP_KICK_WAIT_SEC 269

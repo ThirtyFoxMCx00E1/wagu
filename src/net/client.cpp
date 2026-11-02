@@ -226,6 +226,7 @@ void MPClient::Poll(INetEvents* ev)
             case PKT_SRV_SETTINGS: if(r >= (int)sizeof(PktSrvSettings)) { PktSrvSettings m; memcpy(&m, buf, sizeof(m)); ev->OnSrvSettings(m); } break;
             case PKT_GM_EVENT:     ev->OnGmEvent(buf, r); break;
             case PKT_PROGRESS:     if(r >= (int)sizeof(PktProgress)) { PktProgress m; memcpy(&m, buf, sizeof(m)); ev->OnProgress(m); } break;   // 3.39.1
+            case PKT_ADMIN_ACT:    if(r >= (int)sizeof(PktAdminAct)) { PktAdminAct m; memcpy(&m, buf, sizeof(m)); ev->OnAdminAct(m); } break;   // 3.54
             case PKT_PLAYER_JOIN:  if(r >= (int)sizeof(PktPlayerJoin))  ev->OnPlayerJoin(*(PktPlayerJoin*)buf);   break;
             // 3.01: SA-MP features (copied out: packed + unaligned)
             case PKT_EVENT:    if(r >= (int)sizeof(PktEvent)) { PktEvent e; memcpy(&e, buf, sizeof(e)); ev->OnEvent(e); } break;

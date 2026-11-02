@@ -121,6 +121,14 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **3.54**: **Admin and moderator chat commands.**
+  - New staff commands for [ADMIN], [MOD] and the server owner: /kick, /ban, /unban, /bans, /warn (3 warnings = kick), /mute, /unmute, /sethealth, /setarmour, /fine, /givecash, /reportmute, /goto, /gethere, /makevip, /makeadmin, /resetstats and /givecookie. Type /acmds for the list. A player can be picked by id or by part of the name.
+  - /report [id] [what happened] for every player: it goes to the staff online; /reportmute [id] [minutes] blocks it for a player.
+  - /givecash and /fine use the server money on Mega Vil (cash first, then the bank) and MW3 cash on MW3; /resetstats also clears the saved progress, Mega Vil money / level and MW3 stats.
+  - /makeadmin gives the [MOD] tag and moderator rights, /makevip gives the [VIP] tag; both are kept in ranks.txt and stay after a re-join (the 24/7 servers save it).
+  - Same rules as before: moderators can't use commands on other staff, and on Brief Case War / MW3 / Mega Vil a moderator's /ban is a kick. On a custom server the owner can do everything.
+  - Server Management page: new Warn, Go to, Get here and Heal buttons.
+  - /fine (Mega Vil police) and /goto [place] still work as before for players who are not staff.
 - **3.53.2**: **Chat colors in Settings > Display, Mega Vil taxi passengers always there.**
   - Settings > Display: Server chat color (server and system messages) and Player chat color (the text players type), with color swatches, R / G / B sliders and Default. Only on your screen.
   - Mega Vil taxi job: the passenger is made as soon as the fare starts (up to 300 m away), stands on the street (not under it or on a roof), and if the game can't make one, the passenger gets in anyway when you stop at the yellow marker - no more waiting for a ped.

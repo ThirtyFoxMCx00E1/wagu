@@ -62,6 +62,7 @@ public:
     virtual void OnGmEvent(const uint8_t* /*data*/, int /*len*/) {}   // 3.39
     virtual void OnKickWait(int /*seconds*/) {}                   // 3.39: kicked: wait before joining again
     virtual void OnProgress(const PktProgress&) {}                // 3.39.1: my saved progress
+    virtual void OnAdminAct(const PktAdminAct&) {}                // 3.54: staff command for me
 };
 
 class MPClient

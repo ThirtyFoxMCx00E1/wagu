@@ -244,6 +244,7 @@ static bool HandleCommand(const char* text)
     int n = 0; while(*arg && *arg != ' ' && n < 30) cmd[n++] = (char)tolower((unsigned char)*arg++);
     cmd[n] = 0;
     while(*arg == ' ') ++arg;
+    if(AdmCommand(cmd, arg)) return true;     // 3.54: admin / moderator commands + /report (before the gamemode blocks)
     if(GatesCommand(cmd, arg)) return true;   // 3.04.2: /gatepos, /gates
     if(TdeCommand(cmd, arg)) return true;     // 3.50: /tde Textdraw Editor
     if(RulesCommand(cmd, arg) || SrvSettingsCommand(cmd, arg) || ProgCommand(cmd, arg) || MvCommand(cmd, arg) || HkCommand(cmd, arg) || NeedsCommand(cmd, arg) || Modes2Command(cmd, arg)) return true;   // 3.39
@@ -284,6 +285,8 @@ static bool HandleCommand(const char* text)
     {
         for(int i = 0; i < MP_CMD_COUNT; ++i) SysMsg(COL_SYSTEM, "%s %s  -  %s", kCmds[i].cmd, kCmds[i].args, kCmds[i].help);
         GamesHelp();
+        if(AdmLocalStaff()) SysMsg(0xC080FFFF, "Staff: /acmds lists the admin / moderator commands.");
+        else SysMsg(COL_SYSTEM, "/report [id] [what happened]  -  tell the staff");
     }
     else SysMsg(COL_RED, "Unknown command /%s. Type /help.", cmd);
     return true;

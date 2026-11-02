@@ -65,7 +65,7 @@ jobs:
         if: steps.guard.outputs.run == '1'
         run: |
           if git fetch -q --depth 1 origin mp247-data 2>/dev/null; then
-            for f in bans.txt homes.txt homes_rp.txt mw3_stats.txt progress.txt rp_citizens.txt turf.txt; do
+            for f in bans.txt homes.txt homes_rp.txt mw3_stats.txt progress.txt ranks.txt rp_citizens.txt turf.txt; do
               git show "FETCH_HEAD:$f" > "server/$f" 2>/dev/null || rm -f "server/$f"; done
             echo "data restored"; else echo "no saved data yet"; fi
 
@@ -75,7 +75,7 @@ jobs:
         run: |
           cd server
           ./run_24_7.sh "$REGION"
-          FILES="bans.txt homes.txt homes_rp.txt mw3_stats.txt progress.txt rp_citizens.txt turf.txt"
+          FILES="bans.txt homes.txt homes_rp.txt mw3_stats.txt progress.txt ranks.txt rp_citizens.txt turf.txt"
           save() {
             rm -rf /tmp/d; mkdir -p /tmp/d
             for f in $FILES; do [ -s "$f" ] && cp -f "$f" /tmp/d/; done

@@ -778,6 +778,7 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             }
             // 2.25: banned? (by this phone's id, or by name for phones older than 2.25)
             char juid[MP_UID_LEN + 1] = {0};
+            bool grantedMod = false;   // 3.54
             if(len >= (int)sizeof(PktJoin3)) { memcpy(juid, ((const PktJoin3*)data)->uid, MP_UID_LEN); juid[MP_UID_LEN] = 0; }
             // 3.39: the same phone on a new network path (Wi-Fi <-> mobile data, direct <-> relay) while it
             // is still connected: keep its slot, id and login instead of a timeout + a new player
@@ -870,6 +871,7 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
                     char bare[MP_NAME_LEN]; MP_CopyStr(bare, jn, sizeof(bare)); MP_StripAdminTag(bare);
                     const char* mk = !strncmp(key, MP_MOD_PREFIX, 4) ? key + 4 : nullptr;   // 3.35: "MOD:<key>"
                     if(mk && (MP_ModMasterOk(mk) || MP_ModKeyOk(m_szModFile, bare, mk))) isMod = true;   // 3.35.2: the phone's moderator.txt alone is enough
+                    if(!isMod && juid[0] && RankOf(juid) == 'M') { isMod = true; grantedMod = true; }   // 3.54: /makeadmin (ranks.txt)
                     if(MP_IsModReservedName(bare))
                     {
                         if(!isMod)
@@ -889,7 +891,8 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
                     Slot& o = m_Slots[slot];
                     char base[MP_NAME_LEN]; MP_CopyStr(base, o.name, sizeof(base));
                     if(!strncmp(base, MP_MOD_TAG, 6)) memmove(base, base + 6, strlen(base + 6) + 1);
-                    o.mod = isMod; rankChanged = true;
+                    if(!strncmp(base, "[VIP] ", 6)) memmove(base, base + 6, strlen(base + 6) + 1);
+                    o.mod = isMod; o.granted = isMod && grantedMod; rankChanged = true;
                     if(isMod && MP_IsModReservedName(base)) MP_CopyStr(base, MP_MOD_RESERVED_SHOW, sizeof(base));
                     if(isMod) { char tmp[MP_NAME_LEN]; snprintf(tmp, sizeof(tmp), MP_MOD_TAG "%.17s", base); MP_CopyStr(o.name, tmp, MP_NAME_LEN); }
                     else MP_CopyStr(o.name, base, MP_NAME_LEN);
@@ -929,6 +932,9 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
                 s.hkLastCmd = 0;
                 if(s.mod && MP_IsModReservedName(s.name)) MP_CopyStr(s.name, MP_MOD_RESERVED_SHOW, MP_NAME_LEN);   // 3.40.1: "trunk" / "TRUNK" -> "Trunk"
                 if(s.mod) { char tmp[MP_NAME_LEN]; snprintf(tmp, sizeof(tmp), MP_MOD_TAG "%.17s", s.name); MP_CopyStr(s.name, tmp, MP_NAME_LEN); Log("%s is a moderator (moderator.txt)", s.name); }
+                s.granted = s.mod && grantedMod;
+                s.vip = !isAdmin && !s.mod && RankOf(juid) == 'V';   // 3.54: /makevip
+                if(s.vip) { char tmp[MP_NAME_LEN]; snprintf(tmp, sizeof(tmp), "[VIP] %.17s", s.name); MP_CopyStr(s.name, tmp, MP_NAME_LEN); }
                 if(isAdmin) MP_CopyStr(s.name, MP_ADMIN_TAG MP_ADMIN_NAME, MP_NAME_LEN);   // 2.37: the rank shows on every server (admin powers: default server only)
                 // make the name unique
                 if(bot && !strcasecmp(s.name, MP_BOT_NAME)) { char tmp[MP_NAME_LEN]; snprintf(tmp, sizeof(tmp), "%.18s_%d", s.name, slot); MP_CopyStr(s.name, tmp, MP_NAME_LEN); }   // 3.23.5
@@ -1219,38 +1225,9 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             break;
         }
 
-        case PKT_ADMIN_CMD:   // 2.37: only the real SENJI (joined with the admin key) may use these
-        {
-            // 3.39: the default server (+ the 3 other featured servers): the administrator + moderators;
-            // a custom server: only its host owner
-            const bool featured = IsDefaultServer() || IsBcwServer() || IsMw3Server() || IsRpServer();
-            if(slot < 0 || len < (int)sizeof(PktAdminCmd)) return;
-            if(featured ? !(m_Slots[slot].admin || m_Slots[slot].mod) : !m_Slots[slot].owner) return;
-            PktAdminCmd c = *(const PktAdminCmd*)data;
-            if(featured && !IsDefaultServer() && !m_Slots[slot].admin && c.cmd == ADMIN_BAN) c.cmd = ADMIN_KICK;   // 3.35: moderators kick, only the admin bans (3.50.1: on the default server moderators have the admin permissions, ban too)
-            if(!m_Slots[slot].admin && c.cmd != ADMIN_CHEATS && c.target < MP_MAX_PLAYERS && m_Slots[c.target].used && (m_Slots[c.target].admin || m_Slots[c.target].mod)) return;   // no staff vs staff
-            c.reason[MP_REASON_LEN - 1] = 0;
-            char who[MP_NAME_LEN]; MP_CopyStr(who, m_Slots[slot].name, sizeof(who));
-            PktServerMsg m; memset(&m, 0, sizeof(m)); m.type = PKT_SERVER_MSG; m.color = 0xC080FFFF;
-            if(c.cmd == ADMIN_CHEATS)
-            {
-                uint8_t np = c.value ? (m_nPerms | PERM_NO_CHEATS) : (m_nPerms & ~PERM_NO_CHEATS);
-                SetPermsLocked(np);
-                snprintf(m.text, sizeof(m.text), "%s %s cheats for everyone.", who, c.value ? "disabled" : "enabled");
-                Log("%s", m.text); Broadcast(&m, sizeof(m));
-                return;
-            }
-            int t = c.target;
-            if(t >= MP_MAX_PLAYERS || !m_Slots[t].used || t == slot) return;
-            if(c.cmd == ADMIN_KICK || c.cmd == ADMIN_BAN) { KickLocked(t, who, c.reason, c.cmd == ADMIN_BAN); return; }
-            if(c.cmd == ADMIN_MUTE || c.cmd == ADMIN_UNMUTE)
-            {
-                m_Slots[t].muted = c.cmd == ADMIN_MUTE;
-                snprintf(m.text, sizeof(m.text), "%s was %s by %s", m_Slots[t].name, m_Slots[t].muted ? "muted" : "unmuted", who);
-                Log("%s", m.text); Broadcast(&m, sizeof(m));
-            }
+        case PKT_ADMIN_CMD:   // 2.37 / 3.54: staff commands + /report (server_admin.inc)
+            AdminCmd(slot, data, len);
             return;
-        }
 
         case PKT_CHAT:
         {
@@ -1977,6 +1954,7 @@ void MPServer::RaceQueueTick(uint64_t now, bool changed)
 #include "server_rp.inc"    // 3.25: Mega Vil Futuristic (Roleplay)
 #include "server_home.inc"  // 3.39: Home Kit, rules, live settings
 #include "server_ac.inc"    // 3.50: anti-cheat (Nex-AC)
+#include "server_admin.inc" // 3.54: admin / moderator commands
 
 // 3.04.6: an old MP version tried to join: log it once per phone every 10 minutes (console + the
 // --outdated-log file of the 24/7 server) and count it

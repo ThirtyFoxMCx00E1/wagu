@@ -758,6 +758,7 @@ static bool TdeCommand(const char* cmd, const char* arg);   // 3.50 (mp_tde.inc)
 static void TdeRender();
 static void ModCheckProcess(uint64_t now);
 static void ProgProcess(int ped, uint64_t now);
+static void AdmOnAct(const PktAdminAct& a); static void AdmProcess(int ped);   // 3.54 mp_admincmds.inc
 static void ProgOnPacket(const PktProgress& m);
 static void ProgReset();
 static void ProgSendNow();
@@ -2576,6 +2577,7 @@ public:
     void OnSrvSettings(const PktSrvSettings& m) override { SrvSettingsOnPacket(m); }
     void OnGmEvent(const uint8_t* d, int len) override { Modes2OnEvent(d, len); }
     void OnProgress(const PktProgress& m) override { ProgOnPacket(m); }   // 3.39.1
+    void OnAdminAct(const PktAdminAct& m) override { AdmOnAct(m); }      // 3.54
     void OnEvent(const PktEvent& e) override { SampOnEvent(e); }          // 3.01
     void OnTeam(const PktTeam& t) override { SampOnTeam(t); }
     void OnTurf(const PktTurf& t) override { SampOnTurf(t); }
@@ -4109,7 +4111,7 @@ void MP::Process()
     BcwProcess(ped, now);        // 3.04: Brief Case War
     Mw3Process(ped, now);        // 3.23: Modern Warfare 3
     RpProcess(ped, now);         // 3.25: Mega Vil Futuristic
-    HkProcess(ped, now); NeedsProcess(ped, now); MvProcess(now); Modes2Process(ped, now); RulesProcess(now); ModCheckProcess(now); ProgProcess(ped, now);   // 3.39
+    HkProcess(ped, now); NeedsProcess(ped, now); MvProcess(now); Modes2Process(ped, now); RulesProcess(now); ModCheckProcess(now); ProgProcess(ped, now); AdmProcess(ped);   // 3.39 / 3.54 staff commands
     ProcessGates(ped, now);      // 3.04.2: Area 69 gates
     ProcessHotelPc(ped, now);    // 3.36: hotel rooms with a computer (eyefind.info vehicle shops)
     ProcessClothes(now);         // 3.10: clothing sync
@@ -4251,6 +4253,7 @@ static const ImVec4 kGreenTxt(0.35f, 0.95f, 0.45f, 1), kGreyTxt(0.6f, 0.6f, 0.6f
 static bool JoinHudOff() { return s_bJoinHudOff; }
 static void PSettingsOpen();    // 3.35: mp_psettings.inc
 static void PSettingsPopup();
+#include "mp_admincmds.inc"  // 3.54: admin / moderator commands
 #include "mp_cmds.inc"   // 2.19: chat commands, cheats, player list, chat box, spawn buttons
 #include "mp_samp.inc"   // 3.01: SA-MP dialogs, textdraws, race / derby state of the others
 #include "mp_games.inc"  // 2.21: /spawn, /w, races, deathmatch, jobs, teleport events, open world (3.01: derbies, live race positions)

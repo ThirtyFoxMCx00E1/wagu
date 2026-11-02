@@ -874,8 +874,19 @@ static void LPagePlayersAdmin()
     if(ImGui::Button("Mute##am", ImVec2(q * 0.5f - ImGui::GetStyle().ItemSpacing.x * 0.5f, UI::S(72))) && can) SendAdminCmd(ADMIN_MUTE, t, 0, "");
     ImGui::SameLine();
     if(ImGui::Button("Unmute##au", ImVec2(q * 0.5f - ImGui::GetStyle().ItemSpacing.x * 0.5f, UI::S(72))) && can) SendAdminCmd(ADMIN_UNMUTE, t, 0, "");
+    {   // 3.54: the chat commands as buttons too
+        float w4 = (ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ItemSpacing.x * 3) / 4.0f;
+        if(ImGui::Button("Warn##aw", ImVec2(w4, UI::S(64))) && can) SendAdminCmd2(ADMIN_WARN, t, 0, 0, s_szKickReason);
+        ImGui::SameLine();
+        if(ImGui::Button("Go to##ag", ImVec2(w4, UI::S(64))) && can) SendAdminCmd2(ADMIN_GOTO, t, 0, 0, "");
+        ImGui::SameLine();
+        if(ImGui::Button("Get here##ah", ImVec2(w4, UI::S(64))) && can) SendAdminCmd2(ADMIN_GETHERE, t, 0, 0, "");
+        ImGui::SameLine();
+        if(ImGui::Button("Heal##ahp", ImVec2(w4, UI::S(64))) && can) SendAdminCmd2(ADMIN_SETHEALTH, t, 0, 100, "");
+    }
     if(!can) ImGui::EndDisabled();
-    ImGui::TextDisabled("Tap a player, pick a reason, then Kick / Ban / Mute. The 24/7 server keeps its ban list.");
+    ImGui::TextDisabled("Tap a player, pick a reason, then Kick / Ban / Mute / Warn. The 24/7 server keeps its ban list.");
+    ImGui::TextDisabled("Chat: /acmds lists every staff command (/sethealth /givecash /fine /makevip /makeadmin /unban ...).");
 }
 
 static void LPagePlayers()

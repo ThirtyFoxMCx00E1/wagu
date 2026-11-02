@@ -173,6 +173,12 @@ private:
         uint64_t     hkLastCmd;      // 3.39: Home Kit flood guard
         uint64_t     progAt;         // 3.39.1: last progress save from this player
         uint64_t     gmEvAt;         // 3.39: PKT_GM_EVENT rate limit
+        uint8_t      warns;          // 3.54: /warn count (3 = kicked)
+        bool         vip;            // 3.54: /makevip -> "[VIP] name"
+        bool         granted;        // 3.54: [MOD] given by /makeadmin (ranks.txt), not moderator.txt
+        uint16_t     cookies;        // 3.54: /givecookie
+        uint64_t     reportMuteUntil;// 3.54: /reportmute
+        uint64_t     lastReport;     // 3.54: /report flood guard
     };
     // ---- 3.39: Home Kit (server_home.inc) ----
     struct HkHome { PktHomeHead h; std::vector<HkObj> obj; };
@@ -214,6 +220,12 @@ private:
     bool KickLocked(int id, const char* admin, const char* reason, bool ban);   // 2.37, m_Mutex held
     char               m_szAdminHash[65] = {0};
     char               m_szModFile[256] = "moderator.txt";   // 3.35
+    // 3.54: ranks given in game (/makeadmin, /makevip), kept in ranks.txt: "<M|V> <uid> <name>"
+    std::map<std::string, char> m_Ranks; long m_nRanksStamp = -1;
+    void RanksLoad(); void RanksSave(); char RankOf(const char* uid);
+    void AdminCmd(int slot, const uint8_t* data, int len);
+    void AdminAct(int slot, uint8_t act, int32_t amount, const float* pos, float heading, const char* text);
+    void Retag(int slot);
     uint8_t            m_nBasePerms = PERM_MISSION_PAIR;   // 2.37: what the owner set; the admin's changes reset when everybody left
     int  FindBan(const char* name, const char* uid);   // m_Mutex held
     void SaveBans();                                   // m_Mutex held
