@@ -71,23 +71,33 @@ jobs:
 
       - name: Run the 4 servers (one shift)
         if: steps.guard.outputs.run == '1'
+        shell: bash {0}   # no -e: a missing data file or a failed save must never end the shift
         run: |
           cd server
           ./run_24_7.sh "$REGION"
+          FILES="bans.txt homes.txt homes_rp.txt mw3_stats.txt progress.txt rp_citizens.txt turf.txt"
           save() {
-            mkdir -p /tmp/d && cp -f bans.txt homes.txt homes_rp.txt mw3_stats.txt progress.txt rp_citizens.txt turf.txt /tmp/d/ 2>/dev/null
-            ( cd /tmp/d && [ -n "$(ls)" ] && rm -rf .git && git init -q -b mp247-data && git add -A &&
+            rm -rf /tmp/d; mkdir -p /tmp/d
+            for f in $FILES; do [ -s "$f" ] && cp -f "$f" /tmp/d/; done
+            [ -n "$(ls -A /tmp/d)" ] || { echo "no server data to save yet"; return 0; }
+            ( cd /tmp/d && git init -q -b mp247-data && git add -A &&
               git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
                   commit -qm "server data $(date -u +%F' '%H:%M)" &&
-              git push -qf "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" mp247-data ) || true
+              git push -qf "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:mp247-data ) \
+              && echo "server data saved" || echo "saving server data failed (will retry)"
+            return 0
           }
           end=$(( $(date +%s) + SHIFT_MIN * 60 ))
           while [ "$(date +%s)" -lt "$end" ]; do
-            sleep 600; save
-            tail -n 2 logs/*.log 2>/dev/null | tail -n 12
+            sleep 600
+            save
+            ./run_24_7.sh "$REGION" > /dev/null   # restarts a server if its loop ever died
+            for l in logs/*.log; do [ -f "$l" ] && { echo "== $l"; tail -n 2 "$l"; }; done
           done
           echo "Queueing the next shift"
-          gh workflow run mp-247-servers.yml -R "$GITHUB_REPOSITORY" --ref "${GITHUB_REF_NAME}" -f handoff=true || true
+          gh workflow run mp-247-servers.yml -R "$GITHUB_REPOSITORY" --ref "${GITHUB_REF_NAME}" -f handoff=true \
+            || echo "queueing failed - the hourly safety net will start the next shift"
           sleep $(( OVERLAP_MIN * 60 ))
           save
           ./run_24_7.sh stop
+          exit 0
