@@ -361,7 +361,7 @@ static void TbSpawnTruck(int ped)
     if(g < -999.0f || s_Tb.start.z - g > 20.0f) g = Game::GroundZBelow(cp.x, cp.y, s_Tb.start.z + 1.6f);
     if((g < -999.0f || s_Tb.start.z - g > 20.0f) && ++s_Tb.truckTries < 40) { s_Tb.truckAt = now + 100; return; }   // not streamed yet: try again (max 4 s)
     if(g < -999.0f || s_Tb.start.z - g > 20.0f) g = TbFloor(s_Tb.start).z;
-    cp.z = g + 0.15f;
+    cp.z = g + 1.0f;   // 3.56: a bit in the air (it drops onto its wheels) - at +0.15 it could spawn stuck in the floor
     int car = Game::CreateCar(TB_TRUCK, cp, true);
     if(car <= 0) { s_Tb.truckAt = now + 250; return; }
     Game::SetCarHeading(car, s_Tb.startH); Game::SetCarColours(car, 1, 1);

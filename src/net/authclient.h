@@ -16,7 +16,7 @@
 class AuthClient
 {
 public:
-    enum State { IDLE, LINKING, CODE, SIGNUP, LOGIN, BUSY, TICKET, WAIT_SERVER, DONE, FAILED };
+    enum State { IDLE, LINKING, CODE, SIGNUP, LOGIN, BUSY, TICKET, WAIT_SERVER, DONE, FAILED, RESET };   // 3.56: RESET = new password
 
     void Begin(const char chalHex[33], const char* serverName, bool accountOnPhone, const char* lastUser);
     void Tick(uint64_t nowMs);          // call every frame while a login screen is up
@@ -26,6 +26,11 @@ public:
     void Login(const char* user, const char* pass);
     void WantNewAccount();              // LOGIN -> CODE
     void WantLogin();                   // CODE -> LOGIN
+    // 3.56: forgot username / password: LOGIN -> CODE (/gen proves it is your Discord) ->
+    //   username: back to LOGIN with it filled in;  password: RESET (new password) -> logged in
+    void WantRecover(int kind);         // 1 = username, 2 = password
+    void ResetPassword(const char* pass);
+    int  recover = 0;                   // 0 = normal sign up / login, 1 / 2 = recovering
     // the server's answer to our ticket
     void ServerResult(bool ok, const char* msg);
 

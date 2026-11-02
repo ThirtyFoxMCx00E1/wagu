@@ -1,6 +1,7 @@
 {
-"latest": "3.55.2",
+"latest": "3.56",
 "supported": [
+"3.56",
 "3.55.2",
 "3.55.1",
 "3.55",
@@ -69,6 +70,17 @@
 "3.04.6"
 ],
 "versions": [
+{
+"v": "3.56",
+"summary": "Forgot username / Forgot password on the login screen (and /forgotuser, /resetpass in Discord); the Timber pickup now spawns a bit in the air after the teleport",
+"items": [
+"Login screen: Forgot username? and Forgot password? buttons; a /gen CODE in #verification proves it is your Discord",
+"Forgot username: back to Login with your username filled in",
+"Forgot password: New password + Confirm screen, Save & Login logs you straight in; your other phones get logged out",
+"Discord bot: /forgotuser shows your game username, /resetpass opens a form for a new password (only you see both)",
+"Timber job: the pickup spawns 1 m above the barn floor and drops onto its wheels (no more stuck in the floor)"
+]
+},
 {
 "v": "3.55.2",
 "summary": "/dealerspot reset puts the dealership receptionist, car lot and showroom camera back on their original positions; /dealerspot auto turns the wall check on again",

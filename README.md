@@ -121,6 +121,12 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **3.56**: Forgot username / Forgot password on the login screen (and /forgotuser, /resetpass in Discord); the Timber pickup now spawns a bit in the air after the teleport
+  - Login screen: Forgot username? and Forgot password? buttons; a /gen CODE in #verification proves it is your Discord
+  - Forgot username: back to Login with your username filled in
+  - Forgot password: New password + Confirm screen, Save & Login logs you straight in; your other phones get logged out
+  - Discord bot: /forgotuser shows your game username, /resetpass opens a form for a new password (only you see both)
+  - Timber job: the pickup spawns 1 m above the barn floor and drops onto its wheels (no more stuck in the floor)
 - **3.55.2**: /dealerspot reset puts the dealership receptionist, car lot and showroom camera back on their original positions; /dealerspot auto turns the wall check on again
   - /dealerspot reset: original table positions (only snapped to the ground), no wall check, camera as in 3.55
   - /dealerspot auto: wall check on again, the spots are checked again when you come near

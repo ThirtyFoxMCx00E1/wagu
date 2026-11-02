@@ -25,6 +25,8 @@ struct AuthField { char buf[40]; int max; bool secret; bool numeric; const char*
 static AuthField s_AfUser = { "", 21, false, false, "User" };
 static AuthField s_AfPass = { "", 33, true,  false, "Password" };
 static AuthField s_AfAge  = { "", 3,  false, true,  "Age" };
+static AuthField s_AfNewPass  = { "", 33, true, false, "New password" };    // 3.56: forgot password
+static AuthField s_AfNewPass2 = { "", 33, true, false, "Confirm" };
 static const int AUTH_AGE_MIN = 10, AUTH_AGE_MAX = 24;   // allowed sign-up ages (keep the hint text below in step)
 static int       s_nAfGender = 0;            // 0 Male, 1 Female, 2 Other
 static AuthField* s_pAfEditing = nullptr;
@@ -426,7 +428,7 @@ static void RenderAuth()
     AuthPanel P; P.f = UI::Font(); P.L = AuthStyleLook(bcw, mw3, rp); P.pad = UI::S(28); P.fs = UI::S(30); P.ids = 0;
     P.w = fminf(fmaxf(UI::S(760), ds.x * 0.46f), ds.x * 0.94f);
     const AuthClient::State st = s_Auth.state;
-    float h = UI::S(st == AuthClient::SIGNUP ? 700 : st == AuthClient::LOGIN ? 560 : st == AuthClient::CODE ? 640 : 380);
+    float h = UI::S(st == AuthClient::SIGNUP ? 700 : st == AuthClient::LOGIN ? 640 : st == AuthClient::CODE ? 680 : st == AuthClient::RESET ? 600 : 380);
     if(bcw) h += UI::S(90);
     h = fminf(h, ds.y * 0.96f);
     P.p0 = ImVec2((ds.x - P.w) * 0.5f, (ds.y - h) * 0.5f);
@@ -453,7 +455,8 @@ static void RenderAuth()
             dl->PopClipRect();
         }
         const char* title = st == AuthClient::SIGNUP ? "Create your account" : st == AuthClient::LOGIN ? "Login" :
-                            st == AuthClient::CODE ? "Code authentication" : st == AuthClient::DONE ? "Welcome" : "Login";
+                            st == AuthClient::CODE ? (s_Auth.recover == 1 ? "Forgot username" : s_Auth.recover == 2 ? "Forgot password" : "Code authentication") :
+                            st == AuthClient::RESET ? "New password" : st == AuthClient::DONE ? "Welcome" : "Login";
         char cap[96]; snprintf(cap, sizeof(cap), "%s%s", rp ? "MEGA VIL FUTURISTIC  |  " : mw3 ? "MODERN WARFARE 3  |  " : (bcw ? "BRIEF CASE WAR  |  " : "MP  |  "), title);
         dl->AddText(P.f, UI::S(32), ImVec2(P.p0.x + P.pad, P.p0.y + (capH - UI::S(32)) * 0.5f), IM_COL32_WHITE, cap);
         P.y = P.p0.y + capH + UI::S(18);
@@ -488,7 +491,8 @@ static void RenderAuth()
         }
         case AuthClient::CODE:
         {
-            P.Text("This server uses accounts. Verify with Discord first:", L.dim);
+            if(s_Auth.recover) P.Text(s_Auth.recover == 1 ? "Forgot your username? Prove the Discord of your account:" : "Forgot your password? Prove the Discord of your account:", L.dim);
+            else P.Text("This server uses accounts. Verify with Discord first:", L.dim);
             P.Text("1.  Join the Discord server:", L.text);
             P.Text(MP_AUTH_DISCORD_URL, L.accent, UI::S(32), true);
             P.Text("2.  In the #verification channel type:", L.text);
@@ -505,11 +509,12 @@ static void RenderAuth()
             char w[96]; snprintf(w, sizeof(w), "Waiting for /gen...  (code works %d:%02d more)", left / 60, left % 60);
             P.Text(w, L.dim, UI::S(26), true);
             if(!s_Auth.err.empty()) P.Text(s_Auth.err.c_str(), L.err, UI::S(26), true);
+            if(s_Auth.recover) P.Text("Or on Discord: /forgotuser shows it, /resetpass sets a new password.", L.dim, UI::S(24), true);
             P.y = P.p0.y + h - P.pad - bh * 2 - gap;
             if(P.Button("Open Discord", P.p0.x + P.pad, halfW, bh, true)) Voice::OpenUrl(MP_AUTH_DISCORD_URL);
             if(P.Button("New code", P.p0.x + P.pad + halfW + gap, halfW, bh, false)) s_Auth.NewCode();
             P.y += bh + gap;
-            if(P.Button("I have an account: Login", P.p0.x + P.pad, halfW, bh, false)) s_Auth.WantLogin();
+            if(P.Button(s_Auth.recover ? "Back to Login" : "I have an account: Login", P.p0.x + P.pad, halfW, bh, false)) s_Auth.WantLogin();
             if(P.Button("Leave server", P.p0.x + P.pad + halfW + gap, halfW, bh, false)) { ImGui::End(); ImGui::PopStyleColor(); ImGui::PopStyleVar(2); LeaveServer("Left the server."); return; }
             break;
         }
@@ -557,7 +562,11 @@ static void RenderAuth()
             if(!s_Auth.prefillUser.empty() && !s_AfUser.buf[0]) MP_CopyStr(s_AfUser.buf, s_Auth.prefillUser.c_str(), sizeof(s_AfUser.buf));
             P.Field(s_AfUser); P.Field(s_AfPass);
             if(!s_Auth.err.empty()) P.Text(s_Auth.err.c_str(), L.err, UI::S(26));
-            P.y = P.p0.y + h - P.pad - bh * 2 - gap;
+            P.y = P.p0.y + h - P.pad - bh * 3 - gap * 2;
+            // 3.56: forgot username / password (a /gen in #verification proves it is your Discord)
+            if(P.Button("Forgot username?", P.p0.x + P.pad, halfW, bh, false)) { s_AfUser.buf[0] = 0; s_Auth.prefillUser.clear(); s_Auth.WantRecover(1); }
+            if(P.Button("Forgot password?", P.p0.x + P.pad + halfW + gap, halfW, bh, false)) { s_AfPass.buf[0] = 0; s_Auth.WantRecover(2); }
+            P.y += bh + gap;
             if(P.Button("Login", P.p0.x + P.pad, fullW, bh, true))
             {
                 AuthTakeField(s_AfUser); AuthTakeField(s_AfPass);
@@ -566,6 +575,30 @@ static void RenderAuth()
             P.y += bh + gap;
             if(P.Button("New account (Discord code)", P.p0.x + P.pad, halfW, bh, false)) s_Auth.WantNewAccount();
             if(P.Button("Leave server", P.p0.x + P.pad + halfW + gap, halfW, bh, false)) { ImGui::End(); ImGui::PopStyleColor(); ImGui::PopStyleVar(2); LeaveServer("Left the server."); return; }
+            break;
+        }
+        case AuthClient::RESET:   // 3.56: forgot password -> Discord verified -> new password
+        {
+            if(!s_Auth.info.empty()) P.Text(s_Auth.info.c_str(), L.ok, UI::S(26));
+            P.Field(s_AfNewPass); P.Field(s_AfNewPass2);
+            P.Text("Password 6-32. Your other phones get logged out.", L.dim, UI::S(24));
+            if(!s_Auth.err.empty()) P.Text(s_Auth.err.c_str(), L.err, UI::S(26));
+            P.y = P.p0.y + h - P.pad - bh;
+            if(P.Button("Save & Login", P.p0.x + P.pad, halfW, bh, true))
+            {
+                AuthTakeField(s_AfNewPass); AuthTakeField(s_AfNewPass2);
+                const size_t n = strlen(s_AfNewPass.buf);
+                if(n < 6 || n > 32) s_Auth.err = "Password must be 6-32 characters.";
+                else if(strcmp(s_AfNewPass.buf, s_AfNewPass2.buf)) s_Auth.err = "The passwords do not match.";
+                else
+                {
+                    if(!s_Auth.prefillUser.empty()) MP_CopyStr(s_AfUser.buf, s_Auth.prefillUser.c_str(), sizeof(s_AfUser.buf));
+                    MP_CopyStr(s_AfPass.buf, s_AfNewPass.buf, sizeof(s_AfPass.buf));
+                    s_Auth.ResetPassword(s_AfNewPass.buf);
+                    s_AfNewPass.buf[0] = s_AfNewPass2.buf[0] = 0;
+                }
+            }
+            if(P.Button("Back to Login", P.p0.x + P.pad + halfW + gap, halfW, bh, false)) { s_AfNewPass.buf[0] = s_AfNewPass2.buf[0] = 0; s_Auth.WantLogin(); }
             break;
         }
         case AuthClient::DONE:

@@ -99,8 +99,23 @@ void AuthClient::Login(const char* u, const char* p)
     m_AfterLink = LOGIN; Set(BUSY); m_nBusySince = 0;
 }
 
-void AuthClient::WantNewAccount() { if(state == LOGIN) { err.clear(); info.clear(); Set(CODE); NewCode(); } }
-void AuthClient::WantLogin()      { if(state == CODE || state == SIGNUP) { err.clear(); info.clear(); Set(LOGIN); } }
+void AuthClient::WantNewAccount() { if(state == LOGIN) { recover = 0; err.clear(); info.clear(); Set(CODE); NewCode(); } }
+void AuthClient::WantLogin()      { if(state == CODE || state == SIGNUP || state == RESET) { recover = 0; err.clear(); info.clear(); Set(LOGIN); } }
+void AuthClient::WantRecover(int kind)
+{
+    if(state != LOGIN || (kind != 1 && kind != 2)) return;
+    recover = kind; err.clear(); info.clear();
+    m_VToken.clear();                    // a fresh /gen proves it is you (an old verification does not count)
+    Set(CODE); NewCode();
+}
+void AuthClient::ResetPassword(const char* p)
+{
+    if(state != RESET) return;
+    err.clear();
+    char rid[12]; snprintf(rid, sizeof(rid), "%d", ++m_nRid);
+    Send({ { "op", "reset" }, { "vtoken", m_VToken }, { "pass", p }, { "chal", m_Chal }, { "srv", m_Server }, { "rid", rid }, { "dev", device } });
+    m_AfterLink = RESET; Set(BUSY); m_nBusySince = 0;
+}
 
 void AuthClient::RequestStats()
 {
@@ -177,11 +192,14 @@ void AuthClient::OnAnswer(std::map<std::string, std::string>& a)
         else if(state != CODE && state != LOGIN) return;
         if(a["vtoken"].empty() || a["vtoken"] == m_VToken) return;   // the same push again
         m_VToken = a["vtoken"]; discordName = a["dname"]; err.clear();
+        if(recover && state == LOGIN) return;   // 3.56: recovering needs the new /gen (CODE screen)
+        if(a["has"] == "1" && recover == 2) { prefillUser = a["user"]; info = "Discord verified (" + discordName + "). Your username is " + a["user"] + ". Choose a new password."; Set(RESET); return; }
+        if(a["has"] == "1" && recover == 1) { prefillUser = a["user"]; recover = 0; info = "Discord verified (" + discordName + "). Your username is " + a["user"] + "."; Set(LOGIN); return; }
         if(a["has"] == "1") { prefillUser = a["user"]; info = "Discord verified (" + discordName + "). You already have the account " + a["user"] + ": log in."; Set(LOGIN); }
-        else { info = "Discord verified: " + discordName; Set(SIGNUP); }
+        else { if(recover) err = "This Discord has no game account yet - create one below."; recover = 0; info = "Discord verified: " + discordName; Set(SIGNUP); }
         return;
     }
-    if(op == "signup" || op == "login" || op == "ticket")
+    if(op == "signup" || op == "login" || op == "ticket" || op == "reset")
     {
         if(state != BUSY && state != TICKET) return;
         if(ok && Unhex64(a["sig"], m_Sig) && !a["ticket"].empty())
@@ -189,11 +207,13 @@ void AuthClient::OnAnswer(std::map<std::string, std::string>& a)
             if(!a["sess"].empty()) m_Sess = a["sess"];
             user = a["user"]; m_Ticket = a["ticket"]; m_bTicket = true;
             createdNow = op == "signup";
+            if(op == "reset") { recover = 0; info = "Password changed."; }
             Set(WAIT_SERVER);
             return;
         }
         err = a["err"].empty() ? std::string("Login failed.") : a["err"];
         if(a["relogin"] == "1") m_Sess.clear();
+        if(op == "reset" && a["again"] == "1") { recover = 2; m_VToken.clear(); Set(CODE); NewCode(); return; }   // 3.56: verification expired
         Set(op == "ticket" ? LOGIN : m_AfterLink);
         return;
     }
