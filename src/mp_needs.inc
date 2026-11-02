@@ -107,17 +107,18 @@ static void NeedsRender()
     const ImVec2 ds = ImGui::GetIO().DisplaySize;
     const float sz = UI::S(92.0f), gap = UI::S(10.0f), m = UI::S(18.0f);
     ImFont* pf = UI::PricedownFont() ? UI::PricedownFont() : UI::Font();
-    const float fs = UI::S(pf == UI::Font() ? 26.0f : 32.0f);
+    const float fs = UI::S(pf == UI::Font() ? 21.0f : 25.0f);   // 3.55: fits in the hexagon
     const float vals[2] = { s_Need.hunger, s_Need.energy };
     for(int i = 0; i < 2; ++i)
     {
         ImVec2 a(ds.x - m - (2 - i) * sz - (1 - i) * gap, ds.y - m - sz), b(a.x + sz, a.y + sz);
-        dl->AddRectFilled(a, b, IM_COL32(0, 0, 0, 120), UI::S(4));
-        ImVec2 c(a.x + sz * 0.5f, a.y + sz * 0.38f);
-        if(i == 0) NeedsIconFood(dl, c, sz * 0.28f); else NeedsIconEnergy(dl, c, sz * 0.28f);
+        // 3.55: a hexagon (was a dark box)
+        HexLabel(dl, ImVec2(a.x + sz * 0.5f, a.y + sz * 0.5f), sz * 0.54f, IM_COL32(20, 20, 24, 170), (NeedsCol(vals[i]) & 0x00FFFFFF) | 0xE6000000, UI::S(3));
+        ImVec2 c(a.x + sz * 0.5f, a.y + sz * 0.36f);
+        if(i == 0) NeedsIconFood(dl, c, sz * 0.22f); else NeedsIconEnergy(dl, c, sz * 0.22f);
         char t[8]; snprintf(t, sizeof(t), "%d%%", (int)(vals[i] + 0.5f));
         ImVec2 ts = pf->CalcTextSizeA(fs, FLT_MAX, 0, t);
-        ImVec2 p(a.x + (sz - ts.x) * 0.5f, b.y - ts.y - UI::S(4));
+        ImVec2 p(a.x + (sz - ts.x) * 0.5f, a.y + sz * 0.55f);   // 3.55: inside the hexagon
         const float o = fmaxf(1.0f, fs * 0.07f);
         for(int ox = -1; ox <= 1; ++ox) for(int oy = -1; oy <= 1; ++oy) if(ox || oy) dl->AddText(pf, fs, ImVec2(p.x + ox * o, p.y + oy * o), IM_COL32(0, 0, 0, 255), t);
         dl->AddText(pf, fs, p, NeedsCol(vals[i]), t);

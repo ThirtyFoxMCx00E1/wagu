@@ -898,6 +898,27 @@ void MPServer::RpHandleCmd(int slot, const PktRpCmd& c)
             RpSendMe(slot);
             break;
         }
+        if(c.a == 3)
+        {   // 3.55: the dealership receptionist: val = model, b = colour, at a dealership counter only
+            int model = c.val, price = DealerVehPrice(model);
+            if(price <= 0) break;
+            if(now - m.lastBuy < 400) break; m.lastBuy = now;
+            bool near = false;
+            for(int d = 0; d < DEALER_SITE_COUNT; ++d) if(g_DealerSites[d].rp && s.hasPos)
+            { float dp[3] = { g_DealerSites[d].x, g_DealerSites[d].y, g_DealerSites[d].z }; if(RpDist2D(s.pos, dp) < 45.0f) near = true; }
+            if(!near) { RpMsg(slot, RP_RED, "[DEALER] Buy cars at the receptionist (Coutt and Schutz, GPS > Budget Car Dealership)."); break; }
+            if(m.nveh >= RP_VEH_SLOTS) { RpMsg(slot, RP_RED, "Your garage is full (%d). Sell one at the receptionist or in the Garage app.", RP_VEH_SLOTS); break; }
+            if(m.cash + m.bank < price) { RpMsg(slot, RP_RED, "That costs %s - not enough money (cash + bank).", RpMoney(price, mb, sizeof(mb))); break; }
+            int fromCash = std::min(std::max(m.cash, 0), price);
+            m.bank -= price - fromCash;
+            if(fromCash) RpPay(slot, -fromCash, "Cardealer");
+            m.veh[m.nveh++] = (uint16_t)model; m.lastVeh = now;
+            RpEv(slot, RPV_VEHICLE, 3, c.b, MP_INVALID_ID, model);
+            RpMsg(slot, RP_GREEN, "[DEALER] Paid %s - enjoy your new car. It is in your garage too (Garage app).", RpMoney(price, mb, sizeof(mb)));
+            m.statT = (uint32_t)time(nullptr); m_bRpDirty = true;
+            RpSendMe(slot);
+            break;
+        }
         int idx = c.val; if(idx < 0 || idx >= RP_SHOP_COUNT) break;
         if(now - m.lastBuy < 400) break; m.lastBuy = now;
         const RpShopItem& it = g_RpShop[idx];
@@ -1110,6 +1131,8 @@ void MPServer::RpHandleCmd(int slot, const PktRpCmd& c)
         if(c.a >= m.nveh) break;
         int model = m.veh[c.a], back = 1000;
         for(int i = 0; i < RP_SHOP_COUNT; ++i) if(g_RpShop[i].kind == RPI_VEH && g_RpShop[i].a == model) { back = g_RpShop[i].price / 2; break; }
+        if(back == 1000 && DealerVehPrice(model) > 0) back = DealerVehPrice(model) / 2;   // 3.55: dealership cars
+        else if(back == 1000 && HotelVehPrice(model) > 0) back = HotelVehPrice(model) / 2;
         for(int v = c.a; v + 1 < m.nveh; ++v) m.veh[v] = m.veh[v + 1];
         m.veh[--m.nveh] = 0; m.bank += back; m_bRpDirty = true; m.statT = (uint32_t)time(nullptr);
         RpMsg(slot, RP_SKY, "[GARAGE] Sold for %s (to your bank).", RpMoney(back, mb, sizeof(mb)));

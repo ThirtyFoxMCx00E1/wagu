@@ -323,6 +323,7 @@ static void PadNavScroll(float pages)
 static void PadCloseScreen()
 {
     if(VKeyboard::IsOpen()) { VKeyboard::Close(); return; }
+    if(MP::DealerBack()) return;   // 3.55
     if(FloatMenu::IsOpen()) { FloatMenu::Toggle(); return; }
     FloatMenu::CloseAll();
 }
@@ -423,7 +424,7 @@ static void PadTick()   // game thread, every 2D frame (before ImGui's frame)
         else s_bPadCursor = !s_bPadCursor.load();
     }
     // auto: an MP screen opened and the pad is being used -> navigation mode (3.53; before: the cursor)
-    const bool screen = FloatMenu::IsModal() || VKeyboard::IsOpen() || MP::AuthScreenShown() || FloatMenu::IsOpen();
+    const bool screen = FloatMenu::IsModal() || VKeyboard::IsOpen() || MP::AuthScreenShown() || FloatMenu::IsOpen() || MP::DealerShown();
     const bool padRecent = s_nPadUsedAt.load() && now - s_nPadUsedAt.load() < 60000;
     if(screen && padRecent && !s_bPadCursor.load() && !s_bPadNav.load()) { s_bPadNav = true; s_bPadAuto = true; }
     if(!screen && s_bPadAuto && (s_bPadCursor.load() || s_bPadNav.load())) { s_bPadCursor = false; s_bPadNav = false; s_bPadAuto = false; }

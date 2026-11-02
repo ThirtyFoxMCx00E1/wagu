@@ -263,6 +263,8 @@ private:
     uint64_t m_nLastTurfSend = 0;
     uint64_t m_nNextAd = 0;          // 3.11: next Discord message
     uint64_t m_nAdInterval = MP_AD_INTERVAL_MS;
+    uint64_t m_nNextInfo = 0; int m_nInfoIdx = 0;   // 3.55: [INFO] tips every 35 min 20 s
+    void InfoTick(uint64_t now);
 public:
     void     SetAdInterval(uint64_t ms) { m_nAdInterval = ms ? ms : MP_AD_INTERVAL_MS; }   // tests
 private:

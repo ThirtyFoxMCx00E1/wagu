@@ -20,6 +20,7 @@
 #include "../net/server.h"
 #include "../../imgui/rw_glue.h"
 #include "../../imgui/arial.h"
+#include "../../imgui/fredoka.h"   // 3.55: the MP system font (GTA SA-like rounded labels)
 
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_ONLY_PNG
@@ -52,8 +53,8 @@ static float     s_fScale = 1.0f;
 static ImFont* s_pFonts[UI_FONT_COUNT] = {};
 static int     s_nFont = 0, s_nFontFx = 1;
 static float   s_fUiScale = 1.0f, s_fFontScale = 1.0f;
-static const char* const kFontNames[UI_FONT_COUNT] = { "Arial (MP)", "Pricedown (GTA)", "Roboto", "Roboto Condensed", "Noto Serif",
-                                                       "Mono", "Coming Soon", "Dancing Script", "Carrois Gothic" };
+static const char* const kFontNames[UI_FONT_COUNT] = { "MP (GTA style)", "Pricedown (GTA)", "Roboto", "Roboto Condensed", "Noto Serif",
+                                                       "Mono", "Coming Soon", "Dancing Script", "Carrois Gothic", "Arial (old MP font)" };
 const char* UI::FontName(int i) { return i >= 0 && i < UI_FONT_COUNT ? kFontNames[i] : "?"; }
 bool UI::FontAvailable(int i) { return i == 0 || (i > 0 && i < UI_FONT_COUNT && s_pFonts[i]); }
 void UI::SetLook(int font, int effect, float fontScale, float uiScale)
@@ -330,7 +331,10 @@ static void BuildFontsInto(FontBuild& fb)
         if(fb.kind[0]) { sc.AddText("0123456789"); sc.BuildRanges(&fb.script); }
     }
     ImFontConfig fc; fc.FontDataOwnedByAtlas = false; fc.OversampleH = 2; fc.OversampleV = 2;
-    fb.font = at->AddFontFromMemoryTTF((void*)arialData, sizeof(arialData), UI::S(34.0f), &fc, fb.ranges.Data);
+    // 3.55: the system font is Fredoka (rounded, condensed - like the GTA SA / SA-MP HUD labels); Arial is merged
+    // under it for every character Fredoka doesn't have (Cyrillic, Greek, Vietnamese ...). x1.08: same cap height as Arial.
+    fb.font = at->AddFontFromMemoryTTF((void*)fredokaData, sizeof(fredokaData), UI::S(34.0f * 1.08f), &fc, fb.ranges.Data);
+    { ImFontConfig mc = fc; mc.MergeMode = true; at->AddFontFromMemoryTTF((void*)arialData, sizeof(arialData), UI::S(34.0f), &mc, fb.ranges.Data); }
     if(fb.script.Size > 1) MergePhoneFont(at, fb.kind.c_str(), UI::S(34.0f), fb.script.Data);
     // 2.19: coloured emoji glyphs (chat / keyboard)
     UI::EmojiAddGlyphs(at, fb.font, UI::S(34.0f));
@@ -350,6 +354,9 @@ static void BuildFontsInto(FontBuild& fb)
             fb.fonts[2 + i] = LoadSystemFont(at, lists[i], UI::S(34.0f));
             if(fb.fonts[2 + i] && 2 + i == fb.fontIdx && fb.script.Size > 1) MergePhoneFont(at, fb.kind.c_str(), UI::S(34.0f), fb.script.Data);   // 3.52
         }
+        // 3.55: the old Arial system font stays in the list
+        fb.fonts[9] = at->AddFontFromMemoryTTF((void*)arialData, sizeof(arialData), UI::S(34.0f), &fc, fb.ranges.Data);
+        if(fb.fonts[9] && fb.fontIdx == 9 && fb.script.Size > 1) MergePhoneFont(at, fb.kind.c_str(), UI::S(34.0f), fb.script.Data);
     }
     at->Build();
     UI::EmojiBake(at, fb.font);
@@ -1003,7 +1010,7 @@ static void DrawChat(ImDrawList* dl)
     {
         const ChatLine& l = MP::chat[i];
         float alpha = 1.0f;
-        if(!open && st.chatFade > 0 && l.t)
+        if(!open && st.chatFadeOn && st.chatFade > 0 && l.t)
         {
             float age = (float)(now - l.t) / 1000.0f, life = (float)st.chatFade;
             if(age >= life) break;                          // older ones are gone too

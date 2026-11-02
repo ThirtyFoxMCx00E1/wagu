@@ -271,7 +271,15 @@ static bool HandleCommand(const char* text)
     else if(!strcmp(cmd, "chatscale"))  { if(*arg) settings.chatScale = (float)atof(arg) / 100.0f; ClampChatSettings(); SaveConfig(); SysMsg(COL_SYSTEM, "Chat scale: %d%%", (int)(settings.chatScale * 100 + 0.5f)); }
     else if(!strcmp(cmd, "fontsize"))  { if(*arg) settings.chatSize = (float)atof(arg) / 100.0f; ClampChatSettings(); SaveConfig(); SysMsg(COL_SYSTEM, "Chat text size: %d%%", (int)(settings.chatSize * 100 + 0.5f)); }
     else if(!strcmp(cmd, "chatwidth")) { if(*arg) settings.chatWidth = (float)atof(arg) / 100.0f; ClampChatSettings(); SaveConfig(); SysMsg(COL_SYSTEM, "Chat width: %d%%", (int)(settings.chatWidth * 100 + 0.5f)); }
-    else if(!strcmp(cmd, "chatfade"))  { if(*arg) settings.chatFade = atoi(arg); ClampChatSettings(); SaveConfig(); SysMsg(COL_SYSTEM, "Chat fade: %s", settings.chatFade ? (std::to_string(settings.chatFade) + " s").c_str() : "never"); }
+    else if(!strcmp(cmd, "chatfade"))
+    {   // 3.55: /chatfade on | off | [seconds]
+        if(!strcasecmp(arg, "off")) settings.chatFadeOn = false;
+        else if(!strcasecmp(arg, "on")) { settings.chatFadeOn = true; if(settings.chatFade <= 0) settings.chatFade = 25; }
+        else if(*arg) { settings.chatFade = atoi(arg); settings.chatFadeOn = settings.chatFade > 0; }
+        else settings.chatFadeOn = !settings.chatFadeOn;
+        ClampChatSettings(); SaveConfig();
+        SysMsg(COL_SYSTEM, "Chat fade: %s", (settings.chatFadeOn && settings.chatFade) ? (std::to_string(settings.chatFade) + " s").c_str() : "off (the lines stay)");
+    }
     else if(!strcmp(cmd, "chatbg"))    { settings.chatBg = !settings.chatBg; SaveConfig(); SysMsg(COL_SYSTEM, "Chat background: %s", OnOff(settings.chatBg)); }
     else if(!strcmp(cmd, "clearchat")) { chat.clear(); }
     else if(!strcmp(cmd, "gravity"))
@@ -990,7 +998,7 @@ static void Render219(void*)
     RenderBcw();               // 3.04: Brief Case War
     RenderMw3();               // 3.23: Modern Warfare 3
     RenderRp();                // 3.25: Mega Vil Futuristic
-    HkRender(); NeedsRender(); Modes2Render();   // 3.39
+    HkRender(); NeedsRender(); Modes2Render(); DealerRender();   // 3.39 / 3.55
     RenderHotelPc();           // 3.36: hotel room computer (every server)
     RenderSafeZones();         // 3.21: hospital safe zones
     RenderMarkers();           // 3.21: red checkpoint beams

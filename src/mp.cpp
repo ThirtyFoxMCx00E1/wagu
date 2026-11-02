@@ -38,6 +38,7 @@
 #include "ui/floatmenu.h"
 #include "ui/vkeyboard.h"
 #include "ui/ui_common.h"
+#include "ui/hexlabel.h"   // 3.55
 #include "game/cleoblock.h"
 #include "game/modscan.h"
 #include "net/admin.h"
@@ -746,6 +747,10 @@ static bool HkCommand(const char* cmd, const char* arg);
 static bool Modes2Command(const char* cmd, const char* arg);
 static void Modes2Process(int ped, uint64_t now);
 static void Modes2Render();
+static void DealerProcess(int ped, uint64_t now);
+static void DealerRender();
+static void DealerRememberColour(int model, int ci);
+static void DealerApplyColour(int car, int model);
 static bool MvCommand(const char* cmd, const char* arg);
 static void MvProcess(uint64_t now);
 static void NeedsProcess(int ped, uint64_t now);
@@ -925,9 +930,13 @@ static void SetRemoteStatus(RemotePlayer& p, uint8_t st, const char* mission, bo
     bool wasMission = (p.status & STATUS_MISSION) != 0;
     bool isMission  = (st & STATUS_MISSION) != 0;
     if(announce && isMission && mission && mission[0] && (!wasMission || strcmp(p.mission, mission)))
-        SysMsg(COL_SYSTEM, "*** %s is on a mission: %s", p.name, MP::MissionTitle(mission));
+        SysMsg(COL_GREEN, "*** %s is on a mission: %s", p.name, MP::MissionTitle(mission));   // 3.55: green
     else if(announce && wasMission && !isMission)
-        SysMsg(COL_SYSTEM, "*** %s finished their mission.", p.name);
+    {   // 3.55: passed / failed are not sent, so: dead or wasted right at the end = red "failed", else green
+        const bool failed = p.ped > 0 && (Game::IsCharDead(p.ped) || Game::GetCharHealth(p.ped) <= 0);
+        if(failed) SysMsg(COL_RED, "*** %s failed their mission.", p.name);
+        else SysMsg(COL_GREEN, "*** %s finished their mission.", p.name);
+    }
     p.status = st;
     if(!isMission) p.mission[0] = 0;
     else if(mission && mission[0]) MP_CopyStr(p.mission, mission, sizeof(p.mission));
@@ -4111,7 +4120,7 @@ void MP::Process()
     BcwProcess(ped, now);        // 3.04: Brief Case War
     Mw3Process(ped, now);        // 3.23: Modern Warfare 3
     RpProcess(ped, now);         // 3.25: Mega Vil Futuristic
-    HkProcess(ped, now); NeedsProcess(ped, now); MvProcess(now); Modes2Process(ped, now); RulesProcess(now); ModCheckProcess(now); ProgProcess(ped, now); AdmProcess(ped);   // 3.39 / 3.54 staff commands
+    HkProcess(ped, now); NeedsProcess(ped, now); MvProcess(now); Modes2Process(ped, now); RulesProcess(now); ModCheckProcess(now); ProgProcess(ped, now); AdmProcess(ped); DealerProcess(ped, now);   // 3.39 / 3.54 staff commands
     ProcessGates(ped, now);      // 3.04.2: Area 69 gates
     ProcessHotelPc(ped, now);    // 3.36: hotel rooms with a computer (eyefind.info vehicle shops)
     ProcessClothes(now);         // 3.10: clothing sync
@@ -4282,6 +4291,7 @@ static void PSettingsPopup();
 #include "mp_progress.inc"  // 3.39.1: saved progress (place, money, weapons, health, hunger)
 #include "mp_modes2.inc"    // 3.39: survival, CnR, A/D, stunt, drift
 #include "mp_timber.inc"    // 3.51: the Timber job + the Broker MQQ title
+#include "mp_dealer.inc"    // 3.55: dealership receptionist + showroom (default server, Mega Vil)
 #include "mp_tdeplug.inc"   // 3.50: Add server > Plugins (Textdraw .mptd files)
 #include "mp_tde.inc"       // 3.50: in-game MP Textdraw Editor (/tde)
 
@@ -5203,7 +5213,7 @@ void MP::SaveConfig()
     B("SyncAnims", settings.syncAnims); B("BrokerStandby", settings.brokerStandby); B("SyncEnv", settings.syncEnv); B("SyncNPCs", settings.syncNpcs); B("AllowMissionPair", settings.allowMissionPair); B("AllowCheatMenu", settings.allowCheatMenu); B("HostAuth", settings.hostAuth); B("HostAntiCheat", settings.hostAc); { char m[24]; snprintf(m, sizeof(m), "%llX", settings.hostAcMask); S("HostAntiCheatMask", m); } B("HitSound", settings.hitSound); B("DisableCheats", settings.disableCheats);
     F("ChatX", settings.chatX); F("ChatY", settings.chatY); I("Skin", settings.skin);
     I("ChatLines", settings.chatLines); F("ChatSize", settings.chatSize); F("ChatScale", settings.chatScale); F("ChatWidth", settings.chatWidth);   // 2.19.6
-    I("ChatFade", settings.chatFade); B("ChatBackground", settings.chatBg);
+    I("ChatFade", settings.chatFade); B("ChatFadeOn", settings.chatFadeOn); B("ChatBackground", settings.chatBg);
     B("ChatBoxBackground", settings.chatBoxBg); B("ChatBoxLabel", settings.chatBoxLabel); B("ChatBoxTap", settings.chatBoxTap);   // 2.22
     F("ChatBoxX", settings.chatBoxX); F("ChatBoxY", settings.chatBoxY); B("RealSkin", settings.realSkin);
     I("Region", settings.region); B("LobbyAuto", settings.lobbyAuto); B("RegionPicked", settings.regionPicked); I("NameColor", (int)settings.nameColor); I("ServerChatColor", (int)settings.serverChatColor); I("PlayerChatColor", (int)settings.playerChatColor); I("MaxPlayers", settings.maxPlayers); I("HostGamemodes", settings.hostModes); I("ServerIcon", settings.serverIcon); S("ServerLang", settings.serverLang); S("DeviceId", settings.deviceId); S("UiLanguage", settings.uiLanguage);   // 3.52
@@ -5281,6 +5291,7 @@ static void LoadConfig()
     settings.chatScale       = ::cfg->GetFloat("ChatScale", 1.00f, "MP");   // 3.04.5
     settings.chatWidth       = ::cfg->GetFloat("ChatWidth", 0.42f, "MP");
     settings.chatFade        = ::cfg->GetInt("ChatFade", 25, "MP");
+    settings.chatFadeOn      = ::cfg->GetBool("ChatFadeOn", true, "MP");   // 3.55
     settings.chatBg          = ::cfg->GetBool("ChatBackground", true, "MP");
     settings.chatBoxBg       = ::cfg->GetBool("ChatBoxBackground", true, "MP");   // 2.22
     settings.chatBoxLabel    = ::cfg->GetBool("ChatBoxLabel", true, "MP");
@@ -6638,6 +6649,14 @@ static void SectionDisplay(void*)
     changed |= FloatMenu::ToggleSwitch("Health bars", &settings.showHealthBars);
     changed |= FloatMenu::ToggleSwitch("Player radar icons", &settings.showRadarIcons);
     changed |= FloatMenu::ToggleSwitch("Chat", &settings.showChat);
+    changed |= FloatMenu::ToggleSwitch("Chat fade", &settings.chatFadeOn);   // 3.55
+    if(settings.chatFadeOn)
+    {
+        ImGui::TextUnformatted("Fade out after"); ImGui::SetNextItemWidth(-FLT_MIN);
+        if(settings.chatFade <= 0) settings.chatFade = 25;
+        changed |= ImGui::SliderInt("##dchf", &settings.chatFade, 3, 120, "%d seconds");
+    }
+    ImGui::TextDisabled(settings.chatFadeOn ? "Chat lines fade away after the time above." : "Chat fade is off: the chat lines stay on the screen.");
     changed |= ChatScaleOptions("dispsc");   // 3.04.5
     {   // 3.53.1: chat colours (only on your screen)
         ImGui::Separator();

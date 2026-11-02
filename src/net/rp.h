@@ -381,6 +381,50 @@ static const HotelVeh g_HotelVeh[] =
 };
 #define HOTEL_VEH_COUNT ((int)(sizeof(g_HotelVeh) / sizeof(g_HotelVeh[0])))
 inline int HotelVehPrice(int model) { for(int i = 0; i < HOTEL_VEH_COUNT; ++i) if(g_HotelVeh[i].model == model) return g_HotelVeh[i].price; return 0; }
+
+// ---- 3.55: the car dealership receptionist (Coutt and Schutz, Jefferson LS; Otto's Autos SF) -----
+// Default server (Broker MQQ) + Mega Vil. A list "Quintara-style" Cardealer dialog: categories, then a
+// showroom preview (car on the lot, < > to browse, colours, PURCHASE). Mega Vil: RPC_BUY a = 3,
+// b = colour index, val = model (server checks the price from this table + that you are at a dealer).
+enum eDealerCat : uint8_t { DLC_VANS = 0, DLC_HEAVY, DLC_SUV, DLC_BIKE, DLC_LOW, DLC_2DOOR, DLC_4DOOR, DLC_SPORT, DLC_COUNT };
+static const char* const kDealerCat[DLC_COUNT] = { "Light Truck & Vans", "Heavy Truck", "SUV & Wagon", "Motorbike & Bike", "Lowriders", "2 Doors & Compact", "4 Doors & Luxury", "Sports & Super" };
+struct DealerVeh { uint16_t model; uint8_t cat; int price; uint16_t trunk; };
+static const DealerVeh g_DealerVeh[] =
+{
+    { 422, DLC_VANS, 11000, 60 }, { 482, DLC_VANS, 16000, 80 }, { 413, DLC_VANS, 14000, 90 }, { 440, DLC_VANS, 14000, 95 }, { 459, DLC_VANS, 15000, 85 },
+    { 418, DLC_VANS, 10000, 70 }, { 582, DLC_VANS, 18000, 80 }, { 478, DLC_VANS, 6000, 50 }, { 543, DLC_VANS, 9000, 55 }, { 554, DLC_VANS, 18000, 75 },
+    { 600, DLC_VANS, 10000, 45 }, { 605, DLC_VANS, 8000, 50 }, { 498, DLC_VANS, 25000, 120 }, { 499, DLC_VANS, 25000, 110 }, { 609, DLC_VANS, 25000, 115 },
+    { 414, DLC_HEAVY, 25000, 160 }, { 456, DLC_HEAVY, 30000, 220 }, { 455, DLC_HEAVY, 50000, 300 }, { 403, DLC_HEAVY, 55000, 250 }, { 514, DLC_HEAVY, 55000, 260 },
+    { 515, DLC_HEAVY, 60000, 280 }, { 578, DLC_HEAVY, 35000, 240 }, { 573, DLC_HEAVY, 45000, 200 }, { 524, DLC_HEAVY, 40000, 230 }, { 406, DLC_HEAVY, 80000, 400 },
+    { 400, DLC_SUV, 25000, 50 }, { 489, DLC_SUV, 20000, 55 }, { 505, DLC_SUV, 21000, 55 }, { 579, DLC_SUV, 42000, 60 }, { 470, DLC_SUV, 60000, 50 },
+    { 500, DLC_SUV, 19000, 40 }, { 495, DLC_SUV, 40000, 45 }, { 418, DLC_SUV, 10000, 70 }, { 458, DLC_SUV, 13000, 50 }, { 479, DLC_SUV, 9000, 50 }, { 561, DLC_SUV, 15000, 45 },
+    { 522, DLC_BIKE, 65000, 5 }, { 521, DLC_BIKE, 18000, 6 }, { 461, DLC_BIKE, 15000, 6 }, { 463, DLC_BIKE, 14000, 10 }, { 586, DLC_BIKE, 13000, 10 },
+    { 581, DLC_BIKE, 12000, 6 }, { 468, DLC_BIKE, 6000, 4 }, { 471, DLC_BIKE, 7000, 8 }, { 462, DLC_BIKE, 2500, 4 }, { 448, DLC_BIKE, 2500, 6 },
+    { 510, DLC_BIKE, 800, 2 }, { 481, DLC_BIKE, 500, 1 }, { 509, DLC_BIKE, 300, 2 },
+    { 412, DLC_LOW, 20000, 30 }, { 534, DLC_LOW, 27000, 30 }, { 535, DLC_LOW, 30000, 25 }, { 536, DLC_LOW, 26000, 30 }, { 566, DLC_LOW, 13000, 30 },
+    { 567, DLC_LOW, 25000, 30 }, { 575, DLC_LOW, 24000, 25 }, { 576, DLC_LOW, 22000, 30 },
+    { 401, DLC_2DOOR, 9000, 20 }, { 410, DLC_2DOOR, 6000, 14 }, { 436, DLC_2DOOR, 8000, 18 }, { 439, DLC_2DOOR, 14000, 20 }, { 474, DLC_2DOOR, 12000, 20 },
+    { 475, DLC_2DOOR, 15000, 20 }, { 491, DLC_2DOOR, 11000, 20 }, { 496, DLC_2DOOR, 12000, 16 }, { 517, DLC_2DOOR, 13000, 22 }, { 526, DLC_2DOOR, 15000, 20 },
+    { 527, DLC_2DOOR, 10000, 18 }, { 533, DLC_2DOOR, 38000, 14 }, { 542, DLC_2DOOR, 9000, 20 }, { 545, DLC_2DOOR, 32000, 12 }, { 549, DLC_2DOOR, 8000, 18 }, { 587, DLC_2DOOR, 45000, 16 },
+    { 405, DLC_4DOOR, 16000, 30 }, { 409, DLC_4DOOR, 85000, 40 }, { 421, DLC_4DOOR, 18000, 32 }, { 426, DLC_4DOOR, 18000, 32 }, { 445, DLC_4DOOR, 15000, 30 },
+    { 466, DLC_4DOOR, 10000, 30 }, { 467, DLC_4DOOR, 11000, 30 }, { 492, DLC_4DOOR, 10000, 28 }, { 507, DLC_4DOOR, 17000, 32 }, { 516, DLC_4DOOR, 14000, 30 },
+    { 529, DLC_4DOOR, 11000, 28 }, { 540, DLC_4DOOR, 12000, 30 }, { 546, DLC_4DOOR, 12000, 30 }, { 547, DLC_4DOOR, 11000, 28 }, { 550, DLC_4DOOR, 12000, 30 },
+    { 551, DLC_4DOOR, 14000, 30 }, { 560, DLC_4DOOR, 48000, 26 }, { 580, DLC_4DOOR, 30000, 34 }, { 585, DLC_4DOOR, 14000, 30 },
+    { 411, DLC_SPORT, 150000, 10 }, { 451, DLC_SPORT, 135000, 10 }, { 541, DLC_SPORT, 120000, 8 }, { 415, DLC_SPORT, 105000, 10 }, { 494, DLC_SPORT, 95000, 10 },
+    { 502, DLC_SPORT, 95000, 10 }, { 503, DLC_SPORT, 95000, 10 }, { 506, DLC_SPORT, 90000, 10 }, { 429, DLC_SPORT, 80000, 12 }, { 480, DLC_SPORT, 75000, 12 },
+    { 477, DLC_SPORT, 70000, 12 }, { 402, DLC_SPORT, 69000, 16 }, { 559, DLC_SPORT, 56000, 14 }, { 562, DLC_SPORT, 52000, 14 }, { 565, DLC_SPORT, 30000, 12 },
+    { 558, DLC_SPORT, 35000, 14 }, { 603, DLC_SPORT, 44000, 16 }, { 589, DLC_SPORT, 28000, 14 },
+};
+#define DEALER_VEH_COUNT ((int)(sizeof(g_DealerVeh) / sizeof(g_DealerVeh[0])))
+inline int DealerVehPrice(int model) { for(int i = 0; i < DEALER_VEH_COUNT; ++i) if(g_DealerVeh[i].model == model) return g_DealerVeh[i].price; return 0; }
+// the dealership counters: x, y, z of the receptionist, her heading, then the lot spot (car) + its heading
+struct DealerSite { const char* name; float x, y, z, h; float cx, cy, cz, ch; bool rp; bool def; };
+static const DealerSite g_DealerSites[] =
+{
+    { "Coutt and Schutz",  2131.91f, -1150.75f, 23.70f, 180.0f,  2131.0f, -1141.0f, 23.90f, 300.0f, true,  true },
+    { "Otto's Autos",     -1657.60f,  1207.60f,  7.25f, 315.0f, -1663.0f,  1214.0f,  7.25f, 225.0f, false, true },
+};
+#define DEALER_SITE_COUNT ((int)(sizeof(g_DealerSites) / sizeof(g_DealerSites[0])))
 inline bool RpWeaponIsHarmless(int w) { return w == 0 || w == 14 || w == 15 || w == 43 || w == 46 || w == 10 || w == 11 || w == 12 || w == 13; }
 
 // ---- emotes / dances (names from rpemotes, GTA SA animations) ----------------------------------

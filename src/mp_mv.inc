@@ -82,6 +82,7 @@ static void MvSpawn(MvCar& c)
     int car = Game::CreateCar(c.model, { c.p.x, c.p.y, c.p.z + 0.4f }, true);
     if(car <= 0) { SysMsg(COL_RED, "Could not spawn the %s here (try again near it).", kVehNames[c.model - 400]); return; }
     Game::SetCarHeading(car, c.h);
+    DealerApplyColour(car, c.model);   // 3.55: the colour picked at the dealership
     Game::LockCar(car, c.locked);
     c.car = car;
     SysMsg(COL_GREEN, "Your %s is spawned (%.0f m away).", kVehNames[c.model - 400], MvDist(c));

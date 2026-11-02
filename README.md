@@ -121,6 +121,16 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **3.55**: Car dealership receptionist + showroom (default server, Mega Vil), chat fade on/off, hexagon HUD labels, new GTA-style system font, bigger Broker MQQ logo, [INFO] tips every 35 min 20 s, green/red mission chat
+  - Receptionist at Coutt and Schutz (Jefferson, LS) on the default server and Mega Vil, plus Otto's Autos (SF) on the default server: Access Showroom, Cardealer list (Light Truck & Vans, Heavy Truck, SUV & Wagon, Motorbike & Bike, Lowriders, 2 Doors & Compact, 4 Doors & Luxury, Sports & Super, red Sell Vehicle)
+  - Showroom preview: the car on the lot under a fixed camera, 06/20 index, name - price, trunk capacity, 9 colour circles, Cancel / PURCHASE / < / >; controller: D-pad + A, LB / RB browse, B back
+  - Mega Vil: bought cars go to the garage (server checks price + place, cash + bank); default server: game money, into My Vehicles; picked colour is kept for later spawns
+  - Settings > Display > Chat fade on/off + seconds (/chatfade on|off|seconds): off = the chat stays on screen
+  - HUD labels are hexagons now (Mega Vil right panel: players, ID, cash, bank, job; hunger / energy)
+  - New system font: Fredoka (GTA SA style, OFL), Arial kept as a font choice and as fallback for missing glyphs
+  - Broker MQQ title logo bigger (x1.35) and a bit lower
+  - [INFO] tips to everybody every 35 min 20 s (Mega Vil: roleplay tips)
+  - Mission chat: is on a mission / finished = green, failed = red
 - **3.54**: **Admin and moderator chat commands.**
   - New staff commands for [ADMIN], [MOD] and the server owner: /kick, /ban, /unban, /bans, /warn (3 warnings = kick), /mute, /unmute, /sethealth, /setarmour, /fine, /givecash, /reportmute, /goto, /gethere, /makevip, /makeadmin, /resetstats and /givecookie. Type /acmds for the list. A player can be picked by id or by part of the name.
   - /report [id] [what happened] for every player: it goes to the staff online; /reportmute [id] [minutes] blocks it for a player.

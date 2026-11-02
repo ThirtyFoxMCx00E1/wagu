@@ -12,7 +12,7 @@ namespace UI
     ImFont* Font();
     ImFont* PricedownFont();
     // 3.34: Settings > Display: 9 fonts, text effect (0 none, 1 outline, 2 bold outline, 3 shadow), font + UI scale
-    #define UI_FONT_COUNT 9
+    #define UI_FONT_COUNT 10
     const char* FontName(int i);
     bool  FontAvailable(int i);
     std::string LangFontStatus();   // 3.53.1: "" = the language font is fine

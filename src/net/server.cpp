@@ -680,6 +680,7 @@ void MPServer::Loop()
             if(now - lastWorld >= 3000) { lastWorld = now; PktWorld w; FillWorld(w); Broadcast(&w, sizeof(w)); }
             ExpirePickups(now);
             AdTick(now);     // 3.11: Discord message every 45 min 20 s
+            InfoTick(now);   // 3.55: [INFO] tips every 35 min 20 s
             TurfTick(now);   // 3.01
             RaceQueueTick(now, false);
         }
@@ -701,6 +702,52 @@ void MPServer::AdTick(uint64_t now)
     MP_CopyStr(m.text, MP_AD_TEXT, sizeof(m.text));
     Broadcast(&m, sizeof(m));
     Log("Sent the Discord message to everybody");
+}
+
+// 3.55: "[INFO]" tips (like the DayZ servers: "* Always team up...", "* Remember to report hackers...")
+// to everybody every 35 min 20 s, one tip each time, in turn. Same clock rules as the Discord message:
+// starts with the server, never on join, nothing while empty. Mega Vil gets its own roleplay tips.
+void MPServer::InfoTick(uint64_t now)
+{
+    static const uint64_t kEvery = (35 * 60 + 20) * 1000ull;
+    if(!m_nNextInfo) { m_nNextInfo = now + kEvery; return; }
+    if(now < m_nNextInfo) return;
+    m_nNextInfo = now + kEvery;
+    bool any = false;
+    for(int i = 0; i < MP_MAX_PLAYERS; ++i) if(m_Slots[i].used) { any = true; break; }
+    if(!any) return;
+    static const char* const kAll[] =
+    {
+        "Always team up with your friends - Mission sync lets two players share a mission.",
+        "Remember to report hackers and rule breakers: /report [id] [reason].",
+        "Read the server rules any time with /rules - breaking them can get you kicked or banned.",
+        "Need help? /help lists the commands, /cmds the short list.",
+        "Your progress is saved on this server: money, place, weapons, health.",
+        "Chat fading off or on: Settings > Display > Chat fade (or /chatfade).",
+        "My Vehicles: sit in a car and type /savecar, /mv to spawn it again.",
+        "Buy a car from the receptionist at Coutt and Schutz (Jefferson, LS) or Otto's Autos (San Fierro).",
+    };
+    static const char* const kRp[] =
+    {
+        "Always roleplay - stay in character, no random deathmatch (RDM) and no car ramming (VDM).",
+        "Remember to report hackers and rule breakers: /report [id] [reason].",
+        "Get a job at the Job Centre (GPS), then go on duty to earn money every pay day.",
+        "Keep your money safe: deposit it at Mega Bank or any ATM.",
+        "Buy a car from the receptionist at the Budget Car Dealership (Coutt and Schutz, GPS).",
+        "Hungry or thirsty? Eat and drink at the shops - PANEL > Bag to use items.",
+        "The rules are at the info points in the Mega Vil Plaza - read them before you play.",
+    };
+    const bool rp = IsRpServer();
+    const int n = rp ? (int)(sizeof(kRp) / sizeof(kRp[0])) : (int)(sizeof(kAll) / sizeof(kAll[0]));
+    const char* tip = rp ? kRp[m_nInfoIdx % n] : kAll[m_nInfoIdx % n];
+    ++m_nInfoIdx;
+    PktServerMsg m; memset(&m, 0, sizeof(m)); m.type = PKT_SERVER_MSG; m.color = 0x38BDF8FF;   // sky blue
+    snprintf(m.text, sizeof(m.text), "{38BDF8}[INFO]{FFFFFF} * %s", tip);
+    PktServerMsg mo; memset(&mo, 0, sizeof(mo)); mo.type = PKT_SERVER_MSG; mo.color = 0x38BDF8FF;
+    snprintf(mo.text, sizeof(mo.text), "[INFO] * %s", tip);
+    for(int i = 0; i < MP_MAX_PLAYERS; ++i)
+        if(m_Slots[i].used) { if(m_Slots[i].build >= 33900) SendTo(i, &m, sizeof(m)); else SendTo(i, &mo, sizeof(mo)); }
+    Log("[INFO] tip %d sent", m_nInfoIdx);
 }
 
 void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)

@@ -37,6 +37,7 @@ struct MPSettings
     float chatScale         = 1.00f;   // 3.04.5: scales the whole chat (lines + chat box + suggestions), Settings > Chat / Display
     float chatWidth         = 0.42f;   // max width of a line (share of the screen), longer lines wrap
     int   chatFade          = 25;      // seconds a line stays before it fades out (0 = always shown)
+    bool  chatFadeOn        = true;    // 3.55: Settings > Display > Chat fade (off = the lines stay)
     bool  chatBg            = true;    // dark see-through strip behind the chat
     // 2.22: chat box (the "Tap to chat" input under the chat), set in Server > Display / Chat
     bool  chatBoxBg         = true;    // dark box + white frame of the chat box
@@ -291,6 +292,8 @@ namespace MP
     float SpawnPickerAlpha();
     void  DrawDefaultTitle(ImDrawList* dl);   // 3.53.1
     bool AuthScreenShown();    // 3.21.6: login screen on top
+    bool DealerShown();   // 3.55: the dealership list / showroom is open (controller navigation)
+    bool DealerBack();    // 3.55: controller B: back one step (false = not open)
     bool LauncherPadPage(int dir);   // 3.53: controller LB / RB = previous / next launcher page (false = launcher not open)
     bool JoinScreenActive();   // 2.19.1: join screen / connection view / spawn picker on screen
     // 3.04: Brief Case War (private 24/7 gamemode server, pinned in the Internet list)

@@ -879,7 +879,12 @@ static void RpOnPacket(const uint8_t* d, int len)
             if(ped > 0 && s_Rp.view == 2 && e.a) Game::GiveAndSelectWeapon(ped, e.a);
             break;
         case RPV_VEHICLE:
-            if(s_Rp.view == 2 && e.val >= 400 && e.val < 612 && SpawnVehicleForMe(e.val, false)) SysMsg(RP_SKY, "[GARAGE] Your %s is here.", kVehNames[e.val - 400]);
+            if(s_Rp.view == 2 && e.val >= 400 && e.val < 612)
+            {   // 3.55: a = 3 -> bought at the dealership, b = the colour (kept on the phone for later garage spawns)
+                if(e.a == 3) DealerRememberColour(e.val, e.b);
+                int car = SpawnVehicleForMe(e.val, false);
+                if(car) { DealerApplyColour(car, e.val); SysMsg(RP_SKY, e.a == 3 ? "[DEALER] Your new %s is here." : "[GARAGE] Your %s is here.", kVehNames[e.val - 400]); }
+            }
             break;
         case RPV_JETPACK:
             if(s_Rp.view == 2) Game::GiveLocalJetpack();
@@ -1350,31 +1355,29 @@ static void RpDrawHud(ImDrawList* dl, float now, uint64_t nowMs)
         // 3.34: the screenshot's list - ONLINE, BANK, ID, JOB, CASH - an icon + the value in a dark
         // see-through box each, right-aligned, kept above the game's interact buttons on the right
         (void)rh; (void)w; (void)x0;
-        const int rows = 5; const float bh = UI::S(40), bg = UI::S(6), isz = UI::S(30);
+        // 3.55: hexagon labels (the screenshot): the value right-aligned, then a purple hexagon with the icon
+        const int rows = 5; const float bh = UI::S(40), bg = UI::S(6), isz = UI::S(24), hr = UI::S(21);
         y0 = UI::S(212);
         float y1 = y0 + rows * (bh + bg);
         int online = 1; for(int i = 0; i < MP_MAX_PLAYERS; ++i) if(i != myId && players[i].active) ++online;
         char vals[rows][64];
-        snprintf(vals[0], 64, "%d", online);
-        snprintf(vals[1], 64, "$%d", m.bank);
-        snprintf(vals[2], 64, "%d  |  Lv %d", myId, m.level);
-        snprintf(vals[3], 64, "%s%s", g_RpJobs[m.job < RPJ_COUNT ? m.job : 0].name, m.duty ? " (duty)" : "");
-        snprintf(vals[4], 64, "$%d", m.cash);
-        static const int kIc[rows] = { RPH_ONLINE, RPH_BANK, RPH_ID, RPH_JOB, RPH_CASH };
-        static const char* const kGl[rows] = { "P", "B", "#", "J", "$" };
-        float fs = UI::S(19);
+        snprintf(vals[0], 64, "%d/%d", online, client.GetMaxPlayers() > 0 ? client.GetMaxPlayers() : MP_MAX_PLAYERS);
+        snprintf(vals[1], 64, "ID : #%d  -  Lv %d", myId, m.level);
+        snprintf(vals[2], 64, "Cash $%d", m.cash);
+        snprintf(vals[3], 64, "Bank $%d", m.bank);
+        snprintf(vals[4], 64, "%s%s", g_RpJobs[m.job < RPJ_COUNT ? m.job : 0].name, m.duty ? " - On duty" : "");
+        static const int kIc[rows] = { RPH_ONLINE, RPH_ID, RPH_CASH, RPH_BANK, RPH_JOB };
+        static const char* const kGl[rows] = { "P", "#", "$", "B", "J" };
+        static const uint32_t kVc[rows] = { 0xA3E635FF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF };
+        float fs = UI::S(21);
         for(int i = 0; i < rows; ++i)
         {
-            float tw = RpTextW(fs, vals[i]), bw = tw + isz + UI::S(30);
-            if(bw < UI::S(120)) bw = UI::S(120);
+            float tw = RpTextW(fs, vals[i]);
             float y = y0 + i * (bh + bg);
-            ImVec2 ba(x1 - bw, y), bb(x1, y + bh);
-            dl->AddRectFilled(ba, bb, IM_COL32(10, 10, 12, 140));
-            dl->AddRectFilled(ImVec2(bb.x - UI::S(3), ba.y), bb, RpCol(i == 4 ? 0xF58220FF : RP_SKY, 1));
-            ImVec2 ic(ba.x + UI::S(8) + isz * 0.5f, y + bh * 0.5f);
-            if(!RpHudIcon(dl, kIc[i], ic, isz, IM_COL32_WHITE)) RpText(dl, fs, ImVec2(ic.x - UI::S(6), y + UI::S(9)), RpCol(RP_SKY, 1), kGl[i]);
-            uint32_t vc = i == 4 ? 0x86EFACFF : (i == 1 ? 0x7DD3FCFF : 0xFFFFFFFF);
-            RpText(dl, fs, ImVec2(bb.x - UI::S(12) - tw, y + (bh - fs) * 0.5f), RpCol(vc, 1), vals[i]);
+            ImVec2 hc(x1 - hr, y + bh * 0.5f);
+            HexLabel(dl, hc, hr, IM_COL32(110, 24, 150, 235), IM_COL32(200, 110, 210, 255), UI::S(3));
+            if(!RpHudIcon(dl, kIc[i], hc, isz, IM_COL32_WHITE)) RpText(dl, fs, ImVec2(hc.x - RpTextW(fs, kGl[i]) * 0.5f, hc.y - fs * 0.5f), IM_COL32_WHITE, kGl[i]);
+            RpText(dl, fs, ImVec2(hc.x - hr - UI::S(12) - tw, y + (bh - fs) * 0.5f), RpCol(kVc[i], 1), vals[i]);
         }
         // payday + money popup
         snprintf(t, sizeof(t), "Payday in %d:%02d", m.paydayS / 60, m.paydayS % 60);
