@@ -1,6 +1,7 @@
 {
-"latest": "3.56",
+"latest": "3.57",
 "supported": [
+"3.57",
 "3.56",
 "3.55.2",
 "3.55.1",
@@ -70,6 +71,18 @@
 "3.04.6"
 ],
 "versions": [
+{
+"v": "3.57",
+"summary": "Vehicle HUD in hexagons: speed (car icon), engine ON/OFF and fuel (pump icon) in one horizontal row with hunger and energy; fuel system with /refuel and /engine",
+"items": [
+"Bottom-right HUD is now one horizontal row of hexagons (no more stacked boxes): speed, engine, fuel, hunger, energy",
+"Speed hexagon: car icon + mph; engine hexagon: engine icon + ON (green) / OFF (red); fuel hexagon: pump icon + % (green / yellow / red)",
+"The 3 vehicle hexagons only show in a vehicle (bicycles: speed only)",
+"Fuel: -1 % every 350 m driven and a little while idling; 0 % stops the engine; teleports do not use fuel",
+"/refuel at any of 17 GTA SA gas stations ($1 a %), /fuel shows the tank, /engine turns the engine off / on",
+"Same servers as hunger + energy (default server, custom servers with the HUD permission)"
+]
+},
 {
 "v": "3.56",
 "summary": "Forgot username / Forgot password on the login screen (and /forgotuser, /resetpass in Discord); the Timber pickup now spawns a bit in the air after the teleport",

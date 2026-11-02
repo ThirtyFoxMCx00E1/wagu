@@ -1073,6 +1073,14 @@ bool Game::ReadVehState(int car, VehState& s)
     s.valid = true;
     return true;
 }
+// 3.56: engine HUD + fuel (the hexagon HUD): read / set just the bEngineOn bit
+bool Game::IsCarEngineOn(int car)
+{
+    void* v = CarPtr(car); u8 f = 0;
+    if(!v || !SafeRead((u8*)v + V_FLAGS, &f, 1)) return false;
+    return (f & (1 << 4)) != 0;
+}
+void Game::SetCarEngineOn(int car, bool on) { if(car > 0 && CarPtr(car)) CALLSCM(SET_CAR_ENGINE_ON, car, on ? 1 : 0); }
 
 // Apply only what changed since the last call (state = what this car already shows).
 bool Game::GetCarColours(int car, uint8_t out[4])

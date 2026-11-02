@@ -121,6 +121,13 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **3.57**: Vehicle HUD in hexagons: speed (car icon), engine ON/OFF and fuel (pump icon) in one horizontal row with hunger and energy; fuel system with /refuel and /engine
+  - Bottom-right HUD is now one horizontal row of hexagons (no more stacked boxes): speed, engine, fuel, hunger, energy
+  - Speed hexagon: car icon + mph; engine hexagon: engine icon + ON (green) / OFF (red); fuel hexagon: pump icon + % (green / yellow / red)
+  - The 3 vehicle hexagons only show in a vehicle (bicycles: speed only)
+  - Fuel: -1 % every 350 m driven and a little while idling; 0 % stops the engine; teleports do not use fuel
+  - /refuel at any of 17 GTA SA gas stations ($1 a %), /fuel shows the tank, /engine turns the engine off / on
+  - Same servers as hunger + energy (default server, custom servers with the HUD permission)
 - **3.56**: Forgot username / Forgot password on the login screen (and /forgotuser, /resetpass in Discord); the Timber pickup now spawns a bit in the air after the teleport
   - Login screen: Forgot username? and Forgot password? buttons; a /gen CODE in #verification proves it is your Discord
   - Forgot username: back to Login with your username filled in

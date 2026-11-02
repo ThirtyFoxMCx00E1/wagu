@@ -202,6 +202,8 @@ namespace Game
         uint16_t mods[MP_VEH_MOD_SLOTS_G]; uint8_t doorOpen[6];
     };
     bool  ReadVehState(int car, VehState& s);
+    bool  IsCarEngineOn(int car);             // 3.56
+    void  SetCarEngineOn(int car, bool on);   // 3.56
     void  ApplyVehState(int car, const VehState& want, VehState& applied);   // only what changed
     struct VehFast { float steer, gas, brake; uint16_t misc; float doomV, doomH; bool horn; };
     bool  ReadVehFast(int car, VehFast& f);
