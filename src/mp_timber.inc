@@ -116,10 +116,18 @@ static Vec3 TbGround(Vec3 p)
     {
         float g = Game::GroundZBelow(p.x, p.y, p.z + 3.0f);
         if(g > -999.0f && p.z - g < 30.0f) { p.z = g; return p; }
-        g = Game::GroundZ(p.x, p.y, p.z + 30.0f); if(g > -100.0f && fabsf(g - p.z) < 30.0f) p.z = g; return p;
+        // 3.53.1: the old fallback probed from 30 m up and took the barn / canopy roof (the yellow "i" and the
+        // /timber teleport ended up on the roof). Never go more than 1.5 m above the spot's own height.
+        g = Game::GroundZ(p.x, p.y, p.z + 30.0f); if(g > -100.0f && g < p.z + 1.5f && p.z - g < 30.0f) p.z = g; return p;
     }
     float g = Game::GroundZ(p.x, p.y, 200.0f);
     p.z = g > -100.0f ? g : 30.0f;
+    return p;
+}
+static Vec3 TbFloor(Vec3 p)
+{   // 3.53.1: storage / job start under the barn and canopy roofs: the floor right under the saved spot
+    float g = Game::GroundZBelow(p.x, p.y, p.z + 0.8f);
+    p.z = (g > -999.0f && p.z - g < 4.0f) ? g : p.z - 1.0f;
     return p;
 }
 static void TbPickMission()
@@ -189,8 +197,8 @@ static void TbIconsStream(uint64_t now)
         int& o = s_Tb.icon[i];
         if(o > 0 && !Game::WorldObjectExists(o)) o = 0;
         if(BcwCamDist(at[i]) > 220.0f) { TbDelObj(o); continue; }
-        if(o <= 0) { if(made || now - s_Tb.iconTry < 500) continue; s_Tb.iconTry = now; made = true; Vec3 p = TbGround(at[i]); p.z += 0.6f; o = Game::CreateWorldObject(1239, p); continue; }
-        Vec3 p = TbGround(at[i]); p.z += 0.6f + 0.08f * sinf((float)(now % 2000) * 0.00314f);
+        if(o <= 0) { if(made || now - s_Tb.iconTry < 500) continue; s_Tb.iconTry = now; made = true; Vec3 p = TbFloor(at[i]); p.z += 0.9f; o = Game::CreateWorldObject(1239, p); continue; }
+        Vec3 p = TbFloor(at[i]); p.z += 0.9f + 0.08f * sinf((float)(now % 2000) * 0.00314f);
         Game::MoveWorldObject(o, p, (float)(now % 3000) * 0.12f + i * 40.0f);
     }
 }
@@ -349,10 +357,10 @@ static void TbSpawnTruck(int ped)
     const float r = s_Tb.startH * 0.0174533f;
     Vec3 cp = { s_Tb.start.x + cosf(r) * 4.0f, s_Tb.start.y + sinf(r) * 4.0f, s_Tb.start.z };
     if(s_Tb.truckTries == 0) Game::PreloadArea(cp, true);
-    float g = Game::GroundZBelow(cp.x, cp.y, s_Tb.start.z + 3.0f);
-    if(g < -999.0f || s_Tb.start.z - g > 20.0f) g = Game::GroundZBelow(cp.x, cp.y, s_Tb.start.z + 8.0f);
+    float g = Game::GroundZBelow(cp.x, cp.y, s_Tb.start.z + 1.0f);   // 3.53.1: from just above the floor (+3 / +8 m hit the canopy roof)
+    if(g < -999.0f || s_Tb.start.z - g > 20.0f) g = Game::GroundZBelow(cp.x, cp.y, s_Tb.start.z + 1.6f);
     if((g < -999.0f || s_Tb.start.z - g > 20.0f) && ++s_Tb.truckTries < 40) { s_Tb.truckAt = now + 100; return; }   // not streamed yet: try again (max 4 s)
-    if(g < -999.0f || s_Tb.start.z - g > 20.0f) g = TbGround(s_Tb.start).z;
+    if(g < -999.0f || s_Tb.start.z - g > 20.0f) g = TbFloor(s_Tb.start).z;
     cp.z = g + 0.15f;
     int car = Game::CreateCar(TB_TRUCK, cp, true);
     if(car <= 0) { s_Tb.truckAt = now + 250; return; }
@@ -369,7 +377,7 @@ static void TimberProcess(int ped, uint64_t now, float dt)
     if(s_Tb.sellMsgDue && now >= s_Tb.sellAgainAt) { s_Tb.sellMsgDue = false; SysMsg(COL_YELLOW, "{FFA500}LUMBERJACK: {FFFFFF}You can now sell lumbers again!"); }
     if(!s_Tb.on || ped <= 0) { s_Tb.cutReq = s_Tb.loadReq = false; return; }
     if(Game::IsCharDead(ped)) { TbEnd(false); SysMsg(COL_RED, "{FFA500}LUMBERJACK: {FFFFFF}You died - the Timber job stopped."); return; }
-    if(s_Tb.tpDue) { s_Tb.tpDue = false; Game::TeleportGround(ped, TbGround(s_Tb.start), s_Tb.startH); TbNextTarget(); return; }
+    if(s_Tb.tpDue) { s_Tb.tpDue = false; Game::Teleport(ped, TbFloor(s_Tb.start), s_Tb.startH); TbNextTarget(); return; }   // 3.53.1: feet on the floor, not on the roof
     if(s_Tb.chainsawDue && !Game::IsCharInAnyCar(ped)) { if(Game::GiveAndSelectWeapon(ped, 9)) s_Tb.chainsawDue = false; }
     if(s_Tb.truckDue) TbSpawnTruck(ped);
     if(s_Tb.truck && !Game::CarExists(s_Tb.truck)) { s_Tb.truck = 0; for(int& o : s_Tb.logs) o = 0; if(s_Tb.timber) SysMsg(COL_RED, "Your pickup is gone (the %d timber too). /quitjob and /timber for a new one.", s_Tb.timber); s_Tb.timber = 0; }
@@ -595,9 +603,11 @@ static void DefaultDrawLogo(ImDrawList* dl, float cx, float y, float scale)
     RpGtaText(dl, f, ft, ImVec2(tx, ty), red, t1, tt);
     RpGtaText(dl, f, ft, ImVec2(tx + w1 + gap, ty), brown, t2, tt);
 }
-static void DefaultLogoRender()
+static void DefaultLogoRender() {}   // 3.53.1: drawn by the HUD (MP::DrawDefaultTitle), also on the join screen
+void MP::DrawDefaultTitle(ImDrawList* dl)
 {
-    if(client.GetState() != NET_CONNECTED || !MP::IsOnDefault() || Game::IsPaused() || !myDrawValid) return;
-    if(MP::AuthScreenShown() || SampDialogOpen()) return;
-    DefaultDrawLogo(ImGui::GetBackgroundDrawList(), ImGui::GetIO().DisplaySize.x * 0.5f, UI::S(6), 1.0f);
+    // 3.53.1: from the moment you connect to the default server (connecting / black join screen, spawn
+    // picker, under the RULES window and other dialogs), not only after every window was closed
+    if(!MP::IsOnDefault() || Game::IsPaused()) return;
+    DefaultDrawLogo(dl, ImGui::GetIO().DisplaySize.x * 0.5f, UI::S(6), 1.0f);
 }

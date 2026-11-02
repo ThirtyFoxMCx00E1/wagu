@@ -169,42 +169,126 @@ static ImFont* LoadSystemFont(ImFontAtlas* atlas, const char* const* names, floa
 
 bool HUD::IsInitialised() { return s_bInit; }
 
-// 3.52: the phone font that has the chosen language's script (CJK / Thai), merged into the font before it
+// 3.53.1: the phone font that has the chosen language's script (CJK / Thai), merged into the font before it.
+// 3.52 only tried 5 fixed file names in /system/fonts (max 40 MB): on many phones (Samsung, Xiaomi, Android 12+
+// updatable fonts in /data/fonts, fonts in /product/fonts) none matched, so Chinese / Japanese / Korean stayed
+// English. Now every font folder is searched and a font is only used if it really has the language's characters.
+#define STBTT_STATIC
+#define STB_TRUETYPE_IMPLEMENTATION
+#include "../../imgui/imstb_truetype.h"
+static std::string s_szLangFontStatus;   // shown on the language page (render thread reads it after the swap)
+static std::mutex  s_LangFontMx;
+static void SetLangFontStatus(const std::string& t) { std::lock_guard<std::mutex> lk(s_LangFontMx); s_szLangFontStatus = t; }
+std::string UI::LangFontStatus() { std::lock_guard<std::mutex> lk(s_LangFontMx); return s_szLangFontStatus; }
+
+static bool FontNameFits(const char* kind, const char* name)
+{
+    char l[160]; size_t i = 0; for(; name[i] && i < sizeof(l) - 1; ++i) l[i] = (char)tolower((unsigned char)name[i]); l[i] = 0;
+    const char* ext = strrchr(l, '.');
+    if(!ext || (strcmp(ext, ".ttf") && strcmp(ext, ".otf") && strcmp(ext, ".ttc"))) return false;
+    if(!strcmp(kind, "thai")) return strstr(l, "thai") != nullptr;
+    static const char* const k[] = { "cjk", "han", "hans", "hant", "chinese", "japan", "korea", "fallback", "droidsans",
+                                     "sc-", "tc-", "jp-", "kr-", "sc.", "tc.", "jp.", "kr.", "gothic", "mincho", "gulim", "malgun",
+                                     "miui", "mi lan", "milan", "sec", "samsung", "oneplus", "oppo", "hwfont", "honor", "source", nullptr };
+    for(int j = 0; k[j]; ++j) if(strstr(l, k[j])) return true;
+    return false;
+}
+static void ListFontFiles(const char* kind, const char* dir, std::vector<std::string>& out, int depth)
+{
+    DIR* d = opendir(dir); if(!d) return;
+    while(dirent* e = readdir(d))
+    {
+        if(e->d_name[0] == '.') continue;
+        std::string p = std::string(dir) + "/" + e->d_name;
+        if(e->d_type == DT_DIR) { if(depth > 0) ListFontFiles(kind, p.c_str(), out, depth - 1); continue; }
+        if(FontNameFits(kind, e->d_name)) out.push_back(p);
+    }
+    closedir(d);
+}
 static bool MergePhoneFont(ImFontAtlas* atlas, const char* kind, float size, const ImWchar* ranges)
 {
-    struct C { const char* file; int no; };
-    C list[8]; int n = 0;
+    // the characters this language needs (ranges = pairs, 0 terminated) - a font must have nearly all of them
+    std::vector<unsigned int> need;
+    for(const ImWchar* r = ranges; r[0]; r += 2) for(unsigned int c = r[0]; c <= r[1] && need.size() < 4000; ++c) if(c > 0x7F) need.push_back(c);
+    if(need.empty()) return false;
     const int ttcNo = !strcmp(kind, "cjk-jp") ? 0 : !strcmp(kind, "cjk-kr") ? 1 : !strcmp(kind, "cjk-sc") ? 2 : 3;   // NotoSansCJK.ttc order
-    if(!strncmp(kind, "cjk", 3))
-    {
-        list[n++] = { "NotoSansCJK-Regular.ttc", ttcNo };
-        list[n++] = { !strcmp(kind, "cjk-jp") ? "NotoSansJP-Regular.otf" : !strcmp(kind, "cjk-kr") ? "NotoSansKR-Regular.otf" : !strcmp(kind, "cjk-sc") ? "NotoSansSC-Regular.otf" : "NotoSansTC-Regular.otf", 0 };
-        list[n++] = { "NotoSerifCJK-Regular.ttc", ttcNo };
-        list[n++] = { "DroidSansFallbackFull.ttf", 0 };
-        list[n++] = { "DroidSansFallback.ttf", 0 };
+
+    static std::mutex cacheMx; static std::string cacheKind, cachePath;   // the 2nd merge (list font) finds it at once
+    std::vector<std::string> files;
+    { std::lock_guard<std::mutex> lk(cacheMx); if(cacheKind == kind && !cachePath.empty()) files.push_back(cachePath); }
+    {   // the well known names first, then everything that looks like one
+        static const char* const cjk[] = { "NotoSansCJK-Regular.ttc", "NotoSansCJKsc-Regular.otf", "NotoSansSC-Regular.otf", "NotoSansJP-Regular.otf",
+                                           "NotoSansKR-Regular.otf", "NotoSansTC-Regular.otf", "NotoSerifCJK-Regular.ttc", "DroidSansFallbackFull.ttf",
+                                           "DroidSansFallback.ttf", "MiSansVF.ttf", "SECCJK-Regular.ttc", nullptr };
+        static const char* const thai[] = { "NotoSansThai-Regular.ttf", "NotoSansThaiUI-Regular.ttf", "DroidSansThai.ttf", nullptr };
+        const char* const* l = !strcmp(kind, "thai") ? thai : cjk;
+        for(int i = 0; l[i]; ++i) files.push_back(std::string("/system/fonts/") + l[i]);
+        static const char* const dirs[] = { "/system/fonts", "/product/fonts", "/system/product/fonts", "/system_ext/fonts", "/vendor/fonts", "/data/fonts/files", "/system/etc/fonts", nullptr };
+        for(int i = 0; dirs[i]; ++i) ListFontFiles(kind, dirs[i], files, !strcmp(dirs[i], "/data/fonts/files") ? 2 : 0);
     }
-    else if(!strcmp(kind, "thai"))
+    std::vector<std::string> seen;
+    std::string best; size_t bestHave = 0; int bestNo = 0;
+    for(const std::string& path : files)
     {
-        list[n++] = { "NotoSansThai-Regular.ttf", 0 };
-        list[n++] = { "NotoSansThaiUI-Regular.ttf", 0 };
-        list[n++] = { "DroidSansThai.ttf", 0 };
-    }
-    for(int i = 0; i < n; ++i)
-    {
-        char path[256]; snprintf(path, sizeof(path), "/system/fonts/%s", list[i].file);
-        FILE* f = fopen(path, "rb"); if(!f) continue;
+        bool dup = false; for(auto& x : seen) if(x == path) { dup = true; break; }
+        if(dup) continue; seen.push_back(path);
+        FILE* f = fopen(path.c_str(), "rb"); if(!f) continue;
         fseek(f, 0, SEEK_END); long len = ftell(f); fseek(f, 0, SEEK_SET);
-        if(len < 1024 || len > 40 * 1024 * 1024) { fclose(f); continue; }
+        if(len < 1024 || len > 96L * 1024 * 1024) { fclose(f); continue; }
         unsigned char* buf = (unsigned char*)IM_ALLOC((size_t)len);
-        bool ok = fread(buf, 1, (size_t)len, f) == (size_t)len; fclose(f);
-        bool font = ok && len > 16;
-        if(font && !memcmp(buf, "ttcf", 4)) font = (int)((buf[8] << 24) | (buf[9] << 16) | (buf[10] << 8) | buf[11]) > list[i].no;   // fonts in the collection
-        else if(font) font = list[i].no == 0 && ((buf[0] == 0 && buf[1] == 1 && buf[2] == 0 && buf[3] == 0) || !memcmp(buf, "OTTO", 4) || !memcmp(buf, "true", 4));
-        if(!font) { IM_FREE(buf); continue; }
-        ImFontConfig fc; fc.FontDataOwnedByAtlas = true; fc.OversampleH = 1; fc.OversampleV = 1; fc.MergeMode = true; fc.FontNo = list[i].no;
-        if(atlas->AddFontFromMemoryTTF(buf, (int)len, size, &fc, ranges)) { logger->Info("3.52: language font %s #%d", path, list[i].no); return true; }
+        bool ok = buf && fread(buf, 1, (size_t)len, f) == (size_t)len; fclose(f);
+        if(!ok) { if(buf) IM_FREE(buf); continue; }
+        int count = stbtt_GetNumberOfFonts(buf); if(count <= 0) count = 1;
+        int order[16]; int n = 0;
+        if(ttcNo < count) order[n++] = ttcNo;
+        for(int i = 0; i < count && n < 16; ++i) if(i != ttcNo) order[n++] = i;
+        int useNo = -1; size_t useHave = 0;
+        for(int k = 0; k < n; ++k)
+        {
+            int off = stbtt_GetFontOffsetForIndex(buf, order[k]); if(off < 0) continue;
+            stbtt_fontinfo fi; if(!stbtt_InitFont(&fi, buf, off)) continue;
+            size_t have = 0; for(unsigned int c : need) if(stbtt_FindGlyphIndex(&fi, (int)c)) ++have;
+            if(have > useHave) { useHave = have; useNo = order[k]; }
+            if(have * 100 >= need.size() * 97) break;   // good enough: the preferred face
+        }
+        if(useNo >= 0 && useHave * 100 >= need.size() * 90)
+        {
+            ImFontConfig fc; fc.FontDataOwnedByAtlas = true; fc.OversampleH = 1; fc.OversampleV = 1; fc.MergeMode = true; fc.FontNo = useNo;
+            if(atlas->AddFontFromMemoryTTF(buf, (int)len, size, &fc, ranges))
+            {
+                logger->Info("3.53.1: language font %s #%d (%d/%d characters)", path.c_str(), useNo, (int)useHave, (int)need.size());
+                SetLangFontStatus("");
+                { std::lock_guard<std::mutex> lk(cacheMx); cacheKind = kind; cachePath = path; }
+                return true;
+            }
+            continue;   // the atlas freed buf
+        }
+        if(useHave > bestHave) { bestHave = useHave; best = path; bestNo = useNo; }
+        IM_FREE(buf);
     }
-    logger->Info("3.52: no phone font for %s - those texts stay English", kind);
+    if(!best.empty() && bestHave * 100 >= need.size() * 40)
+    {   // nothing complete: the best one (most texts are shown, the rest stays English)
+        FILE* f = fopen(best.c_str(), "rb");
+        if(f)
+        {
+            fseek(f, 0, SEEK_END); long len = ftell(f); fseek(f, 0, SEEK_SET);
+            unsigned char* buf = (unsigned char*)IM_ALLOC((size_t)len);
+            bool ok = buf && fread(buf, 1, (size_t)len, f) == (size_t)len; fclose(f);
+            if(ok)
+            {
+                ImFontConfig fc; fc.FontDataOwnedByAtlas = true; fc.OversampleH = 1; fc.OversampleV = 1; fc.MergeMode = true; fc.FontNo = bestNo;
+                if(atlas->AddFontFromMemoryTTF(buf, (int)len, size, &fc, ranges))
+                {
+                    logger->Info("3.53.1: partial language font %s #%d (%d/%d)", best.c_str(), bestNo, (int)bestHave, (int)need.size());
+                    SetLangFontStatus("Your phone's font has only part of this language: some texts stay English.");
+                    return true;
+                }
+            }
+            else if(buf) IM_FREE(buf);
+        }
+    }
+    logger->Info("3.53.1: no phone font for %s (%d files checked) - those texts stay English", kind, (int)seen.size());
+    SetLangFontStatus("Your phone has no font for this language, so the texts stay English. Install a Chinese / Japanese / Korean / Thai system font (or Google's Noto CJK) and pick it again.");
     return false;
 }
 
@@ -1099,6 +1183,7 @@ void HUD::Render()
         // 2.19 join screen: full black slide overlay (under the chat + title logo)
         float ox0, ox1; bool overlay = MP::JoinOverlay(ox0, ox1);
         if(overlay) dl->AddRectFilled(ImVec2(ox0 * io.DisplaySize.x, 0), ImVec2(ox1 * io.DisplaySize.x, io.DisplaySize.y), IM_COL32(0, 0, 0, 255));
+        MP::DrawDefaultTitle(dl);   // 3.53.1: the Broker MQQ title, also over the black join screen
         // 2.35: launcher open = nothing of the HUD behind it (tags, chat, kill feed, status)
         const bool launcher = FloatMenu::IsModal();
         if(!launcher)

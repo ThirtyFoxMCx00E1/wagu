@@ -121,6 +121,12 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **3.53.1**: **One RULES window, Broker MQQ title on join, live player count, timber yard roof fix, Chinese / Japanese / Korean text.**
+  - The small "Welcome to MP LAN Server" box is gone: the RULES window with the 10 rules is the only one when you join the default server.
+  - The Broker MQQ title shows from the moment you connect to the default server (connecting screen, spawn picker, under the RULES window), not only after every window was closed.
+  - Leaving a server: the launcher list shows the new player count within a second (it used an old scan, so it said 2/100 for minutes).
+  - Timber: the yellow "i" markers and the /timber teleport are on the floor of the timber yard, not on the barn and canopy roofs.
+  - Chinese, Japanese and Korean (and Thai) now find the phone's font in every font folder (Samsung, Xiaomi, Android 12+): the texts change instead of staying English. If a phone really has no such font, the language page says so.
 - **3.53**: **Friends can join, Server Management, 24/7 Broker servers, controller, timber.**
   - Joining a private server on a hotspot no longer freezes: the phone accepts the host's reply from its hotspot address, and the connecting screen gives up after 25 s with a message instead of staying black.
   - New Server Management page in the launcher (only while you are on a server): hosted by Broker (24/7 bot), [MOD] Trunk and [ADMIN] SENJI on the 4 featured servers; gamemodes, permissions, rules, players and bans. The admin and moderators can change them on the featured servers even when other players joined first; on a custom server only the host owner can.

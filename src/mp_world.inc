@@ -424,6 +424,8 @@ static void SampOnTeam(const PktTeam& t) { if(t.id < MP_MAX_PLAYERS) s_Team[t.id
 static void SampOnDialog(const PktDialog& d)
 {
     s_bServer301 = true;
+    // 3.53.1: the small "Welcome to MP LAN Server" box of older servers came before the real RULES window
+    if(d.dialogId == 1 && MP::IsOnDefault() && !strncmp(d.info, "{FFFFFF}Welcome to ", 19)) return;
     ShowDialog(d.dialogId, d.style <= DIALOG_STYLE_TABLIST_HEADERS ? d.style : DIALOG_STYLE_MSGBOX, d.caption, d.info, d.button1, d.button2, nullptr, 0, true);
 }
 static void SampOnTextDraw(const PktTextDraw& t)

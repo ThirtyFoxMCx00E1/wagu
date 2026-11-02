@@ -287,6 +287,7 @@ namespace MP
     void SpawnStep(int d);
     void SpawnConfirm();
     float SpawnPickerAlpha();
+    void  DrawDefaultTitle(ImDrawList* dl);   // 3.53.1
     bool AuthScreenShown();    // 3.21.6: login screen on top
     bool LauncherPadPage(int dir);   // 3.53: controller LB / RB = previous / next launcher page (false = launcher not open)
     bool JoinScreenActive();   // 2.19.1: join screen / connection view / spawn picker on screen

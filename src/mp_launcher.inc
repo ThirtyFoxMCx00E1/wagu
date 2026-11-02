@@ -1144,6 +1144,14 @@ static void RenderLauncher(void* openPtr)
     if(MP_NowMs() - ServerList::LastRefreshMs() > 10000) ServerList::Refresh();
     std::vector<LanServer> nearby;
     { std::lock_guard<std::mutex> lk(s_LanMutex); nearby = s_Nearby; }
+    {   // 3.53.1: live player counts from the lobby (every host re-announces every 3 s). The rows used the last
+        // scan only (every 15 s, none while another job ran), so after leaving a server it still showed 2/100
+        // for minutes. Same token = same server: take its live numbers.
+        static std::vector<LanServer> live; static uint64_t liveAt = 0;
+        if(MP_NowMs() - liveAt > 1000) { liveAt = MP_NowMs(); live = Online::Snapshot(); }
+        for(auto& n : nearby)
+            if(n.token) for(auto& l : live) if(l.token == n.token) { n.players = l.players; n.maxPlayers = l.maxPlayers; break; }
+    }
     if(s_bHasNetwork && !IsSearching() && MP_NowMs() - s_nNearbyTime > 15000) { s_nNearbyTime = MP_NowMs(); StartJob(JOB_SCAN, false, "", MP_DEFAULT_PORT); }
     bool listTab = s_nLTab == LT_INTERNET || s_nLTab == LT_FAVORITES;
     std::vector<LRow> rows;

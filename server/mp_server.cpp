@@ -223,12 +223,7 @@ int main(int argc, char** argv)
                 else printf("[MP Server] can't read %s\n", argv[i + 1]);
             }
         }
-        if(motd.empty() && server.IsDefaultServer())
-            motd = "{FFFFFF}Welcome to {FFD21E}" MP_DEFAULT_SERVER_NAME "{FFFFFF}!\n\n"
-                   "{A9C4E4}/class{FFFFFF}  pick a gang (Grove, Ballas, Vagos, Aztecas, Rifa, Da Nang) or Police\n"
-                   "{A9C4E4}/turf{FFFFFF}  gang zones: stand in an enemy zone for 60 s to take it\n"
-                   "{A9C4E4}/race{FFFFFF}  races with real positions   {A9C4E4}/derby{FFFFFF}  last car standing wins\n"
-                   "{A9C4E4}/job{FFFFFF}  jobs   {A9C4E4}/dm{FFFFFF}  deathmatch   {A9C4E4}/help{FFFFFF}  everything else";
+        // 3.53.1: no built-in welcome box on the default server any more - the 10 RULES window is the only one
         for(size_t k; (k = motd.find("\\n")) != std::string::npos; ) motd.replace(k, 2, "\n");
         if(!motd.empty()) server.SetMotd(nullptr, motd.c_str());
         server.SetTurfWars(turf);

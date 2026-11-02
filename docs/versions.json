@@ -1,6 +1,7 @@
 {
-"latest": "3.53",
+"latest": "3.53.1",
 "supported": [
+"3.53.1",
 "3.53",
 "3.52",
 "3.51.1",
@@ -63,6 +64,17 @@
 "3.04.6"
 ],
 "versions": [
+{
+"v": "3.53.1",
+"summary": "**One RULES window, Broker MQQ title on join, live player count, timber yard roof fix, Chinese / Japanese / Korean text.**",
+"items": [
+"The small \"Welcome to MP LAN Server\" box is gone: the RULES window with the 10 rules is the only one when you join the default server.",
+"The Broker MQQ title shows from the moment you connect to the default server (connecting screen, spawn picker, under the RULES window), not only after every window was closed.",
+"Leaving a server: the launcher list shows the new player count within a second (it used an old scan, so it said 2/100 for minutes).",
+"Timber: the yellow \"i\" markers and the /timber teleport are on the floor of the timber yard, not on the barn and canopy roofs.",
+"Chinese, Japanese and Korean (and Thai) now find the phone's font in every font folder (Samsung, Xiaomi, Android 12+): the texts change instead of staying English. If a phone really has no such font, the language page says so."
+]
+},
 {
 "v": "3.53",
 "summary": "**Friends can join, Server Management, 24/7 Broker servers, controller, timber.**",

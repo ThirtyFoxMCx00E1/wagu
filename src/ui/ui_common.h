@@ -1,4 +1,5 @@
 #pragma once
+#include <string>
 #include "../../imgui/imgui.h"
 #include "../../imgui/imgui_internal.h"
 #include <stdio.h>
@@ -14,6 +15,7 @@ namespace UI
     #define UI_FONT_COUNT 9
     const char* FontName(int i);
     bool  FontAvailable(int i);
+    std::string LangFontStatus();   // 3.53.1: "" = the language font is fine
     bool FontsLoading();   // 3.53: a new font atlas (language) is being built in the background
     void  SetLook(int font, int effect, float fontScale, float uiScale);   // 3.00: pricedown.ttf found on the phone (else nullptr)
     const char* PricedownPath();

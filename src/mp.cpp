@@ -4349,6 +4349,7 @@ static void DoConnect(const char* host, int port)
 
 static void LeaveServer(const char* msg)
 {
+    s_nNearbyTime = 0;   // 3.53.1: the launcher list rescans right away (no old player count)
     if(client.GetState() == NET_DISCONNECTED) return;
     s_Prog.sendAt = 0; ProgSendNow();   // 3.39.1: the last save before leaving (the server keeps it)
     client.Disconnect(true);
@@ -6786,6 +6787,7 @@ static void SectionLanguage(void*)
         else snprintf(s_szMsg, sizeof(s_szMsg), "%s is not installed: files/MP/lang/%s.lng is missing (it comes with the MP full / client zip).", L.english, L.code);
     }
     if(UI::FontsLoading()) ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.3f, 1.0f), "Loading the font for %s... (the game keeps running)", I18n::Info(I18n::Current()).english);
+    if(cur && !UI::FontsLoading()) { std::string fs = UI::LangFontStatus(); if(!fs.empty()) ImGui::TextColored(ImVec4(1.0f, 0.55f, 0.45f, 1.0f), "%s", fs.c_str()); }   // 3.53.1
     GImTrSuspend--;
     if(s_szMsg[0]) ImGui::TextColored(ImVec4(1.0f, 0.55f, 0.45f, 1.0f), "%s", s_szMsg);
     if(cur) ImGui::TextDisabled("Machine translated (%d texts). Chinese, Japanese, Korean and Thai use your phone's own font.", I18n::Entries());
