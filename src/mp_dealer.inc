@@ -62,6 +62,7 @@ static void DealerApplyColour(int car, int model)
 struct DealerSpot { bool done = false; int tries = 0; uint64_t nextTry = 0; bool movedPed = false, movedCar = false;
                     Vec3 ped = { 0, 0, 0 }; float pedH = 0; Vec3 car = { 0, 0, 0 }; float carH = 0; Vec3 cam = { 0, 0, 0 }; };
 static DealerSpot s_DlSpot[DEALER_SITE_COUNT];
+static bool s_bDlOriginal = false;   // 3.55.2: /dealerspot reset - the table spots as they are, no wall check
 
 static bool DlClear(const Vec3& a, const Vec3& b) { return Game::LineOfSightClear(a, b); }
 static bool DlPedOk(float x, float y, float zHint, float& gz)
@@ -117,6 +118,15 @@ static void DealerFixSpot(int i, const Vec3& me, uint64_t now)
     DealerSpot& S = s_DlSpot[i]; const DealerSite& d = g_DealerSites[i];
     if(S.done || now < S.nextTry) return;
     if(!S.tries) { S.ped = { d.x, d.y, d.z }; S.pedH = d.h; S.car = { d.cx, d.cy, d.cz }; S.carH = d.ch; }
+    if(s_bDlOriginal)
+    {   // 3.55.2: the original positions (ground under them only), the camera as in 3.55
+        float g = Game::GroundZ(d.x, d.y, d.z + 1.0f); S.ped = { d.x, d.y, (g > d.z - 3.0f && g < d.z + 3.0f) ? g : d.z - 1.0f };
+        g = Game::GroundZ(d.cx, d.cy, d.cz + 2.0f); S.car = { d.cx, d.cy, (g > d.cz - 4.0f && g < d.cz + 4.0f) ? g : d.cz };
+        S.pedH = d.h; S.carH = d.ch; S.movedPed = S.movedCar = false;
+        const float r = (d.ch + 35.0f) * 0.0174533f;
+        S.cam = { d.cx - sinf(r) * 7.5f, d.cy + cosf(r) * 7.5f, S.car.z + 2.6f };
+        S.done = true; return;
+    }
     float dx = me.x - d.x, dy = me.y - d.y;
     if(dx * dx + dy * dy > 70.0f * 70.0f) return;                  // collision is only there close by
     S.nextTry = now + 1500; ++S.tries;
@@ -467,17 +477,38 @@ static void DealerRender()
 }
 
 // 3.55.1: /dealerspot - where the receptionist, the lot and the camera ended up (and if they moved)
-static bool DealerCommand(const char* cmd, const char*)
+static void DealerRespot()
+{
+    DealerClose();
+    if(s_Dl.ped) { Game::DeleteChar(s_Dl.ped); s_Dl.ped = 0; s_Dl.pedSite = -1; }
+    for(auto& S : s_DlSpot) S = DealerSpot();   // checked again (or placed again) when you are near
+}
+// 3.55.2: /dealerspot reset = back to the original spots (no wall check), /dealerspot auto = check again
+static bool DealerCommand(const char* cmd, const char* arg)
 {
     if(strcmp(cmd, "dealerspot")) return false;
     bool rp = false; if(!DealerServerOn(rp)) { SysMsg(COL_RED, "Only on the default server and Mega Vil."); return true; }
+    if(arg && !strncasecmp(arg, "reset", 5))
+    {
+        s_bDlOriginal = true; DealerRespot();
+        SysMsg(COL_GREEN, "[DEALER] Spots reset to their original positions (no wall check). /dealerspot auto to check them again.");
+        return true;
+    }
+    if(arg && !strncasecmp(arg, "auto", 4))
+    {
+        s_bDlOriginal = false; DealerRespot();
+        SysMsg(COL_GREEN, "[DEALER] Wall check on: the spots are checked again when you are near a dealership.");
+        return true;
+    }
+    if(arg && *arg) { SysMsg(COL_SYSTEM, "/dealerspot - show the spots, /dealerspot reset - original positions, /dealerspot auto - wall check again"); return true; }
+    SysMsg(COL_SYSTEM, "[DEALER] Mode: %s. (/dealerspot reset | auto)", s_bDlOriginal ? "original positions" : "wall check");
     for(int i = 0; i < DEALER_SITE_COUNT; ++i)
     {
         if(!DealerSiteOk(i, rp)) continue;
         const DealerSpot& S = s_DlSpot[i];
         if(!S.done) { SysMsg(COL_SYSTEM, "%s: not checked yet (go there).", g_DealerSites[i].name); continue; }
         SysMsg(COL_SYSTEM, "%s: receptionist %.1f %.1f %.1f%s, car %.1f %.1f %.1f%s", g_DealerSites[i].name,
-               S.ped.x, S.ped.y, S.ped.z, S.movedPed ? " (moved off a wall)" : "", S.car.x, S.car.y, S.car.z, S.movedCar ? " (moved off a wall)" : "");
+               S.ped.x, S.ped.y, S.ped.z, S.movedPed ? " (moved off a wall)" : (s_bDlOriginal ? " (original)" : ""), S.car.x, S.car.y, S.car.z, S.movedCar ? " (moved off a wall)" : (s_bDlOriginal ? " (original)" : ""));
     }
     return true;
 }

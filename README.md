@@ -121,6 +121,10 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **3.55.2**: /dealerspot reset puts the dealership receptionist, car lot and showroom camera back on their original positions; /dealerspot auto turns the wall check on again
+  - /dealerspot reset: original table positions (only snapped to the ground), no wall check, camera as in 3.55
+  - /dealerspot auto: wall check on again, the spots are checked again when you come near
+  - /dealerspot: shows the mode and where the spots are
 - **3.55.1**: Dealership spots never inside walls: the receptionist, car lot and showroom camera are checked against the world and moved to the nearest clear place
   - Receptionist spot: ground, nothing solid at body height, clear 0.6 m around her; else the nearest clear spot (up to 20 m)
   - Car spot: flat ground in a 3 m circle (the car turns), 2.4 m headroom, clear lines to the edge, 4.5 m+ from her; she faces the lot
