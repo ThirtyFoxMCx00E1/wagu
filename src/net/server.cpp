@@ -169,6 +169,14 @@ bool MPServer::Start(uint16_t port, const char* serverName, MPServerLogFn log, i
     BcwReset();                               // 3.04
     Mw3Reset();                               // 3.23
     RpReset();                                // 3.25
+    DzReset();                                // 3.58
+    if(IsDayzServer())
+    {   // 3.58: Project Day Z Remastered - survival only, all 250 places, no cheats, no other gamemodes
+        m_nMaxPlayers = MP_DZ_MAX_PLAYERS;
+        m_bTurfWars = false; m_bSafeZones = false;
+        m_nBasePerms = PERM_NO_CHEATS; m_nPerms = PERM_NO_CHEATS;
+        DzLoad();
+    }
     if(IsRpServer())
     {   // 3.25: Mega Vil Futuristic - roleplay only, 250 players, no cheats, no other gamemodes
         m_nMaxPlayers = MP_RP_MAX_PLAYERS;
@@ -203,6 +211,7 @@ void MPServer::Stop()
         std::lock_guard<std::mutex> lk(m_Mutex);
         if(IsMw3Server()) Mw3Save();   // 3.23
         if(IsRpServer()) RpSave();     // 3.25
+        if(IsDayzServer()) DzSave();   // 3.58
         if(m_bHomeDirty) HomeSave();   // 3.39.1: never lose a house that was just built
         if(m_bProgDirty) ProgSave();   // 3.39.1
         PktReject rj; rj.type = PKT_REJECT; rj.reason = REJECT_SHUTDOWN;
@@ -443,7 +452,7 @@ void MPServer::SetAdminHash(const char* h)
 // Not on Brief Case War servers (own base protection: BcwOnDamage).
 bool MPServer::SafeZoneBlocks(int from, int to) const
 {
-    if(!m_bSafeZones || IsBcwServer() || IsMw3Server() || IsRpServer()) return false;
+    if(!m_bSafeZones || IsBcwServer() || IsMw3Server() || IsRpServer() || IsDayzServer()) return false;
     if(to < 0 || to >= MP_MAX_PLAYERS || !m_Slots[to].used) return false;
     const Slot& t = m_Slots[to];
     if(t.spawnProtUntil && MP_NowMs() < t.spawnProtUntil) return true;
@@ -459,7 +468,7 @@ bool MPServer::IsDefaultServer() const { return !strcasecmp(m_szName, MP_DEFAULT
 void MPServer::SetPermsLocked(uint8_t perms)
 {
     if(IsDefaultServer()) perms &= ~PERM_CHEAT_MENU;   // 3.00: never a cheat menu on the default server
-    if(IsBcwServer() || IsMw3Server() || IsRpServer()) { perms &= ~(PERM_CHEAT_MENU | PERM_MISSION_PAIR); perms |= PERM_NO_CHEATS; }   // 3.04 / 3.23 MW3: Brief Case War: no CheatMenu, MP + CLEO menu cheats off
+    if(IsBcwServer() || IsMw3Server() || IsRpServer() || IsDayzServer()) { perms &= ~(PERM_CHEAT_MENU | PERM_MISSION_PAIR); perms |= PERM_NO_CHEATS; }   // 3.04 / 3.23 MW3: Brief Case War: no CheatMenu, MP + CLEO menu cheats off
     if(m_nPerms == perms) return;
     m_nPerms = perms;
     if(!(perms & PERM_MISSION_PAIR))
@@ -475,7 +484,7 @@ void MPServer::MakePerms(PktPerms& p, uint8_t perms) const
     p.type = PKT_PERMS; p.perms = perms | PERM_V219;
     p.modesMagic = MP_MODES_MAGIC; p.modes = GetModes();
 }
-uint16_t MPServer::GetModes() const { if(IsRpServer()) return GM_HOME; if(IsBcwServer() || IsMw3Server()) return 0; return IsDefaultServer() ? (m_bStaffModes ? (uint16_t)(m_nModes & GM_ALL) : (uint16_t)GM_ALL) : (uint16_t)(m_nModes & GM_ALL); }   // 3.53: + staff choice   // 3.04: Brief Case War runs only its own gamemode
+uint16_t MPServer::GetModes() const { if(IsRpServer()) return GM_HOME; if(IsBcwServer() || IsMw3Server() || IsDayzServer()) return 0; return IsDefaultServer() ? (m_bStaffModes ? (uint16_t)(m_nModes & GM_ALL) : (uint16_t)GM_ALL) : (uint16_t)(m_nModes & GM_ALL); }   // 3.53: + staff choice   // 3.04: Brief Case War runs only its own gamemode
 void MPServer::SetModes(uint16_t modes)
 {
     std::lock_guard<std::mutex> lk(m_Mutex);
@@ -513,7 +522,7 @@ void MPServer::AuthBegin(int slot)
         AuthCrypto::Hex(r, 16, s.chal);
     }
     PktAuthChal c; memset(&c, 0, sizeof(c));
-    c.type = PKT_AUTH; c.op = AUTH_CHALLENGE; c.style = IsBcwServer() ? AUTH_STYLE_BCW : (IsMw3Server() ? AUTH_STYLE_MW3 : (IsRpServer() ? AUTH_STYLE_RP : AUTH_STYLE_NORMAL));
+    c.type = PKT_AUTH; c.op = AUTH_CHALLENGE; c.style = IsBcwServer() ? AUTH_STYLE_BCW : (IsMw3Server() ? AUTH_STYLE_MW3 : (IsRpServer() ? AUTH_STYLE_RP : (IsDayzServer() ? AUTH_STYLE_DZ : AUTH_STYLE_NORMAL)));
     memcpy(c.chal, s.chal, sizeof(c.chal));
     MP_CopyStr(c.server, m_szName, sizeof(c.server));
     SendTo(slot, &c, sizeof(c));
@@ -563,6 +572,7 @@ void MPServer::AuthHandle(int slot, const uint8_t* data, int len)
     AnnounceJoin(slot);
     Mw3OnAuthed(slot);   // 3.23: load the MW3 stats of this account
     RpOnAuthed(slot);    // 3.25: load the citizen (money, job, house...)
+    DzOnAuthed(slot);    // 3.58: load the survivor
     ProgSend(slot);      // 3.39.1: my saved progress (place, money, weapons...)
     s.spawnProtUntil = now + MP_SPAWN_PROTECT_MS;
 }
@@ -585,6 +595,7 @@ void MPServer::Drop(int slot, uint8_t reason)
     BcwOnLeave(slot);   // 3.04
     Mw3OnLeave(slot);   // 3.23
     RpOnLeave(slot);    // 3.25
+    DzOnLeave(slot);    // 3.58 (anti-relog: leaving in combat = death)
     PktPlayerLeave p; p.type = PKT_PLAYER_LEAVE; p.id = (uint8_t)slot; p.reason = reason;
     Broadcast(&p, sizeof(p));
 
@@ -659,6 +670,7 @@ void MPServer::Loop()
             BcwTick(now);
             Mw3Tick(now);   // 3.23
             RpTick(now);    // 3.25
+            DzTick(now);    // 3.58
             HomeTick(now);  // 3.39
             ProgTick(now);  // 3.39.1
         }   // 3.04: 10 Hz referee
@@ -680,7 +692,7 @@ void MPServer::Loop()
             if(now - lastWorld >= 3000) { lastWorld = now; PktWorld w; FillWorld(w); Broadcast(&w, sizeof(w)); }
             ExpirePickups(now);
             AdTick(now);     // 3.11: Discord message every 45 min 20 s
-            InfoTick(now);   // 3.55: [INFO] tips every 35 min 20 s
+            if(!IsDayzServer()) InfoTick(now);   // 3.55: [INFO] tips every 35 min 20 s (3.58: DayZ runs its own [INFO] / [SERVER] / [GUIDE] loops)
             TurfTick(now);   // 3.01
             RaceQueueTick(now, false);
         }
@@ -975,7 +987,7 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
                 s.admin = isAdmin;
                 s.authed = !AuthOn();   // 3.21.6
                 s.mod = isMod && !isAdmin;
-                s.owner = m_szOwnerUid[0] && juid[0] && !strcmp(juid, m_szOwnerUid) && !IsDefaultServer() && !IsBcwServer() && !IsMw3Server() && !IsRpServer();   // 3.39
+                s.owner = m_szOwnerUid[0] && juid[0] && !strcmp(juid, m_szOwnerUid) && !IsDefaultServer() && !IsBcwServer() && !IsMw3Server() && !IsRpServer() && !IsDayzServer();   // 3.39
                 s.hkLastCmd = 0;
                 if(s.mod && MP_IsModReservedName(s.name)) MP_CopyStr(s.name, MP_MOD_RESERVED_SHOW, MP_NAME_LEN);   // 3.40.1: "trunk" / "TRUNK" -> "Trunk"
                 if(s.mod) { char tmp[MP_NAME_LEN]; snprintf(tmp, sizeof(tmp), MP_MOD_TAG "%.17s", s.name); MP_CopyStr(s.name, tmp, MP_NAME_LEN); Log("%s is a moderator (moderator.txt)", s.name); }
@@ -1055,6 +1067,7 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             BcwOnJoin(slot, fresh);        // 3.04: Brief Case War state
             Mw3OnJoin(slot, fresh);        // 3.23: MW3 state
             RpOnJoin(slot, fresh);         // 3.25: Mega Vil Futuristic
+            DzOnJoin(slot, fresh);         // 3.58: Project Day Z
             if(!s.authed) AuthBegin(slot);              // 3.21.6: log in first (the others see you after that)
             else if(fresh || rankChanged) AnnounceJoin(slot);   // 3.40.1: everyone sees the new [MOD] tag
             break;
@@ -1290,6 +1303,7 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             p.id = (uint8_t)slot;
             p.text[MP_CHAT_LEN - 1] = 0;
             Log("[chat] %s: %s", m_Slots[slot].name, p.text);
+            if(IsDayzServer() && DzChat(slot, p.text)) break;   // 3.58: party chat colours / commands
             if(IsRpServer())
             {   // 3.25: roleplay: people hear you only when they are close ("Name says: ...")
                 PktRpCmd rc; memset(&rc, 0, sizeof(rc)); rc.type = PKT_RP_CMD; rc.cmd = RPC_CHAT; rc.a = RPH_SAY;
@@ -1330,6 +1344,7 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             if(!m_Slots[slot].used) return;
             BcwOnDeath(slot, p.killer == MP_INVALID_ID ? -1 : p.killer);   // 3.04
             RpOnDeath(slot, p.killer == MP_INVALID_ID ? -1 : p.killer);    // 3.25
+            DzOnDeath(slot, p.killer == MP_INVALID_ID ? -1 : p.killer, p.weapon);   // 3.58
             Mw3OnDeath(slot, p.killer == MP_INVALID_ID ? -1 : p.killer, p.weapon);   // 3.23
             Broadcast(&p, sizeof(p));
             break;
@@ -1346,7 +1361,7 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             if(p.target < MP_MAX_PLAYERS && p.target != slot && m_Slots[p.target].used && !m_Slots[p.target].paused
                && !SafeZoneBlocks(slot, p.target)   // 3.21: hospital safe zones + 5 s spawn protection
                && ((!m_Slots[p.target].status && !m_Slots[slot].status) || IsPartner(slot, p.target))
-               && BcwOnDamage(slot, p.target, p.amount) && Mw3OnDamage(slot, p.target, p.amount) && RpOnDamage(slot, p.target, p.amount)) SendTo(p.target, &p, sizeof(p));   // 3.04: no friendly fire in Brief Case War
+               && BcwOnDamage(slot, p.target, p.amount) && Mw3OnDamage(slot, p.target, p.amount) && RpOnDamage(slot, p.target, p.amount) && DzOnDamage(slot, p.target, p.amount)) SendTo(p.target, &p, sizeof(p));   // 3.04: no friendly fire in Brief Case War
             break;
         }
 
@@ -1397,6 +1412,13 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             if(slot < 0 || len < (int)sizeof(PktSrvSettings)) return;
             PktSrvSettings p; memcpy(&p, data, sizeof(p));
             if(p.op == 1) OnSrvSettings(slot, p); else SendSrvSettings(slot);
+            break;
+        }
+        case PKT_DZ_CMD:    // 3.58: Project Day Z
+        {
+            if(slot < 0 || len < (int)sizeof(PktDzCmd) || !IsDayzServer()) return;
+            PktDzCmd c; memcpy(&c, data, sizeof(c)); c.text[sizeof(c.text) - 1] = 0;
+            DzHandleCmd(slot, c);
             break;
         }
         case PKT_RP_CMD:    // 3.25
@@ -1739,15 +1761,28 @@ bool MPServer::KickLocked(int id, const char* admin, const char* reason, bool ba
 bool MPServer::AddBan(const char* name, const char* uid, const char* admin, const char* reason)
 {
     std::lock_guard<std::mutex> lk(m_Mutex);
-    if((!name || !name[0]) && (!uid || !uid[0])) return false;
-    if(FindBan(name, uid) >= 0) return false;
+    return BanNameLocked(name, uid, admin, reason);
+}
+// 3.58 ban fix: "Ban name" only wrote the list - a player who was ONLINE with that name kept playing
+// (and a name typed with spaces around it never matched). Now: trimmed, case-insensitive, and every
+// online player with that name is banned + kicked at once (phone id saved too, so a rename doesn't help).
+bool MPServer::BanNameLocked(const char* name, const char* uid, const char* admin, const char* reason)
+{
+    char nm[MP_NAME_LEN] = "";
+    if(name) { while(*name == ' ') ++name; MP_CopyStr(nm, name, sizeof(nm)); for(int k = (int)strlen(nm) - 1; k >= 0 && nm[k] == ' '; --k) nm[k] = 0; }
+    if(!nm[0] && (!uid || !uid[0])) return false;
+    bool any = false;
+    for(int i = 0; i < MP_MAX_PLAYERS; ++i)
+        if(m_Slots[i].used && nm[0] && !strcasecmp(m_Slots[i].name, nm)) { KickLocked(i, admin, reason && reason[0] ? reason : "Banned", true); any = true; }
+    if(FindBan(nm, uid) >= 0) return any;
     BanEntry b; memset(&b, 0, sizeof(b));
-    MP_CopyStr(b.uid, uid ? uid : "", sizeof(b.uid)); MP_CopyStr(b.name, name ? name : "", sizeof(b.name));
+    MP_CopyStr(b.uid, uid ? uid : "", sizeof(b.uid)); MP_CopyStr(b.name, nm, sizeof(b.name));
     b.when = (uint32_t)time(nullptr);
     MP_CopyStr(b.admin, admin && admin[0] ? admin : "Server", sizeof(b.admin));
     MP_CopyStr(b.reason, reason ? reason : "", sizeof(b.reason));
     BanClean(b.name); BanClean(b.admin); BanClean(b.reason);
     m_Bans.push_back(b); SaveBans();
+    Log("Banned the name %s (by %s)", b.name, b.admin);
     return true;
 }
 
@@ -1997,7 +2032,8 @@ void MPServer::RaceQueueTick(uint64_t now, bool changed)
 }
 
 #include "server_bcw.inc"   // 3.04: Brief Case War
-#include "server_mw3.inc"   // 3.23: Call Of Duty: Modern Warfare 3
+#include "server_mw3.inc"
+#include "server_dayz.inc"   // 3.58   // 3.23: Call Of Duty: Modern Warfare 3
 #include "server_rp.inc"    // 3.25: Mega Vil Futuristic (Roleplay)
 #include "server_home.inc"  // 3.39: Home Kit, rules, live settings
 #include "server_ac.inc"    // 3.50: anti-cheat (Nex-AC)

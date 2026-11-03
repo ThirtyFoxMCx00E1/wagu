@@ -10,7 +10,7 @@ static int s_nMv = 0;
 static char s_szMvKey[80] = "";
 static int s_nMvSel = -1;
 
-static bool MvOn() { return client.GetState() == NET_CONNECTED && Game::IsReady() && !BcwOnServer() && !Mw3OnServer() && !RpOnServer(); }
+static bool MvOn() { return client.GetState() == NET_CONNECTED && Game::IsReady() && !BcwOnServer() && !Mw3OnServer() && !RpOnServer() && !DzOnServer(); }
 static void MvKey(char* out, size_t n) { snprintf(out, n, "%s:%u", client.GetServerName()[0] ? client.GetServerName() : "server", (unsigned)client.GetPort()); }
 static std::string MvPath() { return std::string(s_szDataDir) + "/myvehicles.txt"; }
 static void MvSave()

@@ -1,5 +1,5 @@
-# MP 24/7 featured servers (3.53): the 4 featured servers (MP LAN Server, Brief Case War,
-# Call Of Duty: Modern Warfare 3, Mega Vil Futuristic) hosted by the Broker bot non stop, the same way
+# MP 24/7 featured servers (3.53, 3.58: 5 servers): MP LAN Server (Default), Brief Case War,
+# Call Of Duty: Modern Warfare 3, Mega Vil Futuristic, Project Day Z Remastered - hosted by the Broker bot non stop, the same way
 # the Discord bot ("MP Railway cloud runner") stays online: each run is one ~5 h 40 min shift and
 # queues the next shift itself. The next shift starts BEFORE the old one stops (overlap), so the servers
 # never go offline between shifts; players on the old copy are moved to the new copy automatically.
@@ -65,17 +65,17 @@ jobs:
         if: steps.guard.outputs.run == '1'
         run: |
           if git fetch -q --depth 1 origin mp247-data 2>/dev/null; then
-            for f in bans.txt homes.txt homes_rp.txt mw3_stats.txt progress.txt ranks.txt rp_citizens.txt turf.txt; do
+            for f in bans.txt homes.txt homes_rp.txt mw3_stats.txt progress.txt ranks.txt rp_citizens.txt dayz_survivors.txt turf.txt; do
               git show "FETCH_HEAD:$f" > "server/$f" 2>/dev/null || rm -f "server/$f"; done
             echo "data restored"; else echo "no saved data yet"; fi
 
-      - name: Run the 4 servers (one shift)
+      - name: Run the 5 servers (one shift)
         if: steps.guard.outputs.run == '1'
         shell: bash {0}   # no -e: a missing data file or a failed save must never end the shift
         run: |
           cd server
           ./run_24_7.sh "$REGION"
-          FILES="bans.txt homes.txt homes_rp.txt mw3_stats.txt progress.txt ranks.txt rp_citizens.txt turf.txt"
+          FILES="bans.txt homes.txt homes_rp.txt mw3_stats.txt progress.txt ranks.txt rp_citizens.txt dayz_survivors.txt turf.txt"
           save() {
             rm -rf /tmp/d; mkdir -p /tmp/d
             for f in $FILES; do [ -s "$f" ] && cp -f "$f" /tmp/d/; done

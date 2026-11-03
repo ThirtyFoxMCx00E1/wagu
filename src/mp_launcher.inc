@@ -14,6 +14,7 @@
 
 enum { LT_INTERNET = 0, LT_FAVORITES, LT_HOSTED, LT_ADD, LT_PLAYERS, LT_BANS, LT_SRVMGMT, LT_SECTIONS };   // 3.53: + Server Management
 static int   s_nLTab = LT_INTERNET;
+static int   s_nInetSub = 0;   // 3.58: Internet = PUBLIC (default + custom servers) || FEATURED (the 24/7 Broker servers)
 static bool  s_bLauncherCloseReq = false;   // 3.39: close the launcher (e.g. Server settings opens a dialog in game)
 static int   s_nLSel = -1;                         // selected row
 static char  s_szLSelKey[48] = "";                 // name|port of the selected row (rows move)
@@ -194,7 +195,7 @@ static void OnBanName(const char* t, void*) { MP_CopyStr(s_szBanName, t ? t : ""
 // ---- server rows -----------------------------------------------------------------------------
 struct LRow
 {
-    int  kind;            // 0 default, 1 live (internet / Wi-Fi), 2 saved (favourite), 3 Brief Case War (3.04), 4 MW3 (3.23), 5 Mega Vil Futuristic (3.25)
+    int  kind;            // 0 default, 1 live (internet / Wi-Fi), 2 saved (favourite), 3 Brief Case War (3.04), 4 MW3 (3.23), 5 Mega Vil Futuristic (3.25), 6 Project Day Z (3.58)
     char name[40];
     int  players, maxp, ping, region, icon;
     bool locked, live, on, mine, internet;
@@ -231,7 +232,8 @@ static void LBuildRows(int tab, const std::vector<LanServer>& nearby, std::vecto
         else if(found >= 0)        { r.players = nearby[found].players; r.maxp = nearby[found].maxPlayers; r.ping = nearby[found].ping; r.live = true; r.internet = nearby[found].token != 0; }
         else                       { r.players = 0; r.maxp = MP_STD_MAX_PLAYERS; r.live = true; }   // 2.29: always there, 0/100 - Join starts it
         MP_CopyStr(r.lang, "All", sizeof(r.lang));   // 3.53: the 4 featured servers are always "All" (nobody can change it)
-        if(LMatch(r.name)) rows.push_back(r);
+        if(s_nInetSub == 0 && LMatch(r.name)) rows.push_back(r);
+        if(s_nInetSub == 1) {   // 3.58: FEATURED page
         {   // 3.04: Brief Case War - pinned under the default server, always there (0/20) like it
             LRow w; memset(&w, 0, sizeof(w));
             w.kind = 3; MP_CopyStr(w.name, MP_BCW_SERVER_NAME, sizeof(w.name)); w.port = MP_BCW_PORT;
@@ -280,12 +282,31 @@ static void LBuildRows(int tab, const std::vector<LanServer>& nearby, std::vecto
             MP_CopyStr(w.lang, "All", sizeof(w.lang));
             if(LMatch(w.name) || LMatch("roleplay") || LMatch("rp") || LMatch("mega vil")) rows.push_back(w);
         }
+        {   // 3.58: Project Day Z Remastered - 24/7 featured (Broker bot on GitHub Actions)
+            LRow w; memset(&w, 0, sizeof(w));
+            w.kind = 6; MP_CopyStr(w.name, MP_DZ_SERVER_NAME, sizeof(w.name)); w.port = MP_DZ_PORT;
+            w.region = -1; w.icon = 0; w.saved = -1; w.live = true;
+            w.on = MP::IsOnDz();
+            int bf = -1;
+            for(int i = 0; i < (int)nearby.size(); ++i)
+                if(MP_IsDzServerName(nearby[i].name) && nearby[i].dedicated && bf < 0) bf = i;
+            bool hosting = s_Server.IsRunning() && s_Server.IsDayzServer();
+            if(w.on && IsConnected())  { w.players = OnlineCount(); w.maxp = OnlineMax(); w.ping = MP::DisplayPing(); }
+            else if(hosting)           { w.players = s_Server.GetPlayerCount(); w.maxp = MP_DZ_MAX_PLAYERS; w.ping = 0; w.mine = true; }
+            else if(bf >= 0)           { w.players = nearby[bf].players; w.maxp = nearby[bf].maxPlayers; w.ping = nearby[bf].ping; w.internet = nearby[bf].token != 0; }
+            else                       { w.players = 0; w.maxp = MP_DZ_MAX_PLAYERS; w.ping = -1; }
+            MP_CopyStr(w.lang, "All", sizeof(w.lang));
+            if(LMatch(w.name) || LMatch("dayz") || LMatch("day z") || LMatch("zombie")) rows.push_back(w);
+        }
+        }   // 3.58: end of the FEATURED page
         for(auto& sv : nearby)
         {
+            if(s_nInetSub != 0) break;   // 3.58: custom servers are on the PUBLIC page
             if(IsDefaultServer(sv.name, sv.port)) continue;
             if(MP_IsBcwServerName(sv.name)) continue;   // 3.04: the pinned row
             if(MP_IsMw3ServerName(sv.name)) continue;   // 3.23: the pinned row
             if(MP_IsRpServerName(sv.name)) continue;    // 3.25: the pinned row
+            if(MP_IsDzServerName(sv.name)) continue;    // 3.58: the pinned row
             if(!settings.lobbyAuto && sv.token != 0 && sv.region != settings.region) continue;   // 3.25: region switch (Wi-Fi servers always show)
             LRow q; memset(&q, 0, sizeof(q));
             q.kind = 1; MP_CopyStr(q.name, sv.name, sizeof(q.name)); MP_CopyStr(q.ip, sv.ip, sizeof(q.ip)); q.port = sv.port;
@@ -325,7 +346,7 @@ static void LBuildRows(int tab, const std::vector<LanServer>& nearby, std::vecto
     if(s_nSortCol >= 0 && rows.size() > 1)
     {
         size_t from = 0;   // the default server + Brief Case War stay on top
-        while(tab == LT_INTERNET && from < rows.size() && (rows[from].kind == 0 || rows[from].kind == 3 || rows[from].kind == 4 || rows[from].kind == 5)) ++from;
+        while(tab == LT_INTERNET && from < rows.size() && (rows[from].kind == 0 || rows[from].kind == 3 || rows[from].kind == 4 || rows[from].kind == 5 || rows[from].kind == 6)) ++from;
         auto key = [](const LRow& r, int c) -> int { return c == 1 ? r.players : (c == 2 ? (r.ping < 0 ? 99999 : r.ping) : (c == 3 ? r.region : 0)); };
         std::stable_sort(rows.begin() + from, rows.end(), [&](const LRow& a, const LRow& b)
         {
@@ -355,6 +376,7 @@ static void LJoin(const LRow& r)
     if(r.kind == 3) { if(!MP::IsOnBcw()) LeaveServer(nullptr); MP::JoinBcw(); return; }   // 3.04
     if(r.kind == 4) { if(!MP::IsOnMw3()) LeaveServer(nullptr); MP::JoinMw3(); return; }   // 3.23
     if(r.kind == 5) { if(!MP::IsOnRp()) LeaveServer(nullptr); MP::JoinRp(); return; }     // 3.25
+    if(r.kind == 6) { if(!MP::IsOnDz()) LeaveServer(nullptr); MP::JoinDz(); return; }     // 3.58
     if(r.on) { LeaveServer("Left the server."); return; }
     if(r.kind == 1) MP::JoinServer(r.ip, r.port, r.name);
     else if(ServerEntry* e = ServerList::Get(r.saved)) MP::JoinServer(e->host, e->port, e->name);
@@ -562,6 +584,15 @@ static void LTable(std::vector<LRow>& rows, float w, float h)
                 dl->PopClipRect();
             }
         }
+        if(r.kind == 6)
+        {   // 3.58: Project Day Z banner: yellow highlight + yellow outline + the hand print symbol
+            float pulse = 0.75f + 0.25f * sinf(MP_NowMs() * 0.004f);
+            dl->AddRectFilledMultiColor(a, ImVec2(a.x + W, a.y + rowH), IM_COL32(202, 150, 10, (int)(150 * pulse)), IM_COL32(90, 64, 4, 70), IM_COL32(90, 64, 4, 70), IM_COL32(202, 150, 10, (int)(150 * pulse)));
+            dl->AddRect(a, ImVec2(a.x + W, a.y + rowH), IM_COL32(250, 204, 21, 255), UI::S(6), 0, UI::S(sel ? 4 : 2.5f));
+            dl->PushClipRect(a, ImVec2(a.x + W, a.y + rowH), true);
+            DzDrawSymbol(dl, ImVec2(a.x + W - rowH * 0.7f, a.y + rowH * 0.5f), rowH * 0.55f, MP_NowMs() / 1000.0f);
+            dl->PopClipRect();
+        }
         if(sel) dl->AddRectFilled(a, ImVec2(a.x + W, a.y + rowH), IM_COL32(255, 255, 255, 30), UI::S(6));
         else if(ImGui::IsItemActive()) dl->AddRectFilled(a, ImVec2(a.x + W, a.y + rowH), IM_COL32(255, 255, 255, 16), UI::S(6));
         dl->AddLine(ImVec2(a.x, a.y + rowH), ImVec2(a.x + W, a.y + rowH), IM_COL32(255, 255, 255, 14));
@@ -575,17 +606,18 @@ static void LTable(std::vector<LRow>& rows, float w, float h)
         LPadlock(dl, ImVec2(a.x + cLock + UI::S(18), a.y + rowH * 0.5f - UI::S(4)), UI::S(24), r.locked, r.locked ? IM_COL32(240, 200, 60, 255) : IM_COL32(70, 200, 110, 255));
         ImVec2 uv(1, 1);
         void* rtex = r.kind == 3 ? HUD::Texture("bcw_icon.png", &uv) : (r.kind == 4 ? HUD::Texture("mw3_icon.png", &uv) : (r.kind == 5 ? HUD::Texture("rp_icon.png", &uv) : nullptr));   // 3.04: Brief Case War icon (briefcase)
-        if(void* tex = rtex ? rtex : HUD::ServerIcon(r.icon, &uv))
+        if(r.kind == 6) DzDrawSymbol(dl, ImVec2(a.x + cIcon + (rowH - UI::S(18)) * 0.5f, a.y + rowH * 0.5f), (rowH - UI::S(18)) * 0.5f, MP_NowMs() / 1000.0f);   // 3.58
+        else if(void* tex = rtex ? rtex : HUD::ServerIcon(r.icon, &uv))
         {
             float is = rowH - UI::S(18);
             ImVec2 ia(a.x + cIcon, a.y + UI::S(9));
             dl->AddImageRounded((ImTextureID)tex, ia, ImVec2(ia.x + is, ia.y + is), ImVec2(0, 0), uv, IM_COL32_WHITE, UI::S(8));
         }
-        ImU32 nameCol = r.kind == 3 ? IM_COL32(255, 235, 235, 255) : r.kind == 4 ? IM_COL32(230, 255, 235, 255) : r.kind == 5 ? IM_COL32(224, 242, 254, 255) : ((r.live || sel) ? IM_COL32_WHITE : IM_COL32(175, 175, 175, 255));
+        ImU32 nameCol = r.kind == 3 ? IM_COL32(255, 235, 235, 255) : r.kind == 4 ? IM_COL32(230, 255, 235, 255) : r.kind == 5 ? IM_COL32(224, 242, 254, 255) : r.kind == 6 ? IM_COL32(254, 249, 195, 255) : ((r.live || sel) ? IM_COL32_WHITE : IM_COL32(175, 175, 175, 255));
         dl->PushClipRect(ImVec2(a.x + cName, a.y), ImVec2(a.x + cPl - UI::S(12), a.y + rowH), true);
         float nx = a.x + cName;
         if(r.on) { dl->AddCircleFilled(ImVec2(nx + UI::S(8), a.y + rowH * 0.5f), UI::S(7), IM_COL32(70, 200, 110, 255)); nx += UI::S(26); }
-        char nm[80]; snprintf(nm, sizeof(nm), "%s%s", r.name, r.kind == 0 ? "  (default)" : (r.kind == 3 ? "  (gamemode)" : r.kind == 4 ? "  (24/7)" : r.kind == 5 ? "  (Roleplay 24/7)" : (r.mine ? "  (yours)" : "")));
+        char nm[80]; snprintf(nm, sizeof(nm), "%s%s", r.name, r.kind == 0 ? "  (default)" : (r.kind == 3 ? "  (gamemode)" : r.kind == 4 ? "  (24/7)" : r.kind == 5 ? "  (Roleplay 24/7)" : r.kind == 6 ? "  (Survival 24/7)" : (r.mine ? "  (yours)" : "")));
         dl->AddText(ImVec2(nx, ty), nameCol, nm);
         dl->PopClipRect();
         char b[48];
@@ -600,6 +632,7 @@ static void LTable(std::vector<LRow>& rows, float w, float h)
             if(r.kind == 3) snprintf(md, sizeof(md), "Brief Case War");   // 3.04
             if(r.kind == 4) snprintf(md, sizeof(md), "MW3 Team DM");      // 3.23
             if(r.kind == 5) snprintf(md, sizeof(md), MP_RP_GAMEMODE);     // 3.25: Roleplay RP
+            if(r.kind == 6) snprintf(md, sizeof(md), MP_DZ_GAMEMODE);     // 3.58: Proper DAYZ
             dl->AddText(ImVec2(a.x + cMode, ty), r.live ? IM_COL32_WHITE : dim, md);
         }
         dl->PopClipRect();
@@ -688,7 +721,17 @@ static void LRightPanel(const LRow* r, float w, float h)
             { "weather",   "server synced" },
             { "icon",      ic },
         };
-        if(r->kind == 5)
+        if(r->kind == 6)
+        {   // 3.58
+            const char* dz[][2] = {
+                { "address",   "24/7 featured (Broker bot, GitHub Actions)" }, { "gamemode", MP_DZ_GAMEMODE }, { "port", pt },
+                { "players",   pl }, { "spawns", "15 random places" }, { "loot", "houses, 19 gas stations, 10 military bases" },
+                { "zombies",   "everywhere (more at night / in the fog)" }, { "parties", "max 4, unique colours" },
+                { "anti-relog","disconnect in combat = death" }, { "cheats", "off (MP + CLEO + CheatMenu)" }, { "login", "required" }, { "version", "MP 3.58" },
+            };
+            for(auto& kv : dz) { ImVec2 p = ImGui::GetCursorScreenPos(); LTwoCol(dl, p, W, rh, kv[0], kv[1], false); ImGui::Dummy(ImVec2(W, rh)); }
+        }
+        else if(r->kind == 5)
         {   // 3.25
             const char* rp[][2] = {
                 { "address",   "24/7 featured (always on, VPS + Broker)" }, { "gamemode", "Roleplay RP (only)" }, { "port", pt },
@@ -734,7 +777,7 @@ static void LRightPanel(const LRow* r, float w, float h)
 //   (moderator.txt + the name Trunk) - also with many players on it, the first joiner is nobody special;
 //   a custom server -> only its host owner (the phone that hosts it).
 static bool LSrvMgmtAvailable() { return client.GetState() == NET_CONNECTED; }
-static bool LSrvFeatured() { return MP::IsOnDefault() || BcwOnServer() || Mw3OnServer() || RpOnServer(); }
+static bool LSrvFeatured() { return MP::IsOnDefault() || BcwOnServer() || Mw3OnServer() || RpOnServer() || DzOnServer(); }
 static void LSrvHeader(const char* t) { ImGui::Dummy(ImVec2(0, UI::S(10))); ImGui::TextColored(ImVec4(1.0f, 0.65f, 0.15f, 1), "%s", t); ImGui::Separator(); }
 static void LPageServerMgmt()
 {
@@ -797,6 +840,19 @@ static void LPageServerMgmt()
     }
     { bool on = st.rulesOn != 0; if(FloatMenu::ToggleSwitch("Rules window after the login", &on)) { st.rulesOn = on ? 1 : 0; send = true; } }
     if(!canEdit) ImGui::EndDisabled();
+    // 3.58: the anti-cheat gamemode (fly / teleport / airbreak / speed / rapid fire / CLEO + CheatMenu block)
+    LSrvHeader("ANTI-CHEAT");
+    {
+        const bool known = (st.pad & 0x80) != 0, fixedOn = known && !(st.pad & 2);
+        bool on = known ? (st.pad & 1) != 0 : featured;
+        if(!canEdit || fixedOn || !known) ImGui::BeginDisabled();
+        if(FloatMenu::ToggleSwitch("Anti-cheat gamemode", &on)) { st.pad = (uint8_t)((st.pad & ~1) | (on ? 1 : 0) | 0x80); send = true; }
+        if(!canEdit || fixedOn || !known) ImGui::EndDisabled();
+        if(fixedOn) ImGui::TextDisabled("Always ON on the featured servers.");
+        ImGui::TextDisabled("Checks: teleport, airbreak, fly (on foot only - helicopters, jets and cars in the air are fine),");
+        ImGui::TextDisabled("speed, rapid fire, infinite ammo, packet flood. Floating / teleporting: kick, 3 kicks = permanent ban");
+        ImGui::TextDisabled("(only [ADMIN] / [MOD] can unban). CLEO menus and libCheatMenu.so / libCheatMenu64.so are blocked.");
+    }
     if(send && canEdit) { SrvSettingsSend(); s_SrvSet.at = now; s_nAskAt = now; }
 
     LSrvHeader("MORE");
@@ -892,7 +948,7 @@ static void LPagePlayersAdmin()
 static void LPagePlayers()
 {
     // 3.39: admin + moderators manage the 4 featured servers only; a custom server is managed by its host owner
-    const bool onFeatured = client.GetState() == NET_CONNECTED && (MP::IsOnDefault() || BcwOnServer() || Mw3OnServer() || RpOnServer());
+    const bool onFeatured = client.GetState() == NET_CONNECTED && (MP::IsOnDefault() || BcwOnServer() || Mw3OnServer() || RpOnServer() || DzOnServer());
     if(client.GetState() == NET_CONNECTED && FloatMenu::BigButton("Server Management (gamemodes / permissions / rules)")) s_nLTab = LT_SRVMGMT;   // 3.53
     if(onFeatured && !MP::IsLocalMod() && !MP::IsDefaultAdmin() && MP::LocalModName())   // 3.50.1
     { ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 0.85f, 0.2f, 1)); ImGui::TextWrapped("moderator.txt has the MP moderator key, but this server didn't give you [MOD] (older MP copy). Type /modcheck, then rejoin."); ImGui::PopStyleColor(); }
@@ -992,6 +1048,37 @@ static void LPagePlayers()
 
 static void LPageBans()
 {
+    // 3.58: on a server this phone doesn't host (the 24/7 featured servers, a friend's server) the list
+    // lives THERE - "Ban name" used to write this phone's own list, so the player was never banned.
+    const bool remote = client.GetState() == NET_CONNECTED && !s_Server.IsRunning();
+    if(remote)
+    {
+        const bool staff = MP::IsDefaultAdmin() || MP::IsLocalMod() || AdmLocalStaff();
+        ImGui::Text("Bans of the server you are on");
+        ImGui::TextDisabled("This server is not hosted by your phone: bans and unbans go to the server itself.");
+        ImGui::TextDisabled("Online players: Players page -> tap -> Ban. Offline players / any name: here.");
+        ImGui::Separator();
+        if(!staff) { ImGui::TextWrapped("Only [ADMIN], [MOD] or the owner of this server can ban here."); return; }
+        if(FloatMenu::BigButton("Show the ban list (chat)")) { SendAdminCmd2(ADMIN_BANS, -1, 0, 0, ""); SysMsg(COL_YELLOW, "The ban list is in the chat."); }
+        ImGui::Separator();
+        ImGui::TextUnformatted("Ban a name (online = kicked at once, or when they join)");
+        FloatMenu::TextField("Player name", s_szBanName, "Player name", MP_NAME_LEN - 1, OnBanName);
+        FloatMenu::TextField("Reason##bn", s_szKickReason, "Reason", MP_REASON_LEN - 1, OnKickReason);
+        if(!s_szBanName[0]) ImGui::BeginDisabled();
+        if(FloatMenu::BigButton("Ban name", IM_COL32(150, 25, 25, 240)))
+        {
+            char t[MP_REASON_LEN]; snprintf(t, sizeof(t), "%s\t%s", s_szBanName, s_szKickReason);
+            SendAdminCmd2(ADMIN_BANNAME, -1, 0, 0, t);
+            SysMsg(COL_RED, "Ban sent for %s.", s_szBanName); s_szBanName[0] = 0;
+        }
+        if(FloatMenu::BigButton("Unban this name"))
+        {
+            SendAdminCmd2(ADMIN_UNBAN, -1, 0, 0, s_szBanName);
+            s_szBanName[0] = 0;
+        }
+        if(!s_szBanName[0]) ImGui::EndDisabled();
+        return;
+    }
     std::vector<MPServer::BanEntry> bans; s_Server.GetBans(bans);
     ImGui::Text("Ban list  (%d)   |   Administrator: %s", (int)bans.size(), settings.name);
     ImGui::TextDisabled("Saved in files/MP/bans.txt, used by every server this phone hosts.");
@@ -1039,7 +1126,7 @@ static void LPageBans()
     if(!s_szBanName[0]) ImGui::BeginDisabled();
     if(FloatMenu::BigButton("Ban name", IM_COL32(150, 25, 25, 240)))
     {
-        if(s_Server.AddBan(s_szBanName, "", settings.name, s_szKickReason)) { SysMsg(COL_RED, "Banned the name %s.", s_szBanName); s_szBanName[0] = 0; }
+        if(s_Server.AddBan(s_szBanName, "", settings.name, s_szKickReason)) { SysMsg(COL_RED, "Banned the name %s (kicked if online).", s_szBanName); s_szBanName[0] = 0; }
         else SysMsg(COL_YELLOW, "%s is already banned.", s_szBanName);
     }
     if(!s_szBanName[0]) ImGui::EndDisabled();
@@ -1256,7 +1343,28 @@ static void RenderLauncher(void* openPtr)
         ImGui::SetCursorScreenPos(ImVec2(cx0 + UI::S(4), bodyY + UI::S(6)));
         // 3.25.1: the region switch is an icon in the toolbar now, the table gets the whole height again
         ImGui::SetCursorScreenPos(ImVec2(cx0 + UI::S(4), bodyY));
-        LTable(rows, tableW, bodyH);
+        float subH = 0;
+        if(s_nLTab == LT_INTERNET)
+        {   // 3.58: PUBLIC || FEATURED
+            subH = UI::S(58);
+            const char* lb[2] = { "PUBLIC", "FEATURED" };
+            float bw = (tableW - UI::S(12)) * 0.5f;
+            for(int i = 0; i < 2; ++i)
+            {
+                ImVec2 a(cx0 + UI::S(4) + i * (bw + UI::S(8)), bodyY + UI::S(6)), b(a.x + bw, a.y + subH - UI::S(12));
+                ImGui::SetCursorScreenPos(a); ImGui::PushID(900 + i);
+                if(ImGui::InvisibleButton("##isub", ImVec2(bw, b.y - a.y)) && s_nInetSub != i) { s_nInetSub = i; s_szLSelKey[0] = 0; s_nLSel = -1; }
+                bool held = ImGui::IsItemActive(); ImGui::PopID();
+                bool on = s_nInetSub == i;
+                dl->AddRectFilled(a, b, on ? IM_COL32(255, 255, 255, held ? 200 : 235) : IM_COL32(255, 255, 255, held ? 45 : 18), UI::S(10));
+                if(!on) dl->AddRect(a, b, IM_COL32(255, 255, 255, 40), UI::S(10), 0, UI::S(1.5f));
+                ImVec2 ts = ImGui::CalcTextSize(lb[i]);
+                dl->AddText(ImVec2((a.x + b.x - ts.x) * 0.5f, (a.y + b.y - ts.y) * 0.5f), on ? IM_COL32(15, 15, 15, 255) : IM_COL32(230, 230, 230, 255), lb[i]);
+            }
+            if(s_nInetSub == 0) { char c[24]; snprintf(c, sizeof(c), "||"); ImVec2 ts = ImGui::CalcTextSize(c); dl->AddText(ImVec2(cx0 + UI::S(4) + bw + UI::S(4) - ts.x * 0.5f, bodyY + subH * 0.5f - ts.y * 0.5f), IM_COL32(200, 200, 200, 160), c); }
+            ImGui::SetCursorScreenPos(ImVec2(cx0 + UI::S(4), bodyY + subH));
+        }
+        LTable(rows, tableW, bodyH - subH);
         float rx0 = cx0 + UI::S(4) + tableW + UI::S(2);
         dl->AddLine(ImVec2(rx0, bodyY), ImVec2(rx0, wp.y + ws.y), line, UI::S(2));
         ImGui::SetCursorScreenPos(ImVec2(rx0 + UI::S(4), bodyY));

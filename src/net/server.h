@@ -10,7 +10,8 @@
 #include "turf.h"
 #include "bcw.h"
 #include "mw3.h"   // 3.23
-#include "rp.h"    // 3.25: Mega Vil Futuristic
+#include "rp.h"
+#include "dayz.h"    // 3.25: Mega Vil Futuristic
 #include "anticheat.h"   // 3.50
 #include <string>
 #include <map>
@@ -45,7 +46,7 @@ public:
     bool IsPersistent() const { return m_bPersistent; }
 
     // Player limit 1..100. Lowering it never kicks anyone; it only blocks new joins.
-    void SetMaxPlayers(int n) { m_nMaxPlayers = n < 1 ? 1 : (n > MP_STD_MAX_PLAYERS ? MP_STD_MAX_PLAYERS : n); if(IsBcwServer()) m_nMaxPlayers = MP_BCW_MAX_PLAYERS; else if(IsMw3Server()) m_nMaxPlayers = MP_MW3_MAX_PLAYERS; else if(IsRpServer()) m_nMaxPlayers = MP_RP_MAX_PLAYERS; else if(IsDefaultServer()) m_nMaxPlayers = MP_STD_MAX_PLAYERS; }   // 3.04: Brief Case War = 20; 3.10: the default server is always 100; 3.25: Mega Vil Futuristic = 250
+    void SetMaxPlayers(int n) { m_nMaxPlayers = n < 1 ? 1 : (n > MP_STD_MAX_PLAYERS ? MP_STD_MAX_PLAYERS : n); if(IsBcwServer()) m_nMaxPlayers = MP_BCW_MAX_PLAYERS; else if(IsMw3Server()) m_nMaxPlayers = MP_MW3_MAX_PLAYERS; else if(IsRpServer()) m_nMaxPlayers = MP_RP_MAX_PLAYERS; else if(IsDayzServer()) m_nMaxPlayers = MP_DZ_MAX_PLAYERS; else if(IsDefaultServer()) m_nMaxPlayers = MP_STD_MAX_PLAYERS; }   // 3.04: Brief Case War = 20; 3.10: the default server is always 100; 3.25: Mega Vil Futuristic = 250
     int  GetMaxPlayers() const { return m_nMaxPlayers; }
     void SetRegion(int r) { m_nRegion = (r >= 0 && r < REGION_COUNT) ? r : REGION_ASIA; }
     int  GetRegion() const { return m_nRegion; }
@@ -65,6 +66,7 @@ public:
     bool SafeZoneBlocks(int from, int to) const;       // 3.21: damage from -> to dropped (zone / spawn protection)
     bool IsBcwServer() const;                   // 3.04: the name is MP_BCW_SERVER_NAME (Brief Case War)
     bool IsMw3Server() const;                   // 3.23: Call Of Duty: Modern Warfare 3
+    bool IsDayzServer() const;                  // 3.58: Project Day Z Remastered
     void SetMw3File(const char* path);          // 3.23: MW3 stats + zone owners (default mw3_stats.txt)
     bool IsRpServer() const;                    // 3.25: Mega Vil Futuristic (Roleplay)
     void SetRpFile(const char* path);           // 3.25: citizens (money, bank, job, house...) + house owners (default rp_citizens.txt)
@@ -81,11 +83,11 @@ public:
     void SetAuth(bool on) { m_bAuthCustom = on; }
     // 3.23.5: the 3 featured servers (default 100, Brief Case War 20, MW3 64) always have the bot
     // "Broker" in them (id MP_BOT_ID): 1/100, 1/20, 1/64 with nobody else, on the VPS or a phone copy
-    bool HasBot() const { return IsDefaultServer() || IsBcwServer() || IsMw3Server() || IsRpServer(); }
+    bool HasBot() const { return IsDefaultServer() || IsBcwServer() || IsMw3Server() || IsRpServer() || IsDayzServer(); }
 #ifdef MP_AUTH_OFF_FOR_TESTS   // 3.40.1: unit tests only (they have no login bot)
     bool AuthOn() const { return false; }
 #else
-    bool AuthOn() const { return IsDefaultServer() || IsBcwServer() || IsMw3Server() || IsRpServer() || m_bAuthCustom; }
+    bool AuthOn() const { return IsDefaultServer() || IsBcwServer() || IsMw3Server() || IsRpServer() || IsDayzServer() || m_bAuthCustom; }
 #endif
     // 3.50: anti-cheat (Nex-AC checks). Always on (every check) on the default server, Mega Vil
     // Futuristic, Brief Case War and MW3. Custom servers: Add server -> Gamemode -> Anti-cheat.
@@ -120,6 +122,8 @@ public:
     void GetBans(std::vector<BanEntry>& out);
     bool Unban(int index);
     bool AddBan(const char* name, const char* uid, const char* admin, const char* reason);   // offline ban by name
+    std::map<std::string, int> m_AcRepeat;   // 3.58: fly / teleport kicks per phone id (3 = ban)
+    bool BanNameLocked(const char* name, const char* uid, const char* admin, const char* reason);   // 3.58: + kicks online
 
     // Server world: the server owns the time + weather. 1 game minute = 1 real second, like GTA SA,
     // from the real clock, so every server shows the same normal day. Sent on join and every 3 s.
@@ -264,6 +268,35 @@ private:
     uint64_t m_nNextAd = 0;          // 3.11: next Discord message
     uint64_t m_nAdInterval = MP_AD_INTERVAL_MS;
     uint64_t m_nNextInfo = 0; int m_nInfoIdx = 0;   // 3.55: [INFO] tips every 35 min 20 s
+    // 3.58: Project Day Z Remastered (server_dayz.inc)
+    struct DzSurvivor
+    {
+        bool     loaded = false, alive = false, spawned = false;
+        int      blood = 12000, hunger = 100, thirst = 100; bool infected = false;
+        int      humanity = 2500, murders = 0, zkills = 0, bkills = 0, headshots = 0, points = 0;
+        uint32_t aliveMin = 0;
+        uint8_t  armor[5] = { 0, 0, 0, 0, 0 }; uint8_t bag = 0, hands = 0; bool gps = false;
+        DzInvSlot inv[DZ_INV_MAX]; int nInv = 0;
+        int      party = -1;
+        uint64_t combatUntil = 0, lastNeeds = 0, lastZk = 0, lastMin = 0, lastPick = 0;
+    };
+    struct DzLootSpot { uint8_t site, item, count; float x, y; uint64_t respawnAt; };
+    struct DzParty { bool used = false; int leader = -1; uint32_t col = 0; char name[24] = ""; int members[MP_DZ_PARTY_MAX]; int n = 0; int invite[MP_MAX_PLAYERS / 8 + 1]; };
+    DzSurvivor m_Dz[MP_MAX_PLAYERS];
+    std::vector<DzLootSpot> m_DzLoot;
+    DzParty  m_DzParty[64];
+    std::map<std::string, std::string> m_DzSaved;   // account -> saved line
+    uint64_t m_nDzInfoAt = 0, m_nDzSrvAt = 0, m_nDzGuideAt = 0, m_nDzFogAt = 0, m_nDzFogEnd = 0, m_nDzSaveAt = 0;
+    int      m_nDzInfoIdx = 0, m_nDzSrvIdx = 0, m_nDzGuideIdx = 0, m_nDzInvite[MP_MAX_PLAYERS];
+    bool     m_bDzFog = false, m_bDzDirty = false;
+    void DzReset(); void DzLoad(); void DzSave(); void DzTick(uint64_t now);
+    void DzOnAuthed(int slot); void DzOnJoin(int slot, bool fresh); void DzOnLeave(int slot); void DzOnDeath(int slot, int killer, int weapon);
+    bool DzOnDamage(int from, int to, int amount); void DzHandleCmd(int slot, const PktDzCmd& c); bool DzChat(int slot, const char* text);
+    void DzSendMe(int slot); void DzSendInv(int slot); void DzSendLoot(int slot, int onlyIdx = -1); void DzEvent(int slot, uint8_t ev, int a, int b, int32_t val, const float* pos, const char* text);
+    void DzMsg(int slot, uint32_t col, const char* fmt, ...);
+    void DzRoll(DzLootSpot& sp); bool DzGive(int slot, int item, int count); float DzKg(int slot) const; float DzMaxKg(int slot) const;
+    void DzFresh(int slot); void DzSpawn(int slot); void DzSetColor(int slot); void DzPartyLeave(int slot, bool quiet);
+    bool DzCommand(int slot, const char* cmd, const char* arg);
     void InfoTick(uint64_t now);
 public:
     void     SetAdInterval(uint64_t ms) { m_nAdInterval = ms ? ms : MP_AD_INTERVAL_MS; }   // tests
@@ -537,3 +570,5 @@ private:
 };
 
 uint64_t MP_NowMs();
+
+void MPServerSetDzFile(const char* path);   // 3.58: Project Day Z survivors (default dayz_survivors.txt)

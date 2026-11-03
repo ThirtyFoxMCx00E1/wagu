@@ -64,3 +64,23 @@ void Game::SceneCameraOff() { CALLSCM(RESTORE_CAMERA_JUMPCUT_358); }
 static float s_fFogRadius = 0.0f;
 void  Game::SetFogRadius(float metres) { s_fFogRadius = metres > 0.0f ? (metres < 25.0f ? 25.0f : metres) : 0.0f; }
 float Game::FogRadius() { return s_fFogRadius; }
+
+// ---- 3.58: Project DayZ zombies (local peds that hunt you) ----
+DEFOPCODE(05E2, TASK_KILL_CHAR_ON_FOOT_358, ii);
+DEFOPCODE(05D3, TASK_GO_STRAIGHT_TO_COORD_358, iffffi);
+DEFOPCODE(0223, SET_CHAR_HEALTH_358, ii);
+void Game::ZombieHunt(int ped, int target)
+{
+    if(ped <= 0 || target <= 0 || !PedPtr(ped) || !PedPtr(target)) return;
+    CALLSCM(TASK_KILL_CHAR_ON_FOOT_358, ped, target);
+}
+void Game::NpcGoTo(int ped, const Vec3& p, bool run)
+{
+    if(ped <= 0 || !PedPtr(ped)) return;
+    CALLSCM(TASK_GO_STRAIGHT_TO_COORD_358, ped, p.x, p.y, p.z, run ? 6 : 4, -1);
+}
+void Game::SetNpcHealth(int ped, int hp)
+{
+    if(ped <= 0 || !PedPtr(ped)) return;
+    CALLSCM(SET_CHAR_HEALTH_358, ped, hp);
+}

@@ -62,7 +62,7 @@ bool MPClient::Connect(const char* host, uint16_t port, const char* name, uint16
 {
     Disconnect(false);
     m_fPingAvg = -1.0f; m_nPing = 0;
-    m_bDirect = false; m_bDirectFellBack = false; m_bGotReply = false; m_nFallbackVia = 0;
+    m_bDirect = false; m_bDirectFellBack = false; m_bGotReply = false; m_nFallbackVia = 0; m_nAltSeen = 0;
 
     if(m_nDirectIp)   // 3.11: straight to the 24/7 server's public address (relay only as fallback)
     {
@@ -182,13 +182,20 @@ void MPClient::Poll(INetEvents* ev)
             // answer was thrown away: the friend hung on the black "Connecting..." screen. While connecting,
             // an answer to our join from the same port on a private (LAN / hotspot) address = that server.
             auto priv = [](uint32_t be) { const uint32_t a = ntohl(be); return (a >> 24) == 10 || (a >> 20) == 0xAC1 || (a >> 16) == 0xC0A8 || (a >> 22) == 0x191; };   // 10/8 172.16/12 192.168/16 100.64/10
-            if(m_eState == NET_CONNECTING && from.sin_port == m_Server.sin_port && (buf[0] == PKT_WELCOME || buf[0] == PKT_REJECT)
-               && priv(from.sin_addr.s_addr) && priv(m_Server.sin_addr.s_addr))
+            // 3.58 hotspot freeze fix: the same can happen IN the game - the host phone's mobile data / Wi-Fi
+            // reconnects (or the hotspot DHCP lease renews, ~5 min) and from then on its packets leave from its
+            // other private address. They were all dropped: everyone froze in place and timed out. While
+            // connected, a private address on the same port that keeps talking to us is the same server.
+            const bool sameSrv = from.sin_port == m_Server.sin_port && priv(from.sin_addr.s_addr) && priv(m_Server.sin_addr.s_addr);
+            if(m_eState == NET_CONNECTED && sameSrv && now - m_nLastRecv > 1200) m_nAltSeen++;
+            if(sameSrv && ((m_eState == NET_CONNECTING && (buf[0] == PKT_WELCOME || buf[0] == PKT_REJECT))
+                           || (m_eState == NET_CONNECTED && m_nAltSeen >= 3)))
             {
                 char oldIp[32], newIp[32];
                 inet_ntop(AF_INET, &m_Server.sin_addr, oldIp, sizeof(oldIp)); inet_ntop(AF_INET, &from.sin_addr, newIp, sizeof(newIp));
                 { std::lock_guard<std::mutex> lk(m_SockMutex); m_Server.sin_addr = from.sin_addr; }
                 if(!strcmp(m_szHost, oldIp)) MP_CopyStr(m_szHost, newIp, sizeof(m_szHost));
+                m_nAltSeen = 0;
             }
             else continue;
         }
@@ -276,6 +283,7 @@ void MPClient::Poll(INetEvents* ev)
                 break;
             case PKT_NPC:           { static PktNpc m; if(MP_DecodeNpc(buf, r, m)) ev->OnNpc(m); } break;   // 2.18
             case PKT_MW3_STATE: case PKT_MW3_PLAYERS: case PKT_MW3_ME: case PKT_MW3_EVENT: case PKT_MW3_CARD: ev->OnMw3(buf, r); break;   // 3.24: + CARD   // 3.23
+            case PKT_DZ_ME: case PKT_DZ_INV: case PKT_DZ_LOOT: case PKT_DZ_EVENT: ev->OnDz(buf, r); break;   // 3.58: Project Day Z
             case PKT_RP_ME: case PKT_RP_PLAYERS: case PKT_RP_STATE: case PKT_RP_EVENT: case PKT_RP_CARD: case PKT_RP_INV: case PKT_RP_DROPS: case PKT_RP_FAC: case PKT_RP_PFAC: ev->OnRp(buf, r); break;   // 3.25: Mega Vil Futuristic
             case PKT_BCW_STATE: case PKT_BCW_ROLL: case PKT_BCW_SCORE: case PKT_BCW_EVENT: ev->OnBcw(buf, r); break;   // 3.04
             case PKT_AUTH:     ev->OnAuth(buf, r); break;   // 3.21.6: login system
@@ -362,7 +370,9 @@ void MPClient::Poll(INetEvents* ev)
         const uint64_t quiet = now - m_nLastRecv;
         if(quiet > 5000 && m_nServerBuild >= 33900 && now - m_nLastRebind > 2000)
         {
-            if(quiet > 9000 && m_bDirect && m_nFallbackVia)
+            const uint32_t sa = ntohl(m_Server.sin_addr.s_addr);
+            const bool lanSrv = (sa >> 24) == 10 || (sa >> 20) == 0xAC1 || (sa >> 16) == 0xC0A8;   // 3.58: hotspot / Wi-Fi: stay direct
+            if(quiet > 9000 && m_bDirect && m_nFallbackVia && !lanSrv)
             {
                 std::lock_guard<std::mutex> lk(m_SockMutex);
                 memset(&m_Server, 0, sizeof(m_Server));

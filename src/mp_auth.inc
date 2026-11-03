@@ -294,10 +294,17 @@ struct AuthLook
 {
     ImU32 panel, header, accent, accentHeld, text, dim, field, fieldBorder, btn, btnHeld, btnText, err, ok;
 };
-static AuthLook AuthStyleLook(bool bcw, bool mw3 = false, bool rp = false)
+static AuthLook AuthStyleLook(bool bcw, bool mw3 = false, bool rp = false, bool dz = false)
 {
     AuthLook l;
-    if(rp)
+    if(dz)
+    {   // 3.58: Project Day Z Remastered - the MW3 layout + gfx, in yellow
+        l.panel = IM_COL32(12, 10, 4, 238); l.header = IM_COL32(161, 120, 8, 245); l.accent = IM_COL32(250, 204, 21, 255);
+        l.accentHeld = IM_COL32(254, 240, 138, 255); l.text = IM_COL32(255, 255, 255, 255); l.dim = IM_COL32(234, 222, 180, 255);
+        l.field = IM_COL32(255, 255, 255, 22); l.fieldBorder = IM_COL32(250, 204, 21, 210); l.btn = IM_COL32(202, 150, 10, 240);
+        l.btnHeld = IM_COL32(255, 255, 255, 240); l.btnText = IM_COL32(20, 16, 4, 255);
+    }
+    else if(rp)
     {   // 3.25: Mega Vil Futuristic - the same layout, in sky blue
         l.panel = IM_COL32(4, 12, 24, 238); l.header = IM_COL32(14, 116, 168, 245); l.accent = IM_COL32(56, 189, 248, 255);
         l.accentHeld = IM_COL32(186, 230, 253, 255); l.text = IM_COL32(255, 255, 255, 255); l.dim = IM_COL32(186, 222, 245, 255);
@@ -417,15 +424,16 @@ static void RenderAuth()
         fg->AddText(f, fs, ImVec2(a0.x + UI::S(18), a0.y + UI::S(8)), IM_COL32(255, 255, 255, 230), b);
         return;
     }
-    const bool rp  = s_nAuthStyle == AUTH_STYLE_RP || MP::IsOnRp();    // 3.25: Mega Vil Futuristic = sky blue
-    const bool mw3 = !rp && (s_nAuthStyle == AUTH_STYLE_MW3 || MP::IsOnMw3());   // 3.23
-    const bool bcw = s_nAuthStyle == AUTH_STYLE_BCW || mw3 || rp;
+    const bool dz  = s_nAuthStyle == AUTH_STYLE_DZ || MP::IsOnDz();    // 3.58: Project Day Z = yellow (MW3 gfx)
+    const bool rp  = !dz && (s_nAuthStyle == AUTH_STYLE_RP || MP::IsOnRp());    // 3.25: Mega Vil Futuristic = sky blue
+    const bool mw3 = !rp && !dz && (s_nAuthStyle == AUTH_STYLE_MW3 || MP::IsOnMw3());   // 3.23
+    const bool bcw = s_nAuthStyle == AUTH_STYLE_BCW || mw3 || rp || dz;
     const float t = (float)(MP_NowMs() % 3600000ull) / 1000.0f;
     ImDrawList* bg = ImGui::GetBackgroundDrawList();
     if(bcw) AuthBcwBackdrop(bg, ds, t);
     else bg->AddRectFilled(ImVec2(0, 0), ds, IM_COL32(0, 0, 0, 120));
 
-    AuthPanel P; P.f = UI::Font(); P.L = AuthStyleLook(bcw, mw3, rp); P.pad = UI::S(28); P.fs = UI::S(30); P.ids = 0;
+    AuthPanel P; P.f = UI::Font(); P.L = AuthStyleLook(bcw, mw3, rp, dz); P.pad = UI::S(28); P.fs = UI::S(30); P.ids = 0;
     P.w = fminf(fmaxf(UI::S(760), ds.x * 0.46f), ds.x * 0.94f);
     const AuthClient::State st = s_Auth.state;
     float h = UI::S(st == AuthClient::SIGNUP ? 700 : st == AuthClient::LOGIN ? 640 : st == AuthClient::CODE ? 680 : st == AuthClient::RESET ? 600 : 380);
@@ -457,7 +465,7 @@ static void RenderAuth()
         const char* title = st == AuthClient::SIGNUP ? "Create your account" : st == AuthClient::LOGIN ? "Login" :
                             st == AuthClient::CODE ? (s_Auth.recover == 1 ? "Forgot username" : s_Auth.recover == 2 ? "Forgot password" : "Code authentication") :
                             st == AuthClient::RESET ? "New password" : st == AuthClient::DONE ? "Welcome" : "Login";
-        char cap[96]; snprintf(cap, sizeof(cap), "%s%s", rp ? "MEGA VIL FUTURISTIC  |  " : mw3 ? "MODERN WARFARE 3  |  " : (bcw ? "BRIEF CASE WAR  |  " : "MP  |  "), title);
+        char cap[96]; snprintf(cap, sizeof(cap), "%s%s", dz ? "PROJECT DAY Z  |  " : rp ? "MEGA VIL FUTURISTIC  |  " : mw3 ? "MODERN WARFARE 3  |  " : (bcw ? "BRIEF CASE WAR  |  " : "MP  |  "), title);
         dl->AddText(P.f, UI::S(32), ImVec2(P.p0.x + P.pad, P.p0.y + (capH - UI::S(32)) * 0.5f), IM_COL32_WHITE, cap);
         P.y = P.p0.y + capH + UI::S(18);
         if(bcw)
@@ -465,8 +473,9 @@ static void RenderAuth()
             ImVec2 uv(1, 1); const float is = UI::S(84);
             float bob = sinf(t * 2.2f) * UI::S(4);
             ImVec2 c(P.p0.x + P.w * 0.5f, P.y + is * 0.5f + bob);
-            dl->AddCircleFilled(c, is * 0.62f, rp ? IM_COL32(56, 189, 248, (int)(70 + 50 * sinf(t * 3.0f))) : mw3 ? IM_COL32(60, 255, 106, (int)(70 + 50 * sinf(t * 3.0f))) : IM_COL32(230, 30, 40, (int)(70 + 50 * sinf(t * 3.0f))), 40);
-            if(void* tex = HUD::Texture(rp ? "rp_phone.png" : mw3 ? "mw3_guns.png" : "bcw_briefcase.png", &uv))
+            dl->AddCircleFilled(c, is * 0.62f, dz ? IM_COL32(250, 204, 21, (int)(70 + 50 * sinf(t * 3.0f))) : rp ? IM_COL32(56, 189, 248, (int)(70 + 50 * sinf(t * 3.0f))) : mw3 ? IM_COL32(60, 255, 106, (int)(70 + 50 * sinf(t * 3.0f))) : IM_COL32(230, 30, 40, (int)(70 + 50 * sinf(t * 3.0f))), 40);
+            if(dz) DzDrawSymbol(dl, c, is * 0.5f, t);   // 3.58: the human print + zombie hand symbol
+            else if(void* tex = HUD::Texture(rp ? "rp_phone.png" : mw3 ? "mw3_guns.png" : "bcw_briefcase.png", &uv))
                 dl->AddImage((ImTextureID)tex, ImVec2(c.x - is * 0.5f, c.y - is * 0.5f), ImVec2(c.x + is * 0.5f, c.y + is * 0.5f), ImVec2(0, 0), uv);
             else
             {   // no texture: a drawn briefcase
@@ -644,10 +653,11 @@ static void RenderStats()
 {
     if(!s_bStatsOpen) return;
     const ImVec2 ds = ImGui::GetIO().DisplaySize;
+    const bool dz  = MP::IsOnDz();    // 3.58
     const bool rp  = MP::IsOnRp();    // 3.25
     const bool mw3 = MP::IsOnMw3();   // 3.23
-    const bool bcw = MP::IsOnBcw() || mw3 || rp;
-    AuthPanel P; P.f = UI::Font(); P.L = AuthStyleLook(bcw, mw3, rp); P.pad = UI::S(26); P.fs = UI::S(28); P.ids = 900;
+    const bool bcw = MP::IsOnBcw() || mw3 || rp || dz;
+    AuthPanel P; P.f = UI::Font(); P.L = AuthStyleLook(bcw, mw3, rp, dz); P.pad = UI::S(26); P.fs = UI::S(28); P.ids = 900;
     P.w = fminf(UI::S(700), ds.x * 0.9f);
     const float h = UI::S(600);
     P.p0 = ImVec2((ds.x - P.w) * 0.5f, (ds.y - h) * 0.5f);

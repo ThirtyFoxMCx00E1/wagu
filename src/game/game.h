@@ -360,4 +360,7 @@ namespace Game
     void  SceneCameraOff();
     void  SetFogRadius(float metres);   // 0 = off; else the far clip + fog are capped (main.cpp RW hooks)
     float FogRadius();
+    void  ZombieHunt(int ped, int target);   // 3.58 DayZ: TASK_KILL_CHAR_ON_FOOT (fists)
+    void  NpcGoTo(int ped, const Vec3& p, bool run);
+    void  SetNpcHealth(int ped, int hp);
 }

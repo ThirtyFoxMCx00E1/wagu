@@ -155,6 +155,7 @@ static void JoinFlowProcess(int ped, uint64_t now)
             {   // all black now: park the player out of sight and point the camera at the beach
                 Vec3 jcP = kJoinCamPos, jcL = kJoinCamLook, park = kJoinPedPark;
                 if(s_bBcwJoin) { BcwJoinCam(jcP, jcL); park = { jcP.x, jcP.y, -100.0f }; }
+                else if(s_bDzJoin) { DzJoinCam(jcP, jcL); park = { jcP.x, jcP.y, -100.0f }; }   // 3.58: Project Day Z: the cabin
                 else if(s_bRpJoin) { RpJoinCam(jcP, jcL); park = { jcP.x, jcP.y, -100.0f }; }   // 3.25: Mega Vil: over the Lobby Hub
                 else if(s_bMw3Join) { Mw3JoinCam(jcP, jcL); park = { jcP.x, jcP.y, -100.0f }; }   // 3.23: MW3: the LS Docks & Warehouses   // 3.04: Brief Case War: no beach, the war map (Area 69)
                 Game::PreloadArea(jcL, false);
@@ -174,6 +175,12 @@ static void JoinFlowProcess(int ped, uint64_t now)
         case JP_WAIT:
             if(t >= JOIN_BUTTONS_MS && !AuthHoldsJoin(now))   // 3.21.6: login first
             {
+                if(s_bDzJoin || MP_IsDzServerName(client.GetServerName()))
+                {   // 3.58: Project Day Z: the cabin connection screen (PLAY / RULES / CREDITS / SETTINGS)
+                    s_bJoinCamSet = false; s_bJoinHudOff = false; s_nJoinPhase = JP_NONE;
+                    DzJoinTakeover(ped);
+                    return;
+                }
                 if(s_bRpJoin || MP_IsRpServerName(client.GetServerName()))
                 {   // 3.25: Mega Vil: the Lobby Hub < SPAWN > (or straight home) replaces the spawn picker
                     s_bJoinCamSet = false; s_bJoinHudOff = false; s_nJoinPhase = JP_NONE;

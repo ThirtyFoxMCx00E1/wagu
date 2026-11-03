@@ -7,7 +7,7 @@
 // (/fix /flip /lv /sf /ls /chiliad are the /spawn games' ones.) On by themselves on the default server; on custom servers when the host turns them on (Gamemodes).
 // The players' clients talk with PKT_GM_EVENT (the server passes it on).
 
-static bool GmOn(uint16_t gm) { return client.GetState() == NET_CONNECTED && Game::IsReady() && !BcwOnServer() && !Mw3OnServer() && !RpOnServer() && MP::ModeOn(gm); }
+static bool GmOn(uint16_t gm) { return client.GetState() == NET_CONNECTED && Game::IsReady() && !BcwOnServer() && !Mw3OnServer() && !RpOnServer() && !DzOnServer() && MP::ModeOn(gm); }
 static void GmSend(uint8_t op, uint16_t mode, int to, int a = 0, int b = 0, int val = 0, const char* text = "")
 {
     PktGmEvent e; memset(&e, 0, sizeof(e));

@@ -495,7 +495,7 @@ static void TdeRender()
 
     // ---- tool bar (bottom, two rows) + info line (top) ----
     ImVec2 uv(1, 1); void* tex = HUD::Texture("tde_icons.png", &uv);
-    const float isz = fminf(UI::S(64), ds.x / 19.5f), gap = UI::S(4);
+    const float isz = fminf(UI::S(104), ds.x / 12.5f), gap = UI::S(6);   // 3.58: bigger tools (was 64 px / 19.5 per row)
     std::vector<int> tools; TdeBarTools(c, tools);
     const int perRow = (int)((ds.x - gap) / (isz + gap));
     const int rows = s_Tde.hideTools ? 0 : ((int)tools.size() + perRow - 1) / perRow;
@@ -536,7 +536,7 @@ static void TdeRender()
         }
         else snprintf(info, sizeof(info), "%s%s  |  %d textdraws  |  tap New to add one, tap a textdraw to select it",
                       s_Tde.file.c_str(), s_Tde.dirty ? "*" : "", (int)s_Tde.pr.items.size());
-        const float fs = UI::S(22);
+        const float fs = UI::S(32);   // 3.58: bigger
         ImVec2 ts = UI::Font()->CalcTextSizeA(fs, FLT_MAX, 0, info);
         dl->AddRectFilled(ImVec2(0, 0), ImVec2(ds.x, ts.y + UI::S(12)), IM_COL32(16, 16, 20, 200));
         dl->AddText(UI::Font(), fs, ImVec2(UI::S(12), UI::S(6)), IM_COL32(255, 255, 255, 235), info);
@@ -548,34 +548,34 @@ static void TdeRender()
     // nudge pad (top right, under the info line): 0.5 / 1 / 5 px steps of the drag mode
     if(c && !s_Tde.hideTools)
     {
-        const float bs = UI::S(56), y0 = UI::S(46), x0 = ds.x - bs * 3 - UI::S(14);
+        const float bs = UI::S(92), y0 = UI::S(60), x0 = ds.x - bs * 3 - UI::S(14);
         const char* L[4] = { "<", ">", "^", "v" };
         const ImVec2 P[4] = { ImVec2(x0, y0 + bs), ImVec2(x0 + bs * 2, y0 + bs), ImVec2(x0 + bs, y0), ImVec2(x0 + bs, y0 + bs * 2) };
         for(int i = 0; i < 4; ++i)
         {
             ImVec2 a = P[i], b(a.x + bs - UI::S(4), a.y + bs - UI::S(4));
             dl->AddRectFilled(a, b, IM_COL32(16, 16, 20, 200), UI::S(8));
-            ImVec2 ts = UI::Font()->CalcTextSizeA(UI::S(28), FLT_MAX, 0, L[i]);
-            dl->AddText(UI::Font(), UI::S(28), ImVec2((a.x + b.x - ts.x) * 0.5f, (a.y + b.y - ts.y) * 0.5f), IM_COL32(255, 216, 74, 255), L[i]);
+            ImVec2 ts = UI::Font()->CalcTextSizeA(UI::S(44), FLT_MAX, 0, L[i]);
+            dl->AddText(UI::Font(), UI::S(44), ImVec2((a.x + b.x - ts.x) * 0.5f, (a.y + b.y - ts.y) * 0.5f), IM_COL32(255, 216, 74, 255), L[i]);
             hits.push_back({ a, b, 100 + i });
         }
     }
     // palette (premade colours of the original editor + Hex)
     if(c && s_Tde.palette)
     {
-        const float cs = UI::S(44), pg = UI::S(6);
+        const float cs = UI::S(70), pg = UI::S(8);
         const int cols = 10, prow = (k_nTdePalette + 1 + cols - 1) / cols;
-        const float pw = cols * (cs + pg) + pg, ph = prow * (cs + pg) + pg + UI::S(30);
+        const float pw = cols * (cs + pg) + pg, ph = prow * (cs + pg) + pg + UI::S(44);
         ImVec2 pa((ds.x - pw) * 0.5f, barY - ph - UI::S(10)), pb(pa.x + pw, pa.y + ph);
         dl->AddRectFilled(pa, pb, IM_COL32(16, 16, 20, 235), UI::S(10));
         const char* title = s_Tde.palette == TDE_PAL_COLOR ? "Color" : s_Tde.palette == TDE_PAL_BG ? "Background / outline colour" : "Box colour";
-        dl->AddText(UI::Font(), UI::S(22), ImVec2(pa.x + pg * 2, pa.y + pg), IM_COL32_WHITE, title);
+        dl->AddText(UI::Font(), UI::S(32), ImVec2(pa.x + pg * 2, pa.y + pg), IM_COL32_WHITE, title);
         for(int i = 0; i <= k_nTdePalette; ++i)
         {
             const int r = i / cols, k = i % cols;
-            ImVec2 a(pa.x + pg + k * (cs + pg), pa.y + UI::S(30) + pg + r * (cs + pg)), b(a.x + cs, a.y + cs);
+            ImVec2 a(pa.x + pg + k * (cs + pg), pa.y + UI::S(44) + pg + r * (cs + pg)), b(a.x + cs, a.y + cs);
             if(i < k_nTdePalette) { dl->AddRectFilled(a, b, TdCol(k_TdePalette[i] | 0xFF), UI::S(6)); dl->AddRect(a, b, IM_COL32(255, 255, 255, 60), UI::S(6)); }
-            else { dl->AddRect(a, b, IM_COL32(255, 216, 74, 255), UI::S(6), 0, 2); dl->AddText(UI::Font(), UI::S(18), ImVec2(a.x + UI::S(5), a.y + UI::S(12)), IM_COL32_WHITE, "HEX"); }
+            else { dl->AddRect(a, b, IM_COL32(255, 216, 74, 255), UI::S(6), 0, 2); dl->AddText(UI::Font(), UI::S(28), ImVec2(a.x + UI::S(8), a.y + UI::S(20)), IM_COL32_WHITE, "HEX"); }
             hits.push_back({ a, b, 200 + i });
         }
         hits.push_back({ pa, pb, 199 });   // the panel itself (no canvas tap through it)

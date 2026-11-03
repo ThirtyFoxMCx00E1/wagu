@@ -247,6 +247,7 @@ static bool HandleCommand(const char* text)
     if(AdmCommand(cmd, arg)) return true;     // 3.54: admin / moderator commands + /report (before the gamemode blocks)
     if(GatesCommand(cmd, arg)) return true;   // 3.04.2: /gatepos, /gates
     if(TdeCommand(cmd, arg)) return true;     // 3.50: /tde Textdraw Editor
+    if(DzCommand(cmd, arg)) return true;      // 3.58: Project Day Z (44+ commands, every other one blocked)
     if(RulesCommand(cmd, arg) || SrvSettingsCommand(cmd, arg) || ProgCommand(cmd, arg) || MvCommand(cmd, arg) || DealerCommand(cmd, arg) || HkCommand(cmd, arg) || NeedsCommand(cmd, arg) || Modes2Command(cmd, arg)) return true;   // 3.39
     if(Mw3Command(cmd, arg)) return true;   // 3.23: MW3 commands (others blocked)
     if(RpCommand(cmd, arg)) return true;    // 3.25: Mega Vil Futuristic RP commands (others blocked)
@@ -998,6 +999,7 @@ static void Render219(void*)
     RenderBcw();               // 3.04: Brief Case War
     RenderMw3();               // 3.23: Modern Warfare 3
     RenderRp();                // 3.25: Mega Vil Futuristic
+    RenderDz();                // 3.58: Project Day Z Remastered
     HkRender(); NeedsRender(); Modes2Render(); DealerRender();   // 3.39 / 3.55
     RenderHotelPc();           // 3.36: hotel room computer (every server)
     RenderSafeZones();         // 3.21: hospital safe zones

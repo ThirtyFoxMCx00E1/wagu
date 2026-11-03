@@ -455,6 +455,8 @@ void MPServer::SendSrvSettings(int slot)
     PktSrvSettings p; memset(&p, 0, sizeof(p));
     p.type = PKT_SRV_SETTINGS; p.op = 0; p.perms = m_nPerms.load(); p.modes = GetModes(); p.rulesOn = m_bRulesOn ? 1 : 0;
     p.can = CanManage(slot) ? 1 : 0;
+    // 3.58: pad = anti-cheat: 0x80 valid | 1 on | 2 can be switched (custom servers; the featured ones always run it)
+    p.pad = (uint8_t)(0x80 | (AcIsOn() ? 1 : 0) | ((IsDefaultServer() || IsBcwServer() || IsMw3Server() || IsRpServer() || IsDayzServer()) ? 0 : 2));
     SendTo(slot, &p, sizeof(p));
 }
 
@@ -468,6 +470,7 @@ void MPServer::OnSrvSettings(int slot, const PktSrvSettings& p)
     else if(!(IsBcwServer() || IsMw3Server() || IsRpServer())) m_nModes = p.modes & GM_ALL;
     m_nPerms = p.perms; m_nBasePerms = p.perms;
     m_bRulesOn = p.rulesOn != 0;
+    if((p.pad & 0x80) && !(IsDefaultServer() || IsBcwServer() || IsMw3Server() || IsRpServer() || IsDayzServer())) m_bAcCustom = (p.pad & 1) != 0;   // 3.58
     Log("%s changed the server settings (gamemodes 0x%04X, permissions 0x%02X)", m_Slots[slot].name, (unsigned)m_nModes.load(), (unsigned)m_nPerms.load());
     PktPerms pm; memset(&pm, 0, sizeof(pm));
     pm.type = PKT_PERMS; pm.perms = m_nPerms.load(); pm.modesMagic = 0x47; pm.modes = GetModes();

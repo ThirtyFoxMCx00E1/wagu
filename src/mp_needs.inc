@@ -10,7 +10,7 @@ static struct { float hunger = 100.0f, energy = 100.0f; uint64_t lastAt = 0, hur
 
 static bool NeedsOn()
 {
-    if(client.GetState() != NET_CONNECTED || !Game::IsReady() || RpOnServer() || BcwOnServer() || Mw3OnServer()) return false;
+    if(client.GetState() != NET_CONNECTED || !Game::IsReady() || RpOnServer() || BcwOnServer() || Mw3OnServer() || DzOnServer()) return false;
     if(MP::IsOnDefault()) return true;
     return (s_nServerPerms & PERM_NEEDS) != 0;
 }

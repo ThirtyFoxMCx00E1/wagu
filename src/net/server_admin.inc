@@ -151,12 +151,26 @@ void MPServer::AdminCmd(int slot, const uint8_t* data, int len)
     }
     if(c.cmd == ADMIN_UNBAN)
     {
-        if(!full) { tell(kAdmRed, "Only the administrator can unban on this server."); return; }
+        // 3.58: [ADMIN] and [MOD] can both unban (anti-cheat bans too)
         int i = AdmFindBan(m_Bans, c.reason);
         if(i < 0) { tell(kAdmRed, "No ban found for \"%s\". /bans shows the list.", c.reason); return; }
         char nm[MP_NAME_LEN]; MP_CopyStr(nm, m_Bans[i].name, sizeof(nm));
         m_Bans.erase(m_Bans.begin() + i); SaveBans();
         all("%s was unbanned by %s.", nm, who);
+        return;
+    }
+
+    if(c.cmd == ADMIN_BANNAME)
+    {   // 3.58: the launcher's Bans page on a remote / 24/7 server: ban a name, kicks them if online
+        char nm[MP_NAME_LEN] = ""; const char* rs = "";
+        char* tab = strchr(c.reason, '\t'); if(tab) { *tab = 0; rs = tab + 1; }
+        MP_CopyStr(nm, c.reason, sizeof(nm));
+        if(!nm[0]) { tell(kAdmRed, "Type a player name."); return; }
+        for(int i = 0; i < MP_MAX_PLAYERS; ++i)
+            if(m_Slots[i].used && !strcasecmp(m_Slots[i].name, nm) && (m_Slots[i].admin || (m_Slots[i].mod && !me.admin)))
+            { tell(kAdmRed, "You can't ban another staff member."); return; }
+        if(BanNameLocked(nm, "", who, rs[0] ? rs : "Banned")) tell(kAdmGreen, "%s is banned now (permanent, until /unban).", nm);
+        else tell(kAdmYellow, "%s is already banned.", nm);
         return;
     }
 
@@ -175,8 +189,7 @@ void MPServer::AdminCmd(int slot, const uint8_t* data, int len)
     switch(c.cmd)
     {
     case ADMIN_BAN:
-        if(!full) { KickLocked(t, who, why ? why : "Kicked by a moderator", false); return; }   // 3.35: moderators kick, the admin bans
-        KickLocked(t, who, why ? why : "Banned", true); return;
+        KickLocked(t, who, why ? why : "Banned", true); return;   // 3.58: [MOD] bans for real too (was a kick: "the ban didn't work")
     case ADMIN_KICK:
         KickLocked(t, who, why ? why : "Kicked", false); return;
     case ADMIN_MUTE: case ADMIN_UNMUTE:

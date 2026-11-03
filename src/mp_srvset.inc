@@ -42,6 +42,12 @@ static void SrvSettingsDlg(int resp, int item, const char*, int)
     }
     else if(item < MP_GAMEMODE_COUNT + SRV_PERM_ROWS) s_SrvSet.s.perms ^= kSrvPerms[item - MP_GAMEMODE_COUNT].bit;
     else if(item == MP_GAMEMODE_COUNT + SRV_PERM_ROWS) s_SrvSet.s.rulesOn = s_SrvSet.s.rulesOn ? 0 : 1;
+    else if(item == MP_GAMEMODE_COUNT + SRV_PERM_ROWS + 1)
+    {   // 3.58: anti-cheat gamemode
+        if(!(s_SrvSet.s.pad & 0x80)) { SysMsg(COL_YELLOW, "This server is older than MP 3.58 (anti-cheat state unknown)."); SrvSettingsShow(); return; }
+        if(!(s_SrvSet.s.pad & 2)) { SysMsg(COL_YELLOW, "The anti-cheat always runs on the featured servers."); SrvSettingsShow(); return; }
+        s_SrvSet.s.pad ^= 1;
+    }
     else return;
     SrvSettingsSend();
     SrvSettingsShow();   // redrawn again when the server answers
@@ -83,6 +89,12 @@ static void SrvSettingsShow()
         char l[160]; snprintf(l, sizeof(l), "{FFFFFF}Permission: %s\t%s\n", kSrvPerms[i].name, (s.perms & kSrvPerms[i].bit) ? "{33CC55}ON" : "{FF4444}OFF"); body += l;
     }
     { char l[96]; snprintf(l, sizeof(l), "{FFFFFF}Rules window\t%s\n", s.rulesOn ? "{33CC55}ON" : "{FF4444}OFF"); body += l; }
+    {   // 3.58: the anti-cheat as its own gamemode row
+        char l[160];
+        if(!(s.pad & 0x80)) snprintf(l, sizeof(l), "{FFFFFF}Gamemode: Anti-cheat\t{AAAAAA}?\n");
+        else snprintf(l, sizeof(l), "{FFFFFF}Gamemode: Anti-cheat%s\t%s\n", (s.pad & 2) ? "" : " {AAAAAA}(always on)", (s.pad & 1) ? "{33CC55}ON" : "{FF4444}OFF");
+        body += l;
+    }
     char cap[96]; snprintf(cap, sizeof(cap), "{FFFFFF}Server settings %s", s.can ? "{33CC55}(you can change them)" : "{AAAAAA}(view only)");
     ShowDialog(0, DIALOG_STYLE_TABLIST_HEADERS, cap, body.c_str(), s.can ? "Toggle" : "OK", "Close", SrvSettingsDlg, 0x5353);
 }

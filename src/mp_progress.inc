@@ -9,7 +9,7 @@ static void ProgReset() { s_Prog.got = false; s_Prog.applied = false; s_Prog.got
 static bool ProgActive()
 {
     if(client.GetState() != NET_CONNECTED || client.GetServerBuild() < 33910) return false;
-    if(BcwOnServer() || Mw3OnServer() || RpOnServer()) return false;
+    if(BcwOnServer() || Mw3OnServer() || RpOnServer() || DzOnServer()) return false;
     if(s_bAuthReq && s_Auth.state != AuthClient::DONE) return false;
     return true;
 }

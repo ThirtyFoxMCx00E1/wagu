@@ -122,6 +122,20 @@ bool MPServer::AcFlag(int slot, int check, int kickAt, const char* fmt, ...)
     if(a.flags[check] < kickAt || AcExempt(slot)) { AcStaffNotice(line); return true; }
     char reason[80]; snprintf(reason, sizeof(reason), "Anti-cheat: %s", g_AcInfo[check].name);
     AcStaffNotice(line);
+    // 3.58: floating in the sky / teleporting / airbreak again and again = permanent ban
+    //       (only [ADMIN] or [MOD] can /unban it). Counted per phone id for the life of the server.
+    if(check == AC_FLY || check == AC_TELEPORT || check == AC_AIRBREAK)
+    {
+        std::string key = m_Slots[slot].uid[0] ? m_Slots[slot].uid : m_Slots[slot].name;
+        int n = ++m_AcRepeat[key];
+        if(n >= 3)
+        {
+            snprintf(reason, sizeof(reason), "Anti-cheat: %s (%d kicks) - permanent ban", g_AcInfo[check].name, n);
+            KickLocked(slot, "Anti-cheat", reason, true);
+            return false;
+        }
+        snprintf(reason, sizeof(reason), "Anti-cheat: %s (%d/3 - then a permanent ban)", g_AcInfo[check].name, n);
+    }
     KickLocked(slot, "Anti-cheat", reason, false);
     return false;
 }
@@ -472,8 +486,9 @@ bool MPServer::AcSync(int slot, const PktSync& p, const uint8_t* raw, int rawLen
         else if(AcCheck(AC_FLY) && !jet)
         {
             const float rise = pos[2] - a.zMin;
-            if(!inCar && rise > 15.f) { a.hasZ = false; if(!AcFlag(slot, AC_FLY, 3, "rose %.0f m on foot", rise)) return false; }
-            else if(inCar && !AcAirModel(d.carModel) && rise > 60.f) { a.hasZ = false; if(!AcFlag(slot, AC_FLY, 3, "rose %.0f m in a car", rise)) return false; }
+            // 3.58: ANY vehicle in the air (helicopter, jet, a car off a ramp / stunt) is never "fly" - only
+            //       a player floating up into the sky ON FOOT. 3 kicks for it = a permanent ban (AcFlag).
+            if(!inCar && rise > 15.f) { a.hasZ = false; if(!AcFlag(slot, AC_FLY, 3, "floating %.0f m up on foot", rise)) return false; }
         }
     }
     return true;

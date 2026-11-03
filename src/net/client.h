@@ -52,6 +52,7 @@ public:
     virtual void OnTextDraw(const PktTextDraw&) {}
     virtual void OnMw3(const uint8_t* /*data*/, int /*len*/) {}   // 3.23: PKT_MW3_STATE / PLAYERS / ME / EVENT
     virtual void OnRp(const uint8_t* /*data*/, int /*len*/) {}    // 3.25: PKT_RP_ME / PLAYERS / STATE / EVENT / CARD
+    virtual void OnDz(const uint8_t* /*data*/, int /*len*/) {}    // 3.58: PKT_DZ_ME / INV / LOOT / EVENT
     virtual void OnBcw(const uint8_t* /*data*/, int /*len*/) {}   // 3.04: PKT_BCW_STATE / ROLL / SCORE / EVENT
     virtual void OnClothes(const PktClothes&) {}                  // 3.10: CJ clothing sync
     virtual void OnVoice(int /*id*/, uint16_t /*seq*/, uint8_t /*flags*/, const uint8_t* /*opus*/, int /*len*/) {}   // 3.11
@@ -117,6 +118,7 @@ private:
     std::thread m_Heartbeat;
     uint32_t    m_nServerBuild = 0;   // 3.39
     uint64_t    m_nLastRebind = 0;    // 3.39
+    int         m_nAltSeen = 0;       // 3.58: packets from the server's other hotspot address
     std::atomic<bool> m_bHbRun{false}, m_bGamePaused{false}, m_bSentPaused{false}, m_bAfk{false}, m_bSentAfk{false};
     std::atomic<uint64_t> m_nLastGamePoll{0};
     uint8_t     m_nMyId;

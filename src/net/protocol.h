@@ -13,10 +13,10 @@
 // phones refuse servers older than that too (they would let old phones in).
 // 3.10: build 31000. MP_MIN_BUILD stays 30406 and the lobby stays thirtyfox/mp5/: 3.04.6 (no cheats)
 // and 3.10 phones play together on the same servers; only 3.04.5 and older (mp4) stay shut out.
-#define MP_BUILD 35700   // 3.57
+#define MP_BUILD 35800   // 3.58
 #define MP_MIN_BUILD       30406
 #define MP_AUTH_MIN_BUILD  32106   // 3.21.6: servers with the login system refuse older phones (they could not log in)
-#define MP_VERSION_STR     "3.57"
+#define MP_VERSION_STR     "3.58"
 #define MP_VOICE_BUILD     31100   // 3.11: phones from this build on get voice packets
 #define MP_DOWNLOAD_URL    "thirtyfoxmcx00e1.github.io/wagu"   // 3.37: the website is back in the wagu repo (one repo for everything)
 #define MP_DEFAULT_HOST    "127.0.0.1"
@@ -132,6 +132,11 @@ enum ePacket : uint8_t
     PKT_GM_EVENT,       // S<->C         3.39: new gamemodes (CnR, A/D, survival, stunt, drift) - scores / rounds / notices
     PKT_PROGRESS,       // S<->C         3.39.1: my saved progress (place, money, weapons, health, hunger) on the default + custom servers
     PKT_ADMIN_ACT,      // S->C          3.54: an admin / moderator command for this phone (health, armour, cash, teleport, warn, reset...)
+    PKT_DZ_ME,          // S->C          3.58: Project Day Z: your survivor (blood, hunger, thirst, stats, armour, bag)
+    PKT_DZ_INV,         // S->C          3.58: your inventory
+    PKT_DZ_LOOT,        // S->C          3.58: loot on the ground (a page of spots)
+    PKT_DZ_CMD,         // C->S          3.58: pick up / use / drop / equip / spawn / commands
+    PKT_DZ_EVENT,       // S->C          3.58: spawn, fog, weapon, notice, anti-relog, party
 };
 
 enum eRegion : uint8_t { REGION_ASIA = 0, REGION_EUROPE, REGION_NA, REGION_OCEANIA, REGION_COUNT };
@@ -431,7 +436,8 @@ enum eAdminCmd : uint8_t { ADMIN_KICK = 1, ADMIN_BAN = 2, ADMIN_MUTE = 3, ADMIN_
     // 3.54: chat commands (PktAdminCmd2: + amount + text)
     ADMIN_WARN = 6, ADMIN_SETHEALTH = 7, ADMIN_SETARMOUR = 8, ADMIN_FINE = 9, ADMIN_REPORTMUTE = 10, ADMIN_GOTO = 11,
     ADMIN_GETHERE = 12, ADMIN_UNBAN = 13, ADMIN_GIVECASH = 14, ADMIN_MAKEVIP = 15, ADMIN_MAKEADMIN = 16, ADMIN_RESETSTATS = 17,
-    ADMIN_GIVECOOKIE = 18, ADMIN_REPORT = 19, ADMIN_BANS = 20 };
+    ADMIN_GIVECOOKIE = 18, ADMIN_REPORT = 19, ADMIN_BANS = 20,
+    ADMIN_BANNAME = 21 };   // 3.58: ban a name (online or offline), reason = "name\treason"
 struct PktAdminCmd    { uint8_t type; uint8_t cmd; uint8_t target; uint8_t value; char reason[MP_REASON_LEN]; };   // 2.37, value: ADMIN_CHEATS 1 = cheats off
 struct PktAdminCmd2   { uint8_t type; uint8_t cmd; uint8_t target; uint8_t value; char reason[MP_REASON_LEN]; int32_t amount; };   // 3.54 (older servers read the first part)
 enum eAdminAct : uint8_t { AACT_HEALTH = 1, AACT_ARMOUR = 2, AACT_MONEY = 3, AACT_TELEPORT = 4, AACT_RESET = 5, AACT_WARN = 6, AACT_COOKIE = 7 };
@@ -620,7 +626,7 @@ struct PktClothes
 // Until the login is done the player is connected but nobody sees them and nothing they send
 // (position, chat, shots...) reaches anybody.
 enum eAuthOp : uint8_t { AUTH_CHALLENGE = 1, AUTH_TICKET = 2, AUTH_RESULT = 3 };
-enum eAuthStyle : uint8_t { AUTH_STYLE_NORMAL = 0, AUTH_STYLE_BCW = 1, AUTH_STYLE_MW3 = 2, AUTH_STYLE_RP = 3 };   // 3.23: MW3 = green; 3.25: Mega Vil Futuristic = sky blue
+enum eAuthStyle : uint8_t { AUTH_STYLE_NORMAL = 0, AUTH_STYLE_BCW = 1, AUTH_STYLE_MW3 = 2, AUTH_STYLE_RP = 3, AUTH_STYLE_DZ = 4 };   // 3.58: Project Day Z = yellow   // 3.23: MW3 = green; 3.25: Mega Vil Futuristic = sky blue
 struct PktAuthChal   { uint8_t type; uint8_t op; uint8_t style; uint8_t pad; char chal[33]; char server[32]; };
 struct PktAuthTicket { uint8_t type; uint8_t op; uint16_t plen; uint8_t sig[64]; };   // + plen bytes of ticket text
 struct PktAuthResult { uint8_t type; uint8_t op; uint8_t ok; uint8_t pad; char user[24]; char msg[96]; };
@@ -830,3 +836,31 @@ inline void MP_CopyStr(char* dst, const char* src, size_t n)
     strncpy(dst, src ? src : "", n - 1);
     dst[n - 1] = 0;
 }
+
+// ---- 3.58: Project Day Z Remastered ----------------------------------------------------------
+#define DZ_INV_MAX   40
+#define DZ_LOOT_PAGE 40
+struct PktDzMe
+{
+    uint8_t  type, party, gps, bag;          // bag level 0-3
+    int16_t  blood;                           // 0-12000
+    uint8_t  hunger, thirst, infected, combat;   // combat = anti-relog seconds left
+    int32_t  humanity;
+    uint16_t murders, zkills, bkills, headshots;
+    int32_t  points;
+    uint8_t  armor[5];                        // item id per armour slot (0 = empty)
+    uint8_t  alive, fog, partyN, pad;
+    uint16_t maxKg100, kg100;                 // carry weight * 100
+    uint32_t partyCol;
+    uint32_t aliveMin;
+};
+struct DzInvSlot { uint8_t item; uint8_t pad; uint16_t count; };
+struct PktDzInv  { uint8_t type, n, hands, pad; DzInvSlot s[DZ_INV_MAX]; };   // hands = item in your hands
+struct DzLootRow { uint16_t idx; uint8_t item, count; float x, y; };
+struct PktDzLoot { uint8_t type, n; uint16_t total; DzLootRow r[DZ_LOOT_PAGE]; };
+enum eDzCmd : uint8_t { DZCMD_TEXT = 1, DZCMD_PICK, DZCMD_USE, DZCMD_DROP, DZCMD_EQUIP, DZCMD_PLAY, DZCMD_ZKILL, DZCMD_HIT,
+                        DZCMD_FUEL, DZCMD_UNEQUIP };
+struct PktDzCmd  { uint8_t type, cmd, a, b; int32_t val; float pos[3]; char text[100]; };
+enum eDzEv : uint8_t { DZEV_SPAWN = 1, DZEV_FOG, DZEV_WEAPON, DZEV_HEAL, DZEV_NOTICE, DZEV_RELOG, DZEV_PICKED, DZEV_UI, DZEV_FUEL,
+                       DZEV_TAKEWEAPON, DZEV_DIED };
+struct PktDzEvent { uint8_t type, ev, a, b; int32_t val; float pos[4]; char text[96]; };
