@@ -31,6 +31,10 @@ static void RpLifeProcess(int ped, uint64_t now, bool engaged);
 static void RpInfoDraw(ImDrawList* dl);
 static bool RpTaxiArrive(int ped);           // 3.35: taxi passengers (mp_rp_life.inc)
 static void RpTaxiTick(int ped, uint64_t now);
+static void RpTaxiDraw(ImDrawList* dl, float now);   // 3.58
+static void RpDrawRulesUi();   // 3.58
+static void RpRulesUiOpen();
+static struct { bool pending = false, open = false; uint64_t at = 0; } s_RpRulesUi;
 static void RpTaxiReset(bool keepDest);
 static void RpDrawAtm(uint64_t nowMs);
 static void RpDrawDrops(uint64_t nowMs);              // 3.30
@@ -308,7 +312,7 @@ static void RpSetTarget(const float* p, uint32_t col, const char* text)
     RpClearTarget();
     s_Rp.tgtOn = true; s_Rp.tgt = { p[0], p[1], p[2] }; s_Rp.tgtCol = col ? col : RP_SKY;
     MP_CopyStr(s_Rp.tgtText, text ? text : "", sizeof(s_Rp.tgtText));
-    s_Rp.tgtCp = Game::CreateRaceCheckpoint(1, s_Rp.tgt, s_Rp.tgt, 6.0f);
+    s_Rp.tgtCp = 0;   // 3.58: no race checkpoint box - a red ring on the ground (RpDraw3D)
     s_Rp.tgtBlip = Game::AddCoordBlip(s_Rp.tgt, s_Rp.tgtCol | 0xFF, 2);
 }
 
@@ -546,6 +550,10 @@ static void RpDrawRadar(uint64_t nowMs)
     if(s_Rp.tgtOn && n < 96)    { SaPin& q = pins[n++]; q.x = s_Rp.tgt.x;     q.y = s_Rp.tgt.y;     q.z = s_Rp.tgt.z;     q.rgba = s_Rp.tgtCol | 0xFF; q.style = 2; q.glyph[0] = 0; }
     SaArea areas[24]; int na = 0;
     for(const RpZone& z : g_RpGreen) { if(na >= 24) break; areas[na++] = { z.x - z.r, z.y - z.r, z.x + z.r, z.y + z.r, 0x22C55E38 }; }
+    // 3.58: GPS tracker line along the roads to the GPS point / job target
+    if(s_Rp.gpsBlip)    SaRouteTrack(me.x, me.y, me.z, s_Rp.gpsPos.x, s_Rp.gpsPos.y, s_Rp.gpsPos.z, nowMs / 1000.0, IM_COL32(66, 133, 244, 255));
+    else if(s_Rp.tgtOn) SaRouteTrack(me.x, me.y, me.z, s_Rp.tgt.x, s_Rp.tgt.y, s_Rp.tgt.z, nowMs / 1000.0, IM_COL32(234, 88, 12, 255));
+    else SaRouteClear();
     ImDrawList* dl = ImGui::GetBackgroundDrawList();
     SaRadarDraw(dl, p0, size, v, pins, n, areas, na, (float)(nowMs % 100000) / 1000.0f);
     SaRadarDrawChip(dl, p0, size, v.mode);
@@ -1234,7 +1242,7 @@ static bool RpCommand(const char* cmd, const char* arg)
     if(IS("talk")) { if(s_Rp.talkPed && s_Rp.talkStage == 1) RpTalkChoose(100); else SysMsg(COL_YELLOW, "Walk up to someone in the street - they stop and you can talk."); return true; }
     // ---- info ----
     if(IS("help") || IS("cmds") || IS("commands") || IS("rphelp")) { RpShowHelp(); return true; }
-    if(IS("rules")) { RpShowRules(); return true; }
+    if(IS("rules")) { RpRulesUiOpen(); s_RpRulesUi.at = 0; return true; }   // 3.58: the 11-rule window
     if(IS("faction") || IS("factions") || IS("fac")) { RpFacOpen(); return true; }   // 3.34
     if(IS("createfaction") || IS("fcreate") || IS("clan")) { RpFacOpenCreate(); return true; }   // 3.51: [TAG] = a faction (names can't have [ ])
     if(IS("stats") || IS("me2") || IS("profile")) { RpShowStatsLocal(); return true; }
@@ -1476,7 +1484,8 @@ static void RpDrawWorld(ImDrawList* dl, float now)
         else snprintf(t, sizeof(t), "%s\nFOR SALE  $%d  /buyhouse", g_RpHouses[h].addr, g_RpHouses[h].price);
         BcwLabel3D(dl, p, t, mine ? RP_GREEN : (sold ? 0xA3A3A3FF : RP_SKY), 22.0f, 12.0f);
     }
-    if(s_Rp.tgtOn) { BcwDrawZone(dl, { s_Rp.tgt.x, s_Rp.tgt.y, s_Rp.tgt.z - 0.9f }, 5.0f, s_Rp.tgtCol, now, true, 1.2f, false); BcwLabel3D(dl, { s_Rp.tgt.x, s_Rp.tgt.y, s_Rp.tgt.z + 2.5f }, s_Rp.tgtText, s_Rp.tgtCol, 26.0f, 40.0f); }
+    RpTaxiDraw(dl, now);
+    if(s_Rp.tgtOn) { BcwGroundRing(dl, { s_Rp.tgt.x, s_Rp.tgt.y, s_Rp.tgt.z - 0.95f }, 5.0f, 0xEF2222FF, now); BcwLabel3D(dl, { s_Rp.tgt.x, s_Rp.tgt.y, s_Rp.tgt.z + 2.5f }, s_Rp.tgtText, s_Rp.tgtCol, 26.0f, 40.0f); }
     if(s_Rp.haveState && s_Rp.st.evKind && s_Rp.st.evState == 1 && (s_Rp.st.evPos[0] != 0 || s_Rp.st.evPos[1] != 0))
     {
         Vec3 c = { s_Rp.st.evPos[0], s_Rp.st.evPos[1], s_Rp.st.evPos[2] - 0.9f };
@@ -1555,6 +1564,7 @@ static void RenderRp()
         RenderRpInv();     // 3.26: PANEL, player info + bag, documents, "Received" cards
         RpDrawAtm(nowMs);  // 3.29: the ATM screen
         RpDrawDrops(nowMs);   // 3.30: items on the ground
+        RpDrawRulesUi();      // 3.58: 11 rules on spawn
     }
     if(s_Rp.bannerAt && nowMs - s_Rp.bannerAt < 3500)
     {

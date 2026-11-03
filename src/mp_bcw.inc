@@ -472,6 +472,26 @@ static float BcwCamDist(const Vec3& p)
     Vec3 c, l; if(!Game::GetCameraPos(c, l)) return 0;
     return sqrtf((c.x - p.x) * (c.x - p.x) + (c.y - p.y) * (c.y - p.y) + (c.z - p.z) * (c.z - p.z));
 }
+// 3.58: a flat red "ring on a circle" lying on the ground (taxi pick-up / job targets): a soft filled
+// disc, a thick outer ring and a pulsing inner ring. Replaces the game's race checkpoint box.
+static void BcwGroundRing(ImDrawList* dl, const Vec3& c, float r, uint32_t rgba, float now)
+{
+    float d = BcwCamDist(c); if(d > 260.0f) return;
+    const int N = 40; ImVec2 o[N], in[N]; bool okO = true, okI = true;
+    float pulse = 0.55f + 0.25f * sinf(now * 4.0f);
+    for(int i = 0; i < N; ++i)
+    {
+        float a = (float)i / N * 6.2831853f;
+        if(!BcwW2S({ c.x + cosf(a) * r, c.y + sinf(a) * r, c.z + 0.05f }, o[i])) okO = false;
+        if(!BcwW2S({ c.x + cosf(a) * r * pulse, c.y + sinf(a) * r * pulse, c.z + 0.05f }, in[i])) okI = false;
+    }
+    if(!okO) return;
+    ImVec2 ctr; if(BcwW2S({ c.x, c.y, c.z + 0.05f }, ctr))
+        for(int i = 0; i < N; ++i) dl->AddTriangleFilled(ctr, o[i], o[(i + 1) % N], BcwCol(rgba, 0.22f));
+    float w = UI::S(d < 40 ? 5.0f : 3.0f);
+    dl->AddPolyline(o, N, BcwCol(rgba, 0.95f), ImDrawFlags_Closed, w);
+    if(okI) dl->AddPolyline(in, N, BcwCol(rgba, 0.75f), ImDrawFlags_Closed, w * 0.7f);
+}
 // 3.21.4: WALLS HIDE THE RINGS / BEAMS. They are drawn over the game picture, so before 3.21.4 you
 // saw them through houses like a ghost outline. Now every corner of a ring / beam is checked with
 // the game's own line of sight (camera -> point, buildings + objects): the parts behind a wall are

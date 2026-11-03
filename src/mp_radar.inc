@@ -221,6 +221,134 @@ static ImVec2 SarEdge(float cx, float cy, float half, float dx, float dy)
 }
 
 // ---- the radar ---------------------------------------------------------------------------------
+
+// ---- 3.58: GPS route line (A* over the game's vehicle path nodes) -------------------------------
+// One shared route: SaRouteTrack(me, dst) once a frame (throttled inside), SaRadarDraw draws it
+// under the pins as a thick blue line like Google navigation. SaRouteClear() hides it.
+#define SAR_ROUTE_MAX 700
+static float    s_SarRoute[SAR_ROUTE_MAX][3];
+static int      s_nSarRoute = 0;
+static float    s_SarRouteDst[3] = { 0, 0, 0 };
+static bool     s_SarRouteOn = false;
+static float    s_SarRouteMe[3] = { 0, 0, 0 };
+static uint32_t s_SarRouteCol = IM_COL32(66, 133, 244, 255);
+static double   s_SarRouteAt = -100;
+static int*     s_SarAdjStart = nullptr;   // CSR adjacency, built once
+static int*     s_SarAdj = nullptr;
+static inline void SarNode(int i, float& x, float& y, float& z) { x = kSaMapNode[i * 3] * 0.25f; y = kSaMapNode[i * 3 + 1] * 0.25f; z = kSaMapNode[i * 3 + 2] * 0.25f; }
+static void SarBuildAdj()
+{
+    if(s_SarAdjStart) return;
+    s_SarAdjStart = (int*)calloc(SAMAP_NODES + 1, sizeof(int));
+    s_SarAdj = (int*)malloc(sizeof(int) * SAMAP_EDGES * 2);
+    if(!s_SarAdjStart || !s_SarAdj) return;
+    for(int e = 0; e < SAMAP_EDGES; ++e) { s_SarAdjStart[kSaMapEdge[e * 2] + 1]++; s_SarAdjStart[kSaMapEdge[e * 2 + 1] + 1]++; }
+    for(int i = 0; i < SAMAP_NODES; ++i) s_SarAdjStart[i + 1] += s_SarAdjStart[i];
+    int* fill = (int*)calloc(SAMAP_NODES, sizeof(int));
+    for(int e = 0; e < SAMAP_EDGES; ++e)
+    {
+        int a = kSaMapEdge[e * 2], b = kSaMapEdge[e * 2 + 1];
+        s_SarAdj[s_SarAdjStart[a] + fill[a]++] = b;
+        s_SarAdj[s_SarAdjStart[b] + fill[b]++] = a;
+    }
+    free(fill);
+}
+static int SarNearestNode(float x, float y, float z)
+{
+    int best = -1; float bd = 1e18f;
+    for(int i = 0; i < SAMAP_NODES; ++i)
+    {
+        float nx, ny, nz; SarNode(i, nx, ny, nz);
+        float d = (nx - x) * (nx - x) + (ny - y) * (ny - y) + (nz - z) * (nz - z) * 0.25f;
+        if(d < bd) { bd = d; best = i; }
+    }
+    return best;
+}
+static bool SarAStar(int from, int to)
+{
+    SarBuildAdj(); if(!s_SarAdj || from < 0 || to < 0) return false;
+    static float* g = nullptr; static int* par = nullptr; static uint8_t* st = nullptr;
+    static int* heap = nullptr; static float* hk = nullptr;
+    if(!g) { g = (float*)malloc(4 * SAMAP_NODES); par = (int*)malloc(4 * SAMAP_NODES); st = (uint8_t*)malloc(SAMAP_NODES); heap = (int*)malloc(4 * SAMAP_EDGES * 4); hk = (float*)malloc(4 * SAMAP_EDGES * 4); }
+    if(!g || !par || !st || !heap || !hk) return false;
+    const int HCAP = SAMAP_EDGES * 4;
+    for(int i = 0; i < SAMAP_NODES; ++i) { g[i] = 1e30f; st[i] = 0; par[i] = -1; }
+    float tx, ty, tz; SarNode(to, tx, ty, tz);
+    int hn = 0;
+    auto push = [&](int n, float k) {
+        if(hn >= HCAP) return; int i = hn++; heap[i] = n; hk[i] = k;
+        while(i > 0) { int p = (i - 1) / 2; if(hk[p] <= hk[i]) break; int t = heap[p]; heap[p] = heap[i]; heap[i] = t; float f = hk[p]; hk[p] = hk[i]; hk[i] = f; i = p; }
+    };
+    auto pop = [&]() -> int {
+        int r = heap[0]; --hn; heap[0] = heap[hn]; hk[0] = hk[hn]; int i = 0;
+        for(;;) { int l = i * 2 + 1, rr = l + 1, m = i; if(l < hn && hk[l] < hk[m]) m = l; if(rr < hn && hk[rr] < hk[m]) m = rr; if(m == i) break;
+                  int t = heap[m]; heap[m] = heap[i]; heap[i] = t; float f = hk[m]; hk[m] = hk[i]; hk[i] = f; i = m; }
+        return r;
+    };
+    g[from] = 0; push(from, 0);
+    int expanded = 0;
+    while(hn > 0 && expanded < 40000)
+    {
+        int n = pop(); if(st[n]) continue; st[n] = 1; ++expanded;
+        if(n == to) break;
+        float nx, ny, nz; SarNode(n, nx, ny, nz);
+        for(int k = s_SarAdjStart[n]; k < s_SarAdjStart[n + 1]; ++k)
+        {
+            int m = s_SarAdj[k]; if(st[m]) continue;
+            float mx, my, mz; SarNode(m, mx, my, mz);
+            float c = g[n] + sqrtf((mx - nx) * (mx - nx) + (my - ny) * (my - ny) + (mz - nz) * (mz - nz));
+            if(c < g[m]) { g[m] = c; par[m] = n; push(m, c + sqrtf((mx - tx) * (mx - tx) + (my - ty) * (my - ty))); }
+        }
+    }
+    if(!st[to]) return false;
+    // walk back, then reverse (simplify: keep every node, they are ~10-40 m apart)
+    int path[SAR_ROUTE_MAX]; int np = 0;
+    for(int n = to; n >= 0 && np < SAR_ROUTE_MAX; n = par[n]) path[np++] = n;
+    if(np >= SAR_ROUTE_MAX) { // too long: keep every 2nd node
+        int k = 0; for(int i = 0; i < np; i += 2) path[k++] = path[i]; np = k; }
+    s_nSarRoute = 0;
+    for(int i = np - 1; i >= 0; --i) { SarNode(path[i], s_SarRoute[s_nSarRoute][0], s_SarRoute[s_nSarRoute][1], s_SarRoute[s_nSarRoute][2]); ++s_nSarRoute; }
+    return true;
+}
+static void SaRouteClear() { s_SarRouteOn = false; s_nSarRoute = 0; }
+// call every frame while a destination is set; re-plans when the target moves or you leave the line
+static void SaRouteTrack(float mx, float my, float mz, float dx, float dy, float dz, double nowSec, uint32_t col = IM_COL32(66, 133, 244, 255))
+{
+    s_SarRouteCol = col; s_SarRouteMe[0] = mx; s_SarRouteMe[1] = my; s_SarRouteMe[2] = mz;
+    float ddx = dx - s_SarRouteDst[0], ddy = dy - s_SarRouteDst[1];
+    bool newDst = !s_SarRouteOn || ddx * ddx + ddy * ddy > 25.0f;
+    // trim passed nodes, measure the distance to the line
+    float off = 1e9f;
+    if(s_nSarRoute > 1)
+    {
+        int bestI = 0; float bd = 1e18f;
+        int lim = s_nSarRoute < 40 ? s_nSarRoute : 40;
+        for(int i = 0; i < lim; ++i) { float ex = s_SarRoute[i][0] - mx, ey = s_SarRoute[i][1] - my, d = ex * ex + ey * ey; if(d < bd) { bd = d; bestI = i; } }
+        off = sqrtf(bd);
+        if(bestI > 0 && off < 30.0f) { memmove(s_SarRoute, s_SarRoute + bestI, sizeof(s_SarRoute[0]) * (s_nSarRoute - bestI)); s_nSarRoute -= bestI; }
+    }
+    s_SarRouteOn = true;
+    float straight = sqrtf((dx - mx) * (dx - mx) + (dy - my) * (dy - my));
+    if(straight < 60.0f) { s_nSarRoute = 0; s_SarRouteDst[0] = dx; s_SarRouteDst[1] = dy; s_SarRouteDst[2] = dz; return; }   // close: direct line only
+    if(!newDst && off < 45.0f && s_nSarRoute > 1) return;
+    if(nowSec - s_SarRouteAt < (newDst ? 0.3 : 2.5)) return;
+    s_SarRouteAt = nowSec;
+    s_SarRouteDst[0] = dx; s_SarRouteDst[1] = dy; s_SarRouteDst[2] = dz;
+    if(!SarAStar(SarNearestNode(mx, my, mz), SarNearestNode(dx, dy, dz))) s_nSarRoute = 0;
+}
+// draws [me] -> route -> [dst] with any world->screen mapping (game radar, menu map, own radar)
+template<class F> static void SaRouteDrawWith(ImDrawList* dl, float mx, float my, float wPx, F map)
+{
+    if(!s_SarRouteOn) return;
+    ImVec2 pts[SAR_ROUTE_MAX + 2]; int n = 0; ImVec2 s;
+    if(map(mx, my, s)) pts[n++] = s;
+    for(int i = 0; i < s_nSarRoute; ++i) if(map(s_SarRoute[i][0], s_SarRoute[i][1], s)) pts[n++] = s; else if(n > 1) break;
+    if(map(s_SarRouteDst[0], s_SarRouteDst[1], s)) pts[n++] = s;
+    if(n < 2) return;
+    dl->AddPolyline(pts, n, IM_COL32(20, 60, 140, 255), 0, wPx + UI::S(2.0f));
+    dl->AddPolyline(pts, n, s_SarRouteCol, 0, wPx);
+}
+
 static void SaRadarDraw(ImDrawList* dl, ImVec2 p0, float size, const SaRadarView& v,
                         const SaPin* pins, int nPins, const SaArea* areas, int nAreas, float now)
 {
@@ -336,6 +464,31 @@ static void SaRadarDraw(ImDrawList* dl, ImVec2 p0, float size, const SaRadarView
         }
     }
     dl->Flags = oldFlags;
+
+    // 3.58: GPS route (thick blue line along the roads)
+    if(s_SarRouteOn)
+    {
+        const float rw = d3 ? 11.0f : 9.0f, rmin = UI::S(d3 ? 3.5f : 4.5f);
+        float prev[3];
+        for(int pass = 0; pass < 2; ++pass)
+        {
+            prev[0] = s_SarRouteMe[0]; prev[1] = s_SarRouteMe[1]; prev[2] = s_SarRouteMe[2];
+            ImU32 c = pass == 0 ? IM_COL32(20, 60, 140, 255) : s_SarRouteCol;
+            for(int i = 0; i <= s_nSarRoute; ++i)
+            {
+                float q[3];
+                if(i < s_nSarRoute) { q[0] = s_SarRoute[i][0]; q[1] = s_SarRoute[i][1]; q[2] = s_SarRoute[i][2]; }
+                else { q[0] = s_SarRouteDst[0]; q[1] = s_SarRouteDst[1]; q[2] = s_SarRouteDst[2]; }
+                float mx = (q[0] + prev[0]) * 0.5f - qx, my = (q[1] + prev[1]) * 0.5f - qy;
+                if(mx * mx + my * my < (reach + 200) * (reach + 200))
+                {
+                    float a2[3] = { prev[0], prev[1], d3 ? prev[2] + 0.5f : v.meZ }, b2[3] = { q[0], q[1], d3 ? q[2] + 0.5f : v.meZ };
+                    SarRoad(dl, P, a2, b2, pass == 0 ? rw + 3.0f : rw, pass == 0 ? rmin + UI::S(2) : rmin, c);
+                }
+                prev[0] = q[0]; prev[1] = q[1]; prev[2] = q[2];
+            }
+        }
+    }
 
     // district names (biggest first, no overlaps)
     {

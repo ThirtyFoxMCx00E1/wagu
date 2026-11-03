@@ -352,6 +352,51 @@ static void RpInfoDraw(ImDrawList* dl)
     }
 }
 
+// ---- 3.58: the RULES window on spawn (11 rules, Close) -------------------------------------------
+static const char* const kRpRules11[11] = {
+    "Roleplay at all times. Out of character only in /b or /ooc.",
+    "No deathmatch (DM): no random killing, the city is peaceful.",
+    "No cheats, hacks, mod menus, CLEO or bug abuse.",
+    "Respect every citizen - new players too. Help them in /n.",
+    "No powergaming: no unrealistic actions others can't react to.",
+    "No metagaming: your character only knows what it saw in game.",
+    "Greenzones (green squares on the radar) are safe for everyone.",
+    "Police / military / medics use their powers only on duty.",
+    "No car ramming, no stealing job / faction vehicles without RP.",
+    "Don't pretend to be staff (admin, moderator or the Broker bot).",
+    "Listen to admins and moderators. Kick = 4:29 wait, ban = permanent.",
+};
+
+static void RpRulesUiOpen() { s_RpRulesUi.pending = true; s_RpRulesUi.at = MP_NowMs() + 2500; }
+static void RpDrawRulesUi()
+{
+    if(s_RpRulesUi.pending && MP_NowMs() > s_RpRulesUi.at && !SampDialogOpen()) { s_RpRulesUi.pending = false; s_RpRulesUi.open = true; }
+    if(!s_RpRulesUi.open) return;
+    ImVec2 ds = ImGui::GetIO().DisplaySize;
+    const float w = std::min(ds.x * 0.62f, UI::S(1100)), h = std::min(ds.y * 0.86f, UI::S(860));
+    const ImVec2 p0(ds.x * 0.5f - w * 0.5f, ds.y * 0.5f - h * 0.5f), p1(p0.x + w, p0.y + h);
+    ImDrawList* dl = ImGui::GetForegroundDrawList();
+    dl->AddRectFilled(ImVec2(0, 0), ds, IM_COL32(0, 0, 0, 110));
+    dl->AddRectFilled(p0, p1, IM_COL32(8, 14, 24, 238), UI::S(14));
+    dl->AddRect(p0, p1, RpCol(RP_SKY, 1), UI::S(14), 0, UI::S(2.5f));
+    dl->AddRectFilled(p0, ImVec2(p1.x, p0.y + UI::S(74)), RpCol(0x0C4A6EFF, 0.95f), UI::S(14), ImDrawFlags_RoundCornersTop);
+    BcwCenterText(dl, UI::S(34), p0.y + UI::S(37), IM_COL32_WHITE, "MEGA VIL  -  CITY RULES");
+    float y = p0.y + UI::S(96); const float fs = UI::S(23), lh = (h - UI::S(96) - UI::S(120)) / 11.0f;
+    for(int i = 0; i < 11; ++i)
+    {
+        char n[8]; snprintf(n, sizeof(n), "%d.", i + 1);
+        dl->AddCircleFilled(ImVec2(p0.x + UI::S(42), y + lh * 0.5f), UI::S(15), RpCol(RP_SKY, 0.9f), 20);
+        ImVec2 ts = UI::Font()->CalcTextSizeA(UI::S(18), FLT_MAX, 0, n);
+        dl->AddText(UI::Font(), UI::S(18), ImVec2(p0.x + UI::S(42) - ts.x * 0.5f, y + lh * 0.5f - ts.y * 0.5f), IM_COL32(8, 14, 24, 255), n);
+        dl->AddText(UI::Font(), fs, ImVec2(p0.x + UI::S(72), y + lh * 0.5f - fs * 0.55f), IM_COL32(235, 240, 245, 255), kRpRules11[i], nullptr);
+        y += lh;
+    }
+    const float bw = UI::S(300), bh = UI::S(70);
+    BcwBeginOverlay("##RpRulesUi", ImVec2(ds.x * 0.5f - bw * 0.5f - UI::S(14), p1.y - bh - UI::S(36)), ImVec2(bw + UI::S(28), bh + UI::S(28)), 0.0f);
+    if(BcwTeamButton("I AGREE - CLOSE##rru", RP_SKY, ImVec2(bw, bh), true, false)) s_RpRulesUi.open = false;
+    BcwEndOverlay();
+}
+
 // ---- welcome in the chat -----------------------------------------------------------------------
 static void RpWelcome()
 {
@@ -406,6 +451,7 @@ static bool RpLifeCommand(const char* cmd, const char* arg)
     }
     if(LIS("rules"))
     {
+        RpRulesUiOpen(); s_RpRulesUi.at = 0;   // 3.58: the window
         SysMsg(RP_SKY, "______ MEGA VIL RULES ______");
         SysMsg(0xFFFFFFFF, "1. Roleplay: act like a real citizen. No deathmatch, no random killing.");
         SysMsg(0xFFFFFFFF, "2. No cheats, no hacks, no bug abuse. Greenzones: nobody can be hurt.");
@@ -422,7 +468,7 @@ static void RpLifeProcess(int ped, uint64_t now, bool engaged)
 {
     static bool s_Welcomed = false;
     if(!engaged) { if(s_Welcomed || s_RpIcon[1].obj) { RpAtmClear(); RpDropsClear(); RpWelcomeIconClear(); RpInfoUpdate(false, now); s_Atm.open = false; } s_Welcomed = false; return; }
-    if(!s_Welcomed) { s_Welcomed = true; RpWelcome(); }
+    if(!s_Welcomed) { s_Welcomed = true; RpWelcome(); RpRulesUiOpen(); }   // 3.58: + the rules window
     RpInfoUpdate(false, now);   // 3.34: no info people (floating pickups instead, RpInfoDraw)
     RpWelcomeIconStream(now);   // 3.39.2: the spinning info "i" at the welcome spot
     if(s_Rp.view == 2) { RpAtmStream(now, ped); RpDropsStream(now, ped); } else { RpAtmClear(); RpDropsClear(); }
@@ -445,8 +491,14 @@ static void RpTaxiMarkers(bool on)
     if(on)
     {
         s_Taxi.blip = Game::AddCoordBlip(s_Taxi.pick, 0xFACC15FF, 2);
-        s_Taxi.cp = Game::CreateRaceCheckpoint(1, s_Taxi.pick, s_Taxi.pick, 4.0f);
+        s_Taxi.cp = 0;   // 3.58: red ring on the ground instead of the race checkpoint box (RpTaxiDraw)
     }
+}
+static void RpTaxiDraw(ImDrawList* dl, float now)
+{
+    if(!s_Taxi.blip) return;
+    BcwGroundRing(dl, { s_Taxi.pick.x, s_Taxi.pick.y, s_Taxi.pick.z + 0.02f }, 4.0f, 0xEF2222FF, now);
+    BcwLabel3D(dl, { s_Taxi.pick.x, s_Taxi.pick.y, s_Taxi.pick.z + 2.4f }, "PASSENGER", 0xFACC15FF, 22.0f, 40.0f);
 }
 static void RpTaxiReset(bool keepDest)
 {
@@ -468,7 +520,7 @@ static void RpTaxiPickSpot(const Vec3& me)
         float dx = g_RpStreet[i][0] - me.x, dy = g_RpStreet[i][1] - me.y, d = sqrtf(dx * dx + dy * dy);
         float ex = g_RpStreet[i][0] - s_Rp.tgt.x, ey = g_RpStreet[i][1] - s_Rp.tgt.y;
         if(ex * ex + ey * ey < 120.0f * 120.0f) continue;
-        float score = d < 60.0f ? 1000.0f + (60.0f - d) : d > 450.0f ? d : fabsf(d - 180.0f);
+        float score = d < 45.0f ? 1000.0f + (45.0f - d) : d > 320.0f ? d : fabsf(d - 120.0f);   // 3.58: closer (they are made at once)
         if(score < bestScore) { bestScore = score; best = i; }
     }
     if(best >= 0) s_Taxi.pick = { g_RpStreet[best][0], g_RpStreet[best][1], g_RpStreet[best][2] };
@@ -547,20 +599,16 @@ static void RpTaxiTick(int ped, uint64_t now)
             {   // this model doesn't load (not on this phone / not allowed): another one
                 s_Taxi.skin = kTaxiSkins[rand() % (int)(sizeof(kTaxiSkins) / sizeof(kTaxiSkins[0]))]; s_Taxi.skinAt = now;
             }
-            if(ready && dPick < 300.0f)
-            {
-                if(!s_Taxi.grounded && dPick < 120.0f)
-                {
-                    float g = Game::GroundZBelow(s_Taxi.pick.x, s_Taxi.pick.y, s_Taxi.pick.z + 1.5f);
-                    if(g > -999.0f && fabsf(g - s_Taxi.pick.z) < 3.0f) s_Taxi.pick.z = g;
-                    s_Taxi.grounded = true;
-                }
+            if(ready)
+            {   // 3.58: the passenger is made AT ONCE when the shift / fare starts and stands there waiting
+                //       (frozen until you are close, so a far ped can't fall through unloaded ground)
                 float h = atan2f(-px, -py) * 57.2958f;   // looking at the road (towards me)
                 Vec3 at = s_Taxi.pick; at.z += 1.0f;      // CreateNpcPed puts the feet 1 m below
                 s_Taxi.npc = Game::CreateNpcPed(s_Taxi.skin, at, h < 0 ? h + 360.0f : h);
-                if(s_Taxi.npc) return;
+                if(s_Taxi.npc) { Game::FreezeChar(s_Taxi.npc, dPick > 110.0f); s_Taxi.grounded = dPick <= 110.0f; return; }
             }
-            // still nobody when you are at the marker: the passenger gets in anyway (no waiting for a ped)
+            // the model never loads on this phone (20 s): only then the old "gets in anyway" fallback
+            if(now - s_Taxi.t < 20000) return;
             if(dPick < 14.0f) { if(!s_Taxi.nearAt) s_Taxi.nearAt = now; } else s_Taxi.nearAt = 0;
             int car = Game::GetCarCharIsIn(ped);
             if(s_Taxi.nearAt && now - s_Taxi.nearAt > 2500 && car && Game::GetDriverOfCar(car) == ped)
@@ -570,6 +618,12 @@ static void RpTaxiTick(int ped, uint64_t now)
                 SysMsg(COL_GREEN, "[TAXI] Passenger in. Drive to the fare marker and stop there.");
             }
             return;
+        }
+        if(!s_Taxi.grounded && dPick < 110.0f)
+        {   // 3.58: close now: put the waiting passenger on the real ground and let them move
+            float g = Game::GroundZBelow(s_Taxi.pick.x, s_Taxi.pick.y, s_Taxi.pick.z + 1.5f);
+            if(g > -999.0f && fabsf(g - s_Taxi.pick.z) < 3.0f) { s_Taxi.pick.z = g; Game::Teleport(s_Taxi.npc, s_Taxi.pick, 0.0f); }
+            Game::FreezeChar(s_Taxi.npc, false); s_Taxi.grounded = true;
         }
         {   // 3.53.1: fell under the road (collision loaded late): back on the street
             Vec3 np; Game::GetCharPos(s_Taxi.npc, np);

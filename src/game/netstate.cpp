@@ -1391,6 +1391,19 @@ bool Game::MenuMapWorldToScreen(float x, float y, float& sx, float& sy)
     sx = scr.x; sy = scr.y; return true;
 }
 void Game::SetMenuMapLayer(MenuMapLayerFn f) { s_MenuMapLayer = f; }
+// 3.58: the HUD radar (GPS route on the game's own radar). False outside the radar disc.
+bool Game::RadarWorldToScreen(float x, float y, float& sx, float& sy, bool clampToDisc)
+{
+    if(!TransformRealWorldPointToRadarSpace || !TransformRadarPointToScreenSpace || s_InMenuBlips) return false;
+    CVec2D_ world = { x, y }, rad, scr;
+    TransformRealWorldPointToRadarSpace(rad, world);
+    if(!(rad.x == rad.x) || !(rad.y == rad.y)) return false;
+    float l = sqrtf(rad.x * rad.x + rad.y * rad.y);
+    if(l > 1.0f) { if(!clampToDisc) return false; rad.x /= l; rad.y /= l; }
+    TransformRadarPointToScreenSpace(scr, rad);
+    if(!(scr.x == scr.x) || !(scr.y == scr.y)) return false;
+    sx = scr.x; sy = scr.y; return true;
+}
 
 static void DrawMapPlayers()
 {

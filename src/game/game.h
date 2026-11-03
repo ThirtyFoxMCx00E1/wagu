@@ -231,6 +231,7 @@ namespace Game
     typedef bool (*MenuMapLayerFn)(int layer, const MapLabel* labels, int n);
     void  SetMenuMapLayer(MenuMapLayerFn f);
     bool  MenuMapWorldToScreen(float x, float y, float& sx, float& sy);   // only valid while the pause map is drawn
+    bool  RadarWorldToScreen(float x, float y, float& sx, float& sy, bool clampToDisc = false);   // 3.58: HUD radar
     // 3.00: top-right score bar drawn by the game itself (CFont, FONT_PRICEDOWN = the HUD money font),
     // segments left -> right, each in its own colour (0xRRGGBBAA)
     struct HudSeg { char text[40]; uint32_t rgba; };

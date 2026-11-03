@@ -680,7 +680,14 @@ static void TimberRender(ImDrawList* bg, ImDrawList* fg, float& y, float now)
     // the storage + the job start: floating text over the "i" (screenshot 1)
     { Vec3 s = s_Tb.storage; s.z += 1.9f; BcwLabel3D(bg, s, "Timber Storage", 0x38BDF8FF, 21, 14); s.z -= 0.45f; BcwLabel3D(bg, s, "use '/unloadtimber' to sell collected timber", 0xFFFFFFFF, 17, 14); }
     { Vec3 s = s_Tb.start; s.z += 1.9f; BcwLabel3D(bg, s, "Lumberjack", 0xFFA500FF, 21, 14); s.z -= 0.45f; BcwLabel3D(bg, s, s_Tb.on ? "/timberhelp - the job commands" : "type '/timber' to start the job", 0xFFFFFFFF, 17, 14); }
-    if(!s_Tb.on) return;
+    if(!s_Tb.on) { SaRouteClear(); return; }
+    // 3.58: GPS tracker line on the game radar (roads to the tree / the storage)
+    if(s_Tb.blip && !Game::IsPaused())
+    {
+        SaRouteTrack(myDrawPos.x, myDrawPos.y, myDrawPos.z, s_Tb.blipAt.x, s_Tb.blipAt.y, s_Tb.blipAt.z, now, IM_COL32(255, 60, 60, 255));
+        SaRouteDrawWith(fg, myDrawPos.x, myDrawPos.y, UI::S(3.0f), [](float x, float yy, ImVec2& o) { float sx, sy; if(!Game::RadarWorldToScreen(x, yy, sx, sy, false)) return false; o = ImVec2(sx, sy); return true; });
+    }
+    else SaRouteClear();
     char t[64]; snprintf(t, sizeof(t), "TIMBER %d/%d  TREE %d/%d", s_Tb.timber, TB_CAP, std::min(s_Tb.idx + 1, TB_MISSION), TB_MISSION);
     GmHudLine(fg, y, IM_COL32(255, 165, 0, 255), t); y += UI::S(34);
     const int type = s_Tb.mType[std::min(s_Tb.idx, TB_MISSION - 1)];
