@@ -1,5 +1,5 @@
 # MP 24/7 featured servers (3.53, 3.58: 5 servers): MP LAN Server (Default), Brief Case War,
-# Call Of Duty: Modern Warfare 3, Mega Vil Futuristic, Project Day Z Remastered - hosted by the Broker bot non stop, the same way
+# Call Of Duty: Modern Warfare 3, Mega Vil Futuristic, Project Day Z Legacy - hosted by the Broker bot non stop, the same way
 # the Discord bot ("MP Railway cloud runner") stays online: each run is one ~5 h 40 min shift and
 # queues the next shift itself. The next shift starts BEFORE the old one stops (overlap), so the servers
 # never go offline between shifts; players on the old copy are moved to the new copy automatically.
@@ -91,6 +91,21 @@ jobs:
           while [ "$(date +%s)" -lt "$end" ]; do
             sleep 600
             save
+            # 3.59: hot update - a push to main (new server code, a new featured server) is picked up by the
+            # shift that is already online, instead of waiting up to 5 h 40 min for the next shift
+            if git -C .. fetch -q --depth 1 origin main 2>/dev/null; then
+              old=$(git -C .. rev-parse HEAD:server HEAD:src/net 2>/dev/null | tr -d '\n')
+              new=$(git -C .. rev-parse FETCH_HEAD:server FETCH_HEAD:src/net 2>/dev/null | tr -d '\n')
+              if [ -n "$new" ] && [ "$old" != "$new" ]; then
+                echo "New server code on main - updating the running servers"
+                save
+                git -C .. reset -q --hard FETCH_HEAD
+                if make -j"$(nproc)" > logs/build.log 2>&1; then
+                  ./run_24_7.sh stop > /dev/null; sleep 2
+                  ./run_24_7.sh "$REGION"
+                else echo "build failed - keeping the old servers"; tail -n 20 logs/build.log; fi
+              fi
+            fi
             ./run_24_7.sh "$REGION" > /dev/null   # restarts a server if its loop ever died
             for l in logs/*.log; do [ -f "$l" ] && { echo "== $l"; tail -n 2 "$l"; }; done
           done
