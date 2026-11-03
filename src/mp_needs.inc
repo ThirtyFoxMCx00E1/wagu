@@ -245,7 +245,7 @@ static void NeedsRender()
         ImVec2 a(ds.x - m - (n - i) * sz - (n - 1 - i) * gap, ds.y - m - sz);
         // 3.55: a hexagon (was a dark box); the border shows the colour of the value
         const ImU32 border = hx[i].icon == 2 ? IM_COL32(190, 190, 200, 230) : ((hx[i].col & 0x00FFFFFF) | 0xE6000000);
-        HexLabel(dl, ImVec2(a.x + sz * 0.5f, a.y + sz * 0.5f), sz * 0.54f, IM_COL32(20, 20, 24, 170), border, UI::S(3));
+        HexLabelGlass(dl, ImVec2(a.x + sz * 0.5f, a.y + sz * 0.5f), sz * 0.54f, IM_COL32(0, 0, 0, 128), border, UI::S(3));   // 3.58: black 50 % (was green: the border fill bled through)
         ImVec2 c(a.x + sz * 0.5f, a.y + sz * 0.36f);
         switch(hx[i].icon)
         {

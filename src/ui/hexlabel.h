@@ -20,3 +20,14 @@ static inline void HexLabel(ImDrawList* dl, ImVec2 c, float r, ImU32 fill, ImU32
     HexPoints(c, r - borderW, p);
     dl->AddConvexPolyFilled(p, 6, fill);
 }
+
+// 3.58: see-through hexagon: the fill is drawn ONCE (black 50 % by default) and the border is only a
+// stroked outline, so the value colour (green / yellow / red) never bleeds through the background.
+static inline void HexLabelGlass(ImDrawList* dl, ImVec2 c, float r, ImU32 fill, ImU32 border, float borderW)
+{
+    ImVec2 p[6];
+    HexPoints(c, r, p);
+    dl->AddConvexPolyFilled(p, 6, fill);
+    HexPoints(c, r - borderW * 0.5f, p);
+    dl->AddPolyline(p, 6, border, ImDrawFlags_Closed, borderW);
+}

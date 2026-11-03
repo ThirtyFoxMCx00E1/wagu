@@ -10,9 +10,17 @@
 // paycheck and /mysalary.
 // Spots: built-in (the Flint County Timber Storage barn + the pine forest around it, 3.51.1), or files/MP/timber.txt
 // ("storage x y z", "start x y z h", "tree x y z" lines; /timberpos adds your position, staff only).
+// 3.58: the Bobcat (422) is a job pickup too (/timbercar bobcat | sadler, or just drive your own pickup);
+// the pickup spawns 0.12 m over the ground (no drop: wheel-detach mods broke it at +1 m); a cut tree
+// breaks into 3 real log objects that scatter on the ground; PICK UP lifts one with both hands (CARRY
+// liftup), you can carry 1 to 3 at once (crry_prtial while you walk); stand at the back of the pickup
+// and CROUCH (or PUT IN) to lay them in the bed (CARRY putdwn).
 
 #define TB_MISSION   16      // trees in one mission
-#define TB_CAP       7       // timber in one pickup load
+#define TB_CAP       12      // 3.58: logs in one pickup load (a tree = 3 logs, was 7 timber = 7 trees)
+#define TB_LOG_MODEL 841     // 3.58: a single fallen log (Prineside "trees" category); 1463 = woodpile fallback
+#define TB_CARRY_MAX 3       // logs in your arms at once
+#define TB_BED_SHOW  6       // log objects drawn in the bed (2 layers of 3)
 #define TB_POOL      48
 #define TB_TRUCK     543     // Sadler pickup
 static const int kTbPickups[] = { 543, 422, 478, 554, 600, 605 };   // Sadler, Bobcat, Walton, Yosemite, Picador, Sadler (shit)
@@ -21,10 +29,15 @@ static const char* const kTbTypeC[] = { "{C9C9C9}", "{BA9F7B}", "{96744D}" };
 static const uint32_t    kTbTypeRgba[] = { 0xC9C9C9FF, 0xBA9F7BFF, 0x96744DFF };
 static const float kTbRound[] = { 50.0f, 34.0f, 25.0f };   // tree health per finished cut (WW-RP: 50 / 25 / 20)
 static const float kTbRate[]  = { 30.0f, 22.0f, 16.0f };   // cut progress % a second while you hold CUT
-static const float kTbPay[]   = { 25.50f, 31.50f, 42.00f };// paycheck per timber
+static const float kTbPay[]   = { 8.50f, 10.50f, 14.00f }; // 3.58: paycheck per LOG (3 logs = the old 25.50 / 31.50 / 42.00 per tree)
+// 3.58: the pickup bed per model (car space): bed centre y, rear tailgate y, bed floor z, half width
+struct TbBed { int model; float bedY, rearY, floorZ, halfW; };
+static const TbBed kTbBeds[] = { { 543, -1.55f, -2.75f, 0.05f, 0.55f }, { 422, -1.45f, -2.60f, 0.02f, 0.52f }, { 478, -1.55f, -2.70f, 0.10f, 0.55f },
+                                 { 554, -1.75f, -3.00f, 0.15f, 0.60f }, { 600, -1.50f, -2.70f, 0.00f, 0.55f }, { 605, -1.55f, -2.75f, 0.05f, 0.55f } };
+static const TbBed& TbBedOf(int model) { for(const TbBed& b : kTbBeds) if(b.model == model) return b; return kTbBeds[0]; }
 static const int   kTbCool[]  = { 300, 210, 150 };          // tired cooldown (s) by skill level (WW-RP LVL1..3COOLDOWN)
 
-enum { TB_OFF = 0, TB_GO, TB_CUT, TB_FALL, TB_LOAD, TB_SELL };
+enum { TB_OFF = 0, TB_GO, TB_CUT, TB_FALL, TB_LOAD, TB_SELL, TB_LOGS };   // 3.58: TB_LOGS = the logs lie on the ground (pick up / carry / load)
 static struct
 {
     bool     on = false;
@@ -36,7 +49,10 @@ static struct
     float    health = 100.0f, prog = 0.0f; bool holding = false; uint64_t lastHold = 0;
     int      tree = 0, stump = 0; uint64_t stumpUntil = 0; Vec3 treeAt = {}; float fallH = 0, ang = 0, vel = 0; int bounces = 0;
     float    loadProg = 0.0f; bool loadReq = false, cutReq = false;
-    int      truck = 0, logs[3] = {}, nLogs = 0, timber = 0;
+    int      truck = 0, logs[TB_BED_SHOW] = {}, nLogs = 0, timber = 0;
+    int      truckModel = TB_TRUCK; bool carLoaded = false;   // 3.58: 543 Sadler or 422 Bobcat (/timbercar)
+    int      gLog[3] = {}; Vec3 gFrom[3] = {}, gPos[3] = {}; float gRot[3] = {}; bool gAlive[3] = {}; float scatT = 0; uint64_t settleAt = 0;
+    int      carry[TB_CARRY_MAX] = {}; int nCarry = 0; int act = 0; uint64_t actUntil = 0; int actLog = -1; bool pickReq = false, putReq = false; uint64_t upperAt = 0;
     int      blip = 0; Vec3 blipAt = {}; bool arrived = false;
     float    paycheck = 0.0f, earned = 0.0f; int sold = 0, trees = 0;
     int      xp = 0; uint64_t tiredUntil = 0, sellAgainAt = 0; bool sellMsgDue = false;
@@ -60,6 +76,7 @@ static void TbLoadStats()
     if(s_Tb.loaded) return; s_Tb.loaded = true;
     s_Tb.xp = TbCfgGet("Xp", 0); s_Tb.paycheck = TbCfgGet("PaycheckCents", 0) / 100.0f; s_Tb.earned = TbCfgGet("EarnedCents", 0) / 100.0f;
     s_Tb.sold = TbCfgGet("Sold", 0); s_Tb.trees = TbCfgGet("Trees", 0);
+    s_Tb.truckModel = TbCfgGet("Car", TB_TRUCK) == 422 ? 422 : 543;   // 3.58
 }
 static void TbSaveStats()
 {
@@ -169,23 +186,84 @@ static void TbSetBlip(const Vec3& p)
     s_Tb.blip = Game::AddCoordBlip(p, 0xFF1A1AFF, 2); s_Tb.blipAt = p; s_Tb.arrived = false;
 }
 static void TbClearBlip() { if(s_Tb.blip) Game::RemoveBlip(s_Tb.blip); s_Tb.blip = 0; }
+static int TbBedWant() { return (s_Tb.truck && Game::CarExists(s_Tb.truck)) ? std::min(s_Tb.timber, TB_BED_SHOW) : 0; }
 static void TbLogsUpdate()
 {
-    // 1-2 timber: one pile, 3-5: two, 6-7: three (a full bed)
-    int want = s_Tb.timber <= 0 ? 0 : (s_Tb.timber <= 2 ? 1 : (s_Tb.timber <= 5 ? 2 : 3));
-    if(!s_Tb.truck || !Game::CarExists(s_Tb.truck)) want = 0;
-    for(int i = 0; i < 3; ++i)
+    // 3.58: real single logs lying lengthwise in the bed: 3 side by side, then a 2nd layer (counter = all of them)
+    const int want = TbBedWant();
+    const TbBed& bed = TbBedOf(s_Tb.truck ? Game::GetCarModel(s_Tb.truck) : s_Tb.truckModel);
+    for(int i = 0; i < TB_BED_SHOW; ++i)
     {
         if(i >= want) { TbDelObj(s_Tb.logs[i]); continue; }
         if(s_Tb.logs[i] > 0 && Game::WorldObjectExists(s_Tb.logs[i])) continue;
         Vec3 cp; Game::GetCarPos(s_Tb.truck, cp);
-        int o = Game::CreateWorldObject(1463, cp);   // DYN_WOODPILE2 - a pile of logs
+        int o = Game::CreateWorldObject(TB_LOG_MODEL, cp);
         if(o <= 0) continue;
         s_Tb.logs[i] = o;
-        static const Vec3 kOff[3] = { { 0.0f, -1.25f, 0.05f }, { 0.0f, -2.05f, 0.05f }, { 0.0f, -1.65f, 0.55f } };
-        Game::AttachObjectToCar(o, s_Tb.truck, kOff[i], { 0.0f, 0.0f, 90.0f });
+        const int col = i % 3, lay = i / 3;
+        const Vec3 off = { (col - 1) * bed.halfW * 0.62f + (lay ? bed.halfW * 0.3f : 0.0f), bed.bedY, bed.floorZ + 0.12f + lay * 0.26f };
+        Game::AttachObjectToCar(o, s_Tb.truck, off, { 0.0f, 0.0f, 0.0f });
     }
     s_Tb.nLogs = want;
+}
+// ---- 3.58: logs on the ground and in your arms ----------------------------------------------------------
+static void TbDropCarried()
+{
+    for(int& o : s_Tb.carry) TbDelObj(o);
+    s_Tb.nCarry = 0; s_Tb.act = 0; s_Tb.actLog = -1;
+}
+static void TbClearGround() { for(int i = 0; i < 3; ++i) { TbDelObj(s_Tb.gLog[i]); s_Tb.gAlive[i] = false; } }
+static void TbScatter()
+{
+    // the trunk breaks into 3 logs where it lies (2.2 / 4.6 / 7.0 m from the base) and they roll off to the sides
+    TbClearGround();
+    const float r = s_Tb.fallH * 0.0174533f;
+    const Vec3 dir = { -sinf(r), cosf(r), 0.0f }, side = { cosf(r), sinf(r), 0.0f };
+    static const float kAlong[3] = { 2.2f, 4.6f, 7.0f };
+    for(int i = 0; i < 3; ++i)
+    {
+        Vec3 from = { s_Tb.treeAt.x + dir.x * kAlong[i], s_Tb.treeAt.y + dir.y * kAlong[i], s_Tb.treeAt.z + 0.45f };
+        const float lat = ((rand() % 2) ? 1.0f : -1.0f) * (0.6f + (rand() % 70) / 100.0f);
+        Vec3 to = { from.x + side.x * lat + dir.x * (rand() % 50 - 25) / 100.0f, from.y + side.y * lat + dir.y * (rand() % 50 - 25) / 100.0f, from.z };
+        const float g = Game::GroundZBelow(to.x, to.y, to.z + 2.0f);
+        to.z = (g > -999.0f && fabsf(g - s_Tb.treeAt.z) < 6.0f) ? g + 0.14f : s_Tb.treeAt.z + 0.14f;
+        s_Tb.gFrom[i] = from; s_Tb.gPos[i] = to; s_Tb.gRot[i] = s_Tb.fallH + 90.0f + (rand() % 60 - 30); s_Tb.gAlive[i] = true;
+        s_Tb.gLog[i] = 0;
+    }
+    s_Tb.scatT = 0.0f;
+}
+static void TbGroundStream(float dt)
+{
+    // the logs are made one per tick (models stream in) and fly the short arc of the scatter
+    if(s_Tb.scatT < 1.0f) s_Tb.scatT = std::min(1.0f, s_Tb.scatT + dt / 0.75f);
+    const float t = s_Tb.scatT;
+    for(int i = 0; i < 3; ++i)
+    {
+        if(!s_Tb.gAlive[i]) { TbDelObj(s_Tb.gLog[i]); continue; }
+        if(s_Tb.gLog[i] <= 0 || !Game::WorldObjectExists(s_Tb.gLog[i])) { s_Tb.gLog[i] = Game::CreateWorldObject(TB_LOG_MODEL, s_Tb.gFrom[i]); continue; }
+        if(t >= 1.0f && s_Tb.gLog[i] > 0) { Game::PlaceMapObject(s_Tb.gLog[i], s_Tb.gPos[i], 0.0f, 0.0f, s_Tb.gRot[i]); continue; }
+        const float e = 1.0f - (1.0f - t) * (1.0f - t);   // ease out
+        Vec3 p = { s_Tb.gFrom[i].x + (s_Tb.gPos[i].x - s_Tb.gFrom[i].x) * e, s_Tb.gFrom[i].y + (s_Tb.gPos[i].y - s_Tb.gFrom[i].y) * e,
+                   s_Tb.gFrom[i].z + (s_Tb.gPos[i].z - s_Tb.gFrom[i].z) * e + sinf(t * 3.14159f) * 0.55f + (t > 0.8f ? sinf((t - 0.8f) * 15.7f) * 0.06f : 0.0f) };
+        Game::PlaceMapObject(s_Tb.gLog[i], p, 0.0f, 0.0f, s_Tb.gRot[i] - (1.0f - t) * 140.0f);
+    }
+}
+static int TbNearestLog(const Vec3& me, float maxD)
+{
+    int best = -1; float bd = maxD;
+    for(int i = 0; i < 3; ++i) if(s_Tb.gAlive[i]) { const float d = TbDist2D(me, s_Tb.gPos[i]); if(d < bd && fabsf(me.z - s_Tb.gPos[i].z) < 2.5f) { bd = d; best = i; } }
+    return best;
+}
+static int TbGroundLeft() { int n = 0; for(bool a : s_Tb.gAlive) n += a ? 1 : 0; return n; }
+static bool TbAtTailgate(const Vec3& me)
+{
+    if(!s_Tb.truck || !Game::CarExists(s_Tb.truck)) return false;
+    Vec3 cp; Game::GetCarPos(s_Tb.truck, cp);
+    const float h = Game::GetCarHeading(s_Tb.truck) * 0.0174533f;
+    const TbBed& bed = TbBedOf(Game::GetCarModel(s_Tb.truck));
+    // car space y axis = (-sin h, cos h): the tailgate is bed.rearY (negative) along it
+    const Vec3 tg = { cp.x + (-sinf(h)) * bed.rearY, cp.y + cosf(h) * bed.rearY, cp.z };
+    return TbDist2D(me, tg) < 1.9f && fabsf(me.z - cp.z) < 2.2f;
 }
 static void TbIconsStream(uint64_t now)
 {
@@ -211,6 +289,8 @@ static void TbEnd(bool msg)
     if(s_Tb.phase == TB_CUT || s_Tb.phase == TB_LOAD) TbStopAnim(ped);
     TbClearBlip(); TbDelObj(s_Tb.tree); TbDelObj(s_Tb.stump);
     for(int& o : s_Tb.logs) TbDelObj(o);
+    if(s_Tb.nCarry && ped > 0) TbStopAnim(ped);
+    TbDropCarried(); TbClearGround();   // 3.58
     if(s_Tb.truck && Game::CarExists(s_Tb.truck)) { if(Game::GetDriverOfCar(s_Tb.truck) <= 0) Game::DeleteCar(s_Tb.truck); else Game::ReleaseCar(s_Tb.truck); }
     s_Tb.truck = 0; s_Tb.timber = 0; s_Tb.on = false; s_Tb.phase = TB_OFF; s_Tb.prog = s_Tb.loadProg = 0;
     if(msg) SysMsg(COL_YELLOW, "{FFA500}LUMBERJACK: {FFFFFF}You quit the Timber job. Your paycheck stays ($%.2f, /mysalary).", s_Tb.paycheck);
@@ -237,7 +317,8 @@ static void TbNextTarget()
 static void TbHelp()
 {
     SysMsg(COL_YELLOW, "{FFA500}Timber job: {FFFFFF}/timber (start, teleports you to the Timber Storage)  /quitjob  /fixjob  /timbergps");
-    SysMsg(COL_YELLOW, "{FFFFFF}/cut (or hold CUT with the chainsaw)  /loadtimber (at the fallen tree)  /unloadtimber (Timber Storage)");
+    SysMsg(COL_YELLOW, "{FFFFFF}/cut (or hold CUT with the chainsaw)  /pickuplog (PICK UP, 1-3 logs in your arms)  /putlogs (or CROUCH at the back of the pickup)");
+    SysMsg(COL_YELLOW, "{FFFFFF}/unloadtimber (Timber Storage)  /timbercar bobcat | sadler (your job pickup: 422 Bobcat or 543 Sadler)");
     SysMsg(COL_YELLOW, "{FFFFFF}/mysalary  /collectsalary (at the storage)  /timberskill  /checkjobcooldown  /timberhelp");
 }
 static void TbStart()
@@ -278,7 +359,7 @@ static void TbUnload()
         TbEnd(false);
         return;
     }
-    TbNextTarget();
+    if(s_Tb.phase != TB_LOGS) TbNextTarget();   // 3.58: logs still on the ground: finish that tree first
 }
 static void TbSalary()
 {
@@ -295,6 +376,16 @@ static bool TimberCommand(const char* cmd, const char* arg)
     if(!strcmp(cmd, "timber") || !strcmp(cmd, "lumberjack") || !strcmp(cmd, "lumber"))
     { if(arg && (!strcasecmp(arg, "stop") || !strcasecmp(arg, "quit"))) { if(s_Tb.on) TbEnd(true); } else if(arg && !strcasecmp(arg, "help")) TbHelp(); else TbStart(); return true; }
     if(!strcmp(cmd, "timberhelp")) { TbHelp(); return true; }
+    if(!strcmp(cmd, "timbercar") || !strcmp(cmd, "jobcar"))
+    {   // 3.58: Bobcat (422) support
+        int m = s_Tb.truckModel;
+        if(arg && (!strcasecmp(arg, "bobcat") || !strcmp(arg, "422"))) m = 422;
+        else if(arg && (!strcasecmp(arg, "sadler") || !strcmp(arg, "543"))) m = 543;
+        else { SysMsg(COL_YELLOW, "{FFA500}LUMBERJACK: {FFFFFF}Your job pickup: %s. Use /timbercar bobcat | sadler (you can also drive your own Bobcat / Sadler / Walton / Yosemite).", s_Tb.truckModel == 422 ? "Bobcat (422)" : "Sadler (543)"); return true; }
+        s_Tb.truckModel = m; TbCfgPut("Car", m); ::cfg->Save();
+        SysMsg(COL_GREEN, "{FFA500}LUMBERJACK: {FFFFFF}Your next job pickup is a %s.%s", m == 422 ? "Bobcat (422)" : "Sadler (543)", s_Tb.on ? " (/quitjob and /timber to get it now)" : "");
+        return true;
+    }
     if(!strcmp(cmd, "mysalary") || !strcmp(cmd, "salary")) { TbSalary(); return true; }
     if(!strcmp(cmd, "timberskill") || !strcmp(cmd, "woodskill"))
     { TbLoadStats(); int lv = TbLevel(); SysMsg(COL_YELLOW, "{FFA500}Woodcutting: {FFFFFF}level %d, %d xp%s.", lv, s_Tb.xp, lv == 1 ? " (oak trees at 20 xp)" : (lv == 2 ? " (yew trees at 60 xp)" : " (max)")); return true; }
@@ -336,13 +427,16 @@ static bool TimberCommand(const char* cmd, const char* arg)
         TbStopAnim(ped);
         if(s_Tb.phase == TB_CUT) s_Tb.phase = TB_GO;
         if(s_Tb.phase == TB_LOAD) s_Tb.phase = TB_FALL;
+        if(s_Tb.phase == TB_LOGS) { s_Tb.act = 0; s_Tb.actLog = -1; s_Tb.upperAt = 0; }   // 3.58
         s_Tb.holding = false; s_Tb.loadProg = 0; s_Tb.chainsawDue = true;
         SysMsg(COL_YELLOW, "Job state fixed (animation stopped, chainsaw back).");
         return true;
     }
     if(!strcmp(cmd, "timbergps") || !strcmp(cmd, "jobgps")) { TbSetBlip(s_Tb.phase == TB_SELL ? s_Tb.storage : (s_Tb.phase == TB_GO || s_Tb.phase == TB_CUT ? s_Tb.treeAt : s_Tb.treeAt)); SysMsg(COL_YELLOW, "{FFA500}GPSINFO: {FFFFFF}Marked on your radar."); return true; }
     if(!strcmp(cmd, "cut") || !strcmp(cmd, "cuttree")) { s_Tb.cutReq = true; s_Tb.lastHold = MP_NowMs(); return true; }
-    if(!strcmp(cmd, "loadtimber") || !strcmp(cmd, "load")) { s_Tb.loadReq = true; return true; }
+    if(!strcmp(cmd, "loadtimber") || !strcmp(cmd, "load")) { if(s_Tb.nCarry) s_Tb.putReq = true; else s_Tb.pickReq = true; return true; }
+    if(!strcmp(cmd, "pickuplog") || !strcmp(cmd, "pickup") || !strcmp(cmd, "takelog")) { s_Tb.pickReq = true; return true; }
+    if(!strcmp(cmd, "putlogs") || !strcmp(cmd, "putlog") || !strcmp(cmd, "droplogs")) { s_Tb.putReq = true; return true; }
     return false;
 }
 
@@ -361,8 +455,10 @@ static void TbSpawnTruck(int ped)
     if(g < -999.0f || s_Tb.start.z - g > 20.0f) g = Game::GroundZBelow(cp.x, cp.y, s_Tb.start.z + 1.6f);
     if((g < -999.0f || s_Tb.start.z - g > 20.0f) && ++s_Tb.truckTries < 40) { s_Tb.truckAt = now + 100; return; }   // not streamed yet: try again (max 4 s)
     if(g < -999.0f || s_Tb.start.z - g > 20.0f) g = TbFloor(s_Tb.start).z;
-    cp.z = g + 1.0f;   // 3.56: a bit in the air (it drops onto its wheels) - at +0.15 it could spawn stuck in the floor
-    int car = Game::CreateCar(TB_TRUCK, cp, true);
+    // 3.58: CREATE_CAR already lifts the car by its own wheel height, so this is 12 cm between the tyres and the
+    // floor: it settles on its wheels without a drop (the +1 m drop broke cars with wheel-detach mods)
+    cp.z = g + 0.12f;
+    int car = Game::CreateCar(s_Tb.truckModel == 422 ? 422 : TB_TRUCK, cp, true);
     if(car <= 0) { s_Tb.truckAt = now + 250; return; }
     Game::SetCarHeading(car, s_Tb.startH); Game::SetCarColours(car, 1, 1);
     Game::SetMoveSpeed(car, true, { 0, 0, 0 });
@@ -381,8 +477,20 @@ static void TimberProcess(int ped, uint64_t now, float dt)
     if(s_Tb.chainsawDue && !Game::IsCharInAnyCar(ped)) { if(Game::GiveAndSelectWeapon(ped, 9)) s_Tb.chainsawDue = false; }
     if(s_Tb.truckDue) TbSpawnTruck(ped);
     if(s_Tb.truck && !Game::CarExists(s_Tb.truck)) { s_Tb.truck = 0; for(int& o : s_Tb.logs) o = 0; if(s_Tb.timber) SysMsg(COL_RED, "Your pickup is gone (the %d timber too). /quitjob and /timber for a new one.", s_Tb.timber); s_Tb.timber = 0; }
-    if(s_Tb.nLogs != (s_Tb.timber <= 0 ? 0 : (s_Tb.timber <= 2 ? 1 : (s_Tb.timber <= 5 ? 2 : 3)))) TbLogsUpdate();
-    for(int i = 0; i < s_Tb.nLogs; ++i) if(s_Tb.logs[i] > 0 && !Game::WorldObjectExists(s_Tb.logs[i])) { s_Tb.logs[i] = 0; s_Tb.nLogs = -1; }
+    if(s_Tb.nLogs != TbBedWant()) TbLogsUpdate();
+    // 3.58: your own Bobcat / Sadler / Walton... becomes the job pickup when the job one is gone or still empty
+    if(Game::IsCharInAnyCar(ped))
+    {
+        const int c = Game::GetCarCharIsIn(ped);
+        if(c > 0 && c != s_Tb.truck && TbIsPickup(Game::GetCarModel(c)) && Game::GetDriverOfCar(c) == ped && s_Tb.timber == 0 && !s_Tb.truckDue)
+        {
+            if(s_Tb.truck && Game::CarExists(s_Tb.truck) && Game::GetDriverOfCar(s_Tb.truck) <= 0) Game::DeleteCar(s_Tb.truck);
+            for(int& o : s_Tb.logs) TbDelObj(o);
+            s_Tb.truck = c; s_Tb.nLogs = 0;
+            SysMsg(COL_YELLOW, "{FFA500}LUMBERJACK: {FFFFFF}This %s is your timber pickup now.", Game::GetCarModel(c) == 422 ? "Bobcat" : "pickup");
+        }
+    }
+    for(int i = 0; i < s_Tb.nLogs && i < TB_BED_SHOW; ++i) if(s_Tb.logs[i] > 0 && !Game::WorldObjectExists(s_Tb.logs[i])) { s_Tb.logs[i] = 0; s_Tb.nLogs = -1; }
 
     Vec3 me; if(!Game::GetCharPos(ped, me)) return;
     if(s_Tb.blip && !s_Tb.arrived && TbDist2D(me, s_Tb.blipAt) < 10.0f) { s_Tb.arrived = true; SysMsg(COL_YELLOW, "{FFA500}GPSINFO: {FFFFFF}You have arrived!"); }
@@ -464,45 +572,90 @@ static void TimberProcess(int ped, uint64_t now, float dt)
             Vec3 p = s_Tb.treeAt; p.z += 0.35f * (s_Tb.ang / 90.0f);
             if(s_Tb.tree > 0) Game::PlaceMapObject(s_Tb.tree, p, -s_Tb.ang, 0.0f, s_Tb.fallH);
         }
-        // the log lies from the base towards fallH: you load it standing next to its middle
-        const float r = s_Tb.fallH * 0.0174533f;
-        const Vec3 mid = { s_Tb.treeAt.x - sinf(r) * 4.0f, s_Tb.treeAt.y + cosf(r) * 4.0f, s_Tb.treeAt.z };
-        const bool nearLog = TbDist2D(me, mid) < 5.0f || dTree < 4.0f;
-        if(s_Tb.phase == TB_FALL && s_Tb.loadReq && s_Tb.vel == 0.0f && s_Tb.ang >= 89.0f)
+        // 3.58: once it lies still, the trunk breaks into 3 logs that scatter on the ground
+        if(s_Tb.phase == TB_FALL && s_Tb.vel == 0.0f && s_Tb.ang >= 89.0f)
         {
-            if(!nearLog) SysMsg(COL_RED, "Stand next to the fallen tree.");
-            else if(Game::IsCharInAnyCar(ped)) SysMsg(COL_RED, "Get out of the car to load the timber.");
-            else if(!s_Tb.truck || !Game::CarExists(s_Tb.truck)) SysMsg(COL_RED, "You need your pickup here (/quitjob, /timber for a new one).");
-            else
+            if(!s_Tb.settleAt) s_Tb.settleAt = now + 650;
+            if(now >= s_Tb.settleAt)
             {
-                Vec3 cp; Game::GetCarPos(s_Tb.truck, cp);
-                if(TbDist(cp, me) > 18.0f) SysMsg(COL_RED, "Bring the pickup closer (within 18 m of the log).");
-                else
-                {
-                    s_Tb.phase = TB_LOAD; s_Tb.loadProg = 0;
-                    Game::SetCurrentWeapon(ped, 0); Game::FreezeChar(ped, true);
-                    TbAnim(ped, "BOM_Plant_Loop", "BOMBER");   // down on the knees, the hands working on the log
-                }
+                s_Tb.settleAt = 0;
+                TbDelObj(s_Tb.tree);
+                TbDelObj(s_Tb.stump); s_Tb.stump = Game::CreateWorldObject((s_Tb.idx & 1) ? 832 : 831, s_Tb.treeAt); s_Tb.stumpUntil = now + 120000;   // WW-RP: the stump stays
+                TbScatter(); s_Tb.phase = TB_LOGS; s_Tb.chainsawDue = false;
+                Game::SetCurrentWeapon(ped, 0);
+                SysMsg(COL_YELLOW, "{FFA500}JOBINFO: {FFFFFF}The tree broke into 3 logs. PICK UP (1-%d in your arms), stand at the back of the pickup and CROUCH to load them.", TB_CARRY_MAX);
             }
         }
         s_Tb.loadReq = false;
-        if(s_Tb.phase == TB_LOAD)
+        return;
+    }
+    if(s_Tb.phase == TB_LOGS)
+    {
+        TbGroundStream(dt);
+        const bool inCar = Game::IsCharInAnyCar(ped);
+        // the pickup / put-down animation is running
+        if(s_Tb.act)
         {
-            s_Tb.loadProg += 100.0f / 6.0f * dt;   // 6 s
-            if(s_Tb.loadProg >= 100.0f)
-            {
-                TbStopAnim(ped); s_Tb.chainsawDue = true;
-                TbDelObj(s_Tb.tree);
-                TbDelObj(s_Tb.stump); s_Tb.stump = Game::CreateWorldObject((s_Tb.idx & 1) ? 832 : 831, s_Tb.treeAt); s_Tb.stumpUntil = now + 120000;   // WW-RP: the stump stays
-                ++s_Tb.timber; ++s_Tb.trees; ++s_Tb.idx;
-                const int gain = 1 + rand() % 2; const int lv0 = TbLevel(); s_Tb.xp += gain; TbSaveStats();
-                SysMsg(COL_SYSTEM, "{C2A2DA}AME: {FFFFFF}loads timber in the back of the pickup truck");
-                SysMsg(COL_YELLOW, "{FFA500}JOBINFO: {FFFFFF}You've successfully loaded the timber into the car! (total timber: %d/%d)", s_Tb.timber, TB_CAP);
+            if(now < s_Tb.actUntil) { s_Tb.pickReq = s_Tb.putReq = false; return; }
+            if(s_Tb.act == 1 && s_Tb.actLog >= 0)
+            {   // lifted: the ground log is gone, one more in the arms (stacked on the forearms)
+                const int i = s_Tb.actLog; s_Tb.gAlive[i] = false; TbDelObj(s_Tb.gLog[i]);
+                Vec3 at = me; at.z += 1.0f;
+                int o = Game::CreateWorldObject(TB_LOG_MODEL, at);
+                if(o > 0) { Game::AttachObjectToCharRot(o, ped, { 0.0f, 0.42f, 0.10f + s_Tb.nCarry * 0.20f }, { 0.0f, 0.0f, 90.0f }); s_Tb.carry[s_Tb.nCarry] = o; }
+                ++s_Tb.nCarry; Game::FreezeChar(ped, false);
+                SysMsg(COL_SYSTEM, "{C2A2DA}* %s lifts a log with both hands (%d/%d in the arms).", settings.name, s_Tb.nCarry, TB_CARRY_MAX);
+                s_Tb.upperAt = 0;
+            }
+            else if(s_Tb.act == 2)
+            {   // laid in the bed
+                const int n = s_Tb.nCarry; TbDropCarried(); TbStopAnim(ped);
+                s_Tb.timber = std::min(TB_CAP, s_Tb.timber + n);
+                const int gain = n >= 2 ? 2 : 1; const int lv0 = TbLevel(); s_Tb.xp += gain;
+                SysMsg(COL_SYSTEM, "{C2A2DA}AME: {FFFFFF}puts %d log%s in the back of the pickup truck", n, n == 1 ? "" : "s");
+                SysMsg(COL_YELLOW, "{FFA500}JOBINFO: {FFFFFF}You've loaded the timber into the car! (logs: %d/%d)", s_Tb.timber, TB_CAP);
                 if(TbLevel() > lv0) SysMsg(COL_GREEN, "Woodcutting level %d: %s.", TbLevel(), TbLevel() == 2 ? "you can cut oak trees now" : "you can cut yew trees now");
                 TbLogsUpdate();
-                TbNextTarget();
+                if(TbGroundLeft() == 0)
+                {   // this tree is done
+                    ++s_Tb.trees; ++s_Tb.idx; TbSaveStats(); TbClearGround();
+                    s_Tb.chainsawDue = true; s_Tb.phase = TB_GO;
+                    TbNextTarget();
+                    return;
+                }
+                TbSaveStats();
             }
+            s_Tb.act = 0; s_Tb.actLog = -1;
         }
+        // keep the arms around the logs while you walk (upper body only)
+        if(s_Tb.nCarry && !inCar && now >= s_Tb.upperAt) { if(Game::PlayAnimUpper(ped, "crry_prtial", "CARRY", true)) s_Tb.upperAt = now + 2500; else s_Tb.upperAt = now + 200; }
+        if(s_Tb.nCarry && inCar) { SysMsg(COL_RED, "You dropped the logs - you cannot drive with logs in your arms."); for(int k = 0; k < s_Tb.nCarry; ++k) { for(int i = 0; i < 3; ++i) if(!s_Tb.gAlive[i]) { s_Tb.gAlive[i] = true; s_Tb.gPos[i] = s_Tb.gFrom[i]; s_Tb.gPos[i].z -= 0.3f; s_Tb.gFrom[i] = s_Tb.gPos[i]; break; } } TbDropCarried(); }
+        // PICK UP
+        if(s_Tb.pickReq && !inCar)
+        {
+            const int li = TbNearestLog(me, 2.4f);
+            if(li < 0) SysMsg(COL_RED, "Stand next to a log to pick it up.");
+            else if(s_Tb.nCarry >= TB_CARRY_MAX) SysMsg(COL_RED, "Your arms are full (%d logs). Bring them to the back of the pickup and crouch.", TB_CARRY_MAX);
+            else if(Game::PlayAnimOnce(ped, "liftup", "CARRY", 4.0f, true, -1))
+            {
+                const float h = atan2f(-(s_Tb.gPos[li].x - me.x), s_Tb.gPos[li].y - me.y) * 57.29578f;
+                Game::SetCharHeading(ped, h);
+                s_Tb.act = 1; s_Tb.actLog = li; s_Tb.actUntil = now + 1150;
+            }
+            else return;   // CARRY.ifp is still loading: try again next tick (keep the request)
+        }
+        s_Tb.pickReq = false;
+        // PUT IN: at the tailgate, crouch (the game's crouch button) or the PUT IN button
+        const bool tail = s_Tb.nCarry > 0 && !inCar && TbAtTailgate(me);
+        if(tail && (s_Tb.putReq || Game::IsCharDucking(ped)))
+        {
+            if(Game::PlayAnimOnce(ped, "putdwn", "CARRY", 4.0f, true, -1)) { s_Tb.act = 2; s_Tb.actUntil = now + 1000; }
+            else return;
+        }
+        else if(s_Tb.putReq && s_Tb.nCarry && !tail) SysMsg(COL_RED, "Stand at the back of your pickup (the tailgate) and crouch to put the logs in.");
+        s_Tb.putReq = false;
+        if(s_Tb.timber >= TB_CAP && s_Tb.nCarry == 0 && TbGroundLeft() > 0)
+        { SysMsg(COL_RED, "The pickup is full (%d/%d). Sell at the Timber Storage, the rest of the logs stay here.", s_Tb.timber, TB_CAP); TbClearGround(); ++s_Tb.idx; ++s_Tb.trees; TbSaveStats(); TbNextTarget(); }
         return;
     }
 }
@@ -542,15 +695,28 @@ static void TimberRender(ImDrawList* bg, ImDrawList* fg, float& y, float now)
     const float dTree = TbDist2D(myDrawPos, s_Tb.treeAt);
     ImVec2 ds = ImGui::GetIO().DisplaySize;
     bool showCut = (s_Tb.phase == TB_GO || s_Tb.phase == TB_CUT) && dTree < 3.8f;
-    bool showLoad = s_Tb.phase == TB_FALL && s_Tb.ang >= 89.0f && s_Tb.vel == 0.0f && dTree < 10.0f;
+    // 3.58: the logs on the ground (floating label) and the PICK UP / PUT IN button
+    bool showLoad = false; const char* loadLab = "PICK UP";
+    if(s_Tb.phase == TB_LOGS && !s_Tb.act)
+    {
+        for(int i = 0; i < 3; ++i) if(s_Tb.gAlive[i] && TbDist2D(myDrawPos, s_Tb.gPos[i]) < 25.0f) { Vec3 p = s_Tb.gPos[i]; p.z += 0.55f; BcwLabel3D(bg, p, "Log", 0xBA9F7BFF, 17, 12); }
+        const int li = TbNearestLog(myDrawPos, 2.4f);
+        if(li >= 0 && s_Tb.nCarry < TB_CARRY_MAX) { showLoad = true; loadLab = "PICK UP"; }
+        else if(s_Tb.nCarry && TbAtTailgate(myDrawPos)) { showLoad = true; loadLab = "PUT IN"; }
+        if(s_Tb.nCarry)
+        {
+            char c[96]; snprintf(c, sizeof(c), "Carrying %d/%d log%s - back of the pickup + CROUCH to load", s_Tb.nCarry, TB_CARRY_MAX, s_Tb.nCarry == 1 ? "" : "s");
+            GmHudLine(fg, y, IM_COL32(186, 159, 123, 255), c); y += UI::S(34);
+        }
+    }
+    if(s_Tb.phase == TB_LOGS && s_Tb.act) TbBar(fg, s_Tb.act == 1 ? "Picking up the log" : "Loading the logs", 100.0f * (1.0f - std::max(0.0f, (float)((int64_t)s_Tb.actUntil - (int64_t)MP_NowMs())) / (s_Tb.act == 1 ? 1150.0f : 1000.0f)));
     if(s_Tb.phase == TB_CUT) TbBar(fg, "Cutting tree", s_Tb.prog);
-    if(s_Tb.phase == TB_LOAD) TbBar(fg, "Loading timber", s_Tb.loadProg);
     if(showCut || showLoad)
     {
         // the CUT / LOAD button (hold CUT; tap LOAD) over my head, like the screenshot
         Vec3 hp = myDrawPos; hp.z += 1.2f; ImVec2 sp;
         if(!BcwW2S(hp, sp)) sp = ImVec2(ds.x * 0.5f, ds.y * 0.55f);
-        const char* lab = showCut ? "CUT" : "LOAD";
+        const char* lab = showCut ? "CUT" : loadLab;
         const float bw = UI::S(110), bh = UI::S(56);
         ImGui::SetNextWindowPos(ImVec2(sp.x - bw * 0.5f, sp.y - bh * 0.5f));
         ImGui::SetNextWindowBgAlpha(0.0f);
@@ -558,7 +724,7 @@ static void TimberRender(ImDrawList* bg, ImDrawList* fg, float& y, float now)
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0.35f)); ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.2f, 0.1f, 0, 0.5f)); ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(1.0f, 0.42f, 0, 0.6f));
         ImGui::Button(lab, ImVec2(bw, bh));
         if(showCut) { s_Tb.holding = ImGui::IsItemActive(); if(s_Tb.holding) s_Tb.lastHold = MP_NowMs(); }
-        else { s_Tb.holding = false; if(ImGui::IsItemClicked()) s_Tb.loadReq = true; }
+        else { s_Tb.holding = false; if(ImGui::IsItemClicked()) { if(!strcmp(loadLab, "PUT IN")) s_Tb.putReq = true; else s_Tb.pickReq = true; } }
         ImGui::PopStyleColor(3);
         ImGui::End();
     }

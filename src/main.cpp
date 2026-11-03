@@ -496,6 +496,20 @@ void PadDrawCursor()   // inside the HUD's ImGui frame (hud.cpp)
     PadDrawHint("A tap   B close   X highlight mode   Back cursor");
 }
 
+// 3.58: Project DayZ real fog - the RenderWare camera far clip / fog distance are capped while a fog
+// event is on (Game::SetFogRadius): the world past the radius is inside the game's own fog, not an overlay
+DECL_HOOK(void*, RwCamFarClip, void* cam, float f)
+{
+    const float r = Game::FogRadius();
+    if(r > 0.0f && f > r) f = r;
+    return RwCamFarClip(cam, f);
+}
+DECL_HOOK(void*, RwCamFogDist, void* cam, float f)
+{
+    const float r = Game::FogRadius();
+    if(r > 0.0f && f > r * 0.18f) f = r * 0.18f;
+    return RwCamFogDist(cam, f);
+}
 #define HOOK_IF(_name, _sym) do { void* _a = (void*)aml->GetSym(pGameHandle, _sym); if(_a) { HOOK(_name, _a); ++hooked; } } while(0)
 static void HookTouchInterface()
 {
@@ -602,6 +616,7 @@ extern "C" void OnModLoad()
     HOOKSYM(CGame_Process, pGameHandle, "_ZN5CGame7ProcessEv");
     HOOKSYM(Render2dStuff, pGameHandle, "_Z13Render2dStuffv");
     HookTouchInterface();   // 2.19.5
+    { int hooked = 0; HOOK_IF(RwCamFarClip, "_Z23RwCameraSetFarClipPlaneP8RwCameraf"); HOOK_IF(RwCamFogDist, "_Z22RwCameraSetFogDistanceP8RwCameraf"); logger->Info("Fog: %d camera hooks", hooked); }   // 3.58
     HookGamepad();          // 3.39.2: controller
 
 #ifdef AML32
