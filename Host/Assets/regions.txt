@@ -1,0 +1,73 @@
+# MP Multiplayer - regional brokers (2.22). Downloaded by the mod (2.20+) at every start; it
+# measures the ping of every region and uses the fastest one. Termius + Termux read it too.
+# Server lists are shared between the regions by MpBridge (runs on the Asia server).
+#
+#   Asia     mpsamp.duckdns.org      Europe   eusamp.duckdns.org
+#   NA       nasamp.duckdns.org      Oceania  ocsamp.duckdns.org
+#
+# host / port / tls / user / pass -> the mod (MQTT 1883; second host = TLS 8883 fallback)
+# web / web_user / web_pass       -> the website (secure WebSocket 8884)
+# console                         -> web terminal of the region's HiveMQ server (login admin)
+# The "mp" and "web" logins are public on purpose: the broker's topic rules limit what they can do.
+# The bridge / admin / console passwords are NOT here (they stay in mp.env on the servers).
+# A region that is down is skipped; if all are down the mod uses the free public lobby.
+
+[Asia]
+host=mpsamp.duckdns.org
+port=1883
+tls=0
+user=mp
+pass=M6oehkIzqcJKSTalT8nL
+# fallback for networks that block 1883
+host=mqtts://mpsamp.duckdns.org:8883
+user=mp
+pass=M6oehkIzqcJKSTalT8nL
+web=wss://mpsamp.duckdns.org:8884/mqtt
+web_user=web
+web_pass=GtNTBqTW6sE3y0qacB18
+console=https://mpsamp.duckdns.org:7681/
+
+[Europe]
+host=eusamp.duckdns.org
+port=1883
+tls=0
+user=mp
+pass=M6oehkIzqcJKSTalT8nL
+# fallback for networks that block 1883
+host=mqtts://eusamp.duckdns.org:8883
+user=mp
+pass=M6oehkIzqcJKSTalT8nL
+web=wss://eusamp.duckdns.org:8884/mqtt
+web_user=web
+web_pass=GtNTBqTW6sE3y0qacB18
+console=https://eusamp.duckdns.org:7681/
+
+[NA]
+host=nasamp.duckdns.org
+port=1883
+tls=0
+user=mp
+pass=M6oehkIzqcJKSTalT8nL
+# fallback for networks that block 1883
+host=mqtts://nasamp.duckdns.org:8883
+user=mp
+pass=M6oehkIzqcJKSTalT8nL
+web=wss://nasamp.duckdns.org:8884/mqtt
+web_user=web
+web_pass=GtNTBqTW6sE3y0qacB18
+console=https://nasamp.duckdns.org:7681/
+
+[Oceania]
+host=ocsamp.duckdns.org
+port=1883
+tls=0
+user=mp
+pass=M6oehkIzqcJKSTalT8nL
+# fallback for networks that block 1883
+host=mqtts://ocsamp.duckdns.org:8883
+user=mp
+pass=M6oehkIzqcJKSTalT8nL
+web=wss://ocsamp.duckdns.org:8884/mqtt
+web_user=web
+web_pass=GtNTBqTW6sE3y0qacB18
+console=https://ocsamp.duckdns.org:7681/
