@@ -121,6 +121,7 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **4.01**: Project Day Z Legacy MTA models: fixed the RenderWare texture symbol name (the model loader always failed its engine check, so every model stayed GTA). Models now swap the XkiLoader way: the game reads its own gta3.img data and the clump/atomic loader hooks (plus a ped SetClump fallback) feed it the MTA dff from memory, with no more cd-size patching (vehicles keep the old buffer swap). dzmodels_log.txt lists the new hooks. Research notes: research/xkiloader-findings.md.
 - **4.00.2**: Project Day Z Legacy fixes:
   - **Can't move / zombies don't move** (Tierra Robada, Bone County, anywhere): while an MTA DayZ model waited to be swapped, the zombies with that model were deleted every second and your skin was switched away and back again and again - if the model never got free this went on forever (zombies respawning in place, your character reset all the time). Now new zombies just use another model until it is swapped, and the skin trick is done once per skin, only while you stand still. The controls are given back for 10 s after a spawn, and `/stuck` moves you a few metres if you are ever stuck.
   - **Zombie walk styles** only use names the game can read (8 letters); a zombie that should walk but stands still for 3 s goes back to the normal walk / gets its task again.

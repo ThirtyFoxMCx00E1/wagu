@@ -11,6 +11,10 @@
 // Models: PC dff files load fine on Android. CStreaming::ConvertBufferToObject is hooked: when the
 // game converts a model we replace, it gets the downloaded dff instead of the bytes it read from
 // gta3.img (its cd size is set to ours for that call, the memory counter is corrected after).
+// 4.01: models (not vehicles) no longer swap the buffer: the game converts its own bytes and the
+// CFileLoader::LoadClumpFile / LoadAtomicFile hooks (and CPedModelInfo::SetClump as a fallback)
+// read our dff from a memory stream instead. Also fixed: the RwTexDictionaryAddTexture symbol name
+// was mangled wrong (_Z26), so the engine check always failed and every model stayed GTA.
 // A model is only switched (txd slot index in its model info) while it is not loaded, so the
 // texture references of the game always stay balanced; models in use switch when they unload.
 //
@@ -64,6 +68,7 @@ struct Entry
     int slot = -1; int16_t origTxd = -1; bool built = false, swapped = false, bad = false, wanted = false;
     bool waitLogged = false, loadedOnce = false; int texMade = -1;   // 4.00: status / log
     int fails = 0;
+    bool noStream = false;           // 4.01: this model needs the old buffer swap
 };
 
 std::vector<Entry*> s_E;               // from the manifest
@@ -112,6 +117,55 @@ void (*SetupTxdParent)(int) = nullptr;
 void (*RemoveModel)(int) = nullptr;
 void* (*TexCreate)(RwRaster*) = nullptr;
 void* (*DictAddTex)(void*, void*) = nullptr;
+// 4.01: the model swap point (the way XkiLoader does it, see research/xkiloader-findings.md): the game
+// reads its own gta3.img bytes as normal, and when it hands the stream to the clump / atomic loader
+// (or gives a ped its clump) our dff is put in from a memory stream. Nothing about cd sizes changes.
+struct RwMem { uint8_t* start; uint32_t length; };
+bool  (*LoadClump_orig)(void*, unsigned) = nullptr;
+bool  (*LoadAtomic_orig)(void*, unsigned) = nullptr;
+void  (*PedSetClump_orig)(void*, void*) = nullptr;
+void* (*StreamOpen)(int, int, const void*) = nullptr;
+int   (*StreamClose)(void*, void*) = nullptr;
+int   (*StreamFindChunk)(void*, uint32_t, uint32_t*, uint32_t*) = nullptr;
+void* (*ClumpStreamRead)(void*) = nullptr;
+int   (*ClumpDestroy)(void*) = nullptr;
+int s_CurId = -1; bool s_CurUsed = false; const char* s_CurHow = "";
+std::vector<uint8_t> s_CurBuf; uint8_t* s_CurPtr = nullptr; uint32_t s_CurLen = 0;
+bool StreamMode() { return LoadClump_orig && LoadAtomic_orig && StreamOpen && StreamClose; }
+void* OpenCur() { RwMem m { s_CurPtr, s_CurLen }; return StreamOpen(3 /*rwSTREAMMEMORY*/, 1 /*rwSTREAMREAD*/, &m); }
+bool HookLoadClump(void* stream, unsigned id)
+{
+    if(s_CurId < 0 || (int)id != s_CurId || s_CurUsed) return LoadClump_orig(stream, id);
+    void* ms = OpenCur(); if(!ms) return LoadClump_orig(stream, id);
+    s_CurUsed = true; s_CurHow = "clump loader";
+    bool r = LoadClump_orig(ms, id);
+    StreamClose(ms, nullptr);
+    return r;
+}
+bool HookLoadAtomic(void* stream, unsigned id)
+{
+    if(s_CurId < 0 || (int)id != s_CurId || s_CurUsed) return LoadAtomic_orig(stream, id);
+    void* ms = OpenCur(); if(!ms) return LoadAtomic_orig(stream, id);
+    s_CurUsed = true; s_CurHow = "atomic loader";
+    bool r = LoadAtomic_orig(ms, id);
+    StreamClose(ms, nullptr);
+    return r;
+}
+// a ped clump that came another way (big model path): read ours, drop the game's one
+void HookPedSetClump(void* mi, void* clump)
+{
+    if(s_CurId >= 0 && !s_CurUsed && s_MI && (void*)s_MI[s_CurId] == mi && StreamFindChunk && ClumpStreamRead && ClumpDestroy)
+    {
+        void* ours = nullptr;
+        if(void* ms = OpenCur())
+        {
+            if(StreamFindChunk(ms, 0x10 /*rwID_CLUMP*/, nullptr, nullptr)) ours = ClumpStreamRead(ms);
+            StreamClose(ms, nullptr);
+        }
+        if(ours) { s_CurUsed = true; s_CurHow = "ped SetClump"; if(clump) ClumpDestroy(clump); clump = ours; }
+    }
+    PedSetClump_orig(mi, clump);
+}
 
 uint64_t NowMs() { timespec t; clock_gettime(CLOCK_MONOTONIC, &t); return (uint64_t)t.tv_sec * 1000 + t.tv_nsec / 1000000; }
 
@@ -449,19 +503,40 @@ bool HookCBTO(char* buf, int idx, int ch)
     Mark(idx);
     BuildTxd(e);
     std::vector<uint8_t> dff;
-    if(!ReadFile(CacheName(e->dff), dff)) { e->bad = true; Mark(0); return CBTO_orig(buf, idx, ch); }
-    uint32_t sectors = (uint32_t)((dff.size() + 2047) / 2048);
-    dff.resize((size_t)sectors * 2048, 0);
-    StreamingInfo& si = s_SI[idx];
-    uint32_t oldSize = si.cdSize; int mem0 = *s_MemUsed;
-    si.cdSize = sectors;
-    bool r = CBTO_orig((char*)dff.data(), idx, ch);
-    si.cdSize = oldSize;
-    int added = *s_MemUsed - mem0;
-    if(added == (int)sectors * 2048) *s_MemUsed -= ((int)sectors - (int)oldSize) * 2048;
+    if(!ReadFile(CacheName(e->dff), dff) || dff.size() < 12) { e->bad = true; Mark(0); return CBTO_orig(buf, idx, ch); }
+    bool r;
+    const char* how = "buffer swap";
+    if(StreamMode() && !e->noStream && e->kind != 'v' && s_CurId < 0)   // vehicles keep the buffer swap (big-model path)
+    {   // 4.01: the game reads its own bytes, our loader hooks hand it the MTA dff
+        s_CurBuf.assign(dff.size() + 16, 0);
+        s_CurPtr = (uint8_t*)(((uintptr_t)s_CurBuf.data() + 15) & ~(uintptr_t)15);
+        memcpy(s_CurPtr, dff.data(), dff.size()); s_CurLen = (uint32_t)dff.size();
+        s_CurId = idx; s_CurUsed = false;
+        r = CBTO_orig(buf, idx, ch);
+        bool used = s_CurUsed; how = s_CurHow;
+        s_CurId = -1; s_CurPtr = nullptr; s_CurLen = 0; std::vector<uint8_t>().swap(s_CurBuf);
+        if(!used)
+        {   // the conversion never reached a loader we hook: use the old way from the next load on
+            e->noStream = true; Mark(0);
+            DzLog(true, "DzModels: model %d did not go through the clump/atomic loader - next load uses the buffer swap", idx);
+            return r;
+        }
+    }
+    else
+    {
+        uint32_t sectors = (uint32_t)((dff.size() + 2047) / 2048);
+        dff.resize((size_t)sectors * 2048, 0);
+        StreamingInfo& si = s_SI[idx];
+        uint32_t oldSize = si.cdSize; int mem0 = *s_MemUsed;
+        si.cdSize = sectors;
+        r = CBTO_orig((char*)dff.data(), idx, ch);
+        si.cdSize = oldSize;
+        int added = *s_MemUsed - mem0;
+        if(added == (int)sectors * 2048) *s_MemUsed -= ((int)sectors - (int)oldSize) * 2048;
+    }
     Mark(0);
-    if(r && !e->loadedOnce) { e->loadedOnce = true; DzLog(false, "DzModels: model %d (%s) is in the game now (MTA dff, %u sectors)", idx, e->dff.c_str(), sectors); }
-    if(!r) DzLog(true, "DzModels: the game could not read %s for model %d (try %d)", e->dff.c_str(), idx, e->fails + 1);
+    if(r && !e->loadedOnce) { e->loadedOnce = true; DzLog(false, "DzModels: model %d (%s) is in the game now (MTA dff via %s)", idx, e->dff.c_str(), how); }
+    if(!r) DzLog(true, "DzModels: the game could not read %s for model %d via %s (try %d)", e->dff.c_str(), idx, how, e->fails + 1);
     if(!r && ++e->fails >= 2) { e->bad = true; DzLog(true, "DzModels: model %d (%s) did not load - GTA model kept", idx, e->dff.c_str()); }
     return r;
 }
@@ -544,13 +619,27 @@ void DzModels::Init(void* h)
     *(void**)&SetupTxdParent = (void*)aml->GetSym(h, "_ZN9CTxdStore14SetupTxdParentEi");
     *(void**)&RemoveModel = (void*)aml->GetSym(h, "_ZN10CStreaming11RemoveModelEi");
     *(void**)&TexCreate = (void*)aml->GetSym(h, "_Z15RwTextureCreateP8RwRaster");
-    *(void**)&DictAddTex = (void*)aml->GetSym(h, "_Z26RwTexDictionaryAddTextureP15RwTexDictionaryP9RwTexture");
+    *(void**)&DictAddTex = (void*)aml->GetSym(h, "_Z25RwTexDictionaryAddTextureP15RwTexDictionaryP9RwTexture");
     if(!TexCreate) *(void**)&TexCreate = (void*)aml->GetSym(h, "RwTextureCreate");
     if(!DictAddTex) *(void**)&DictAddTex = (void*)aml->GetSym(h, "RwTexDictionaryAddTexture");
     void* f = (void*)aml->GetSym(h, "_ZN10CStreaming21ConvertBufferToObjectEPcii");
     if(f && s_SI && s_MemUsed && s_MI) aml->Hook(f, (void*)&HookCBTO, (void**)&CBTO_orig);
+    // 4.01: RenderWare streams + the loader hooks
+    *(void**)&StreamOpen = (void*)aml->GetSym(h, "_Z12RwStreamOpen12RwStreamType18RwStreamAccessTypePKv");
+    *(void**)&StreamClose = (void*)aml->GetSym(h, "_Z13RwStreamCloseP8RwStreamPv");
+    *(void**)&StreamFindChunk = (void*)aml->GetSym(h, "_Z17RwStreamFindChunkP8RwStreamjPjS1_");
+    *(void**)&ClumpStreamRead = (void*)aml->GetSym(h, "_Z17RpClumpStreamReadP8RwStream");
+    *(void**)&ClumpDestroy = (void*)aml->GetSym(h, "_Z14RpClumpDestroyP7RpClump");
+    if(CBTO_orig && StreamOpen && StreamClose)
+    {
+        if(void* g = (void*)aml->GetSym(h, "_ZN11CFileLoader13LoadClumpFileEP8RwStreamj")) aml->Hook(g, (void*)&HookLoadClump, (void**)&LoadClump_orig);
+        if(void* g = (void*)aml->GetSym(h, "_ZN11CFileLoader14LoadAtomicFileEP8RwStreamj")) aml->Hook(g, (void*)&HookLoadAtomic, (void**)&LoadAtomic_orig);
+        if(StreamFindChunk && ClumpStreamRead && ClumpDestroy)
+            if(void* g = (void*)aml->GetSym(h, "_ZN14CPedModelInfo8SetClumpEP7RpClump")) aml->Hook(g, (void*)&HookPedSetClump, (void**)&PedSetClump_orig);
+    }
     s_Cache = FindCacheDir();
     if(!s_Cache.empty()) LoadBad();
+    DzLog(false, "DzModels: loader hooks clump %s atomic %s ped %s", LoadClump_orig ? "ok" : "-", LoadAtomic_orig ? "ok" : "-", PedSetClump_orig ? "ok" : "-");
     DzLog(false, "DzModels: hook %s, txd %s, rw %s, cache %s", CBTO_orig ? "ok" : "-", (AddTxdSlot && TxdCreate && s_TxdPool) ? "ok" : "-",
                  (TexCreate && DictAddTex) ? "ok" : "-", s_Cache.empty() ? "-" : s_Cache.c_str());
 }
@@ -621,6 +710,8 @@ void DzModels::SetLogPath(const char* path)
         fprintf(f, "streamer hook: %s | txd store: %s | RW textures: %s | model table: %s | streaming table: %s\n",
                 CBTO_orig ? "ok" : "MISSING", (AddTxdSlot && TxdCreate && s_TxdPool) ? "ok" : "MISSING", (TexCreate && DictAddTex) ? "ok" : "MISSING",
                 s_MI ? "ok" : "MISSING", s_SI ? "ok" : "MISSING");
+        fprintf(f, "4.01 loader hooks: clump %s | atomic %s | ped SetClump %s | RW stream %s\n", LoadClump_orig ? "ok" : "MISSING",
+                LoadAtomic_orig ? "ok" : "MISSING", PedSetClump_orig ? "ok" : "MISSING", (StreamOpen && StreamClose) ? "ok" : "MISSING");
         fprintf(f, "cache: %s\n", s_Cache.empty() ? "NONE (no writable folder - nothing can be downloaded)" : s_Cache.c_str());
         if(!s_Bad.empty()) { fputs("skipped (the game closed twice while loading them):", f); for(int id : s_Bad) fprintf(f, " %d", id); fputs("  - /dzmodels reset to try them again\n", f); }
         fclose(f);
@@ -630,7 +721,7 @@ void DzModels::ResetBad()
 {
     if(!s_Cache.empty()) { unlink((s_Cache + "/bad.txt").c_str()); unlink((s_Cache + "/inhook.txt").c_str()); }
     s_Bad.clear();
-    for(Entry* e : s_E) { e->bad = false; e->fails = 0; }
+    for(Entry* e : s_E) { e->bad = false; e->fails = 0; e->noStream = false; }
     s_Disabled = false; s_Checked = false; s_Ok = false; s_NextCheck = 0;
     DzLog(false, "DzModels: reset - every model is tried again");
 }

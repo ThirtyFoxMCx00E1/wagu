@@ -1,6 +1,7 @@
 {
-"latest": "4.00.2",
+"latest": "4.01",
 "supported": [
+"4.01",
 "4.00.2",
 "4.00.1",
 "4.00",
@@ -81,6 +82,11 @@
 "3.04.6"
 ],
 "versions": [
+{
+"v": "4.01",
+"summary": "Project Day Z Legacy MTA models: fixed the RenderWare texture symbol name (the model loader always failed its engine check, so every model stayed GTA). Models now swap the XkiLoader way: the game reads its own gta3.img data and the clump/atomic loader hooks (plus a ped SetClump fallback) feed it the MTA dff from memory, with no more cd-size patching (vehicles keep the old buffer swap). dzmodels_log.txt lists the new hooks. Research notes: research/xkiloader-findings.md.",
+"items": []
+},
 {
 "v": "4.00.2",
 "summary": "Project Day Z Legacy fixes:",
