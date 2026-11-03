@@ -674,6 +674,7 @@ static int  Mw3RadarZones(Game::RadarZone* out, int maxOut);
 // 3.58: Project Day Z Legacy (mp_dayz.inc)
 static bool s_bDzJoin = false;
 static bool DzOnServer();
+static bool DzHideCorner();   // 3.60
 static int DzAdjustDamage(int hp, int dmg, bool instant);   // 3.59: helmet vs headshot, DOWN at 5%
 static bool DzHidden();
 static void DzProcess(int ped, uint64_t now);

@@ -102,6 +102,7 @@ static bool DzOnServer()
 {
     return client.GetState() == NET_CONNECTED && MP_IsDzServerName(client.GetServerName()[0] ? client.GetServerName() : s_szCurServer);
 }
+static bool DzHideCorner() { return DzOnServer() && s_Dz.view == 2 && !Game::IsPaused(); }   // 3.60: in game on Day Z (GPS bottom-left)
 bool MP::IsOnDz() { return DzOnServer(); }
 static bool DzHidden() { return s_Dz.engaged && (s_Dz.view == 1 || s_Dz.view == 3); }
 static ImU32 DzCol(uint32_t rgba, float a = 1.0f) { return UI::FromRGBA(rgba, a < 0 ? 0 : (a > 1 ? 1 : a)); }

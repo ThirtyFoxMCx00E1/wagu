@@ -121,6 +121,8 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **3.60.1**: **Project Day Z Legacy**: the bottom-left "SUMMER / Los Santos / 24 C / Extra Sunny / New session in ..." text is gone while you play on Day Z.
+  - That text comes from another mod (DynamicSeason) printed with the game's font right over the Day Z GPS. While you are in game on Day Z, game-font text that starts in the bottom-left corner is not drawn (MP's own text and the other servers are not touched; it comes back in the pause menu and after you leave).
 - **3.60**: **Project Day Z Legacy** fixes from the 19 new screenshots: spawning, freezes, a bigger HUD like the MTA DayZ screenshots, icon buttons, the 10 rules window, a new server icon and a click sound for every button.
   - Spawn fix: tapping a location on the spawn map now always spawns you there (before every location put you at the same Grove Street spot). The login cabin parks you under Grove Street, and that spot was saved as "where you logged out" - now only real outdoor positions are saved.
   - Stuck / roof spawn fix: after a spawn the controls, HUD and ped are unfrozen again for 3 s, and a bad height (under the map or on a roof) is moved down to the ground.

@@ -1357,6 +1357,21 @@ static void (*FontSetProportional)(bool) = nullptr;
 static void (*FontSetBackground)(bool, bool) = nullptr;
 static void (*FontPrintString)(float, float, uint16_t*) = nullptr;
 static void (*FontRenderBuffer)() = nullptr;
+// 3.60: other mods (DynamicSeason: "SUMMER / Los Santos / 24 C / Extra Sunny / New session in 1373m") print with the
+// game's CFont in the bottom-left corner - right over the Project Day Z GPS. While HideCornerText is on, strings
+// whose start is in the left 45 % + bottom 42 % of the screen are dropped (the game itself prints nothing there).
+static void (*FontPrintString_orig)(float, float, uint16_t*) = nullptr;
+static bool s_bHideCornerText = false;
+void Game::HideCornerText(bool on) { s_bHideCornerText = on; }
+static void HookFontPrintString(float x, float y, uint16_t* text)
+{
+    if(s_bHideCornerText && text)
+    {
+        float sw = (float)Game::ScreenWidth(), sh = (float)Game::ScreenHeight();
+        if(sw > 320 && sh > 200 && x < sw * 0.45f && y > sh * 0.58f) return;
+    }
+    if(FontPrintString_orig) FontPrintString_orig(x, y, text);
+}
 static void (*FontSetCentreSize)(float) = nullptr;
 static void (*FontSetWrapx)(float) = nullptr;
 static u8* s_pMenu = nullptr;      // gMobileMenu
@@ -1633,6 +1648,9 @@ void Game::InitNetState217(void* h)
     SET_TO(FontSetProportional, aml->GetSym(h, "_ZN5CFont15SetProportionalEh"));
     SET_TO(FontSetBackground,   aml->GetSym(h, "_ZN5CFont13SetBackgroundEhh"));
     SET_TO(FontPrintString,     aml->GetSym(h, "_ZN5CFont11PrintStringEffPt"));
+    if(FontPrintString && aml->Hook((void*)FontPrintString, (void*)&HookFontPrintString, (void**)&FontPrintString_orig) && FontPrintString_orig)
+        FontPrintString = FontPrintString_orig;   // 3.60: MP's own text skips the corner filter
+    logger->Info("3.60: corner text filter %s", FontPrintString_orig ? "on" : "off");
     SET_TO(FontRenderBuffer,    aml->GetSym(h, "_ZN5CFont16RenderFontBufferEv"));
     SET_TO(FontSetCentreSize,   aml->GetSym(h, "_ZN5CFont13SetCentreSizeEf"));
     SET_TO(FontSetWrapx,        aml->GetSym(h, "_ZN5CFont8SetWrapxEf"));

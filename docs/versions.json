@@ -1,6 +1,7 @@
 {
-"latest": "3.60",
+"latest": "3.60.1",
 "supported": [
+"3.60.1",
 "3.60",
 "3.59",
 "3.58",
@@ -74,6 +75,13 @@
 "3.04.6"
 ],
 "versions": [
+{
+"v": "3.60.1",
+"summary": "**Project Day Z Legacy**: the bottom-left \"SUMMER / Los Santos / 24 C / Extra Sunny / New session in ...\" text is gone while you play on Day Z.",
+"items": [
+"That text comes from another mod (DynamicSeason) printed with the game's font right over the Day Z GPS. While you are in game on Day Z, game-font text that starts in the bottom-left corner is not drawn (MP's own text and the other servers are not touched; it comes back in the pause menu and after you leave)."
+]
+},
 {
 "v": "3.60",
 "summary": "**Project Day Z Legacy** fixes from the 19 new screenshots: spawning, freezes, a bigger HUD like the MTA DayZ screenshots, icon buttons, the 10 rules window, a new server icon and a click sound for every button.",

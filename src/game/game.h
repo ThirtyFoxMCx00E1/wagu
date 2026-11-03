@@ -118,6 +118,7 @@ namespace Game
     // Screen
     bool  WorldToScreen(const Vec3& world, float& sx, float& sy, float& depth);
     int   ScreenWidth();
+    void  HideCornerText(bool on);   // 3.60: drop other mods' game-font text in the bottom-left (Day Z GPS spot)
     int   ScreenHeight();
     bool  IsPaused();
 
