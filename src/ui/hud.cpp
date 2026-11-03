@@ -1196,7 +1196,22 @@ bool HUD::HasGlobalClick()
         s_next = now + 3000;   // look for the file again every 3 s (it can be pasted while playing)
         const char* d = MP::DataDir();
         s_bGlobalClick = false;
-        if(d && d[0]) { snprintf(s_szGlobalClick, sizeof(s_szGlobalClick), "%s/global_click.mp3", d); s_bGlobalClick = access(s_szGlobalClick, R_OK) == 0; }
+        if(d && d[0])
+        {
+            snprintf(s_szGlobalClick, sizeof(s_szGlobalClick), "%s/global_click.mp3", d); s_bGlobalClick = access(s_szGlobalClick, R_OK) == 0;
+            if(!s_bGlobalClick)
+            {   // 4.00.2: any case / extension: "Global_click.mp3", "GLOBAL_CLICK.MP3", "global_click.mp3.mp3", ".wav", ".ogg" ...
+                DIR* dir = opendir(d);
+                if(dir)
+                {
+                    struct dirent* e;
+                    while((e = readdir(dir)) != nullptr)
+                        if(!strncasecmp(e->d_name, "global_click", 12) || !strncasecmp(e->d_name, "global click", 12) || !strncasecmp(e->d_name, "globalclick", 11))
+                        { snprintf(s_szGlobalClick, sizeof(s_szGlobalClick), "%s/%s", d, e->d_name); s_bGlobalClick = access(s_szGlobalClick, R_OK) == 0; if(s_bGlobalClick) break; }
+                    closedir(dir);
+                }
+            }
+        }
     }
     return s_bGlobalClick;
 }

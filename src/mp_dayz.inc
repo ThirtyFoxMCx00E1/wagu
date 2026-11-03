@@ -30,7 +30,8 @@ static const Vec3 kDzCabinOutLook = { -1630.5f, -2243.5f, 31.6f };
 
 struct DzLootC { uint16_t idx; uint8_t item, count; float x, y, z; int obj; bool zDone; uint64_t tryAt = 0; uint8_t tries = 0; };
 struct DzZed   { int ped; uint64_t born, deadAt; int lastHp; bool reported; bool hunting = false; uint64_t wanderAt = 0, huntAt = 0; int model = 0;
-                  uint64_t atkAt = 0, hitDue = 0, idleAt = 0; int style = 0; bool styled = false; int dmg = 0; };
+                  uint64_t atkAt = 0, hitDue = 0, idleAt = 0; int style = 0; bool styled = false; int dmg = 0;
+                  Vec3 lastP{}; uint64_t stillSince = 0, goAt = 0; int unstuck = 0; };
 struct DzNum   { Vec3 at; bool world; float sx, sy; int val; uint64_t t; bool green; };
 struct DzDrop  { float x, y, vy; uint64_t t; bool green; };
 struct DzProp  { int model, alt; Vec3 p; float rz, rx; int obj; };
@@ -791,7 +792,7 @@ static bool DzZedSafeHere(const Vec3& me)
 // idle sway, alert / turn, claw swipes left + right, an overhead smash, a lunge / grab, hit stagger, death.
 // GTA SA has no zombie .ifp, so these are the closest stock anims (all of them exist on mobile too):
 // walk styles from animgrp.dat (drunkman = staggering, oldman / oldfatman = slow limp, shuffle = dragging feet)
-static const char* const kDzZedWalk[] = { "drunkman", "oldman", "oldfatman", "shuffle", "drunkman" };
+static const char* const kDzZedWalk[] = { "drunkman", "oldman", "shuffle", "drunkman", "oldman" };   // 4.00.2: names of max 8 letters (the game reads 8)
 struct DzZedAnim { const char* file; const char* anim; int ms; int hitMs; };
 static const DzZedAnim kDzZedAtk[] = {
     { "ped",      "BIKE_elbowL", 900, 380 },   // claw swipe, left arm
@@ -842,7 +843,7 @@ static void DzZedTick(int ped, const Vec3& me, uint64_t now)
                 z.hunting = true;   // hurt: it knows where you are
             }
             z.lastHp = hp;
-            if(!z.styled && now - z.born > 300) { z.styled = true; Game::SetAnimGroup(z.ped, kDzZedWalk[z.style % 5]); }
+            if(!z.styled && now - z.born > 300) { z.styled = true; if(z.style >= 0) Game::SetAnimGroup(z.ped, kDzZedWalk[z.style % 5]); }
             if(z.hitDue && now >= z.hitDue)
             {   // 4.00: the claw / bite lands (our own hit, the zombies don't punch with GTA fists anymore)
                 z.hitDue = 0;
@@ -857,6 +858,19 @@ static void DzZedTick(int ped, const Vec3& me, uint64_t now)
                         Game::SetCharHealth(ped, nh); s_Dz.prevHp = nh;
                         DzSend(DZCMD_HIT, 1, 0, nh); s_Dz.combatUntil = now + 15000;
                     }
+                }
+            }
+            {   // 4.00.2: a zombie that should walk but stands still for 3 s: first back to the normal walk
+                // style (a walk style without its anims = can't walk), then its task is cleared and given again
+                bool wantMove = (z.hunting && d > 2.2f) || (!z.hunting && z.goAt && now - z.goAt < 5000);
+                float mx = zp.x - z.lastP.x, my = zp.y - z.lastP.y;
+                if(!wantMove || mx * mx + my * my > 0.35f * 0.35f) { z.lastP = zp; z.stillSince = now; }
+                else if(now - z.stillSince > 3000 && now > z.atkAt + 1500)
+                {
+                    z.stillSince = now; ++z.unstuck;
+                    if(z.styled && z.style >= 0) { Game::SetAnimGroup(z.ped, "man"); z.style = -1; logger->Info("DZ: zombie %d did not walk with its walk style: normal walk", z.ped); }
+                    else Game::ClearTasksNow(z.ped);
+                    z.huntAt = 0; z.wanderAt = 0;
                 }
             }
             if(!z.hunting && (d < detect || d < 3.0f)) { z.hunting = true; z.huntAt = 0; }
@@ -875,7 +889,7 @@ static void DzZedTick(int ped, const Vec3& me, uint64_t now)
                         { z.atkAt = now; z.hitDue = now + a.hitMs; z.huntAt = now + a.ms - 1200; }
                     }
                 }
-                else if(now > z.atkAt + 900 && now - z.huntAt > 700)
+                else if(now > z.atkAt + 900 && now - z.huntAt > 1200)
                 {   // chase: shamble (walk style) or, on veteran / hardcore and far away, a lurching run
                     z.huntAt = now;
                     Game::NpcGoTo(z.ped, me, (diff >= 1 && d > 7.0f) || d > 18.0f);
@@ -892,7 +906,7 @@ static void DzZedTick(int ped, const Vec3& me, uint64_t now)
                 else
                 {
                     float a = (float)(rand() % 628) / 100.0f, r = 4.0f + rand() % 10;
-                    Game::NpcGoTo(z.ped, { zp.x + cosf(a) * r, zp.y + sinf(a) * r, zp.z }, false);
+                    Game::NpcGoTo(z.ped, { zp.x + cosf(a) * r, zp.y + sinf(a) * r, zp.z }, false); z.goAt = now;
                 }
             }
         }
@@ -936,6 +950,7 @@ static void DzZedTick(int ped, const Vec3& me, uint64_t now)
     float gz = Game::GroundZBelow(p.x, p.y, p.z); if(gz < -500.0f || fabsf(gz - me.z) > 25.0f) return;
     p.z = gz + 1.0f;
     int skin = kDzZedSkins[rand() % (int)(sizeof(kDzZedSkins) / sizeof(kDzZedSkins[0]))];
+    for(int t = 0; t < 8 && DzModels::Pending(skin); ++t) skin = kDzZedSkins[rand() % (int)(sizeof(kDzZedSkins) / sizeof(kDzZedSkins[0]))];   // 4.00.2: let a waiting model get free
     {   // 3.61: the MTA DayZ zombies, once they are in the game
         int mz[sizeof(kDzMtaZeds) / sizeof(kDzMtaZeds[0])], n = 0;
         for(int z : kDzMtaZeds) if(DzModels::IsReplaced(z)) mz[n++] = z;
@@ -1051,7 +1066,7 @@ static void DzProcess(int ped, uint64_t now)
     Vec3 me; if(!Game::GetCharPos(ped, me)) return;
     // 3.60: "I spawn and can't move" - the cabin froze the ped and took the controls every second; one of
     // those could land after the spawn. For the first 3 s the controls + position are given back again.
-    if(s_Dz.view == 2 && now - s_Dz.spawnedAt < 3000 && now - s_Dz.lastUnstick > 350 && !DzXDowned())
+    if(s_Dz.view == 2 && now - s_Dz.spawnedAt < 10000 && now - s_Dz.lastUnstick > 350 && !DzXDowned() && !DzXProne())   // 4.00.2: 10 s
     { s_Dz.lastUnstick = now; Game::FreezeChar(ped, false); Game::SetPlayerControl(true); Game::ShowGameHud(true); }
     // 4.00.1: stuck after a spawn (Bone County: in a rock / a house): the stick is pushed but you don't move
     if(s_Dz.view == 2 && now - s_Dz.spawnedAt < 180000 && !DzXDowned() && !DzXProne() && !Game::IsCharInAnyCar(ped))
@@ -1162,6 +1177,18 @@ static void DzLocalCmd(const char* cmd)
     if(!strcmp(cmd, "skills")) { DzXJournal(2); return; }
     if(!strcmp(cmd, "checkbody")) { DzSend(DZCMD_CHECKBODY, 0, 0, -1); return; }
     if(!strcmp(cmd, "music") || !strcmp(cmd, "ambient")) { DzAmbToggle(); return; }   // 3.63
+    if(!strcmp(cmd, "stuck") || !strcmp(cmd, "unstuck"))
+    {   // 4.00.2: can't move: controls back, tasks cleared, a few metres away on the ground
+        int ped = Game::LocalPed(); Vec3 me;
+        if(ped > 0 && !Game::IsCharInAnyCar(ped) && !DzXDowned() && Game::GetCharPos(ped, me))
+        {
+            Game::FreezeChar(ped, false); Game::SetPlayerControl(true); Game::ClearTasksNow(ped);
+            float a = (float)(rand() % 628) / 100.0f;
+            Game::TeleportGround(ped, { me.x + cosf(a) * 5.0f, me.y + sinf(a) * 5.0f, me.z + 2.0f }, Game::GetCharHeading(ped));
+            DzNotice(DZ_GRY, "Unstuck.");
+        }
+        return;
+    }
     if(!strcmp(cmd, "dzmodels")) { DzModelsReport(false); return; }   // 4.00
     if(!strcmp(cmd, "hud")) { s_Dz.opt.logo = !s_Dz.opt.logo; return; }
     if(!strcmp(cmd, "fps") || !strcmp(cmd, "ping")) { s_Dz.opt.fps = !s_Dz.opt.fps; return; }
@@ -1198,7 +1225,7 @@ static bool DzCommand(const char* cmd, const char* arg)
     if(DzPassCmd(c)) return false;
     static const char* const local[] = { "inv", "bag", "map", "gps", "compass", "hud", "armor", "weapon", "fps", "ping", "eat", "drink", "heal",
                                          "bandage", "cure", "painkillers", "drop", "pickup", "refuel", "fuel", "list", "tab", "online", "journal", "debug",
-                                         "achievements", "ach", "skills", "checkbody", "music", "ambient", "dzmodels" };
+                                         "achievements", "ach", "skills", "checkbody", "music", "ambient", "dzmodels", "stuck", "unstuck" };
     if(!strcmp(c, "dzmodels")) { DzModelsReport(arg && strstr(arg, "reset")); return true; }   // 4.00: /dzmodels [reset]
     for(const char* l : local) if(!strcmp(c, l)) { DzLocalCmd(c); return true; }
     if(!strcmp(c, "panel") || !strcmp(c, "f2")) { s_Dz.panelOpen = !s_Dz.panelOpen; return true; }

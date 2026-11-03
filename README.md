@@ -121,6 +121,11 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **4.00.2**: Project Day Z Legacy fixes:
+  - **Can't move / zombies don't move** (Tierra Robada, Bone County, anywhere): while an MTA DayZ model waited to be swapped, the zombies with that model were deleted every second and your skin was switched away and back again and again - if the model never got free this went on forever (zombies respawning in place, your character reset all the time). Now new zombies just use another model until it is swapped, and the skin trick is done once per skin, only while you stand still. The controls are given back for 10 s after a spawn, and `/stuck` moves you a few metres if you are ever stuck.
+  - **Zombie walk styles** only use names the game can read (8 letters); a zombie that should walk but stands still for 3 s goes back to the normal walk / gets its task again.
+  - **Click sound**: `global_click.mp3` is found with any capital letters (`Global_click.mp3`, `GLOBAL_CLICK.MP3`, `global_click.mp3.mp3` ...) and a click file the mp3 decoder can't read (wav / ogg / m4a) plays with the Android decoder.
+  - The website uses the multiplayer icon as its tab icon; `.github/social-preview.png` is the image for GitHub link previews (Settings -> Social preview).
 - **4.00.1**: Project Day Z Legacy fixes:
   - **No fog** - the fog is removed completely (no fog events, clear view; /fog says there is none).
   - **Ambient music plays**: dz_ambient.mp3 that is really an m4a / aac / ogg / opus / webm (YouTube downloads) or an mp3 the built-in decoder can't read now plays with the Android decoder; the file is also found as "dz_ambient.mp3.mp3", "DZ_Ambient.MP3", "dz_ambient (1).mp3", .m4a ... in files/MP, files/MP/music or files/; put it in while playing and it starts within 20 s. Why it does (not) play: `files/MP/dz_music_log.txt`.

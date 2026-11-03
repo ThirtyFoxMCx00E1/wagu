@@ -510,11 +510,50 @@ void* Sound::EngineItf() { return EnsureEngine() ? (void*)g_EngineItf : nullptr;
 void* Sound::OutputMix() { return EnsureEngine() ? (void*)g_Mix : nullptr; }
 
 // 3.29: UI clicks - a missing file is decoded (tried) once and then just stays silent
+// 4.00.2: UI clicks the mp3 decoder can't read (a wav / ogg / m4a named .mp3): the Android decoder,
+// one player per file, rewound and started again on every click
+namespace
+{
+    struct UiFd { std::string path; SLObjectItf obj = nullptr; SLPlayItf play = nullptr; SLVolumeItf vol = nullptr; SLSeekItf seek = nullptr; int fd = -1; bool bad = false; };
+    UiFd s_UiFd[3];
+    bool UiFdPlay(const char* path, float volume)
+    {
+        UiFd* u = nullptr;
+        for(UiFd& x : s_UiFd) if(x.path == path) { u = &x; break; }
+        if(!u) { for(UiFd& x : s_UiFd) if(x.path.empty()) { u = &x; break; } }
+        if(!u) { u = &s_UiFd[0]; if(u->obj) (*u->obj)->Destroy(u->obj); if(u->fd >= 0) close(u->fd); *u = UiFd(); }
+        if(u->bad) return false;
+        if(!u->obj)
+        {
+            u->path = path;
+            int fd = open(path, O_RDONLY); if(fd < 0) { u->bad = true; return false; }
+            SLDataLocator_AndroidFD loc = { SL_DATALOCATOR_ANDROIDFD, fd, 0, SL_DATALOCATOR_ANDROIDFD_USE_FILE_SIZE };
+            SLDataFormat_MIME mime = { SL_DATAFORMAT_MIME, nullptr, SL_CONTAINERTYPE_UNSPECIFIED };
+            SLDataSource src = { &loc, &mime };
+            SLDataLocator_OutputMix outMix = { SL_DATALOCATOR_OUTPUTMIX, g_Mix };
+            SLDataSink sink = { &outMix, nullptr };
+            const SLInterfaceID ids[2] = { SL_IID_VOLUME, SL_IID_SEEK };
+            const SLboolean req[2] = { SL_BOOLEAN_FALSE, SL_BOOLEAN_FALSE };
+            if((*g_EngineItf)->CreateAudioPlayer(g_EngineItf, &u->obj, &src, &sink, 2, ids, req) != SL_RESULT_SUCCESS) { close(fd); u->obj = nullptr; u->bad = true; return false; }
+            if((*u->obj)->Realize(u->obj, SL_BOOLEAN_FALSE) != SL_RESULT_SUCCESS || (*u->obj)->GetInterface(u->obj, SL_IID_PLAY, &u->play) != SL_RESULT_SUCCESS)
+            { (*u->obj)->Destroy(u->obj); close(fd); u->obj = nullptr; u->bad = true; logger->Error("Sound: %s can't be played", path); return false; }
+            if((*u->obj)->GetInterface(u->obj, SL_IID_VOLUME, &u->vol) != SL_RESULT_SUCCESS) u->vol = nullptr;
+            if((*u->obj)->GetInterface(u->obj, SL_IID_SEEK, &u->seek) != SL_RESULT_SUCCESS) u->seek = nullptr;
+            u->fd = fd;
+            logger->Info("Sound: %s plays with the Android decoder", path);
+        }
+        if(u->vol) (*u->vol)->SetVolumeLevel(u->vol, (volume <= 0.01f) ? SL_MILLIBEL_MIN : (SLmillibel)(2000.0f * log10f(volume > 1.0f ? 1.0f : volume)));
+        (*u->play)->SetPlayState(u->play, SL_PLAYSTATE_STOPPED);   // stopped = back to the start
+        if(u->seek) (*u->seek)->SetPosition(u->seek, 0, SL_SEEKMODE_FAST);
+        return (*u->play)->SetPlayState(u->play, SL_PLAYSTATE_PLAYING) == SL_RESULT_SUCCESS;
+    }
+}
+
 bool Sound::PlayUi(const char* path, float volume)
 {
     if(!path || !*path || !EnsureEngine()) return false;
     const Pcm* p = Decode(path);
-    if(!p) return false;
+    if(!p) return UiFdPlay(path, volume);   // 4.00.2
     Voice& v = s_Ui[s_nNextUi]; s_nNextUi = (s_nNextUi + 1) % 2;
     return PlayOn(v, *p, volume);
 }

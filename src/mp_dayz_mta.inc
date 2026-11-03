@@ -418,29 +418,27 @@ static void DzModelsRefresh(int ped, uint64_t now)
         for(int i = 0; i < s_Dz.nProps; ++i) if(s_Dz.props[i].obj > 0) { Game::DeleteWorldObject(s_Dz.props[i].obj); s_Dz.props[i].obj = 0; }
     }
     lastSwaps = swaps;
-    for(size_t i = 0; i < s_Dz.zeds.size();)
-    {
-        DzZed& z = s_Dz.zeds[i];
-        int m = z.model;
-        if(m > 0 && DzModels::Pending(m) && !z.hunting) { Game::DeleteChar(z.ped); s_Dz.zeds.erase(s_Dz.zeds.begin() + i); continue; }
-        ++i;
-    }
-    if(skinBack < 0 && ped > 0 && !Game::IsCharInAnyCar(ped) && !Game::IsCharDead(ped))
+    // 4.00.2: no more deleting zombies every second / switching your skin again and again while a model
+    // waits (if it never got free, the zombies kept respawning in place and you were reset all the time =
+    // "I can't move" + "zombies don't move"). New zombies just avoid waiting models (DzZedTick), and the
+    // skin trick is tried ONCE per skin, only while you stand still, never in the first 15 s after a spawn.
+    static int tried[8] = {}; static int nTried = 0;
+    if(skinBack < 0 && ped > 0 && !Game::IsCharInAnyCar(ped) && !Game::IsCharDead(ped) && !DzXDowned() && !DzXProne()
+       && s_Dz.view == 2 && now - s_Dz.spawnedAt > 15000 && Game::GetCharSpeed(ped) < 0.05f)
     {
         int m = Game::LocalModel();
-        if(m > 0 && DzModels::Pending(m))
+        bool done = false; for(int k = 0; k < nTried; ++k) if(tried[k] == m) done = true;
+        if(m > 0 && !done && nTried < 8 && DzModels::Pending(m))
         {
+            tried[nTried++] = m;
             const int tmp = DzModels::Pending(252) ? 0 : 252;
             if(tmp && Game::ModelReady(tmp) && Game::SetLocalModel(tmp)) { skinBack = m; skinAt = now; }
         }
     }
-    else if(skinBack >= 0 && (now - skinAt > 1500))
-    {   // the skin is free now: switched; put it back (it loads the MTA model)
-        if(!DzModels::Pending(skinBack) || now - skinAt > 8000)
-        {
-            if(!Game::ModelReady(skinBack)) return;
-            if(Game::SetLocalModel(skinBack) || now - skinAt > 15000) skinBack = -1;
-        }
+    else if(skinBack >= 0 && now - skinAt > 1200)
+    {   // put it back after ~1 s (it loads the MTA model if it got free), always within 3 s
+        if(Game::ModelReady(skinBack) && (Game::SetLocalModel(skinBack) || now - skinAt > 3000)) skinBack = -1;
+        else if(now - skinAt > 6000) skinBack = -1;
     }
 }
 // ---- 4.00: knockdown banner (Apex Legends style, but no dark strip: only outlined text) ----------
