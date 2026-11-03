@@ -48,4 +48,5 @@ jobs:
           gh release delete "v$V" -y --cleanup-tag 2>/dev/null || true
           TGT=$(git rev-parse "${REF:-HEAD}")
           gh release create "v$V" -t "MP Multiplayer $V" -F notes.md --target "$TGT" --latest="$LATEST" \
-            bin/libMP64.so bin/libMP32.so release/MP-$V-client.zip release/MP-$V-full.zip release/HiveMQ-kit-$V.zip
+            bin/libMP64.so bin/libMP32.so release/MP-$V-client.zip release/MP-$V-full.zip release/HiveMQ-kit-$V.zip \
+            $(ls release/MP-Voice.apk release/MP-Textdraw-Editor.apk 2>/dev/null)   # 3.59: both APKs
