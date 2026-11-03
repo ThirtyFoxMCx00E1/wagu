@@ -354,7 +354,8 @@ namespace Game
     void  DamageNpc(int handle, bool car, int dmg);
     // 3.58 (game358.cpp): Timber log carry, Project DayZ loot / cabin scene, real fog
     bool  PlayAnimOnce(int ped, const char* anim, const char* file, float delta = 4.0f, bool lockF = true, int timeMs = -1);   // false = file loading
-    bool  PlayAnimUpper(int ped, const char* anim, const char* file, bool loop);   // secondary task: arms only, the legs can walk
+    bool  PlayAnimUpper(int ped, const char* anim, const char* file, bool loop);
+    void  SetAnimGroup(int ped, const char* group);   // 4.00: walk style ("drunkman", "oldman", "shuffle" ...)   // secondary task: arms only, the legs can walk
     void  AttachObjectToCharRot(int obj, int ped, const Vec3& off, const Vec3& rot);
     void  DetachObject(int obj);
     void  SceneCamera(const Vec3& eye, const Vec3& look);

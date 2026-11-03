@@ -113,6 +113,7 @@ static void TdeOpen(const char* name)
     s_Tde.open = true; s_Tde.palette = TDE_PAL_NONE;
     TdeMsg(COL_SYSTEM, "Editing %s. Tap a textdraw to select it, drag to move. /tde close (saves) - /tde help.", s_Tde.file.c_str());
 }
+static bool TdeIsOpen() { return s_Tde.open; }   // 4.00
 static void TdeClose()
 {
     if(s_Tde.dirty) TdeSave(true);

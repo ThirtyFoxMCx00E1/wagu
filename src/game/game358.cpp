@@ -84,3 +84,11 @@ void Game::SetNpcHealth(int ped, int hp)
     if(ped <= 0 || !PedPtr(ped)) return;
     CALLSCM(SET_CHAR_HEALTH_358, ped, hp);
 }
+
+// ---- 4.00: zombie walk styles (animgrp.dat: drunkman / oldman / oldfatman / shuffle ...) ----
+DEFOPCODE(0245, SET_ANIM_GROUP_FOR_CHAR_400, is);
+void Game::SetAnimGroup(int ped, const char* group)
+{
+    if(ped <= 0 || !group || !group[0] || !PedPtr(ped)) return;
+    CALLSCM(SET_ANIM_GROUP_FOR_CHAR_400, ped, group);
+}

@@ -1285,14 +1285,14 @@ static void RenderLauncher(void* openPtr)
 {
     bool* open = (bool*)openPtr;
     const ImVec2 ds = ImGui::GetIO().DisplaySize;
-    const float mx = ds.x * 0.025f, my = ds.y * 0.03f;
+    const float mx = 0.0f, my = 0.0f;   // 4.00: full screen (was 2.5 % / 3 % margins)
     // 2.26: dim the game behind the launcher (touches never reach it while this is open)
     ImGui::GetBackgroundDrawList()->AddRectFilled(ImVec2(0, 0), ds, IM_COL32(0, 0, 0, 110));
     ImGui::SetNextWindowPos(ImVec2(mx, my));
     ImGui::SetNextWindowSize(ImVec2(ds.x - mx * 2, ds.y - my * 2));
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, UI::S(4));     // 3.63: Valorant: nearly square
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, UI::S(1.5f));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);         // 4.00: full screen, square
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
     ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.035f, 0.065f, 0.095f, 0.50f));   // 3.63: navy glass, 50% transparent
     ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0, 0, 0, 0));
     ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.93f, 0.91f, 0.88f, 0.14f));

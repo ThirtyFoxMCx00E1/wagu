@@ -13,6 +13,10 @@ struct DzXState
     // fake death (DOWN) + revive
     bool        downed = false; uint64_t downAt = 0, downAnimAt = 0, giveUpAt = 0; int downAnim = 0;
     uint8_t     downedP[MP_MAX_PLAYERS] = {}; uint64_t remoteAnimAt = 0;
+    // 4.00: prone (white button, MTA DayZ "FLOOR_hit_f" + crawl), knockdown banner (Apex style)
+    bool        prone = false; uint64_t proneAt = 0, getupUntil = 0, proneMoveAt = 0; float proneTurn = 0.0f;
+    int         dmgTo[MP_MAX_PLAYERS] = {}; uint64_t dmgAt[MP_MAX_PLAYERS] = {};
+    char        knockTop[24] = {}, knockName[40] = {}, knockSub[48] = {}; uint64_t knockAt = 0;
     int         reviveTarget = -1; uint64_t reviveAt = 0;
     // TAB player list
     bool        listOpen = false; std::vector<DzListRow> list; uint16_t listTotal = 0, listMax = 0; uint64_t listAsk = 0; int listSel = -1;
@@ -336,6 +340,12 @@ static void DzXEvent(const PktDzEvent& e)
         case DZEV_DOWNED:
             if(e.a >= MP_MAX_PLAYERS) break;
             if(e.a == myId) { if(!e.b && s_DzX.downed && ped > 0) DzDownEnd(ped, 0); break; }
+            if(e.b && !s_DzX.downedP[e.a] && s_DzX.dmgAt[e.a] && now - s_DzX.dmgAt[e.a] < 10000)
+            {   // 4.00: I knocked them down
+                char sub[48]; snprintf(sub, sizeof(sub), "%d DAMAGE INFLICTED", s_DzX.dmgTo[e.a] * 120);   // blood, like the green numbers
+                DzKnockShow("KNOCKED DOWN", e.text[0] ? e.text : players[e.a].name, sub);
+                s_DzX.dmgTo[e.a] = 0; s_DzX.dmgAt[e.a] = 0;
+            }
             s_DzX.downedP[e.a] = e.b ? 1 : 0;
             if(e.b && DzIsParty(e.a)) DzNotice(DZ_RED, "%s is DOWN - revive them with a medicine.", e.text[0] ? e.text : players[e.a].name);
             if(!e.b && players[e.a].ped > 0) Game::ClearTasksNow(players[e.a].ped);
@@ -392,12 +402,121 @@ static void DzXList(const uint8_t* d, int len)
 }
 
 // ---- process (called every frame from DzProcess while playing) -----------------------------------
+// 4.00: the MTA models are only switched while the game is not using the GTA model. Things that are
+// always in use get a nudge: our zombies with a waiting skin are removed (new ones come with the MTA
+// skin), your own skin is changed for a moment, loot / bag objects are made again after a switch.
+static void DzModelsRefresh(int ped, uint64_t now)
+{
+    static uint64_t at = 0; static int lastSwaps = -1; static int skinBack = -1; static uint64_t skinAt = 0;
+    if(!DzModels::Available() || now - at < 1000) return;
+    at = now;
+    int swaps = DzModels::SwapCount();
+    if(lastSwaps >= 0 && swaps != lastSwaps)
+    {
+        for(auto& kv : s_Dz.loot) if(kv.second.obj > 0) DzLootDelObj(kv.second);
+        for(auto& kv : s_Dz.loot) if(kv.second.obj < 0) kv.second.obj = 0;   // "no model" before: try again
+        for(int i = 0; i < s_Dz.nProps; ++i) if(s_Dz.props[i].obj > 0) { Game::DeleteWorldObject(s_Dz.props[i].obj); s_Dz.props[i].obj = 0; }
+    }
+    lastSwaps = swaps;
+    for(size_t i = 0; i < s_Dz.zeds.size();)
+    {
+        DzZed& z = s_Dz.zeds[i];
+        int m = z.model;
+        if(m > 0 && DzModels::Pending(m) && !z.hunting) { Game::DeleteChar(z.ped); s_Dz.zeds.erase(s_Dz.zeds.begin() + i); continue; }
+        ++i;
+    }
+    if(skinBack < 0 && ped > 0 && !Game::IsCharInAnyCar(ped) && !Game::IsCharDead(ped))
+    {
+        int m = Game::LocalModel();
+        if(m > 0 && DzModels::Pending(m))
+        {
+            const int tmp = DzModels::Pending(252) ? 0 : 252;
+            if(tmp && Game::ModelReady(tmp) && Game::SetLocalModel(tmp)) { skinBack = m; skinAt = now; }
+        }
+    }
+    else if(skinBack >= 0 && (now - skinAt > 1500))
+    {   // the skin is free now: switched; put it back (it loads the MTA model)
+        if(!DzModels::Pending(skinBack) || now - skinAt > 8000)
+        {
+            if(!Game::ModelReady(skinBack)) return;
+            if(Game::SetLocalModel(skinBack) || now - skinAt > 15000) skinBack = -1;
+        }
+    }
+}
+// ---- 4.00: knockdown banner (Apex Legends style, but no dark strip: only outlined text) ----------
+static void DzKnockShow(const char* top, const char* name, const char* sub)
+{
+    MP_CopyStr(s_DzX.knockTop, top, sizeof(s_DzX.knockTop));
+    MP_CopyStr(s_DzX.knockName, name ? name : "", sizeof(s_DzX.knockName));
+    MP_CopyStr(s_DzX.knockSub, sub ? sub : "", sizeof(s_DzX.knockSub));
+    s_DzX.knockAt = MP_NowMs();
+}
+static bool DzXProne() { return s_DzX.prone; }
+static void DzKnockDmg(int id, int dmg, uint64_t now)
+{
+    if(id < 0 || id >= MP_MAX_PLAYERS || dmg <= 0) return;
+    if(now - s_DzX.dmgAt[id] > 30000) s_DzX.dmgTo[id] = 0;
+    s_DzX.dmgTo[id] += dmg; s_DzX.dmgAt[id] = now;
+}
+static void DzDrawKnock(ImDrawList* dl, const ImVec2& ds, uint64_t now)
+{   // a bit below the centre, medium size: "KNOCKED DOWN <name>" + "98 DAMAGE INFLICTED"
+    if(!s_DzX.knockAt || now - s_DzX.knockAt > 3600) return;
+    const float t = (now - s_DzX.knockAt) / 1000.0f;
+    const float a = t < 0.15f ? t / 0.15f : t > 3.0f ? 1.0f - (t - 3.0f) / 0.6f : 1.0f;
+    const float fs = UI::S(24), fs2 = UI::S(15), gap = UI::S(10);
+    const float w1 = RpTextW(fs, s_DzX.knockTop), w2 = s_DzX.knockName[0] ? RpTextW(fs, s_DzX.knockName) + gap : 0.0f;
+    const float y = ds.y * 0.60f, x = ds.x * 0.5f - (w1 + w2) * 0.5f;
+    UI::OutlinedText(dl, fs, ImVec2(x, y), IM_COL32(255, 255, 255, (int)(240 * a)), s_DzX.knockTop);
+    if(w2 > 0) UI::OutlinedText(dl, fs, ImVec2(x + w1 + gap, y), IM_COL32(235, 60, 50, (int)(245 * a)), s_DzX.knockName);
+    if(s_DzX.knockSub[0])
+        UI::OutlinedText(dl, fs2, ImVec2(ds.x * 0.5f - RpTextW(fs2, s_DzX.knockSub) * 0.5f, y + fs + UI::S(4)), IM_COL32(215, 215, 215, (int)(220 * a)), s_DzX.knockSub);
+}
+
+// ---- 4.00: prone (MTA DayZ: "ped" "FLOOR_hit_f" frozen on the last frame, "getup_front" to stand) --
+static void DzProneSet(int ped, bool on, uint64_t now)
+{
+    if(ped <= 0) return;
+    if(on)
+    {
+        if(s_DzX.downed || Game::IsCharInAnyCar(ped) || Game::IsCharDead(ped)) return;
+        if(!Game::PlayAnimOnce(ped, "FLOOR_hit_f", "ped", 4.0f, true, -1)) return;
+        s_DzX.prone = true; s_DzX.proneAt = now; s_DzX.getupUntil = 0;
+    }
+    else if(s_DzX.prone)
+    {
+        s_DzX.prone = false;
+        if(!s_DzX.downed && !Game::IsCharInAnyCar(ped) && !Game::IsCharDead(ped))
+        { Game::PlayAnimOnce(ped, "getup_front", "ped", 4.0f, false, 1300); s_DzX.getupUntil = now + 1300; }
+    }
+}
+static void DzProneTick(int ped, uint64_t now)
+{
+    if(!s_DzX.prone) return;
+    if(s_DzX.downed || Game::IsCharInAnyCar(ped) || Game::IsCharDead(ped)) { s_DzX.prone = false; return; }
+    if(now - s_DzX.proneAt < 900) return;   // still falling down onto the belly
+    // crawl with the joystick: up / down = forward / back (slow), left / right = turn
+    static uint64_t last = 0; float dt = last ? (now - last) / 1000.0f : 0.0f; last = now; if(dt > 0.1f) dt = 0.1f;
+    int sx = 0, sy = 0; if(!Game::GetStick(sx, sy)) return;
+    if(abs(sx) > 40) { float h = Game::GetCharHeading(ped) - sx / 128.0f * 70.0f * dt; if(h < 0) h += 360.0f; if(h >= 360.0f) h -= 360.0f; Game::SetCharHeading(ped, h); }
+    if(abs(sy) > 40 && dt > 0)
+    {
+        Vec3 p; if(!Game::GetCharPos(ped, p)) return;
+        float h = Game::GetCharHeading(ped) * 0.0174533f, sp = -sy / 128.0f * (sy < 0 ? 0.85f : 0.55f) * dt;
+        Vec3 n = { p.x - sinf(h) * sp, p.y + cosf(h) * sp, p.z };
+        float gz = Game::GroundZBelow(n.x, n.y, p.z + 0.6f);
+        if(gz < -500.0f || gz > p.z - 0.3f || gz < p.z - 1.6f) return;   // a wall / a step / a drop: stop
+        Game::NudgeEntity(ped, false, { n.x - p.x, n.y - p.y, 0.0f });
+    }
+}
+
 static void DzXProcess(int ped, int hp, int prevHp, uint64_t now)
 {
+    DzModelsRefresh(ped, now);   // 4.00
     Vec3 me; if(!Game::GetCharPos(ped, me)) return;
     // fake death: 5% HP or less (the game's 10% low-health warning does not count)
     if(!s_DzX.downed && hp > 0 && hp <= 5 && now - s_Dz.spawnedAt > 3000) DzDownStart(ped, now);
     DzDownTick(ped, now);
+    DzProneTick(ped, now);   // 4.00
     DzReviveTick(ped, now);
     DzRemoteDownTick(now);
     DzCondTick(ped, Game::GetCharHealth(ped), prevHp, now);
@@ -455,23 +574,25 @@ static void DzDrawStatusMta(ImDrawList* dl, ImVec2 ds, int ped, float t)
     const PktDzMe& m = s_Dz.me;
     // 3.60: bigger, like the MTA DayZ screenshots. Ear + eye in the right column (above the armour),
     // temperature / blood / food / drink / humanity in a column left of the GTA fire + sprint buttons.
-    auto blink = [&](bool warn) { return warn ? DzCol(DZ_RED, 0.55f + 0.45f * sinf(t * 7.0f)) : IM_COL32_WHITE; };
+    // 4.00: MTA DayZ green (like the screenshots), yellow when it gets low, blinking red when critical
+    const ImU32 G = IM_COL32(98, 190, 70, 240), Y = IM_COL32(230, 200, 60, 240);
+    auto blink = [&](bool warn) { return warn ? DzCol(DZ_RED, 0.55f + 0.45f * sinf(t * 7.0f)) : G; };
     // ear + eye (sound / visibility level)
     {
         const float es = UI::S(60), ex = ds.x - UI::S(132);
         float ey = ds.y * 0.40f;
         int noise, vis; DzNoiseVis(ped, noise, vis);
-        DzStatus(dl, DZST_EAR, ImVec2(ex, ey), es);
-        if(noise > 0) DzStatus(dl, DZST_LEVEL1 + noise - 1, ImVec2(ex + es * 0.86f, ey), es, noise >= 4 ? DzCol(DZ_RED) : IM_COL32_WHITE);
-        DzStatus(dl, DZST_EYE, ImVec2(ex, ey + es * 0.92f), es);
-        if(vis > 0) DzStatus(dl, DZST_LEVEL1 + vis - 1, ImVec2(ex + es * 0.86f, ey + es * 0.92f), es, vis >= 4 ? DzCol(DZ_RED) : IM_COL32_WHITE);
+        DzStatus(dl, DZST_EAR, ImVec2(ex, ey), es, G);
+        if(noise > 0) DzStatus(dl, DZST_LEVEL1 + noise - 1, ImVec2(ex + es * 0.86f, ey), es, noise >= 4 ? DzCol(DZ_RED) : G);
+        DzStatus(dl, DZST_EYE, ImVec2(ex, ey + es * 0.92f), es, G);
+        if(vis > 0) DzStatus(dl, DZST_LEVEL1 + vis - 1, ImVec2(ex + es * 0.86f, ey + es * 0.92f), es, vis >= 4 ? DzCol(DZ_RED) : G);
     }
     const float s = UI::S(62), x = ds.x - UI::S(256);
     float y = ds.y * 0.42f;
     // temperature + rising / falling arrows
     float temp = s_DzX.temp; int tl = (int)((temp - 33.0f) / 1.2f + 0.5f); if(tl < 0) tl = 0; if(tl > 4) tl = 4;
-    ImU32 tc = temp < 34.5f ? IM_COL32(120, 180, 255, 255) : (temp > 38.5f ? DzCol(DZ_ORG) : IM_COL32_WHITE);
-    DzStatus(dl, DZST_TEMP_BORDER, ImVec2(x, y), s); if(tl) DzStatus(dl, DZST_TEMP0 + tl, ImVec2(x, y), s, tc);
+    ImU32 tc = temp < 34.5f ? IM_COL32(120, 180, 255, 255) : (temp > 38.5f ? DzCol(DZ_ORG) : G);
+    DzStatus(dl, DZST_TEMP_BORDER, ImVec2(x, y), s, tc); if(tl) DzStatus(dl, DZST_TEMP0 + tl, ImVec2(x, y), s, tc);
     float r = s_DzX.tempRate; int arrows = fabsf(r) < 0.0008f ? 0 : fabsf(r) < 0.003f ? 1 : fabsf(r) < 0.006f ? 2 : 3;
     if(arrows) DzStatus(dl, r < 0 ? DZST_TARROW0 + arrows : DZST_TARROW3 + arrows, ImVec2(x - s * 0.62f, y + s * 0.18f), s * 0.62f, r < 0 ? IM_COL32(120, 180, 255, 255) : DzCol(DZ_ORG));
     char tt[16]; snprintf(tt, sizeof(tt), "%.1fC", temp); DzTextR(dl, UI::S(17), x + s + UI::S(4), y + s - UI::S(16), IM_COL32(230, 230, 230, 220), tt);
@@ -484,8 +605,9 @@ static void DzDrawStatusMta(ImDrawList* dl, ImVec2 ds, int ped, float t)
     for(int i = 0; i < 3; ++i)
     {
         int lv = (int)ceilf(std::max(0.0f, std::min(1.0f, ls[i].k)) * 5.0f); if(lv > 5) lv = 5;
-        DzStatus(dl, ls[i].border, ImVec2(x, y), s, blink(ls[i].warn));
-        if(lv) DzStatus(dl, ls[i].base + lv, ImVec2(x, y), s, i == 0 && m.infected ? IM_COL32(110, 230, 120, 255) : blink(ls[i].warn));
+        ImU32 c = ls[i].warn ? blink(true) : (ls[i].k < 0.4f ? Y : G);
+        DzStatus(dl, ls[i].border, ImVec2(x, y), s, c);
+        if(lv) DzStatus(dl, ls[i].base + lv, ImVec2(x, y), s, i == 0 && m.infected ? IM_COL32(110, 230, 120, 255) : c);
         y += s + UI::S(2);
     }
     // conditions row (left of the column): bleeding, infection, broken bones, pain, helmet
@@ -493,12 +615,12 @@ static void DzDrawStatusMta(ImDrawList* dl, ImVec2 ds, int ped, float t)
     auto cond = [&](int cell, ImU32 c) { cx -= cs + UI::S(2); DzStatus(dl, cell, ImVec2(cx, cy), cs, c); };
     if(s_DzX.cond & DZCO_BLEEDING) cond(DZST_SPLAT, DzCol(DZ_RED, 0.7f + 0.3f * sinf(t * 6)));
     if(m.infected) cond(DZST_INFECTION, IM_COL32(110, 230, 120, 255));
-    if(s_DzX.cond & (DZCO_LEGS | DZCO_ARMS)) cond(DZST_BONE, IM_COL32_WHITE);
+    if(s_DzX.cond & (DZCO_LEGS | DZCO_ARMS)) cond(DZST_BONE, Y);
     if(s_DzX.cond & DZCO_PAIN) cond(DZST_MEDIC, DzCol(DZ_YEL));
     if(m.armor[DZA_HELMET]) cond(DZST_HELMET, DzCol(DZ_GRN));
     // humanity face
     int hu = m.humanity < -5000 ? 0 : m.humanity < -1000 ? 1 : m.humanity < 0 ? 2 : m.humanity < 2500 ? 3 : m.humanity < 5000 ? 4 : 5;
-    DzStatus(dl, DZST_HUM0 + hu, ImVec2(x + s * 0.12f, y), s * 0.76f, m.humanity < 0 ? DzCol(DZ_RED) : IM_COL32_WHITE);
+    DzStatus(dl, DZST_HUM0 + hu, ImVec2(x + s * 0.12f, y), s * 0.76f, m.humanity < 0 ? DzCol(DZ_RED) : G);
 }
 // pain: the camera sway of MTA DayZ, drawn as a slow pulsing blur at the edges
 static void DzDrawPain(ImDrawList* dl, ImVec2 ds, float t)
@@ -700,7 +822,7 @@ static void DzDrawGps(ImDrawList* dl, ImVec2 ds, int ped, ImVec2& outP0, float& 
     outP0 = p0; outSize = fh;
     const float tabH = UI::S(24);
     ImVec2 ia(p0.x + fw * 0.055f, p0.y + fh * 0.075f), ib(p0.x + fw * 0.945f, p0.y + fh * 0.79f);
-    bool on = s_Dz.haveMe && s_Dz.me.gps && !s_DzX.gpsOff;
+    bool on = !s_DzX.gpsOff;   // 4.00: unlocked from the start (no GPS item to find)
     if(!on)
     {
         dl->AddRectFilled(ia, ib, IM_COL32(0, 0, 0, 235));
@@ -1156,14 +1278,24 @@ static void DzDrawJournal(ImVec2 ds)
     // right page
     float rx = x0 + W * 0.53f, ry = y0 + H * 0.10f, rw = W * 0.40f;
     ImGui::SetCursorScreenPos(ImVec2(rx, ry));
-    ImGui::BeginChild("##dzjpage", ImVec2(rw, H * 0.80f), false);
+    // 4.00: no dark label background over the book page (like the inventory fix) - transparent child,
+    // thin see-through scrollbar, values right-aligned inside the visible width (were cut off)
+    ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0, 0, 0, 0));
+    ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0, 0, 0, 0));
+    ImGui::PushStyleColor(ImGuiCol_ScrollbarBg, ImVec4(0, 0, 0, 0));
+    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrab, ImVec4(0.16f, 0.12f, 0.08f, 0.35f));
+    ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0, 0, 0, 0));
+    ImGui::PushStyleVar(ImGuiStyleVar_ScrollbarSize, UI::S(4));
+    ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 0.0f);
+    ImGui::BeginChild("##dzjpage", ImVec2(rw, H * 0.80f), false, ImGuiWindowFlags_NoBackground);
     ImDrawList* pl = ImGui::GetWindowDrawList();
+    const float cw = ImGui::GetContentRegionAvail().x;
     auto line = [&](const char* l, const char* v, ImU32 c)
     {
         ImVec2 p = ImGui::GetCursorScreenPos();
         pl->AddText(UI::Font(), UI::S(16), p, ink, l);
-        pl->AddText(UI::Font(), UI::S(16), ImVec2(p.x + rw - RpTextW(UI::S(16), v) - UI::S(8), p.y), c, v);
-        ImGui::Dummy(ImVec2(rw, UI::S(22)));
+        pl->AddText(UI::Font(), UI::S(16), ImVec2(p.x + cw - RpTextW(UI::S(16), v) - UI::S(6), p.y), c, v);
+        ImGui::Dummy(ImVec2(cw, UI::S(22)));
     };
     char v[64];
     if(s_DzX.jTab == 0)
@@ -1190,24 +1322,24 @@ static void DzDrawJournal(ImVec2 ds)
     else if(s_DzX.jTab == 1)
     {
         int got = 0; for(int i = 0; i < DZACH_COUNT; ++i) if(m.ach & (1u << i)) ++got;
-        snprintf(v, sizeof(v), "%d / %d unlocked", got, DZACH_COUNT); pl->AddText(UI::Font(), UI::S(16), ImGui::GetCursorScreenPos(), ink2, v); ImGui::Dummy(ImVec2(rw, UI::S(24)));
+        snprintf(v, sizeof(v), "%d / %d unlocked", got, DZACH_COUNT); pl->AddText(UI::Font(), UI::S(16), ImGui::GetCursorScreenPos(), ink2, v); ImGui::Dummy(ImVec2(cw, UI::S(24)));
         for(int i = 0; i < DZACH_COUNT; ++i)
         {
             bool on = (m.ach & (1u << i)) != 0; ImVec2 p = ImGui::GetCursorScreenPos();
             DzHud(pl, DZR_TROPHY, p, ImVec2(p.x + UI::S(30), p.y + UI::S(30)), on ? IM_COL32_WHITE : IM_COL32(0, 0, 0, 90));
             pl->AddText(UI::Font(), UI::S(15), ImVec2(p.x + UI::S(36), p.y), on ? IM_COL32(20, 110, 40, 255) : ink, g_DzAch[i].name);
             pl->AddText(UI::Font(), UI::S(12), ImVec2(p.x + UI::S(36), p.y + UI::S(17)), ink2, g_DzAch[i].desc);
-            ImGui::Dummy(ImVec2(rw, UI::S(36)));
+            ImGui::Dummy(ImVec2(cw, UI::S(36)));
         }
     }
     else
     {
-        snprintf(v, sizeof(v), "Skill points: %d   (1 per level)", m.skillPts); pl->AddText(UI::Font(), UI::S(16), ImGui::GetCursorScreenPos(), m.skillPts ? IM_COL32(20, 110, 40, 255) : ink2, v); ImGui::Dummy(ImVec2(rw, UI::S(26)));
+        snprintf(v, sizeof(v), "Skill points: %d   (1 per level)", m.skillPts); pl->AddText(UI::Font(), UI::S(16), ImGui::GetCursorScreenPos(), m.skillPts ? IM_COL32(20, 110, 40, 255) : ink2, v); ImGui::Dummy(ImVec2(cw, UI::S(26)));
         const char* tree = "";
         for(int k = 0; k < DZSK_COUNT; ++k)
         {
             const DzSkill& s = g_DzSkills[k];
-            if(strcmp(tree, s.tree)) { tree = s.tree; pl->AddText(UI::Font(), UI::S(17), ImGui::GetCursorScreenPos(), IM_COL32(120, 20, 20, 255), tree); ImGui::Dummy(ImVec2(rw, UI::S(22))); }
+            if(strcmp(tree, s.tree)) { tree = s.tree; pl->AddText(UI::Font(), UI::S(17), ImGui::GetCursorScreenPos(), IM_COL32(120, 20, 20, 255), tree); ImGui::Dummy(ImVec2(cw, UI::S(22))); }
             ImVec2 p = ImGui::GetCursorScreenPos(); float is = UI::S(40);
             if(const DzRect* r = DzSkillIcon(k)) DzHud(pl, *r, p, ImVec2(p.x + is, p.y + is));
             char nm[64]; snprintf(nm, sizeof(nm), "%s  %d/%d", s.name, m.skills[k], s.maxRank);
@@ -1215,14 +1347,15 @@ static void DzDrawJournal(ImVec2 ds)
             pl->AddText(UI::Font(), UI::S(12), ImVec2(p.x + is + UI::S(6), p.y + UI::S(18)), ink2, s.desc);
             if(m.skillPts && m.skills[k] < s.maxRank)
             {
-                ImGui::SetCursorScreenPos(ImVec2(p.x + rw - UI::S(48), p.y + UI::S(4))); char id[16]; snprintf(id, sizeof(id), "+##dzsk%d", k);
+                ImGui::SetCursorScreenPos(ImVec2(p.x + cw - UI::S(48), p.y + UI::S(4))); char id[16]; snprintf(id, sizeof(id), "+##dzsk%d", k);
                 if(BcwTeamButton(id, 0x16A34AFFu, ImVec2(UI::S(38), UI::S(32)), false, false)) DzSend(DZCMD_SKILL, k);
                 ImGui::SetCursorScreenPos(p);
             }
-            ImGui::Dummy(ImVec2(rw, is + UI::S(6)));
+            ImGui::Dummy(ImVec2(cw, is + UI::S(6)));
         }
     }
     ImGui::EndChild();
+    ImGui::PopStyleVar(2); ImGui::PopStyleColor(5);
     ImGui::End(); ImGui::PopStyleColor(); ImGui::PopStyleVar();
 }
 

@@ -42,6 +42,7 @@
 #include "game/cleoblock.h"
 #include "game/modscan.h"
 #include "game/dzmodels.h"   // 3.61: Day Z model pack
+#include "game/boneattach.h"  // 4.00: bag on the spine bone
 #include "net/admin.h"
 #include "net/safezone.h"   // 3.21: hospital safe zones
 #include "ui/emoji.h"
@@ -777,6 +778,7 @@ static void RulesProcess(uint64_t now);
 static bool RulesCommand(const char* cmd, const char* arg);
 static bool SrvSettingsCommand(const char* cmd, const char* arg);
 static bool TdeCommand(const char* cmd, const char* arg);   // 3.50 (mp_tde.inc)
+static bool TdeIsOpen();   // 4.00: the GTA HUD is hidden while /tde is open
 static void TdeRender();
 static void ModCheckProcess(uint64_t now);
 static void ProgProcess(int ped, uint64_t now);
@@ -4122,7 +4124,7 @@ void MP::Process()
     {   // 2.35: MP Launcher open = the game's HUD (radar, weapon, buttons) is hidden behind it and
         // gets no touches; it comes back when the launcher closes
         static bool s_bLaunchHud = false; static uint64_t s_nLaunchHudT = 0;
-        bool modal = FloatMenu::IsModal() && !paused;
+        bool modal = (FloatMenu::IsModal() || TdeIsOpen()) && !paused;   // 4.00: + /tde (Textdraw Editor): all GTA HUDs hidden
         if(modal && (!s_bLaunchHud || now - s_nLaunchHudT > 500)) { Game::ShowGameHud(false); s_bLaunchHud = true; s_nLaunchHudT = now; }
         else if(!modal && s_bLaunchHud) { s_bLaunchHud = false; if(!JoinHudOff()) Game::ShowGameHud(true); }
     }

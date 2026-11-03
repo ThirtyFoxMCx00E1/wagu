@@ -17,6 +17,8 @@
 // Safety: every engine address is checked first (model info table, a live streaming table with txd
 // entries at 20000+, the txd pool), else nothing is replaced. A marker file is written around the
 // risky part of a conversion: if the game dies there, that model is never replaced again.
+#include <stdarg.h>
+#include <time.h>
 #include <mod/amlmod.h>
 #include <mod/logger.h>
 #include <string.h>
@@ -33,6 +35,7 @@
 #include <string>
 #include <vector>
 #include <set>
+#include <map>
 #include <algorithm>
 #include "dzmodels.h"
 #include "../net/online.h"
@@ -59,6 +62,7 @@ struct Entry
     std::string dff, txd; uint32_t dffSize = 0, txdSize = 0, dffCrc = 0, txdCrc = 0;
     std::atomic<int> file { 0 };     // 0 = not yet, 1 = on disk + checked, 2 = failed
     int slot = -1; int16_t origTxd = -1; bool built = false, swapped = false, bad = false, wanted = false;
+    bool waitLogged = false, loadedOnce = false; int texMade = -1;   // 4.00: status / log
     int fails = 0;
 };
 
@@ -74,6 +78,23 @@ std::atomic<uint64_t> s_BDone { 0 }, s_BTotal { 0 };
 std::atomic<size_t> s_BCur { 0 };
 std::string s_CurFile, s_CurHost;
 bool s_Started = false, s_Checked = false, s_Ok = false, s_PoolOk = false, s_Disabled = false;
+int s_Engine = 0;                 // 4.00: the engine check result (1 ok, 0 not yet, < 0 failed)
+std::string s_LogPath;            // 4.00: files/MP/dzmodels_log.txt (readable on the phone)
+std::mutex s_LogM;
+void DzLog(bool err, const char* fmt, ...) __attribute__((format(printf, 2, 3)));
+void DzLog(bool err, const char* fmt, ...)
+{
+    char b[512]; va_list ap; va_start(ap, fmt); vsnprintf(b, sizeof(b), fmt, ap); va_end(ap);
+    if(err) logger->Error("%s", b); else logger->Info("%s", b);
+    std::lock_guard<std::mutex> lk(s_LogM);
+    if(s_LogPath.empty()) return;
+    if(FILE* f = fopen(s_LogPath.c_str(), "ab"))
+    {
+        time_t t = time(nullptr); struct tm tm; localtime_r(&t, &tm);
+        fprintf(f, "[%02d:%02d:%02d] %s%s\n", tm.tm_hour, tm.tm_min, tm.tm_sec, err ? "ERROR " : "", b);
+        fclose(f);
+    }
+}
 uint64_t s_NextCheck = 0;
 std::set<int> s_Bad;
 
@@ -137,12 +158,16 @@ void LoadBad()
         int id = atoi(std::string(d.begin(), d.end()).c_str());
         FILE* f = fopen((s_Cache + "/bad.txt").c_str(), "ab"); if(f) { fprintf(f, "%d\n", id); fclose(f); }
         unlink((s_Cache + "/inhook.txt").c_str());
-        logger->Error("DzModels: the game closed while loading model %d last time - it stays GTA now", id);
+        DzLog(true, "DzModels: the game closed while loading model %d last time - it stays GTA now", id);
     }
     if(ReadFile(s_Cache + "/bad.txt", d))
     {
         std::string s(d.begin(), d.end()); const char* p = s.c_str();
-        while(*p) { int id = atoi(p); if(id > 0) s_Bad.insert(id); while(*p && *p != '\n') ++p; while(*p == '\n') ++p; }
+        // 4.00: a model is only skipped after the game closed TWICE while loading it (closing the app
+        // from the recent apps list while a model loads used to block that model forever)
+        std::map<int, int> cnt;
+        while(*p) { int id = atoi(p); if(id > 0) ++cnt[id]; while(*p && *p != '\n') ++p; while(*p == '\n') ++p; }
+        for(auto& kv : cnt) if(kv.second >= 2) s_Bad.insert(kv.first);
     }
 }
 void Mark(int id)
@@ -217,7 +242,7 @@ void DownloadThread(std::vector<int> objIds)
     s_E = list;
     for(Entry* e : list) if(!s_ById[e->id]) s_ById[e->id] = e;
     s_ListReady = true;
-    logger->Info("DzModels: %d models in the list, %d wanted (%d MB)", (int)list.size(), total, kb / 1024);
+    DzLog(false, "DzModels: %d models in the list, %d wanted (%d MB)", (int)list.size(), total, kb / 1024);
     // 2) the files
     for(Entry* e : list)
     {
@@ -226,9 +251,9 @@ void DownloadThread(std::vector<int> objIds)
         bool ok = Fetch(e->txd, e->txdSize, e->txdCrc, false) && okD;
         e->file = ok ? 1 : 2;
         if(ok) { ++s_Done; s_KbDone += (int)((e->dffSize + e->txdSize) / 1024); }
-        else logger->Error("DzModels: %d (%s) not downloaded: %s", e->id, e->dff.c_str(), s_Err.c_str());
+        else DzLog(true, "DzModels: %d (%s) not downloaded: %s", e->id, e->dff.c_str(), s_Err.c_str());
     }
-    logger->Info("DzModels: %d / %d models ready", s_Done.load(), total);
+    DzLog(false, "DzModels: %d / %d models ready", s_Done.load(), total);
     s_Busy = false;
 }
 
@@ -412,7 +437,8 @@ bool BuildTxd(Entry* e)
         p = next;
     }
     if(SetupTxdParent && def->parent >= 0) SetupTxdParent(e->slot);
-    logger->Info("DzModels: %d textures for %d (%s)", made, e->id, e->txd.c_str());
+    e->texMade = made;
+    DzLog(made > 0 ? false : true, "DzModels: %d of %d textures decoded for %d (%s)", made, count, e->id, e->txd.c_str());
     return made > 0;
 }
 
@@ -434,7 +460,9 @@ bool HookCBTO(char* buf, int idx, int ch)
     int added = *s_MemUsed - mem0;
     if(added == (int)sectors * 2048) *s_MemUsed -= ((int)sectors - (int)oldSize) * 2048;
     Mark(0);
-    if(!r && ++e->fails >= 2) { e->bad = true; logger->Error("DzModels: model %d (%s) did not load - GTA model kept", idx, e->dff.c_str()); }
+    if(r && !e->loadedOnce) { e->loadedOnce = true; DzLog(false, "DzModels: model %d (%s) is in the game now (MTA dff, %u sectors)", idx, e->dff.c_str(), sectors); }
+    if(!r) DzLog(true, "DzModels: the game could not read %s for model %d (try %d)", e->dff.c_str(), idx, e->fails + 1);
+    if(!r && ++e->fails >= 2) { e->bad = true; DzLog(true, "DzModels: model %d (%s) did not load - GTA model kept", idx, e->dff.c_str()); }
     return r;
 }
 
@@ -451,6 +479,7 @@ int CheckEngine()
         if(s_SI[kTxdBase + t].loadState == 1) ++good; else ++badc;
     }
     if(good < 2) return 0;          // nothing loaded yet - try again later
+    DzLog(badc > good / 4, "DzModels: engine check - %d loaded models with their txd at 20000+, %d without", good, badc);
     if(badc > good / 4) return -3;  // the txd entries are not at 20000+ (limit adjuster?)
     s_PoolOk = false;
     if(s_TxdPool && *s_TxdPool && (*s_TxdPool)->objs && (*s_TxdPool)->size > 1000 && (*s_TxdPool)->size < 100000)
@@ -458,7 +487,7 @@ int CheckEngine()
         int t = s_MI[400]->txd;
         if(t >= 0 && t < (*s_TxdPool)->size) { char n[21] = {}; memcpy(n, (*s_TxdPool)->objs[t].name, 20); s_PoolOk = strncasecmp(n, "landstal", 8) == 0; }
     }
-    if(!s_PoolOk) return -4;
+    if(!s_PoolOk) { DzLog(true, "DzModels: the txd pool did not look right (size %d)", (s_TxdPool && *s_TxdPool) ? (*s_TxdPool)->size : -1); return -4; }
     return 1;
 }
 
@@ -489,7 +518,12 @@ bool Switch(Entry* e, bool on)
     if(on && !MakeSlot(e)) return false;
     StreamingInfo& si = s_SI[e->id];
     if(si.loadState == 1 && mi->refs == 0) RemoveModel(e->id);
-    if(si.loadState != 0) return false;     // in use / being read: next time
+    if(si.loadState != 0)                   // in use / being read: next time
+    {
+        if(!e->waitLogged) { e->waitLogged = true; DzLog(false, "DzModels: model %d waits - the game is using it (refs %d, state %d)", e->id, (int)mi->refs, (int)si.loadState); }
+        return false;
+    }
+    if(on) DzLog(false, "DzModels: model %d switched to the MTA files (txd slot %d)", e->id, e->slot);
     if(on) { if(mi->txd != e->origTxd) { e->bad = true; return false; } mi->txd = (int16_t)e->slot; }
     else mi->txd = e->origTxd;
     e->swapped = on;
@@ -517,7 +551,7 @@ void DzModels::Init(void* h)
     if(f && s_SI && s_MemUsed && s_MI) aml->Hook(f, (void*)&HookCBTO, (void**)&CBTO_orig);
     s_Cache = FindCacheDir();
     if(!s_Cache.empty()) LoadBad();
-    logger->Info("DzModels: hook %s, txd %s, rw %s, cache %s", CBTO_orig ? "ok" : "-", (AddTxdSlot && TxdCreate && s_TxdPool) ? "ok" : "-",
+    DzLog(false, "DzModels: hook %s, txd %s, rw %s, cache %s", CBTO_orig ? "ok" : "-", (AddTxdSlot && TxdCreate && s_TxdPool) ? "ok" : "-",
                  (TexCreate && DictAddTex) ? "ok" : "-", s_Cache.empty() ? "-" : s_Cache.c_str());
 }
 
@@ -539,8 +573,9 @@ void DzModels::Tick(bool on, const int* objIds, int nObj)
         else
         {
             s_Checked = true; s_Ok = r > 0;
-            if(!s_Ok) { s_Disabled = true; std::lock_guard<std::mutex> lk(s_M); s_Err = "engine check failed (" + std::to_string(r) + ")"; logger->Error("DzModels: engine check %d - models stay GTA", r); return; }
-            logger->Info("DzModels: engine ok");
+            s_Engine = r;
+            if(!s_Ok) { s_Disabled = true; std::lock_guard<std::mutex> lk(s_M); s_Err = "engine check failed (" + std::to_string(r) + ")"; DzLog(true, "DzModels: engine check %d - models stay GTA", r); return; }
+            DzLog(false, "DzModels: engine ok");
         }
     }
     if(!s_Ok) return;
@@ -555,6 +590,50 @@ void DzModels::Tick(bool on, const int* objIds, int nObj)
     }
 }
 
+bool DzModels::Pending(int model)
+{   // 4.00: downloaded, wanted, engine ok, but the game is still using the GTA model
+    Entry* e = (model > 0 && model < kTxdBase) ? s_ById[model] : nullptr;
+    return s_Ok && e && s_ById[model] == e && e->wanted && e->file == 1 && !e->bad && !e->swapped && !s_Bad.count(model);
+}
+int DzModels::SwapCount() { int n = 0; for(Entry* e : s_E) if(e->swapped && !e->bad) ++n; return n; }
+void DzModels::GetStatus(Status& st)
+{
+    st = Status();
+    st.engine = s_Checked ? s_Engine : 0; st.disabled = s_Disabled; st.hooked = CBTO_orig != nullptr; st.cache = !s_Cache.empty();
+    for(Entry* e : s_E)
+    {
+        if(s_ById[e->id] != e || !e->wanted) continue;
+        ++st.wanted;
+        if(e->file == 1) ++st.files;
+        if(e->bad || s_Bad.count(e->id)) ++st.failed;
+        else if(e->swapped) { ++st.swapped; if(e->loadedOnce) ++st.loaded; if(e->texMade == 0) ++st.noTex; }
+        else if(e->file == 1) ++st.waiting;
+    }
+}
+void DzModels::SetLogPath(const char* path)
+{
+    std::lock_guard<std::mutex> lk(s_LogM);
+    s_LogPath = path ? path : "";
+    if(s_LogPath.empty()) return;
+    if(FILE* f = fopen(s_LogPath.c_str(), "wb"))
+    {
+        fputs("MP - Project Day Z Legacy MTA model loader log (send this file if the models stay GTA)\n", f);
+        fprintf(f, "streamer hook: %s | txd store: %s | RW textures: %s | model table: %s | streaming table: %s\n",
+                CBTO_orig ? "ok" : "MISSING", (AddTxdSlot && TxdCreate && s_TxdPool) ? "ok" : "MISSING", (TexCreate && DictAddTex) ? "ok" : "MISSING",
+                s_MI ? "ok" : "MISSING", s_SI ? "ok" : "MISSING");
+        fprintf(f, "cache: %s\n", s_Cache.empty() ? "NONE (no writable folder - nothing can be downloaded)" : s_Cache.c_str());
+        if(!s_Bad.empty()) { fputs("skipped (the game closed twice while loading them):", f); for(int id : s_Bad) fprintf(f, " %d", id); fputs("  - /dzmodels reset to try them again\n", f); }
+        fclose(f);
+    }
+}
+void DzModels::ResetBad()
+{
+    if(!s_Cache.empty()) { unlink((s_Cache + "/bad.txt").c_str()); unlink((s_Cache + "/inhook.txt").c_str()); }
+    s_Bad.clear();
+    for(Entry* e : s_E) { e->bad = false; e->fails = 0; }
+    s_Disabled = false; s_Checked = false; s_Ok = false; s_NextCheck = 0;
+    DzLog(false, "DzModels: reset - every model is tried again");
+}
 bool DzModels::IsReplaced(int model) { Entry* e = (model > 0 && model < kTxdBase) ? s_ById[model] : nullptr; return e && e->swapped && !e->bad; }
 bool DzModels::Available() { return s_Ok; }
 void DzModels::Progress(int& done, int& total, int& mbDone, int& mbTotal, bool& busy)

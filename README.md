@@ -121,6 +121,21 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **4.00**: fixes from testing 3.63 on the phone, a full-screen MP launcher and a clean screen for /tde.
+  - MP launcher (server UI): opens **full screen** (no margins, square edges), same Valorant look and layout.
+  - /tde (Textdraw Editor): **all GTA HUDs are hidden** while it is open (radar, money, weapon, health, touch buttons) and the Day Z HUD too; they come back when you close it.
+  - Project Day Z Legacy: the **map / GPS is unlocked from the start** - no GPS item to find any more (players were confused). Key 7 / the GPS button still hides and shows it. The spawn and guide messages say so.
+  - Project Day Z Legacy: the **journal** (debug monitor, achievements, skills) has no dark label box over the book page any more (the same fix as the inventory); the values are no longer cut off on the right, the scrollbar is thin and see-through.
+  - Project Day Z Legacy: the **drive HUD** (SPD, ENG / TNK / WHL / DRS / LGT / BDY, HP / FUEL / SPD bars) stays where it was, about 15 % bigger.
+  - Project Day Z Legacy: the **PROJECT DAY Z LEGACY** title logo at the bottom is drawn a bit higher.
+  - Project Day Z Legacy: **always fog** - the view is 90 m all the time (no more fog only every 3 - 9 days).
+  - Project Day Z Legacy: the **status icons** on the right (ear / eye, sound + visibility levels, temperature, blood, food, drink, humanity) and the empty armour slots are **green** like MTA DayZ; yellow when low, blinking red when critical.
+  - Project Day Z Legacy: the **backpack follows the spine bone** every frame (it moved with the body only after a delay before: floating while running, jumping behind in cars).
+  - Project Day Z Legacy: **zombie animations** instead of GTA fist fights: each zombie has its own walk style (staggering drunk walk, slow limp, dragging feet), they stand and sway / look around when idle, and attack with claw swipes (left / right arm), a two-arm smash, a lunge / grab and a bite lurch; they turn to you before an attack. The damage now comes from their attack (same difficulty / skill rules).
+  - Project Day Z Legacy: **PRONE** button (white icon, right side): lie on the belly like MTA DayZ ("FLOOR_hit_f"), crawl slowly with the joystick (up / down = forward / back, left / right = turn), tap again to get up. Prone is the quietest and hardest to see.
+  - Project Day Z Legacy: **KNOCKED DOWN** banner (Apex Legends style, no background - outlined text a bit below the centre): "KNOCKED DOWN <name>" + damage inflicted when you knock a player down, "ZOMBIE KILLED" (+ HEADSHOT) for zombies.
+  - Project Day Z Legacy: **MTA DayZ models**: the zombies, skins, guns and loot that are already in the game are swapped again after a download finishes (they stayed GTA before); a model is only skipped after it failed twice. `/dzmodels` shows the status (`/dzmodels reset` retries skipped models), the Day Z settings have a status line, an on / off switch and "Retry skipped models", and everything is written to `files/MP/dzmodels_log.txt`.
+  - Link previews: `docs/social-preview.png` (San Andreas Multiplayer logo, 1280 x 640) + Open Graph tags on the website, so shared links show the MP image.
 - **3.63**: **MP launcher** in a Valorant-style look (same layout), **Friends / Chats / Party / Community / Inbox**, a new virtual keyboard look and **Project Day Z ambient music**.
   - Launcher: translucent navy panels with chamfered corners, thin outlines, corner ticks, teal pill tabs and red accents (#FF4655); the layout, buttons and pages are where they were.
   - Friends: every phone gets an 8-digit player ID (shown in the Friends page). Search by player name or ID, tap ADD + to send a request, they see it in the Inbox (bell icon in the title bar) and Accept or Decline; you can cancel a sent request. Friends show online / offline (last seen), and have Chat, Party and Remove.

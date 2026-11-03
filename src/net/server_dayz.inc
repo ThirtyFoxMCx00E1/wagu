@@ -26,7 +26,7 @@ void MPServer::DzReset()
     for(int i = 0; i < MP_MAX_PLAYERS; ++i) { m_Dz[i] = DzSurvivor(); m_nDzInvite[i] = -1; }
     for(auto& p : m_DzParty) p = DzParty();
     m_DzLoot.clear();
-    m_bDzFog = false; m_bDzDirty = false;
+    m_bDzFog = true; m_bDzDirty = false;   // 4.00: the fog is always there (90 m)
     uint64_t now = MP_NowMs();
     m_nDzInfoAt = now + (25 * 60 + 20) * 1000ull;
     m_nDzSrvAt  = now + (35 * 60 + 20) * 1000ull;
@@ -430,7 +430,7 @@ void MPServer::DzSpawn(int slot, int region)
     if(z.skin) DzEvent(slot, DZEV_SKIN, 0, 0, z.skin, nullptr, "");
     DzSendWeather(slot);
     DzSendMe(slot); DzSendInv(slot);
-    DzMsg(slot, DZC_GREEN, "You woke up at %s. Find food, water, a GPS and a better bag.", name);
+    DzMsg(slot, DZC_GREEN, "You woke up at %s. Find food, water and a better bag. Your map is already unlocked.", name);
     DzLog("SPAWN %s at %s", m_Slots[slot].name, name);
 }
 
@@ -565,11 +565,11 @@ bool MPServer::DzCommand(int slot, const char* cmd, const char* arg)
         return true;
     }
     if(IS("time")) { DzMsg(slot, DZC_GREY, "The day goes round every 24 minutes. Nights are dark - use the light of the fire and the streets."); return true; }
-    if(IS("fog")) { DzMsg(slot, m_bDzFog ? DZC_RED : DZC_GREY, m_bDzFog ? "FOG: you can see only 90 m. Zombies and bandits hide in it." : "No fog right now. It comes back every 3 to 9 days."); return true; }
+    if(IS("fog")) { DzMsg(slot, m_bDzFog ? DZC_RED : DZC_GREY, m_bDzFog ? "FOG: you can see only 90 m. Zombies and bandits hide in it." : "FOG: you can see only 90 m."); return true; }
     if(IS("spawns")) { DzMsg(slot, DZC_YELLOW, "15 spawns: you wake up at a random one of them (Angel Pine, Flint, Blueberry, Dillimore, Palomino, Montgomery, Back o Beyond, Fort Carson, El Quebrados, Bayside...)."); return true; }
     if(IS("supplies") || IS("loot"))
     {
-        DzMsg(slot, DZC_YELLOW, "[GUIDE] Gas stations: food, drinks and fuel. Military bases / camps: guns, ammo, armour, big bags, GPS.");
+        DzMsg(slot, DZC_YELLOW, "[GUIDE] Gas stations: food, drinks and fuel. Military bases / camps: guns, ammo, armour, big bags.");
         DzMsg(slot, DZC_WHITE, "[GUIDE] Houses: food, trash and sometimes a gun. Ruins: a bit of everything. Taken loot comes back in ~30 min.");
         return true;
     }
@@ -974,7 +974,7 @@ void MPServer::DzTick(uint64_t now)
             "[INFO] Hunger and thirst go down all the time - eat and drink before they reach 0.",
             "[INFO] A zombie bite can infect you (green blood drop + X). Antibiotics cure it.",
             "[INFO] Bags: Small backpack 30 KG, Assault pack 50 KG, Military rucksack 80 KG.",
-            "[INFO] The map stays black until you find a GPS - military bases have them.",
+            "[INFO] The map (GPS) is unlocked from the start - key 7 turns it on / off.",
             "[INFO] Killing survivors lowers your humanity: you become a Bandit.",
             "[INFO] Fog comes every 3 to 9 days. You see only 90 m - listen for footsteps.",
         };
@@ -1000,23 +1000,12 @@ void MPServer::DzTick(uint64_t now)
             "[GUIDE] You can find guns, ammo, armour and big bags at the military bases and camps (Area 69, Easter Basin, K.A.C.C.).",
             "[GUIDE] You can find food and sometimes guns in the houses of every town.",
             "[GUIDE] You can find fuel canisters in houses and gas stations (not many) - cars run out of fuel.",
-            "[GUIDE] You can find a GPS at the military bases: it unlocks the map.",
+            "[GUIDE] The map is always unlocked: press 7 to show / hide it.",
         };
         char t[200]; snprintf(t, sizeof(t), "%s", k[m_nDzGuideIdx++ % 5]); chatAll(DZC_GREEN, t);
     }
-    // fog events (every 3 to 9 game days, 10-15 minutes, a warning first)
-    if(!m_bDzFog && now >= m_nDzFogAt)
-    {
-        m_bDzFog = true; m_nDzFogEnd = now + (uint64_t)(10 + DzRand() % 6) * 60 * 1000;
-        chatAll(DZC_RED, "[WARNING] A thick fog is rolling in - you can see only 90 m. Stay together.");
-        DzEvent(-1, DZEV_FOG, 1, 0, 90, nullptr, "FOG - visibility 90 m");
-    }
-    else if(m_bDzFog && now >= m_nDzFogEnd)
-    {
-        m_bDzFog = false; m_nDzFogAt = now + (uint64_t)(72 + DzRand() % 145) * 60 * 1000;
-        chatAll(DZC_GREEN, "[INFO] The fog is lifting.");
-        DzEvent(-1, DZEV_FOG, 0, 0, 0, nullptr, "");
-    }
+    // 4.00: always fog (90 m horizon) - no more fog events every 3 to 9 days
+    if(!m_bDzFog) { m_bDzFog = true; DzEvent(-1, DZEV_FOG, 1, 0, 90, nullptr, ""); }
     // loot respawn + old drops
     for(int i = 0; i < (int)m_DzLoot.size(); ++i)
     {
