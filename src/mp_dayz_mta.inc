@@ -405,6 +405,7 @@ static void DzXProcess(int ped, int hp, int prevHp, uint64_t now)
     if(s_DzX.wantSkin >= 0 && now - s_DzX.skinTry > 1000)
     {
         s_DzX.skinTry = now; int m = s_DzX.wantSkin ? s_DzX.wantSkin : 252;
+        if(m == 60 && DzModels::IsReplaced(179)) m = 179;   // 3.61: civilian clothes = MTA DayZ civilian
         if(!Game::ModelReady(m) || Game::SetLocalModel(m)) s_DzX.wantSkin = Game::ModelReady(m) ? -1 : s_DzX.wantSkin;
     }
     // "I Can See My House From Here!": a plane / heli above 300 m

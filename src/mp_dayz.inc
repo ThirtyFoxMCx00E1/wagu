@@ -119,8 +119,38 @@ static void DzNotice(uint32_t col, const char* fmt, ...)
     va_list ap; va_start(ap, fmt); vsnprintf(s_Dz.notice, sizeof(s_Dz.notice), fmt, ap); va_end(ap);
     s_Dz.noticeCol = col; s_Dz.noticeAt = MP_NowMs();
 }
+// 3.61: the MTA DayZ model of an item (Host/DayZ/models on GitHub, src/game/dzmodels.cpp). Used only
+// once that model is really in the game; until then (or with the setting off) the GTA model as before.
+static const struct { uint8_t item; uint16_t mta; } kDzMtaItem[] = {
+    { DZI_AMMO_PISTOL, 3013 }, { DZI_AMMO_SHELLS, 2033 }, { DZI_AMMO_SMG, 2041 }, { DZI_AMMO_RIFLE, 2035 }, { DZI_AMMO_SNIPER, 2034 },
+    { DZI_BEANS, 2601 }, { DZI_BURGER, 2404 }, { DZI_PIZZA, 2770 }, { DZI_SODA, 2647 }, { DZI_WATER, 2683 }, { DZI_BEER, 2405 },
+    { DZI_MEDKIT, 2891 }, { DZI_BANDAGE, 1578 }, { DZI_ANTIBIOTICS, 330 }, { DZI_PAINKILLERS, 2709 },
+    { DZI_BAG1, 3026 }, { DZI_BAG2, 1644 }, { DZI_BAG3, 2382 },
+    { DZI_GPS, 2976 }, { DZI_FUELCAN, 1650 }, { DZI_TOOLBOX, 2969 }, { DZI_MAP, 1277 }, { DZI_WATCH, 2710 },
+    { DZI_TRASH_CAN, 2601 }, { DZI_TRASH_BOTTLE, 2683 },
+    { DZI_MORPHINE, 958 }, { DZI_EPINEPHRINE, 2782 }, { DZI_BLOODBAG, 1580 }, { DZI_COMPASS, 1579 }, { DZI_HEATPACK, 1576 },
+    { DZI_EMPTY_CAN_FUEL, 1650 }, { DZI_CLOTHES_CIV, 1247 }, { DZI_CLOTHES_CAMO, 1247 }, { DZI_CLOTHES_GHILLIE, 1247 }, { DZI_CLOTHES_SURV, 1247 },
+    { DZI_MRE, 2740 }, { DZI_STEW, 2107 },
+};
+static int DzMtaModel(int item)
+{
+    for(const auto& m : kDzMtaItem) if(m.item == item) return DzModels::IsReplaced(m.mta) ? m.mta : 0;
+    return 0;
+}
+static void DzModelsTick()
+{
+    static int ids[sizeof(kDzMtaItem) / sizeof(kDzMtaItem[0])]; static int n = 0;
+    if(!n) for(const auto& m : kDzMtaItem) ids[n++] = m.mta;
+    const bool on = settings.dzModels && DzOnServer();
+    DzModels::Tick(on, ids, n);
+    // a line when the download starts / ends (the files stay cached, next time it is instant)
+    static int shown = 0; int done, total, mbD, mbT; bool busy; DzModels::Progress(done, total, mbD, mbT, busy);
+    if(on && busy && total > 0 && done < total && shown == 0 && s_Dz.view == 2) { shown = 1; DzNotice(DZ_YEL, "Downloading the MTA DayZ models from GitHub (%d MB)...", mbT); }
+    if(on && !busy && total > 0 && shown == 1) { shown = 2; if(done == total) DzNotice(DZ_YEL, "MTA DayZ models ready (%d).", done); else DzNotice(DZ_RED, "MTA DayZ models: %d of %d downloaded.", done, total); }
+}
 static int DzModel(const DzItem& d)
 {
+    if(&d >= g_DzItems && &d < g_DzItems + DZI_COUNT) { int m = DzMtaModel((int)(&d - g_DzItems)); if(m) return m; }   // 3.61
     if(d.model > 0 && Game::IsKnownModel(d.model)) return d.model;
     if(d.model2 > 0 && Game::IsKnownModel(d.model2)) return d.model2;
     return 0;
@@ -369,18 +399,24 @@ static int DzMagSize(int w)
 // ---- spawn / death -----------------------------------------------------------------------------
 static void DzMakeBag(int ped)
 {
+    static int s_BagModel = 0;
     int lvl = s_Dz.haveMe ? s_Dz.me.bag : 0;
-    if(s_Dz.bagObj && (lvl != s_Dz.bagLvl || !Game::WorldObjectExists(s_Dz.bagObj))) { Game::DeleteWorldObject(s_Dz.bagObj); s_Dz.bagObj = 0; }
+    int m = Game::IsKnownModel(3026) ? 3026 : (Game::IsKnownModel(2919) ? 2919 : 0);
+    // 3.61: MTA DayZ packs (Patrol 3026, Assault 1644, ALICE 2382) - modelled upright, back side to the body
+    const int mta = lvl > 0 ? DzMtaModel(lvl == 3 ? DZI_BAG3 : (lvl == 2 ? DZI_BAG2 : DZI_BAG1)) : 0;
+    if(mta) m = mta;
+    if(s_Dz.bagObj && (lvl != s_Dz.bagLvl || m != s_BagModel || !Game::WorldObjectExists(s_Dz.bagObj))) { Game::DeleteWorldObject(s_Dz.bagObj); s_Dz.bagObj = 0; }
     s_Dz.bagLvl = lvl;
-    if(lvl <= 0 || s_Dz.bagObj || ped <= 0 || s_Dz.view != 2) return;
-    int m = Game::IsKnownModel(3026) ? 3026 : (Game::IsKnownModel(2919) ? 2919 : 0); if(!m) return;
+    if(lvl <= 0 || s_Dz.bagObj || ped <= 0 || s_Dz.view != 2 || !m) return;
     Vec3 p; Game::GetCharPos(ped, p);
     int o = Game::CreateWorldObject(m, p); if(o <= 0) return;
+    s_BagModel = m;
     Game::SetObjectCollision(o, false);
     float back = lvl == 3 ? -0.20f : (lvl == 2 ? -0.17f : -0.14f);
     // 3.60: the parachute pack (3026) is made for the spine bone (its X axis points up the back), so it
     // lay sideways at the hip - turn it -90 around Y so it stands upright, straps to the body
-    Game::AttachObjectToCharRot(o, ped, { 0.0f, back, 0.12f + 0.03f * lvl }, { 0.0f, -90.0f, 0.0f });   // on the back, bigger bag sits higher
+    if(mta) Game::AttachObjectToCharRot(o, ped, { 0.0f, back - 0.06f, 0.10f + 0.03f * lvl }, { 0.0f, 0.0f, 0.0f });
+    else Game::AttachObjectToCharRot(o, ped, { 0.0f, back, 0.12f + 0.03f * lvl }, { 0.0f, -90.0f, 0.0f });   // on the back, bigger bag sits higher
     s_Dz.bagObj = o;
 }
 static void DzSpawnAt(const float* p, const char* name)
@@ -535,6 +571,8 @@ static void DzOnPacket(const uint8_t* d, int len)
 
 // ---- zombies (local to this phone: they hunt you, kills are reported to the server) -------------
 static const int kDzZedSkins[] = { 162, 200, 212, 230, 78, 79, 134, 135, 137, 160, 213 };
+// 3.61: MTA DayZ zombie skins (models/zombies, loadskins.lua)
+static const int kDzMtaZeds[] = { 56, 67, 68, 69, 75, 92, 97, 105, 107, 108, 126, 127, 128, 152, 162, 167, 188, 195, 206, 209, 212, 229, 230, 258, 264, 277, 280 };
 static bool DzZedSafeHere(const Vec3& me)
 {
     for(int i = 0; i < 15; ++i) { float dx = g_DzSpawns[i].x - me.x, dy = g_DzSpawns[i].y - me.y; if(dx * dx + dy * dy < 30.0f * 30.0f && MP_NowMs() - s_Dz.spawnedAt < 60000) return true; }
@@ -635,6 +673,11 @@ static void DzZedTick(int ped, const Vec3& me, uint64_t now)
     float gz = Game::GroundZBelow(p.x, p.y, p.z); if(gz < -500.0f || fabsf(gz - me.z) > 25.0f) return;
     p.z = gz + 1.0f;
     int skin = kDzZedSkins[rand() % (int)(sizeof(kDzZedSkins) / sizeof(kDzZedSkins[0]))];
+    {   // 3.61: the MTA DayZ zombies, once they are in the game
+        int mz[sizeof(kDzMtaZeds) / sizeof(kDzMtaZeds[0])], n = 0;
+        for(int z : kDzMtaZeds) if(DzModels::IsReplaced(z)) mz[n++] = z;
+        if(n) skin = mz[rand() % n];
+    }
     if(!Game::IsSafePedModel(skin) || !Game::ModelReady(skin)) return;
     int zp = Game::CreateNpcPed(skin, p, (float)(rand() % 360)); if(zp <= 0) return;
     Game::SetNpcHealth(zp, 45 + rand() % 30 + diff * 15);

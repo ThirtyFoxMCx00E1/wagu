@@ -27,7 +27,7 @@ static void PSettingsPopup()
     if(!ImGui::BeginPopupModal("Settings##psdlg", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings))
     { ImGui::PopStyleColor(2); return; }
     s_PsGoogle = settings.radarStyle != 0;
-    const bool rp = RpOnServer(), mw3 = Mw3OnServer();
+    const bool rp = RpOnServer(), mw3 = Mw3OnServer(), dz = DzOnServer();
     PsRow rows[] = {
         { "Name Tag",          &settings.showNameTags,   0 },
         { "Name Tag: Show Yourself", &settings.showOwnTag, 0 },   // 3.35.2
@@ -41,6 +41,7 @@ static void PSettingsPopup()
         { "Global Chat (OOC)", &settings.globalChat,     1 },
         { "Google Map Radar",  &s_PsGoogle,              1 },
         { "PUBG Compass",      &settings.pubgCompass,    2 },
+        { "Day Z Models (GitHub)", &settings.dzModels,   3 },   // 3.61
     };
     const int nRows = (int)(sizeof(rows) / sizeof(rows[0]));
     ImDrawList* dl = ImGui::GetWindowDrawList();
@@ -76,6 +77,7 @@ static void PSettingsPopup()
     {
         if(rows[i].kind == 1 && !rp) continue;
         if(rows[i].kind == 2 && !mw3) continue;
+        if(rows[i].kind == 3 && !dz) continue;
         if(s_PsSel == 0 && !shown) s_PsSel = i;
         ++shown;
         bool on = *rows[i].val;
@@ -89,7 +91,7 @@ static void PSettingsPopup()
     if(ImGui::Button("Toggle##ps", ImVec2(bw, UI::S(64))) && s_PsSel >= 0 && s_PsSel < nRows)
     {
         PsRow& r = rows[s_PsSel];
-        if(!(r.kind == 1 && !rp) && !(r.kind == 2 && !mw3)) { *r.val = !*r.val; PsApply(r); }
+        if(!(r.kind == 1 && !rp) && !(r.kind == 2 && !mw3) && !(r.kind == 3 && !dz)) { *r.val = !*r.val; PsApply(r); }
     }
     ImGui::SameLine();
     if(ImGui::Button("Close##ps", ImVec2(bw, UI::S(64)))) ImGui::CloseCurrentPopup();

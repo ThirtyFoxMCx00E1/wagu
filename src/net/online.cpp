@@ -1659,7 +1659,7 @@ static int TcpConnectTimed(const std::string& host, uint16_t port, int timeoutMs
     return fd;
 }
 
-static bool HttpsGet(const std::string& url, std::string& body, int timeoutMs, std::string& why)
+static bool HttpsGet(const std::string& url, std::string& body, int timeoutMs, std::string& why, size_t maxBytes = 256 * 1024)
 {
     body.clear();
     bool tls = true; std::string rest;
@@ -1677,7 +1677,7 @@ static bool HttpsGet(const std::string& url, std::string& body, int timeoutMs, s
     mbedtls_ssl_context ssl; mbedtls_ssl_config conf;
     bool tlsOn = false, ok = false;
     std::string raw;
-    std::string req = "GET " + path + " HTTP/1.1\r\nHost: " + host + "\r\nUser-Agent: ThirtyFoxMP\r\nAccept: text/plain\r\nConnection: close\r\n\r\n";
+    std::string req = "GET " + path + " HTTP/1.1\r\nHost: " + host + "\r\nUser-Agent: ThirtyFoxMP\r\nAccept: */*\r\nConnection: close\r\n\r\n";
     auto waitFd = [&](short ev) -> bool { int left = (int)((int64_t)until - (int64_t)MP_NowMs()); if(left <= 0) return false; pollfd p = { fd, ev, 0 }; poll(&p, 1, left < 200 ? left : 200); return true; };
     do
     {
@@ -1715,7 +1715,7 @@ static bool HttpsGet(const std::string& url, std::string& body, int timeoutMs, s
         {
             unsigned char buf[4096];
             int n = tls ? mbedtls_ssl_read(&ssl, buf, sizeof(buf)) : (int)recv(fd, buf, sizeof(buf), 0);
-            if(n > 0) { raw.append((const char*)buf, n); if(raw.size() > 256 * 1024) break; continue; }
+            if(n > 0) { raw.append((const char*)buf, n); if(raw.size() > maxBytes) break; continue; }
             if(n == 0 || (tls && (n == MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY))) break;
             bool again = tls ? (n == MBEDTLS_ERR_SSL_WANT_READ || n == MBEDTLS_ERR_SSL_WANT_WRITE) : (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR);
             if(!again) break;
@@ -2367,4 +2367,10 @@ bool Online::AuthLinkRecv(std::string& frame)
     if(s_AuthIn.empty()) return false;
     frame = s_AuthIn.front(); s_AuthIn.pop_front();
     return true;
+}
+
+// 3.61: Day Z model pack (dff / txd from GitHub, src/game/dzmodels.cpp). Blocking, background threads only.
+bool Online::HttpsFetch(const std::string& url, std::string& body, int timeoutMs, std::string& why, size_t maxBytes)
+{
+    return HttpsGet(url, body, timeoutMs, why, maxBytes);
 }

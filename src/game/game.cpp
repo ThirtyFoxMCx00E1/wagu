@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "game.h"
+#include "dzmodels.h"
 #include "scripting.h"
 #include "net/protocol.h"
 uint64_t MP_NowMs();   // net/server.cpp (3.32: model streaming timers)
@@ -58,6 +59,7 @@ bool Game::Init(void* h)
     InitGame219(h);       // 2.19: camera, cheats, jetpack, joystick
     InitFileGuard(h);     // 3.11.5
     InitSkins(h);         // 2.19.6: player model sync + story characters
+    DzModels::Init(h);    // 3.61: Day Z model pack (MTA DayZ dff / txd from GitHub)
     SET_TO(CalcScreenCoors, aml->GetSym(h, "_ZN7CSprite15CalcScreenCoorsERK5RwV3dPS0_PfS4_bb"));
     SET_TO(m_UserPause, aml->GetSym(h, "_ZN6CTimer11m_UserPauseE"));
     SET_TO(m_CodePause, aml->GetSym(h, "_ZN6CTimer11m_CodePauseE"));

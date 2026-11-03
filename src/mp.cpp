@@ -41,6 +41,7 @@
 #include "ui/hexlabel.h"   // 3.55
 #include "game/cleoblock.h"
 #include "game/modscan.h"
+#include "game/dzmodels.h"   // 3.61: Day Z model pack
 #include "net/admin.h"
 #include "net/safezone.h"   // 3.21: hospital safe zones
 #include "ui/emoji.h"
@@ -675,6 +676,7 @@ static int  Mw3RadarZones(Game::RadarZone* out, int maxOut);
 static bool s_bDzJoin = false;
 static bool DzOnServer();
 static bool DzHideCorner();   // 3.60
+static void DzModelsTick();   // 3.61: mp_dayz.inc
 static int DzAdjustDamage(int hp, int dmg, bool instant);   // 3.59: helmet vs headshot, DOWN at 5%
 static bool DzHidden();
 static void DzProcess(int ped, uint64_t now);
@@ -5261,6 +5263,7 @@ void MP::SaveConfig()
     I("Team", settings.team); I("ClassSkin", settings.classSkin);
     B("ShowNameTags", settings.showNameTags); B("ShowDmgInd", settings.showDmgInd); B("GlobalChat", settings.globalChat);   // 3.35
     I("RadarStyle", settings.radarStyle); B("PubgCompass", settings.pubgCompass);   // 3.27
+    B("DzModels", settings.dzModels);   // 3.61
     S("ServerPassword", settings.serverPassword); S("HostedPassword", settings.hostedPassword);   // 2.19
     ::cfg->Save();
 }
@@ -5350,6 +5353,7 @@ static void LoadConfig()
     settings.radarStyle      = ::cfg->GetInt("RadarStyle", 2, "MP");   // 3.27
     if(settings.radarStyle < 0 || settings.radarStyle > 2) settings.radarStyle = 2;
     settings.pubgCompass     = ::cfg->GetBool("PubgCompass", true, "MP");
+    settings.dzModels        = ::cfg->GetBool("DzModels", true, "MP");
     if(settings.team < 0 || settings.team >= 8) settings.team = 0;
     settings.regionPicked    = ::cfg->GetBool("RegionPicked", false, "MP");
     settings.nameColor       = (uint32_t)::cfg->GetInt("NameColor", 0, "MP");
@@ -6730,6 +6734,7 @@ static void SectionDisplay(void*)
         if(settings.radarStyle < 0 || settings.radarStyle > 2) settings.radarStyle = 2;
         changed |= ImGui::Combo("##radarstyle", &settings.radarStyle, kStyles, 3);
         changed |= FloatMenu::ToggleSwitch("MW3: PUBG compass on top", &settings.pubgCompass);
+        changed |= FloatMenu::ToggleSwitch("Day Z: MTA DayZ models (download)", &settings.dzModels);   // 3.61
     }
     NpcStatusLine();
     SyncStatusLines();   // 2.19.6

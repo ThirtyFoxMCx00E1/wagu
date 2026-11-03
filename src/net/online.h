@@ -74,4 +74,7 @@ namespace Online
     const char* AuthLinkBroker();
     void AuthLinkSend(const std::string& frame);
     bool AuthLinkRecv(std::string& frame);
+
+    // 3.61: plain HTTPS GET (TLS 1.2, system CAs, no redirects), body up to maxBytes. Blocking.
+    bool HttpsFetch(const std::string& url, std::string& body, int timeoutMs, std::string& why, size_t maxBytes);
 }
