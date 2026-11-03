@@ -452,23 +452,28 @@ static void DzDrawStatusMta(ImDrawList* dl, ImVec2 ds, int ped, float t)
 {
     if(!s_Dz.haveMe) return;
     const PktDzMe& m = s_Dz.me;
-    const float s = UI::S(44), x = ds.x - UI::S(118);
-    float y = std::max(ds.y * 0.36f, UI::S(338));
+    // 3.60: bigger, like the MTA DayZ screenshots. Ear + eye in the right column (above the armour),
+    // temperature / blood / food / drink / humanity in a column left of the GTA fire + sprint buttons.
     auto blink = [&](bool warn) { return warn ? DzCol(DZ_RED, 0.55f + 0.45f * sinf(t * 7.0f)) : IM_COL32_WHITE; };
     // ear + eye (sound / visibility level)
-    int noise, vis; DzNoiseVis(ped, noise, vis);
-    DzStatus(dl, DZST_EAR, ImVec2(x - s * 0.55f, y), s * 0.62f);
-    if(noise > 0) DzStatus(dl, DZST_LEVEL1 + noise - 1, ImVec2(x - s * 0.02f, y), s * 0.62f, noise >= 4 ? DzCol(DZ_RED) : IM_COL32_WHITE);
-    DzStatus(dl, DZST_EYE, ImVec2(x - s * 0.55f, y + s * 0.62f), s * 0.62f);
-    if(vis > 0) DzStatus(dl, DZST_LEVEL1 + vis - 1, ImVec2(x - s * 0.02f, y + s * 0.62f), s * 0.62f, vis >= 4 ? DzCol(DZ_RED) : IM_COL32_WHITE);
-    y += s * 1.32f;
+    {
+        const float es = UI::S(60), ex = ds.x - UI::S(132);
+        float ey = ds.y * 0.40f;
+        int noise, vis; DzNoiseVis(ped, noise, vis);
+        DzStatus(dl, DZST_EAR, ImVec2(ex, ey), es);
+        if(noise > 0) DzStatus(dl, DZST_LEVEL1 + noise - 1, ImVec2(ex + es * 0.86f, ey), es, noise >= 4 ? DzCol(DZ_RED) : IM_COL32_WHITE);
+        DzStatus(dl, DZST_EYE, ImVec2(ex, ey + es * 0.92f), es);
+        if(vis > 0) DzStatus(dl, DZST_LEVEL1 + vis - 1, ImVec2(ex + es * 0.86f, ey + es * 0.92f), es, vis >= 4 ? DzCol(DZ_RED) : IM_COL32_WHITE);
+    }
+    const float s = UI::S(62), x = ds.x - UI::S(256);
+    float y = ds.y * 0.42f;
     // temperature + rising / falling arrows
     float temp = s_DzX.temp; int tl = (int)((temp - 33.0f) / 1.2f + 0.5f); if(tl < 0) tl = 0; if(tl > 4) tl = 4;
     ImU32 tc = temp < 34.5f ? IM_COL32(120, 180, 255, 255) : (temp > 38.5f ? DzCol(DZ_ORG) : IM_COL32_WHITE);
     DzStatus(dl, DZST_TEMP_BORDER, ImVec2(x, y), s); if(tl) DzStatus(dl, DZST_TEMP0 + tl, ImVec2(x, y), s, tc);
     float r = s_DzX.tempRate; int arrows = fabsf(r) < 0.0008f ? 0 : fabsf(r) < 0.003f ? 1 : fabsf(r) < 0.006f ? 2 : 3;
     if(arrows) DzStatus(dl, r < 0 ? DZST_TARROW0 + arrows : DZST_TARROW3 + arrows, ImVec2(x - s * 0.62f, y + s * 0.18f), s * 0.62f, r < 0 ? IM_COL32(120, 180, 255, 255) : DzCol(DZ_ORG));
-    char tt[16]; snprintf(tt, sizeof(tt), "%.1fC", temp); DzTextR(dl, UI::S(12), x + s, y + s - UI::S(10), IM_COL32(230, 230, 230, 220), tt);
+    char tt[16]; snprintf(tt, sizeof(tt), "%.1fC", temp); DzTextR(dl, UI::S(17), x + s + UI::S(4), y + s - UI::S(16), IM_COL32(230, 230, 230, 220), tt);
     y += s + UI::S(2);
     // blood / food / drink
     struct L { int border, base; float k; bool warn; } ls[3] = {
@@ -813,9 +818,9 @@ static void DzDrawAntiRelog(ImDrawList* dl, ImVec2 ds, uint64_t now, float t)
     int left = (int)((s_Dz.combatUntil - now + 999) / 1000);
     float cx = ds.x * 0.11f, y = ds.y * 0.29f; ImU32 c = DzCol(DZ_RED, 0.80f + 0.20f * sinf(t * 6));
     const char* l1 = "ANTI-RELOG"; const char* l2 = "DISCONNECT = DEATH"; char l3[12]; snprintf(l3, sizeof(l3), "%d", left);
-    DzText(dl, UI::S(19), ImVec2(cx - RpTextW(UI::S(19), l1) * 0.5f, y), c, l1);
-    DzText(dl, UI::S(17), ImVec2(cx - RpTextW(UI::S(17), l2) * 0.5f, y + UI::S(22)), c, l2);
-    DzText(dl, UI::S(22), ImVec2(cx - RpTextW(UI::S(22), l3) * 0.5f, y + UI::S(42)), c, l3);
+    DzText(dl, UI::S(26), ImVec2(cx - RpTextW(UI::S(26), l1) * 0.5f, y), c, l1);            // 3.60: bigger
+    DzText(dl, UI::S(23), ImVec2(cx - RpTextW(UI::S(23), l2) * 0.5f, y + UI::S(30)), c, l2);
+    DzText(dl, UI::S(32), ImVec2(cx - RpTextW(UI::S(32), l3) * 0.5f, y + UI::S(57)), c, l3);
 }
 
 // ---- the inventory (MTA DayZ: "(n) Inventory" + the bag list) -------------------------------------
@@ -829,7 +834,7 @@ static bool DzSlotBox(ImDrawList* wl, const char* id, ImVec2 a, ImVec2 sz, int i
 {
     ImGui::SetCursorScreenPos(a); bool hit = ImGui::InvisibleButton(id, sz);
     ImVec2 b(a.x + sz.x, a.y + sz.y);
-    wl->AddRectFilled(a, b, sel ? IM_COL32(90, 70, 20, 170) : IM_COL32(0, 0, 0, 110), UI::S(2));
+    if(sel) wl->AddRectFilled(a, b, IM_COL32(90, 70, 20, 150), UI::S(2));   // 3.60: the texture is the background
     wl->AddRect(a, b, sel ? DzCol(DZ_YEL) : IM_COL32(255, 255, 255, 45), UI::S(2), 0, UI::S(sel ? 2.0f : 1.0f));
     if(item)
     {
@@ -854,7 +859,7 @@ static void DzDrawInventoryMta(ImVec2 ds, int ped)
     const PktDzInv& inv = s_Dz.inv;
     // ---- left: "(n) Inventory" on the grunge panel
     if(!DzHud(wl, DZR_INV_DARK, ImVec2(x0, y0), ImVec2(x0 + LW, y0 + H), IM_COL32(255, 255, 255, 245))) wl->AddRectFilled(ImVec2(x0, y0), ImVec2(x0 + LW, y0 + H), IM_COL32(24, 24, 22, 240));
-    wl->AddRectFilled(ImVec2(x0, y0), ImVec2(x0 + LW, y0 + H), IM_COL32(0, 0, 0, 70));
+    // 3.60: no extra black layer over the texture (it looked doubled)
     int nItems = 0; for(int i = 0; i < inv.n; ++i) nItems += inv.s[i].count ? 1 : 0;
     char hd[48]; snprintf(hd, sizeof(hd), "(%d) Inventory", nItems);
     RpGtaText(wl, UI::Font(), UI::S(22), ImVec2(x0 + UI::S(14), y0 + UI::S(8)), IM_COL32_WHITE, hd, UI::S(1.5f));
@@ -880,7 +885,6 @@ static void DzDrawInventoryMta(ImVec2 ds, int ped)
         int p = weap.size() > 0 ? weap[0] : -1, s = weap.size() > 1 ? weap[1] : -1;
         if(DzSlotBox(wl, "##dzwp", ImVec2(x0 + pad, y), ImVec2(ww, wh), p >= 0 ? inv.s[p].item : 0, 1, p >= 0 && s_Dz.invSel == p, "PRIMARY") && p >= 0) { s_Dz.invSel = p; s_DzX.groundSel = -1; }
         if(DzSlotBox(wl, "##dzws", ImVec2(x0 + pad + ww + UI::S(8), y), ImVec2(sw, wh), s >= 0 ? inv.s[s].item : 0, 1, s >= 0 && s_Dz.invSel == s, "SECONDARY") && s >= 0) { s_Dz.invSel = s; s_DzX.groundSel = -1; }
-        if(p >= 0) wl->AddText(UI::Font(), UI::S(12), ImVec2(x0 + pad + UI::S(6), y + wh - UI::S(16)), IM_COL32(230, 230, 230, 230), DzItemInfo(inv.s[p].item).name);
         y += wh + UI::S(8);
         // more weapons go into the gear grid
         for(size_t k = 2; k < weap.size(); ++k) gear.insert(gear.begin(), weap[k]);
@@ -888,7 +892,7 @@ static void DzDrawInventoryMta(ImVec2 ds, int ped)
     // description box
     {
         float dh = UI::S(70); ImVec2 a(x0 + pad, y), b(x0 + pad + cw, y + dh);
-        wl->AddRectFilled(a, b, IM_COL32(0, 0, 0, 120), UI::S(2)); wl->AddRect(a, b, IM_COL32(255, 255, 255, 40), UI::S(2));
+        wl->AddRect(a, b, IM_COL32(255, 255, 255, 40), UI::S(2));
         int item = 0, cnt = 0;
         if(s_Dz.invSel >= 0 && s_Dz.invSel < inv.n) { item = inv.s[s_Dz.invSel].item; cnt = inv.s[s_Dz.invSel].count; }
         else if(s_DzX.groundSel >= 0 && s_Dz.loot.count((uint16_t)s_DzX.groundSel)) { item = s_Dz.loot[(uint16_t)s_DzX.groundSel].item; cnt = s_Dz.loot[(uint16_t)s_DzX.groundSel].count; }
@@ -959,8 +963,8 @@ static void DzDrawInventoryMta(ImVec2 ds, int ped)
     }
     // ---- right: the bag ("Small backpack (kg/max)") + the ground
     {
-        wl->AddRectFilled(ImVec2(RX, y0), ImVec2(RX + RW, y0 + H), IM_COL32(16, 16, 16, 232), UI::S(2));
-        wl->AddRect(ImVec2(RX, y0), ImVec2(RX + RW, y0 + H), IM_COL32(255, 255, 255, 30), UI::S(2));
+        // 3.60: the same inventory texture as the left side (no flat box + border on top of it)
+        if(!DzHud(wl, DZR_INV_DARK, ImVec2(RX, y0), ImVec2(RX + RW, y0 + H), IM_COL32(255, 255, 255, 245))) wl->AddRectFilled(ImVec2(RX, y0), ImVec2(RX + RW, y0 + H), IM_COL32(24, 24, 22, 240), UI::S(2));
         // the backpack silhouette, faint, behind the list
         { float bh = H * 0.62f, bw = bh * 0.5f; DzImgFull(wl, "dz_bag.png", ImVec2(RX + RW * 0.5f - bw * 0.5f, y0 + H * 0.24f), ImVec2(RX + RW * 0.5f + bw * 0.5f, y0 + H * 0.24f + bh), IM_COL32(255, 255, 255, 34)); }
         float kgCur = s_Dz.haveMe ? s_Dz.me.kg100 / 100.0f : 0, kgMax = s_Dz.haveMe ? s_Dz.me.maxKg100 / 100.0f : 10;

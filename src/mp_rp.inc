@@ -23,6 +23,7 @@ static void RpClick(int which)
 {
     static const char* const kFile[3] = { "click.mp3", "click2.mp3", "click3.mp3" };
     if(which < 0 || which > 2 || !s_szDataDir[0]) return;
+    if(which == RPS_CLICK && HUD::HasGlobalClick()) return;   // 3.60: global_click.mp3 already clicked on the press
     char snd[512]; snprintf(snd, sizeof(snd), "%s/%s", s_szDataDir, kFile[which]);
     Sound::PlayUi(snd, 1.0f);
 }

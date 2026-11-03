@@ -121,6 +121,17 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **3.60**: **Project Day Z Legacy** fixes from the 19 new screenshots: spawning, freezes, a bigger HUD like the MTA DayZ screenshots, icon buttons, the 10 rules window, a new server icon and a click sound for every button.
+  - Spawn fix: tapping a location on the spawn map now always spawns you there (before every location put you at the same Grove Street spot). The login cabin parks you under Grove Street, and that spot was saved as "where you logged out" - now only real outdoor positions are saved.
+  - Stuck / roof spawn fix: after a spawn the controls, HUD and ped are unfrozen again for 3 s, and a bad height (under the map or on a roof) is moved down to the ground.
+  - Hotspot freeze fix: when the host left the vehicle near the other player, the other phone froze - the host's shared zombies / NPC copies were sent to the other phone. On Day Z the NPC sharing is off (Day Z has its own zombies) and the default server rules system doesn't run there.
+  - Freeze fix at Grove Street and the country side: the loot objects were asked for again every frame (ground + model streaming for every spot in 110 m). Now max 4 tries per pass, 10 passes a second, the ground only within 70 m, and a spot that failed waits before the next try. Ruins debris is built 3 pieces at a time instead of 26 retries every frame.
+  - HUD like the screenshots: no "Press F2" line (this is a phone); the F2 / BAG / J text buttons are icon buttons (gear, backpack, journal) with a 50 % black background next to the top bar; the TAB button is gone (the player list is in the 3-dots menu). Bigger scoreboard moved under the GTA clock / weapon icon, bigger ear + eye, status icons (temperature, blood, food, drink, humanity) moved left of the fire / sprint buttons, bigger armour slots, weapon name + ammo, FPS | PING and ANTI-RELOG.
+  - Inventory: no extra black layer over the inventory texture, the bag side uses the same texture, no doubled label backgrounds / weapon name; the HUD is hidden behind it.
+  - Rules: the Rules button on the connection screen is gone. After you tap Play + a location, the 10 rules window shows once (like the default server).
+  - Backpack on the back is upright now (it was sideways at the hip).
+  - Server list: new Project Day Z Legacy icon (rounded tile with transparent corners like the other featured servers).
+  - global_click.mp3: put it in the MP folder and every button of the mod clicks (like the MO launcher UI); click.mp3 is then skipped so it never clicks twice.
 - **3.59**: **Project Day Z Legacy** gets the MTA DayZ systems (ported from [MTA DayZ / NullSystemWorks 0.9.9.5a](https://github.com/ThirtyFoxMCx00E1/mtadayz), credited in the cabin CREDITS) and the original MTA DayZ textures (inventory panel, item icons, status icons, GPS map, compass, spawn selection, journal), plus the features from the 11 new screenshots. Includes everything from 3.58 (first release that ships it).
   - New inventory like the real one: textured background with labels (PRIMARY / SECONDARY / GEAR / FOOD / MEDICINES / TOOL BELT), item icons, weight bar, ground + bag tabs.
   - Loot glow + beams: aiming at a loot object straight on gives it a glowing outline, otherwise only a light beam; both only for you and never through walls (line of sight checked).

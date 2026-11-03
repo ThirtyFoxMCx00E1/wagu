@@ -26,6 +26,9 @@
 #define STBI_ONLY_PNG
 #define STBI_NO_STDIO_FAILURE_STRINGS
 #include "../../imgui/stb_image.h"
+#include "../../imgui/imgui_internal.h"   // 3.60: GImGui->ActiveIdIsJustActivated (global click sound)
+#include "../audio/sound.h"
+#include <unistd.h>
 #include "emoji.h"
 #include "i18n.h"
 
@@ -636,13 +639,13 @@ static void EnsureEmbeddedAsset(const char* file, const char* path)
 }
 // 3.04: any other PNG in files/MP by file name (Brief Case War briefcase / lock / banner), max 512x512
 struct NamedTex { char file[48]; RwRaster* r; ImVec2 uv; };
-static NamedTex s_NamedTex[48]; static int s_nNamedTex = 0;
+static NamedTex s_NamedTex[96]; static int s_nNamedTex = 0;   // 3.60: 48 -> 96 (Day Z + RP + BCW + MW3 textures)
 void* HUD::Texture(const char* file, ImVec2* uv)
 {
     if(!file || !*file) return nullptr;
     for(int i = 0; i < s_nNamedTex; ++i)
         if(!strcmp(s_NamedTex[i].file, file)) { if(uv) *uv = s_NamedTex[i].uv; return (void*)s_NamedTex[i].r; }
-    if(s_nNamedTex >= 48) return nullptr;
+    if(s_nNamedTex >= 96) return nullptr;
     uint32_t fr = (uint32_t)ImGui::GetFrameCount();
     if(s_nIconLoadFrame == fr) return nullptr;   // one file per frame
     s_nIconLoadFrame = fr;
@@ -1181,6 +1184,31 @@ static void DrawLogo(ImDrawList* dl)
     }
 }
 
+// ---- 3.60: global_click.mp3 - a click for every button of the mod (like the MO launcher UI) -------
+static char s_szGlobalClick[512];
+static bool s_bGlobalClick = false;
+bool HUD::HasGlobalClick()
+{
+    static uint64_t s_next = 0;
+    const uint64_t now = (uint64_t)(ImGui::GetTime() * 1000.0);
+    if(now >= s_next || now + 10000 < s_next)
+    {
+        s_next = now + 3000;   // look for the file again every 3 s (it can be pasted while playing)
+        const char* d = MP::DataDir();
+        s_bGlobalClick = false;
+        if(d && d[0]) { snprintf(s_szGlobalClick, sizeof(s_szGlobalClick), "%s/global_click.mp3", d); s_bGlobalClick = access(s_szGlobalClick, R_OK) == 0; }
+    }
+    return s_bGlobalClick;
+}
+static void GlobalClickTick()
+{
+    ImGuiContext& g = *GImGui;
+    // a button / tab / checkbox / slider was just pressed this frame (not a window being dragged)
+    if(!g.ActiveIdIsJustActivated || !g.ActiveId || g.MovingWindow || g.ActiveIdSource == ImGuiInputSource_Keyboard) return;
+    if(!HUD::HasGlobalClick()) return;
+    Sound::PlayUi(s_szGlobalClick, 1.0f);
+}
+
 // ---- frame ----------------------------------------------------------------------------------
 static void PublishHitRects();   // 2.22
 void PadDrawCursor();   // main.cpp
@@ -1216,6 +1244,7 @@ void HUD::Render()
         VKeyboard::Render();
     }
     PadDrawCursor();   // 3.39.2: controller cursor
+    GlobalClickTick();   // 3.60
 
     ImGui::EndFrame();
     PublishHitRects();   // 2.22

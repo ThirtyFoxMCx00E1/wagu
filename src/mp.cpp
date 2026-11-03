@@ -3686,6 +3686,7 @@ static void MissionNpcSend(uint64_t now)
 static void NpcReceive(const PktNpc& m, bool mission)
 {
     if(m.h.id >= MP_MAX_PLAYERS || m.h.id == myId || !players[m.h.id].active) return;
+    if(DzOnServer()) return;   // 3.60: Day Z - zombies / NPCs are never copied from another phone
     // 3.02: mission sync - the peds / cars a group member's mission made (only their phone runs the
     // mission script). Taken from my group only, even when I'm on a mission / cutscene myself.
     if(mission && !IsPartner(m.h.id)) return;
@@ -3960,6 +3961,17 @@ static void NpcUpdateCopies(int lp, uint64_t now)
 
 static void NpcProcess(int ped, uint64_t now)
 {
+    // 3.60: Project Day Z - no NPC / spawned-entity sync. Every phone runs its own zombies (CreateNpcPed =
+    // "spawned entities"); the host shared its zombies with the players near it, so when the host got out
+    // of the car (zombies only spawn on foot) and came close, the other phone got the host's whole horde
+    // as copies on top of its own zombies (create / delete every frame, zombie tasks on copies) and froze.
+    // In a car the host had no zombies -> no freeze. Same rule now on every phone: zombies stay local.
+    if(DzOnServer())
+    {
+        static uint64_t s_nDzNpcOff = 0;
+        if(s_bNpcFollow || s_bNpcHost || (NpcHasSpawnedCopies() && now - s_nDzNpcOff > 1000)) { s_nDzNpcOff = now; NpcStop(); NpcClearCopies(); }
+        return;
+    }
     if(!s_nNpcJoinAt) s_nNpcJoinAt = now;   // 3.52
     if(now - s_nNpcLastRole >= 500) { s_nNpcLastRole = now; NpcDecideRole(ped, now); }
     NpcSend(ped, now);   // 2.28: host traffic and / or my spawned entities

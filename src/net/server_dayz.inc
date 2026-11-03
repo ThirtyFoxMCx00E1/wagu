@@ -228,6 +228,16 @@ void MPServer::DzLoad()
     fclose(f);
     Log("DAYZ: %d survivors loaded from %s", n, s_szDzFile);
 }
+// 3.60: a position the survivor really stood on. While on the connection screen the ped is parked at
+// the cabin (x 2493 y -1700 = Grove Street, z -100 / interior z 1015) - that used to be saved as
+// "where you logged out", so every spawn went to the Grove Street roof.
+static bool DzPosValid(const float* p)
+{
+    if(!p || (fabsf(p[0]) < 1.0f && fabsf(p[1]) < 1.0f)) return false;
+    if(fabsf(p[0]) > 3000.0f || fabsf(p[1]) > 3000.0f || p[2] < -20.0f || p[2] > 700.0f) return false;
+    float dx = p[0] - 2497.4f, dy = p[1] + 1696.2f; if(dx * dx + dy * dy < 12.0f * 12.0f) return false;   // the cabin spot itself
+    return true;
+}
 void MPServer::DzSave()
 {
     // the online survivors first (their live state)
@@ -238,7 +248,7 @@ void MPServer::DzSave()
         const DzSurvivor& z = m_Dz[i]; char buf[1300];
         int o = snprintf(buf, sizeof(buf), "%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%u|%d|%d|%d,%d,%d,%d,%d|%.1f|%.1f|%.1f|",
                          z.relogDied ? -1 : (int)z.alive, z.blood, z.hunger, z.thirst, z.infected, z.humanity, z.murders, z.zkills, z.bkills, z.headshots, z.points, z.aliveMin,
-                         z.bag, z.gps, z.armor[0], z.armor[1], z.armor[2], z.armor[3], z.armor[4], m_Slots[i].pos[0], m_Slots[i].pos[1], m_Slots[i].pos[2]);
+                         z.bag, z.gps, z.armor[0], z.armor[1], z.armor[2], z.armor[3], z.armor[4], z.hasPos ? z.lastPos[0] : 0.0f, z.hasPos ? z.lastPos[1] : 0.0f, z.hasPos ? z.lastPos[2] : 0.0f);
         for(int k = 0; k < z.nInv && o < (int)sizeof(buf) - 16; ++k) o += snprintf(buf + o, sizeof(buf) - o, "%d:%d,", z.inv[k].item, z.inv[k].count);
         // 3.59: #temp|cond|achievements|skills|skin|confirmed|revives (after the items: older builds stop reading at the '#')
         char sk[DZSK_COUNT + 1]; for(int k = 0; k < DZSK_COUNT; ++k) sk[k] = (char)('0' + std::min<int>(9, z.skills[k])); sk[DZSK_COUNT] = 0;
@@ -298,7 +308,7 @@ void MPServer::DzOnAuthed(int slot)
         }
         if(alive < 0) z.relogNotice = true;   // 3.58b: died by ANTI-RELOG (told when the player is in)
         if(!z.alive || z.blood <= 0) { DzFresh(slot); z.alive = false; }
-        else { m_Slots[slot].pos[0] = px; m_Slots[slot].pos[1] = py; m_Slots[slot].pos[2] = pz; }
+        else { m_Slots[slot].pos[0] = px; m_Slots[slot].pos[1] = py; m_Slots[slot].pos[2] = pz; float lp[3] = { px, py, pz }; if(DzPosValid(lp)) { memcpy(z.lastPos, lp, sizeof(lp)); z.hasPos = true; } }
         z.spawned = false;
         // remember where to wake up
         z.lastPick = 0;
@@ -387,8 +397,11 @@ void MPServer::DzSpawn(int slot, int region)
     DzSurvivor& z = m_Dz[slot];
     float p[4];
     char name[64];
-    if(z.alive && (fabsf(m_Slots[slot].pos[0]) > 1.0f || fabsf(m_Slots[slot].pos[1]) > 1.0f))
-    { p[0] = m_Slots[slot].pos[0]; p[1] = m_Slots[slot].pos[1]; p[2] = m_Slots[slot].pos[2]; p[3] = 0; MP_CopyStr(name, "where you logged out", sizeof(name)); }
+    // 3.60: a location tapped on the spawn map always wins; plain Play wakes an alive survivor up where
+    // they really logged out (the last outdoor spot, never the cabin parked under Grove Street).
+    const bool picked = DzVar(DZV_SPAWNSELECTION) && region >= 1 && region <= 9;
+    if(!picked && z.alive && z.hasPos)
+    { p[0] = z.lastPos[0]; p[1] = z.lastPos[1]; p[2] = z.lastPos[2]; p[3] = 0; MP_CopyStr(name, "where you logged out", sizeof(name)); }
     else
     {
         int si = (int)(DzRand() % 15);
@@ -496,14 +509,17 @@ bool MPServer::DzChat(int slot, const char* text)
     return false;   // normal chat: broadcast with the party colour as the name colour
 }
 
-static const char* const kDzRules[] = {
-    "1. No cheats, CLEO, mod menus (libCheatMenu.so / libCheatMenu64.so are blocked) or bug abuse.",
-    "2. Disconnecting during combat (ANTI-RELOG) = your survivor dies.",
-    "3. Parties: max 4 survivors. Don't pretend to be another party (colours are unique).",
-    "4. No spawn killing at the 15 spawn points.",
-    "5. Respect everyone in the chat - no insults, spam or advertising.",
-    "6. Don't impersonate staff (admin, moderator) or the Broker bot.",
-    "7. Kick = wait 4:29 to rejoin. Fly / teleport hacks: 3 kicks = permanent ban.",
+static const char* const kDzRules[] = {   // 3.60: the same 10 rules as the client window
+    "1. No cheating: no CLEO, mod menus, aimbots, speed / fly hacks (libCheatMenu is blocked).",
+    "2. ANTI-RELOG: leaving the game during combat = your survivor dies.",
+    "3. No bug abuse: no glitching into walls or under the map - report it to an admin.",
+    "4. No spawn killing at the 15 spawn points or on fresh survivors.",
+    "5. Parties: max 4 survivors. Don't pretend to be another party.",
+    "6. Respect everyone: no insults, racism, threats or harassment.",
+    "7. No spam: no flooding, caps lock or advertising other servers.",
+    "8. Don't pretend to be staff (admin, moderator or the bot Broker).",
+    "9. Listen to the admins: a kick waits 4:29, 3 fly / teleport kicks = permanent ban.",
+    "10. Survive, loot, trust no one - and have fun.",
 };
 
 bool MPServer::DzCommand(int slot, const char* cmd, const char* arg)
@@ -941,6 +957,13 @@ void MPServer::DzTick(uint64_t now)
 {
     if(!IsDayzServer()) return;
     auto chatAll = [&](uint32_t col, const char* text) { DzMsg(-1, col, "%s", text); };
+    // 3.60: remember the last real outdoor spot of every survivor in the game (for "where you logged out")
+    for(int i = 0; i < MP_MAX_PLAYERS; ++i)
+    {
+        DzSurvivor& z = m_Dz[i];
+        if(!m_Slots[i].used || !z.loaded || !z.alive || !z.spawned || z.downed || !DzPosValid(m_Slots[i].pos)) continue;
+        memcpy(z.lastPos, m_Slots[i].pos, sizeof(z.lastPos)); z.hasPos = true;
+    }
     // chat loops ([INFO] 25:20, [SERVER] 35:20, [GUIDE] 10:20) - only grey / white / yellow / green / red / orange
     if(now >= m_nDzInfoAt)
     {

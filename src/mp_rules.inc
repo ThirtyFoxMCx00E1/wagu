@@ -52,7 +52,7 @@ static void RulesProcess(uint64_t now)
 {
     if(client.GetState() != NET_CONNECTED) { s_Rules.shown = false; s_Rules.open = false; s_Rules.readyAt = 0; s_Rules.joinAt = 0; return; }
     if(!s_Rules.joinAt) s_Rules.joinAt = now;
-    if(s_Rules.shown || BcwOnServer() || Mw3OnServer() || RpOnServer() || !Game::IsReady()) return;
+    if(s_Rules.shown || BcwOnServer() || Mw3OnServer() || RpOnServer() || DzOnServer() || !Game::IsReady()) return;   // 3.60: Day Z shows its own 10 rules after the spawn
     if(s_Rules.open)
     {
         if(SampDialogOpen() && s_Dlg.user == RULES_DLG_USER) return;
@@ -70,7 +70,7 @@ static void RulesProcess(uint64_t now)
 }
 static bool RulesCommand(const char* cmd, const char*)
 {
-    if(strcmp(cmd, "rules") || RpOnServer() || BcwOnServer() || Mw3OnServer()) return false;
+    if(strcmp(cmd, "rules") || RpOnServer() || BcwOnServer() || Mw3OnServer() || DzOnServer()) return false;
     RulesShow(false);
     return true;
 }

@@ -285,6 +285,8 @@ private:
         int      temp100 = 3700; uint16_t cond = 0; uint32_t ach = 0; uint8_t skills[DZSK_COUNT] = { 0 };
         int      skin = 0, confirmed = 0, revives = 0, adverts = 0, pingBad = 0, areaIdx = -1; bool hunted = false;
         uint64_t lastStatus = 0, lastAchCheck = 0, areaAt = 0, lastStation = 0, lastTreat = 0;
+        // 3.60: the last REAL outdoor spot (never the connection-screen cabin under Grove Street)
+        float    lastPos[3] = { 0, 0, 0 }; bool hasPos = false;
     };
     struct DzBody { int id, killer; char victim[24]; int weapon; float x, y, z; uint64_t at; bool checked, bandit; };
     struct DzLootSpot { uint8_t site, item, count; float x, y; uint64_t respawnAt; };

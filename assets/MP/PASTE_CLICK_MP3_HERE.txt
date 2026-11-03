@@ -1,5 +1,7 @@
 MP 3.29 - paste your 3 click sounds into this folder (assets/MP, on the phone: the MP folder next to sound_010.mp3):
 
+  global_click.mp3 - 3.60: EVERY button of the mod (menus, launcher, Day Z panel / bag, settings)
+                     like the MO launcher UI. When it is there, click.mp3 is not played (no double click).
   click.mp3   - every UI button (panel, bag, talk menu, team buttons)
   click2.mp3  - phone taps (Mega Vil Futuristic roleplay phone)
   click3.mp3  - a "Received" item card (Mega Vil Futuristic roleplay)

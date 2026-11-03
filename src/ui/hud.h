@@ -3,6 +3,7 @@ struct ImVec2;
 namespace HUD
 {
     bool Init();
+    bool HasGlobalClick();   // 3.60: <MP folder>/global_click.mp3 is there (every ImGui button clicks)
     bool IsInitialised();
     void Render();                     // from Render2dStuff hook
     bool WantsTouch(float x, float y); // should this touch be eaten by MP UI?

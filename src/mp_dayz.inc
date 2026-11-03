@@ -28,7 +28,7 @@ static const Vec3 kDzCabinLook = { 2497.40f, -1696.20f, 1014.95f };
 static const Vec3 kDzCabinOutCam  = { -1634.0f, -2249.0f, 33.8f };   // fallback: the hunter's cabin, Back o Beyond
 static const Vec3 kDzCabinOutLook = { -1630.5f, -2243.5f, 31.6f };
 
-struct DzLootC { uint16_t idx; uint8_t item, count; float x, y, z; int obj; bool zDone; };
+struct DzLootC { uint16_t idx; uint8_t item, count; float x, y, z; int obj; bool zDone; uint64_t tryAt = 0; uint8_t tries = 0; };
 struct DzZed   { int ped; uint64_t born, deadAt; int lastHp; bool reported; bool hunting = false; uint64_t wanderAt = 0, huntAt = 0; };
 struct DzNum   { Vec3 at; bool world; float sx, sy; int val; uint64_t t; bool green; };
 struct DzDrop  { float x, y, vy; uint64_t t; bool green; };
@@ -40,7 +40,8 @@ struct DzClientState
     bool        engaged = false;
     int         view = 0;               // 1 cabin (connection screen), 2 playing, 3 dead (waiting for the game respawn)
     int         page = 0;               // cabin: 0 menu, 1 rules, 2 credits, 3 settings
-    uint64_t    connectedAt = 0, lastHudOff = 0, spawnedAt = 0, playAsked = 0, diedAt = 0;
+    uint64_t    connectedAt = 0, lastHudOff = 0, spawnedAt = 0, playAsked = 0, diedAt = 0, lastUnstick = 0, rulesAt = 0;
+    bool        rulesShown = false;   // 3.60: the 10 rules window after the first spawn of this connection
     bool        haveMe = false, haveInv = false;
     PktDzMe     me{};
     PktDzInv    inv{};
@@ -72,6 +73,7 @@ struct DzClientState
     char        spawnName[64] = ""; uint64_t spawnNameAt = 0;
     bool        fog = false;
     std::vector<int> ruinObjs; int ruinSite = -1;
+    uint8_t     ruinState[26] = {}, ruinTries[26] = {}; uint64_t ruinAt = 0, lootAt = 0;   // 3.60: built a few per tick (no freeze)
     uint64_t    lastStatus = 0, lastNeedsHurt = 0, lastInfHurt = 0, lastLootAsk = 0;
     bool        radarHidden = false;
     DzOpts      opt;
@@ -93,6 +95,8 @@ static void DzXToggleList();
 static void DzXGpsToggle();
 static bool DzXCompassToggle();
 static void DzXSpawned();
+static void DzRulesTick(uint64_t now);
+static void DzShowRules();   // 3.60: the 10 rules window after the spawn
 
 static bool DzOnServer()
 {
@@ -264,26 +268,38 @@ static void DzLootDelObj(DzLootC& l) { if(l.obj > 0) { Game::DeleteWorldObject(l
 static void DzLootClear() { for(auto& kv : s_Dz.loot) DzLootDelObj(kv.second); s_Dz.loot.clear(); s_Dz.nLootObj = 0; }
 static void DzLootTick(const Vec3& me)
 {
-    int made = 0;
+    // 3.60: freeze fix (Grove Street, the country side - places with a lot of loot). Every frame each loot
+    // spot in 110 m without an object used to probe the ground (REQUEST_COLLISION + GET_GROUND_Z) and ask
+    // for its model again - when the model / collision wasn't streamed yet that was dozens of streaming
+    // calls per frame, again and again. Now: 10 times a second, max 4 tries per pass, the ground only for
+    // spots within 70 m (collision is loaded there) and a failed spot waits 1.5 s before the next try.
+    const uint64_t now = MP_NowMs();
+    if(now < s_Dz.lootAt) return;
+    s_Dz.lootAt = now + 100;
+    int made = 0, tries = 0;
     for(auto& kv : s_Dz.loot)
     {
         DzLootC& l = kv.second;
         float dx = l.x - me.x, dy = l.y - me.y, d2 = dx * dx + dy * dy;
         if(d2 > DZ_LOOT_RANGE * DZ_LOOT_RANGE) { if(l.obj) DzLootDelObj(l); continue; }
         if(l.obj || !l.item) continue;
-        if(s_Dz.nLootObj >= DZ_LOOT_OBJ_MAX || made >= 3) continue;
+        if(s_Dz.nLootObj >= DZ_LOOT_OBJ_MAX || made >= 3 || tries >= 4) continue;
+        if(now < l.tryAt) continue;
         if(!l.zDone)
         {
+            if(d2 > 70.0f * 70.0f) continue;   // the collision there is not loaded yet - wait until closer
+            ++tries;
             float z = Game::GroundZBelow(l.x, l.y, me.z + 30.0f);
-            if(z < -500.0f) z = Game::GroundZ(l.x, l.y, me.z);
-            if(z < -500.0f) continue;
+            if(z < -500.0f) { l.tryAt = now + 1500; if(++l.tries < 6) continue; z = Game::GroundZ(l.x, l.y, me.z); }
             l.z = z; l.zDone = true;
         }
         int m = DzModel(DzItemInfo(l.item)); if(!m) { l.obj = -1; continue; }
-        float bottom = Game::ModelReady(m) ? Game::ModelBottom(m) : 1.0f; if(bottom > 0.5f || bottom < -2.0f) bottom = -0.05f;
+        ++tries;
+        float bottom = Game::ModelBottom(m); if(bottom > 0.5f || bottom < -2.0f) bottom = -0.05f;
         int o = Game::CreateMapObject(m, { l.x, l.y, l.z - bottom + 0.02f }, DzItemInfo(l.item).kind == DZK_WEAPON ? 90.0f : 0.0f, 0, (float)((l.idx * 47) % 360));
         if(o > 0) { l.obj = o; ++s_Dz.nLootObj; ++made; Game::SetObjectCollision(o, false); }
         else if(o < 0) l.obj = -1;
+        else l.tryAt = now + 400;   // model asked for, not streamed yet - try again a bit later
     }
 }
 static int DzNearestLoot(const Vec3& me, float r, float* outD = nullptr)
@@ -361,7 +377,9 @@ static void DzMakeBag(int ped)
     int o = Game::CreateWorldObject(m, p); if(o <= 0) return;
     Game::SetObjectCollision(o, false);
     float back = lvl == 3 ? -0.20f : (lvl == 2 ? -0.17f : -0.14f);
-    Game::AttachObjectToCharRot(o, ped, { 0.0f, back, 0.10f + 0.03f * lvl }, { 0.0f, 0.0f, 180.0f });   // on the back, bigger bag sits higher
+    // 3.60: the parachute pack (3026) is made for the spine bone (its X axis points up the back), so it
+    // lay sideways at the hip - turn it -90 around Y so it stands upright, straps to the body
+    Game::AttachObjectToCharRot(o, ped, { 0.0f, back, 0.12f + 0.03f * lvl }, { 0.0f, -90.0f, 0.0f });   // on the back, bigger bag sits higher
     s_Dz.bagObj = o;
 }
 static void DzSpawnAt(const float* p, const char* name)
@@ -371,6 +389,8 @@ static void DzSpawnAt(const float* p, const char* name)
     DzCabinClear();
     DzXSpawned();
     Vec3 at = { p[0], p[1], p[2] };
+    // 3.60: never wake up on a roof / under the map from a bad saved spot (the old cabin position)
+    if(at.z < -20.0f || at.z > 700.0f) { float g = Game::GroundZ(at.x, at.y, 60.0f); at.z = g > -50.0f && g < 700.0f ? g + 1.0f : 30.0f; }
     Game::EnterArea(0);
     Game::PreloadArea(at, true);
     Game::FreezeChar(ped, false);
@@ -486,7 +506,7 @@ static void DzOnPacket(const uint8_t* d, int len)
                 case DZEV_UI:
                     if(e.a == 6) DzLocalCmd(e.text);
                     else if(e.a == 7) DzXJournal(e.b);
-                    else if(e.a == 2 && s_Dz.view == 1) s_Dz.page = 1;
+                    else if(e.a == 2) DzShowRules();   // 3.60: /rules = the 10 rules window
                     else if(e.a == 5 && s_Dz.view == 1) s_Dz.page = 2;
                     else s_Dz.uiWin = e.a;
                     break;
@@ -626,25 +646,37 @@ static void DzZedTick(int ped, const Vec3& me, uint64_t now)
 // ---- ruins: debris of destroyed buildings (rocks, broken walls, chairs, wrecks) ----------------
 static void DzRuinsTick(const Vec3& me)
 {
+    // 3.60: freeze fix - the 26 pieces of a ruin were all made in ONE frame, and when the ground there was
+    // not loaded yet (seen from 260 m) none was made, so it tried all 26 again the next frame, every frame.
+    // Now 3 pieces per tick (every 150 ms), each piece max 5 tries, only within 160 m.
+    const uint64_t now = MP_NowMs();
     int near = -1;
-    for(int i = 0; i < DZ_SITES; ++i) if(g_DzSites[i].kind == DZS_RUINS) { float dx = g_DzSites[i].x - me.x, dy = g_DzSites[i].y - me.y; if(dx * dx + dy * dy < 260.0f * 260.0f) { near = i; break; } }
-    if(near == s_Dz.ruinSite && (near < 0 || !s_Dz.ruinObjs.empty())) return;
-    for(int o : s_Dz.ruinObjs) if(o > 0) Game::DeleteWorldObject(o);
-    s_Dz.ruinObjs.clear(); s_Dz.ruinSite = near;
-    if(near < 0) return;
+    for(int i = 0; i < DZ_SITES; ++i) if(g_DzSites[i].kind == DZS_RUINS) { float dx = g_DzSites[i].x - me.x, dy = g_DzSites[i].y - me.y; if(dx * dx + dy * dy < 160.0f * 160.0f) { near = i; break; } }
+    if(near != s_Dz.ruinSite)
+    {
+        for(int o : s_Dz.ruinObjs) if(o > 0) Game::DeleteWorldObject(o);
+        s_Dz.ruinObjs.clear(); s_Dz.ruinSite = near;
+        memset(s_Dz.ruinState, 0, sizeof(s_Dz.ruinState)); memset(s_Dz.ruinTries, 0, sizeof(s_Dz.ruinTries)); s_Dz.ruinAt = 0;
+    }
+    if(near < 0 || now < s_Dz.ruinAt) return;
+    s_Dz.ruinAt = now + 150;
     static const int kDebris[] = { 3594, 3593, 12957, 1438, 1265, 1349, 1811, 1721, 3866, 3887, 905, 906, 899, 1218, 1225, 2672, 1450, 1428 };
     const DzSite& s = g_DzSites[near];
-    uint32_t seed = (uint32_t)(near * 2654435761u);
-    for(int i = 0; i < 26; ++i)
+    int budget = 3;
+    for(int i = 0; i < 26 && budget > 0; ++i)
     {
+        if(s_Dz.ruinState[i]) continue;
+        uint32_t seed = (uint32_t)(near * 2654435761u) ^ (uint32_t)((i + 1) * 40503u);
         seed = seed * 1103515245u + 12345u; int m = kDebris[(seed >> 8) % (sizeof(kDebris) / sizeof(kDebris[0]))];
-        if(!Game::IsKnownModel(m)) continue;
+        if(!Game::IsKnownModel(m)) { s_Dz.ruinState[i] = 1; continue; }
+        --budget;
         seed = seed * 1103515245u + 12345u; float a = (float)((seed >> 8) % 628) / 100.0f;
         seed = seed * 1103515245u + 12345u; float r = (float)((seed >> 8) % 1000) / 1000.0f * s.r;
         float x = s.x + cosf(a) * r, y = s.y + sinf(a) * r;
+        if(++s_Dz.ruinTries[i] > 5) { s_Dz.ruinState[i] = 1; continue; }
         float z = Game::GroundZBelow(x, y, me.z + 60.0f); if(z < -500.0f) continue;
         int o = Game::CreateMapObject(m, { x, y, z + 0.05f }, (float)((seed >> 4) % 30) - 15.0f, (float)((seed >> 12) % 24) - 12.0f, (float)((seed >> 16) % 360));
-        if(o > 0) s_Dz.ruinObjs.push_back(o);
+        if(o > 0) { s_Dz.ruinObjs.push_back(o); s_Dz.ruinState[i] = 1; }
     }
 }
 
@@ -708,6 +740,11 @@ static void DzProcess(int ped, uint64_t now)
     // ---- playing ----
     if(s_bLocalDead) { if(s_Dz.view == 2 && now - s_Dz.spawnedAt > 2000) { s_Dz.view = 3; s_Dz.diedAt = now; } return; }
     Vec3 me; if(!Game::GetCharPos(ped, me)) return;
+    // 3.60: "I spawn and can't move" - the cabin froze the ped and took the controls every second; one of
+    // those could land after the spawn. For the first 3 s the controls + position are given back again.
+    if(s_Dz.view == 2 && now - s_Dz.spawnedAt < 3000 && now - s_Dz.lastUnstick > 350 && !DzXDowned())
+    { s_Dz.lastUnstick = now; Game::FreezeChar(ped, false); Game::SetPlayerControl(true); Game::ShowGameHud(true); }
+    DzRulesTick(now);
     if(s_Dz.radarHidden == false || now % 3000 < 40) { Game::ShowRadar(false); s_Dz.radarHidden = true; }
     DzWeaponsTick();
     DzPickTick(ped, now);
@@ -854,7 +891,7 @@ static void DzArmorIcon(ImDrawList* dl, int slot, ImVec2 c, float s, ImU32 col)
 }
 static void DzDrawArmor(ImDrawList* dl, ImVec2 ds)
 {
-    const float sz = UI::S(46), gap = UI::S(8), x = ds.x - sz - UI::S(14);
+    const float sz = UI::S(52), gap = UI::S(8), x = ds.x - sz - UI::S(14);   // 3.60: a bit bigger
     float y = ds.y * 0.56f;
     static const char* const names[5] = { "HELMET", "CHEST", "VEST", "GLOVES", "BOOTS" };
     for(int i = 0; i < 5; ++i)
@@ -864,7 +901,7 @@ static void DzDrawArmor(ImDrawList* dl, ImVec2 ds)
         dl->AddRectFilled(a, b, IM_COL32(0, 0, 0, 120), UI::S(6));
         dl->AddRect(a, b, on ? DzCol(DZ_GRN, 0.9f) : IM_COL32(255, 255, 255, 40), UI::S(6), 0, UI::S(1.5f));
         DzArmorIcon(dl, i, c, sz * 0.7f, on ? DzCol(DZ_GRN) : IM_COL32(150, 150, 150, 110));
-        if(on) dl->AddText(UI::Font(), UI::S(11), ImVec2(x - RpTextW(UI::S(11), names[i]) - UI::S(4), y + sz * 0.36f), DzCol(DZ_GRN, 0.85f), names[i]);
+        if(on) dl->AddText(UI::Font(), UI::S(14), ImVec2(x - RpTextW(UI::S(14), names[i]) - UI::S(4), y + sz * 0.36f), DzCol(DZ_GRN, 0.85f), names[i]);
         y += sz + gap;
     }
 }
@@ -920,8 +957,9 @@ static void DzDrawStats(ImDrawList* dl, ImVec2 ds)
     snprintf(l[5], 48, "Headshots:");          snprintf(v[5], 24, "%d", m.headshots);
     snprintf(l[6], 48, "Humanity:");           snprintf(v[6], 24, "%d", m.humanity);
     snprintf(l[7], 48, "Blood:");              snprintf(v[7], 24, "%d", m.blood);
-    const float fs = UI::S(15), lh = UI::S(18), xr = ds.x - UI::S(12), xl = ds.x - UI::S(250);
-    float y = UI::S(118);
+    // 3.60: bigger (like the MTA screenshots) and under the GTA clock / money / weapon icon, not over it
+    const float fs = UI::S(18), lh = UI::S(21), xr = ds.x - UI::S(12), xl = ds.x - UI::S(318);
+    float y = ds.y * 0.235f;
     dl->AddRectFilledMultiColor(ImVec2(xl - UI::S(10), y - UI::S(4)), ImVec2(ds.x, y + lh * 8 + UI::S(4)), IM_COL32(0, 0, 0, 0), IM_COL32(0, 0, 0, 140), IM_COL32(0, 0, 0, 140), IM_COL32(0, 0, 0, 0));
     for(int i = 0; i < 8; ++i)
     {
@@ -971,7 +1009,7 @@ static void DzDrawStats(ImDrawList* dl, ImVec2 ds)
 static void DzDrawTopRight(ImDrawList* dl, ImVec2 ds, int ped)
 {
     char t[64];
-    if(s_Dz.opt.fps) { snprintf(t, sizeof(t), "FPS: %d | PING: %d", (int)ImGui::GetIO().Framerate, client.GetPing()); DzTextR(dl, UI::S(14), ds.x - UI::S(8), UI::S(4), IM_COL32(255, 255, 255, 220), t); }
+    if(s_Dz.opt.fps) { snprintf(t, sizeof(t), "FPS: %d | PING: %d", (int)ImGui::GetIO().Framerate, client.GetPing()); DzTextR(dl, UI::S(18), ds.x - UI::S(8), UI::S(4), IM_COL32(255, 255, 255, 220), t); }
     int w = Game::GetCharWeapon(ped);
     if(w > 0)
     {
@@ -981,7 +1019,7 @@ static void DzDrawTopRight(ImDrawList* dl, ImVec2 ds, int ped)
         if(mag > 1 && total > 0) { int clip = ((total - 1) % mag) + 1; snprintf(t, sizeof(t), "%s   %d | %d", nm, clip, total - clip); }
         else if(mag == 1) snprintf(t, sizeof(t), "%s   %d", nm, total);
         else snprintf(t, sizeof(t), "%s", nm);
-        DzTextR(dl, UI::S(20), ds.x - UI::S(8), UI::S(24), IM_COL32(255, 255, 255, 240), t);
+        DzTextR(dl, UI::S(26), ds.x - UI::S(8), UI::S(28), IM_COL32(255, 255, 255, 240), t);
     }
 }
 // damage numbers (floating) + animated blood drops (red = lost, green = healed)
@@ -1289,15 +1327,41 @@ static void DzKgBar(ImDrawList* wl, ImVec2 a, float w, float cur, float max)
 }
 
 // ---- F2 control panel (stats / party / commands / rules / settings) ----------------------------
-static const char* const kDzRulesC[] = {
-    "1. No cheats, CLEO, mod menus (libCheatMenu.so / libCheatMenu64.so are blocked) or bug abuse.",
-    "2. Disconnecting during combat (ANTI-RELOG) = your survivor dies.",
-    "3. Parties: max 4 survivors. Don't pretend to be another party (colours are unique).",
-    "4. No spawn killing at the 15 spawn points.",
-    "5. Respect everyone in the chat - no insults, spam or advertising.",
-    "6. Don't impersonate staff (admin, moderator) or the Broker bot.",
-    "7. Kick = wait 4:29 to rejoin. Fly / teleport hacks: 3 kicks = permanent ban.",
+// 3.60: 10 rules (same look as the Default server's 10 rules window), shown after you pick a location
+static const char* const kDzRules10[10] = {
+    "{FF4444}No cheating{FFFFFF}: no CLEO, mod menus, aimbots, speed / fly hacks (libCheatMenu is blocked).",
+    "{FF4444}ANTI-RELOG{FFFFFF}: leaving the game during combat = {FF4444}your survivor dies{FFFFFF}.",
+    "{FFFF00}No bug abuse{FFFFFF}: no glitching into walls or under the map - report it to an {33CC55}admin{FFFFFF}.",
+    "{FFFF00}No spawn killing{FFFFFF} at the 15 spawn points or on fresh survivors.",
+    "{FFFF00}Parties{FFFFFF}: max 4 survivors. Don't pretend to be another party.",
+    "{FFFF00}Respect everyone{FFFFFF}: no insults, racism, threats or harassment.",
+    "{FFFF00}No spam{FFFFFF}: no flooding, caps lock or advertising other servers.",
+    "{FFFF00}Don't pretend to be staff{FFFFFF} (admin, moderator or the bot {00BFFF}Broker{FFFFFF}).",
+    "{FFFF00}Listen to the {33CC55}admins{FFFFFF}: a kick waits {FF9900}4:29{FFFFFF}, 3 fly / teleport kicks = {FF4444}permanent ban{FFFFFF}.",
+    "{33CC55}Survive, loot, trust no one{FFFFFF} - and have fun.",
 };
+// the same lines without the {RRGGBB} colour codes (F2 panel / old builds)
+static void DzRulePlain(int i, char* out, size_t n)
+{
+    size_t o = 0; const char* r = kDzRules10[i];
+    o += (size_t)snprintf(out, n, "%d. ", i + 1);
+    for(; *r && o + 1 < n; ++r) { if(*r == '{') { const char* e = strchr(r, '}'); if(e && e - r == 7) { r = e; continue; } } out[o++] = *r; }
+    out[o < n ? o : n - 1] = 0;
+}
+static void DzRulesDlgCb(int, int, const char*, int) {}
+static void DzShowRules()
+{
+    std::string body;
+    for(int i = 0; i < 10; ++i) { char l[240]; snprintf(l, sizeof(l), "{FFFF00}%d ) {FFFFFF}%s\n", i + 1, kDzRules10[i]); body += l; }
+    ShowDialog(0, DIALOG_STYLE_MSGBOX, "{FFFFFF}PROJECT DAY Z LEGACY - RULES", body.c_str(), "Close", "", DzRulesDlgCb, 0x445A);
+}
+static void DzRulesTick(uint64_t now)
+{   // once per connection, 1.5 s after the first spawn (after you tapped a location on the map)
+    if(s_Dz.rulesShown) return;
+    if(!s_Dz.rulesAt) { s_Dz.rulesAt = now + 1500; return; }
+    if(now < s_Dz.rulesAt || SampDialogOpen() || VKeyboard::IsOpen() || s_Dz.invOpen) return;
+    s_Dz.rulesShown = true; DzShowRules();
+}
 static const char* const kDzCmdList[] = {
     "/help", "/rules", "/credits", "/stats", "/level", "/humanity", "/score", "/top", "/time", "/fog", "/spawns", "/supplies", "/loot",
     "/inv", "/bag", "/map", "/gps", "/compass", "/hud", "/armor", "/weapon", "/fps", "/ping", "/eat", "/drink", "/heal", "/bandage",
@@ -1369,7 +1433,7 @@ static void DzDrawPanel(ImVec2 ds)
             }
             break;
         }
-        case 3: for(const char* r : kDzRulesC) ImGui::TextWrapped("%s", r); break;
+        case 3: for(int i = 0; i < 10; ++i) { char r[200]; DzRulePlain(i, r, sizeof(r)); ImGui::TextWrapped("%s", r); } break;
         default:
             ImGui::Checkbox("FPS | PING", &s_Dz.opt.fps);
             ImGui::Checkbox("Damage numbers", &s_Dz.opt.dmg);
@@ -1420,10 +1484,10 @@ static void DzDrawCabin(float t)
     if(s_Dz.page == 0)
     {
         if(DzMenuText("##dzplay", s_Dz.playAsked ? "waiting..." : "Play", cx, y, fs, false) && !s_Dz.playAsked) { s_Dz.playAsked = MP_NowMs(); if(s_Dz.haveMe && s_Dz.me.spawnSel) { DzXSpawnSelect(); s_Dz.playAsked = 0; } else DzSend(DZCMD_PLAY); }
-        if(DzMenuText("##dzrules", "Rules", cx, y + step, fs, false)) s_Dz.page = 1;
-        if(DzMenuText("##dzcred", "Credits", cx, y + step * 2, fs, false)) s_Dz.page = 2;
-        if(DzMenuText("##dzset", "Settings", cx, y + step * 3, fs, false)) s_Dz.page = 3;
-        if(DzMenuText("##dzleave", "Leave", cx, y + step * 4.4f, fs * 0.7f, false)) LeaveServer("Left Project Day Z Legacy.");
+        // 3.60: no Rules button here any more - the 10 rules window comes up after you pick a location
+        if(DzMenuText("##dzcred", "Credits", cx, y + step, fs, false)) s_Dz.page = 2;
+        if(DzMenuText("##dzset", "Settings", cx, y + step * 2, fs, false)) s_Dz.page = 3;
+        if(DzMenuText("##dzleave", "Leave", cx, y + step * 3.4f, fs * 0.7f, false)) LeaveServer("Left Project Day Z Legacy.");
     }
     else
     {
@@ -1441,7 +1505,7 @@ static void DzDrawCabin(float t)
         if(s_Dz.page == 1)
         {
             DzText(fg, UI::S(26), ImVec2(px + UI::S(20), ly), DzCol(DZ_YEL), "RULES"); ly += UI::S(44);
-            for(const char* r : kDzRulesC) { fg->AddText(UI::Font(), lf, ImVec2(px + UI::S(20), ly), IM_COL32_WHITE, r, nullptr, pw - UI::S(40)); ly += lf * 2.2f; }
+            for(int i = 0; i < 10; ++i) { char r[200]; DzRulePlain(i, r, sizeof(r)); fg->AddText(UI::Font(), lf, ImVec2(px + UI::S(20), ly), IM_COL32_WHITE, r, nullptr, pw - UI::S(40)); ly += lf * 1.6f; }
         }
         else if(s_Dz.page == 2)
         {
@@ -1491,10 +1555,10 @@ static void RenderDz()
     if(!s_DzX.gpsOff) { if(s_Dz.opt.radar == 2) DzDrawRadar(bg, ds, ped, nowMs, rp0, rs); else DzDrawGps(bg, ds, ped, rp0, rs); }   // 3.59: the MTA DayZ GPS (key 7)
     if(rs > 0) DzDrawDrive(bg, rp0, rs, ped);
     DzDrawTopRight(fg, ds, ped);
-    DzDrawStats(bg, ds);
+    if(!s_Dz.invOpen) DzDrawStats(bg, ds);   // 3.60: not behind the inventory
     DzDrawPain(bg, ds, t);
-    DzDrawStatusMta(bg, ds, ped, t);   // blood / food / drink / temperature / sound / visibility (MTA DayZ icons)
-    DzDrawArmor(bg, ds);
+    if(!s_Dz.invOpen) DzDrawStatusMta(bg, ds, ped, t);   // blood / food / drink / temperature / sound / visibility (MTA DayZ icons)
+    if(!s_Dz.invOpen) DzDrawArmor(bg, ds);
     DzDrawLootX(bg, ds, ped, t);       // beams (never through walls) + glow outline when aimed at
     DzDrawPartyMarkers(fg, ds, ped, t);
     DzDrawBigCompass(fg, ds);
@@ -1520,30 +1584,74 @@ static void RenderDz()
     float by = ds.y - UI::S(30);
     if(s_Dz.opt.logo) { DzDrawLogo(bg, ds.x * 0.5f, ds.y - UI::S(92), 0.85f, t, 0.9f); by = ds.y - UI::S(118); }
     DzDrawAntiRelog(fg, ds, nowMs, t);   // 3.59: top-left like the screenshot
-    BcwCenterText(fg, UI::S(15), by, IM_COL32(220, 220, 220, 210), "Press F2 to open the control panel");
+    (void)by;   // 3.60: no "Press F2" line - this is a phone, the gear button opens the panel
     if(s_Dz.noticeAt && nowMs - s_Dz.noticeAt < 4000)
     {
         float a = nowMs - s_Dz.noticeAt < 3400 ? 1.0f : 1.0f - (nowMs - s_Dz.noticeAt - 3400) / 600.0f;
         BcwCenterText(fg, UI::S(22), ds.y * 0.30f, DzCol(s_Dz.noticeCol, a), s_Dz.notice);
     }
     if(s_Dz.fog) BcwCenterText(fg, UI::S(15), UI::S(80), DzCol(DZ_ORG, 0.8f), "FOG - visibility 90 m - zombies are restless");
-    // small buttons: F2 (panel), BAG (inventory), REFUEL at gas stations
+    // 3.60: icon buttons right of the top bar (same height as its pills, black 50 % background):
+    // control panel (gear), bag (backpack), journal (book) and FUEL at gas stations. The TAB button
+    // is gone - the player list is in the 3-dots menu of the top bar.
     {
-        const float b = UI::S(52);
-        ImGui::SetNextWindowPos(ImVec2(ds.x - b * 5 - UI::S(56), UI::S(274))); ImGui::SetNextWindowSize(ImVec2(b * 5 + UI::S(50), b + UI::S(8)));
+        float bx0, by0, bx1, by1;
+        float h = UI::S(52), x = ds.x - UI::S(330), y = UI::S(16);
+        if(FloatMenu::GetBarRect(&bx0, &by0, &bx1, &by1)) { h = by1 - by0; x = bx1 + UI::S(10); y = by0; }
+        Vec3 p; Game::GetCharPos(ped, p);
+        const bool fuel = Game::IsCharInAnyCar(ped) && DzAtGasStation(p);
+        const int n = fuel ? 4 : 3; const float gap = UI::S(10), w = h * 1.08f;
+        ImGui::SetNextWindowPos(ImVec2(x, y)); ImGui::SetNextWindowSize(ImVec2(n * w + (n - 1) * gap + 2, h + 2));
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
         ImGui::Begin("##DzBtns", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoFocusOnAppearing);
-        ImGui::SetWindowFontScale(0.8f);
-        if(BcwTeamButton("F2##dzf2", 0x27272AFFu, ImVec2(b, b), s_Dz.panelOpen, false)) s_Dz.panelOpen = !s_Dz.panelOpen;
-        ImGui::SameLine(0, UI::S(8));
-        if(BcwTeamButton("BAG##dzbag", 0x92400EFFu, ImVec2(b, b), s_Dz.invOpen, false) && !s_DzX.downed) s_Dz.invOpen = !s_Dz.invOpen;
-        ImGui::SameLine(0, UI::S(8));
-        if(BcwTeamButton("TAB##dztab", 0x3F3F46FFu, ImVec2(b, b), s_DzX.listOpen, false)) DzXToggleList();
-        ImGui::SameLine(0, UI::S(8));
-        if(BcwTeamButton("J##dzjr", 0x1E3A8AFFu, ImVec2(b, b), s_DzX.journal, false)) s_DzX.journal = !s_DzX.journal;
-        Vec3 p; Game::GetCharPos(ped, p);
-        if(Game::IsCharInAnyCar(ped) && DzAtGasStation(p)) { ImGui::SameLine(0, UI::S(8)); if(BcwTeamButton("FUEL##dzrf", 0xEA580CFFu, ImVec2(b, b), s_Dz.refueling, false)) s_Dz.refueling = !s_Dz.refueling; }
-        ImGui::SetWindowFontScale(1.0f);
+        ImDrawList* dl = ImGui::GetWindowDrawList();
+        for(int i = 0; i < n; ++i)
+        {
+            ImGui::SetCursorScreenPos(ImVec2(x + i * (w + gap), y));
+            char id[16]; snprintf(id, sizeof(id), "##dzib%d", i);
+            const bool hit = ImGui::InvisibleButton(id, ImVec2(w, h));
+            const bool on = i == 0 ? s_Dz.panelOpen : i == 1 ? s_Dz.invOpen : i == 2 ? s_DzX.journal : s_Dz.refueling;
+            const ImVec2 a0 = ImGui::GetItemRectMin(), a1 = ImGui::GetItemRectMax();
+            dl->AddRectFilled(a0, a1, ImGui::IsItemActive() ? IM_COL32(40, 40, 40, 170) : IM_COL32(0, 0, 0, 128), h * 0.26f);
+            if(on) dl->AddRect(a0, a1, IM_COL32(255, 255, 255, 150), h * 0.26f, 0, UI::S(2));
+            const ImU32 c = IM_COL32(255, 255, 255, 235);
+            const float cx = (a0.x + a1.x) * 0.5f, cy = (a0.y + a1.y) * 0.5f, r = h * 0.30f, lw = UI::S(2.6f);
+            if(i == 0)
+            {   // gear: 8 teeth, ring, hole
+                for(int k = 0; k < 8; ++k) { float an = k * 0.785398f; ImVec2 d(cosf(an), sinf(an)); dl->AddLine(ImVec2(cx + d.x * r * 0.62f, cy + d.y * r * 0.62f), ImVec2(cx + d.x * r * 1.02f, cy + d.y * r * 1.02f), c, r * 0.36f); }
+                dl->AddCircleFilled(ImVec2(cx, cy), r * 0.72f, c, 24);
+                dl->AddCircleFilled(ImVec2(cx, cy), r * 0.30f, IM_COL32(20, 20, 20, 255), 16);
+            }
+            else if(i == 1)
+            {   // backpack: body, top handle, front pocket, straps
+                dl->AddRect(ImVec2(cx - r * 0.30f, cy - r * 1.08f), ImVec2(cx + r * 0.30f, cy - r * 0.70f), c, r * 0.18f, 0, lw);
+                dl->AddRectFilled(ImVec2(cx - r * 0.78f, cy - r * 0.78f), ImVec2(cx + r * 0.78f, cy + r * 1.02f), c, r * 0.36f);
+                dl->AddRectFilled(ImVec2(cx - r * 0.50f, cy + r * 0.05f), ImVec2(cx + r * 0.50f, cy + r * 0.72f), IM_COL32(25, 25, 25, 255), r * 0.14f);
+                dl->AddLine(ImVec2(cx - r * 0.50f, cy + r * 0.28f), ImVec2(cx + r * 0.50f, cy + r * 0.28f), c, lw * 0.8f);
+                dl->AddLine(ImVec2(cx - r * 0.78f, cy - r * 0.25f), ImVec2(cx + r * 0.78f, cy - r * 0.25f), IM_COL32(25, 25, 25, 255), lw * 0.8f);
+            }
+            else if(i == 2)
+            {   // journal: closed book with spine + bookmark
+                dl->AddRectFilled(ImVec2(cx - r * 0.75f, cy - r), ImVec2(cx + r * 0.75f, cy + r), c, r * 0.12f);
+                dl->AddRectFilled(ImVec2(cx - r * 0.75f, cy - r), ImVec2(cx - r * 0.50f, cy + r), IM_COL32(120, 120, 120, 255), r * 0.12f);
+                for(int k = 0; k < 3; ++k) { float ly = cy - r * 0.45f + k * r * 0.38f; dl->AddLine(ImVec2(cx - r * 0.30f, ly), ImVec2(cx + r * 0.52f, ly), IM_COL32(25, 25, 25, 255), lw * 0.8f); }
+                dl->AddTriangleFilled(ImVec2(cx + r * 0.25f, cy + r), ImVec2(cx + r * 0.50f, cy + r), ImVec2(cx + r * 0.375f, cy + r * 0.70f), IM_COL32(220, 38, 38, 255));
+            }
+            else
+            {   // fuel pump
+                dl->AddRectFilled(ImVec2(cx - r * 0.70f, cy - r), ImVec2(cx + r * 0.25f, cy + r), c, r * 0.14f);
+                dl->AddRectFilled(ImVec2(cx - r * 0.52f, cy - r * 0.78f), ImVec2(cx + r * 0.07f, cy - r * 0.25f), IM_COL32(25, 25, 25, 255), r * 0.08f);
+                dl->AddBezierCubic(ImVec2(cx + r * 0.25f, cy - r * 0.45f), ImVec2(cx + r * 0.85f, cy - r * 0.45f), ImVec2(cx + r * 0.85f, cy + r * 0.60f), ImVec2(cx + r * 0.62f, cy + r * 0.60f), c, lw);
+                dl->AddLine(ImVec2(cx + r * 0.70f, cy - r * 0.60f), ImVec2(cx + r * 0.70f, cy + r * 0.20f), c, lw);
+            }
+            if(hit)
+            {
+                if(i == 0) s_Dz.panelOpen = !s_Dz.panelOpen;
+                else if(i == 1) { if(!s_DzX.downed) s_Dz.invOpen = !s_Dz.invOpen; }
+                else if(i == 2) s_DzX.journal = !s_DzX.journal;
+                else s_Dz.refueling = !s_Dz.refueling;
+            }
+        }
         ImGui::End(); ImGui::PopStyleVar();
     }
     DzDrawActions(ds, ped);
