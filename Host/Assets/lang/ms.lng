@@ -1,0 +1,2534 @@
+#mp-lang 1
+#code=ms
+#name=Bahasa Melayu
+#english=Malay
+#font=
+#rtl=0
+no (script fallback)	tidak (skrip sandaran)
+, its ImGui is not exported: still blocked from every server	, ImGui-nya tidak dieksport: masih disekat daripada setiap pelayan
+renamed, found by its CheatMenu label	dinamakan semula, ditemui oleh label CheatMenunya
+Fire	Kebakaran
+past the map edge, moved back inside	melepasi tepi peta, bergerak kembali ke dalam
+skipped: position is NaN / inf	dilangkau: kedudukan ialah NaN / inf
+skipped: broken bounding box	dilangkau: kotak sempadan yang rosak
+skipped: world node pools are full	dilangkau: kolam nod dunia penuh
+triangles without vertices 	segi tiga tanpa bucu 
+spheres 	sfera 
+boxes 	kotak-kotak 
+lines 	garisan 
+MP command	Arahan Ahli Parlimen
+that script is stopped there	skrip itu berhenti di situ
+Rose	Mawar
+Paul	Paulus
+OG Loc	Lokasi OG
+The Truth	Kebenaran
+Jethro	Yitro
+Zero	Sifar
+A tap   B close   Back cursor	A ketik B tutup Kembali kursor
+MPMenu	Menu MP
+server_combat system	sistem server_combat
+server_player sync	penyegerakan server_player
+server_vehicle sync	penyegerakan kenderaan pelayan
+server_weapon sync	penyegerakan server_weapon
+server_damage system	sistem kerosakan_pelayan
+server_death system	sistem server_death
+server_kill feed	suapan server_kill
+server_chat system	sistem sembang_pelayan
+server_name tags	tag nama_pelayan
+server_health bars	bar server_health
+server_armour bars	palang server_armour
+server_radar icons	ikon radar_pelayan
+server_player colors	warna pemain_pelayan
+server_pause system	sistem jeda_pelayan
+server_ping system	sistem ping pelayan
+server_spawn system	sistem server_spawn
+server_teleport system	sistem teleport pelayan
+server_skin system	sistem server_skin
+server_animation sync	penyegerakan animasi_pelayan
+server_movement sync	penyegerakan pergerakan_pelayan
+server_aim sync	penyegerakan server_aim
+server_shooting sync	penyegerakan server_shooting
+server_crouch sync	penyegerakan server_crouch
+server_driver sync	penyegerakan pemacu_pelayan
+server_passenger sync	penyegerakan penumpang_pelayan
+server_vehicle health	kesihatan kenderaan pelayan
+server_vehicle colors	warna kenderaan_pelayan
+server_vehicle spawn	kelahiran kenderaan_pelayan
+server_vehicle respawn	kenderaan_pelayan muncul semula
+server_weather sync	penyegerakan server_weather
+server_clock sync	penyegerakan jam_pelayan
+server_day night cycle	kitaran malam server_day
+server_world objects	objek server_world
+server_world streaming	penstriman server_world
+server_map zones	zon peta_pelayan
+server_gang zones	zon server_geng
+server_turf wars	peperangan server_turf
+server_territory system	sistem server_territory
+server_police system	sistem server_police
+server_wanted level	tahap pelayan_dikehendaki
+server_jail system	sistem penjara_pelayan
+server_hospital respawn	pelayan_hospital muncul semula
+server_money system	sistem wang pelayan
+server_bank system	sistem bank_pelayan
+server_shop system	sistem kedai_pelayan
+server_property system	sistem server_property
+server_house system	sistem server_house
+server_business system	sistem perniagaan_pelayan
+server_job system	sistem kerja_pelayan
+server_taxi job	kerja teksi_pelayan
+server_pizza job	kerja server_pizza
+server_trucker job	kerja server_trucker
+server_mission system	sistem misi_pelayan
+server_race system	sistem server_race
+server_team deathmatch	perlawanan maut pasukan_pelayan
+server_capture the flag	server_capture bendera
+server_casino system	sistem server_casino
+server_stunt system	sistem server_stunt
+server_drift system	sistem server_drift
+server_score board	papan skor_pelayan
+server_stats system	sistem statistik_pelayan
+server_level system	sistem peringkat_pelayan
+server_admin system	sistem pentadbir_pelayan
+server_anti cheat	curang server_anti
+server_ban system	sistem server_ban
+server_kick system	sistem server_kick
+server_mute system	sistem server_mute
+server_report system	sistem laporan_pelayan
+server_player list	senarai pemain_pelayan
+server_region system	sistem server_region
+server_server list	senarai pelayan_pelayan
+server_lan discovery	penemuan server_lan
+server_host takeover	pengambilalihan server_host
+server_save system	sistem server_save
+server_account system	sistem akaun_pelayan
+server_login system	sistem log masuk_pelayan
+server_audio system	sistem audio_pelayan
+server_connect logo	logo server_connect
+server_virtual keyboard	papan kekunci server_virtual
+server_floating menu	menu terapung_pelayan
+server_hud system	sistem server_hud
+server_world unlock	buka kunci server_world
+server_city unlock	buka kunci server_city
+server_safe houses	rumah server_safe
+server_driving school	sekolah memandu server
+server_flight school	sekolah penerbangan_pelayan
+server_bike school	sekolah server_bike
+server_boat school	sekolah bot pelayan
+server_race tournaments	kejohanan server_race
+server_pay n spray	server_pay n semburan
+server_barber shops	kedai gunting rambut server_
+server_well stacked pizza	piza bertindan dengan baik
+server_burger shot	tangkapan server_burger
+server_cluckin bell	loceng server_cluckin
+server_tattoo shops	kedai tatu server_
+server_gym system	sistem server_gym
+server_clothing shops	kedai pakaian server
+server_mod garages	garaj server_mod
+server_interior doors	pintu dalaman pelayan
+server_trucking job	kerja server_trucking
+server_quarry job	kerja server_quarry
+server_delivery jobs	kerja penghantaran_pelayan
+server_vehicle spawner	penjana kenderaan pelayan
+server_weapon spawner	penjana senjata_pelayan
+server_teleport events	peristiwa server_teleport
+server_deathmatch zones	zon server_deathmatch
+server_kill streaks	coretan server_kill
+server_race checkpoints	titik pemeriksaan server_race
+server_race timer	pemasa perlumbaan_pelayan
+server_event announcer	penyiar_peristiwa pelayan
+server_score board hud	papan skor_pelayan hud
+server_npc world mirror	cermin dunia server_npc
+server_seat name tags	tag nama server_seat
+server_home kit	kit pelayan_rumah
+server_house builder	pembina server_house
+server_house doors	pintu rumah pelayan
+server_house keys	kunci server_house
+server_furniture objects	objek perabot_pelayan
+server_progress save	simpan kemajuan_pelayan
+server_hunger system	sistem server_hunger
+server_energy system	sistem tenaga_pelayan
+server_rules window	tetingkap server_rules
+server_server settings	tetapan pelayan_pelayan
+server_moderator system	sistem pelayan_moderator
+server_temp kicks	server_temp bermula
+server_gamemode manager	pengurus mod_permainan pelayan
+server_gamemode vote	undian server_gamemode
+server_brief case war	perang kes server_brief
+server_modern warfare 3	peperangan server_modern 3
+server_mega vil roleplay	server_mega akan memainkan peranan
+server_roleplay jobs	kerja layan_peranan
+server_roleplay factions	puak-puak server_roleplay
+server_roleplay phone	telefon pelayan_peranan
+server_roleplay inventory	inventori lakon_peranan_server
+server_roleplay documents	dokumen lakon_peranan_server
+server_atm machines	mesin server_atm
+server_invest system	sistem server_invest
+server_marriage system	sistem perkahwinan_pelayan
+server_pawn shop	kedai pajak gadai server
+server_seatbelt system	sistem tali pinggang keledar pelayan
+server_starter pack	pek server_starter
+server_info pickups	pengambilan maklumat_pelayan
+server_gps system	sistem server_gps
+server_hotel rooms	bilik-bilik server_hotel
+server_hotel computer	komputer server_hotel
+server_safe zones	zon selamat_pelayan
+server_hospital zones	zon server_hospital
+server_red checkpoints	titik semak server_red
+server_gate system	sistem server_gate
+server_mv vehicles	kenderaan server_mv
+server_voice chat	sembang suara_pelayan
+server_voice range	julat suara_pelayan
+server_clothes sync	penyegerakan server_clothes
+server_ped aim sync	penyegerakan matlamat server_ped
+server_remote weapons	senjata pelayan_jauh
+server_jetpack sync	penyegerakan server_jetpack
+server_parachute sync	penyegerakan pelayan_parasut
+server_swim sync	penyegerakan server_swim
+server_ladder sync	penyegerakan pelayan_ladder
+server_fight styles	gaya server_fight
+server_drive by sync	server_drive mengikut penyegerakan
+server_trailer sync	penyegerakan treler_pelayan
+server_train sync	penyegerakan server_train
+server_plane sync	penyegerakan server_plane
+server_heli sync	penyegerakan server_heli
+server_boat sync	penyegerakan server_boat
+server_bike sync	penyegerakan server_bike
+server_radio stations	stesen radio_pelayan
+server_3d labels	label server_3d
+server_class selection	pemilihan kelas_pelayan
+server_controller support	sokongan server_controller
+server_loading screen	skrin pemuatan_pelayan
+server_welcome message	mesej alu-aluan_pelayan
+ resources	 sumber
+Connected successfully!	Berjaya disambungkan!
+{FFFFFF}Welcome to {38BDF8}%s	{FFFFFF}Selamat datang ke {38BDF8}%s
+the server	pelayan
+Receiving Server Info...	Menerima Maklumat Pelayan...
+Receiving Resources...	Menerima Sumber...
+Receiving Player Info...	Menerima Maklumat Pemain...
+Receiving Vehicle Info...	Menerima Maklumat Kenderaan...
+Receiving Weapon Info...	Menerima Maklumat Senjata...
+Receiving World Data...	Menerima Data Dunia...
+Connecting	Menyambung
+Please Wait, Loading Server Data...	Sila Tunggu, Memuatkan Data Pelayan...
+Done - joining %s	Selesai - menyertai %s
+Receiving Resources... %s	Menerima Sumber... %s
+Connecting to %s...	Menyambung ke %s...
+In the Beginning	Pada Permulaan
+Big Smoke / Sweet & Kendl	Asap Besar / Manis & Kendl
+Tagging Up Turf	Menandai Turf
+Cleaning the Hood	Membersihkan Hud
+Drive-Thru	Pandu Lalu
+Nines and AK's	Nines dan AK's
+Drive-By	Pandu Lalu
+Sweet's Girl	Gadis Manis
+Burning Desire	Keinginan yang Membara
+Gray Imports	Import Kelabu
+Home Invasion	Pencerobohan Rumah
+Catalyst	Pemangkin
+Robbing Uncle Sam	Merompak Pak Cik Sam
+Running Dog	Anjing Berlari
+Wrong Side of the Tracks	Bahagian Trek yang Salah
+Just Business	Perniagaan Sahaja
+Life's a Beach	Hidup Ini Pantai
+Madd Dogg's Rhymes	Sajak Madd Dogg
+Management Issues	Isu Pengurusan
+House Party	Parti Rumah
+High Stakes, Low Rider	Taruhan Tinggi, Penunggang Rendah
+Reuniting the Families	Menyatukan Semula Keluarga
+The Green Sabre	Pedang Hijau
+Badlands	Tanah tandus
+First Date	Temujanji Pertama
+First Base / Local Liquor Store	First Base / Kedai Minuman Keras Tempatan
+Made in Heaven / Small Town Bank	Dibuat di Syurga / Bank Bandar Kecil
+Tanker Commander	Komander Kapal Tanker
+Gone Courting / Against All Odds	Pergi Bercinta / Menentang Segala Kemungkinan
+King in Exile	Raja dalam Buangan
+Are You Going to San Fierro?	Adakah Anda Akan Ke San Fierro?
+Wu Zi Mu / Farewell, My Love...	Wu Zi Mu / Selamat tinggal, Cintaku...
+Wear Flowers in Your Hair	Pakai Bunga di Rambut Anda
+Deconstruction	Dekonstruksi
+555 We Tip	555 Kami Memberi Tip
+Snail Trail	Laluan Siput
+Mountain Cloud Boys	Budak Awan Gunung
+Ran Fa Li	Berlari Fa Li
+Lure	Umpan
+Amphibious Assault	Serangan Amfibia
+The Da Nang Thang	Da Nang Thang
+Photo Opportunity	Peluang Foto
+Ice Cold Killa	Killa Sejuk Ais
+Toreno's Last Flight	Penerbangan Terakhir Toreno
+Pier 69	Jeti 69
+Zeroing In	Menyentuh
+Test Drive	Pandu Uji
+Customs Fast Track	Laluan Pantas Kastam
+Puncture Wounds	Luka Tusukan
+Back to School	Kembali ke Sekolah
+Air Raid	Serangan Udara
+Supply Lines...	Talian Bekalan...
+New Model Army	Tentera Model Baharu
+Monster	Raksasa
+Interdiction	Sekatan
+Verdant Meadows	Padang Rumput Menghijau
+Stowaway	Pencuri rahsia
+Black Project	Projek Hitam
+Green Goo	Goo Hijau
+Learning to Fly	Belajar Terbang
+Fender Ketchup	Sos Tomato Fender
+Explosive Situation	Situasi Letupan
+You've Had Your Chips	Anda Telah Makan Kentang Goreng Anda
+Fish in a Barrel	Ikan dalam Tong
+Intensive Care	Rawatan Rapi
+The Meat Business	Perniagaan Daging
+Freefall	Jatuh bebas
+Saint Mark's Bistro	Bistro Saint Mark
+Misappropriation	Penyalahgunaan
+High Noon	Tengah hari
+Architectural Espionage	Pengintipan Seni Bina
+Key to Her Heart	Kunci Hatinya
+Dam and Blast	Empangan dan Letupan
+Cop Wheels	Roda Polis
+Up, Up and Away!	Naik, Naik dan Pergi!
+Breaking the Bank at Caligula's	Memecahkan Bank di Caligula's
+A Home in the Hills	Sebuah Rumah di Bukit
+Vertical Bird	Burung Menegak
+Home Coming	Pulang ke Rumah
+Cut Throat Business	Perniagaan Potong Tekak
+Beat Down on B Dup	Pukul B Dup
+Riot	Rusuhan
+End of the Line	Penghujung Barisan
+Shooting Range	Lapangan Tembak
+Gym Fight School	Sekolah Pertarungan Gim
+Trucking	Trak
+Quarry	Kuari
+Boat School	Sekolah Bot
+Bike School	Sekolah Basikal
+Taxi Driver	Pemandu Teksi
+Paramedic	Paramedik
+Firefighter	Ahli bomba
+Vigilante	Pengawal
+Burglary	Pecah Masuk
+Freight Train	Kereta Api Barang
+Pimping	Pembantu rumah
+Race Tournament	Kejohanan Perlumbaan
+Lowrider Challenge	Cabaran Penunggang Rendah
+Pool	Kolam renang
+Beefy Baron	Baron yang Berdaging
+Blood Ring	Cincin Darah
+Kickstart	Permulaan
+Beat the Cock!	Pukul Zakar!
+Courier	Kurier
+The Chiliad Challenge	Cabaran Chiliad
+Stunt Challenge	Cabaran Aksi
+Buy Property	Beli Hartanah
+a mission	satu misi
+*** %s: other players are hidden until it ends. Your Mission sync group (%d players) stays with you.	*** %s: pemain lain disembunyikan sehingga ia tamat. Kumpulan penyegerakan Misi anda (%d pemain) kekal bersama anda.
+*** %s: other players are hidden until it ends. %s (Mission sync) stays with you.	*** %s: pemain lain disembunyikan sehingga ia tamat. %s (Penyegerakan misi) kekal bersama anda.
+your partner	pasangan anda
+*** %s: other players are hidden until it ends (your own story).	*** %s: pemain lain disembunyikan sehingga ia berakhir (cerita anda sendiri).
+Cutscene	Adegan Potongan
+*** %s is on a mission: %s	*** %s sedang menjalankan misi: %s
+*** %s finished their mission.	*** %s telah menyelesaikan misi mereka.
+%s set by the server - change blocked.	%s ditetapkan oleh pelayan - perubahan disekat.
+Time and weather are	Masa dan cuaca adalah
+Weather is	Cuaca adalah
+Time is	Masa adalah
+*** Voice of %s unmuted.	*** Suara %s dinyahbisukan.
+*** Voice of %s muted (only for you).	*** Suara %s disenyapkan (hanya untuk anda).
+Voice chat works on a server: connect first, then tap the mic.	Sembang suara berfungsi pada pelayan: sambung dahulu, kemudian ketik mikrofon.
+*** Microphone off.	*** Mikrofon dimatikan.
+Voice chat is not available on this phone (%s).	Sembang suara tidak tersedia pada telefon ini (%s).
+Allow the microphone, then tap the mic again.	Benarkan mikrofon, kemudian ketik mikrofon sekali lagi.
+Could not turn on the microphone: %s.	Tidak dapat menghidupkan mikrofon: %s.
+*** Your GTA SA app can't use the microphone, so the MP Voice app does it for you...	*** Aplikasi GTA SA anda tidak boleh menggunakan mikrofon, jadi aplikasi MP Voice melakukannya untuk anda...
+*** Microphone on: players near you hear you (louder up close, nothing past %d m).	*** Mikrofon dihidupkan: pemain berhampiran anda mendengar anda (lebih kuat dari dekat, tiada bunyi melebihi %d m).
+*** Microphone on (MP Voice): players near you hear you (louder up close, nothing past %d m).	*** Mikrofon dihidupkan (Suara MP): pemain berhampiran anda mendengar anda (lebih kuat dari dekat, tiada bunyi melebihi %d m).
+MP Voice stopped sending your voice. Open MP Voice and tap Start microphone.	MP Voice berhenti menghantar suara anda. Buka MP Voice dan ketik Mulakan mikrofon.
+Install the MP Voice app (MP-Voice.apk in the MP package / on the MP website), open it once, tap Start microphone, then tap the mic here again.	Pasang aplikasi MP Voice (MP-Voice.apk dalam pakej MP / di laman web MP), bukanya sekali, ketik Mulakan mikrofon, kemudian ketik mikrofon di sini sekali lagi.
+You can still hear the others without it.	Anda masih boleh mendengar yang lain tanpanya.
+The server was closed by its host.	Pelayan telah ditutup oleh hosnya.
+Your MP version is too old. Download MP %s: %s	Versi MP anda terlalu lama. Muat turun MP %s: %s
+This server runs an old MP version (it lets cheaters in). Ask the host to update to MP %s.	Pelayan ini menjalankan versi MP lama (ia membenarkan penipu masuk). Minta hos untuk mengemas kini kepada MP %s.
+Wrong server password. Edit the server and type the right one (max 16 characters).	Kata laluan pelayan salah. Edit pelayan dan taip yang betul (maksimum 16 aksara).
+This server runs an old MP (before 3.23.6) - trying your old admin key on it...	Pelayan ini menjalankan MP lama (sebelum 3.23.6) - cuba kunci pentadbir lama anda padanya...
+This server didn't take your first admin key - trying your other key from administrator.txt...	Pelayan ini tidak mengambil kunci pentadbir pertama anda - cuba kunci anda yang lain daripada administrator.txt...
+This server refused your admin key. Your MP %s and administrator.txt are fine: the SERVER runs MP older than 3.23.6 and only knows the old key.	Pelayan ini menolak kunci pentadbir anda. MP %s dan administrator.txt anda baik-baik saja: PELAYAN menjalankan MP yang lebih lama daripada 3.23.6 dan hanya mengetahui kunci lama.
+Quick fix: keep your old key as admin.txt next to administrator.txt (MP folder) - MP %s tries the old key on old servers by itself.	Penyelesaian pantas: kekalkan kunci lama anda sebagai admin.txt di sebelah administrator.txt (folder MP) - MP %s mencuba kunci lama pada pelayan lama dengan sendirinya.
+Real fix: update the server. 24/7 VPS: sudo bash /opt/mp/kit/update.sh (or: curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/update.sh | sudo bash). Termux: mp-server update.	Penyelesaian sebenar: kemas kini pelayan. VPS 24/7: sudo bash /opt/mp/kit/update.sh (atau: curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/update.sh | sudo bash). Termux: kemas kini mp-server.
+This server refused your moderator key for %s: it runs MP older than 3.40.1 (it updates by itself) or the key in moderator.txt is wrong.	Pelayan ini menolak kunci moderator anda untuk %s: ia menjalankan MP yang lebih lama daripada 3.40.1 (ia dikemas kini dengan sendirinya) atau kunci dalam moderator.txt salah.
+You are banned from the server!	Anda telah diharamkan daripada pelayan!
+You were kicked from the server!	Awak telah dihalau keluar dari pelayan!
+Server is full.	Pelayan penuh.
+Server uses a different MP version.	Pelayan menggunakan versi MP yang berbeza.
+Could not connect to %s (no response).	Tidak dapat bersambung ke %s (tiada respons).
+Lost connection to the server. (Timeout)	Sambungan ke pelayan terputus. (Tamat masa)
+*** %s joined the server.	*** %s telah menyertai pelayan.
+*** %s left the server.%s	*** %s meninggalkan pelayan.%s
+ (Timeout)	 (Tamat masa)
+ (Kicked)	 (Ditendang)
+*** Cheats were disabled on this server (MP cheats).	*** Cheat telah dinyahdayakan pada pelayan ini (cheat MP).
+*** The host allowed cheats again.	*** Hos membenarkan penipuan lagi.
+*** The host turned off Mission sync.	*** Hos telah mematikan penyegerakan Misi.
+*** Mission sync is allowed here (MP menu > Players online).	*** Penyegerakan misi dibenarkan di sini (menu MP > Pemain dalam talian).
+*** %s wants Mission sync with you: Accept or Decline.	*** %s mahu penyegerakan Misi dengan anda: Terima atau Tolak.
+*** Mission sync with %s (group: %d/%d): you see each other and each other's mission markers on missions now.	*** Penyegerakan misi dengan %s (kumpulan: %d/%d): anda melihat antara satu sama lain dan penanda misi antara satu sama lain dalam misi sekarang.
+*** Mission sync with %s ended.	*** Penyegerakan misi dengan %s tamat.
+*** %s declined Mission sync.	*** %s menolak penyegerakan Misi.
+The player	Pemain itu
+*** Could not start Mission sync (the player left, didn't ask you, or the group is full: 16 max).	*** Tidak dapat memulakan penyegerakan Misi (pemain telah pergi, tidak bertanya kepada anda, atau kumpulan telah penuh: maksimum 16).
+*** Mission sync is turned off on this server.	*** Penyegerakan misi dimatikan pada pelayan ini.
+*** %s pulled you out of your car.	*** %s menarik awak keluar dari kereta awak.
+That car is full.	Kereta tu dah penuh.
+NPC sync isn't available on this game version.	Penyegerakan NPC tidak tersedia pada versi permainan ini.
+NPCs around you come from %s.	NPC di sekeliling anda datang dari %s.
+You are the NPC host for %d player%s near you.	Anda ialah hos NPC untuk %d pemain%s berhampiran anda.
+On a mission: your own NPCs.	Dalam misi: NPC anda sendiri.
+Wanted: your own NPCs and police.	Dikehendaki: NPC dan polis anda sendiri.
+Nobody near you: your own NPCs.	Tiada sesiapa berhampiran anda: NPC anda sendiri.
+Sync status shows here while you are on a server.	Status penyegerakan dipaparkan di sini semasa anda berada di pelayan.
+Animations: off (switch on above).	Animasi: mati (hidupkan di atas).
+Animations: not available on this game version.	Animasi: tidak tersedia pada versi permainan ini.
+Animations: on (no player near you).	Animasi: hidup (tiada pemain berhampiran anda).
+Animations: %d of %d players near you send their full animations.	Animasi: %d daripada %d pemain berhampiran anda menghantar animasi penuh mereka.
+Players on an older MP version only send walk / run / basic moves.	Pemain pada versi MP yang lebih lama hanya menghantar gerakan berjalan/lari/asas.
+%d player%s shown as story characters.	%d pemain%s ditunjukkan sebagai watak cerita.
+Server modes stay on here - only the server owner, [ADMIN] or [MOD] can change them.	Mod pelayan kekal dihidupkan di sini - hanya pemilik pelayan, [ADMIN] atau [MOD] boleh mengubahnya.
+Trailers like the Tug Stairs can't be driven in MP (they fly off). Use the Tug to pull it.	Treler seperti Tangga Tunda tidak boleh dipandu dalam mod MP (ia boleh terbang). Gunakan Tangga Tunda untuk menariknya.
+You are offline. Turn on Wi-Fi or mobile data.	Anda berada di luar talian. Hidupkan Wi-Fi atau data mudah alih.
+this server	pelayan ini
+Sorry, this server doesn't allow cheat menus. %s is loaded in your game: remove it from your mods folder and restart the game.	Maaf, pelayan ini tidak membenarkan menu cheat. %s dimuatkan dalam permainan anda: alih keluarnya dari folder mod anda dan mulakan semula permainan.
+That online server is gone. Tap Connect / Join again.	Pelayan dalam talian itu telah tiada. Ketik Sambung / Sertai sekali lagi.
+Invalid server address.	Alamat pelayan tidak sah.
+SERVER RULES	PERATURAN PELAYAN
+%s is hosted by the 24/7 bot - waiting for it (only the admin / moderators can host it).	%s dihoskan oleh bot 24/7 - menunggunya (hanya pentadbir / moderator sahaja yang boleh mengehoskannya).
+Could not start the server on port %d	Tidak dapat memulakan pelayan pada port %d
+Plugins: %d textdraws from files/MP/%s/	Plugin: %d teks yang dilukis daripada files/MP/%s/
+Disconnected. Your server stays online for the others.	Terputus sambungan. Pelayan anda kekal dalam talian untuk yang lain.
+Disconnected from the server.	Terputus sambungan dari pelayan.
+Please wait...	Sila tunggu...
+You are already connected to %s.	Anda sudah bersambung ke %s.
+Already connecting to %s...	Sudah bersambung ke %s...
+%s's server	Pelayan %s
+Player	Pemain
+Server name: \"%s\" (change it in Host your own server).	Nama pelayan: \"%s\" (tukarnya dalam Hoskan pelayan anda sendiri).
+Port %d is the default server's, your server uses port %d.	Port %d ialah port lalai pelayan, pelayan anda menggunakan port %d.
+Server stopped.	Pelayan berhenti.
+Reconnecting to \"%s\" (host: 	Menyambung semula ke \"%s\" (hos: 
+The other copy of \"%s\" did not answer - you host it again.	Salinan \"%s\" yang lain tidak menjawab - anda mengehosnya sekali lagi.
+The host left - moving to the 24/7 server (you keep playing)...	Hos itu pergi - berpindah ke pelayan 24/7 (anda terus bermain)...
+Connection to \"%s\" lost - you host it now (nobody else was on it)...	Sambungan ke \"%s\" terputus - anda mengehosnya sekarang (tiada orang lain yang berada di dalamnya)...
+The host left - moving to the new host...	Tuan rumah itu pergi - berpindah ke tuan rumah yang baharu...
+\"%s\" is already online on another phone - joining it. Pick another name to host your own.	\"%s\" sudah pun dalam talian pada telefon lain - menyertainya. Pilih nama lain untuk mengehos telefon anda sendiri.
+Your server \"%s\" is online (port %d).	Pelayan anda \"%s\" sedang dalam talian (port %d).
+Looking for the 24/7 server again...	Mencari pelayan 24/7 lagi...
+\"%s\" isn't online and uses port %d (reserved for the default server). Edit it to port %d or higher.	\"%s\" tidak dalam talian dan menggunakan port %d (dikhaskan untuk pelayan lalai). Editnya kepada port %d atau lebih tinggi.
+Same server on another phone - moving there (you stay connected).	Pelayan yang sama pada telefon lain - berpindah ke sana (anda kekal bersambung).
+*** Broker standby #%d/%d: \"%s\" was offline - this phone hosts it in the background until the 24/7 host is back.	*** Siaga broker #%d/%d: \"%s\" berada di luar talian - telefon ini mengehosnya di latar belakang sehingga hos 24/7 kembali.
+Region set to %s (lowest ping, %d ms). Change it in the Server menu.	Rantau ditetapkan kepada %s (ping terendah, %d ms). Tukarkannya dalam menu Pelayan.
+You are online again.	Awak dalam talian lagi.
+The 24/7 server is online - moving there (you keep playing).	Pelayan 24/7 dalam talian - bergerak ke sana (anda terus bermain).
+Not connected.	Tidak bersambung.
+Name	Nama
+Host	Hos
+Port	Pelabuhan
+Skin	Kulit
+Region	Wilayah
+Girlfriends	Teman wanita
+Rule%d	Peraturan%d
+Actors	Pelakon
+Team	Pasukan
+/Android_unprotected/	/Android_tanpa_lindungan/
+/storage/emulated/0/Android/data/%s/files/MP/admin.txt	/storage/diemulasi/0/Android/data/%s/files/MP/admin.txt
+/storage/emulated/0/Android_unprotected/data/%s/files/MP/admin.txt	/storage/diemulasi/0/Android_tanpa_lindung/data/%s/files/MP/admin.txt
+/storage/emulated/0/Android/media/%s/MP/admin.txt	/storage/diemulasi/0/Android/media/%s/MP/admin.txt
+/storage/emulated/0/Android_unprotected/data/%s/mods/admin.txt	/storage/diemulasi/0/Android_tanpa_lindung/data/%s/mod/admin.txt
+/storage/emulated/0/Android/data/%s/mods/admin.txt	/storage/diemulasi/0/Android/data/%s/mod/admin.txt
+/storage/emulated/0/Android_unprotected/data/%s/files/admin.txt	/storage/diemulasi/0/Android_tanpa_lindung/data/%s/fail/admin.txt
+/storage/emulated/0/Android/data/%s/files/admin.txt	/storage/diemulasi/0/Android/data/%s/fail/admin.txt
+key=	kunci=
+The name SENJI is reserved for the administrator. No valid administrator.txt found.	Nama SENJI dikhaskan untuk pentadbir. Tiada administrator.txt yang sah ditemui.
+Put administrator.txt here: %s/administrator.txt	Letakkan administrator.txt di sini: %s/administrator.txt
+The name %s is reserved for moderators. moderator.txt was found (%s) but it has no valid moderator key.	Nama %s dikhaskan untuk moderator. moderator.txt telah ditemui (%s) tetapi ia tidak mempunyai kunci moderator yang sah.
+The name %s is reserved for moderators. No moderator.txt found.	Nama %s dikhaskan untuk moderator. Tiada moderator.txt ditemui.
+Put moderator.txt (one line: the moderator key) here: %s/moderator.txt	Letakkan moderator.txt (satu baris: kekunci moderator) di sini: %s/moderator.txt
+Reserved name	Nama yang dikhaskan
+Reserved (moderator)	Dikhaskan (moderator)
+Not allowed	Tidak dibenarkan
+No [ ] in names	Tiada [ ] dalam nama
+Names can't have [ or ]. Use only your name - [TAGS] are for staff, factions and clans (Mega Vil: /createfaction).	Nama tidak boleh mempunyai [ atau ]. Gunakan hanya nama anda - [TAGS] adalah untuk kakitangan, puak dan klan (Mega Vil: /createfaction).
+Names can't start with [ADMIN] or [MOD].	Nama tidak boleh bermula dengan [ADMIN] atau [MOD].
+moderator.txt found: you are [MOD] %s on every MP server (name tag, chat, kill feed, kick / mute).	moderator.txt ditemui: anda berada [MOD] %s pada setiap pelayan MP (tag nama, sembang, suapan bunuh, tendang / bisu).
+administrator.txt found: you are the administrator. On the default server you show as [ADMIN] SENJI.	administrator.txt ditemui: anda ialah pentadbir. Pada pelayan lalai anda dipaparkan sebagai [ADMIN] SENJI.
+Type the IP and the port (1-65535).	Taip IP dan port (1-65535).
+Connecting to %s:%d ...	Menyambung ke %s:%d ...
+English	Bahasa Inggeris
+Filipino	Bahasa Filipina
+Tagalog / English	Tagalog / Inggeris
+Indonesian	Bahasa Indonesia
+Russian	Rusia
+Spanish	Bahasa Sepanyol
+Portuguese	Portugis
+Arabic	Bahasa Arab
+%s  %d ms\n%d online	%s %d ms\n%d dalam talian
+%d online	%d dalam talian
+%s\n%d online	%s\n%d dalam talian
+Lobby: lowest ping region	Lobi: kawasan ping terendah
+Lobby broker: %s%s. Servers of other regions are joined through their own broker.	Broker lobi: %s%s. Pelayan rantau lain disertai melalui broker mereka sendiri.
+Lobby broker: public (regional brokers not reachable)	Broker lobi: awam (broker serantau tidak dapat dihubungi)
+Server icon (tap it for the next one)	Ikon pelayan (ketik untuk yang seterusnya)
+Default (main_df_icon.png)	Lalai (main_df_icon.png)
+Custom icon	Ikon tersuai
+Default	Lalai
+The default MP LAN Server always shows the default icon.	Pelayan LAN MP lalai sentiasa menunjukkan ikon lalai.
+Your own pictures: icon_1.png ... icon_250.png inside files/MP/Icons.jar (or loose in files/MP, max 256x256).	Gambar anda sendiri: icon_1.png ... icon_250.png di dalam files/MP/Icons.jar (atau longgar dalam files/MP, maksimum 256x256).
+Offline: turn on Wi-Fi or mobile data	Luar talian: hidupkan Wi-Fi atau data mudah alih
+Connected  |  %d/%d  |  %d ms	Tersambung | %d/%d | %d ms
+Online  |  host: 	Dalam talian | hos: 
+Online at %s  |  %d/%d  |  %d ms	Dalam talian di %s | %d/%d | %d ms
+Always online  |  tap Connect	Sentiasa dalam talian | ketik Sambung
+Connect	Sambungkan
+Cancel	Batal
+Leave	Tinggalkan
+Search...	Cari...
+%s  (default)  -  port %d	%s (lalai) - port %d
+Offline: turn on Wi-Fi or mobile data.	Luar talian: hidupkan Wi-Fi atau data mudah alih.
+Internet lobby: ONLINE via %s (%d ms)  |  %d internet + %d Wi-Fi servers	Lobi Internet: DALAM TALIAN melalui %s (%d ms) | %d internet + %d pelayan Wi-Fi
+Internet lobby: NOT connected - other networks can't see servers yet	Lobi Internet: TIDAK disambungkan - rangkaian lain belum dapat melihat pelayan
+Hide lobby details	Sembunyikan butiran lobi
+Lobby details	Butiran lobi
+Custom server permissions	Kebenaran pelayan tersuai
+Mission sync with somebody	Penyegerakan misi dengan seseorang
+On: two players can sync up: they see each other on missions and share their mission markers.	Hidup: dua pemain boleh menyegerakkan: mereka bertemu antara satu sama lain dalam misi dan berkongsi penanda misi mereka.
+Off: everyone is alone on missions; running mission syncs end.	Mati: semua orang bersendirian dalam misi; penyegerakan misi yang dijalankan tamat.
+Cheat Menu	Menu Menipu
+On: players may use Cheat Menu (libCheatMenu.so / libCheatMenu64.so) on your server.	Hidup: pemain boleh menggunakan Menu Cheat (libCheatMenu.so / libCheatMenu64.so) pada pelayan anda.
+Off: players with Cheat Menu (libCheatMenu.so / libCheatMenu64.so) can't join.	Dimatikan: pemain dengan Menu Cheat (libCheatMenu.so / libCheatMenu64.so) tidak boleh menyertai.
+Never on the default server. \"Disable cheats\" (Settings > Cheats) switches it off too.	Jangan sekali-kali pada pelayan lalai. \"Lumpuhkan cheat\" (Tetapan > Cheat) juga akan mematikannya.
+AFK (too long without moving)	AFK (terlalu lama tanpa bergerak)
+On: after 3 minutes without moving players get an AFK tag; after 20 minutes their seat is freed.	Hidup: selepas 3 minit tanpa bergerak, pemain akan mendapat tag AFK; selepas 20 minit tempat duduk mereka dikosongkan.
+Off: nobody is marked AFK on your server.	Mati: tiada siapa yang ditanda AFK pada pelayan anda.
+Damage indicator	Penunjuk kerosakan
+On: a hit shows \"-25.00\" and \"<shooter> hit the head / torso / arm / leg\" over the name tag (4 s).	Pada: satu pukulan menunjukkan \"-25.00\" dan \"<shooter> mengenai kepala / badan / lengan / kaki\" di atas tanda nama (4 saat).
+Off: no damage numbers over the name tags.	Mati: tiada kerosakan nombor pada tanda nama.
+Player IDs (name tags + player list)	ID Pemain (tag nama + senarai pemain)
+On: name tags and the player list show \"name (id)\".	Hidup: tag nama dan senarai pemain menunjukkan \"nama (id)\".
+Off: names only.	Dimatikan: nama sahaja.
+Hunger + energy HUD	Kelaparan + tenaga HUD
+On: a hunger and energy box (bottom right) - eat with /eat, rest standing still or /sleep in a house.	Pada: kotak rasa lapar dan tenaga (bawah kanan) - makan bersama /eat, berehat sambil berdiri atau /sleep di dalam rumah.
+Off: no hunger / energy (the default server always has it, Mega Vil Futuristic has its own).	Mati: tiada rasa lapar / tenaga (pelayan lalai sentiasa ada, Mega Vil Futuristic ada yang tersendiri).
+/stats and /char work on custom servers that have the Authentication system (login with Discord).	/stats dan /char berfungsi pada pelayan tersuai yang mempunyai sistem Pengesahan (log masuk dengan Discord).
+(The default server always allows Mission sync.)	(Pelayan lalai sentiasa membenarkan penyegerakan Misi.)
+Applied to \"%s\" now.	Digunakan pada \"%s\" sekarang.
+Used for every custom server you create or host.	Digunakan untuk setiap pelayan tersuai yang anda cipta atau hoskan.
+Server cheats	Penipu pelayan
+Disable cheats	Lumpuhkan penipuan
+*** MP cheats disabled for everyone on your server (the CLEO menu is always blocked).	*** Penipuan MP dinyahdayakan untuk semua orang di pelayan anda (menu CLEO sentiasa disekat).
+*** Cheats allowed again on your server.	*** Penipuan dibenarkan sekali lagi pada pelayan anda.
+On: nobody can use MP cheat commands (/fly, /god, /tp, /wh, ...).	Hidup: tiada sesiapa yang boleh menggunakan arahan cheat MP (/fly, /god, /tp, /wh, ...).
+Off: MP cheat commands (/fly, /god, /tp, /wh, ...) work as usual.	Mati: Arahan cheat MP (/fly, /god, /tp, /wh, ...) berfungsi seperti biasa.
+CLEO menu + Cheat Menu: allowed by this server's Cheat Menu permission.	Menu CLEO + Menu Menipu: dibenarkan oleh kebenaran Menu Menipu pelayan ini.
+CLEO menu + Cheat Menu (libCheatMenu.so / libCheatMenu64.so): always blocked (custom servers: Cheat Menu permission).	Menu CLEO + Menu Cheat (libCheatMenu.so / libCheatMenu64.so): sentiasa disekat (pelayan tersuai: kebenaran Menu Cheat).
+(CLEO menu: no CLEO Android found on this phone - only MP cheats are blocked here.)	(Menu CLEO: tiada CLEO Android ditemui pada telefon ini - hanya cheat MP yang disekat di sini.)
+You are %s: this applies to every player on the server (until everybody left).	Anda ialah %s: ini terpakai kepada setiap pemain di pelayan (sehingga semua orang pergi).
+You are the host of \"%s\": this applies to every player.	Anda ialah hos \"%s\": ini terpakai kepada setiap pemain.
+On the default server only [ADMIN] SENJI and the moderators ([MOD], moderator.txt) can change this.	Pada pelayan lalai hanya [ADMIN] SENJI dan moderator ([MOD], moderator.txt) boleh mengubahnya.
+Only the host of this server can change this.	Hanya hos pelayan ini sahaja yang boleh mengubahnya.
+Host your own server to change this. On the default server only [ADMIN] SENJI and [MOD] can.	Hoskan pelayan anda sendiri untuk mengubahnya. Pada pelayan lalai hanya [ADMIN] SENJI dan [MOD] yang boleh.
+Default server	Pelayan lalai
+Online now - %d server%s (internet + Wi-Fi)%s	Dalam talian sekarang - %d pelayan%s (internet + Wi-Fi)%s
+  (searching...)	  (mencari...)
+Searching...	Mencari...
+No other server online right now. Tap Connect to host the default one.	Tiada pelayan lain dalam talian sekarang. Ketik Sambung untuk mengehoskan pelayan lalai.
+internet  |  %d/%d  |  ~%d ms	internet | %d/%d | ~%d ms
+on Wi-Fi  |  %d/%d  |  %d ms	pada Wi-Fi | %d/%d | %d ms
+Join	Sertai
+Left the server.	Meninggalkan pelayan.
+Custom servers in %s  (%d / %d)	Pelayan tersuai dalam %s (%d / %d)
+   [password]	   [kata laluan]
+IP hidden  |  connected  |  %d/%d  |  %d ms	IP tersembunyi | disambungkan | %d/%d | %d ms
+online  |  host: 	dalam talian | hos: 
+IP hidden  |  online (you host it)  |  %d/%d	IP tersembunyi | dalam talian (anda mengehoskannya) | %d/%d
+IP hidden  |  online %d/%d  |  %d ms	IP tersembunyi | dalam talian %d/%d | %d ms
+IP hidden  |  online %s %d/%d  |  %d ms	IP tersembunyi | dalam talian %s %d/%d | %d ms
+on Wi-Fi	pada Wi-Fi
+IP hidden  |  you are offline (Wi-Fi/data off)	IP tersembunyi | anda berada di luar talian (Wi-Fi/data dimatikan)
+IP hidden  |  always active  |  tap Join	IP tersembunyi | sentiasa aktif | ketik Sertai
+Joining...	Menyertai...
+No custom servers in this region yet. Add one below.	Tiada pelayan tersuai di rantau ini lagi. Tambahkan satu di bawah.
+Refresh	Segarkan semula
+Delete selected	Padam yang dipilih
+Tap a server to select it, tap Join to play on it.	Ketik pelayan untuk memilihnya, ketik Sertai untuk bermain di atasnya.
+Custom servers are always active: if nobody runs it, Join hosts it.	Pelayan tersuai sentiasa aktif: jika tiada siapa yang menjalankannya, Join akan mengehosnya.
+Gamemodes	Mod permainan
+\"%s\" (the default server): every gamemode is ON (fixed).	\"%s\" (pelayan lalai): setiap mod permainan HIDUP (tetap).
+The default server has all of them. A custom server starts with none: turn on the ones you want.	Pelayan lalai mempunyai semuanya. Pelayan tersuai bermula dengan tiada: hidupkan yang anda mahukan.
+Map icons and Chat bubbles are each player's own switches: Settings > Display / Chat.	Ikon peta dan gelembung Sembang adalah suis setiap pemain sendiri: Tetapan > Paparan / Sembang.
+All on	Semua dihidupkan
+All off	Semuanya dimatikan
+Only for a NEW server you create (Host). Servers that already exist keep their gamemodes - the one you are on is not changed.	Hanya untuk pelayan BARU yang anda cipta (Host). Pelayan yang sudah wujud mengekalkan mod permainan mereka - yang anda gunakan tidak diubah.
+This phone runs \"%s\": %s (fixed).	Telefon ini menjalankan \"%s\": %s (telah dibaiki).
+every gamemode	setiap mod permainan
+no gamemodes	tiada mod permainan
+24/7 server (mp_server): --gamemodes %s	Pelayan 24/7 (mp_server): --mod permainan %s
+Anti-cheat	Anti-penipuan
+Nex-AC checks on the server. Always on (every check) on the default server, Mega Vil Futuristic, Brief Case War and MW3.	Pemeriksaan Nex-AC pada pelayan. Sentiasa aktif (setiap pemeriksaan) pada pelayan lalai, Mega Vil Futuristic, Brief Case War dan MW3.
+Staff (you, admins, moderators) only get the warning. Checks marked (cheat) are skipped while menu cheats are allowed.	Kakitangan (anda, pentadbir, moderator) hanya akan menerima amaran. Tanda semak yang ditanda (curang) akan dilangkau manakala penipuan menu dibenarkan.
+Anti-cheat on my custom server	Anti-penipuan pada pelayan tersuai saya
+ (cheat)	 (menipu)
+All checks on	Semua pemeriksaan dihidupkan
+All checks off	Semua cek ditamatkan
+This phone runs \"%s\": anti-cheat %s (%u warnings so far).	Telefon ini menjalankan \"%s\": anti-penipuan %s (%u amaran setakat ini).
+24/7 server (mp_server): --anticheat %llX  (or --no-anticheat)	Pelayan 24/7 (mp_server): --anticheat %llX (atau --no-anticheat)
+another app on this phone	aplikasi lain pada telefon ini
+Port %d is free.	Port %d adalah percuma.
+Port %d is taken (%s). This port needs a new one.	Port %d telah diambil (%s). Port ini memerlukan yang baharu.
+Use free port %d	Gunakan port percuma %d
+Rules	Peraturan
+A RULES window after the login on your server (players read it again with /rules).	Tetingkap RULES selepas log masuk pada pelayan anda (pemain membacanya semula dengan /rules).
+Show the rules	Tunjukkan peraturan
+Title	Tajuk
+Rules title	Tajuk peraturan
+Rule %d	Peraturan %d
+Colours work like SA-MP: {FF0000}red {FFFF00}yellow {33CC55}green. Empty lines are skipped.	Warna berfungsi seperti SA-MP: {FF0000}merah {FFFF00}kuning {33CC55}hijau. Baris kosong dilangkau.
+Custom server  -  %s	Pelayan tersuai - %s
+Server name	Nama pelayan
+Host / IP  (empty = host it on this phone)	Hos / IP (kosong = hoskannya pada telefon ini)
+e.g. ggwar or net.ggwar.org	contohnya ggwar atau net.ggwar.org
+Password (optional, max 16)	Kata Laluan (pilihan, maksimum 16)
+Password (max 16)	Kata Laluan (maksimum 16)
+Language	Bahasa
+Language (e.g. English)	Bahasa (cth. Bahasa Inggeris)
+Max players	Pemain maksimum
+%d players	%d pemain
+Server list full (%d/%d)	Senarai pelayan penuh (%d/%d)
+Add server  (%d/%d)	Tambah pelayan (%d/%d)
+Add server  (hosted on this phone)	Tambah pelayan (dihoskan pada telefon ini)
+Add server  (starting...)	Tambah pelayan (memulakan...)
+Add server  (host on this phone)	Tambah pelayan (hos pada telefon ini)
+Brief Case War is a private gamemode server - it is always in the Internet list, just tap it.	Brief Case War ialah pelayan mod permainan peribadi - ia sentiasa ada dalam senarai Internet, hanya ketik padanya.
+Modern Warfare 3 is a 24/7 featured server - it is always in the Internet list, just tap it.	Modern Warfare 3 ialah pelayan pilihan 24/7 - ia sentiasa ada dalam senarai Internet, hanya ketik padanya.
+Mega Vil Futuristic is a 24/7 featured Roleplay server - it is always in the Internet list, just tap it.	Mega Vil Futuristic ialah pelayan Roleplay yang dibuka 24/7 - ia sentiasa ada dalam senarai Internet, hanya ketik padanya.
+Port %d is for the default server. Use %d or higher for a custom server.	Port %d adalah untuk pelayan lalai. Gunakan %d atau lebih tinggi untuk pelayan tersuai.
+Port %d is taken - it needs a new port. Free port: %d (tap \"Use free port %d\").	Port %d telah diambil - ia memerlukan port baharu. Port bebas: %d (ketik \"Gunakan port bebas %d\").
+Port %d is taken - type another port.	Port %d telah diambil - taip port lain.
+That is the default server - it is always on top, just tap Connect.	Itulah pelayan lalai - ia sentiasa berada di atas, hanya ketik Sambung.
+Port %d is taken by another server - it needs a new port (see \"Use free port\").	Port %d diambil oleh pelayan lain - ia memerlukan port baharu (lihat \"Gunakan port percuma\").
+That server is already in your list.	Pelayan itu sudah ada dalam senarai anda.
+Added server \"%s\" (%s). Its IP stays hidden.	Pelayan \"%s\" (%s) telah ditambah. IPnya kekal tersembunyi.
+Enter a host/IP and a port (1-65535).	Masukkan hos/IP dan port (1-65535).
+\"%s\" is hosted by 	\"%s\" dihoskan oleh 
+ (24/7 bot), %d/%d online	 (bot 24/7), %d/%d dalam talian
+Hosting \"%s\"  (IP hidden, %d/%d online)	Pengehosan \"%s\" (IP tersembunyi, %d/%d dalam talian)
+Listed in the internet lobby: players on mobile data can join.	Disenaraikan di lobi internet: pemain yang menggunakan data mudah alih boleh menyertai.
+Not in the internet lobby yet (Wi-Fi/hotspot players only).	Belum lagi di lobi internet (pemain Wi-Fi/hotspot sahaja).
+Stays online when you disconnect. If you leave the game, another player takes over.	Kekal dalam talian apabila anda memutuskan sambungan. Jika anda meninggalkan permainan, pemain lain akan mengambil alih.
+Join my server	Sertai pelayan saya
+Leave + join my server	Tinggalkan + sertai pelayan saya
+Stopping...	Berhenti...
+Stop my server	Hentikan pelayan saya
+Checking online + Wi-Fi for \"%s\"...	Memeriksa dalam talian + Wi-Fi untuk \"%s\"...
+Add server = save it to your server list.	Tambah pelayan = simpan ke senarai pelayan anda.
+No Host / IP: Add server runs it on this phone. If it already runs on another phone, you join it.	Tiada Hos / IP: Tambah pelayan akan menjalankannya pada telefon ini. Jika ia sudah berjalan pada telefon lain, anda boleh menyertainya.
+Local IP	IP Tempatan
+Your local IP: %s  (port %d when you host)	IP setempat anda: %s (port %d apabila anda mengehos)
+Disconnect	Putuskan sambungan
+Same Wi-Fi / hotspot: type the host's local IP and port, then Connect.	Wi-Fi / hotspot yang sama: taip IP dan port setempat hos, kemudian Sambung.
+This phone: %s - port %d	Telefon ini: %s - port %d
+Hotspot: turn on your phone hotspot, host a server, friends join 192.168.43.1.	Hotspot: hidupkan hotspot telefon anda, hoskan pelayan, rakan sertai 192.168.43.1.
+Authentication system	Sistem pengesahan
+Login with Discord	Log masuk dengan Discord
+Login system %s on \"%s\" (players who join from now on).	Sistem log masuk %s pada \"%s\" (pemain yang menyertai mulai sekarang).
+On: a new player gets a code, types /gen CODE in #verification on Discord, then creates an account (user, password, gender, age). Next time: login only.	Hidup: pemain baharu mendapat kod, taip /gen KOD dalam #pengesahan di Discord, kemudian buat akaun (pengguna, kata laluan, jantina, umur). Lain kali: log masuk sahaja.
+Off: players spawn right away (no account).	Dimatikan: pemain akan muncul serta-merta (tiada akaun).
+Discord: %s  (accounts are kept by the MP bot, never by the host, never shown to the others)	Discord: %s (akaun disimpan oleh bot MP, tidak pernah oleh hos, tidak pernah ditunjukkan kepada orang lain)
+The default server and Brief Case War always use it. Needs MP %s or newer on every phone.	Pelayan lalai dan Brief Case War sentiasa menggunakannya. Memerlukan MP %s atau lebih baharu pada setiap telefon.
+\"%s\": login %s	\"%s\": log masuk %s
+administrator.txt OK - this is how everyone sees you (name tag, chat, kill feed).	administrator.txt OK - beginilah cara semua orang melihat anda (tag nama, sembang, suapan bunuh).
+Connect  -  %s (default)	Sambung - %s (lalai)
+Connecting...  (tap to cancel)	Menyambung... (ketik untuk membatalkan)
+Connected  -  tap to Disconnect	Disambungkan - ketik untuk Putuskan Sambungan
+Searching online + Wi-Fi...	Mencari dalam talian + Wi-Fi...
+On \"%s\"  (%s)	Pada \"%s\" (%s)
+internet, direct UDP	internet, UDP terus
+IP hidden	IP tersembunyi
+Offline: turn on Wi-Fi or mobile data to play.	Luar talian: hidupkan Wi-Fi atau data mudah alih untuk bermain.
+Host left - reconnecting to \"%s\"...	Hos kiri - menyambung semula ke \"%s\"...
+Connect = the default server, always online.	Sambung = pelayan lalai, sentiasa dalam talian.
+Custom servers: Servers tab -> Join.	Pelayan tersuai: Tab Pelayan -> Sertai.
+Players online: %d/%d	Pemain dalam talian: %d/%d
+Sound effects	Kesan bunyi
+Hitsound effect	Kesan bunyi Hits
+Enabled: a hit sound plays when you hit a player (guns, fists, melee, drive-by, cars).	Didayakan: bunyi hentakan dimainkan apabila anda memukul pemain (senapang, penumbuk, jarak dekat, pandu lalu, kereta).
+Disabled: no hit sound.	Dilumpuhkan: tiada bunyi hentakan.
+Test hit sound	Bunyi hit ujian
+sound_010.mp3 is missing from the MP folder (assets/MP).	sound_010.mp3 hilang daripada folder MP (aset/MP).
+Voice chat	Sembang suara
+Voice chat (hear players near you)	Sembang suara (dengar pemain berhampiran anda)
+Only on a server. Turn your mic on/off with the mic button next to Chat at the top. Players within 40 m hear you: louder up close, quieter further away.	Hanya di pelayan. Hidupkan/matikan mikrofon anda dengan butang mikrofon di sebelah Sembang di bahagian atas. Pemain dalam jarak 40 m mendengar anda: lebih kuat dari dekat, lebih senyap dari jauh.
+Voice volume	Kelantangan suara
+Microphone boost	Penggalak mikrofon
+Voice pitch (how the others hear you)	Nada suara (bagaimana orang lain mendengar anda)
+Turn microphone off	Matikan mikrofon
+Turn microphone on	Hidupkan mikrofon
+Mic level	Tahap mikrofon
+Connect to a server to turn on your microphone.	Sambung ke pelayan untuk menghidupkan mikrofon anda.
+Muted players: %d	Pemain yang disenyapkan: %d
+Unmute everybody	Nyahbisukan semua orang
+          Microphone (connect to a server first)	          Mikrofon (sambung ke pelayan dahulu)
+          Microphone ON - tap to turn off	          Mikrofon HIDUP - ketik untuk mematikan
+          Microphone OFF - tap to turn on	          Mikrofon MATI - ketik untuk menghidupkan
+Sending your voice...	Menghantar suara anda...
+Listening - talk and the bar turns green.	Mendengar - bercakap dan bar bertukar menjadi hijau.
+Microphone: MP Voice app (working)	Mikrofon: Aplikasi MP Voice (berfungsi)
+Waiting for the MP Voice app...	Menunggu aplikasi MP Voice...
+Open MP Voice	Suara Ahli Parlimen Terbuka
+Hear voice chat	Dengar sembang suara
+Mute everybody (only for you)	Bisukan semua orang (hanya untuk anda)
+Voice volume (what you hear)	Kelantangan suara (apa yang anda dengar)
+Deep	Dalam
+Normal	Biasa
+High	Tinggi
+Chipmunk	Tupai
+Crazy	Gila
+Hear myself (test the pitch, use earphones)	Dengar diri saya sendiri (uji nada, gunakan fon telinga)
+Muted in the player list: %d	Dibisukan dalam senarai pemain: %d
+Unmute all	Nyahbisukan semua
+Like real life: players right next to you are loud, further away they get quieter, past %d m you can't hear them. Walk closer to hear someone.	Seperti kehidupan sebenar: pemain di sebelah anda bising, semakin jauh mereka menjadi lebih senyap, melepasi %d m anda tidak dapat mendengar mereka. Berjalan lebih dekat untuk mendengar seseorang.
+Name tag size	Saiz tag nama
+Name tag distance	Jarak tanda nama
+Name tag: show yourself	Tag nama: tunjukkan diri anda
+On: your own name tag shows above you (only on your screen).	Hidup: tanda nama anda sendiri dipaparkan di atas anda (hanya pada skrin anda).
+Off: you don't see your own name tag (the others still see it).	Mati: anda tidak nampak tag nama anda sendiri (yang lain masih nampak).
+Font	Fon
+  (not on this phone)	  (bukan pada telefon ini)
+None	Tiada
+Outline	Garis Besar
+Bold outline	Garis besar yang tebal
+Shadow	Bayang-bayang
+Text effect	Kesan teks
+Font scale	Skala fon
+UI scale	Skala UI
+No camera shake	Tiada gegaran kamera
+Health bars	Bar kesihatan
+Player radar icons	Ikon radar pemain
+Chat	Sembang
+Kill feed	Bunuh suapan
+Server modes are locked on this server (only the owner, [ADMIN] or [MOD]).	Mod pelayan dikunci pada pelayan ini (hanya pemilik, [ADMIN] atau [MOD]).
+Sync player animations	Animasi pemain segerak
+Sync explosions, fire, weapons	Segerakkan letupan, kebakaran, senjata
+Sync NPCs (people + traffic)	Segerakkan NPC (orang + trafik)
+Broker standby #%d/100 (host offline featured servers)	Siaga broker #%d/100 (hoskan pelayan pilihan luar talian)
+Open world (cities, shops, food, gyms, garages)	Dunia terbuka (bandar, kedai, makanan, gim, garaj)
+Girlfriend houses (optional)	Rumah teman wanita (pilihan)
+[Race] / [DM] / [Job] tips in the chat	Petua [Perlumbaan] / [DM] / [Kerja] dalam sembang
+3D text labels (job / race / derby starts)	Label teks 3D (permulaan kerja / perlumbaan / perlawanan derbi)
+Map icons (jobs, races, derbies, DM)	Ikon peta (pekerjaan, perlumbaan, derby, DM)
+Actors (people at the job starts)	Pelakon (orang yang bertugas bermula)
+Gang zones on the radar + map	Zon geng dalam radar + peta
+Mega Vil radar	Radar Mega Vil
+Game radar	Radar permainan
+Google map 2D	Peta Google 2D
+Google map 3D	Peta Google 3D
+MW3: PUBG compass on top	MW3: Kompas PUBG di atas
+Chat position + chat box	Kedudukan sembang + kotak sembang
+Show chat background (strip behind the lines)	Tunjukkan latar belakang sembang (gariskan di belakang garisan)
+Show chat box background	Tunjukkan latar belakang kotak sembang
+Show chat box label (\"Tap to chat\")	Tunjukkan label kotak sembang (\"Ketik untuk bersembang\")
+Tap the chat box to type	Ketik kotak sembang untuk menaip
+Only the Chat button opens the keyboard - taps on the box go to the game.	Hanya butang Sembang yang membuka papan kekunci - ketikan pada kotak akan pergi ke permainan.
+Chat lines position X / Y	Kedudukan talian sembang X / Y
+Chat box right under the chat lines	Kotak sembang betul-betul di bawah baris sembang
+Chat box position X / Y	Kedudukan kotak sembang X / Y
+Reset chat position	Tetapkan semula kedudukan sembang
+Chat scale (chat lines + chat box)	Skala sembang (talian sembang + kotak sembang)
+Small	Kecil
+Big	Besar
+Huge	Besar
+Player: preview of the chat size	Pemain: pratonton saiz sembang
+Chat timestamps [HH:MM:SS]	Cap masa sembang [HH:MM:SS]
+On: every chat line starts with the time it arrived, like [18:02:48].	Hidup: setiap talian sembang bermula dengan masa ia tiba, seperti [18:02:48].
+Off: no time in front of the chat lines (turn on to see [18:02:48]).	Mati: tiada masa di hadapan talian sembang (hidupkan untuk melihat [18:02:48]).
+Lines shown (0 = only while typing)	Baris yang ditunjukkan (0 = hanya semasa menaip)
+%d lines	%d baris
+Text size	Saiz teks
+Width (long lines wrap)	Lebar (balutan garisan panjang)
+%d %% of the screen	%d %% daripada skrin
+Fade out after	Pudar selepas
+%d seconds	%d saat
+Chat bubbles (text over the head)	Gelembung sembang (teks di atas kepala)
+Small chat (4 lines, 70 %)	Sembang kecil (4 baris, 70%)
+Reset chat layout	Tetapkan semula susun atur sembang
+Clear chat	Kosongkan sembang
+Chat commands: /chatscale /pagesize /fontsize /chatwidth /chatfade /chatbg /clearchat	Arahan sembang: /chatscale /pagesize /fontsize /chatwidth /chatfade /chatbg /clearchat
+Name color	Warna nama
+Shows on your name tag, chat, kill feed and radar icon.	Dipaparkan pada tag nama, sembang, suapan bunuh dan ikon radar anda.
+Custom color (R / G / B)	Warna tersuai (R / G / B)
+Automatic (server color)	Automatik (warna pelayan)
+Avatar skin (how others see you as CJ)	Kulit avatar (bagaimana orang lain melihat anda sebagai CJ)
+Big Smoke	Asap Besar
+Sweet	Manis
+Triads 1	Triad 1
+Triads 2	Triad 2
+Triad boss	Ketua Triad
+Country cop	Polis negara
+Biker cop	Polis penunggang motosikal
+Army	Tentera Darat
+Show my real model (skin mods, story characters, CJ's clothes)	Tunjukkan model sebenar saya (mod kulit, watak cerita, pakaian CJ)
+Others see you as: %s	Orang lain melihat anda sebagai: %s
+Others see you as: ped model %d	Orang lain melihat anda sebagai: model ped %d
+Teleport to Grove Street	Teleport ke Grove Street
+100% progress on the default server	100% pkemajuan pada pelayan lalai
+All missions done while you play on the default server. Leaving it loads your own latest save again (your saves are backed up and put back). Custom servers always use your own progress.	Semua misi selesai semasa anda bermain di pelayan lalai. Membiarkannya akan memuatkan semula simpanan terkini anda sendiri (simpanan anda disandarkan dan disimpan semula). Pelayan tersuai sentiasa menggunakan kemajuan anda sendiri.
+Connection	Sambungan
+Servers	Pelayan
+Display	Paparan
+Sound	Bunyi
+Voice	Suara
+Cheats	Penipuan
+User	Pengguna
+Password	Kata Laluan
+Age	Umur
+Male	Lelaki
+Female	Perempuan
+Other	Lain-lain
+# the game logs you in by itself. Delete it (or log out) to use another account.\nuser=%s\n	# permainan akan melog masuk anda dengan sendirinya. Padamkannya (atau log keluar) untuk menggunakan akaun lain.\nuser=%s\n
+# the game logs you in by itself. Delete it (or log out) to use another account.	# permainan akan melog masuk anda dengan sendirinya. Padamkannya (atau log keluar) untuk menggunakan akaun lain.
+user=%s	pengguna=%s
+Your account was created successfully. Welcome, %s.	Akaun anda telah berjaya dicipta. Selamat datang, %s.
+Logged in as %s.	Log masuk sebagai %s.
+user=	pengguna=
+discord=	perselisihan =
+tap to type	ketik untuk menaip
+your account	akaun anda
+Logging in as %s	Melog masuk sebagai %s
+Connecting to the login server	Menyambung ke pelayan log masuk
+Code authentication	Pengesahan kod
+Welcome	Selamat datang
+Login	Log masuk
+MEGA VIL FUTURISTIC  |  	MEGA VIL FUTURISTIC |  
+MODERN WARFARE 3  |  	PEPERANGAN MODEN 3 |  
+BRIEF CASE WAR  |  	PERANG KES RINGKAS |  
+MP  |  	Ahli Parlimen |  
+Logging in	Log masuk
+This server uses accounts. Verify with Discord first:	Pelayan ini menggunakan akaun. Sahkan dengan Discord terlebih dahulu:
+1.  Join the Discord server:	1. Sertai pelayan Discord:
+2.  In the #verification channel type:	2. Dalam saluran #pengesahan, taip:
+Waiting for /gen...  (code works %d:%02d more)	Menunggu /gen... (kod berfungsi %d:%02d lagi)
+Open Discord	Buka Discord
+New code	Kod baharu
+I have an account: Login	Saya mempunyai akaun: Log masuk
+Leave server	Tinggalkan pelayan
+Discord verified: %s	Discord disahkan: %s
+Gender	Jantina
+User 3-20 letters / numbers / _   Password 6-32   Age 10-24	Pengguna 3-20 huruf / nombor / _ Kata Laluan 6-32 Umur 10-24
+Create	Cipta
+Age must be 10-24.	Umur mestilah 10-24 tahun.
+Welcome back. Log in to play.	Selamat kembali. Log masuk untuk bermain.
+New account (Discord code)	Akaun baharu (kod Discord)
+Your account was created successfully	Akaun anda telah berjaya dicipta
+Welcome, %s	Selamat datang, %s
+Login failed.	Log masuk gagal.
+Try again	Cuba lagi
+Log in first.	Log masuk dahulu.
+No account here: this server has no login system (the default server and Brief Case War have it).	Tiada akaun di sini: pelayan ini tiada sistem log masuk (pelayan lalai dan Brief Case War memilikinya).
+My account  (only you see this)	Akaun saya (hanya anda yang melihat ini)
+Loading...	Memuatkan...
+Could not load your account.	Tidak dapat memuatkan akaun anda.
+Discord	Percanggahan
+Created	Dicipta
+Logins	Log masuk
+Last login	Log masuk terakhir
+Score here	Skor di sini
+Server	Pelayan
+Close	Tutup
+ [Leader]	 [Pemimpin]
+%s STOLE THE %s BRIEFCASE	%s MENCURI BEKAS BEG %s
+%s stole the %s briefcase!	%s mencuri beg bimbit %s!
+THE %s BRIEFCASE WAS DROPPED	BEG KERJA %s TELAH DIJATUHKAN
+The %s briefcase was dropped%s%s.	Beg bimbit %s itu telah terjatuh%s%s.
+ by 	 oleh 
+%s PICKED UP THE %s BRIEFCASE	%s MENGAMBIL BEKAS BEG %s
+%s picked up the %s briefcase.	%s mengambil beg bimbit %s itu.
+THE %s BRIEFCASE IS BACK HOME	BEKAS BEG %s DAH PULANG KE RUMAH
+The %s briefcase is back in its base%s%s.	Beg bimbit %s itu kembali ke tempatnya%s%s.
+ - returned by 	 - dikembalikan oleh 
+%s VICTORY	%s KEMENANGAN
+GUSTAV TEAM	PASUKAN GUSTAV
+SCHELAPZ TEAM	PASUKAN SCHELAPZ
+%s wins the Brief Case War!%s	%s memenangi Perang Kes Ringkas!%s
+ (Victory)	 (Kemenangan)
+ (Defeat)	 (Kekalahan)
+WAR! STEAL THE ENEMY BRIEFCASE	PERANG! CURI BEKAS BEG DIRI MUSUH
+Brief Case War started on %s. Steal the enemy briefcase and bring it to your base.	Perang Kes Ringkas bermula pada %s. Curi beg bimbit musuh dan bawa ke pangkalan anda.
+NEXT MAP: %s	PETA SETERUSNYA: %s
+Next map: %s. Pick your team.	Peta seterusnya: %s. Pilih pasukan anda.
+Put war_ambient.mp3 in files/MP to hear the war music.	Letakkan war_ambient.mp3 dalam files/MP untuk mendengar muzik perang.
+You are in %s. Steal the %s briefcase!	Anda berada di %s. Curi beg bimbit %s itu!
+Wait %d s for the next vehicle.	Tunggu %d s untuk kenderaan seterusnya.
+/%s is not available in Brief Case War.	/%s tidak tersedia dalam Brief Case War.
+%s BASE	%s ASAS
+%s BRIEFCASE  %ds	%s BEG KERJA %d
+STEALING THE %s BRIEFCASE  %d%%	MENCURI BEKAS BEG DIRI %s %d%%
+YOUR BRIEFCASE IS BEING STOLEN!	BEG DARI ANDA SEDANG DICURI!
+YOU HAVE THE BRIEFCASE - BRING IT TO YOUR BASE!	ANDA ADA BEG DARI BEG ITU - BAWA KE PANGKAL ANDA!
+YOUR BRIEFCASE IS STOLEN TOO - KILL THEIR CARRIER FIRST!	BEG DARI ANDA JUGA DICURI - BUNUH PEMBAWA MEREKA DAHULU!
+WORLD BARRIER	PENGHALANG DUNIA
+BRIEF CASE WAR	PERANG KES RINGKAS
+YOU DIED	ANDA MATI
+%s - you will spawn in your safe zone	%s - anda akan bertelur di zon selamat anda
+Respawn in %d.%02d	Bertelur semula dalam %d.%02d
+WAITING FOR PLAYERS  %d/%d	MENUNGGU PEMAIN %d/%d
+PICK YOUR TEAM  -  %d/%d IN THE QUEUE	PILIH PASUKAN ANDA - %d/%d DALAM GARIS BERBARI
+You are in %s - the war starts at %d/%d players	Anda berada di %s - perang bermula pada %d/%d pemain
+A WAR IS RUNNING - JOIN A TEAM WITH A FREE SLOT	PERANG SEDANG BERLAKU - SERTAI PASUKAN DENGAN SLOT PERCUMA
+Gustav Team  %d/%d	Pasukan Gustav %d/%d
+Schelapz Team  %d/%d	Pasukan Schelapz %d/%d
+PICKING TEAM LEADERS	MEMILIH KETUA PASUKAN
+GUSTAV TEAM LEADER	KETUA PASUKAN GUSTAV
+SCHELAPZ TEAM LEADER	KETUA PASUKAN SCHELAPZ
+LEADER!	PEMIMPIN!
+GUSTAV TEAM VICTORY	KEMENANGAN PASUKAN GUSTAV
+SCHELAPZ TEAM VICTORY	KEMENANGAN PASUKAN SCHELAPZ
+Cooldown - resetting the war zone  %d.%02d	Tempoh Penyejukan - menetapkan semula zon perang %d.%02d
+briefcases, objects and war vehicles cleared  -  scoreboard and map vote next	beg bimbit, objek dan kenderaan perang dibersihkan - papan skor dan undian peta seterusnya
+BRIEF CASE WAR  -  %s	PERANG KES RINGKAS - %s
+%d kills  -  %d score	%d membunuh - %d skor
+Gustav Team [%s]	Pasukan Gustav [%s]
+Victory	Kemenangan
+Defeat	Kekalahan
+Schelapz Team [%s]	Pasukan Schelapz [%s]
+Steal	Mencuri
+Cap	Topi
+Ret	Bersara
+Score	Skor
+map vote in %d s	undian peta dalam %d saat
+VOTE THE NEXT WAR MAP  -  %d s	UNDI PETA PERANG SETERUSNYA - %d s
+VOTE THE NEXT WAR MAP  -  opens in %d s	UNDI PETA PERANG SETERUSNYA - dibuka dalam %d saat
+%d vote%s	%d undi%s
+last map	peta terakhir
+Barracks	Berek
+Rhino (tank)	Badak sumbu (kereta kebal)
+Hunter (fighter helicopter)	Hunter (helikopter pejuang)
+Vehicle	Kenderaan
+Left Brief Case War.	Perang Kes Ringkas Kiri.
+teleport, e.g. /tp :grove_street	teleport, contohnya /tp :grove_street
+name tags through walls, any distance (on foot + in a car)	tanda nama menembusi dinding, sebarang jarak (berjalan kaki + di dalam kereta)
+no fall damage, soft landings (on foot + in a car)	tiada kerosakan akibat jatuh, pendaratan lembut (berjalan kaki + menaiki kereta)
+no damage at all (on foot + in a car)	tiada kerosakan langsung (berjalan kaki + menaiki kereta)
+freeze in place (on foot)	beku di tempat (dengan berjalan kaki)
+nobody sees you (on foot)	tiada siapa yang melihat anda (berjalan kaki)
+fly where the camera looks, joystick = move (on foot + in a car)	terbang ke tempat kamera memandang, kayu bedik = bergerak (berjalan kaki + menaiki kereta)
+run super fast (on foot)	berlari dengan sangat pantas (berjalan kaki)
+[id|stop]	[id|hentian]
+go behind the nearest player / player id after 3 2 1 (30 s cooldown)	ketinggalan pemain/id pemain terdekat selepas 3 2 1 (tempoh cooldown 30 saat)
+gravity, 1 = normal (on foot + in a car)	graviti, 1 = normal (berjalan kaki + di dalam kereta)
+chat lines shown (0 = only while typing)	Baris sembang ditunjukkan (0 = hanya semasa menaip)
+chat text size in %	saiz teks sembang dalam %
+scale the whole chat (lines + chat box) in %	skalakan keseluruhan sembang (baris + kotak sembang) dalam %
+seconds before chat lines fade (0 = never)	beberapa saat sebelum talian sembang pudar (0 = tidak pernah)
+chat background on / off	latar belakang sembang hidup/mati
+clear your chat	padamkan sembang anda
+your account (user, Discord, gender, age, logins)	akaun anda (pengguna, Discord, jantina, umur, log masuk)
+same as /stats	sama seperti /stats
+list the commands	senaraikan arahan-arahan tersebut
+player left	pemain kiri
+no position from them yet	tiada pendirian daripada mereka lagi
+they are paused	mereka dijeda
+they are on a mission / in a cutscene	mereka sedang menjalankan misi / dalam babak cutscene
+their position is too old	kedudukan mereka terlalu lama
+they are in another interior	mereka berada di kawasan pedalaman yang lain
+Go behind cancelled%s%s.	Tertinggal dibatalkan%s%s.
+tapped again	diketuk lagi
+Go behind again in %d s.	Ke belakang lagi dalam %d saat.
+Can't go behind %s: %s.	Tidak boleh pergi ke belakang %s: %s.
+Can't go behind as a passenger.	Tidak boleh pergi ke belakang sebagai penumpang.
+Going behind %s in 3... (tap Cancel to stop)	Melangkah ke belakang %s dalam 3... (ketik Batal untuk berhenti)
+Behind %s.	Di belakang %s.
+you died	awak mati
+Going behind %s	Berjalan di belakang %s
+No player to go behind%s.	Tiada pemain yang perlu ketinggalan%s.
+ (wrong id)	 (id salah)
+Usage: /tp :place  -  %s	Penggunaan: /tp :place - %s
+Teleported to %s.	Diteleportasikan ke %s.
+No player with id %d.	Tiada pemain dengan id %d.
+Unknown place \"%s\". Type /tp to list them.	Tempat tidak diketahui \"%s\". Taip /tp untuk menyenaraikannya.
+Gravity: %.2f%s	Graviti: %.2f%s
+ (normal)	 (biasa)
+Unknown command /%s. Type /help.	Arahan tidak diketahui /%s. Taip /help.
+Mission sync request	Permintaan penyegerakan misi
+wants to Mission sync with you: you see each other on missions and share the mission.	mahu Misi disegerakkan dengan anda: anda bertemu antara satu sama lain dalam misi dan berkongsi misi.
+Closes in %d s	Tutup dalam %d saat
+Accept	Terima
+*** Mission sync with %s...	*** Penyegerakan misi dengan %s...
+Decline	Tolak
+*** You declined Mission sync with %s.	*** Anda menolak penyegerakan Misi dengan %s.
+Unsync mission	Misi nyahsegerak
+Accept Mission sync	Terima penyegerakan Misi
+Group full (16)	Kumpulan penuh (16)
+Asked... (waiting)	Ditanya... (menunggu)
+Mission sync	Penyegerakan misi
+*** Asked %s for Mission sync. Waiting for them to accept...	*** Meminta %s untuk penyegerakan Misi. Menunggu mereka menerima...
+*** %s is no longer in your Mission sync.	*** %s tiada lagi dalam penyegerakan Misi anda.
+Player list	Senarai pemain
+Not connected	Tidak bersambung
+Players: %d	Pemain: %d
+Not connected. Server > Connect, or join a custom server.	Tidak bersambung. Pelayan > Sambung atau sertai pelayan tersuai.
+%s: on mission %s	%s: dalam misi %s
+%s: in a cutscene	%s: dalam babak potongan
+%s  |  HP %d  |  armour %d	%s | HP %d | perisai %d
+Mission sync is off on this server	Penyegerakan misi dimatikan pada pelayan ini
+Go behind (%d s)	Pergi ke belakang (%d s)
+Go behind (3 2 1)	Pergi ke belakang (3 2 1)
+      Unmute voice	      Nyahbisukan suara
+      Mute voice	      Suara bisu
+Mission sync (%d/%d): you, %s	Penyegerakan misi (%d/%d): anda, %s
+Leave Mission sync	Tinggalkan penyegerakan Misi
+*** You left Mission sync.	*** Anda telah meninggalkan penyegerakan Misi.
+Tap a player, then Mission sync (up to 16 together). They get Accept / Decline.	Ketik pemain, kemudian Penyegerakan misi (sehingga 16 pemain bersama-sama). Mereka mendapat Terima / Tolak.
+Settings	Tetapan
+Help	Bantuan
+MP 2.37 - multiplayer for GTA SA	MP 2.37 - berbilang pemain untuk GTA SA
+Top bar: the dots open Help, Server and Player list. Chat opens the chat box (type / for the commands). Drag the bar to move it.	Bar atas: titik-titik tersebut membuka senarai Bantuan, Pelayan dan Pemain. Sembang membuka kotak sembang (taip / untuk arahan). Seret bar untuk menggerakkannya.
+Server: connect to the default server, join or add custom servers (with an optional password, max 16 characters), host your own.	Pelayan: sambung ke pelayan lalai, sertai atau tambah pelayan tersuai (dengan kata laluan pilihan, maksimum 16 aksara), hoskan pelayan anda sendiri.
+Player list: tap a player, then Mission sync. They get a popup with Accept / Decline. Synced players see each other on every mission (also in mission scenes) and share markers.	Senarai pemain: ketik pemain, kemudian Penyegerakan misi. Mereka akan mendapat tetingkap timbul dengan Terima / Tolak. Pemain yang disegerakkan akan bertemu antara satu sama lain pada setiap misi (juga dalam babak misi) dan berkongsi penanda.
+Chat commands	Arahan sembang
+Games (2.21)	Permainan (2.21)
+/spawn [id|name] (or /v) any vehicle 400-611, /w [id|name|all] weapons, /fix, /flip, /heal, /armour	/spawn [id|nama] (atau /v) sebarang kenderaan 400-611, /w [id|nama|semua] senjata, /fix, /flip, /heal, /armour
+/race 1-8 races with checkpoints and times, /job trucking|quarry|pizza|burger|cluckin|taxi|medic|firetruck, /dm war|grove|airport|minigun|sniper, /leave, /scores	/race 1-8 perlumbaan dengan pusat pemeriksaan dan masa, /job trak|kuari|piza|burger|kluckin|teksi|medik|trak bomba, /dm perang|grove|lapangan terbang|minigun|penembak tepat, /leave, /scores
+Teleports everybody sees: /ls /sf /lv /chiliad /lsairport /sfairport /lvairport /desert /beach /strip /dam /area51 /pizza /burger /cluckin /barber /tattoo /gym /gymsf /gymlv /clothes /prolaps /victim /ammu /spray /transfender /locolow /waa /school /flightschool /boatschool /truck /quarry /emmet /home /gf /casino	Teleportasi yang dilihat oleh semua orang: /ls /sf /lv /chiliad /lsairport /sfairport /lvairport /desert /beach /strip /dam /area51 /pizza /burger /cluckin /barber /tattoo /gym /gymsf /gymlv /clothes /prolaps /victim /ammu /spray /transfender /locolow /waa /school /flightschool /boatschool /truck /quarry /emmet /home /gf /casino
+Open world: /unlock (all cities, shops, food, gyms, barbers, tattoo, clothes, Ammu-Nation, Pay 'n' Spray, mod garages, schools, safe houses), /girlfriends	Dunia terbuka: /unlock (semua bandar, kedai, makanan, gim, tukang gunting rambut, tatu, pakaian, Ammu-Nation, Pay 'n' Spray, garaj mod, sekolah, rumah selamat), /girlfriends
+Places for /tp :place	Tempat untuk /tp :place
+Say	Katakan
+Tap to chat  -  type / for commands	Ketik untuk bersembang - taip / untuk arahan
+Chat button to type  -  / for commands	Butang sembang untuk menaip - / untuk arahan
+Spawn	Bertelur
+You are back (not AFK any more).	Anda telah kembali (bukan AFK lagi).
+You are AFK (3 minutes without moving). Move to come back.	Anda AFK (3 minit tanpa bergerak). Bergerak untuk kembali.
+AFK: you leave the server in 1 minute if you don't move.	AFK: anda akan meninggalkan pelayan dalam 1 minit jika anda tidak bergerak.
+AFK for 20 minutes: you left the server so somebody else can play.	AFK selama 20 minit: anda meninggalkan pelayan supaya orang lain boleh bermain.
+right arm	lengan kanan
+left arm	lengan kiri
+right torso	badan kanan
+left torso	badan kiri
+right leg	kaki kanan
+left leg	kaki kiri
+%s hit the %s	%s memukul %s
+Buffalo	Kerbau
+Linerunner	Pelari Barisan
+Perennial	Saka
+Dumper	Pembuang sampah
+Firetruck	Trak bomba
+Trashmaster	Tukang Sampah
+Stretch	Regangan
+Pony	Kuda poni
+Mule	Baghal
+Ambulance	Ambulans
+Leviathan	Leviatan
+Moonbeam	Sinar Bulan
+Taxi	Teksi
+Bobcat	Kucing Bobcat
+Mr Whoopee	Encik Whoopee
+BF Injection	Suntikan BF
+Hunter	Pemburu
+Premier	Perdana
+Enforcer	Penguatkuasa
+Predator	Pemangsa
+Bus	Bas
+Rhino	Badak sumbu
+Hotknife	Pisau Panas
+Trailer 1	Treler 1
+Previon	Sebelumnya
+Coach	Jurulatih
+Cabbie	Pemandu teksi
+Stallion	Kuda jantan
+RC Bandit	Penyamun RC
+Packer	Pembungkus
+Admiral	Laksamana
+Seasparrow	Burung pipit laut
+Tram	Trem
+Trailer 2	Treler 2
+Turismo	Pelancongan
+Speeder	Pemecut laju
+Reefer	Penyejuk udara
+Tropic	Tropika
+Flatbed	Katil rata
+Berkley RC Van	Van RC Berkley
+Skimmer	Skimer
+Freeway	Lebuhraya
+RC Baron	Baron RC
+Oceanic	Lautan
+Sparrow	Burung pipit
+Quad	Kuad
+Coastguard	Pengawal Pantai
+Dinghy	Perahu kecil
+Sabre	Pedang
+Comet	Komet
+Camper	Perkhemahan
+Baggage	Bagasi
+News Chopper	Pemotong Berita
+Rancher	Peternak
+FBI Rancher	Peternak FBI
+Police Maverick	Polis Maverick
+RC Goblin	Goblin RC
+Hotring Racer A	Pelumba Hotring A
+Hotring Racer B	Pelumba Hotring B
+Bloodring Banger	Banger Gemuruh Darah
+Rancher Lure	Umpan Rancher
+Elegant	Elegan
+Journey	Perjalanan
+Bike	Basikal
+Mountain Bike	Basikal Gunung
+Cropduster	Mesin Penghabuk Tanaman
+Stunt	Aksi Lagak Ngeri
+Tanker	Kapal tangki
+Roadtrain	Kereta api jalan raya
+Majestic	Megah
+Buccaneer	Pembajak
+Hydra	Hidra
+Cement Truck	Trak Simen
+Tow Truck	Trak Tunda
+Fortune	Nasib
+FBI Truck	Trak FBI
+Tractor	Traktor
+Combine	Gabungkan
+Blade	Bilah
+Freight	Pengangkutan
+Streak	Jalur
+Vortex	Pusaran
+Bullet	Peluru
+Clover	Semanggi
+Firetruck LA	Trak Bomba LA
+Intruder	Penceroboh
+Sunrise	Matahari terbit
+Utility	Utiliti
+Monster A	Raksasa A
+Monster B	Raksasa B
+Elegy	Elegi
+Raindance	Tarian Hujan
+RC Tiger	Harimau RC
+Flash	Kilat
+Savanna	Savana
+Freight Flat	Flat Pengangkutan
+Streak Carriage	Kereta Bergaris
+Mower	Mesin pemotong rumput
+Sweeper	Penyapu
+Tornado	Puting beliung
+Newsvan	Van Berita
+Tug	Tunda
+Trailer 3	Treler 3
+Emperor	Maharaja
+Wayfarer	Pengembara
+Euros	Euro
+Club	Kelab
+Freight Box	Kotak Barang
+Article Trailer 3	Treler Artikel 3
+RC Cam	Kamera RC
+Launch	Pelancaran
+Police LSPD	LSPD Polis
+Police SFPD	SFPD Polis
+Police LVPD	Polis LVPD
+Police Ranger	Renjer Polis
+Alpha	Alfa
+Baggage Trailer A	Treler Bagasi A
+Baggage Trailer B	Treler Bagasi B
+Tug Stairs	Tangga Tunda
+Farm Trailer	Treler Ladang
+Utility Trailer	Treler Utiliti
+Could not spawn that vehicle here.	Tidak dapat menghasilkan kenderaan itu di sini.
+Spawned %s (%d).	Melahirkan %s (%d).
+/spawn [id or name]  e.g. /spawn 411  or  /spawn infernus  (400 - 611)	/spawn [id atau nama] cth. /spawn 411 atau /spawn infernus (400 - 611)
+No vehicle \"%s\". Use an id 400 - 611 or a name (/spawn infernus).	Tiada kenderaan \"%s\". Gunakan id 400 - 611 atau nama (/spawn infernus).
+%s (%d) can't be spawned (rail / camera vehicle or trailer).	%s (%d) tidak boleh dihasilkan (keretapi/kenderaan kamera atau treler).
+/w [id or name]  or  /w all  (pack: deagle, m4, spas, sniper, grenades)	/w [id atau nama] atau /w semua (pek: deagle, m4, spa, penembak tepat, bom tangan)
+Weapon pack given.	Pek senjata diberikan.
+No weapon \"%s\". Type /w for the list.	Tiada senjata \"%s\". Taip /w untuk senarai.
+Weapon: %s (%d).	Senjata: %s (%d).
+Mount Chiliad	Gunung Chiliad
+Los Santos Airport	Lapangan Terbang Los Santos
+Easter Bay Airport	Lapangan Terbang Easter Bay
+Las Venturas Airport	Lapangan Terbang Las Venturas
+Verdant Meadows Airstrip	Landasan Udara Verdant Meadows
+Santa Maria Beach	Pantai Santa Maria
+The Strip	Jalur itu
+Sherman Dam	Empangan Sherman
+Area 69 gate	Pintu pagar Kawasan 69
+Well Stacked Pizza Co.	Syarikat Pizza Bersusun Baik
+Cluckin' Bell	Loceng Berkokok
+Reece's Barber Shop	Kedai Gunting Rambut Reece
+Idlewood Tattoo	Tatu Idlewood
+Ganton Gym	Gimnasium Ganton
+Cobra Martial Arts	Seni Mempertahankan Diri Cobra
+Below the Belt Gym	Gimnasium Di Bawah Belt
+Pro-Laps	Larian Profesional
+Victim	Mangsa
+Pay 'n' Spray	Bayar dan Sembur
+Loco Low Co.	Syarikat Loco Low.
+Wheel Arch Angels	Malaikat Gerbang Roda
+Driving School	Sekolah Memandu
+Flight School	Sekolah Penerbangan
+RS Haul (trucking)	RS Haul (trak)
+Hunter Quarry	Kuari Hunter
+CJ's safe house	Rumah selamat CJ
+Denise's house	Rumah Denise
+Caligula's Casino	Kasino Caligula
+Leave the race / job / DM first (/leave).	Tinggalkan perlumbaan / pekerjaan / DM dahulu (/leave).
+(/%s) %s teleported to %s!	(/%s) %s telah diteleportasikan ke %s!
+Trucking: RS Haul -> Las Venturas	Pengangkutan Trak: RS Haul -> Las Venturas
+Quarry: haul the rocks	Kuari: angkut batu-batu
+Pizza Delivery: Idlewood	Penghantaran Pizza: Idlewood
+Burger Shot Delivery	Penghantaran Burger Shot
+Cluckin' Bell Delivery	Penghantaran Loceng Berkokok
+Taxi: downtown fares	Teksi: tambang pusat bandar
+Paramedic: hospital run	Paramedik: dikendalikan oleh hospital
+Firefighter: Ganton call	Ahli bomba: Panggilan Ganton
+War Zone DM	DM Zon Perang
+Grove Street DM	Jalan Grove DM
+LV Airport DM	Lapangan Terbang LV DM
+Minigun Madness	Kegilaan Minigun
+Chiliad Sniper DM	Penembak tepat Chiliad DM
+Blood Bowl Derby	Derbi Mangkuk Darah
+Monster Truck Derby	Derbi Trak Raksasa
+Ocean Docks Derby	Derby Docks Lautan
+Verdant Meadows Derby	Derby Padang Rumput Verdant
+Chiliad Sumo	Sumo Chiliad
+[Job] %s started %s (/job %s)	[Kerja] %s bermula %s (/job %s)
+Connect to a server first.	Sambung ke pelayan terlebih dahulu.
+This server can't run races yet: it needs the 3.01 server (HiveMQ console option 7, or mp-server update).	Pelayan ini belum boleh menjalankan perlumbaan: ia memerlukan pelayan 3.01 (pilihan konsol HiveMQ 7 atau kemas kini mp-server).
+Finish (or /leave) your race / derby / job / DM first.	Selesaikan (atau /leave) perlumbaan / derby / tugas / DM anda terlebih dahulu.
+You are in the race queue: %d/%d players. The race starts at %d. /leave to leave.	Anda berada dalam barisan perlumbaan: %d/%d pemain. Perlumbaan bermula pada %d. /leave untuk bertolak.
+[Race] %s is waiting for a race - type /race to join (starts with %d players, or %d s after 2 players join).	[Perlumbaan] %s sedang menunggu perlumbaan - taip /race untuk menyertai (bermula dengan %d pemain, atau %d selepas 2 pemain menyertai).
+You left the race queue.	Awak dah keluar dari barisan perlumbaan.
+Could not spawn the race vehicle.	Tidak dapat menghasilkan kenderaan perlumbaan.
+~y~%s~n~~w~%d racers	~y~%s~n~~w~%d pelumba
+[Race] %s (%s, %s, %d checkpoints) - grid place %d of %d. /leave to quit.	[Perlumbaan] %s (%s, %s, %d pusat pemeriksaan) - tempat grid %d daripada %d. /leave untuk berhenti.
+RACE: %s finished %s in %d%s place! (%s%s)	PERLUMBAAN: %s menamatkan perlumbaan %s di tempat %d%s! (%s%s)
+ - best	 - terbaik
+~y~%d%s place!~n~~w~%s  ~g~+$%d	~y~%d%s tempat!~n~~w~%s ~g~+$%d
+JOB: %s completed %s! (+$%d, %s)	KERJA: %s selesai %s! (+$%d, %s)
+~g~Job complete!~n~~w~+$%d	~g~Kerja selesai!~n~~w~+$%d
+(/dm %s) %s teleported to %s!	(/dm %s) %s telah diteleportasikan ke %s!
+[Derby] %s joined %s (/derby %s)	[Derby] %s menyertai %s (/derby %s)
+DERBY: %s %s in %s! (%d left)	DERBY: %s %s dalam %s! (%d kiri)
+DERBY: %s survived %s!	DERBY: %s terselamat daripada %s!
+DERBY: %s won %s! (last car standing of %d)	DERBY: %s menang %s! (kedudukan kereta terakhir %d)
+~y~Survived!~n~~g~+$%d	~y~Terselamat!~n~~g~+$%d
+~y~Winner!~n~~g~+$%d	~y~Pemenang!~n~~g~+$%d
+Job	Ayub
+Pay	Bayar
+Best	Terbaik
+Start	Mula
+%s is inside the stadium (interior %d): the race takes you there.	%s berada di dalam stadium (bahagian dalam %d): perlumbaan membawa anda ke sana.
+%s start is marked on your radar for 90 seconds.	Permulaan %s ditanda pada radar anda selama 90 saat.
+Race	Perlumbaan
+Where	Di mana
+{FFE14D}GTA SA races - /race to queue (%d players)	{FFE14D}Perlumbaan GTA SA - /race ke barisan (%d pemain)
+Zone	Zon
+Weapons	Senjata
+Go	Pergi
+Prize	Hadiah
+ in)	 dalam)
+{FF8C1E}Derbies - last car standing	{FF8C1E}Derbi - kedudukan kereta terakhir
+  best %s	  terbaik %s
+/job %s  -  %s  (%s, $%d)%s	/job %s - %s (%s, $%d)%s
+/spawn [id|name] vehicle  /v = same  /w [id|name|all] weapons  /fix  /flip  /heal  /armour	/spawn [id|nama] kenderaan /v = sama /w [id|nama|semua] senjata /fix /flip /heal /armour
+/race (queue: %d players start a GTA SA race)  /races (the 27 tracks)	/race (barisan: %d pemain memulakan perlumbaan GTA SA) /races (27 trek)
+/derby [bloodbowl|monster|docks|desert|sumo]  /job [trucking|quarry|pizza|burger|cluckin|taxi|medic|firetruck]  /dm [war|grove|airport|minigun|sniper]  /leave	/derby [bloodbowl|raksasa|dok|padang pasir|sumo] /job [trak|kuari|piza|burger|cluckin|teksi|medik|trak bomba] /dm [war|grove|lapangan terbang|minigun|penembak tepat] /leave
+/class (gang / police / civilian)  /turf (gang zones)  /teams  /bubbles  /labels  /icons  /actors  /zones	/class (geng / polis / orang awam) /turf (zon geng) /teams /bubbles /labels /icons /actors /zones
+Teleports:	Teleportasi:
+/scores  /unlock (open world on/off)  /girlfriends  /tips	/scores /unlock (dunia terbuka hidup/mati) /girlfriends /tips
+Get in a car first.	Masuk kereta dulu.
+No repairs in a derby.	Tiada pembaikan dalam perlawanan derbi.
+Vehicle repaired.	Kenderaan dibaiki.
+No job %s. Type /job.	Tiada kerja %s. Taip /job.
+No derby %s. Type /derby.	Tiada perlawanan derbi %s. Taip /derby.
+No DM %s. Type /dm.	Tiada DM %s. Taip /dm.
+You are not in a race / derby / job / DM.	Anda tidak berada dalam perlumbaan / derby / pekerjaan / DM.
+DEATHMATCH: %s left %s.	DEATHMATCH: %s tinggal %s.
+Left the event.	Meninggalkan acara itu.
+[id|name]  -  spawn a vehicle (/spawn 411, /spawn nrg)	[id|nama] - melahirkan kenderaan (/spawn 411, /spawn nrg)
+[id|name|all]  -  weapons	[id|nama|semua] - senjata
+queue for a GTA SA race (14 players)	barisan untuk perlumbaan GTA SA (14 pemain)
+the 27 race tracks (mark on radar)	27 trek perlumbaan (tanda pada radar)
+[arena]  -  last car standing wins	[arena] - kedudukan kereta terakhir menang
+[name]  -  trucking, quarry, pizza, taxi...	[nama] - trak, kuari, piza, teksi...
+[zone]  -  deathmatch zones	[zon] - zon perlawanan maut
+leave the race / derby / job / DM	tinggalkan perlumbaan / derby / kerja / DM
+teleports everybody sees	teleport yang semua orang lihat
+pick a gang, police or civilian (SA-MP class selection)	pilih geng, polis atau orang awam (pilihan kelas SA-MP)
+gang zones + who owns them	zon geng + siapa yang memilikinya
+turf count per gang	kiraan rumput setiap geng
+repair your vehicle	baiki kenderaan anda
+flip your vehicle	terbalikkan kenderaan anda
+your DM / race / job score	DM / bangsa / skor pekerjaan anda
+chat bubbles on / off (off by default)	gelembung sembang hidup/mati (mati secara lalai)
+3D text labels on / off	Label teks 3D hidup/mati
+map icons on / off	ikon peta hidup/mati
+actors at the job starts on / off	pelakon di tempat kerja bermula hidup/mati
+gang zones on the radar on / off	zon geng pada radar hidup/mati
+open world on / off	dunia terbuka hidup/mati
+girlfriend houses on / off	rumah teman wanita hidup/mati
+teleport: 	teleportasi: 
+DEATHMATCH: %s has %d kills in a row in %s!	DEATHMATCH: %s mempunyai %d pembunuhan berturut-turut dalam %s!
+[Race] Type /race to queue for a GTA SA race. It waits for players: it starts with 14 players, or 45 s after the 2nd player is in (15 s more for every new player). Never alone.	[Perlumbaan] Taip /race untuk beratur bagi perlumbaan GTA SA. Ia menunggu pemain: ia bermula dengan 14 pemain, atau 45 saat selepas pemain ke-2 masuk (15 saat lagi untuk setiap pemain baharu). Tidak pernah bersendirian.
+[Derby] Type /derby for Blood Bowl, Monster, Docks, Desert or Chiliad Sumo. Last car standing wins.	[Derby] Taip /derby untuk Blood Bowl, Monster, Docks, Desert atau Chiliad Sumo. Kedudukan kereta terakhir menang.
+[DM] Type /dm war for the War Zone DM. Kill streaks are announced to everyone.	[DM] Taip /dm perang untuk DM Zon Perang. Rentetan pembunuhan diumumkan kepada semua orang.
+[Job] Type /job trucking, /job quarry or /job pizza to earn money.	[Kerja] Taip /job trak, /job kuari atau /job piza untuk mendapatkan wang.
+[Turf] Type /class to join a gang, then stand in an enemy zone (/turf) for 60 s to take it.	[Turf] Taip /class untuk menyertai geng, kemudian berdiri di zon musuh (/turf) selama 60 saat untuk mengambilnya.
+[Spawn] Type /spawn infernus (or any id 400 - 611) for a vehicle, /w all for weapons.	[Spawn] Taip /spawn infernus (atau sebarang id 400 - 611) untuk kenderaan, /w semuanya untuk senjata.
+[Teleport] /ls /sf /lv /chiliad /desert /beach /pizza /gym /ammu /emmet /home ... (/t for all)	[Teleportasi] /ls /sf /lv /chiliad /desert /beach /pizza /gym /ammu /emmet /home ... (/t untuk semua)
+[World] All cities, shops, gyms, barbers, tattoo, clothes, Pay 'n' Spray and mod garages are open.	[Dunia] Semua bandar, kedai, gim, tukang gunting rambut, tatu, pakaian, Pay 'n' Spray dan garaj mod dibuka.
+~g~GO!	~g~PERGI!
+Race over: you died.	Perlumbaan tamat: awak mati.
+Get back in your vehicle within 20 seconds.	Masuk semula ke dalam kenderaan anda dalam masa 20 saat.
+Left the vehicle: race over.	Meninggalkan kenderaan: berlumba.
+Job failed: you died.	Pekerjaan gagal: awak mati.
+Left the vehicle: event over.	Meninggalkan kenderaan: acara tamat.
+was wrecked	telah musnah
+Get back in your car within %d seconds!	Masuk semula ke dalam kereta anda dalam masa %d saat!
+was out of the car	telah keluar dari kereta
+fell off	jatuh
+Back into the arena within %d seconds! (follow the red ring)	Kembali ke arena dalam masa %d saat! (ikuti gelanggang merah)
+left the arena	meninggalkan arena
+You left the DM zone: go back within 10 seconds (/leave to quit).	Anda meninggalkan zon DM: kembali dalam masa 10 saat (/leave untuk berhenti).
+Left the DM zone.	Meninggalkan zon DM.
+DM SCORE: %d	SKOR DM: %d
+RACE SCORE: %d	SKOR PERLUMBAAN: %d
+JOB SCORE: %d	SKOR PEKERJAAN: %d
+SCORE: %d	SKOR: %d
+~y~RACE QUEUE~n~~w~Waiting for players (%d/%d)  -  /leave	~y~BARIS BARISAN~n~~w~Menunggu pemain (%d/%d) - /leave
+~y~RACE QUEUE~n~~w~%d/%d players - starts soon  -  /leave	~y~BARIS PERLUMBAAN~n~~w~%d/%d pemain - bermula tidak lama lagi - /leave
+~y~%s~n~~w~GO in %d  -  %d racers	~y~%s~n~~w~MASUK dalam %d - %d pelumba
+~y~%s~n~~w~starts in %d  -  %d car%s	~y~%s~n~~w~bermula dalam %d - %d kereta%s
+POS ~y~%d~w~/%d   CP ~y~%d~w~/%d   TIME ~y~%s	POS ~y~%d~w~/%d CP ~y~%d~w~/%d MASA ~y~%s
+~b~~h~%s~w~   CP ~y~%d~w~/%d   TIME ~y~%s	~b~~h~%s~w~ CP ~y~%d~w~/%d MASA ~y~%s
+~r~~h~DERBY~w~   CARS ~y~%d~w~/%d   TIME ~y~%s	KERETA ~r~~h~DERBY~w~ ~y~%d~w~/%d MASA ~y~%s
+%s  -  kills %d  -  streak %d  -  /leave to quit	%s - membunuh %d - rentetan %d - /leave untuk berhenti
+Gate	Pintu Gerbang
+Area 69 North Gate	Pintu Utara Kawasan 69
+Area 69 East Gate	Kawasan 69 Pintu Timur
+gates.txt line:  %.2f %.2f %.2f %.0f 11 My Gate	gates.txt baris: %.2f %.2f %.2f %.0f 11 Pintu Gerbang Saya
+Stand in the middle of the gate, facing through it. Put the line in files/MP/gates.txt, then /gates reload.	Berdiri di tengah-tengah pintu pagar, menghadap melaluinya. Letakkan tali di files/MP/gates.txt, kemudian muat semula /gates.
+%d gate teleport(s):	%d teleport pintu gerbang:
+No house called \"%s\" (/houses lists them).	Tiada rumah yang dipanggil \"%s\" (/houses menyenaraikannya).
+Stand at a house (or type its name).	Berdiri di sebuah rumah (atau taip namanya).
+~r~Locked	~r~Dikunci
+%s has no interior yet (owner: /edithouseinteriors).	%s belum mempunyai bahagian dalam (pemilik: /edithouseinteriors).
+Get out of the vehicle first.	Keluar dari kenderaan dahulu.
+You need $%d (you have $%d).	Anda memerlukan $%d (anda mempunyai $%d).
+{FFFFFF}House: {00BFFF}%s {FFFFFF}[H:%u]\n	{FFFFFF}Rumah: {00BFFF}%s {FFFFFF}[H:%u]\n
+{FFFFFF}House: {00BFFF}%s {FFFFFF}[H:%u]	{FFFFFF}Rumah: {00BFFF}%s {FFFFFF}[H:%u]
+{FFFFFF}Owner: {FFFF00}%s\n	{FFFFFF}Pemilik: {FFFF00}%s\n
+{FFFFFF}Owner: {FFFF00}%s	{FFFFFF}Pemilik: {FFFF00}%s
+{FFFFFF}Slot: {33CC55}%dx%d {FFFFFF}squares   Objects: {33CC55}%u\n	{FFFFFF}Slot: {33CC55}%dx%d {FFFFFF}petak Objek: {33CC55}%u\n
+{FFFFFF}Slot: {33CC55}%dx%d {FFFFFF}squares   Objects: {33CC55}%u	{FFFFFF}Slot: {33CC55}%dx%d {FFFFFF}petak Objek: {33CC55}%u
+Nobody (the server)	Tiada sesiapa (pelayan)
+{33CC55}For sale	{33CC55}Untuk dijual
+{FFFFFF}Price: {33CC55}$	{FFFFFF}Harga: {33CC55}$
+\n{A9C4E4}Tap Buy or type /buyhouse	\n{A9C4E4}Ketik Beli atau taip /buyhouse
+{A9C4E4}Tap Buy or type /buyhouse	{A9C4E4}Ketik Beli atau taip /buyhouse
+{A9C4E4}Tap Enter to go in (/exithouse to leave)	{A9C4E4}Ketik Enter untuk masuk (/exithouse untuk keluar)
+{A9C4E4}No interior yet	{A9C4E4}Tiada bahagian dalam lagi
+{FFFFFF}House {00BFFF}[H:%u]	{FFFFFF}Rumah {00BFFF}[H:%u]
+Buy	Beli
+Enter	Masukkan
+~g~House created	~g~Rumah telah dicipta
+{00BFFF}[H:%u]\n{FFFF00}Owner: {FFFFFF}%s\n{FFFFFF}%s\n{33CC55}For sale: ${FFFFFF}%d {A9C4E4}/buyhouse	{00BFFF}[H:%u]\n{FFFF00}Pemilik: {FFFFFF}%s\n{FFFFFF}%s\n{33CC55}Untuk dijual: ${FFFFFF}%d {A9C4E4}/buyhouse
+{FFFF00}Owner: {FFFFFF}%s	{FFFF00}Pemilik: {FFFFFF}%s
+{33CC55}For sale: ${FFFFFF}%d {A9C4E4}/buyhouse	{33CC55}Untuk dijual: ${FFFFFF}%d {A9C4E4}/buyhouse
+{00BFFF}[H:%u]\n{FFFF00}Owner: {FFFFFF}%s\n{FFFFFF}%s%s	{00BFFF}[H:%u]\n{FFFF00}Pemilik: {FFFFFF}%s\n{FFFFFF}%s%s
+{FFFFFF}Exit	{FFFFFF}Keluar
+Setup %s: pick the slot size (1x1 - 16x16, each square 2x2 m). Tap a square to light it on the ground. Green = fine, red = over the limit / taken.	Persediaan %s: pilih saiz slot (1x1 - 16x16, setiap petak 2x2 m). Ketik petak untuk menyalakannya di atas tanah. Hijau = halus, merah = melebihi had / diambil.
+Red squares: make the slot 16x16 or smaller and keep it off other houses.	Petak merah: buat slot 16x16 atau lebih kecil dan jauhkannya daripada rumah lain.
+SETUP  [H:%u] %s	PERSEDIAAN [H:%u] %s
+Each square = %.0fx%.0f m. Limit %dx%d.	Setiap segi empat sama = %.0fx%.0f m. Hadkan %dx%d.
+Width	Lebar
+Height	Ketinggian
+Turn -15	Pusingan -15
+Turn +15	Pusing +15
+Move here	Bergerak ke sini
+Square %d,%d %s	Segiempat %d,%d %s
+(red: not allowed)	(merah: tidak dibenarkan)
+(green: fine)	(hijau: baik)
+Tap a square to light it up on the ground.	Ketik petak untuk meneranginya di atas tanah.
+Building: %s	Bangunan: %s
+None (build your own)	Tiada (bina sendiri)
+Red squares: 16x16 is the limit / another house is there.	Petak merah: 16x16 adalah had / ada rumah lain di sana.
+Save	Simpan
+Pick an interior first (top of the editor).	Pilih bahagian dalam dahulu (bahagian atas editor).
+Pick an interior first.	Pilih bahagian dalam dahulu.
+EDIT HOUSE	EDIT RUMAH
+Objects %d/%d (outside %d, inside %d)	Objek %d/%d (di luar %d, di dalam %d)
+Interior: %s	Bahagian Dalam: %s
+Go inside	Masuk ke dalam
+Add in front of me	Tambah di hadapan saya
+No object picked	Tiada objek yang dipilih
+Turn	Pusing
+Delete	Padam
+Door here	Pintu di sini
+Pick an interior first (/edithouseinteriors).	Pilih bahagian dalam dahulu (/edithouseinteriors).
+Furniture on its way - move it with /edithouseinteriors.	Perabot dalam perjalanan - alihkannya dengan /edithouseinteriors.
+Home Kit: /create house <name>  /setup <name>  /buyhouse  /sellhouse <price>  /cancelsale  /edithouse  /edithouseinteriors	Kit Rumah: /create rumah <nama> /setup <nama> /buyhouse /sellhouse <harga> /cancelsale /edithouse /edithouseinteriors
+/enterhouse  /exithouse  /lockhouse  /renamehouse <new>  /deletehouse  /homedelete <name>  /myhouses  /houses  /houseinfo  /hometp <name>	/enterhouse /exithouse /lockhouse /renamehouse <baru> /deletehouse /homedelete <nama> /myhouses /houses /houseinfo /hometp <nama>
+/addobject <model>  /removeobject  /objects  /clearobjects  /furnish <low|med|swank>  /prefab <model|0>  /setentrance  /givehouse <id>  /housekey <id>	/addobject <model> /removeobject /objects /clearobjects /furnish <rendah|sederhana|mewah> /prefab <model|0> /setentrance /givehouse <id> /housekey <id>
+%s is not your house.	%s bukan rumah anda.
+Use: /create house <name>  (2-23 letters, numbers, _ - .)	Kegunaan: /create rumah <nama> (2-23 huruf, nombor, _ - .)
+You need the house key.	Awak perlukan kunci rumah.
+Stand at the red marker of a house for sale.	Berdiri di penanda merah rumah untuk dijual.
+%s is not for sale.	%s tidak untuk dijual.
+Use: /sellhouse <price>  (at your house)	Gunakan: /sellhouse <harga> (di rumah anda)
+Use: /homedelete <home name>  (your houses: /myhouses)	Gunakan: /homedelete <nama rumah> (rumah anda: /myhouses)
+No house called \"%s\" (your houses: /myhouses).	Tiada rumah yang dipanggil \"%s\" (rumah anda: /myhouses).
+{FFFFFF}Delete the house {FFFF00}%s{FFFFFF} with all its buildings and furniture?\n{FF4444}This can't be undone.	{FFFFFF}Padamkan rumah {FFFF00}%s{FFFFFF} dengan semua bangunan dan perabotnya?\n{FF4444}Ini tidak boleh dibuat asal.
+{FFFFFF}Delete the house {FFFF00}%s{FFFFFF} with all its buildings and furniture?	{FFFFFF}Padamkan rumah {FFFF00}%s{FFFFFF} dengan semua bangunan dan perabotnya?
+{FF4444}This can't be undone.	{FF4444}Ini tidak boleh dibuat asal.
+{FFFFFF}Delete house	{FFFFFF}Padam rumah
+Use: /renamehouse <new name>  (at your house)	Gunakan: /renamehouse <nama baharu> (di rumah anda)
+Stand at a house door.	Berdiri di pintu rumah.
+You are not in a house.	Awak bukan berada di dalam rumah.
+[H:%u] %s  %dx%d  %u objects%s	[H:%u] %s %dx%d %u objek%s
+  (for sale)	  (untuk dijual)
+You have no house. Go to an empty field and type /create house <name>.	Anda tiada rumah. Pergi ke medan kosong dan taip /create rumah <nama>.
+ - for sale	 - untuk dijual
+%d houses on this server.	%d rumah di pelayan ini.
+Use: /hometp <home name>	Gunakan: /hometp <nama rumah>
+  (key)	  (kunci)
+You have no house yet: /create house <name>	Anda belum mempunyai rumah: /create rumah <nama>
+That house is still loading, try again.	Rumah itu masih penuh, cuba lagi.
+%s is not your house (you need to own it or have its key).	%s bukan rumah anda (anda perlu memilikinya atau mempunyai kuncinya).
+Wait %d s.	Tunggu %d saat.
+Only to your own house (or one you have a key for).	Hanya ke rumah anda sendiri (atau rumah yang anda ada kuncinya).
+Stand at your house.	Berdiri di rumah anda.
+Use: /addobject <GTA SA model id>  (or pick from the /edithouse list)	Gunakan: /addobject <id model GTA SA> (atau pilih daripada senarai /edithouse)
+Stand next to an object of your house.	Berdiri di sebelah objek rumah anda.
+No object of your house within 6 m.	Tiada objek di rumah anda dalam jarak 6 m.
+%d objects.	%d objek.
+Use it at (or in) your house: /furnish <low|med|swank>	Gunakannya di (atau di) rumah anda: /furnish <rendah|sederhana|manja>
+Buildings: %s0 = none	Bangunan: %s0 = tiada
+Use it at your house: /%s <player id>	Gunakannya di rumah anda: /%s <id pemain>
+Legendary Motorsport	Sukan Permotoran Legenda
+Pedal and Metal	Pedal dan Logam
+Cars, vans and trucks for every budget	Kereta, van dan trak untuk setiap bajet
+Sports and luxury cars	Kereta sport dan mewah
+Motorbikes, quads and bicycles	Motosikal, quad dan basikal
+Planes and helicopters	Pesawat dan helikopter
+Boats and yachts	Bot dan kapal layar
+Jefferson Motel	Motel Jefferson
+Four Dragons Casino	Kasino Empat Naga
+Caligula's Palace	Istana Caligula
+[EYEFIND] Your new %s is here.	[EYEFIND] %s baharu anda telah tiba.
+Welcome to your room. The computer is on the desk.	Selamat datang ke bilik anda. Komputer ada di atas meja.
+The hotel room did not load - try again.	Bilik hotel tidak dimuatkan - cuba lagi.
+Not enough money: the %s costs %s.	Tidak cukup wang: %s berharga %s.
+Your garage is full - sell one in the Garage app first.	Garaj anda penuh - jual satu dalam aplikasi Garaj terlebih dahulu.
+[EYEFIND] You bought a %s for %s.	[EYEFIND] Anda membeli %s dengan harga %s.
+Search vehicles (name or site)...	Cari kenderaan (nama atau tapak)...
+eyefind.info search	carian eyefind.info
+%s  -  %s  (%d vehicles)	%s - %s (%d kenderaan)
+Exclusive cars for exclusive people	Kereta eksklusif untuk orang eksklusif
+Search results	Hasil carian
+\"%s\" - tap to search again	\"%s\" - ketik untuk mencari sekali lagi
+Nothing found - try another word.	Tiada apa-apa ditemui - cuba perkataan lain.
+  -  not enough money	  - tidak cukup wang
+Hotel room	Bilik hotel
+Going to your room...	Nak pergi bilik awak...
+Leave room	Tinggalkan bilik
+Computer	Komputer
+Grove Street	Jalan Grove
+East Beach	Pantai Timur
+Pershing Square (LSPD)	Dataran Pershing (LSPD)
+Conference Center	Pusat Persidangan
+Market	Pasaran
+Downtown Los Santos	Pusat Bandar Los Santos
+Ocean Docks	Dok Lautan
+Palomino Creek	Sungai Palomino
+Fort Carson	Kubu Carson
+Downtown San Fierro	Pusat Bandar San Fierro
+Juniper Hill	Bukit Juniper
+Avispa Country Club	Kelab Desa Avispa
+The Strip (Pyramid)	Jalur (Piramid)
+Royal Casino	Kasino Diraja
+The Visage	Wajah
+Come-A-Lot	Datang-A-Lot
+Las Venturas Hospital	Hospital Las Venturas
+LV Airport	Lapangan Terbang LV
+Emerald Isle	Pulau Zamrud
+V-Rock Hotel	Hotel V-Rock
+Spawned at %s.	Dilahirkan pada %s.
+All	Semua
+briefcase war	perang beg bimbit
+modern warfare	peperangan moden
+Region: Auto (lowest ping)%s%s. All regions are listed.	Wilayah: Auto (ping terendah)%s%s. Semua wilayah disenaraikan.
+Region: %s (%d ms). The lobby moves to the %s broker; only %s servers are listed.	Wilayah: %s (%d ms). Lobi beralih ke broker %s; hanya pelayan %s disenaraikan.
+Region: %s. Only %s servers are listed.	Wilayah: %s. Hanya %s pelayan disenaraikan.
+%s  |  %d servers	%s | %d pelayan
+lowest ping  |  %d	ping terendah | %d
+%d ms  |  %d servers	%d ms | %d pelayan
+Players	Pemain
+Mode	Mod
+  (default)	  (lalai)
+  (gamemode)	  (mod permainan)
+  (Roleplay 24/7)	  (Lakonan Peranan 24/7)
+  (yours)	  (milik anda)
+Freeroam %s%s	Jelajah Bebas %s%s
+(all)	(semua)
+Brief Case War	Perang Kes Ringkas
+MW3 Team DM	Pasukan MW3 DM
+No server matches \"%s\".	Tiada pelayan yang sepadan dengan \"%s\".
+No favourite servers yet. Tap + to add one.	Tiada pelayan kegemaran lagi. Ketik + untuk menambah satu.
+  Nobody on your server yet.	  Tiada sesiapa pun di pelayan anda lagi.
+  Join to see who is playing.	  Sertai untuk melihat siapa yang bermain.
+  Select a server.	  Pilih pelayan.
+Rule	Peraturan
+Value	Nilai
+default (always on)	lalai (sentiasa aktif)
+internet lobby	lobi internet
+always active	sentiasa aktif
+server synced	pelayan disegerakkan
+24/7 featured (always on, VPS + Broker)	Disediakan 24/7 (sentiasa aktif, VPS + Broker)
+Roleplay RP (only)	RP Lakonan Peranan (sahaja)
+Mega Vil (Los Santos of the future)	Mega Vil (Los Santos masa depan)
+20 jobs, payday every 30 min	20 pekerjaan, gaji setiap 30 minit
+calls, SMS, bank, GPS, shop, games...	panggilan, SMS, bank, GPS, kedai, permainan...
+peaceful: only police / military on duty	aman: hanya polis / tentera yang bertugas
+off (MP + CLEO menu)	mati (menu MP + CLEO)
+24/7 featured (always on, VPS)	Disediakan 24/7 (sentiasa aktif, VPS)
+Call Of Duty: Modern Warfare 3	Call of Duty: Peperangan Moden 3
+Eurasia, Arabia, Soviet, USA, Australia, Brazil, Taliban, France	Eurasia, Arab Saudi, Soviet, Amerika Syarikat, Australia, Brazil, Taliban, Perancis
+34 capture zones + 8 bases	34 zon tangkapan + 8 pangkalan
+6 DM arenas, duels, events, hourly tournament	6 arena DM, duel, acara, kejohanan setiap jam
+private gamemode (always on)	mod permainan peribadi (sentiasa aktif)
+Gustav 10 vs Schelapz 10	Gustav 10 lawan Schelapz 10
+starts at	bermula pada
+20 players	20 pemain
+Bone County, San Fierro Bay	Daerah Bone, Teluk San Fierro
+not allowed	tidak dibenarkan
+This server   |   Moderator: 	Pelayan ini | Moderator: 
+Default server   |   Administrator: 	Pelayan lalai | Pentadbir: 
+  Nobody else on the default server right now.	  Tiada orang lain di pelayan lalai sekarang.
+Reason	Sebab
+Reason (kick / ban)	Sebab (tendangan / larangan)
+Cheating	Menipu
+Spamming	Spam
+Insulting	Menghina
+Griefing	Kesedihan
+Bug abuse	Penyalahgunaan pepijat
+Kick	Tendang
+Ban	Larangan
+Mute	Bisu
+Unmute	Nyahbisukan
+Tap a player, pick a reason, then Kick / Ban / Mute. The 24/7 server keeps its ban list.	Ketik pemain, pilih sebab, kemudian Tendang / Larang / Bisu. Pelayan 24/7 menyimpan senarai larangannya.
+Server settings (gamemodes / permissions / rules)	Tetapan pelayan (mod permainan / kebenaran / peraturan)
+moderator.txt has the MP moderator key, but this server didn't give you [MOD] (older MP copy). Type /modcheck, then rejoin.	moderator.txt mempunyai kunci moderator MP, tetapi pelayan ini tidak memberikan anda [MOD] (salinan MP yang lebih lama). Taip /modcheck, kemudian sertai semula.
+Player management	Pengurusan pemain
+The default server has one administrator: [ADMIN] SENJI. Joining first (or hosting it) doesn't make you the host.	Pelayan lalai mempunyai seorang pentadbir: [ADMIN] SENJI. Menyertai dahulu (atau mengehoskannya) tidak menjadikan anda hos.
+Want your own rules? Add a server with your own name (Add server -> Host this server).	Mahukan peraturan anda sendiri? Tambah pelayan dengan nama anda sendiri (Tambah pelayan -> Hoskan pelayan ini).
+Go to Add server	Pergi ke Tambah pelayan
+Only the administrator can kick and ban: the phone that hosts the server.	Hanya pentadbir sahaja yang boleh menendang dan menyekat: telefon yang mengehos pelayan.
+Host a server first (Add server -> Host this server), then your players show up here.	Hoskan pelayan terlebih dahulu (Tambah pelayan -> Hoskan pelayan ini), kemudian pemain anda akan muncul di sini.
+Server: %s   |   Administrator: %s   |   %d/%d players	Pelayan: %s | Pentadbir: %s | %d/%d pemain
+Phone id	ID telefon
+Online	Dalam talian
+  (you, administrator)	  (anda, pentadbir)
+old version	versi lama
+%llu min	%llu minit
+Kick %s	Tendang %s
+Kicked %s.	Ditendang %s.
+Ban %s	Larang %s
+Banned %s.	Diharamkan %s.
+That is you (the administrator).	Itulah anda (pentadbir).
+Tap a player, type or pick a reason, then Kick or Ban. Banned players see the date, you as administrator and the reason.	Ketik pemain, taip atau pilih sebab, kemudian Tendang atau Larang. Pemain yang diharamkan akan melihat tarikh, anda sebagai pentadbir dan sebabnya.
+Ban list  (%d)   |   Administrator: %s	Senarai larangan (%d) | Pentadbir: %s
+Saved in files/MP/bans.txt, used by every server this phone hosts.	Disimpan dalam files/MP/bans.txt, yang digunakan oleh setiap pelayan yang dihoskan oleh telefon ini.
+Ban date	Tarikh larangan
+Administrator	Pentadbir
+  Nobody is banned.	  Tiada sesiapa yang diharamkan.
+Unban selected	Batalkan larangan dipilih
+Ban a name (also when that player is offline)	Larang nama (juga apabila pemain itu berada di luar talian)
+Player name	Nama pemain
+Ban name	Nama larangan
+Banned the name %s.	Mengharamkan nama %s.
+%s is already banned.	%s telah pun diharamkan.
+Guest	Tetamu
+Not logged in	Tidak log masuk
+Logged in	Log masuk
+Log in on a server	Log masuk pada pelayan
+MP Launcher	Pelancar MP
+powered by HiveMQ/ThirtyFoxMC	dikuasakan oleh HiveMQ/ThirtyFoxMC
+MP Launcher  v	Pelancar MP v
+Search server	Pelayan carian
+Nickname	Nama panggilan
+Favorites	Kegemaran
+Add server	Tambah pelayan
+Bans	Larangan
+Server:	Pelayan:
+Ban date:	Tarikh larangan:
+Kick date:	Tarikh sepakan:
+Administrator:	Pentadbir:
+Reason:	Sebab:
+No reason given	Tiada sebab diberikan
+If you think this is a mistake, ask the administrator (the host) to unban you.	Jika anda fikir ini satu kesilapan, minta pentadbir (hos) untuk membatalkan sekatan anda.
+You can join again in %d:%02d.	Anda boleh menyertai semula dalam %d:%02d.
+You can join again now. Follow the server rules.	Anda boleh sertai semula sekarang. Ikut peraturan pelayan.
+This server doesn't allow cheat menus	Pelayan ini tidak membenarkan menu curang
+%s is loaded in your game right now. To keep it fair for everyone, 	%s dimuatkan dalam permainan anda sekarang. Untuk memastikan ia adil untuk semua orang, 
+cheat menus aren't allowed on %s.	Menu helah tidak dibenarkan pada %s.
+Cheat Menu works only on custom servers whose host turned on \"Cheat Menu\" (Add server > permissions). 	Menu Cheat hanya berfungsi pada pelayan tersuai yang hosnya menghidupkan \"Menu Cheat\" (Tambah pelayan > kebenaran). 
+For the default server, remove it from your AML mods folder and restart the game - once it is not loaded any more you can join right away.	Untuk pelayan lalai, alih keluarnya daripada folder mod AML anda dan mulakan semula permainan - sebaik sahaja ia tidak dimuatkan lagi, anda boleh sertai dengan segera.
+We check this every time you join, so it can't be switched off while playing.	Kami menyemak ini setiap kali anda menyertai, jadi ia tidak boleh dimatikan semasa bermain.
+Got it	Faham
+JOB: %s	KERJA: %s
+DERBY: %s	DERBI: %s
+%s - starting...	%s - bermula...
+GET BACK IN YOUR CAR	NAIK KEMBALI KERETA ANDA
+BACK INTO THE ARENA	KEMBALI KE ARENA
+BACK INTO THE DM ZONE  %d	KEMBALI KE ZON DM %d
+GET BACK IN YOUR VEHICLE  %d	NAIK KEMBALI DENGAN KENDERAAN ANDA %d
+Wanted players can't join the police.	Pemain yang dikehendaki tidak boleh menyertai polis.
+You are a COP: /cuff <id> and /arrest <id> wanted players ($500 a star).	Anda seorang COP: /cuff <id> dan /arrest <id> pemain yang dikehendaki ($500 setiap bintang).
+You are a ROBBER: /rob <id> players for cash (it makes you wanted).	Anda seorang PEROMPAK: pemain /rob <id> untuk wang tunai (ia membuatkan anda dikehendaki).
+You are a civilian.	Awak orang awam.
+Only robbers can rob (/robber).	Hanya perompak sahaja yang boleh merompak (/robber).
+Use: /rob <id> standing next to them.	Gunakan: /rob <id> berdiri di sebelah mereka.
+Wait a minute before the next robbery.	Tunggu sebentar sebelum rompakan seterusnya.
+You rob %s... (wanted %d)	Awak merompak %s... (dicari %d)
+Only cops (/cop).	Hanya polis (/cop).
+Use: /%s <id> standing next to them.	Gunakan: /%s <id> berdiri di sebelah mereka.
+%s is not wanted.	%s tidak dikehendaki.
+%s is cuffed for 10 seconds - /arrest %d.	%s digari selama 10 saat - /arrest %d.
+Use: /placehit <id> <amount $100+>	Gunakan: /placehit <id> <jumlah $100+>
+You don't have $%d.	Anda tidak mempunyai $%d.
+Hit placed on %s: $%d (whoever kills them gets it).	Klik pada %s: $%d (sesiapa yang membunuh mereka akan mendapatnya).
+No hits. /placehit <id> <amount>	Tiada klik. /placehit <id> <jumlah>
+%s robbed you: -$%d.	%s merompak anda: -$%d.
+Robbery done: +$%d. Cops are after you.	Rompakan telah dilakukan: +$%d. Polis sedang mengejar anda.
+Officer %s cuffed you.	Pegawai %s telah menggari anda.
+Officer %s arrested you: %d seconds in jail.	Pegawai %s menahan anda: %d saat di penjara.
+A $%d hit was placed on %s.	Pukulan $%d telah diletakkan pada %s.
+Hit done on %s: +$%d.	Tekan selesai pada %s: +$%d.
+You are free. Behave.	Awak bebas. Bersikaplah baik.
+JAIL %d	PENJARA %d
+LS Docks	Dok LS
+SF Construction	Pembinaan SF
+Bayside Marina	Marina Tepi Teluk
+A/D round: %s. Attackers: stand 20 s in the checkpoint. Defenders: hold it 5 minutes.	Pusingan A/D: %s. Penyerang: berdiri 20 saat di pusat pemeriksaan. Pemain bertahan: tahan selama 5 minit.
+~r~Attackers win	~r~Penyerang menang
+~b~Defenders win	~b~Pemain bertahan menang
+Your team won: +$1000.	Pasukan anda menang: +$1000.
+You left A/D.	Awak dah tinggalkan A/D.
+You are a %s. /vote <1-%d> picks the base, /ad start starts a round, /ad leave.	Anda seorang %s. /vote <1-%d> memilih pangkalan, /ad mula memulakan pusingan, /ad pergi.
+A round is on (%s).	Satu pusingan sedang berlangsung (%s).
+Voted %s (2 votes start it).	Telah mengundi %s (2 undian memulakannya).
+%s voted %s.	%s mengundi %s.
+CAPTURE %d%%	TAKUT %d%%
+LV airport stunts	Aksi di lapangan terbang LV
+SF airport	Lapangan terbang SF
+Big Ear	Telinga Besar
+Stunt park (LV)	Taman aksi (LV)
+Not during an event.	Bukan semasa sesuatu acara.
+Ramp ahead of you. Go.	Jalan tanjakan di hadapan anda. Pergi.
+Could not place the ramp (try again).	Tidak dapat meletakkan tanjakan (cuba lagi).
+~y~Stunt bonus ~w~$%d	~y~Bonus aksi ~w~$%d
+~r~Drift lost	~r~Hilang hanyut
+~g~Drift %d ~w~+$%d	~g~Hanyutan %d ~w~+$%d
+New best drift: %d.	Hanyutan terbaik baharu: %d.
+DRIFT %d x%d	HANGUS %d x%d
+Survival on: find loot crates (yellow arrows), keep your thirst up (/drink $15), zombies come at night (21:00-06:00).	Teruskan hidup: cari peti rampasan (anak panah kuning), kekalkan dahaga anda (/drink $15), zombi datang pada waktu malam (21:00-06:00).
+Survival off.	Kelangsungan hidup dimatikan.
+A drink is $15.	Sebiji minuman berharga $15.
+Thirst %d%%.	Dahaga %d%%.
+~b~Water	~b~Air
+~y~Weapon	~y~Senjata
+~w~Armour	~w~Perisai
+THIRST %d%%  KILLS %d	Dahaga %d%% Membunuh %d
+My Vehicles is empty: sit in a car and type /savecar (up to %d).	Kenderaan saya kosong: duduk di dalam kereta dan taip /savecar (sehingga %d).
+#\tVehicle Model\tStatus\tDistance\n	#\tModel Kenderaan\tStatus\tJarak\n
+Vehicle Model	Model Kenderaan
+Distance	Jarak
+{FFFFFF}My Vehicles (%d/%d):	{FFFFFF}Kenderaan Saya (%d/%d):
+Select	Pilih
+Could not spawn the %s here (try again near it).	Tidak dapat memunculkan %s di sini (cuba lagi berhampirannya).
+Your %s is spawned (%.0f m away).	%s anda telah terhasil (%.0f m jauhnya).
+Somebody is driving it.	Ada orang yang memandunya.
+%s despawned (parked here for next time).	%s telah digugurkan (diletakkan di sini untuk kali seterusnya).
+Your %s is marked on the radar (%.0f m).	%s anda ditanda pada radar (%.0f m).
+Spawn it first.	Telurkannya dahulu.
+Parking spot saved.	Tempat letak kereta disimpan.
+%s removed from My Vehicles.	%s dialih keluar daripada Kenderaan Saya.
+%s\n%s\n{FFFF00}Locate\n{FFFFFF}Park here\n{FF3333}Remove	%s\n%s\n{FFFF00}Cari\n{FFFFFF}Letak kereta di sini\n{FF3333}Alih keluar
+{FFFFFF}Park here	{FFFFFF}Parkir di sini
+{FFFFFF}Unlock	{FFFFFF}Buka kunci
+Back	Kembali
+Sit in the car you want to keep, then /savecar.	Duduk di dalam kereta yang anda ingin simpan, kemudian /savecar.
+It is already in My Vehicles.	Ia sudah ada dalam Kenderaan Saya.
+My Vehicles is full (%d) - /mv > Remove one first.	Kenderaan saya penuh (%d) - /mv > Keluarkan satu dahulu.
+%s saved to My Vehicles (%d/%d). /mv to manage.	%s disimpan ke Kenderaan Saya (%d/%d). /mv untuk diurus.
+Human	Manusia
+CAPTURING %s	MENGAMBIL %s
+CAPTURE FAILED	TAKUNG GAGAL
+%s CAPTURED	%s DITANGKAP
+[EVENT] You are in the %s team.	[EVENT] Anda berada dalam pasukan %s.
+[EVENT] You are the first zombie. Infect the humans with the chainsaw.	[EVENT] Anda zombi pertama. Jangkiti manusia dengan gergaji rantai.
+PROMOTED: %s	DIPROMOSIKAN: %s
+YOU ARE A ZOMBIE	ANDA ADALAH ZOMBI
+{3CFF6A}MW3 - Help	{3CFF6A}MW3 - Bantuan
+{FFFFFF}Capture zones: stand in a zone checkpoint (on foot) for 25 s.\n	{FFFFFF}Zon tangkap: berdiri di pusat pemeriksaan zon (berjalan kaki) selama 25 saat.\n
+{FFFFFF}Capture zones: stand in a zone checkpoint (on foot) for 25 s.	{FFFFFF}Zon tangkap: berdiri di pusat pemeriksaan zon (berjalan kaki) selama 25 saat.
+Kills: +2 score, $1500. Captures: +5 score, $5000. Owned zones pay every 10 min.\n	Membunuh: +2 skor, $1500. Menangkap: +5 skor, $5000. Zon milik dibayar setiap 10 minit.\n
+Kills: +2 score, $1500. Captures: +5 score, $5000. Owned zones pay every 10 min.	Membunuh: +2 skor, $1500. Menangkap: +5 skor, $5000. Zon yang dimiliki dibayar setiap 10 minit.
+Kill 2+ players within 6 s for a badge. Every 5 kills = a killing spree bonus.\n\n	Bunuh 2+ pemain dalam masa 6 saat untuk mendapatkan lencana. Setiap 5 pembunuhan = bonus pembunuhan beramai-ramai.\n\n
+Kill 2+ players within 6 s for a badge. Every 5 kills = a killing spree bonus.	Bunuh 2+ pemain dalam masa 6 saat untuk mendapatkan lencana. Setiap 5 pembunuhan = bonus pembunuhan beramai-ramai.
+{3CFF6A}/dm /sdm /mdm /chdm /cbdm /hsdm{FFFFFF} - deathmatch arenas, {3CFF6A}/qdm{FFFFFF} - leave\n	{3CFF6A}/dm /sdm /mdm /chdm /cbdm /hsdm{FFFFFF} - arena perlawanan maut, {3CFF6A}/qdm{FFFFFF} - cuti\n
+{3CFF6A}/dm /sdm /mdm /chdm /cbdm /hsdm{FFFFFF} - deathmatch arenas, {3CFF6A}/qdm{FFFFFF} - leave	{3CFF6A}/dm /sdm /mdm /chdm /cbdm /hsdm{FFFFFF} - arena perlawanan maut, {3CFF6A}/qdm{FFFFFF} - cuti
+{3CFF6A}/duel <id> [weapon]{FFFFFF}, {3CFF6A}/accept{FFFFFF} - 1 vs 1 duel\n	{3CFF6A}/duel <id> [senjata]{FFFFFF}, {3CFF6A}/accept{FFFFFF} - pertarungan 1 lawan 1\n
+{3CFF6A}/duel <id> [weapon]{FFFFFF}, {3CFF6A}/accept{FFFFFF} - 1 vs 1 duel	{3CFF6A}/duel <id> [senjata]{FFFFFF}, {3CFF6A}/accept{FFFFFF} - pertarungan 1 lawan 1
+{3CFF6A}/join /leave{FFFFFF} - events (every 15 min at the LS Docks)\n	{3CFF6A}/join /leave{FFFFFF} - acara (setiap 15 minit di LS Docks)\n
+{3CFF6A}/join /leave{FFFFFF} - events (every 15 min at the LS Docks)	{3CFF6A}/join /leave{FFFFFF} - acara (setiap 15 minit di LS Docks)
+{3CFF6A}/team /class{FFFFFF} - change (back to the docks screen)\n	{3CFF6A}/team /class{FFFFFF} - tukar (kembali ke skrin dok)\n
+{3CFF6A}/team /class{FFFFFF} - change (back to the docks screen)	{3CFF6A}/team /class{FFFFFF} - tukar (kembali ke skrin dok)
+{3CFF6A}/jp{FFFFFF} JetTrooper  {3CFF6A}/heal{FFFFFF} Medic  {3CFF6A}/tank{FFFFFF} Engineer  {3CFF6A}/air{FFFFFF} Pilot\n	{3CFF6A}/jp{FFFFFF} JetTrooper {3CFF6A}/heal{FFFFFF} Jurutera {3CFF6A}/tank{FFFFFF} Jurutera {3CFF6A}/air{FFFFFF} Juruterbang\n
+{3CFF6A}/jp{FFFFFF} JetTrooper  {3CFF6A}/heal{FFFFFF} Medic  {3CFF6A}/tank{FFFFFF} Engineer  {3CFF6A}/air{FFFFFF} Pilot	{3CFF6A}/jp{FFFFFF} JetTrooper {3CFF6A}/heal{FFFFFF} Jurutera {3CFF6A}/tank{FFFFFF} Jurutera {3CFF6A}/air{FFFFFF} Juruterbang
+Rank	Pangkat
+{3CFF6A}MW3 - Ranks	{3CFF6A}MW3 - Pangkat
+Class	Kelas
+{3CFF6A}MW3 - Classes	{3CFF6A}MW3 - Kelas
+{FFFFFF}Rank: {3CFF6A}%s (%d){FFFFFF}\nScore: %d   Next rank: %s\nXP: %d\nCash: $%d\n\nKills: %d\nDeaths: %d\nRatio: %.2f\nZone captures: %d\nDeagle kills: %d\nBest killing spree: %d\nKilling spree now: %d	{FFFFFF}Kedudukan: {3CFF6A}%s (%d){FFFFFF}\nSkor: %d Kedudukan seterusnya: %s\nXP: %d\nTunai: $%d\n\nPembunuhan: %d\nKematian: %d\nNisbah: %.2f\nTangkapan zon: %d\nPembunuhan Deagle: %d\nPembunuhan terbaik: %d\nPembunuhan sekarang: %d
+{FFFFFF}Rank: {3CFF6A}%s (%d){FFFFFF}	{FFFFFF}Kedudukan: {3CFF6A}%s (%d){FFFFFF}
+Score: %d   Next rank: %s	Skor: %d Kedudukan seterusnya: %s
+Cash: $%d	Tunai: $%d
+Kills: %d	Membunuh: %d
+Deaths: %d	Kematian: %d
+Ratio: %.2f	Nisbah: %.2f
+Zone captures: %d	Tangkapan zon: %d
+Deagle kills: %d	Deagle membunuh: %d
+Best killing spree: %d	Pembunuhan beramai-ramai terbaik: %d
+Killing spree now: %d	Pembunuhan beramai-ramai sekarang: %d
+{3CFF6A}MW3 - Stats	{3CFF6A}MW3 - Statistik
+/startevent 1 TDM, 2 DM, 3 Zombie, 4 Last Man Standing	/startevent 1 TDM, 2 DM, 3 Zombi, 4 Orang Terakhir Bertahan
+Only the JetTrooper class has a jetpack (rank %d).	Hanya kelas JetTrooper yang mempunyai jetpack (kedudukan %d).
+Jetpack ready in %d s.	Jetpack sedia dalam %d saat.
+Only the Engineer class can drive the tank.	Hanya kelas Jurutera sahaja yang boleh memandu kereta kebal itu.
+Only the Pilot class can fly.	Hanya kelas Juruterbang sahaja yang boleh terbang.
+Only in your own base.	Hanya di pangkalan anda sendiri.
+Next vehicle in %d s.	Kenderaan seterusnya dalam %d saat.
+{3CFF6A}MW3 - Aircraft	{3CFF6A}MW3 - Pesawat
+Leave the arena / event / duel first.	Tinggalkan arena / acara / pertarungan dahulu.
+/%s is not available on Modern Warfare 3. Type /help.	/%s tidak tersedia pada Modern Warfare 3. Taip /help.
+%s capturing  %d%%	%s merakam %d%%
+%s %s BASE	%s %s ASAS
+%s %s (%d%%)   Score: %d   XP: %d	%s %s (%d%%) Skor: %d XP: %d
+%s %s   Score: %d   XP: %d	%s %s Skor: %d XP: %d
+Kills: %d   Deaths: %d   K/D: %.2f   Spree: %d   Caps: %d	Bunuh: %d Kematian: %d K/D: %.2f Spree: %d Had: %d
++%d score  	+%d skor  
+TOURNAMENT: %s  %02d:%02d  -  Leader: %s (%d)	KEJOHANAN: %s %02d:%02d - Ketua: %s (%d)
+EVENT: %s  -  sign-up %d s  -  /join  (%d)	ACARA: %s - pendaftaran %d s - /join (%d)
+EVENT: %s  -  RED %d : %d BLUE  -  %02d:%02d	ACARA: %s - MERAH %d : %d BIRU - %02d:%02d
+EVENT: %s  -  %d humans / %d zombies  -  %02d:%02d	ACARA: %s - %d manusia / %d zombi - %02d:%02d
+EVENT: %s  -  %d alive  -  %02d:%02d	ACARA: %s - %d hidup - %02d:%02d
+Next event: %s in %02d:%02d	Acara seterusnya: %s dalam %02d:%02d
+Event	Acara
+  -  /qdm to leave	  - /qdm untuk pergi
+CAPTURING %s  %d%%	MENGAMBIL %s %d%%
+MODERN WARFARE 3	PEPERANGAN MODEN 3
+CALL OF DUTY  -  24/7  -  LOS SANTOS DOCKS & WAREHOUSES	PANGGILAN TUGAS - 24/7 - DOK & GUDANG LOS SANTOS
+TAP A TEAM TO DEPLOY	PICK PASUKAN UNTUK MENGEMUKAKAN
+CLASS >	KELAS >
+No waiting: tap a team and you spawn in its base. /class changes your class.	Tiada menunggu: ketik pasukan dan anda akan muncul di pangkalannya. /class menukar kelas anda.
+%s %s  -  CHOOSE YOUR CLASS	%s %s - PILIH KELAS ANDA
+%s\nRank %d	%s\nKedudukan %d
+Rank %d	Kedudukan %d
+Your rank: %s (%d)  -  score %d	Kedudukan anda: %s (%d) - skor %d
+< TEAM	< PASUKAN
+Left Modern Warfare 3.	Peperangan Moden Kiri 3.
+You slept well: energy 100%%.	Awak tidur lena: tenaga 100%%.
+You are hungry: /eat ($25 a meal).	Anda lapar: /eat ($25 satu hidangan).
+You are tired: stand still to rest, or /sleep in your house.	Anda letih: berdiri diam untuk berehat, atau /sleep di rumah anda.
+You are not hungry.	Awak tak lapar.
+A meal is $25.	Satu hidangan berharga $25.
+You ate a meal ($25). Hunger %d%%.	Anda telah makan ($25). Kelaparan %d%%.
+Resting... (move to stop)	Berehat... (bergerak untuk berhenti)
+Hunger %d%%  Energy %d%%  (/eat, /sleep, /rest)	Kelaparan %d%% Tenaga %d%% (/eat, /sleep, /rest)
+Your progress is back: your place, $%d, %d weapon%s, health and hunger.	Kemajuan anda telah kembali: tempat anda, $%d, senjata %d%s, kesihatan dan kelaparan.
+Log in first - your progress is saved to your account.	Log masuk dahulu - kemajuan anda disimpan ke akaun anda.
+This server can't save progress (it needs MP 3.39.1).	Pelayan ini tidak dapat menyimpan kemajuan (ia memerlukan MP 3.39.1).
+Your saved progress is still loading...	Kemajuan anda yang disimpan masih dimuatkan...
+Progress saved (it also saves by itself every 15 s and when you leave).	Kemajuan disimpan (ia juga disimpan dengan sendirinya setiap 15 saat dan apabila anda pergi).
+Name Tag	Tag Nama
+Name Tag: Show Yourself	Tag Nama: Tunjukkan Diri Anda
+Damage Indicator	Petunjuk Kerosakan
+Kill Feed	Bunuh Suapan
+Chat Bubble	Gelembung Sembang
+Voice Chat	Sembang Suara
+Hit Sound	Bunyi Hit
+Chat Timestamp	Cap Waktu Sembang
+Radar Player Icons	Ikon Pemain Radar
+Global Chat (OOC)	Sembang Global (OOC)
+Google Map Radar	Radar Peta Google
+PUBG Compass	Kompas PUBG
+Username	Nama pengguna
+Not linked (verify on Discord)	Tidak dipautkan (sahkan di Discord)
+Enable	Dayakan
+Disable	Lumpuhkan
+Your own switches (this phone). Mega Vil: Global chat hides (( [OOC] )) lines, Google map = /googlemap on|off.	Suis anda sendiri (telefon ini). Mega Vil: Sembang global menyembunyikan baris (( [OOC] )), peta Google = /googlemap hidup|mati.
+Your own switches (this phone). Server modes can only be changed by the owner, [ADMIN] or [MOD].	Suis anda sendiri (telefon ini). Mod pelayan hanya boleh ditukar oleh pemilik, [ADMIN] atau [MOD].
+Toggle	Togol
+Lowrider Race	Perlumbaan Penunggang Rendah
+Little Loop	Gelung Kecil
+Backroad Wanderer	Pengembara Jalan Belakang
+City Circuit	Litar Bandar
+Into the Country	Ke Negara
+Dirtbike Danger	Bahaya Basikal Tanah Liat
+Bandito County	Daerah Bandito
+San Fierro Fastlane	Lorong Pantas San Fierro
+San Fierro Hills	Bukit San Fierro
+Country Endurance	Daya Tahan Negara
+SF to LV	SF ke LV
+Dam Rider	Penunggang Empangan
+Desert Tricks	Helah Gurun
+LV Ringroad	Jalan Lingkaran LV
+World War Ace	Ace Perang Dunia
+Air race	Perlumbaan udara
+Military Service	Perkhidmatan Ketenteraan
+Chopper Checkpoint	Pusat Pemeriksaan Helikopter
+Whirly Bird Waypoint	Titik Laluan Whirly Bird
+Heli Hell	Heli Neraka
+8-Track	8-Trek
+Dirt Track	Laluan Tanah
+Citizen	Warganegara
+New Citizen - %s	Warga Baru - %s
+%s%s - Lv %d	%s%s - Tahap %d
+ (duty)	 (tugas)
+[GPS] Route set: %s.	[GPS] Laluan ditetapkan: %s.
+Hey there, citizen. Beautiful neon night in Mega Vil, isn't it?	Hai semua, warga. Malam neon yang indah di Mega Vil, bukan?
+Oh! You startled me. Can I help you?	Oh! Awak mengejutkan saya. Boleh saya bantu?
+Welcome to the future, friend. What do you need?	Selamat datang ke masa depan, kawan. Apa yang kau perlukan?
+Hi! Don't mind me, just waiting for my hover bus.	Hai! Tak kisahlah, cuma tunggu bas hover saya.
+Good to see a friendly face. The city's busy today.	Gembira melihat wajah yang peramah. Bandar ini sibuk hari ini.
+Yo. You new around here? I can tell.	Awak baru di sini? Saya boleh tahu.
+Careful, the holo ads are loud today. What's up?	Hati-hati, iklan holo sangat bising hari ini. Ada apa?
+Hello! My drone is charging, so I've got a minute.	Helo! Dron saya sedang dicas, jadi saya ada masa sebentar.
+Ask about the city	Tanya tentang bandar
+Mega Vil used to be Los Santos. Then the towers went up and the holograms came on.	Mega Vil dahulunya Los Santos. Kemudian menara-menara itu dinaikkan dan hologram-hologram itu muncul.
+City Hall has the Job Center. Everyone starts there - taxi, trucker, police, even pilot.	Dewan Bandaraya mempunyai Pusat Pekerjaan. Semua orang bermula di sana - teksi, pemandu lori, polis, malah juruterbang.
+Paydays every half hour, straight to your bank. The Mega Bank pays interest too.	Hari gaji setiap setengah jam, terus ke bank anda. Mega Bank juga membayar faedah.
+Stay in the greenzones if you want peace. Nobody can hurt you in there.	Kekallah di zon hijau jika kamu mahukan kedamaian. Tiada siapa yang boleh mencederakan kamu di sana.
+Ask for directions	Minta arahan
+Let me put it on your GPS. Follow the sky blue marker.	Biar saya letakkannya pada GPS awak. Ikut penanda biru langit.
+It's not far. I'll send the route to your phone.	Ia tidak jauh. Saya akan hantar laluan ke telefon anda.
+Easy. Check your GPS, I marked it.	Mudah. ​​Periksa GPS anda, saya telah menandakannya.
+Head that way. Your phone has the route now.	Pergi ke sana. Telefon anda mempunyai laluannya sekarang.
+Ask for a job tip	Minta tip kerja
+Truckers make good money. Long routes pay the most.	Pemandu lori mengaut keuntungan yang lumayan. Laluan jauh membayar paling tinggi.
+Pilots get the biggest pay, but you need level 2 first.	Juruterbang mendapat gaji terbesar, tetapi anda memerlukan tahap 2 terlebih dahulu.
+Police need level 3 and two hours in the city. Then you can wear the badge.	Polis memerlukan tahap 3 dan dua jam di bandar. Kemudian awak boleh pakai lencana itu.
+Double Pay Hour comes with the city events. Work then - everything pays twice.	Waktu Gaji Berganda disertakan dengan acara bandar. Bekerjalah kemudian - semuanya dibayar dua kali ganda.
+Compliment them	Puji mereka
+Aww, thank you! You made my day.	Aduh, terima kasih! Awak menceriakan hari saya.
+Ha! You're too kind. Nice outfit yourself.	Ha! Awak terlalu baik. Pakaian awak cantik.
+Thanks, citizen. Mega Vil needs more people like you.	Terima kasih, warganegara. Mega Vil memerlukan lebih ramai orang seperti anda.
+Oh stop it. ...No, keep going.	Oh hentikan. ...Tidak, teruskan.
+Ask about the news	Tanya tentang berita
+Did you hear? A Holo Cash Drop hits the streets every so often. Free money!	Dengar tak? Holo Cash Drop sampai ke jalanan sekali-sekala. Wang percuma!
+The Neon Night Festival at the Plaza is the best party in the city.	Festival Malam Neon di Plaza merupakan pesta terbaik di bandar ini.
+Lottery tickets are $500. I never win, but you might.	Tiket loteri berharga $500. Saya tidak pernah menang, tetapi anda mungkin.
+They say the holo towers pay $2,500 to whoever reaches them first.	Mereka kata menara holo membayar $2,500 kepada sesiapa yang sampai dahulu.
+Take care out there!	Jaga diri di luar sana!
+See you around, citizen.	Jumpa lagi, warga.
+Stay safe in the neon.	Kekal selamat di dalam neon.
+Bye! Watch out for drones.	Selamat tinggal! Berhati-hati dengan dron.
+STOP EMOTE	BERHENTI EMOTE
+Talk	Bercakap
+Nevermind	Tak kisahlah
+Goodbye	Selamat tinggal
+[MEGA VIL] Welcome home - %s.	[MEGA VIL] Selamat pulang - %s.
+[MEGA VIL] You arrived at the Lobby Hub (Mega Vil Plaza). Buy a house and you will always spawn at home.	[MEGA VIL] Anda tiba di Hab Lobby (Mega Vil Plaza). Beli rumah dan anda akan sentiasa bertelur di rumah.
+YOU ARE CUFFED	ANDA DIGEGAR
+[PHONE] Connected with %s - talk with the voice chat (mic button).	[PHONE] Berhubung dengan %s - bercakap dengan sembang suara (butang mikrofon).
+Call ended.	Panggilan tamat.
+%s treated you.	%s melayan anda.
+[MECHANIC] Vehicle repaired.	[MECHANIC] Kenderaan dibaiki.
+Sit in the vehicle to get it repaired.	Duduk di dalam kenderaan untuk membaikinya.
+JAILED  -  %d:%02d	DIPENJARA - %d:%02d
+[GARAGE] Your %s is here.	[GARAGE] %s anda ada di sini.
+[MEGA VIL] You woke up at home.	[MEGA VIL] Anda bangun di rumah.
+[MEGA VIL] Weapons are for on-duty police and soldiers only. Mega Vil is peaceful.	[MEGA VIL] Senjata hanya untuk polis dan askar yang bertugas. Mega Vil bersifat aman.
+{38BDF8}MEGA VIL FUTURISTIC - Help	{38BDF8}FUTURISTIK MEGA VIL - Bantuan
+{FFFFFF}Roleplay only: be your character. Mega Vil is peaceful - only on-duty police and soldiers may use force.\n	{FFFFFF}Lakonan peranan sahaja: jadilah watak anda. Mega Vil bersifat aman - hanya polis dan askar yang bertugas sahaja yang boleh menggunakan kekerasan.\n
+{FFFFFF}Roleplay only: be your character. Mega Vil is peaceful - only on-duty police and soldiers may use force.	{FFFFFF}Lakonan peranan sahaja: jadilah watak anda. Mega Vil bersifat aman - hanya polis dan askar yang bertugas sahaja yang boleh menggunakan kekerasan.
+Open the phone: PANEL > Phone or {38BDF8}/phone{FFFFFF}.\n	Buka telefon: PANEL > Telefon atau {38BDF8}/phone{FFFFFF}.\n
+Open the phone: PANEL > Phone or {38BDF8}/phone{FFFFFF}.	Buka telefon: PANEL > Telefon atau {38BDF8}/phone{FFFFFF}.
+PANEL (the 4-square icon on the right, or {38BDF8}/panel{FFFFFF}): vehicle, documents, player info + bag, phone.\n\n	PANEL (ikon 4 segi empat sama di sebelah kanan, atau {38BDF8}/panel{FFFFFF}): kenderaan, dokumen, maklumat pemain + beg, telefon.\n\n
+PANEL (the 4-square icon on the right, or {38BDF8}/panel{FFFFFF}): vehicle, documents, player info + bag, phone.	PANEL (ikon 4 segi empat sama di sebelah kanan, atau {38BDF8}/panel{FFFFFF}): kenderaan, dokumen, maklumat pemain + beg, telefon.
+{38BDF8}Talk:{FFFFFF} normal chat (20 m), /me /do /ame /try /b /s /l /w /o /n /ad /feed /r /d /m /gov\n	{38BDF8}Perbualan:{FFFFFF} sembang biasa (20 m), /me /do /ame /try /b /s /l /w /o /n /ad /feed /r /d /m /gov\n
+{38BDF8}Talk:{FFFFFF} normal chat (20 m), /me /do /ame /try /b /s /l /w /o /n /ad /feed /r /d /m /gov	{38BDF8}Perbualan:{FFFFFF} sembang biasa (20 m), /me /do /ame /try /b /s /l /w /o /n /ad /feed /r /d /m /gov
+{38BDF8}Money:{FFFFFF} /pay /deposit /withdraw /transfer /balance /atm\n	{38BDF8}Wang:{FFFFFF} /pay /deposit /withdraw /transfer /balance /atm\n
+{38BDF8}Money:{FFFFFF} /pay /deposit /withdraw /transfer /balance /atm	{38BDF8}Wang:{FFFFFF} /pay /deposit /withdraw /transfer /balance /atm
+{38BDF8}Jobs:{FFFFFF} /jobs /job /quitjob /work /stopwork /duty /myjob\n	{38BDF8}Pekerjaan:{FFFFFF} /jobs /job /quitjob /work /stopwork /duty /myjob\n
+{38BDF8}Jobs:{FFFFFF} /jobs /job /quitjob /work /stopwork /duty /myjob	{38BDF8}Pekerjaan:{FFFFFF} /jobs /job /quitjob /work /stopwork /duty /myjob
+{38BDF8}Phone:{FFFFFF} /call /sms /answer /hangup /number /contacts /911 /taxi\n	{38BDF8}Telefon:{FFFFFF} /call /sms /answer /hangup /number /contacts /911 /taxi\n
+{38BDF8}Phone:{FFFFFF} /call /sms /answer /hangup /number /contacts /911 /taxi	{38BDF8}Telefon:{FFFFFF} /call /sms /answer /hangup /number /contacts /911 /taxi
+{38BDF8}Home:{FFFFFF} /houses /buyhouse /sellhouse /home /setspawn /myhouse\n	{38BDF8}Laman Utama:{FFFFFF} /houses /buyhouse /sellhouse /home /setspawn /myhouse\n
+{38BDF8}Home:{FFFFFF} /houses /buyhouse /sellhouse /home /setspawn /myhouse	{38BDF8}Laman Utama:{FFFFFF} /houses /buyhouse /sellhouse /home /setspawn /myhouse
+{38BDF8}Shops:{FFFFFF} /shop /food /clothes /cars /tech /ammu /lotto   {38BDF8}Bag:{FFFFFF} /inv /docs /panel\n	{38BDF8}Kedai:{FFFFFF} /shop /food /clothes /cars /tech /ammu /lotto {38BDF8}Beg:{FFFFFF} /inv /docs /panel\n
+{38BDF8}Shops:{FFFFFF} /shop /food /clothes /cars /tech /ammu /lotto   {38BDF8}Bag:{FFFFFF} /inv /docs /panel	{38BDF8}Kedai:{FFFFFF} /shop /food /clothes /cars /tech /ammu /lotto {38BDF8}Beg:{FFFFFF} /inv /docs /panel
+{38BDF8}Garage & pets:{FFFFFF} /garage /v [n] /sellveh [n] /pets /pet [n] /petoff /jetpack\n	{38BDF8}Garaj & haiwan peliharaan:{FFFFFF} /garage /v [n] /sellveh [n] /pets /pet [n] /petoff /jetpack\n
+{38BDF8}Garage & pets:{FFFFFF} /garage /v [n] /sellveh [n] /pets /pet [n] /petoff /jetpack	{38BDF8}Garaj & haiwan peliharaan:{FFFFFF} /garage /v [n] /sellveh [n] /pets /pet [n] /petoff /jetpack
+{38BDF8}Police:{FFFFFF} /cuff /uncuff /arrest /fine /su /frisk /mdc   {38BDF8}Medic:{FFFFFF} /heal   {38BDF8}Mechanic:{FFFFFF} /repair   {38BDF8}Lawyer:{FFFFFF} /defend\n	{38BDF8}Polis:{FFFFFF} /cuff /uncuff /arrest /fine /su /frisk /mdc {38BDF8}Medik:{FFFFFF} /heal {38BDF8}Mekanik:{FFFFFF} /repair {38BDF8}Peguam:{FFFFFF} /defend\n
+{38BDF8}Police:{FFFFFF} /cuff /uncuff /arrest /fine /su /frisk /mdc   {38BDF8}Medic:{FFFFFF} /heal   {38BDF8}Mechanic:{FFFFFF} /repair   {38BDF8}Lawyer:{FFFFFF} /defend	{38BDF8}Polis:{FFFFFF} /cuff /uncuff /arrest /fine /su /frisk /mdc {38BDF8}Medik:{FFFFFF} /heal {38BDF8}Mekanik:{FFFFFF} /repair {38BDF8}Peguam:{FFFFFF} /defend
+{38BDF8}Fun:{FFFFFF} /e [emote] /emotes /e c /dance /accept /flip /dice /games /event /joinevent\n	{38BDF8}Keseronokan:{FFFFFF} /e [emosi] /emotes /e c /dance /accept /flip /dice /games /event /joinevent\n
+{38BDF8}Fun:{FFFFFF} /e [emote] /emotes /e c /dance /accept /flip /dice /games /event /joinevent	{38BDF8}Keseronokan:{FFFFFF} /e [emosi] /emotes /e c /dance /accept /flip /dice /games /event /joinevent
+{38BDF8}Info:{FFFFFF} /stats /id /time /gps /places /rules /levels /players /greenzones /talk /rp	{38BDF8}Maklumat:{FFFFFF} /stats /id /time /gps /places /rules /levels /players /greenzones /talk /rp
+{38BDF8}Mega Vil - Rules	{38BDF8}Mega Vil - Peraturan
+{FFFFFF}1. Roleplay at all times. Out of character only with /b or /o.\n	{FFFFFF}1. Lakonan peranan sepanjang masa. Di luar watak hanya dengan /b atau /o.\n
+{FFFFFF}1. Roleplay at all times. Out of character only with /b or /o.	{FFFFFF}1. Lakonan peranan pada setiap masa. Di luar watak hanya dengan /b atau /o.
+2. No deathmatch: the city is peaceful. Police / soldiers on duty use force only when the roleplay needs it.\n	2. Tiada perlawanan maut: bandar ini aman. Polis / askar yang bertugas hanya menggunakan kekerasan apabila lakon peranan memerlukannya.\n
+2. No deathmatch: the city is peaceful. Police / soldiers on duty use force only when the roleplay needs it.	2. Tiada perlawanan maut: bandar ini aman. Polis / askar yang bertugas hanya menggunakan kekerasan apabila lakon peranan memerlukannya.
+3. No cheats, no mods that give an advantage, no bug abuse.\n	3. Tiada penipuan, tiada mod yang memberi kelebihan, tiada penyalahgunaan pepijat.\n
+3. No cheats, no mods that give an advantage, no bug abuse.	3. Tiada cheat, tiada mod yang memberi kelebihan, tiada penyalahgunaan pepijat.
+4. Respect everyone - new citizens too. Help them in /n.\n	4. Hormati semua orang - warganegara baharu juga. Bantu mereka dalam /n.\n
+4. Respect everyone - new citizens too. Help them in /n.	4. Hormati semua orang - warganegara baharu juga. Bantu mereka dalam /n.
+5. No powergaming / metagaming. Your character only knows what it saw.\n	5. Tiada powergaming / metagaming. Watak anda hanya tahu apa yang dilihatnya.\n
+5. No powergaming / metagaming. Your character only knows what it saw.	5. Tiada powergaming / metagaming. Watak anda hanya tahu apa yang dilihatnya.
+6. Greenzones (green squares on the radar) are safe for everyone.\n	6. Zon hijau (petak hijau dalam radar) selamat untuk semua orang.\n
+6. Greenzones (green squares on the radar) are safe for everyone.	6. Zon hijau (petak hijau dalam radar) selamat untuk semua orang.
+7. Have fun in the city of the future.	7. Bersenang-senanglah di bandar masa depan.
+Route	Laluan
+Command	Perintah
+Type	Jenis
+{38BDF8}Emotes & dances (rpemotes)	{38BDF8}Emote & tarian (rpemote)
+Type something after the command.	Taip sesuatu selepas arahan.
+/w [id] [text]	/w [id] [teks]
+/deposit [amount] (at an ATM or the bank)	/deposit [jumlah] (di ATM atau bank)
+/withdraw [amount] (at an ATM or the bank)	/withdraw [jumlah] (di ATM atau bank)
+[BANK] Cash $%d  |  Bank $%d  |  Payday in %d:%02d	[BANK] Tunai $%d | Bank $%d | Hari Gaji di %d:%02d
+[PHONE] Your number: %d	[PHONE] Nombor anda: %d
+Help needed!	Bantuan diperlukan!
+Stand at a house door (Houses app shows them on the GPS).	Berdiri di pintu rumah (aplikasi Rumah menunjukkannya pada GPS).
+You don't own a house yet (/houses).	Anda belum memiliki rumah (/houses).
+Buy a house first - then /setspawn inside or at it.	Beli rumah dahulu - kemudian /setspawn di dalam atau di atasnya.
+Stand at your house (within 30 m, on foot) to set the spawn point.	Berdiri di rumah anda (dalam jarak 30 m, berjalan kaki) untuk menetapkan titik bertelur.
+[HOME] Spawn point set. You will always spawn here - never at the Lobby Hub.	[HOME] Titik peneluran ditetapkan. Anda akan sentiasa menelur di sini - tidak pernah di Hab Lobi.
+No vehicles yet (/cars).	Tiada kenderaan lagi (/cars).
+/sellveh [slot 1-6] (Garage app shows them)	/sellveh [slot 1-6] (Aplikasi garaj menunjukkannya)
+[MDC] %s (%d) - WANTED	[MDC] %s (%d) - DIPERLUKAN
+[MDC] Nobody is wanted. A quiet day in Mega Vil.	[MDC] Tiada sesiapa yang dikehendaki. Hari yang tenang di Mega Vil.
+No emote \"%s\" (/emotes)	Tiada emoticon \"%s\" (/emotes)
+/e %s [player id] - a shared emote	/e %s [id pemain] - emoticon yang dikongsi
+[EVENT] %s - %d s left. /joinevent for the GPS.	[EVENT] %s - %d s lagi. /joinevent untuk GPS.
+[EVENT] Next city event in %d:%02d. Lottery jackpot $%d.	[EVENT] Acara bandar seterusnya di %d:%02d. Jackpot loteri $%d.
+Walk up to someone in the street - they stop and you can talk.	Berjalanlah ke arah seseorang di jalan - mereka berhenti dan anda boleh bercakap.
+[LEVEL] You are level %d: %d / %d respect. +1 every 10 min played, +2 every payday, +1 every 3 job tasks.	[LEVEL] Anda berada di tahap %d: %d / %d hormat. +1 setiap 10 minit dimainkan, +2 setiap hari gaji, +1 setiap 3 tugasan kerja.
+Google map radar ON (pause map too). /googlemap off = the original radar.	Radar peta Google HIDUP (jeda peta juga). /googlemap mati = radar asal.
+Original GTA SA radar ON. /googlemap on = the Google map radar again.	Radar GTA SA asal HIDUP. /googlemap hidup = radar peta Google sekali lagi.
+[GREENZONE] Lobby Hub (Plaza), City Hall, both hospitals and the Mega Bank: nobody can be hurt there.	[GREENZONE] Hab Lobi (Plaza), Dewan Bandaraya, kedua-dua hospital dan Mega Bank: tiada siapa yang boleh dicederakan di sana.
+Mega Vil time %02d:%02d - your time %s	Masa Mega Vil %02d:%02d - masa anda %s
+Your id: %d	ID anda: %d
+%s: id %d, phone %d	%s: id %d, telefon %d
+MEGA VIL FUTURISTIC - Roleplay 24/7, %d citizens max. The future awaits.	MEGA VIL FUTURISTIC - Lakonan 24/7, maksimum %d warganegara. Masa depan menanti.
+/%s is not available on Mega Vil Futuristic (no cheats / other gamemodes). /help	/%s tidak tersedia pada Mega Vil Futuristic (tiada cheat / mod permainan lain). /help
+Futuristic	Futuristik
+%d  |  Lv %d	%d | Tahap %d
+Payday in %d:%02d	Hari gaji di %d:%02d
+VOICE: %s%s	SUARA: %s%s
+PHONE CALL	PANGGILAN TELEFON
+  (talking)	  (bercakap)
+EVENT: %s  %d:%02d  /joinevent	ACARA: %s %d:%02d /joinevent
+YOU ARE A NEW CITIZEN	ANDA ADALAH WARGANEGARA BARU
+%02d:%02d:%02d left  -  /n for help	%02d:%02d:%02d kiri - /n untuk bantuan
+YOU ARE IN A GREENZONE	ANDA BERADA DI ZON HIJAU
+JAIL: %d:%02d	PENJARA: %d:%02d
+WANTED LEVEL %d	ARAS YANG DIINGINI %d
+%s: marker %d m  |  tasks %u	%s: penanda %d m | tugasan %u
+ON CALL: %s  %d:%02d  /h	PANGGILAN SECARA ONLINE: %s %d:%02d /h
+YOUR HOME\n%s	RUMAH ANDA\n%s
+YOUR HOME	RUMAH ANDA
+%s\nFOR SALE  $%d  /buyhouse	%s\nUNTUK DIJUAL $%d /buyhouse
+FOR SALE  $%d  /buyhouse	UNTUK DIJUAL $%d /buyhouse
+Going home: %s	Pulang ke rumah: %s
+LOBBY HUB  -  MEGA VIL PLAZA	PUSAT LOBI - PLAZA MEGA VIL
+Level %d  |  Cash $%d  |  Bank $%d  |  Phone %d	Aras %d | Tunai $%d | Bank $%d | Telefon %d
+Roleplay only - peaceful city - no cheats. Own a house and you always spawn at home.	Lakonan sahaja - bandar yang aman - tiada penipuan. Miliki rumah dan anda sentiasa bertelur di rumah.
+Left Mega Vil Futuristic.	Kiri Mega Vil Futuristik.
+Enter an amount first.	Masukkan jumlah terlebih dahulu.
+Withdrawing %s - please take your cash.	Pengeluaran %s - sila ambil wang tunai anda.
+Depositing %s into your account.	Mendepositkan %s ke dalam akaun anda.
+FAST CASH $100	TUNAI PANTAS $100
+OTHER AMOUNT	JUMLAH LAIN
+ALL CASH	SEMUA TUNAI
+BUY %s	BELI %s
+SELL ALL	JUAL SEMUA
+SEND MONEY	HANTAR WANG
+Bank %s  -  cash %s	Bank %s - tunai %s
+Withdraw amount	Jumlah pengeluaran
+You have no cash on you.	Awak tak ada duit tunai.
+Deposit amount	Jumlah deposit
+Buying %s of %s...	Membeli %s daripada %s...
+Selling all of %s...	Menjual semua %s...
+Phone number	Nombor telefon
+Now press BUY next to a plan.	Sekarang tekan BELI di sebelah pelan.
+Type an amount, then press BUY.	Taip jumlah, kemudian tekan BELI.
+Pick WITHDRAWAL or DEPOSIT first.	Pilih PENGELUARAN atau DEPOSIT dahulu.
+Please select a transaction.	Sila pilih transaksi.
+MEGA BANK	BANK MEGA
+24 HOUR BANKING	PERBANKAN 24 JAM
+CASH  -  DEPOSIT  -  INVEST  -  TRANSFER	TUNAI - DEPOSIT - LABUR - PEMINDAHAN
+WELCOME, %s	SELAMAT DATANG, %s
+Please select a transaction	Sila pilih transaksi
+Select an amount, or type it on the keypad and press ENTER	Pilih jumlah, atau taipkannya pada papan kekunci dan tekan ENTER
+One city market - prices move every 5 minutes	Satu pasar bandar - harga bergerak setiap 5 minit
+Send bank money to a phone number	Hantar wang bank ke nombor telefon
+ENTER AMOUNT	MASUKKAN JUMLAH
+Available: %s	Tersedia: %s
+Cash on you: %s	Tunai untuk anda: %s
+%d (%+.1f%%)  yours %s	%d (%+.1f%%) milik anda %s
+Typed: %s - BUY uses it	Ditaip: %s - BELI menggunakannya
+Your number: %d	Nombor anda: %d
+Next payday in %d:%02d	Hari gaji seterusnya dalam %d:%02d
+Works anywhere too: /transfer [number] [amount]	Berfungsi di mana-mana sahaja juga: /transfer [nombor] [jumlah]
+CASH %s	TUNAI %s
+INSERT CARD	KAD Sisip
+UPPER BODY	BADAN ATAS
+[MEGA VIL] CJ outfit saved. Press Spawn.	[MEGA VIL] Pakaian CJ disimpan. Tekan Spawn.
+[MEGA VIL] Outfit saved: %s. Press Spawn.	[MEGA VIL] Pakaian disimpan: %s. Tekan Spawn.
+skin %d	kulit %d
+take it off	tanggalkannya
+CJ's own	CJ sendiri
+FULL VIEW	PANDANGAN PENUH
+FACTIONS  %d / %d	PAKSI %d / %d
+No factions yet. Create the first one.	Tiada puak lagi. Buat yang pertama.
+  (member)	  (ahli)
+%d / %d players   -   owner %s	%d / %d pemain - pemilik %s
+Players %d / %d   -   Owner %s	Pemain %d / %d - Pemilik %s
+SET RULES	TEPATKAN PERATURAN
+Faction rules	Peraturan puak
+CLOSE IT	TUTUP
+Pick a faction on the left.	Pilih satu puak di sebelah kiri.
+CREATE FACTION  ($%d)	WUJUDKAN PAKSI ($%d)
+TAG (2-5 letters)	TAG (2-5 huruf)
+(tap to type)	(ketik untuk menaip)
+PLAYER LIMIT	HAD PEMAIN
+CREATE  ($%d)	WUJUDKAN ($%d)
+R ARM	LENGAN R
+L LEG	KAKI L
+R LEG	KAKI R
+[BAG] Tap an item first.	[BAG] Ketik item terlebih dahulu.
+Give to player id (nearest: %s)	Berikan kepada id pemain (terdekat: %s)
+Give to player id (stand next to them)	Berikan kepada ID pemain (berdiri di sebelah mereka)
+Food  -  fills %d hunger	Makanan - mengisi %d kelaparan
+Drink  -  fills %d thirst	Minum - memuaskan dahaga %d
+Heals %d health	Menyembuhkan %d kesihatan
+Repairs the car you sit in	Membaiki kereta yang anda duduki
+Opens your phone	Membuka telefon anda
+Starter pack  -  open it to unpack	Pek permulaan - buka untuk membongkar
+Item	Barang
+MEGA VIL QUICK MENU	MENU PANTAS MEGA VIL
+PLAYER ID	ID PEMAIN
+%d  (%d XP)	%d (%d XP)
+  (on duty)	  (bertugas)
+%uh %02um	%uj %02um
+Body parts: white = fine, amber = hurt, red = badly hurt	Bahagian badan: putih = halus, kuning = sakit, merah = cedera teruk
+PLAYER INFO	MAKLUMAT PEMAIN
+drag to turn	seret untuk membelok
+Opening the bag...	Membuka beg...
+AMOUNT: %d	JUMLAH: %d
+Amount	Jumlah
+CITIZEN IDENTITY CARD	KAD PENGENALAN WARGANEGARA
+, on duty	, bertugas
+Lobby Hub	Hab Lobi
+%u h %02u min	%u j %02u min
+TIME IN CITY	MASA DI BANDAR
+SHOW ID	TUNJUKKAN ID
+shows a Mega Vil Citizen ID: %s, phone %d, %s.	menunjukkan ID Warga Mega Vil: %s, telefon %d, %s.
+Received %dx	Diterima %dx
+Mega Bank	Bank Mega
+Use ATM	Gunakan ATM
+Pick up %s	Ambil %s
+WELCOME TO MEGA VIL	SELAMAT DATANG KE MEGA VIL
+Futuristic Roleplay 24/7\nRoleplay only - no DM, no cheats\nBe a citizen: work, earn, live	Lakonan Peranan Futuristik 24/7\nLakonan peranan sahaja - tiada DM, tiada penipuan\nJadilah warganegara: bekerja, menjana pendapatan, hidup
+Futuristic Roleplay 24/7	Lakonan Peranan Futuristik 24/7
+Roleplay only - no DM, no cheats	Lakonan sahaja - tiada DM, tiada penipu
+Be a citizen: work, earn, live	Jadilah warganegara: bekerja, mencari rezeki, hidup
+/rules - roleplay, don't fail it\n/b OOC  /me /do  /n newbie help\nGreenzones: nobody gets hurt	/rules - lakon peranan, jangan gagal\n/b OOC /me /do /n bantuan pemula\nZon Hijau: tiada siapa yang cedera
+/rules - roleplay, don't fail it	/rules - lakon peranan, jangan gagal
+/b OOC  /me /do  /n newbie help	/b OOC /me /do /n bantuan pemula
+Greenzones: nobody gets hurt	Zon Hijau: tiada siapa yang tercedera
+/jobs - pick one at the Job Center\n/duty  /work  then follow the GPS\nPayday every 30 min of play	/jobs - pilih satu di Pusat Kerja\n/tugas /work kemudian ikuti GPS\nHari Gaji setiap 30 minit permainan
+/jobs - pick one at the Job Center	/jobs - pilih satu di Pusat Kerja
+/duty  /work  then follow the GPS	/duty /work kemudian ikuti GPS
+Payday every 30 min of play	Hari gaji setiap 30 minit bermain
+MONEY & INVEST	WANG & LABUR
+ATM: walk into the ring - Use ATM\n/invest  /sellinvest  /market\n/pawn at a 24/7 - /lotto 1-60	ATM: masuk ke gelanggang - Gunakan ATM\n/melabur /sellinvest /market\n/gadai pada 24/7 - /lotto 1-60
+ATM: walk into the ring - Use ATM	ATM: masuk ke gelanggang - Gunakan ATM
+/invest  /sellinvest  /market	/invest /sellinvest /market
+/pawn at a 24/7 - /lotto 1-60	/pawn pada 24/7 - /lotto 1-60
+PHONE & PANEL	TELEFON & PANEL
+PANEL button: bag, documents\n/phone  /sms  /call  /taxi  /911\n/gps - every place in the city	Butang PANEL: beg, dokumen\n/telefon /sms /call /taxi /911\n/gps - setiap tempat di bandar
+PANEL button: bag, documents	Butang PANEL: beg, dokumen
+/phone  /sms  /call  /taxi  /911	/phone /sms /call /taxi /911
+/gps - every place in the city	/gps - setiap tempat di bandar
+/buyhouse  /home  /pet  /emotes\n/propose /divorce  /seatbelt\n/joinevent - city events	/buyhouse /home /pet /emotes\n/cadangkan /divorce /seatbelt\n/joinevent - acara bandar
+/buyhouse  /home  /pet  /emotes	/buyhouse /home /pet /emotes
+/propose /divorce  /seatbelt	/propose /divorce /seatbelt
+/joinevent - city events	/joinevent - acara bandar
+Welcome to Mega Vil Futuristic Roleplay Server	Selamat datang ke Pelayan Main Peranan Futuristik Mega Vil
+24/7 roleplay city - stay in character, no DM, no cheats	Bandar lakon peranan 24/7 - kekal dalam watak, tiada DM, tiada penipu
+/jobs work  -  /gps places  -  /phone  -  PANEL: bag + documents  -  /rules	/jobs kerja - /gps tempat - /phone - PANEL: beg + dokumen - /rules
+________ Welcome to Mega Vil Futuristic Roleplay ________	________ Selamat datang ke Mega Vil Futuristik Roleplay ________
+Hello %s, you are a citizen of Mega Vil now. This is a 24/7 roleplay city: stay in character.	Halo %s, anda kini warga Mega Vil. Ini ialah bandar lakon peranan 24/7: kekalkan watak anda.
+Start: /jobs for work, the PANEL button for your bag + documents, /phone, /gps for every place.	Mula: /jobs untuk kerja, butang PANEL untuk beg + dokumen anda, /phone, /gps untuk setiap tempat.
+Money: walk into an ATM ring and tap Use ATM - deposit, withdraw, transfer, /invest.	Wang: masuk ke gelanggang ATM dan ketik Gunakan ATM - deposit, pengeluaran, pemindahan, /invest.
+Rules: /rules  ·  help: /n [question] (newbie chat)  ·  all commands: /help	Peraturan: /rules · bantuan: /n [soalan] (sembang pemula) · semua arahan: /help
+/propose [id]  ($500 wedding, they /accept marry)	/propose [id] ($500 perkahwinan, mereka /accept berkahwin)
+______ MEGA VIL RULES ______	______ PERATURAN MEGA VIL ______
+1. Roleplay: act like a real citizen. No deathmatch, no random killing.	1. Lakonan: berlakon seperti warganegara sebenar. Tiada perlawanan maut, tiada pembunuhan rawak.
+2. No cheats, no hacks, no bug abuse. Greenzones: nobody can be hurt.	2. Tiada penipuan, tiada penggodaman, tiada penyalahgunaan pepijat. Zon Hijau: tiada siapa yang boleh dicederakan.
+3. Police / military: force only on duty. Respect /fine and /arrest.	3. Polis / tentera: hanya bertugas. Hormati /fine dan /arrest.
+4. OOC talk in /b or /ooc only. Be nice in /n newbie chat.	4. Perbualan OOC dalam /b atau /ooc sahaja. Bersikap baik dalam sembang pemula /n.
+[TAXI] No passenger in your taxi - pick them up first (yellow marker).	[TAXI] Tiada penumpang dalam teksi anda - ambil mereka dahulu (penanda kuning).
+[TAXI] Passenger: \"Thanks, keep the change.\"	[TAXI] Penumpang: \"Terima kasih, simpan bakinya.\"
+[TAXI] A passenger is waiting (yellow marker). Stop next to them, then drive to the fare marker.	[TAXI] Seorang penumpang sedang menunggu (penanda kuning). Berhenti di sebelah mereka, kemudian pandu ke penanda tambang.
+[TAXI] Your passenger got hurt - a new one is waiting.	[TAXI] Penumpang anda cedera - penumpang baharu sedang menunggu.
+[TAXI] Your car is full.	[TAXI] Kereta anda penuh.
+[TAXI] Passenger: \"Where is your taxi?\" (get in a car)	[TAXI] Penumpang: \"Di mana teksi anda?\" (masuk kereta)
+[TAXI] Passenger in. Drive to the fare marker and stop there.	[TAXI] Penumpang masuk. Pandu ke penanda tambang dan berhenti di sana.
+[TAXI] Your passenger is out of the car - pick them up again.	[TAXI] Penumpang anda telah keluar dari kereta - jemput mereka semula.
+Home	Laman Utama
+Contacts	Kenalan
+Messages	Mesej
+Phone	Telefon
+Jobs	Pekerjaan
+Shop	Kedai
+Garage	Garaj
+Houses	Rumah-rumah
+Pets	Haiwan peliharaan
+Emotes	Emoticon
+Games	Permainan
+News	Berita
+Amount to send	Jumlah untuk dihantar
+Snake	Ular
+%s   (best %d%s)	%s (terbaik %d%s)
+ wins	 kemenangan
+Score %d   Best %d%s	Skor %d Terbaik %d%s
+   GAME OVER	   PERMAINAN TAMAT
+Play	Main
+Tap to play  -  best %d	Ketik untuk main - terbaik %d
+%s   Wins %d	%s Menang %d
+You win!	Awak menang!
+The phone wins.	Telefon menang.
+Draw.	Lukis.
+You are X.	Awak X.
+Again	Sekali lagi
+< Games	< Permainan
+My number: %d	Nombor saya: %d
+New message to a number	Mesej baharu ke nombor
+%d  -  %s, Lv %d%s	%d - %s, Tahap %d%s
+  (busy)	  (sibuk)
+Call	Panggilan
+Message	Mesej
+New message	Mesej baharu
+Unknown	Tidak diketahui
+No messages yet.	Tiada mesej lagi.
+Reply	Balas
+< All messages	< Semua mesej
+Dial a number	Dail nombor
+Number to call	Nombor untuk dihubungi
+911 = emergency, the Taxi app calls a taxi.	911 = kecemasan, aplikasi Teksi akan menghubungi teksi.
+Recent calls	Panggilan terkini
+Missed:	Terlepas:
+Out:	Keluar:
+In:	Dalam:
+Bank balance  -  cash $%d	Baki bank - tunai $%d
+Payday in %d:%02d (salary + 0.1%% interest)	Hari gaji dalam %d:%02d (gaji + 0.1%% faedah)
+Deposit amount (at an ATM)	Jumlah deposit (di ATM)
+Withdraw	Tarik balik
+Withdraw amount (at an ATM)	Jumlah pengeluaran (di ATM)
+Transfer to a phone number	Pindahkan ke nombor telefon
+Their phone number	Nombor telefon mereka
+Nearest ATM on GPS	ATM terdekat menggunakan GPS
+Deposits and withdrawals work at ATMs and the Mega Bank. Transfers work anywhere.	Deposit dan pengeluaran boleh dilakukan di ATM dan Mega Bank. Pemindahan boleh dilakukan di mana-mana sahaja.
+Job Center	Pusat Pekerjaan
+Your job: %s%s  -  tasks done %u	Kerja anda: %s%s - tugasan selesai %u
+ (on duty)	 (bertugas)
+Stop shift	Berhenti syif
+Start shift	Mula syif
+Off duty	Tidak bertugas
+On duty	Bertugas
+Quit job	Berhenti kerja
+%s  Pay ~$%d / task. Level %d.	%s Bayar ~$%d / tugasan. Aras %d.
+Locked	Dikunci
+Take this job	Ambil kerja ini
+Clear route	Laluan yang jelas
+My home	Rumah saya
+At the store counter: normal price. Anywhere else: drone delivery (+10%). Weapons only at the Licensed Ammu-Nation.	Di kaunter kedai: harga biasa. Di tempat lain: penghantaran dron (+10%). Senjata hanya di Negara Ammu Berlesen.
+Cash $%d  |  Bank $%d	Tunai $%d | Bank $%d
+   (owned)	   (dimiliki)
+< Categories	< Kategori
+No vehicles yet. Shop - Vehicles, or the dealerships on the GPS.	Tiada kenderaan lagi. Kedai - Kenderaan, atau pengedar pada GPS.
+Deliver here	Hantar di sini
+Sell (50%)	Jual (50%)
+Your home: %s	Rumah anda: %s
+You always spawn at home. /setspawn at your house sets the exact point.	Anda sentiasa bertelur di rumah. /setspawn di rumah anda menetapkan titik yang tepat.
+GPS home	Rumah GPS
+Sell (60%)	Jual (60%)
+Buy a house: you will always spawn there instead of the Lobby Hub.	Beli rumah: anda akan sentiasa bertelur di sana dan bukannya Hab Lobi.
+Tap a house for the GPS, then /buyhouse at the door (paid from the bank first).	Ketik rumah untuk GPS, kemudian /buyhouse di pintu (bayar dari bank dahulu).
+Holo Pets	Haiwan Peliharaan Holo
+Send my pet home	Hantar haiwan peliharaan saya pulang
+  (with you)	  (dengan awak)
+  - call	  - panggilan
+ in the Shop	 di Kedai
+Emotes & Dances	Emoticon & Tarian
+Stop (/e c)	Berhenti (/e c)
+Shared emote: /e %s [player id]	Emoticon kongsi: /e %s [id pemain]
+New post	Siaran baharu
+Post to Vil Feed	Hantar ke Suapan Vil
+Advert ($100)	Iklan ($100)
+Advert text	Teks iklan
+%d min ago	%d minit yang lalu
+Nothing posted yet. Be the first.	Tiada apa-apa yang disiarkan lagi. Jadilah yang pertama.
+Mega Vil News	Berita Mega Vil
+LIVE: %s	LANGSUNG: %s
+%d:%02d left	%d:%02d kiri
+Go there (GPS)	Pergi ke sana (GPS)
+Next city event in %d:%02d	Acara bandar seterusnya di %d:%02d
+Mega Lottery jackpot: $%d	Jackpot Loteri Mega: $%d
+Your ticket: %d	Tiket anda: %d
+No ticket yet ($500, numbers 1-60).	Tiada tiket lagi ($500, nombor 1-60).
+Buy a ticket	Beli tiket
+Your number (1-60)	Nombor anda (1-60)
+City events (every 15 minutes):	Acara bandar (setiap 15 minit):
+Sky Blue	Biru Langit
+Sunset	Matahari terbenam
+Matrix	Matriks
+  (on)	  (hidup)
+  (Shop)	  (Kedai)
+Phone number %d  |  MegaVil OS %s	Nombor telefon %d | OS MegaVil %s
+incoming call...	panggilan masuk...
+Voice chat goes to this call. Hold the mic button to talk.	Sembang suara akan ke panggilan ini. Tekan butang mikrofon untuk bercakap.
+Answer	Jawapan
+End call	Tamatkan panggilan
+MegaVil 6G  100%	MegaVil 6G 100%
+911 - what happened?	911 - apa yang berlaku?
+Taxi - where to? (optional)	Teksi - ke mana hendak pergi? (pilihan)
+Cash $%d  |  Bank $%d  |  Lv %d	Tunai $%d | Bank $%d | Tahap %d
+911 Emergency	911 Kecemasan
+Police, paramedics and firefighters on duty get your location.	Polis, paramedik dan anggota bomba yang bertugas akan mendapatkan lokasi anda.
+Call 911	Hubungi 911
+Mega Taxi	Teksi Mega
+Taxi drivers get your location.	Pemandu teksi akan mendapatkan lokasi anda.
+Call a taxi	Hubungi teksi
+{FF4444}No cheating{FFFFFF}: no hacks, aimbots, mod menus or speed / fly mods.	{FF4444}Tiada penipuan{FFFFFF}: tiada penggodaman, aimbot, menu mod atau mod kelajuan / terbang.
+{FF4444}No NSFW{FFFFFF}: no adult names, chat, skins or pictures.	{FF4444}Tiada NSFW{FFFFFF}: tiada nama dewasa, sembang, kulit atau gambar.
+{FFFF00}Respect everyone{FFFFFF}: no insults, racism, threats or harassment.	{FFFF00}Hormati semua orang{FFFFFF}: tiada penghinaan, perkauman, ancaman atau gangguan.
+{FFFF00}No spam{FFFFFF}: no flooding the chat, caps lock or advertising other servers.	{FFFF00}Tiada spam{FFFFFF}: tiada pembanjiran sembang, kunci huruf besar atau pengiklanan pelayan lain.
+{FFFF00}No bug abuse{FFFFFF}: report glitches to an {33CC55}admin{FFFFFF}, don't use them.	{FFFF00}Tiada penyalahgunaan pepijat{FFFFFF}: laporkan gangguan kepada {33CC55}pentadbir{FFFFFF}, jangan gunakannya.
+{FFFF00}No spawn killing{FFFFFF} or griefing other players at spawns and safe zones.	{FFFF00}Tiada pembunuhan spawn{FFFFFF} atau kesedihan pemain lain di spawn dan zon selamat.
+{FFFF00}Don't pretend to be staff{FFFFFF} (admin, moderator or the bot {00BFFF}Broker{FFFFFF}).	{FFFF00}Jangan berpura-pura menjadi kakitangan{FFFFFF} (pentadbir, moderator atau {00BFFF}Broker{FFFFFF} bot).
+{FFFF00}Keep the chat friendly{FFFFFF} and in a language the others understand.	{FFFF00}Kekalkan suasana sembang yang mesra{FFFFFF} dan dalam bahasa yang difahami oleh orang lain.
+{FFFF00}Listen to the {33CC55}admins{FFFF00} and {33CC55}moderators{FFFFFF}: a kick waits {FF9900}4:29{FFFFFF}, a ban is {FF4444}permanent{FFFFFF}.	{FFFF00}Dengarkan {33CC55}pentadbir{FFFF00} dan {33CC55}penyederhana{FFFFFF}: sepakan menunggu {FF9900}4:29{FFFFFF}, larangan adalah {FF4444}kekal{FFFFFF}.
+{33CC55}Have fun{FFFFFF} and play fair.	{33CC55}Bersenang-senanglah{FFFFFF} dan bermainlah secara adil.
+This server has no rules set.	Pelayan ini tidak menetapkan peraturan.
+SAFE ZONE: %s - nobody can hurt you here, weapons are put away.	ZON SELAMAT: %s - tiada siapa yang boleh mencederakan anda di sini, senjata disimpan.
+You left the safe zone - you can be hurt again.	Awak dah keluar dari zon selamat - awak boleh cedera lagi.
+SAFE ZONE	ZON SELAMAT
+SAFE ZONE - weapons away, nobody can hurt you	ZON SELAMAT - senjata dijauhkan, tiada siapa yang boleh mencederakan anda
+Class selection	Pemilihan kelas
+/class: pick a gang, police or civilian (team + skin)	/class: pilih geng, polis atau orang awam (pasukan + kulit)
+Turf wars	Perang rumput
+gang zones on the radar, take them by standing in them (/turf, /teams)	zon geng pada radar, ambilnya dengan berdiri di dalamnya (/turf, /teams)
+Races	Perlumbaan
+/race queue: 14 players race a GTA SA race	Barisan /race: 14 pemain berlumba dalam perlumbaan GTA SA
+Derbies	Derbi
+/derby: last car standing	/derby: kereta terakhir yang berdiri
+Deathmatch	Perlawanan Kematian
+/dm: deathmatch zones with weapons	/dm: zon perlawanan maut dengan senjata
+/job: trucking, quarry, pizza, taxi, medic ...	/job: trak, kuari, piza, teksi, perubatan ...
+3D text labels	Label teks 3D
+names floating over the starts	nama-nama terapung di atas permulaan
+people standing at the job starts	orang yang berdiri di tempat kerja bermula
+Home Kit	Kit Rumah
+/create house <name>, /setup, /buyhouse, /edithouse, /edithouseinteriors (real GTA SA buildings + furniture)	/create rumah <nama>, /setup, /buyhouse, /edithouse, /edithouseinteriors (bangunan GTA SA sebenar + perabot)
+Survival (DayZ)	Kelangsungan Hidup (DayZ)
+/survival: thirst, loot crates, zombies at night (Sunset DayZ style)	/survival: dahaga, peti rampasan, zombi pada waktu malam (gaya Sunset DayZ)
+Cops and Robbers	Polis dan Perompak
+/cop or /robber: /rob, /arrest, /cuff, wanted stars, /hitlist, /placehit	/cop atau /robber: /rob, /arrest, /cuff, bintang yang dikehendaki, /hitlist, /placehit
+Attack / Defend	Serang / Bertahan
+/ad: attackers take the base checkpoint, defenders hold it (5 min rounds, /vote, /spec)	/ad: penyerang mengambil pusat pemeriksaan pangkalan, pemain pertahanan menahannya (5 minit pusingan, /vote, /spec)
+Stunt freeroam	Lagak ngeri bebas
+/ramp, /jump, /chiliad, /lv, /sf, /ls, /n nitro, /fix, stunt bonus	/ramp, /jump, /chiliad, /lv, /sf, /ls, /n nitro, /fix, bonus aksi lagak ngeri
+Drift	Hanyut
+/drift: drift points + combo, /drifttop (RogueDrifterZ style)	/drift: titik hanyutan + kombo, /drifttop (gaya RogueDrifterZ)
+Timber (lumberjack)	Tukang kayu (pembalak)
+/timber: cut trees with a chainsaw, load the logs in the pickup, /unloadtimber at the Timber Storage	/timber: tebang pokok dengan gergaji rantai, muatkan kayu balak ke dalam trak pikap, /unloadtimber di Stor Kayu
+That gamemode	Mod permainan itu
+%s is off on this server. Its host turns gamemodes on in MP Launcher > Add server > Gamemodes.	%s dimatikan pada pelayan ini. Hosnya menghidupkan mod permainan dalam Pelancar MP > Tambah pelayan > Mod Permainan.
+Block menu cheats	Penipuan menu blok
+Allow CheatMenu	Benarkan CheatMenu
+AFK tag	Tag AFK
+Show player ids	Tunjukkan id pemain
+Only %s can change these settings.	Hanya %s sahaja yang boleh mengubah tetapan ini.
+the admin and moderators	pentadbir dan moderator
+the server owner	pemilik pelayan
+The featured servers keep their gamemodes.	Pelayan yang ditampilkan mengekalkan mod permainan mereka.
+Join a server first.	Sertai pelayan dahulu.
+This server still runs MP %s: settings are view only until it updates to 3.39 (the 24/7 servers update by themselves).	Pelayan ini masih menjalankan MP %s: tetapan hanya boleh dilihat sehingga ia dikemas kini kepada 3.39 (pelayan 24/7 dikemas kini dengan sendirinya).
+(old)	(lama)
+Setting	Tetapan
+State	Negeri
+{FFFFFF}Gamemode: %s\t%s\n	{FFFFFF}Mod Permainan: %s\t%s\n
+{FFFFFF}Gamemode: %s	{FFFFFF}Mod Permainan: %s
+{FFFFFF}Permission: %s\t%s\n	{FFFFFF}Kebenaran: %s\t%s\n
+{FFFFFF}Permission: %s	{FFFFFF}Kebenaran: %s
+{FFFFFF}Rules window\t%s\n	{FFFFFF}Tetingkap peraturan\t%s\n
+{FFFFFF}Rules window	{FFFFFF}Tetingkap peraturan
+{FFFFFF}Server settings %s	{FFFFFF}Tetapan pelayan %s
+{33CC55}(you can change them)	{33CC55}(anda boleh mengubahnya)
+{AAAAAA}(view only)	{AAAAAA}(lihatan sahaja)
+Name: %s. moderator.txt: %s.	Nama: %s. moderator.txt: %s.
+not found (put it in the MP folder)	tidak dijumpai (letakkannya dalam folder MP)
+Not on a server right now.	Bukan di pelayan sekarang.
+Server \"%s\" runs MP %s: you are %s.	Pelayan \"%s\" menjalankan MP %s: anda ialah %s.
+[MOD] (moderator permissions)	[MOD] (kebenaran moderator)
+NOT [MOD]	BUKAN [MOD]
+This copy of the server is older than MP 3.40.1 and doesn't know the Trunk key. It is hosted by an old phone / a VPS that didn't update - rejoin when it runs 3.50.1.	Salinan pelayan ini lebih lama daripada MP 3.40.1 dan tidak mengetahui kunci Trunk. Ia dihoskan oleh telefon lama / VPS yang tidak dikemas kini - sertai semula apabila ia menjalankan 3.50.1.
+Rejoin the server (Disconnect, then Connect) - the key is sent at the join.	Sertai semula pelayan (Putuskan Sambungan, kemudian Sambung) - kunci dihantar semasa penyertaan.
+Only [ADMIN], [MOD] or the host of this server can switch the cheats.	Hanya [ADMIN], [MOD] atau hos pelayan ini sahaja yang boleh menukar cheat.
+MP cheats are %s. Use /cheats on or /cheats off (the CLEO menu + Cheat Menu are always blocked).	Penipu MP ialah %s. Gunakan /cheats untuk hidupkan atau /cheats untuk matikan (menu CLEO + Menu Penipu sentiasa disekat).
+*** MP cheats disabled for everyone on your server.	*** Penipuan MP dilumpuhkan untuk semua orang di pelayan anda.
+*** MP cheats allowed again on your server.	*** Penipuan MP dibenarkan sekali lagi di pelayan anda.
+Moderator: you are [MOD] %s here (kick / ban / mute / freeze: MP menu > Players, server settings: /settings).	Moderator: anda berada [MOD] %s di sini (tendang / larang / bisu / bekukan: menu MP > Pemain, tetapan pelayan: /settings).
+moderator.txt: the MP moderator key was read, but this server didn't give [MOD] (it runs an older MP). Type /modcheck to see why.	moderator.txt: kekunci moderator MP telah dibaca, tetapi pelayan ini tidak memberikan [MOD] (ia menjalankan MP yang lebih lama). Taip /modcheck untuk melihat sebabnya.
+moderator.txt: this key is not the MP moderator key and this server's owner hasn't listed it - ask for the MP moderator key.	moderator.txt: kekunci ini bukan kekunci moderator MP dan pemilik pelayan ini belum menyenaraikannya - minta kekunci moderator MP.
+Nothing to redo.	Tiada apa yang perlu diulang.
+Nothing to undo.	Tiada apa yang perlu dibatalkan.
+Could not save files/MP/tde/projects/%s.mptd	Tidak dapat menyimpan files/MP/tde/projects/%s.mptd
+Saved files/MP/tde/projects/%s.mptd (%d textdraws). Add it to your server: Add server > Plugins > Textdraw.	Disimpan files/MP/tde/projects/%s.mptd (%d textdraws). Tambahkannya ke pelayan anda: Tambah pelayan > Plugin > Textdraw.
+New project %s.	Projek baharu %s.
+Editing %s. Tap a textdraw to select it, drag to move. /tde close (saves) - /tde help.	Mengedit %s. Ketik lukisan teks untuk memilihnya, seret untuk bergerak. /tde tutup (simpan) - /tde bantuan.
+Editor closed (saved %s.mptd).	Editor ditutup (disimpan %s.mptd).
+1024 textdraws is the limit.	1024 lukisan teks adalah hadnya.
+Moved to the depot (Depo restores it).	Dipindahkan ke depot (Depo memulihkannya).
+Text	Teks
+No textdraws yet: tap New.	Tiada lukisan teks lagi: ketik Baharu.
+Textdraw	Lukisan Teks
+Position	Kedudukan
+Textdraws	Lukisan Teks
+Textdraw restored.	Lukisan teks dipulihkan.
+The depot is empty (deleted textdraws go here).	Depot kosong (gambar teks yang dipadam diletakkan di sini).
+Deleted textdraw\tText\tDeleted\n	Teks yang dipadam\tTeks\tDipadam\n
+Deleted textdraw	Lukisan teks dipadam
+Deleted	Dipadam
+Depo - tap to restore	Depo - ketik untuk memulihkan
+Restore	Pulihkan
+Sprite browser (font 4)	Pelayar Sprite (fon 4)
+Use	Gunakan
+New textdraw	Lukisan teks baharu
+Model id (skins 0-311, objects, vehicles 400-611). Now: %d	ID model (skin 0-311, objek, kenderaan 400-611). Sekarang: %d
+Preview model	Pratonton model
+Set	Tetapkan
+Rotation X Y Z and zoom. Now: %.0f %.0f %.0f %.2f	Putaran XYZ dan zum. Sekarang: %.0f %.0f %.0f %.2f
+Preview rotation	Pratonton putaran
+Vehicle colours: colour1 colour2 (-1 = random). Now: %d %d	Warna kenderaan: colour1 colour2 (-1 = rawak). Sekarang: %d %d
+Preview vehicle colours	Pratonton warna kenderaan
+Preview model (font 5)	Pratonton model (fon 5)
+Model id\nRotation and zoom\nVehicle colours	ID model\nPutaran dan zum\nWarna kenderaan
+Model id	ID model
+Rotation and zoom	Putaran dan zum
+Vehicle colours	Warna kenderaan
+Edit	Sunting
+That project is open: open another one first.	Projek itu terbuka: buka satu lagi dahulu.
+Deleted %s.mptd.	Dipadamkan %s.mptd.
+Opened %s (%d textdraws).	Membuka %s (%d lukisan teks).
+%s.mptd is not an MP textdraw file.	%s.mptd bukan fail teks MP.
+No textdraws found in that file.	Tiada lukisan teks ditemui dalam fail itu.
+Imported %d textdraws.	Lukisan teks %d yang diimport.
+New project name	Nama projek baharu
+No saved projects yet.	Tiada projek yang disimpan lagi.
+Open project	Projek terbuka
+Delete project	Padam projek
+Open	Buka
+Save as	Simpan sebagai
+Exported files/MP/tde/export/%s%s.pwn	Dieksport files/MP/tde/export/%s%s.pwn
+Could not write %s	Tidak dapat menulis %s
+Put a .mptd, .pwn or .txt export in files/MP/tde/import/ first.	Letakkan eksport .mptd, .pwn atau .txt dalam files/MP/tde/import/ dahulu.
+Import textdraws	Import lukisan teks
+Projects - %s%s	Projek - %s%s
+New project\nOpen project\nSave\nSave as\nExport Pawn (SA-MP)\nExport Pawn (open.mp)\nDelete project\nImport (.mptd / .pwn / .txt)\nClose the editor	Projek baharu\nBuka projek\nSimpan\nSimpan sebagai\nEksport Pawn (SA-MP)\nEksport Pawn (open.mp)\nPadam projek\nImport (.mptd / .pwn / .txt)\nTutup editor
+New project	Projek baharu
+Export Pawn (SA-MP)	Pajak Gadai Eksport (SA-MP)
+Export Pawn (open.mp)	Eksport Pajak Gadai (open.mp)
+Close the editor	Tutup editor
+Global textdraw array	Tatasusunan lukisan teks global
+Player textdraw array	Tatasusunan lukis teks pemain
+Own variable (empty = array)	Pembolehubah sendiri (kosong = tatasusunan)
+Grid snap %s.	Petikan grid %s.
+on (5 px)	pada (5 piksel)
+Fine drag %s.	Seretan halus %s.
+on (1/4 speed)	hidup (1/4 kelajuan)
+Global array name\t%s\nPlayer array name\t%s\nThis textdraw's own variable\t%s\nGrid snap\t%s\nFine drag\t%s\nHide the tool bar (tap the corner to show)\t%s	Nama tatasusunan global\t%s\nNama tatasusunan pemain\t%s\nPembolehubah teks ini sendiri\t%s\nPetikan grid\t%s\nSeret halus\t%s\nSembunyikan bar alat (ketik sudut untuk menunjukkan)\t%s
+Global array name	Nama tatasusunan global
+Player array name	Nama susunan pemain
+This textdraw's own variable	Pembolehubah textdraw ini sendiri
+Grid snap	Penguncian grid
+Fine drag	Seretan halus
+Hide the tool bar (tap the corner to show)	Sembunyikan bar alat (ketik sudut untuk menunjukkan)
+On	Hidup
+Off	Mati
+Change	Perubahan
+Select a textdraw first (tap it, or List).	Pilih lukisan teks terlebih dahulu (ketik padanya atau Senarai).
+Textdraw text (~n~ new line, ~r~ red, _ = space)	Teks lukis teks (~n~ baris baharu, ~r~ merah, _ = ruang)
+Textsize	Saiz teks
+Lettersize	Saiz huruf
+%s%s  |  #%d/%d %s  |  %s: pos %.1f, %.1f  letter %.3f, %.3f  size %.1f, %.1f  font %d  colour %08X	%s%s | #%d/%d %s | %s: pos %.1f, %.1f huruf %.3f, %.3f saiz %.1f, %.1f fon %d warna %08X
+%s%s  |  %d textdraws  |  tap New to add one, tap a textdraw to select it	%s%s | %d lukisan teks | ketik Baharu untuk menambah satu, ketik lukisan teks untuk memilihnya
+Color	Warna
+Background / outline colour	Warna latar belakang / garis besar
+Box colour	Warna kotak
+Colour RRGGBBAA (hex)	Warna RRGGBBAA (heksagon)
+/tde [project] opens the editor, /tde close, /tde save, /tde new <name>, /tde open <name>, /tde export [openmp].	/tde [projek] membuka editor, /tde tutup, /tde simpan, /tde <nama> baharu, /tde buka <nama>, /tde eksport [openmp].
+Files: files/MP/tde/projects/*.mptd - put it on your server with Add server > Plugins > Textdraw > Import file.	Fail: files/MP/tde/projects/*.mptd - letakkannya pada pelayan anda dengan Tambah pelayan > Plugin > Textdraw > Import fail.
+Open the editor first (/tde).	Buka editor terlebih dahulu (/tde).
+Could not read the file.	Tidak dapat membaca fail tersebut.
+Not a textdraw file (	Bukan fail lukisan teks (
+Could not write to 	Tidak dapat menulis kepada 
+%s.mptd added to files/MP/%s/ (%d textdraws)%s	%s.mptd ditambah pada files/MP/%s/ (%d tekslukisan)%s
+ - live on your server now	 - teruskan di pelayan anda sekarang
+/sdcard/Download/MP Textdraws	/sdcard/Muat Turun/Lukisan Teks MP
+/storage/emulated/0/Download/MP Textdraws	/storage/diemulasi/0/Muat Turun/Lukisan Teks MP
+/sdcard/Download	/sdcard/Muat Turun
+Plugins	Plugin
+Files for your custom server go to files/MP/%s/.	Fail untuk pelayan tersuai anda pergi ke files/MP/%s/.
+This plugin type is not available yet.	Jenis pemalam ini belum tersedia lagi.
+Textdraw: a .mptd saved by /tde (in game) or the MP Textdraw Editor app. Every player on your server sees them.	Textdraw: .mptd yang disimpan oleh /tde (dalam permainan) atau aplikasi MP Textdraw Editor. Setiap pemain di pelayan anda melihatnya.
+Import file	Import fail
+No .mptd files found. Save one with /tde, or put it in Download/MP Textdraws or files/MP/import/.	Tiada fail .mptd ditemui. Simpan satu dengan /tde, atau letakkannya dalam Muat Turun/MP Textdraws atau files/MP/import/.
+Import a textdraw file	Import fail textdraw
+No textdraw files on this server yet.	Tiada fail textdraw pada pelayan ini lagi.
+Remove	Alih keluar
+Make one: /tde in game (files/MP/tde/projects/), or the MP Textdraw Editor app.	Buat satu: /tde dalam permainan (files/MP/tde/projects/), atau aplikasi MP Textdraw Editor.
+Birch Tree	Pokok Birch
+Oak Tree	Pokok Oak
+Yew Tree	Pokok Yew
+Sold	Dijual
+Trees	Pokok
+{FFA500}LUMBERJACK: {FFFFFF}You quit the Timber job. Your paycheck stays ($%.2f, /mysalary).	{FFA500}LUMBERJACK: {FFFFFF}Anda berhenti kerja sebagai Tukang Kayu. Gaji anda kekal ($%.2f, /mysalary).
+{FFA500}JOBINFO: {FFFFFF}The pickup is full (%d/%d). Drive to the Timber Storage (red marker) and /unloadtimber.	{FFA500}JOBINFO: {FFFFFF}Pikap penuh (%d/%d). Pandu ke Stor Kayu (penanda merah) dan /unloadtimber.
+{FFA500}JOBINFO: {FFFFFF}Mission trees done. Bring the %d timber to the Timber Storage and /unloadtimber.	{FFA500}JOBINFO: {FFFFFF}Misi pokok selesai. Bawa kayu %d ke Stor Kayu dan /unloadtimber.
+{FFA500}GPSINFO: {FFFFFF}Tree %d/%d: a %s%s{FFFFFF} is marked on your radar.	{FFA500}GPSINFO: {FFFFFF}Pokok %d/%d: %s%s{FFFFFF} ditanda pada radar anda.
+{FFA500}Timber job: {FFFFFF}/timber (start, teleports you to the Timber Storage)  /quitjob  /fixjob  /timbergps	{FFA500}Kerja kayu balak: {FFFFFF}/timber (mula, teleport anda ke Stor Kayu Balak) /quitjob /fixjob /timbergps
+{FFFFFF}/cut (or hold CUT with the chainsaw)  /loadtimber (at the fallen tree)  /unloadtimber (Timber Storage)	{FFFFFF}/cut (atau tahan CUT dengan gergaji rantai) /loadtimber (di pokok tumbang) /unloadtimber (Storan Kayu)
+{FFFFFF}/mysalary  /collectsalary (at the storage)  /timberskill  /checkjobcooldown  /timberhelp	{FFFFFF}/mysalary /collectsalary (di storan) /timberskill /checkjobcooldown /timberhelp
+You cannot cut trees right now - you are on a cooldown (%d s, /checkjobcooldown).	Anda tidak boleh menebang pokok sekarang - anda sedang dalam tempoh cooldown (%d s, /checkjobcooldown).
+{FFA500}LUMBERJACK: {FFFFFF}Tree %d/%d, timber %d/%d, paycheck $%.2f. /quitjob to stop.	{FFA500}PEMBALONG: {FFFFFF}Pokok %d/%d, kayu balak %d/%d, gaji $%.2f. /quitjob untuk berhenti.
+{FFA500}LUMBERJACK: {FFFFFF}Welcome to the Timber job (woodcutting level %d). Cut %d trees, load the logs in the pickup, sell them at the storage.	{FFA500}PEMBALONG: {FFFFFF}Selamat datang ke kerja Balak (tahap pemotongan kayu %d). Tebang %d pokok, muatkan kayu balak ke dalam trak pikap, jualkannya di stor.
+You are not at the Timber Storage (the yellow \"i\" at the barn, /timbergps).	Anda tidak berada di Balai Simpanan Kayu (\"i\" kuning di bangsal, /timbergps).
+You can sell lumber again in %d s.	Anda boleh menjual kayu balak semula dalam masa %d saat.
+Your pickup has no timber. Cut a tree and /loadtimber first.	Pikap anda tiada kayu. Tebang pokok dan /loadtimber dahulu.
+Your pickup is gone - the timber went with it. /quitjob, then /timber.	Pikap anda telah hilang - kayu itu telah hilang bersamanya. /quitjob, kemudian /timber.
+Bring the pickup with the timber to the storage.	Bawa trak pikap bersama kayu balak ke stor.
+{FFA500}STORAGE: {FFFFFF}You've unloaded {FFDD33}%d timber{FFFFFF}, {33CC55}$%.2f{FFFFFF} has been issued to your paycheck.	{FFA500}PENYIMPANAN: {FFFFFF}Anda telah memunggah {FFDD33}%d kayu{FFFFFF}, {33CC55}$%.2f{FFFFFF} telah dikeluarkan untuk gaji anda.
+{FFA500}SALARY: {FFFFFF}Your salary statement has been updated, please check command '/mysalary'.	{FFA500}GAJI: {FFFFFF}Penyata gaji anda telah dikemas kini, sila semak arahan '/mysalary'.
+Mission complete: %d trees. +$150.00 bonus on your paycheck.	Misi selesai: %d pokok. +Bonus $150.00 pada gaji anda.
+{FFA500}LUMBERJACK: {FFFFFF}You feel tired of cutting trees, so you've decided to stop (rest %d s).	{FFA500}PEMBALONG: {FFFFFF}Anda rasa penat menebang pokok, jadi anda telah memutuskan untuk berhenti (rehat %d saat).
+{FFA500}..:: Salary statement ::..	{FFA500}..:: Penyata gaji ::..
+Paycheck (not collected): {33CC55}$%.2f{FFFFFF}   Earned in total: $%.2f	Gaji (tidak dikutip): {33CC55}$%.2f{FFFFFF} Jumlah yang diperolehi: $%.2f
+Timber sold: %d   Trees cut: %d   Woodcutting level %d (%d xp)	Kayu balak yang dijual: %d Pokok yang ditebang: %d Tahap pemotongan kayu %d (%d xp)
+Collect it with /collectsalary at the Timber Storage.	Ambilnya bersama /collectsalary di Stor Kayu.
+{FFA500}Woodcutting: {FFFFFF}level %d, %d xp%s.	{FFA500}Pemotongan Kayu: {FFFFFF}tahap %d, %d xp%s.
+ (oak trees at 20 xp)	 (pokok oak pada 20 xp)
+ (yew trees at 60 xp)	 (pokok yew pada 60 xp)
+ (max)	 (maks)
+{FFA500}..:: Job Cooldowns ::..	{FFA500}..:: Tempoh Sejuk Kerja ::..
+Wood Cutting Cooldown Time Remaining: %.2f minutes	Masa Bertenang Pemotongan Kayu yang Tinggal: %.2f minit
+Lumber selling: %d s	Jualan kayu balak: %d s
+You have no job cooldown timers.	Anda tiada pemasa penyejukan kerja.
+Collect your paycheck at the Timber Storage (/timbergps).	Ambil gaji anda di Timber Storage (/timbergps).
+Your paycheck is empty.	Gaji awak kosong.
+{FFA500}SALARY: {FFFFFF}You collected {33CC55}$%d{FFFFFF} from your paycheck.	{FFA500}GAJI: {FFFFFF}Anda telah menerima {33CC55}$%d{FFFFFF} daripada gaji anda.
+Staff only.	Kakitangan sahaja.
+Saved \"%s\" to timber.txt (%d trees in the file now; built-in spots are used until there are %d).	Disimpan \"%s\" ke timber.txt (%d pokok dalam fail sekarang; tempat terbina dalam digunakan sehingga terdapat %d).
+Job state fixed (animation stopped, chainsaw back).	Keadaan kerja telah dibetulkan (animasi dihentikan, gergaji rantai kembali).
+{FFA500}LUMBERJACK: {FFFFFF}You can now sell lumbers again!	{FFA500}PEMBALONG: {FFFFFF}Kini anda boleh menjual kayu balak semula!
+{FFA500}LUMBERJACK: {FFFFFF}You died - the Timber job stopped.	{FFA500}PEMBALONG: {FFFFFF}Anda mati - kerja Balak telah dihentikan.
+Your pickup is gone (the %d timber too). /quitjob and /timber for a new one.	Pikap anda telah hilang (kayu %d juga). /quitjob dan /timber untuk yang baharu.
+{FFA500}GPSINFO: {FFFFFF}You have arrived!	{FFA500}GPSINFO: {FFFFFF}Anda telah tiba!
+You need the chainsaw in your hands (it comes back by itself).	Anda memerlukan gergaji rantai di tangan anda (ia akan kembali dengan sendirinya).
+{C2A2DA}* %s seizes his chainsaw from behind body, then cut the tree.	{C2A2DA}* %s merampas gergaji rantainya dari belakang badan, kemudian menebang pokok itu.
+You have chopped down a %s%s{FFFFFF}. TIMBER!	Anda telah menebang sebilah %s%s{FFFFFF}. KAYU!
+~y~TIMBER!	~y~KAYU!
+Stand next to the fallen tree.	Berdiri di sebelah pokok tumbang itu.
+Get out of the car to load the timber.	Keluar dari kereta untuk memuatkan kayu balak.
+You need your pickup here (/quitjob, /timber for a new one).	Anda memerlukan pengambilan anda di sini (/quitjob, /timber untuk yang baharu).
+Bring the pickup closer (within 18 m of the log).	Dekatkan pengutip (dalam jarak 18 m dari kayu balak).
+{C2A2DA}AME: {FFFFFF}loads timber in the back of the pickup truck	{C2A2DA}AME: {FFFFFF}memuatkan kayu di bahagian belakang trak pikap
+{FFA500}JOBINFO: {FFFFFF}You've successfully loaded the timber into the car! (total timber: %d/%d)	{FFA500}JOBINFO: {FFFFFF}Anda telah berjaya memuatkan kayu balak ke dalam kereta! (jumlah kayu balak: %d/%d)
+Woodcutting level %d: %s.	Aras pemotongan kayu %d: %s.
+you can cut oak trees now	awak boleh tebang pokok oak sekarang
+you can cut yew trees now	awak boleh tebang pokok yew sekarang
+Timber Storage	Penyimpanan Kayu
+use '/unloadtimber' to sell collected timber	gunakan '/unloadtimber' untuk menjual kayu balak yang dikumpul
+Lumberjack	Tukang kayu
+/timberhelp - the job commands	/timberhelp - arahan kerja
+type '/timber' to start the job	taip '/timber' untuk memulakan kerja
+TIMBER %d/%d  TREE %d/%d	KAYU %d/%d POKOK %d/%d
+Health: %d	Kesihatan: %d
+Cutting tree	Memotong pokok
+Loading timber	Memuatkan kayu balak
+{4DD2FF}%s\n{FFFFFF}/job %s  {33CC55}$%d	{4DD2FF}%s\n{FFFFFF}/job %s {33CC55}$%d
+{FFFFFF}/job %s  {33CC55}$%d	{FFFFFF}/job %s {33CC55}$%d
+{FFE14D}Race: %s\n{FFFFFF}/race  {A9C4E4}(%s, %d players)	{FFE14D}Perlumbaan: %s\n{FFFFFF}/race {A9C4E4}(%s, %d pemain)
+{FFE14D}Race: %s	{FFE14D}Bangsa: %s
+{FFFFFF}/race  {A9C4E4}(%s, %d players)	{FFFFFF}/race {A9C4E4}(%s, %d pemain)
+%s~n~~r~TURF WAR: ~w~%s %d%%	%s~n~~r~PERANG TURF: ~w~%s %d%%
+%s~n~~w~%s turf - stay to take it%s	%s~n~~w~%s rumput - kekal untuk mengambilnya%s
+ (3.01 server)	 (pelayan 3.01)
+%s~n~~w~%s turf	%s~n~~w~%s rumput
+%s is marked on your radar for 90 seconds.	%s ditanda pada radar anda selama 90 saat.
+Owner	Pemilik
+%s\t{%06X}%s\t{FF4444}attacked by %s (%d%%)\n	%s\t{%06X}%s\t{FF4444}diserang oleh %s (%d%%)\n
+{FF4444}attacked by %s (%d%%)	{FF4444}diserang oleh %s (%d%%)
+{FFFFFF}Turf - gang zones	{FFFFFF}Run - zon geng
+Turf	Rumput
+{FFFFFF}Teams	{FFFFFF}Pasukan
+Skin %d is not in this game.	Kulit %d tiada dalam permainan ini.
+%s~n~~w~class %d/%d  -  skin %d	%s~n~~w~kelas %d/%d - kulit %d
+Leave the race / derby / job / DM first (/leave).	Tinggalkan perlumbaan / derby / kerja / DM dahulu (/leave).
+Not during a mission.	Bukan semasa misi.
+(/class) %s is a civilian.	(/class) %s ialah orang awam.
+(/class) %s joined the %s!	(/class) %s telah menyertai %s!
+%s hold %d zones. Stand in an enemy zone for 60 s to take it (/turf).	%s tahan %d zon. Berdiri di zon musuh selama 60 saat untuk mengambilnya (/turf).
+*** No gamemodes on this server (its host turns them on: MP Launcher > Add server > Gamemodes).	*** Tiada mod permainan pada pelayan ini (hosnya menghidupkannya: Pelancar MP > Tambah pelayan > Mod Permainan).
+*** Gamemodes here: %s.	*** Mod permainan di sini: %s.
+*** The host turned on: %s.	*** Hos telah dihidupkan: %s.
+*** The host turned off: %s.	*** Hos dimatikan: %s.
+The host turned this gamemode off.	Hos telah mematikan mod permainan ini.
+[MP Server] %s\n	[Pelayan MP] %s\n
+[MP Server] %s	[Pelayan MP] %s
+MP Server	Pelayan MP
+Bad login ticket.	Tiket log masuk yang rosak.
+Login ticket not signed by the MP bot.	Tiket log masuk tidak ditandatangani oleh bot MP.
+admin key	kunci pentadbir
+moderator key	kunci moderator
+%s %s cheats for everyone.	%s %s penipuan untuk semua orang.
+%s was %s by %s	%s ialah %s oleh %s
+You are muted by the administrator.	Anda telah diredamkan oleh pentadbir.
+%s Administrator: %s  Reason: %s	%s Pentadbir: %s Sebab: %s
+{FFFFFF}[{FFFF00}SERVER{FFFFFF}]: %s got %s by %s	{FFFFFF}[{FFFF00}PELAYAN{FFFFFF}]: %s mendapat %s berbanding %s
+no reason	tiada sebab
+[SERVER]: %s got %s by %s	[SERVER]: %s mendapat %s dengan %s
+TURF: %s took %s from %s!	TURF: %s mengambil %s ​​daripada %s!
+Section	Seksyen
+Tap to type	Ketik untuk menaip
+Arial (MP)	Arial (Ahli Parlimen)
+Pricedown (GTA)	Penurunan Harga (GTA)
+Roboto Condensed	Roboto Dipadatkan
+Coming Soon	Akan datang tidak lama lagi
+Dancing Script	Skrip Tarian
+Vehicle_%d.png	Kenderaan_%d.png
+scrolled up - drag down for new messages	ditatal ke atas - seret ke bawah untuk mesej baharu
+MP: Connected to %s  |  %s  |  Players: %d/%d  |  Ping: %d ms%s	MP: Disambungkan ke %s | %s | Pemain: %d/%d | Ping: %d ms%s
+  |  Host: 	  | Hos: 
+  |  Hosting	  | Pengehosan
+MP: Connecting ...	Ahli Parlimen: Menyambung ...
+MP: Disconnected%s	Ahli Parlimen: Terputus Sambungan%s
+Shift	Syif
+Space	Angkasa
