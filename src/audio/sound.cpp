@@ -24,6 +24,9 @@
 #define MINIMP3_NO_STDIO
 #include "../../third_party/minimp3/minimp3_ex.h"
 #include "sound.h"
+#include <fcntl.h>
+#include <unistd.h>
+#include <SLES/OpenSLES_Android.h>
 
 static SLObjectItf g_Engine = nullptr, g_Mix = nullptr;
 static SLEngineItf g_EngineItf = nullptr;
@@ -346,11 +349,87 @@ namespace
     }
 }
 
+// 4.00.1: the Android media decoder (an OpenSL player on a file descriptor) for files minimp3 can't
+// read: m4a / aac / ogg / opus / webm saved as ".mp3" (YouTube downloads), or odd mp3s. It streams
+// from the file itself, any length.
+namespace
+{
+    struct FdPlayer { SLObjectItf obj = nullptr; SLPlayItf play = nullptr; SLVolumeItf vol = nullptr; int fd = -1; };
+    FdPlayer s_Fd;
+    bool s_FdMode = false, s_FdTried = false;
+    std::atomic<bool> s_FdEnd{false};
+    std::string s_StPath;
+    char s_StInfo[160] = "";
+    void FdCb(SLPlayItf, void*, SLuint32 ev) { if(ev & SL_PLAYEVENT_HEADATEND) s_FdEnd = true; }
+    void FdStop()
+    {
+        if(s_Fd.obj) (*s_Fd.obj)->Destroy(s_Fd.obj);
+        if(s_Fd.fd >= 0) close(s_Fd.fd);
+        s_Fd = FdPlayer(); s_FdMode = false; s_FdEnd = false;
+    }
+    void FdVolume(float volume)
+    {
+        if(s_Fd.vol) (*s_Fd.vol)->SetVolumeLevel(s_Fd.vol, (volume <= 0.01f) ? SL_MILLIBEL_MIN : (SLmillibel)(2000.0f * log10f(volume > 1.0f ? 1.0f : volume)));
+    }
+    bool FdStart(const std::string& path, float volume)
+    {
+        FdStop(); s_FdTried = true;
+        int fd = open(path.c_str(), O_RDONLY);
+        if(fd < 0) { snprintf(s_StInfo, sizeof(s_StInfo), "Android decoder: can't open the file"); return false; }
+        SLDataLocator_AndroidFD loc = { SL_DATALOCATOR_ANDROIDFD, fd, 0, SL_DATALOCATOR_ANDROIDFD_USE_FILE_SIZE };
+        SLDataFormat_MIME mime = { SL_DATAFORMAT_MIME, nullptr, SL_CONTAINERTYPE_UNSPECIFIED };
+        SLDataSource src = { &loc, &mime };
+        SLDataLocator_OutputMix outMix = { SL_DATALOCATOR_OUTPUTMIX, g_Mix };
+        SLDataSink sink = { &outMix, nullptr };
+        const SLInterfaceID ids[1] = { SL_IID_VOLUME };
+        const SLboolean req[1] = { SL_BOOLEAN_FALSE };
+        FdPlayer p; p.fd = fd;
+        if((*g_EngineItf)->CreateAudioPlayer(g_EngineItf, &p.obj, &src, &sink, 1, ids, req) != SL_RESULT_SUCCESS)
+        { close(fd); snprintf(s_StInfo, sizeof(s_StInfo), "Android decoder: format not supported"); return false; }
+        if((*p.obj)->Realize(p.obj, SL_BOOLEAN_FALSE) != SL_RESULT_SUCCESS || (*p.obj)->GetInterface(p.obj, SL_IID_PLAY, &p.play) != SL_RESULT_SUCCESS)
+        { (*p.obj)->Destroy(p.obj); close(fd); snprintf(s_StInfo, sizeof(s_StInfo), "Android decoder: the file can't be decoded (not audio / damaged)"); return false; }
+        if((*p.obj)->GetInterface(p.obj, SL_IID_VOLUME, &p.vol) != SL_RESULT_SUCCESS) p.vol = nullptr;
+        s_Fd = p; s_FdMode = true; s_FdEnd = false;
+        (*p.play)->RegisterCallback(p.play, FdCb, nullptr);
+        (*p.play)->SetCallbackEventsMask(p.play, SL_PLAYEVENT_HEADATEND);
+        FdVolume(volume);
+        if((*p.play)->SetPlayState(p.play, SL_PLAYSTATE_PLAYING) != SL_RESULT_SUCCESS)
+        { FdStop(); snprintf(s_StInfo, sizeof(s_StInfo), "Android decoder: could not start"); return false; }
+        snprintf(s_StInfo, sizeof(s_StInfo), "playing with the Android decoder");
+        return true;
+    }
+    // what is in the file? 1 = mp3, 2 = something else (m4a / ogg / webm / wav ...), 0 = unreadable / empty
+    int Sniff(const char* path, char* what, size_t n)
+    {
+        FILE* f = fopen(path, "rb"); if(!f) { snprintf(what, n, "missing"); return 0; }
+        unsigned char h[16] = {}; size_t got = fread(h, 1, sizeof(h), f); fclose(f);
+        if(got < 12) { snprintf(what, n, "empty / too small"); return 0; }
+        if(h[0] == 'I' && h[1] == 'D' && h[2] == '3') { snprintf(what, n, "mp3 (ID3)"); return 1; }
+        if(h[0] == 0xFF && (h[1] & 0xE0) == 0xE0 && (h[1] & 0x06) != 0) { snprintf(what, n, (h[1] & 0x06) == 0x02 ? "mp3" : "aac / mp2 (adts)"); return (h[1] & 0x06) == 0x02 ? 1 : 2; }
+        if(!memcmp(h + 4, "ftyp", 4)) { snprintf(what, n, "m4a / mp4 (AAC) renamed to .mp3"); return 2; }
+        if(!memcmp(h, "OggS", 4)) { snprintf(what, n, "ogg / opus renamed to .mp3"); return 2; }
+        if(h[0] == 0x1A && h[1] == 0x45 && h[2] == 0xDF && h[3] == 0xA3) { snprintf(what, n, "webm / opus renamed to .mp3"); return 2; }
+        if(!memcmp(h, "RIFF", 4)) { snprintf(what, n, "wav"); return 2; }
+        if(!memcmp(h, "fLaC", 4)) { snprintf(what, n, "flac"); return 2; }
+        if(h[0] == '<' || (h[0] == 0xEF && h[1] == 0xBB)) { snprintf(what, n, "a web page (html), not audio - the download failed"); return 0; }
+        snprintf(what, n, "unknown (%02X %02X %02X %02X)", h[0], h[1], h[2], h[3]); return 2;
+    }
+}
+
 bool Sound::StreamPlay(const char* path, float volume)
 {
-    if(!path || !*path || !EnsureEngine()) return false;
-    FILE* f = fopen(path, "rb"); if(!f) return false; fclose(f);
+    s_StInfo[0] = 0;
+    if(!path || !*path || !EnsureEngine()) { snprintf(s_StInfo, sizeof(s_StInfo), "no audio engine"); return false; }
+    char what[96]; int kind = Sniff(path, what, sizeof(what));
     StreamStop();
+    s_StPath = path; s_FdTried = false;
+    if(kind == 0) { snprintf(s_StInfo, sizeof(s_StInfo), "file: %s", what); return false; }
+    if(kind == 2)
+    {
+        bool ok = FdStart(s_StPath, volume);
+        char tmp[160]; snprintf(tmp, sizeof(tmp), "file: %s - %s", what, s_StInfo); snprintf(s_StInfo, sizeof(s_StInfo), "%s", tmp);
+        return ok;
+    }
     {
         std::lock_guard<std::mutex> lk(s_St.mx);
         int g = s_St.gen + 1; s_St.gen = g;
@@ -359,14 +438,25 @@ bool Sound::StreamPlay(const char* path, float volume)
         s_St.ch = 0; s_St.hz = 0; s_St.dur = 0; s_St.vol = volume;
         std::thread(StDecodeThread, std::string(path), g).detach();
     }
+    snprintf(s_StInfo, sizeof(s_StInfo), "file: %s - decoding", what);
     return true;
 }
 
 void Sound::StreamUpdate()
 {
+    if(s_FdMode) { if(s_FdEnd) { FdStop(); s_St.eof = true; s_St.failed = false; s_St.active = false; } return; }
     if(!s_St.active) return;
-    std::lock_guard<std::mutex> lk(s_St.mx);
-    if(s_St.failed) { s_St.active = false; return; }
+    std::unique_lock<std::mutex> lk(s_St.mx);
+    if(s_St.failed)
+    {
+        s_St.active = false;
+        if(s_St.played == 0 && !s_FdTried && !s_StPath.empty())
+        {   // minimp3 couldn't read it: the Android decoder plays (almost) everything
+            float vol = s_St.vol; lk.unlock();
+            if(FdStart(s_StPath, vol)) { char tmp[160]; snprintf(tmp, sizeof(tmp), "mp3 decoder failed - %s", s_StInfo); snprintf(s_StInfo, sizeof(s_StInfo), "%s", tmp); }
+        }
+        return;
+    }
     if(s_St.ch <= 0) return;
     Voice& v = s_St.v;
     if(!v.obj || v.ch != s_St.ch || v.hz != s_St.hz)
@@ -374,16 +464,20 @@ void Sound::StreamUpdate()
         bool anyQueued = false; for(int i = 0; i < ST_SLOTS; ++i) if(s_St.slotState[i] == 2) anyQueued = true;
         if(anyQueued) return;
         if(v.obj) { (*v.obj)->Destroy(v.obj); v = Voice(); }   // nothing queued: safe
-        if(!BuildVoice(v, s_St.ch, s_St.hz)) { s_St.failed = true; s_St.active = false; return; }
+        if(!BuildVoice(v, s_St.ch, s_St.hz)) { s_St.failed = true; return; }   // (the Android decoder next tick)
         (*v.bq)->RegisterCallback(v.bq, StDone, nullptr);
+        snprintf(s_StInfo, sizeof(s_StInfo), "playing mp3 (%d Hz, %d ch)", s_St.hz, s_St.ch);
     }
     SetVoiceVolume(v, s_St.vol);
     while(StEnqueueNextLocked()) {}
     if(s_St.eof) { bool any = false; for(int i = 0; i < ST_SLOTS; ++i) if(s_St.slotState[i]) any = true; if(!any) s_St.active = false; }
 }
 
+const char* Sound::StreamInfo() { return s_StInfo; }
+
 void Sound::StreamSetVolume(float volume)
 {
+    if(s_FdMode) { FdVolume(volume); return; }
     std::lock_guard<std::mutex> lk(s_St.mx);
     s_St.vol = volume;
     if(s_St.v.obj) SetVoiceVolume(s_St.v, volume);
@@ -391,6 +485,7 @@ void Sound::StreamSetVolume(float volume)
 
 void Sound::StreamStop()
 {
+    FdStop();
     std::lock_guard<std::mutex> lk(s_St.mx);
     s_St.gen = s_St.gen + 1;   // the decoder thread ends itself
     if(s_St.v.obj && s_St.v.bq) (*s_St.v.bq)->Clear(s_St.v.bq);
@@ -398,10 +493,18 @@ void Sound::StreamStop()
     s_St.head = 0; s_St.active = false;
 }
 
-bool  Sound::StreamActive() { return s_St.active; }
-bool  Sound::StreamEnded() { return !s_St.active && s_St.eof && !s_St.failed; }
-float Sound::StreamPosition() { return s_St.hz > 0 ? (float)((double)s_St.played / s_St.hz) : 0.0f; }
-float Sound::StreamDuration() { return s_St.dur; }
+bool  Sound::StreamActive() { return s_FdMode || s_St.active; }
+bool  Sound::StreamEnded() { return !s_FdMode && !s_St.active && s_St.eof && !s_St.failed; }
+float Sound::StreamPosition()
+{
+    if(s_FdMode) { SLmillisecond ms = 0; if(s_Fd.play && (*s_Fd.play)->GetPosition(s_Fd.play, &ms) == SL_RESULT_SUCCESS) return ms / 1000.0f; return 0.0f; }
+    return s_St.hz > 0 ? (float)((double)s_St.played / s_St.hz) : 0.0f;
+}
+float Sound::StreamDuration()
+{
+    if(s_FdMode) { SLmillisecond ms = 0; if(s_Fd.play && (*s_Fd.play)->GetDuration(s_Fd.play, &ms) == SL_RESULT_SUCCESS && ms != SL_TIME_UNKNOWN) return ms / 1000.0f; return 0.0f; }
+    return s_St.dur;
+}
 
 void* Sound::EngineItf() { return EnsureEngine() ? (void*)g_EngineItf : nullptr; }   // 3.11
 void* Sound::OutputMix() { return EnsureEngine() ? (void*)g_Mix : nullptr; }

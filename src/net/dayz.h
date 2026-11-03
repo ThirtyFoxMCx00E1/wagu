@@ -161,10 +161,10 @@ static const DzSpawnPt g_DzSpawns[15] = {
     { "Palomino Creek",          2268.0f,    35.0f, 26.5f, 270.0f },
     { "Montgomery Fields",       1290.0f,   264.0f, 19.6f,   0.0f },
     { "Back o Beyond",          -1009.0f, -1606.0f, 76.4f,  45.0f },
-    { "Fort Carson Desert",       -96.0f,  1080.0f, 19.7f,  90.0f },
+    { "Fort Carson Desert",        70.7f,  1219.1f, 18.4f,  90.0f },   // 4.00.1: the gas station (was inside the town houses)
     { "El Quebrados Ridge",     -1420.0f,  2620.0f, 55.8f, 180.0f },
     { "Bayside Marina",         -2460.0f,  2310.0f,  4.9f, 270.0f },
-    { "Las Barrancas",           -770.0f,  1530.0f, 27.0f,  90.0f },
+    { "Las Barrancas",           -828.3f,  1504.2f, 19.8f,  90.0f },   // 4.00.1: the town road (was in the cliff pueblo: stuck)
     { "Tierra Robada Hills",     -315.0f,  2650.0f, 63.0f, 180.0f },
     { "Whetstone Forest",       -1600.0f, -2700.0f, 48.5f,  60.0f },
     { "Ocean Flats Beach",      -2900.0f,   -60.0f,  4.5f, 270.0f },

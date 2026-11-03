@@ -22,6 +22,7 @@ namespace Sound
     bool  StreamEnded();                 // the file played to its end
     float StreamPosition();              // seconds played
     float StreamDuration();              // seconds (estimated from the bitrate), 0 = unknown
+    const char* StreamInfo();            // 4.00.1: what the file is / which decoder plays it / why it failed
     void* EngineItf();   // 3.11: the shared OpenSL engine (SLEngineItf) for voice chat
     void* OutputMix();   // 3.11: SLObjectItf output mix
 }

@@ -26,7 +26,7 @@ void MPServer::DzReset()
     for(int i = 0; i < MP_MAX_PLAYERS; ++i) { m_Dz[i] = DzSurvivor(); m_nDzInvite[i] = -1; }
     for(auto& p : m_DzParty) p = DzParty();
     m_DzLoot.clear();
-    m_bDzFog = true; m_bDzDirty = false;   // 4.00: the fog is always there (90 m)
+    m_bDzFog = false; m_bDzDirty = false;   // 4.00.1: no fog at all
     uint64_t now = MP_NowMs();
     m_nDzInfoAt = now + (25 * 60 + 20) * 1000ull;
     m_nDzSrvAt  = now + (35 * 60 + 20) * 1000ull;
@@ -322,7 +322,6 @@ void MPServer::DzOnJoin(int slot, bool fresh)
     if(!IsDayzServer()) return;
     DzSendLoot(slot);
     DzSetColor(slot);
-    if(m_bDzFog) DzEvent(slot, DZEV_FOG, 1, 0, 90, nullptr, "");
     DzSendWeather(slot);
     if(m_Dz[slot].skin) DzEvent(slot, DZEV_SKIN, 0, 0, m_Dz[slot].skin, nullptr, "");
     DzLog("JOIN %s (id %d)", m_Slots[slot].name, slot);
@@ -565,7 +564,7 @@ bool MPServer::DzCommand(int slot, const char* cmd, const char* arg)
         return true;
     }
     if(IS("time")) { DzMsg(slot, DZC_GREY, "The day goes round every 24 minutes. Nights are dark - use the light of the fire and the streets."); return true; }
-    if(IS("fog")) { DzMsg(slot, m_bDzFog ? DZC_RED : DZC_GREY, m_bDzFog ? "FOG: you can see only 90 m. Zombies and bandits hide in it." : "FOG: you can see only 90 m."); return true; }
+    if(IS("fog")) { DzMsg(slot, DZC_GREY, "FOG: there is no fog on this server."); return true; }
     if(IS("spawns")) { DzMsg(slot, DZC_YELLOW, "15 spawns: you wake up at a random one of them (Angel Pine, Flint, Blueberry, Dillimore, Palomino, Montgomery, Back o Beyond, Fort Carson, El Quebrados, Bayside...)."); return true; }
     if(IS("supplies") || IS("loot"))
     {
@@ -976,7 +975,6 @@ void MPServer::DzTick(uint64_t now)
             "[INFO] Bags: Small backpack 30 KG, Assault pack 50 KG, Military rucksack 80 KG.",
             "[INFO] The map (GPS) is unlocked from the start - key 7 turns it on / off.",
             "[INFO] Killing survivors lowers your humanity: you become a Bandit.",
-            "[INFO] Fog comes every 3 to 9 days. You see only 90 m - listen for footsteps.",
         };
         char t[160]; snprintf(t, sizeof(t), "%s", k[m_nDzInfoIdx++ % 6]); chatAll(DZC_YELLOW, t);
     }
@@ -1004,8 +1002,8 @@ void MPServer::DzTick(uint64_t now)
         };
         char t[200]; snprintf(t, sizeof(t), "%s", k[m_nDzGuideIdx++ % 5]); chatAll(DZC_GREEN, t);
     }
-    // 4.00: always fog (90 m horizon) - no more fog events every 3 to 9 days
-    if(!m_bDzFog) { m_bDzFog = true; DzEvent(-1, DZEV_FOG, 1, 0, 90, nullptr, ""); }
+    // 4.00.1: no fog at all (no events, never on)
+    if(m_bDzFog) { m_bDzFog = false; DzEvent(-1, DZEV_FOG, 0, 0, 0, nullptr, ""); }
     // loot respawn + old drops
     for(int i = 0; i < (int)m_DzLoot.size(); ++i)
     {

@@ -121,6 +121,11 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **4.00.1**: Project Day Z Legacy fixes:
+  - **No fog** - the fog is removed completely (no fog events, clear view; /fog says there is none).
+  - **Ambient music plays**: dz_ambient.mp3 that is really an m4a / aac / ogg / opus / webm (YouTube downloads) or an mp3 the built-in decoder can't read now plays with the Android decoder; the file is also found as "dz_ambient.mp3.mp3", "DZ_Ambient.MP3", "dz_ambient (1).mp3", .m4a ... in files/MP, files/MP/music or files/; put it in while playing and it starts within 20 s. Why it does (not) play: `files/MP/dz_music_log.txt`.
+  - **No "now playing" card / chat line** for the music anymore.
+  - **Bone County: can't move** - the Las Barrancas spawn was in the cliff pueblo and Fort Carson inside the houses; they are on open ground now (town road / gas station). After any spawn, if you push the stick for 2.5 s and don't move, the controls are given back, then you are moved a few metres onto the ground.
 - **4.00**: fixes from testing 3.63 on the phone, a full-screen MP launcher and a clean screen for /tde.
   - MP launcher (server UI): opens **full screen** (no margins, square edges), same Valorant look and layout.
   - /tde (Textdraw Editor): **all GTA HUDs are hidden** while it is open (radar, money, weapon, health, touch buttons) and the Day Z HUD too; they come back when you close it.
@@ -128,7 +133,6 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
   - Project Day Z Legacy: the **journal** (debug monitor, achievements, skills) has no dark label box over the book page any more (the same fix as the inventory); the values are no longer cut off on the right, the scrollbar is thin and see-through.
   - Project Day Z Legacy: the **drive HUD** (SPD, ENG / TNK / WHL / DRS / LGT / BDY, HP / FUEL / SPD bars) stays where it was, about 15 % bigger.
   - Project Day Z Legacy: the **PROJECT DAY Z LEGACY** title logo at the bottom is drawn a bit higher.
-  - Project Day Z Legacy: **always fog** - the view is 90 m all the time (no more fog only every 3 - 9 days).
   - Project Day Z Legacy: the **status icons** on the right (ear / eye, sound + visibility levels, temperature, blood, food, drink, humanity) and the empty armour slots are **green** like MTA DayZ; yellow when low, blinking red when critical.
   - Project Day Z Legacy: the **backpack follows the spine bone** every frame (it moved with the body only after a delay before: floating while running, jumping behind in cars).
   - Project Day Z Legacy: **zombie animations** instead of GTA fist fights: each zombie has its own walk style (staggering drunk walk, slow limp, dragging feet), they stand and sway / look around when idle, and attack with claw swipes (left / right arm), a two-arm smash, a lunge / grab and a bite lurch; they turn to you before an attack. The damage now comes from their attack (same difficulty / skill rules).

@@ -438,29 +438,81 @@ struct DzAmbient
 {
     int      phase = 0;        // 0 off, 1 playing, 2 fading out, 3 waiting for the next loop
     bool     armed = false, muted = false, missingSaid = false, creditSaid = false;
-    uint64_t phaseAt = 0, cardAt = 0;
+    uint64_t phaseAt = 0, cardAt = 0, retryAt = 0; bool logged = false;
     float    fadeFrom = 0.0f;
 };
 static DzAmbient s_DzAmb;
+// 4.00.1: find the music file even with another name ("dz_ambient.mp3.mp3", "DZ_Ambient.MP3",
+// "dz_ambient (1).mp3", ".m4a" ...), in files/MP, files/MP/music or files/. Everything goes to
+// files/MP/dz_music_log.txt so you can see why it does not play.
+static void DzAmbLog(const char* fmt, ...)
+{
+    char path[512]; snprintf(path, sizeof(path), "%s/dz_music_log.txt", MP::DataDir());
+    static bool fresh = true; FILE* f = fopen(path, fresh ? "w" : "a"); fresh = false; if(!f) return;
+    va_list ap; va_start(ap, fmt); vfprintf(f, fmt, ap); va_end(ap); fputc('\n', f); fclose(f);
+    va_start(ap, fmt); char line[400]; vsnprintf(line, sizeof(line), fmt, ap); va_end(ap); logger->Info("DZ music: %s", line);
+}
+static bool DzAmbAudioExt(const char* n)
+{
+    const char* d = strrchr(n, '.'); if(!d) return false;
+    return !strcasecmp(d, ".mp3") || !strcasecmp(d, ".m4a") || !strcasecmp(d, ".aac") || !strcasecmp(d, ".ogg") || !strcasecmp(d, ".opus") || !strcasecmp(d, ".webm") || !strcasecmp(d, ".wav") || !strcasecmp(d, ".flac") || !strcasecmp(d, ".mp4");
+}
+static bool DzAmbFind(char* out, size_t n)
+{
+    char dirs[3][512];
+    snprintf(dirs[0], 512, "%s", MP::DataDir());
+    snprintf(dirs[1], 512, "%s/music", MP::DataDir());
+    snprintf(dirs[2], 512, "%s", MP::DataDir()); { char* sl = strrchr(dirs[2], '/'); if(sl) *sl = 0; }   // files/
+    snprintf(out, n, "%s/" DZ_AMB_FILE, dirs[0]);
+    { FILE* f = fopen(out, "rb"); if(f) { fclose(f); return true; } }
+    for(int pass = 0; pass < 2; ++pass)   // 1st: names starting with "dz_ambient", 2nd: "*ambient*" / "*no man*" audio
+        for(int d = 0; d < 3; ++d)
+        {
+            DIR* dir = opendir(dirs[d]); if(!dir) continue;
+            struct dirent* e; bool hit = false;
+            while((e = readdir(dir)) != nullptr)
+            {
+                const char* nm = e->d_name; if(nm[0] == '.') continue;
+                char lo[256]; size_t i = 0; for(; nm[i] && i < sizeof(lo) - 1; ++i) lo[i] = (char)tolower((unsigned char)nm[i]); lo[i] = 0;
+                bool ok = pass == 0 ? (!strncmp(lo, "dz_ambient", 10) || !strncmp(lo, "dz ambient", 10) || !strncmp(lo, "dzambient", 9))
+                                    : (DzAmbAudioExt(lo) && (strstr(lo, "ambient") || strstr(lo, "no man") || strstr(lo, "no_man") || strstr(lo, "lemuria")));
+                if(ok && (pass == 1 || DzAmbAudioExt(lo) || strstr(lo, ".mp3"))) { snprintf(out, n, "%s/%s", dirs[d], nm); hit = true; break; }
+            }
+            closedir(dir);
+            if(hit) return true;
+        }
+    snprintf(out, n, "%s/" DZ_AMB_FILE, dirs[0]);
+    return false;
+}
 static bool DzAmbStart(uint64_t now)
 {
-    char path[512]; snprintf(path, sizeof(path), "%s/" DZ_AMB_FILE, MP::DataDir());
-    if(!Sound::StreamPlay(path, 0.0f))
+    char path[512]; bool found = DzAmbFind(path, sizeof(path));
+    s_DzAmb.retryAt = 0;
+    if(!found)
     {
-        s_DzAmb.phase = 0;
+        s_DzAmb.phase = 0; s_DzAmb.retryAt = now + 20000;   // put the file in while playing: it starts by itself
         if(!s_DzAmb.missingSaid)
         {
             s_DzAmb.missingSaid = true;
-            SysMsg(COL_SYSTEM, "[Day Z] Ambient music: put " DZ_AMB_FILE " in files/MP (No Man's Land by Lemuria, youtu.be/aVTcVx1570w).");
+            DzAmbLog("not found: %s (also looked in files/MP/music and files/)", path);
+            SysMsg(COL_SYSTEM, "[Day Z] Ambient music: no " DZ_AMB_FILE " in %s", MP::DataDir());
         }
         return false;
     }
-    s_DzAmb.phase = 1; s_DzAmb.phaseAt = now; s_DzAmb.cardAt = now;
-    if(!s_DzAmb.creditSaid)
+    if(!Sound::StreamPlay(path, 0.0f))
     {
-        s_DzAmb.creditSaid = true;
-        SysMsg(COL_SYSTEM, "[Day Z] Now playing: %s - by %s (%s). /music to turn it off.", kDzAmbTitle, kDzAmbArtist, kDzAmbLink);
+        s_DzAmb.phase = 0; s_DzAmb.retryAt = now + 60000;
+        if(!s_DzAmb.missingSaid)
+        {
+            s_DzAmb.missingSaid = true;
+            DzAmbLog("can't play %s: %s", path, Sound::StreamInfo());
+            SysMsg(COL_SYSTEM, "[Day Z] Ambient music can't play: %s (see files/MP/dz_music_log.txt)", Sound::StreamInfo());
+        }
+        return false;
     }
+    DzAmbLog("start %s: %s", path, Sound::StreamInfo());
+    s_DzAmb.phase = 1; s_DzAmb.phaseAt = now; s_DzAmb.cardAt = now; s_DzAmb.logged = false;
+    // 4.00.1: no "now playing" card / chat line anymore (the credit is in /music and /credits)
     return true;
 }
 static void DzAmbStop()
@@ -483,10 +535,18 @@ static void DzAmbToggle()
 static void DzAmbTick(uint64_t now)
 {
     if(!s_DzAmb.armed || s_DzAmb.muted) return;
+    if(s_DzAmb.phase == 0) { if(s_DzAmb.retryAt && now >= s_DzAmb.retryAt) DzAmbStart(now); return; }
     Sound::StreamUpdate();
     const float sec = (float)(now - s_DzAmb.phaseAt) / 1000.0f;
     if(s_DzAmb.phase == 1)
     {
+        if(!s_DzAmb.logged && sec > 3.0f)
+        {   // 4.00.1: what really happened after 3 s
+            s_DzAmb.logged = true;
+            DzAmbLog("after 3 s: %s, active %d, at %.1f s of %.0f s", Sound::StreamInfo(), Sound::StreamActive() ? 1 : 0, Sound::StreamPosition(), Sound::StreamDuration());
+            if(!Sound::StreamActive() && !Sound::StreamEnded())
+                SysMsg(COL_SYSTEM, "[Day Z] Ambient music stopped: %s (see files/MP/dz_music_log.txt)", Sound::StreamInfo());
+        }
         float pos = Sound::StreamPosition(), dur = Sound::StreamDuration();
         float end = DZ_AMB_LEN_S; if(dur > 60.0f && dur < end) end = dur;
         float k = sec / DZ_AMB_FADEIN_S; if(k > 1) k = 1;
@@ -587,8 +647,7 @@ static void DzSpawnAt(const float* p, const char* name)
     Game::SetMaxWanted(0); Game::ClearWanted();
     s_Dz.view = 2; s_Dz.spawnedAt = MP_NowMs(); s_Dz.prevHp = -1; s_Dz.armourGiven = 0;
     MP_CopyStr(s_Dz.spawnName, name ? name : "", sizeof(s_Dz.spawnName)); s_Dz.spawnNameAt = MP_NowMs();
-    s_Dz.fog = true;   // 4.00: always fog, 90 m horizon
-    Game::SetFogRadius(90.0f); Game::ForceWeatherNow(9);
+    if(s_Dz.fog) { s_Dz.fog = false; Game::SetFogRadius(0); Game::ReleaseWeather(); }   // 4.00.1: no fog
     DzAmbArm();   // 3.63: the ambient music starts with the first spawn
 }
 static void DzShutdown()
@@ -669,7 +728,7 @@ static void DzOnPacket(const uint8_t* d, int len)
             {
                 case DZEV_SPAWN: DzSpawnAt(e.pos, e.text); break;
                 case DZEV_FOG:
-                    s_Dz.fog = true;   // 4.00: always fog (an older server may still send "fog lifting")
+                    s_Dz.fog = false;   // 4.00.1: no fog, even if an older server sends one
                     if(s_Dz.fog) { Game::SetFogRadius((float)(e.val > 0 ? e.val : 90)); Game::ForceWeatherNow(9); if(e.text[0]) DzNotice(DZ_ORG, "%s", e.text); }
                     else { Game::SetFogRadius(0); Game::ReleaseWeather(); }
                     break;
@@ -994,6 +1053,32 @@ static void DzProcess(int ped, uint64_t now)
     // those could land after the spawn. For the first 3 s the controls + position are given back again.
     if(s_Dz.view == 2 && now - s_Dz.spawnedAt < 3000 && now - s_Dz.lastUnstick > 350 && !DzXDowned())
     { s_Dz.lastUnstick = now; Game::FreezeChar(ped, false); Game::SetPlayerControl(true); Game::ShowGameHud(true); }
+    // 4.00.1: stuck after a spawn (Bone County: in a rock / a house): the stick is pushed but you don't move
+    if(s_Dz.view == 2 && now - s_Dz.spawnedAt < 180000 && !DzXDowned() && !DzXProne() && !Game::IsCharInAnyCar(ped))
+    {
+        static Vec3 sPos; static uint64_t sSince = 0; static int sTries = 0; static uint64_t sSpawn = 0;
+        if(sSpawn != s_Dz.spawnedAt) { sSpawn = s_Dz.spawnedAt; sSince = 0; sTries = 0; }
+        int sx = 0, sy = 0; bool push = Game::GetStick(sx, sy) && sx * sx + sy * sy > 70 * 70;
+        if(!push) sSince = 0;
+        else if(!sSince) { sSince = now; sPos = me; }
+        else
+        {
+            float dx = me.x - sPos.x, dy = me.y - sPos.y;
+            if(dx * dx + dy * dy > 0.5f * 0.5f) sSince = 0;
+            else if(now - sSince > 2500)
+            {
+                sSince = 0; ++sTries;
+                logger->Info("DZ: stuck at %.1f %.1f %.1f (try %d)", me.x, me.y, me.z, sTries);
+                Game::FreezeChar(ped, false); Game::SetPlayerControl(true); Game::ClearTasksNow(ped);
+                if(sTries >= 2)
+                {   // still stuck: a few metres away, on the ground
+                    float a = (float)(rand() % 628) / 100.0f, r = 4.0f + 2.0f * sTries;
+                    Game::TeleportGround(ped, { me.x + cosf(a) * r, me.y + sinf(a) * r, me.z + 2.0f }, Game::GetCharHeading(ped));
+                    DzNotice(DZ_GRY, "You were stuck - moved a bit.");
+                }
+            }
+        }
+    }
     DzRulesTick(now);
     if(s_Dz.radarHidden == false || now % 3000 < 40) { Game::ShowRadar(false); s_Dz.radarHidden = true; }
     DzWeaponsTick();
@@ -1044,7 +1129,6 @@ static void DzProcess(int ped, uint64_t now)
         if(s_Dz.me.infected && now - s_Dz.lastInfHurt > 9000) { s_Dz.lastInfHurt = now; if(hp > 1) Game::SetCharHealth(ped, hp - 1); }
     }
     if(now - s_Dz.lastStatus > 5000) { s_Dz.lastStatus = now; DzSend(DZCMD_HIT, 0, 0, Game::GetCharHealth(ped)); }
-    if(s_Dz.fog && now % 5000 < 40) { Game::SetFogRadius(90.0f); Game::ForceWeatherNow(9); }
     if(ImGui::IsKeyPressed(ImGuiKey_F2, false)) s_Dz.panelOpen = !s_Dz.panelOpen;
     if(ImGui::IsKeyPressed(ImGuiKey_I, false) && !ImGui::GetIO().WantTextInput && !DzXDowned()) s_Dz.invOpen = !s_Dz.invOpen;
     if(DzXDowned()) s_Dz.invOpen = false;
@@ -1923,7 +2007,6 @@ static void RenderDz()
         float a = nowMs - s_Dz.spawnNameAt < 5000 ? 1.0f : 1.0f - (nowMs - s_Dz.spawnNameAt - 5000) / 1000.0f;
         BcwCenterText(fg, UI::S(34), ds.y * 0.22f, DzCol(DZ_YEL, a), s_Dz.spawnName);
     }
-    DzAmbDraw(fg, ds, nowMs);   // 3.63: now playing card + credits
     // the floating names of the 15 spawn points (3D text) near me
     {
         Vec3 me; Game::GetCharPos(ped, me);
@@ -1945,7 +2028,6 @@ static void RenderDz()
         float a = nowMs - s_Dz.noticeAt < 3400 ? 1.0f : 1.0f - (nowMs - s_Dz.noticeAt - 3400) / 600.0f;
         BcwCenterText(fg, UI::S(22), ds.y * 0.30f, DzCol(s_Dz.noticeCol, a), s_Dz.notice);
     }
-    if(s_Dz.fog && s_Dz.spawnedAt && nowMs - s_Dz.spawnedAt < 12000) BcwCenterText(fg, UI::S(15), UI::S(80), DzCol(DZ_ORG, 0.8f), "FOG - visibility 90 m - zombies are restless");   // 4.00: always fog, the line only after a spawn
     // 3.60: icon buttons right of the top bar (same height as its pills, black 50 % background):
     // control panel (gear), bag (backpack), journal (book) and FUEL at gas stations. The TAB button
     // is gone - the player list is in the 3-dots menu of the top bar.

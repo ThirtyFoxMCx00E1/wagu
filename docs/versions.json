@@ -1,6 +1,7 @@
 {
-"latest": "4.00",
+"latest": "4.00.1",
 "supported": [
+"4.00.1",
 "4.00",
 "3.63",
 "3.62",
@@ -80,6 +81,16 @@
 ],
 "versions": [
 {
+"v": "4.00.1",
+"summary": "Project Day Z Legacy fixes:",
+"items": [
+"**No fog** - the fog is removed completely (no fog events, clear view; /fog says there is none).",
+"**Ambient music plays**: dz_ambient.mp3 that is really an m4a / aac / ogg / opus / webm (YouTube downloads) or an mp3 the built-in decoder can't read now plays with the Android decoder; the file is also found as \"dz_ambient.mp3.mp3\", \"DZ_Ambient.MP3\", \"dz_ambient (1).mp3\", .m4a ... in files/MP, files/MP/music or files/; put it in while playing and it starts within 20 s. Why it does (not) play: `files/MP/dz_music_log.txt`.",
+"**No \"now playing\" card / chat line** for the music anymore.",
+"**Bone County: can't move** - the Las Barrancas spawn was in the cliff pueblo and Fort Carson inside the houses; they are on open ground now (town road / gas station). After any spawn, if you push the stick for 2.5 s and don't move, the controls are given back, then you are moved a few metres onto the ground."
+]
+},
+{
 "v": "4.00",
 "summary": "fixes from testing 3.63 on the phone, a full-screen MP launcher and a clean screen for /tde.",
 "items": [
@@ -87,8 +98,14 @@
 "/tde (Textdraw Editor): **all GTA HUDs are hidden** while it is open (radar, money, weapon, health, touch buttons) and the Day Z HUD too; they come back when you close it.",
 "Project Day Z Legacy: the **map / GPS is unlocked from the start** - no GPS item to find any more (players were confused). Key 7 / the GPS button still hides and shows it. The spawn and guide messages say so.",
 "Project Day Z Legacy: the **journal** (debug monitor, achievements, skills) has no dark label box over the book page any more (the same fix as the inventory); the values are no longer cut off on the right, the scrollbar is thin and see-through.",
-"Project Day Z Legacy: the **drive HUD** (SPD, ENG / TNK / WHL / DRS / LGT / BDY, HP / FUEL / SPD bars) sits lower, next to the GPS and lined up with its bottom (it was drawn over the top of the map), and is about 15 % bigger.",
+"Project Day Z Legacy: the **drive HUD** (SPD, ENG / TNK / WHL / DRS / LGT / BDY, HP / FUEL / SPD bars) stays where it was, about 15 % bigger.",
 "Project Day Z Legacy: the **PROJECT DAY Z LEGACY** title logo at the bottom is drawn a bit higher.",
+"Project Day Z Legacy: the **status icons** on the right (ear / eye, sound + visibility levels, temperature, blood, food, drink, humanity) and the empty armour slots are **green** like MTA DayZ; yellow when low, blinking red when critical.",
+"Project Day Z Legacy: the **backpack follows the spine bone** every frame (it moved with the body only after a delay before: floating while running, jumping behind in cars).",
+"Project Day Z Legacy: **zombie animations** instead of GTA fist fights: each zombie has its own walk style (staggering drunk walk, slow limp, dragging feet), they stand and sway / look around when idle, and attack with claw swipes (left / right arm), a two-arm smash, a lunge / grab and a bite lurch; they turn to you before an attack. The damage now comes from their attack (same difficulty / skill rules).",
+"Project Day Z Legacy: **PRONE** button (white icon, right side): lie on the belly like MTA DayZ (\"FLOOR_hit_f\"), crawl slowly with the joystick (up / down = forward / back, left / right = turn), tap again to get up. Prone is the quietest and hardest to see.",
+"Project Day Z Legacy: **KNOCKED DOWN** banner (Apex Legends style, no background - outlined text a bit below the centre): \"KNOCKED DOWN <name>\" + damage inflicted when you knock a player down, \"ZOMBIE KILLED\" (+ HEADSHOT) for zombies.",
+"Project Day Z Legacy: **MTA DayZ models**: the zombies, skins, guns and loot that are already in the game are swapped again after a download finishes (they stayed GTA before); a model is only skipped after it failed twice. `/dzmodels` shows the status (`/dzmodels reset` retries skipped models), the Day Z settings have a status line, an on / off switch and \"Retry skipped models\", and everything is written to `files/MP/dzmodels_log.txt`.",
 "Link previews: `docs/social-preview.png` (San Andreas Multiplayer logo, 1280 x 640) + Open Graph tags on the website, so shared links show the MP image."
 ]
 },
