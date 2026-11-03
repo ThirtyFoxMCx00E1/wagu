@@ -6,7 +6,7 @@
 //               [--broker-file broker.txt] [--password pw] [--admin-hash sha256hex] [--no-safezones] [--auth] [--anticheat [hexmask]] [--no-anticheat]
 //               3.04: Brief Case War 24/7: ./mp_server 1930 "Brief Case War" 20 Asia --persistent [--bcw-min 20]
 //               3.25: Mega Vil Futuristic (Roleplay) 24/7: ./mp_server 1932 "Mega Vil Futuristic" 250 Asia --persistent [--rp-file rp_citizens.txt]
-//               3.58: Project Day Z 24/7: ./mp_server 1933 "Project Day Z Remastered" 250 Asia --persistent [--dz-file dayz_survivors.txt]
+//               3.58: Project Day Z 24/7: ./mp_server 1933 "Project Day Z Legacy" 250 Asia --persistent [--dz-file dayz_survivors.txt]
 //               3.23: MW3 24/7: ./mp_server 1931 "Call Of Duty: Modern Warfare 3" 64 Asia --persistent [--mw3-file mw3_stats.txt]
 //               3.04.6: [--outdated-log file] (default outdated_clients.log): phones with an old MP version
 //               are refused + written there. --legacy-notice: run in the OLD lobby (thirtyfox/mp4/, what
@@ -138,12 +138,12 @@ int main(int argc, char** argv)
         server.SetRpFile(rf);
         printf("[MP Server] Mega Vil Futuristic: Roleplay only, %d players max, login on, cheats off, peaceful (police/military on duty only), citizens in %s\n", MP_RP_MAX_PLAYERS, rf);
     }
-    // 3.58: Project Day Z Remastered. --dz-file PATH = survivors (gear, stats, where they logged out)
+    // 3.58: Project Day Z Legacy. --dz-file PATH = survivors (gear, stats, where they logged out)
     if(server.IsDayzServer())
     {
         const char* df = "dayz_survivors.txt";
         for(int i = 1; i + 1 < argc; ++i) if(!strcasecmp(argv[i], "--dz-file")) df = argv[i + 1];
-        printf("[MP Server] Project Day Z Remastered (Proper DAYZ): %d players max, login on, cheats + CLEO + CheatMenu off, parties of %d, survivors in %s\n", MP_DZ_MAX_PLAYERS, MP_DZ_PARTY_MAX, df);
+        printf("[MP Server] Project Day Z Legacy (Proper DAYZ): %d players max, login on, cheats + CLEO + CheatMenu off, parties of %d, survivors in %s\n", MP_DZ_MAX_PLAYERS, MP_DZ_PARTY_MAX, df);
     }
     // 3.39: Home Kit houses. --home-file PATH (default homes.txt; Mega Vil: homes_rp.txt)
     {

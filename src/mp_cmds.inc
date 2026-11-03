@@ -999,7 +999,7 @@ static void Render219(void*)
     RenderBcw();               // 3.04: Brief Case War
     RenderMw3();               // 3.23: Modern Warfare 3
     RenderRp();                // 3.25: Mega Vil Futuristic
-    RenderDz();                // 3.58: Project Day Z Remastered
+    RenderDz();                // 3.58: Project Day Z Legacy
     HkRender(); NeedsRender(); Modes2Render(); DealerRender();   // 3.39 / 3.55
     RenderHotelPc();           // 3.36: hotel room computer (every server)
     RenderSafeZones();         // 3.21: hospital safe zones

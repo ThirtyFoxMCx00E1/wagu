@@ -30,7 +30,7 @@ keep 1922 "MP LAN Server" 100
 keep 1930 "Brief Case War" 20
 keep 1931 "Call Of Duty: Modern Warfare 3" 64 --mw3-file mw3_stats.txt
 keep 1932 "Mega Vil Futuristic" 250 --rp-file rp_citizens.txt
-keep 1933 "Project Day Z Remastered" 250 --dz-file dayz_survivors.txt   # 3.58
+keep 1933 "Project Day Z Legacy" 250 --dz-file dayz_survivors.txt   # 3.58
 if [ "${FOREGROUND:-0}" = 1 ]; then   # 3.38: Docker / Railway: stay in the foreground, stop all 5 on exit
     trap 'kill 0' TERM INT
     tail -n 0 -F logs/*.log & wait

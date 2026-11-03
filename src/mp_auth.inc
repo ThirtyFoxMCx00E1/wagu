@@ -298,7 +298,7 @@ static AuthLook AuthStyleLook(bool bcw, bool mw3 = false, bool rp = false, bool 
 {
     AuthLook l;
     if(dz)
-    {   // 3.58: Project Day Z Remastered - the MW3 layout + gfx, in yellow
+    {   // 3.58: Project Day Z Legacy - the MW3 layout + gfx, in yellow
         l.panel = IM_COL32(12, 10, 4, 238); l.header = IM_COL32(161, 120, 8, 245); l.accent = IM_COL32(250, 204, 21, 255);
         l.accentHeld = IM_COL32(254, 240, 138, 255); l.text = IM_COL32(255, 255, 255, 255); l.dim = IM_COL32(234, 222, 180, 255);
         l.field = IM_COL32(255, 255, 255, 22); l.fieldBorder = IM_COL32(250, 204, 21, 210); l.btn = IM_COL32(202, 150, 10, 240);

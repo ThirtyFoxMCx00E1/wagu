@@ -45,13 +45,15 @@ on the 4 default servers. Without the key the name box says "Reserved (moderator
 kit_skip = ("oracle/", "cloud/")   # the kit zip keeps the 3.33 file set; the full repo has everything
 with zf("release/MP-%s-client.zip" % V) as z:
     c = "MP-%s-client" % V
-    z.write("release/MP-Voice.apk", c + "/MP-Voice.apk"); z.writestr(c + "/INSTALL.txt", inst); z.writestr(c + "/MODERATOR_README.txt", MOD)
+    z.write("release/MP-Voice.apk", c + "/MP-Voice.apk"); z.write("release/MP-Textdraw-Editor.apk", c + "/MP-Textdraw-Editor.apk")   # 3.59: both APKs
+    z.writestr(c + "/INSTALL.txt", inst); z.writestr(c + "/MODERATOR_README.txt", MOD)
     z.write("bin/libMP64.so", c + "/lib/arm64-v8a/libMP64.so"); z.write("bin/libMP32.so", c + "/lib/armeabi-v7a/libMP32.so")
     tree(z, "assets/MP", c + "/files/MP")
 with zf("release/HiveMQ-kit-%s.zip" % V) as z: tree(z, "HiveMQ", "HiveMQ-kit", kit_skip)
 with zf("release/MP-%s-full.zip" % V) as z:
     f = "MP-%s" % V
-    z.write("release/MP-Voice.apk", f + "/MP-Voice.apk"); z.writestr(f + "/ADMIN_KEY_README.txt", admin); z.writestr(f + "/MODERATOR_README.txt", MOD)
+    z.write("release/MP-Voice.apk", f + "/MP-Voice.apk"); z.write("release/MP-Textdraw-Editor.apk", f + "/MP-Textdraw-Editor.apk")   # 3.59: both APKs
+    z.writestr(f + "/ADMIN_KEY_README.txt", admin); z.writestr(f + "/MODERATOR_README.txt", MOD)
     z.write("bin/libMP64.so", f + "/lib/arm64-v8a/libMP64.so"); z.write("bin/libMP32.so", f + "/lib/armeabi-v7a/libMP32.so")
     tree(z, "assets/MP", f + "/assets/MP"); tree(z, "docs", f + "/website"); tree(z, "HiveMQ", f + "/HiveMQ-kit", kit_skip)
     z.write("termux/install.sh", f + "/termux/install.sh")

@@ -66,7 +66,7 @@ public:
     bool SafeZoneBlocks(int from, int to) const;       // 3.21: damage from -> to dropped (zone / spawn protection)
     bool IsBcwServer() const;                   // 3.04: the name is MP_BCW_SERVER_NAME (Brief Case War)
     bool IsMw3Server() const;                   // 3.23: Call Of Duty: Modern Warfare 3
-    bool IsDayzServer() const;                  // 3.58: Project Day Z Remastered
+    bool IsDayzServer() const;                  // 3.58: Project Day Z Legacy
     void SetMw3File(const char* path);          // 3.23: MW3 stats + zone owners (default mw3_stats.txt)
     bool IsRpServer() const;                    // 3.25: Mega Vil Futuristic (Roleplay)
     void SetRpFile(const char* path);           // 3.25: citizens (money, bank, job, house...) + house owners (default rp_citizens.txt)
@@ -268,7 +268,7 @@ private:
     uint64_t m_nNextAd = 0;          // 3.11: next Discord message
     uint64_t m_nAdInterval = MP_AD_INTERVAL_MS;
     uint64_t m_nNextInfo = 0; int m_nInfoIdx = 0;   // 3.55: [INFO] tips every 35 min 20 s
-    // 3.58: Project Day Z Remastered (server_dayz.inc)
+    // 3.58: Project Day Z Legacy (server_dayz.inc)
     struct DzSurvivor
     {
         bool     loaded = false, alive = false, spawned = false;
@@ -279,7 +279,14 @@ private:
         DzInvSlot inv[DZ_INV_MAX]; int nInv = 0;
         int      party = -1;
         uint64_t combatUntil = 0, lastNeeds = 0, lastZk = 0, lastMin = 0, lastPick = 0;
+        bool     downed = false, relogDied = false, relogNotice = false;   // 3.58b: fake death (wait for a party revive) / ANTI-RELOG death
+        uint64_t downedAt = 0, lastCombatCmd = 0, relogWarned = 0, lastList = 0; uint8_t fps = 0;
+        // 3.59: MTA DayZ systems
+        int      temp100 = 3700; uint16_t cond = 0; uint32_t ach = 0; uint8_t skills[DZSK_COUNT] = { 0 };
+        int      skin = 0, confirmed = 0, revives = 0, adverts = 0, pingBad = 0, areaIdx = -1; bool hunted = false;
+        uint64_t lastStatus = 0, lastAchCheck = 0, areaAt = 0, lastStation = 0, lastTreat = 0;
     };
+    struct DzBody { int id, killer; char victim[24]; int weapon; float x, y, z; uint64_t at; bool checked, bandit; };
     struct DzLootSpot { uint8_t site, item, count; float x, y; uint64_t respawnAt; };
     struct DzParty { bool used = false; int leader = -1; uint32_t col = 0; char name[24] = ""; int members[MP_DZ_PARTY_MAX]; int n = 0; int invite[MP_MAX_PLAYERS / 8 + 1]; };
     DzSurvivor m_Dz[MP_MAX_PLAYERS];
@@ -295,8 +302,18 @@ private:
     void DzSendMe(int slot); void DzSendInv(int slot); void DzSendLoot(int slot, int onlyIdx = -1); void DzEvent(int slot, uint8_t ev, int a, int b, int32_t val, const float* pos, const char* text);
     void DzMsg(int slot, uint32_t col, const char* fmt, ...);
     void DzRoll(DzLootSpot& sp); bool DzGive(int slot, int item, int count); float DzKg(int slot) const; float DzMaxKg(int slot) const;
-    void DzFresh(int slot); void DzSpawn(int slot); void DzSetColor(int slot); void DzPartyLeave(int slot, bool quiet);
+    void DzFresh(int slot); void DzSpawn(int slot, int region = 0); void DzCombat(int slot, uint64_t now); void DzDropBody(int slot); void DzPartyEvent(int slot, uint8_t ev, int a, int b, const char* text); void DzSetColor(int slot); void DzPartyLeave(int slot, bool quiet);
     bool DzCommand(int slot, const char* cmd, const char* arg);
+    // 3.59: MTA DayZ systems
+    int  m_DzVar[DZV_COUNT];
+    std::vector<DzBody> m_DzBodies; int m_nDzBodyId = 1;
+    int  m_DzStation[128];                         // petrol station fuel (% of a tank) per site, -1 = not a station
+    uint64_t m_nDzWeatherAt = 0, m_nDzRainEnd = 0, m_nDzStationAt = 0; int m_nDzWeather = 1, m_nDzRain = 0;
+    int  DzVar(int v) const { return m_DzVar[v]; }
+    void DzLoadVars(); void DzSaveVars(); void DzLog(const char* fmt, ...);
+    void DzCheckAch(int slot); void DzUnlock(int slot, int ach); int DzSkillPts(int slot) const;
+    void DzSendWeather(int slot); int DzNearStation(int slot, float maxDist) const; void DzRemove1(int slot, int i);
+    bool DzUseExtra(int slot, int i, const PktDzCmd& c); void DzTreat(int slot, const PktDzCmd& c); void DzCheckBody(int slot, int id);
     void InfoTick(uint64_t now);
 public:
     void     SetAdInterval(uint64_t ms) { m_nAdInterval = ms ? ms : MP_AD_INTERVAL_MS; }   // tests

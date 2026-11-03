@@ -171,7 +171,7 @@ bool MPServer::Start(uint16_t port, const char* serverName, MPServerLogFn log, i
     RpReset();                                // 3.25
     DzReset();                                // 3.58
     if(IsDayzServer())
-    {   // 3.58: Project Day Z Remastered - survival only, all 250 places, no cheats, no other gamemodes
+    {   // 3.58: Project Day Z Legacy - survival only, all 250 places, no cheats, no other gamemodes
         m_nMaxPlayers = MP_DZ_MAX_PLAYERS;
         m_bTurfWars = false; m_bSafeZones = false;
         m_nBasePerms = PERM_NO_CHEATS; m_nPerms = PERM_NO_CHEATS;

@@ -642,6 +642,11 @@ void MPServer::AcDialogShown(int slot, uint16_t id)
 // PKT_PLAYER_INFO: Nex-AC high ping (over 500 ms, 8 readings in a row)
 void MPServer::AcPing(int slot, int ping)
 {
+    if(IsDayzServer() && slot >= 0 && slot < MP_MAX_PLAYERS && m_Dz[slot].loaded && DzVar(DZV_PINGKICK) && MP_NowMs() - m_Ac[slot].joinAt > 60000)
+    {   // 3.59: MTA DayZ ping kicker (pingkick / ping variables)
+        if(ping > DzVar(DZV_PING)) { if(++m_Dz[slot].pingBad == 6) DzMsg(slot, DZC_RED, "[PING] Your ping is too high (%d ms, max %d) - you will be kicked.", ping, DzVar(DZV_PING)); if(m_Dz[slot].pingBad >= 12) { m_Dz[slot].pingBad = 0; DzLog("PINGKICK %s %d ms", m_Slots[slot].name, ping); KickLocked(slot, "Ping kicker", "Ping too high", false); return; } }
+        else m_Dz[slot].pingBad = 0;
+    }
     if(!AcCheck(AC_HIGH_PING)) return;
     AcSlot& a = m_Ac[slot];
     if(ping > 500 && MP_NowMs() - a.joinAt > 60000) { if(++a.pingBad >= 8) { a.pingBad = 0; AcFlag(slot, AC_HIGH_PING, 1, "%d ms", ping); } }

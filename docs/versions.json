@@ -1,6 +1,8 @@
 {
-"latest": "3.57",
+"latest": "3.59",
 "supported": [
+"3.59",
+"3.58",
 "3.57",
 "3.56",
 "3.55.2",
@@ -71,6 +73,28 @@
 "3.04.6"
 ],
 "versions": [
+{
+"v": "3.59",
+"summary": "**Project Day Z Legacy** gets the MTA DayZ systems (ported from [MTA DayZ / NullSystemWorks 0.9.9.5a](https://github.com/ThirtyFoxMCx00E1/mtadayz), credited in the cabin CREDITS) and the original MTA DayZ textures (inventory panel, item icons, status icons, GPS map, compass, spawn selection, journal), plus the features from the 11 new screenshots. Includes everything from 3.58 (first release that ships it).",
+"items": [
+"New inventory like the real one: textured background with labels (PRIMARY / SECONDARY / GEAR / FOOD / MEDICINES / TOOL BELT), item icons, weight bar, ground + bag tabs.",
+"Loot glow + beams: aiming at a loot object straight on gives it a glowing outline, otherwise only a light beam; both only for you and never through walls (line of sight checked).",
+"Party markers above your party members with the distance in metres, visible through walls (party only).",
+"Fake death: at 5% HP you go DOWN (11 lying animations, cannot move) instead of dying; 10% is only the low-health warning. Your party revives you with the new medicines (Morphine, Epinephrine, Blood bag): +50% HP. Bleed-out 120 s with a party (45 s solo), GIVE UP button.",
+"Server list: Project Day Z Legacy highlighted in yellow like the other featured servers; name changed from Remastered to Legacy everywhere (server list, connection cabin, title logo, in-game logo).",
+"ANTI-RELOG DISCONNECT = DEATH 15 in the top left like the screenshot: shooting or getting hit starts 15 s, leaving during it kills your survivor.",
+"TAB player list matching the screenshots (name, level, murders, zombie kills, alive time, FPS, ping, party chip), paged for 250 players.",
+"From the MTA DayZ changelog: sound + visibility levels (zombies hear / see you), zombies spawn around the loot spots (radius + max per loot), limited petrol at the gas stations, 21 achievements, anti-advertising, temperature with arrows, rain when it is cloudy, old clothes / skins, fractured arms + legs, /vehrespawn (admin), pain camera sway (vignette), helmets stop headshots, [DayZAdmin] gameplay variables in game, binds GPS (7) and compass (8), spawn selection map, randomized loot, random clothes on spawn, logs, /chat toggle, hunger + thirst by difficulty, debug monitor in the journal (6 / F1), new damage code, sprinting zombies (veteran + hardcore), Check Body, unconscious fixes. Removed like the original: viral zombies, housing.",
+"From 0.9.9.5a: 12 skills (Soldier / Medic / Scavenger / Engineer, skill points from kills), NPC survivors, the journal (F1: debug monitor, achievements, skills).",
+"Packages: the full zip now has both APKs (MP-Voice + MP-Textdraw-Editor), lib/ and assets/.",
+"Not 1:1 with MTA: no MySQL (the server saves to its file), first-person 360 and camera sway are approximated, the glow is a screen outline, zombies are spawned per phone, country flags replaced by the party chip, 250 players max (protocol limit)."
+]
+},
+{
+"v": "3.58",
+"summary": "New featured server **Project Day Z Legacy** (gamemode Proper DAYZ, port 1933, 250 players, 24/7 on the Broker bot with the other 4 featured servers = 5 servers in the MP 24/7 workflow). Cabin connection screen (PLAY / RULES / CREDITS / SETTINGS, fireplace, sofa, lamps, rifles), new logo (hand print + zombie hand + LEGACY), 15 random spawns, real loot objects (guns, bags lvl 1-3, food, fuel canisters) in houses, gas stations and military bases with pick up animation, inventory with KG bars, armour slots, drive HUD next to the GPS-gated square radar (COORDS | MAP), compass, scoreboard, humanity / blood / infection, damage numbers, real fog (90 m), zombies, ruins, parties of 4 with unique colours, ANTI-RELOG, F2 control panel with 50 commands, yellow login / register UI. Internet page split into PUBLIC (default + custom servers) || FEATURED (MW3, Brief Case War, Mega Vil Futuristic, Project Day Z). Black glass 50% hexagon HUDs, Timber: Bobcat 422, safe vehicle spawn on the ground, real log models (scatter, 2-hand pick up, 1-3 logs, crouch at the truck bed to load), GPS route lines (Mega Vil + Timber quest), Mega Vil taxi NPC waiting + red ring, Mega Vil 11 rules on spawn, hotspot freeze fix, bans by name actually ban, anti-cheat ignores flying vehicles (3 fly / teleport kicks = permanent ban, admins + moderators unban) with a toggle in Server management, bigger /tde tools.",
+"items": []
+},
 {
 "v": "3.57",
 "summary": "Vehicle HUD in hexagons: speed (car icon), engine ON/OFF and fuel (pump icon) in one horizontal row with hunger and energy; fuel system with /refuel and /engine",
@@ -180,7 +204,8 @@
 "Everything MP draws changes at once, no restart: the launcher, every menu and dialog, the HUD, tooltips, buttons, sliders and the server / system chat lines (player chat stays as it was typed, and what you type is never touched). All 2786 texts of the mod are translated (machine translation, files/MP/lang/<code>.lng), numbers and names inside a text are kept.",
 "Fonts: Latin with accents, Vietnamese, Cyrillic and Arabic come from the built-in Arial (Arabic is shaped and drawn right to left). Chinese, Japanese, Korean and Thai use the phone's own font (Noto Sans CJK / Noto Sans Thai / Droid Sans Fallback), added to the UI font when you pick the language. A text the font can't show stays English instead of showing boxes.",
 "Safe formats: a translation is only used when it keeps the same %d / %s in the same order, so a bad translation can never crash the game.",
-"tools/i18n: extract.py (all texts from the source), translate.py (makes the .lng files, Traditional Chinese from Simplified with OpenCC)."
+"tools/i18n: extract.py (all texts from the source), translate.py (makes the .lng files, Traditional Chinese from Simplified with OpenCC).",
+"**One world, no more blinking people / traffic.** Each area has one NPC host and everybody near sees the same people and cars (up to the full 100+ players). Before, a player joining with a lower id took the area over and everyone's peds and traffic vanished and came back, again on every join / leave. Now a newcomer follows the host that is already there (it never hosts in its first 5 s), a follower stays with its host while that host is around, two hosts that meet only merge after 4 s together, what was on your phone before you joined is no longer sent as yours (it showed the same car / person twice), and a copy near the edge of the range is kept to 200 m instead of blinking at 150 m."
 ]
 },
 {

@@ -19,7 +19,7 @@ dl = os.path.join(OUT, "downloads"); os.makedirs(dl, exist_ok=True)
 files = {
     "MP-client.zip": "release/MP-%s-client.zip" % V, "MP-full.zip": "release/MP-%s-full.zip" % V,
     "libMP32.so": "bin/libMP32.so", "libMP64.so": "bin/libMP64.so",
-    "MP-Voice.apk": "release/MP-Voice.apk", "HiveMQ-kit.zip": "release/HiveMQ-kit-%s.zip" % V,
+    "MP-Voice.apk": "release/MP-Voice.apk", "MP-Textdraw-Editor.apk": "release/MP-Textdraw-Editor.apk", "HiveMQ-kit.zip": "release/HiveMQ-kit-%s.zip" % V,
 }
 for d, s in files.items():
     if not os.path.isfile(s): sys.exit("missing %s (run tools/make_release.py %s first)" % (s, V))

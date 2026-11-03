@@ -636,13 +636,13 @@ static void EnsureEmbeddedAsset(const char* file, const char* path)
 }
 // 3.04: any other PNG in files/MP by file name (Brief Case War briefcase / lock / banner), max 512x512
 struct NamedTex { char file[48]; RwRaster* r; ImVec2 uv; };
-static NamedTex s_NamedTex[24]; static int s_nNamedTex = 0;
+static NamedTex s_NamedTex[48]; static int s_nNamedTex = 0;
 void* HUD::Texture(const char* file, ImVec2* uv)
 {
     if(!file || !*file) return nullptr;
     for(int i = 0; i < s_nNamedTex; ++i)
         if(!strcmp(s_NamedTex[i].file, file)) { if(uv) *uv = s_NamedTex[i].uv; return (void*)s_NamedTex[i].r; }
-    if(s_nNamedTex >= 24) return nullptr;
+    if(s_nNamedTex >= 48) return nullptr;
     uint32_t fr = (uint32_t)ImGui::GetFrameCount();
     if(s_nIconLoadFrame == fr) return nullptr;   // one file per frame
     s_nIconLoadFrame = fr;
@@ -651,13 +651,13 @@ void* HUD::Texture(const char* file, ImVec2* uv)
     char path[512]; snprintf(path, sizeof(path), "%s/%s", MP::DataDir(), file);
     EnsureEmbeddedAsset(file, path);   // 3.25
     int w = 0, h = 0, n = 0;
-    if(stbi_info(path, &w, &h, &n) && w > 0 && h > 0 && w <= 512 && h <= 512)
+    if(stbi_info(path, &w, &h, &n) && w > 0 && h > 0 && w <= 2048 && h <= 2048)
     {
         ImVec2 keep = s_LogoUV;
         t.r = LoadPNGRaster(path, &w, &h);
         t.uv = s_LogoUV; s_LogoUV = keep;
     }
-    else logger->Error("%s missing or bigger than 512x512", path);
+    else logger->Error("%s missing or bigger than 2048x2048", path);
     if(uv) *uv = t.uv;
     return (void*)t.r;
 }

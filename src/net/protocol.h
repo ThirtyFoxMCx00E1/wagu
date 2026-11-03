@@ -13,10 +13,10 @@
 // phones refuse servers older than that too (they would let old phones in).
 // 3.10: build 31000. MP_MIN_BUILD stays 30406 and the lobby stays thirtyfox/mp5/: 3.04.6 (no cheats)
 // and 3.10 phones play together on the same servers; only 3.04.5 and older (mp4) stay shut out.
-#define MP_BUILD 35800   // 3.58
+#define MP_BUILD 35900   // 3.59
 #define MP_MIN_BUILD       30406
 #define MP_AUTH_MIN_BUILD  32106   // 3.21.6: servers with the login system refuse older phones (they could not log in)
-#define MP_VERSION_STR     "3.58"
+#define MP_VERSION_STR     "3.59"
 #define MP_VOICE_BUILD     31100   // 3.11: phones from this build on get voice packets
 #define MP_DOWNLOAD_URL    "thirtyfoxmcx00e1.github.io/wagu"   // 3.37: the website is back in the wagu repo (one repo for everything)
 #define MP_DEFAULT_HOST    "127.0.0.1"
@@ -137,6 +137,7 @@ enum ePacket : uint8_t
     PKT_DZ_LOOT,        // S->C          3.58: loot on the ground (a page of spots)
     PKT_DZ_CMD,         // C->S          3.58: pick up / use / drop / equip / spawn / commands
     PKT_DZ_EVENT,       // S->C          3.58: spawn, fog, weapon, notice, anti-relog, party
+    PKT_DZ_LIST,        // S->C          3.58b: Project Day Z player list (TAB): level, murders, zombies, alive time, fps
 };
 
 enum eRegion : uint8_t { REGION_ASIA = 0, REGION_EUROPE, REGION_NA, REGION_OCEANIA, REGION_COUNT };
@@ -837,7 +838,7 @@ inline void MP_CopyStr(char* dst, const char* src, size_t n)
     dst[n - 1] = 0;
 }
 
-// ---- 3.58: Project Day Z Remastered ----------------------------------------------------------
+// ---- 3.58: Project Day Z Legacy ----------------------------------------------------------
 #define DZ_INV_MAX   40
 #define DZ_LOOT_PAGE 40
 struct PktDzMe
@@ -853,14 +854,31 @@ struct PktDzMe
     uint16_t maxKg100, kg100;                 // carry weight * 100
     uint32_t partyCol;
     uint32_t aliveMin;
+    // 3.59: MTA DayZ systems (old servers send the packet without these: the phone zeroes them)
+    int16_t  temp100;                         // body temperature * 100 (37.00 C = 3700)
+    uint16_t cond;                            // eDzCond bits (bleeding, pain, legs, arms, cold, helmet, keycard)
+    uint32_t ach;                             // achievements unlocked (bit = g_DzAch index)
+    uint8_t  skills[12];                      // rank per g_DzSkills
+    uint8_t  skillPts, difficulty, spawnSel, camSway;   // free skill points, 0 normal 1 veteran 2 hardcore, vars
+    uint8_t  zombieSys, zombieRadius, zombiesPerLoot, rain;
+    uint16_t skin, confirmed;                 // clothes model, confirmed kills (Check Body)
+    uint16_t zombieDmg, revives;              // zombie damage % (var), people you revived
 };
+#define DZ_ME_OLD_SIZE ((int)offsetof(PktDzMe, temp100))
 struct DzInvSlot { uint8_t item; uint8_t pad; uint16_t count; };
+#define DZ_LIST_PAGE 60
+struct DzListRow { uint8_t id, level, fps, flags; uint16_t murders; uint16_t zkills; uint32_t aliveMin; };   // flags: 1 alive, 2 downed, 4 bandit, 8 in my party
+struct PktDzList { uint8_t type, n, page, pages; uint16_t total, max; DzListRow r[DZ_LIST_PAGE]; };
 struct PktDzInv  { uint8_t type, n, hands, pad; DzInvSlot s[DZ_INV_MAX]; };   // hands = item in your hands
 struct DzLootRow { uint16_t idx; uint8_t item, count; float x, y; };
 struct PktDzLoot { uint8_t type, n; uint16_t total; DzLootRow r[DZ_LOOT_PAGE]; };
 enum eDzCmd : uint8_t { DZCMD_TEXT = 1, DZCMD_PICK, DZCMD_USE, DZCMD_DROP, DZCMD_EQUIP, DZCMD_PLAY, DZCMD_ZKILL, DZCMD_HIT,
-                        DZCMD_FUEL, DZCMD_UNEQUIP };
+                        DZCMD_FUEL, DZCMD_UNEQUIP,
+                        DZCMD_COMBAT, DZCMD_DOWN, DZCMD_REVIVE, DZCMD_LIST,
+                        DZCMD_STATUS, DZCMD_SKILL, DZCMD_STATION, DZCMD_CHECKBODY, DZCMD_TREAT, DZCMD_ACH };   // 3.59: conditions + temperature, buy a skill rank, petrol station fuel, check body, treat a survivor, client achievement   // 3.58b: shooting = combat (anti-relog), downed (a = 1/0), revive (a = player id)
 struct PktDzCmd  { uint8_t type, cmd, a, b; int32_t val; float pos[3]; char text[100]; };
 enum eDzEv : uint8_t { DZEV_SPAWN = 1, DZEV_FOG, DZEV_WEAPON, DZEV_HEAL, DZEV_NOTICE, DZEV_RELOG, DZEV_PICKED, DZEV_UI, DZEV_FUEL,
-                       DZEV_TAKEWEAPON, DZEV_DIED };
+                       DZEV_TAKEWEAPON, DZEV_DIED,
+                       DZEV_DOWNED, DZEV_REVIVED, DZEV_REVIVER, DZEV_COMBAT,
+                       DZEV_CURE, DZEV_STATION, DZEV_SPECIAL, DZEV_SKIN, DZEV_WEATHER, DZEV_ACH, DZEV_BODY, DZEV_VEHRESPAWN };   // 3.59   // 3.58b: party member down (a = id, b = 1/0), you got revived (val = +HP), you revived (a = id), anti-relog timer (val = ms)
 struct PktDzEvent { uint8_t type, ev, a, b; int32_t val; float pos[4]; char text[96]; };

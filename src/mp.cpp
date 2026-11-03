@@ -671,9 +671,10 @@ static void RenderMw3();
 static int Mw3ScoreOf(int id, int fallback);
 static bool Mw3ListTeam(int id, const char** tag, uint32_t* rgba);
 static int  Mw3RadarZones(Game::RadarZone* out, int maxOut);
-// 3.58: Project Day Z Remastered (mp_dayz.inc)
+// 3.58: Project Day Z Legacy (mp_dayz.inc)
 static bool s_bDzJoin = false;
 static bool DzOnServer();
+static int DzAdjustDamage(int hp, int dmg, bool instant);   // 3.59: helmet vs headshot, DOWN at 5%
 static bool DzHidden();
 static void DzProcess(int ped, uint64_t now);
 static void DzOnPacket(const uint8_t* d, int len);
@@ -2926,6 +2927,7 @@ static void ProcessLocalCombat(int ped)
     {
         int dmg = (int)(s_fPendingDamage + 0.5f);
         s_fPendingDamage = 0;
+        if(DzOnServer()) dmg = DzAdjustDamage(hp, dmg, dmg >= 1000);
         hp -= dmg; if(hp < 0) hp = 0;
         Game::SetCharHealth(ped, hp);
     }
@@ -4308,7 +4310,7 @@ static void PSettingsPopup();
 #include "mp_dealer.inc"    // 3.55: dealership receptionist + showroom (default server, Mega Vil)
 #include "mp_tdeplug.inc"   // 3.50: Add server > Plugins (Textdraw .mptd files)
 #include "mp_tde.inc"       // 3.50: in-game MP Textdraw Editor (/tde)
-#include "mp_dayz.inc"      // 3.58: Project Day Z Remastered (Proper DAYZ)
+#include "mp_dayz.inc"      // 3.58: Project Day Z Legacy (Proper DAYZ)
 
 // 2.37: CheatMenu (libCheatMenu.so / libCheatMenu64.so) is not allowed on any server - the default
 // server and every custom server. Detected with aml->HasMod() in ON_ALL_MODS_LOAD (+ a re-check of
@@ -6279,7 +6281,7 @@ static void SectionAddServer(void*)
         else if(MP_IsRpServerName(s_szNewName) || port == MP_RP_PORT)   // 3.25
             SysMsg(COL_YELLOW, "Mega Vil Futuristic is a 24/7 featured Roleplay server - it is always in the Internet list, just tap it.");
         else if(MP_IsDzServerName(s_szNewName) || port == MP_DZ_PORT)   // 3.58
-            SysMsg(COL_YELLOW, "Project Day Z Remastered is a 24/7 featured server - it is in Internet > Featured, just tap it.");
+            SysMsg(COL_YELLOW, "Project Day Z Legacy is a 24/7 featured server - it is in Internet > Featured, just tap it.");
         else if(port == MP_DEFAULT_PORT && !IsDefaultServer(s_szNewName[0] ? s_szNewName : settings.serverName, port))
             SysMsg(COL_RED, "Port %d is for the default server. Use %d or higher for a custom server.", MP_DEFAULT_PORT, MP_DEFAULT_PORT + 1);
         else if(portTaken)   // 3.35.2: another server already has this port
@@ -6310,7 +6312,7 @@ static void SectionAddServer(void*)
         else if(MP_IsRpServerName(s_szNewName) || atoi(s_szNewPort) == MP_RP_PORT)   // 3.25
             SysMsg(COL_YELLOW, "Mega Vil Futuristic is a 24/7 featured Roleplay server - it is always in the Internet list, just tap it.");
         else if(MP_IsDzServerName(s_szNewName) || atoi(s_szNewPort) == MP_DZ_PORT)   // 3.58
-            SysMsg(COL_YELLOW, "Project Day Z Remastered is a 24/7 featured server - it is in Internet > Featured, just tap it.");
+            SysMsg(COL_YELLOW, "Project Day Z Legacy is a 24/7 featured server - it is in Internet > Featured, just tap it.");
         else if(IsDefaultServer(s_szNewName, atoi(s_szNewPort)) || IsLocalHost(s_szNewHost))
             SysMsg(COL_YELLOW, "That is the default server - it is always on top, just tap Connect.");
         else if(atoi(s_szNewPort) == MP_DEFAULT_PORT)

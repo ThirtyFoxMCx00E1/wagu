@@ -305,7 +305,7 @@ namespace MP
     bool Mw3SubTag(int id, char* out, size_t n);   // "Rank - Class" over the name
     void JoinRp();             // 3.25: Mega Vil Futuristic 24/7 Roleplay (join it, or leave it when you are on it)
     bool IsOnRp();
-    void JoinDz();             // 3.58: Project Day Z Remastered 24/7 (join it, or leave it when you are on it)
+    void JoinDz();             // 3.58: Project Day Z Legacy 24/7 (join it, or leave it when you are on it)
     bool IsOnDz();
     bool RpOwnTagHidden();
     bool RpSubTag(int id, char* out, size_t n);    // "Job - Lv N" over the name

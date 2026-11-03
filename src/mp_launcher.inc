@@ -282,7 +282,7 @@ static void LBuildRows(int tab, const std::vector<LanServer>& nearby, std::vecto
             MP_CopyStr(w.lang, "All", sizeof(w.lang));
             if(LMatch(w.name) || LMatch("roleplay") || LMatch("rp") || LMatch("mega vil")) rows.push_back(w);
         }
-        {   // 3.58: Project Day Z Remastered - 24/7 featured (Broker bot on GitHub Actions)
+        {   // 3.58: Project Day Z Legacy - 24/7 featured (Broker bot on GitHub Actions)
             LRow w; memset(&w, 0, sizeof(w));
             w.kind = 6; MP_CopyStr(w.name, MP_DZ_SERVER_NAME, sizeof(w.name)); w.port = MP_DZ_PORT;
             w.region = -1; w.icon = 0; w.saved = -1; w.live = true;
@@ -605,8 +605,8 @@ static void LTable(std::vector<LRow>& rows, float w, float h)
         float ty = a.y + (rowH - ImGui::GetTextLineHeight()) * 0.5f;
         LPadlock(dl, ImVec2(a.x + cLock + UI::S(18), a.y + rowH * 0.5f - UI::S(4)), UI::S(24), r.locked, r.locked ? IM_COL32(240, 200, 60, 255) : IM_COL32(70, 200, 110, 255));
         ImVec2 uv(1, 1);
-        void* rtex = r.kind == 3 ? HUD::Texture("bcw_icon.png", &uv) : (r.kind == 4 ? HUD::Texture("mw3_icon.png", &uv) : (r.kind == 5 ? HUD::Texture("rp_icon.png", &uv) : nullptr));   // 3.04: Brief Case War icon (briefcase)
-        if(r.kind == 6) DzDrawSymbol(dl, ImVec2(a.x + cIcon + (rowH - UI::S(18)) * 0.5f, a.y + rowH * 0.5f), (rowH - UI::S(18)) * 0.5f, MP_NowMs() / 1000.0f);   // 3.58
+        void* rtex = r.kind == 3 ? HUD::Texture("bcw_icon.png", &uv) : (r.kind == 4 ? HUD::Texture("mw3_icon.png", &uv) : (r.kind == 5 ? HUD::Texture("rp_icon.png", &uv) : (r.kind == 6 ? HUD::Texture("dz_icon.png", &uv) : nullptr)));   // 3.04: Brief Case War icon (briefcase)
+        if(r.kind == 6 && !rtex) DzDrawSymbol(dl, ImVec2(a.x + cIcon + (rowH - UI::S(18)) * 0.5f, a.y + rowH * 0.5f), (rowH - UI::S(18)) * 0.5f, MP_NowMs() / 1000.0f);   // 3.58
         else if(void* tex = rtex ? rtex : HUD::ServerIcon(r.icon, &uv))
         {
             float is = rowH - UI::S(18);

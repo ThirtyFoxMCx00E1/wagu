@@ -1,4 +1,4 @@
-// 3.58: Project Day Z Remastered - the 5th featured server (gamemode "Proper DAYZ").
+// 3.58: Project Day Z Legacy - the 5th featured server (gamemode "Proper DAYZ").
 // Shared by the server (server_dayz.inc) and the client (mp_dayz.inc): names, the port, the item
 // table (every item is a REAL GTA:SA object model on the ground), the 15 spawns and the loot sites
 // (every GTA:SA gas station, the military bases / camps, towns with houses, ruins).
@@ -6,8 +6,9 @@
 #include <stdint.h>
 #include <string.h>
 #include <strings.h>
+#include <ctype.h>
 
-#define MP_DZ_SERVER_NAME   "Project Day Z Remastered"
+#define MP_DZ_SERVER_NAME   "Project Day Z Legacy"
 #define MP_DZ_SHORT_NAME    "DAYZ"
 #define MP_DZ_GAMEMODE      "Proper DAYZ"
 #define MP_DZ_PORT          1933
@@ -26,7 +27,8 @@ static inline bool MP_IsDzServerName(const char* n)
 
 // ---- items ----
 enum eDzKind : uint8_t { DZK_NONE = 0, DZK_WEAPON, DZK_AMMO, DZK_FOOD, DZK_DRINK, DZK_MED, DZK_CURE, DZK_BAG, DZK_ARMOR,
-                         DZK_GPS, DZK_FUEL, DZK_TOOL, DZK_TRASH };
+                         DZK_GPS, DZK_FUEL, DZK_TOOL, DZK_TRASH, DZK_REVIVE,
+                         DZK_SPECIAL, DZK_CLOTHES };   // 3.59 (MTA DayZ): special = val is a DZSP_ code, clothes = val is the skin   // 3.58b: revive = medicine that gets a downed party member up
 enum eDzArmorSlot : uint8_t { DZA_HELMET = 0, DZA_CHEST, DZA_VEST, DZA_GLOVES, DZA_BOOTS, DZA_COUNT };
 struct DzItem
 {
@@ -52,7 +54,14 @@ enum eDzItemId : uint8_t {
     DZI_MAP, DZI_WATCH,
     // trash (houses are full of it)
     DZI_TRASH_CAN, DZI_TRASH_BOTTLE, DZI_TRASH_BOX,
+    // 3.58b: medicines that revive a downed party member (+50% HP); appended = old saves keep their ids
+    DZI_MORPHINE, DZI_EPINEPHRINE, DZI_BLOODBAG, DZI_COMPASS,
+    // 3.59: from MTA DayZ (heat pack, vehicle parts, keycard, the old clothes / skins system, more food, optics)
+    DZI_HEATPACK, DZI_TIRE, DZI_ENGINE, DZI_SCRAP, DZI_EMPTY_CAN_FUEL, DZI_KEYCARD,
+    DZI_CLOTHES_CIV, DZI_CLOTHES_CAMO, DZI_CLOTHES_GHILLIE, DZI_CLOTHES_SURV,
+    DZI_MRE, DZI_STEW, DZI_BINOCULARS, DZI_RANGEFINDER,
     DZI_COUNT };
+enum eDzSpecial : uint8_t { DZSP_HEATPACK = 1, DZSP_TIRE, DZSP_ENGINE, DZSP_SCRAP, DZSP_EMPTYCAN, DZSP_KEYCARD, DZSP_BINOCULARS, DZSP_RANGEFINDER };
 static const DzItem g_DzItems[DZI_COUNT] = {
     { "",                 0,    0,    DZK_NONE,   0,    0,  0.0f },
     { "Knife",            335,  335,  DZK_WEAPON, 4,    1,  0.35f },
@@ -100,7 +109,41 @@ static const DzItem g_DzItems[DZI_COUNT] = {
     { "Empty can",        2601, 1543, DZK_TRASH,  0,    0,  0.05f },
     { "Empty bottle",     1543, 1484, DZK_TRASH,  0,    0,  0.10f },
     { "Cardboard box",    1220, 2900, DZK_TRASH,  0,    0,  0.30f },
+    { "Morphine",         1579, 1241, DZK_REVIVE, 50,   0,  0.10f },   // val = HP % given on revive
+    { "Epinephrine",      1580, 1241, DZK_REVIVE, 50,   0,  0.10f },
+    { "Blood bag",        1577, 1240, DZK_REVIVE, 50,   0,  0.40f },
+    { "Compass",          1239, 1239, DZK_TOOL,   0,    0,  0.10f },
+    { "Heat pack",        1241, 1240, DZK_SPECIAL, DZSP_HEATPACK, 0, 0.10f },     // +temperature, cures the cold
+    { "Tire",             1098, 1025, DZK_SPECIAL, DZSP_TIRE,     0, 8.00f },     // fixes the tyres of the car next to you
+    { "Engine",           1008, 1650, DZK_SPECIAL, DZSP_ENGINE,   0, 12.0f },     // +engine health (a toolbox needed)
+    { "Scrap metal",      2040, 1650, DZK_SPECIAL, DZSP_SCRAP,    0, 2.00f },     // +200 vehicle health (a toolbox needed)
+    { "Empty gas canister",1650,1650, DZK_SPECIAL, DZSP_EMPTYCAN, 0, 1.00f },     // fill it at a petrol station / siphon a car
+    { "Keycard",          1581, 1239, DZK_SPECIAL, DZSP_KEYCARD,  0, 0.05f },     // Area 69 + the San Fierro carrier
+    { "Civilian clothes", 2386, 1242, DZK_CLOTHES, 60,  0, 1.00f },
+    { "Camo clothes",     2386, 1242, DZK_CLOTHES, 287, 0, 1.00f },   // harder to see
+    { "Ghillie suit",     2386, 1242, DZK_CLOTHES, 285, 0, 1.50f },   // almost invisible when still
+    { "Survivor clothes", 2386, 1242, DZK_CLOTHES, 73,  0, 1.00f },
+    { "MRE",              2768, 2769, DZK_FOOD,   80,   0,  0.40f },
+    { "Can (stew)",       2769, 2768, DZK_FOOD,   55,   0,  0.40f },
+    { "Binoculars",       367,  1239, DZK_SPECIAL, DZSP_BINOCULARS, 0, 0.60f },
+    { "Range finder",     367,  1239, DZK_SPECIAL, DZSP_RANGEFINDER, 0, 0.50f },
 };
+static inline bool DzKindStacks(int kind) { return kind == DZK_AMMO || kind == DZK_FOOD || kind == DZK_DRINK || kind == DZK_MED || kind == DZK_CURE || kind == DZK_TRASH || kind == DZK_REVIVE; }
+static inline bool DzItemStacks(int item) { return DzKindStacks(g_DzItems[(item > 0 && item < DZI_COUNT) ? item : 0].kind) || item == DZI_HEATPACK || item == DZI_SCRAP; }
+// 3.58b: inventory sections like the real DayZ inventory (top: weapons, then GEAR, FOOD / DRINKS, MEDICINES, the tool belt)
+enum eDzSection : uint8_t { DZSEC_WEAPON = 0, DZSEC_GEAR, DZSEC_FOOD, DZSEC_MED, DZSEC_TOOLBELT };
+static inline int DzSection(int kind)
+{
+    switch(kind)
+    {
+        case DZK_WEAPON: return DZSEC_WEAPON;
+        case DZK_FOOD: case DZK_DRINK: return DZSEC_FOOD;
+        case DZK_MED: case DZK_CURE: case DZK_REVIVE: return DZSEC_MED;
+        case DZK_GPS: case DZK_TOOL: case DZK_FUEL: return DZSEC_TOOLBELT;
+        case DZK_SPECIAL: return DZSEC_TOOLBELT;
+        default: return DZSEC_GEAR;
+    }
+}
 static inline const DzItem& DzItemInfo(int id) { return g_DzItems[(id > 0 && id < DZI_COUNT) ? id : 0]; }
 static inline int DzWeaponItem(int weapon)   // the item that is this GTA weapon (for drops / the HUD name)
 {
@@ -190,3 +233,103 @@ static const uint32_t g_DzPartyCols[12] = {
 // ---- level: points = 10 per zombie, 50 per bandit, 1 per survived minute ----
 static inline int DzLevel(int points) { int l = 1, need = 500; while(points >= need && l < 99) { points -= need; ++l; need += 250; } return l; }
 static inline int DzToNext(int points) { int need = 500; while(points >= need) { points -= need; need += 250; } return need - points; }
+
+
+// ======================================================================================
+// 3.59: the MTA DayZ systems (github.com/ThirtyFoxMCx00E1/mtadayz, 0.9.9.5a) on Project Day Z Legacy
+// ======================================================================================
+// conditions (PktDzMe::cond bits)
+enum eDzCond : uint16_t { DZCO_BLEEDING = 1, DZCO_PAIN = 2, DZCO_LEGS = 4, DZCO_ARMS = 8, DZCO_COLD = 16, DZCO_UNCONSCIOUS = 32, DZCO_HELMET = 64, DZCO_KEYCARD = 128 };
+// gameplay variables (/dzset <name> <value> by an admin, saved in dayz_vars.txt) - same names as cfgServer.lua
+enum eDzVar { DZV_DIFFICULTY = 0, DZV_ZOMBIEDAMAGE, DZV_SPAWNSELECTION, DZV_NEWZOMBIESPAWN, DZV_ZOMBIERADIUS, DZV_ZOMBIESPERLOOT, DZV_PETROLMAX,
+              DZV_ITEMRESPAWN, DZV_COMBATLOG, DZV_NOADVERT, DZV_PINGKICK, DZV_PING, DZV_CLOTHES, DZV_HEADSHOTMUL, DZV_TEMPWATER, DZV_TEMPSPRINT,
+              DZV_RAIN, DZV_CAMSWAY, DZV_DEBUGMONITOR, DZV_RESPAWNCOUNTDOWN, DZV_COUNT };
+struct DzVarDef { const char* name; int def, min, max; const char* help; };
+static const DzVarDef g_DzVarDefs[DZV_COUNT] = {
+    { "difficulty",          1, 1, 3,       "1 normal, 2 veteran, 3 hardcore (zombie damage, hunger, thirst, sprinting zombies)" },
+    { "zombiedamage",        650, 0, 5000,  "blood a zombie hit takes (x difficulty)" },
+    { "spawnselection",      1, 0, 1,       "players choose the spawn region" },
+    { "newzombiespawnsystem",1, 0, 1,       "zombies spawn near the loot spots" },
+    { "zombiespawnradius",   20, 5, 80,     "radius around a loot spot (m)" },
+    { "maxzombiesperloot",   6, 1, 12,      "zombies per loot spot" },
+    { "maxPetrolFuelAmount", 15, 1, 100,    "max fuel of a petrol station (canisters, random 1..max)" },
+    { "itemrespawntimer",    30, 1, 240,    "minutes before taken loot comes back" },
+    { "combatlog",           1, 0, 1,       "ANTI-RELOG: disconnect in combat = death" },
+    { "noadvert",            1, 0, 1,       "block IPs / links / server adverts in the chat" },
+    { "pingkick",            1, 0, 1,       "kick players with a high ping" },
+    { "ping",                600, 100, 2000,"max ping for the ping kicker (ms)" },
+    { "newclothingsystem",   1, 0, 1,       "clothes = skins, random clothes on spawn" },
+    { "headshotdamage",      150, 100, 400, "headshot multiplier in % (helmets stop it)" },
+    { "temperaturewater",    10, 0, 100,    "temperature lost per tick in water (x0.01 C)" },
+    { "temperaturesprint",   1, 0, 20,      "temperature gained per tick sprinting (x0.005 C)" },
+    { "rain",                1, 0, 1,       "occasional rain when the weather is cloudy" },
+    { "camerasway",          1, 0, 1,       "camera sway when in pain" },
+    { "debugmonitorenabled", 1, 0, 1,       "debug monitor in the journal (key 6)" },
+    { "playerRespawnCountdown", 30, 0, 120, "seconds on the death screen" },
+};
+// achievements (the MTA DayZ table_achievements.lua list) - bit index in the save
+struct DzAch { const char* name; const char* desc; uint8_t reward, rewardN; };
+enum eDzAchId { DZACH_TASTE1 = 0, DZACH_TASTE2, DZACH_TASTE3, DZACH_FITTEST1, DZACH_FITTEST2, DZACH_ODDS1, DZACH_ODDS2, DZACH_DARK1, DZACH_DARK2,
+                DZACH_MONSTER1, DZACH_MONSTER2, DZACH_MONSTER3, DZACH_LITTER, DZACH_HOUSE, DZACH_PULP, DZACH_COMMANDO, DZACH_ROSWELL, DZACH_CARRIER,
+                DZACH_HEADHUNTER, DZACH_MEDIC, DZACH_HUNTED, DZACH_COUNT };
+static const DzAch g_DzAch[DZACH_COUNT] = {
+    { "Tasting Blood I",              "Kill 10 zombies",                 DZI_BANDAGE, 2 },
+    { "Tasting Blood II",             "Kill 100 zombies",                DZI_MEDKIT, 1 },
+    { "Tasting Blood III",            "Kill 500 zombies",                DZI_AMMO_RIFLE, 3 },
+    { "Survival of the Fittest I",    "Survive 1 hour",                  DZI_MRE, 1 },
+    { "Survival of the Fittest II",   "Survive 24 hours",                DZI_BAG2, 1 },
+    { "Against All Odds I",           "Get 10 headshots",                DZI_AMMO_SNIPER, 2 },
+    { "Against All Odds II",          "Get 100 headshots",               DZI_SNIPER, 1 },
+    { "What You Are In The Dark I",   "Murder 1 survivor",               DZI_AMMO_PISTOL, 2 },
+    { "What You Are In The Dark II",  "Murder 10 survivors",             DZI_DEAGLE, 1 },
+    { "He Who Fights Monsters I",     "Kill 1 bandit",                   DZI_BANDAGE, 2 },
+    { "He Who Fights Monsters II",    "Kill 10 bandits",                 DZI_M4, 1 },
+    { "He Who Fights Monsters III",   "Kill 50 bandits",                 DZI_SNIPER, 1 },
+    { "Litterbug",                    "Collect 5 empty tin cans",        DZI_MRE, 1 },
+    { "I Can See My House From Here!","Fly a plane / heli above 300 m",  DZI_STEW, 1 },
+    { "Bloody Pulp",                  "Drop below 6000 blood",           DZI_BLOODBAG, 1 },
+    { "Going Commando",               "Wear no clothes (civilian skin)", DZI_MRE, 0 },
+    { "Roswell Conspiracies",         "Visit Area 69",                   DZI_KEYCARD, 0 },
+    { "USS Werfukd",                  "Visit the San Fierro carrier",    DZI_MRE, 0 },
+    { "Headhunter",                   "Confirm 5 player kills (Check Body)", DZI_RANGEFINDER, 1 },
+    { "Field Medic",                  "Revive 5 party members",          DZI_EPINEPHRINE, 2 },
+    { "Hunted",                       "Get your blood under 3000 and survive", DZI_HEATPACK, 2 },
+};
+// skills (0.9.9.5a RPG): 4 trees, 1 skill point every level
+enum eDzSkill { DZSK_CRIT = 0, DZSK_TOUGH, DZSK_DODGE, DZSK_PROF, DZSK_SECOND, DZSK_WBOR, DZSK_GOOD, DZSK_SHADOW, DZSK_CAMO, DZSK_AMMO, DZSK_ANALYSIS, DZSK_DUCT, DZSK_COUNT };
+struct DzSkill { const char* tree; const char* name; const char* desc; uint8_t maxRank; };
+static const DzSkill g_DzSkills[DZSK_COUNT] = {
+    { "Soldier",   "Critical Hit",   "+4% chance per rank: a zombie dies in one hit", 5 },
+    { "Soldier",   "Toughness",      "-5% zombie damage per rank",                    5 },
+    { "Soldier",   "Dodge",          "+3% chance per rank to dodge a zombie hit",     5 },
+    { "Medic",     "Proficiency",    "+20% blood from medicine per rank",             5 },
+    { "Medic",     "Second Chance",  "+15 s bleed-out time when DOWN per rank",        3 },
+    { "Medic",     "Well Born",      "+1% blood regeneration per rank",               5 },
+    { "Scavenger", "Good Eye",       "+10% chance per rank of a second item from loot",5 },
+    { "Scavenger", "Shadow",         "-1 sound level per rank",                        3 },
+    { "Scavenger", "Camouflage",     "-1 visibility level per rank",                   3 },
+    { "Engineer",  "Ammo Crafter",   "+1 magazine per rank when you pick up ammo",     3 },
+    { "Engineer",  "Analysis",       "+20% fuel from canisters per rank",              3 },
+    { "Engineer",  "Duct Tape",      "+20% vehicle repair per rank",                   5 },
+};
+// spawn selection (gui/spawnselection.png: 8 regions + random), the g_DzSpawns indices of each region
+struct DzRegion { const char* name; float u, v; int8_t spawns[3]; };
+static const DzRegion g_DzRegions[9] = {
+    { "Tierra Robada", 0.115f, 0.17f, { 11, 8, -1 } }, { "Whetstone", 0.115f, 0.62f, { 12, 0, -1 } }, { "San Fierro", 0.305f, 0.47f, { 13, 9, -1 } },
+    { "Bone County",   0.475f, 0.17f, { 10, 7, -1 } }, { "Las Venturas", 0.805f, 0.20f, { 7, -1, -1 } }, { "Red County", 0.605f, 0.47f, { 4, 5, 2 } },
+    { "Flint County",  0.485f, 0.78f, { 1, 6, 3 } },   { "Los Santos", 0.875f, 0.74f, { 14, -1, -1 } }, { "Random", 0.18f, 0.91f, { -1, -1, -1 } },
+};
+// keycard areas (Area 69 + the San Fierro carrier) - you need a Keycard to stay inside
+struct DzArea { const char* name; float x, y, r; int ach; };
+static const DzArea g_DzAreas[2] = { { "Area 69", 213.0f, 1880.0f, 120.0f, DZACH_ROSWELL }, { "the San Fierro carrier", -1380.0f, 500.0f, 70.0f, DZACH_CARRIER } };
+// anti-advertising: IPs (1.2.3.4[:port]), links, invites
+static inline bool DzIsAdvert(const char* t)
+{
+    if(!t) return false;
+    char low[256]; int n = 0; for(; t[n] && n < 255; ++n) low[n] = (char)tolower((unsigned char)t[n]); low[n] = 0;
+    static const char* const bad[] = { "http://", "https://", "www.", "discord.gg", "discord.com/invite", ".com", ".net", ".org", ".xyz", "samp://", "mtasa://", "join my server", "joinmyserver" };
+    for(const char* b : bad) if(strstr(low, b)) { if(strstr(low, "discord.gg/projectdayz")) continue; return true; }
+    int dots = 0, digits = 0;   // a.b.c.d
+    for(int i = 0; low[i]; ++i) { if(isdigit((unsigned char)low[i])) digits++; else if(low[i] == '.' && digits > 0 && digits <= 3) { dots++; digits = 0; } else if(low[i] == ':' && dots >= 3) return true; else { if(dots >= 3 && digits > 0) return true; dots = 0; digits = 0; } }
+    return dots >= 3 && digits > 0;
+}
