@@ -12,6 +12,16 @@ namespace Sound
     void SetMusicVolume(float volume);
     void StopMusic();
     bool MusicPlaying();
+    // 3.63: long tracks (1 h Day Z ambient): decoded on a thread a second at a time and streamed
+    // into a buffer-queue voice (no full decode in RAM, no media framework / URI player)
+    bool  StreamPlay(const char* absPath, float volume = 1.0f);   // false = file missing / not an mp3
+    void  StreamUpdate();                // call every game tick (starts the queue when data is ready)
+    void  StreamSetVolume(float volume);
+    void  StreamStop();
+    bool  StreamActive();                // started and not finished yet
+    bool  StreamEnded();                 // the file played to its end
+    float StreamPosition();              // seconds played
+    float StreamDuration();              // seconds (estimated from the bitrate), 0 = unknown
     void* EngineItf();   // 3.11: the shared OpenSL engine (SLEngineItf) for voice chat
     void* OutputMix();   // 3.11: SLObjectItf output mix
 }

@@ -1001,6 +1001,7 @@ static void Render219(void*)
     RenderRp();                // 3.25: Mega Vil Futuristic
     Game::HideCornerText(DzHideCorner());   // 3.60: DynamicSeason text off the GPS
     DzModelsTick();            // 3.61: MTA DayZ models from GitHub
+    SocialFrame();             // 3.63: MP social (friends, chats, party, communities, inbox)
     RenderDz();                // 3.58: Project Day Z Legacy
     HkRender(); NeedsRender(); Modes2Render(); DealerRender();   // 3.39 / 3.55
     RenderHotelPc();           // 3.36: hotel room computer (every server)

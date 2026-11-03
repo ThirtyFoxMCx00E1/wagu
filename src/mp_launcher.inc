@@ -12,7 +12,9 @@
 // The administrator is the one who hosts the server (this phone's player name).
 // =============================================================================================
 
-enum { LT_INTERNET = 0, LT_FAVORITES, LT_HOSTED, LT_ADD, LT_PLAYERS, LT_BANS, LT_SRVMGMT, LT_SECTIONS };   // 3.53: + Server Management
+enum { LT_INTERNET = 0, LT_FAVORITES, LT_HOSTED, LT_ADD, LT_PLAYERS, LT_BANS, LT_SRVMGMT,   // 3.53: + Server Management
+       LT_FRIENDS, LT_CHATS, LT_PARTY, LT_COMMUNITY, LT_INBOX,                           // 3.63: social (mp_social.inc)
+       LT_SECTIONS };
 static int   s_nLTab = LT_INTERNET;
 static int   s_nInetSub = 0;   // 3.58: Internet = PUBLIC (default + custom servers) || FEATURED (the 24/7 Broker servers)
 static bool  s_bLauncherCloseReq = false;   // 3.39: close the launcher (e.g. Server settings opens a dialog in game)
@@ -39,7 +41,69 @@ static void ShowKicked(const PktKicked& k)
 
 // ---- small drawing helpers -------------------------------------------------------------------
 enum { IC_PLAY, IC_PLUS, IC_TRASH, IC_REFRESH, IC_GEAR, IC_SLIDERS, IC_INFO, IC_CLOSE, IC_GLOBE, IC_HEART,
-       IC_BOX, IC_USERS, IC_BAN, IC_LIST, IC_SEARCH, IC_CHAT, IC_USER, IC_STOP, IC_REGION };
+       IC_BOX, IC_USERS, IC_BAN, IC_LIST, IC_SEARCH, IC_CHAT, IC_USER, IC_STOP, IC_REGION,
+       IC_BELL, IC_USERPLUS, IC_PARTY, IC_FLAG, IC_SEND, IC_CHECK };   // 3.63
+
+// ---- 3.63: Valorant style (shapes + colours only: the layout is the same as before) ----
+// navy glass panels, thin light outlines, chamfered (cut) corners, pill tabs, red #FF4655 + teal accents
+static const ImU32 kVRed    = IM_COL32(255, 70, 85, 255);
+static const ImU32 kVRedDim = IM_COL32(255, 70, 85, 60);
+static const ImU32 kVTeal   = IM_COL32(64, 230, 190, 255);
+static const ImU32 kVTealDim= IM_COL32(64, 230, 190, 40);
+static const ImU32 kVText   = IM_COL32(236, 232, 225, 255);
+static const ImU32 kVDim    = IM_COL32(150, 160, 170, 255);
+static const ImU32 kVLine   = IM_COL32(236, 232, 225, 34);
+static const ImU32 kVPanel  = IM_COL32(15, 25, 35, 120);
+static const ImU32 kVDark   = IM_COL32(15, 25, 35, 255);
+static inline ImU32 VAlpha(ImU32 c, float a) { int al = (int)(((c >> IM_COL32_A_SHIFT) & 0xFF) * a); return (c & ~IM_COL32_A_MASK) | ((ImU32)ImClamp(al, 0, 255) << IM_COL32_A_SHIFT); }
+// rectangle with the top-left and bottom-right corners cut (the Valorant frame)
+static void VChamferPath(ImDrawList* dl, ImVec2 a, ImVec2 b, float cut)
+{
+    cut = ImMin(cut, ImMin(b.x - a.x, b.y - a.y) * 0.45f);
+    dl->PathLineTo(ImVec2(a.x + cut, a.y)); dl->PathLineTo(ImVec2(b.x, a.y)); dl->PathLineTo(ImVec2(b.x, b.y - cut));
+    dl->PathLineTo(ImVec2(b.x - cut, b.y)); dl->PathLineTo(ImVec2(a.x, b.y)); dl->PathLineTo(ImVec2(a.x, a.y + cut));
+}
+static void VChamfer(ImDrawList* dl, ImVec2 a, ImVec2 b, float cut, ImU32 fill, ImU32 border = 0, float thick = 0)
+{
+    if(fill) { VChamferPath(dl, a, b, cut); dl->PathFillConvex(fill); }
+    if(border) { VChamferPath(dl, a, b, cut); dl->PathStroke(border, ImDrawFlags_Closed, thick > 0 ? thick : UI::S(1.5f)); }
+}
+// pill = fully round ends (selected tabs)
+static void VPill(ImDrawList* dl, ImVec2 a, ImVec2 b, ImU32 fill, ImU32 border = 0)
+{
+    float r = (b.y - a.y) * 0.5f;
+    if(fill) dl->AddRectFilled(a, b, fill, r);
+    if(border) dl->AddRect(a, b, border, r, 0, UI::S(1.5f));
+}
+// small corner ticks (the thin brackets on Valorant panels)
+static void VTicks(ImDrawList* dl, ImVec2 a, ImVec2 b, ImU32 col, float len)
+{
+    float t = UI::S(2);
+    dl->AddLine(ImVec2(a.x, a.y), ImVec2(a.x + len, a.y), col, t); dl->AddLine(ImVec2(a.x, a.y), ImVec2(a.x, a.y + len), col, t);
+    dl->AddLine(ImVec2(b.x, b.y), ImVec2(b.x - len, b.y), col, t); dl->AddLine(ImVec2(b.x, b.y), ImVec2(b.x, b.y - len), col, t);
+}
+// ImGui widgets inside the launcher pages (settings, add server, ...) get the same look
+static void VPushWidgetStyle()
+{
+    ImGui::PushStyleColor(ImGuiCol_Button,         ImVec4(0.06f, 0.10f, 0.14f, 0.55f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered,  ImVec4(0.25f, 0.90f, 0.75f, 0.22f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive,   ImVec4(0.25f, 0.90f, 0.75f, 0.45f));
+    ImGui::PushStyleColor(ImGuiCol_FrameBg,        ImVec4(0.06f, 0.10f, 0.14f, 0.55f));
+    ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.10f, 0.16f, 0.22f, 0.65f));
+    ImGui::PushStyleColor(ImGuiCol_FrameBgActive,  ImVec4(0.12f, 0.20f, 0.26f, 0.75f));
+    ImGui::PushStyleColor(ImGuiCol_CheckMark,      ImVec4(0.25f, 0.90f, 0.75f, 1));
+    ImGui::PushStyleColor(ImGuiCol_SliderGrab,     ImVec4(1.0f, 0.27f, 0.33f, 1));
+    ImGui::PushStyleColor(ImGuiCol_SliderGrabActive, ImVec4(1.0f, 0.40f, 0.45f, 1));
+    ImGui::PushStyleColor(ImGuiCol_Header,         ImVec4(0.25f, 0.90f, 0.75f, 0.18f));
+    ImGui::PushStyleColor(ImGuiCol_HeaderHovered,  ImVec4(0.25f, 0.90f, 0.75f, 0.28f));
+    ImGui::PushStyleColor(ImGuiCol_HeaderActive,   ImVec4(0.25f, 0.90f, 0.75f, 0.40f));
+    ImGui::PushStyleColor(ImGuiCol_Separator,      ImVec4(0.93f, 0.91f, 0.88f, 0.14f));
+    ImGui::PushStyleColor(ImGuiCol_Border,         ImVec4(0.93f, 0.91f, 0.88f, 0.16f));
+    ImGui::PushStyleColor(ImGuiCol_Text,           ImVec4(0.93f, 0.91f, 0.88f, 1));
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, UI::S(3));
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, UI::S(1));
+}
+static void VPopWidgetStyle() { ImGui::PopStyleVar(2); ImGui::PopStyleColor(15); }
 
 static void LIcon(ImDrawList* dl, int k, ImVec2 c, float r, ImU32 col)
 {
@@ -116,6 +180,36 @@ static void LIcon(ImDrawList* dl, int k, ImVec2 c, float r, ImU32 col)
     case IC_CHAT:
         dl->AddRect(ImVec2(c.x - r * 0.65f, c.y - r * 0.5f), ImVec2(c.x + r * 0.65f, c.y + r * 0.3f), col, r * 0.2f, 0, t);
         dl->AddTriangleFilled(ImVec2(c.x - r * 0.3f, c.y + r * 0.28f), ImVec2(c.x - r * 0.05f, c.y + r * 0.28f), ImVec2(c.x - r * 0.38f, c.y + r * 0.62f), col); break;
+    case IC_BELL:
+    {   // 3.63: notifications
+        dl->PathArcTo(ImVec2(c.x, c.y - r * 0.1f), r * 0.45f, IM_PI, IM_PI * 2, 16);
+        dl->PathLineTo(ImVec2(c.x + r * 0.45f, c.y + r * 0.3f)); dl->PathLineTo(ImVec2(c.x + r * 0.62f, c.y + r * 0.45f));
+        dl->PathLineTo(ImVec2(c.x - r * 0.62f, c.y + r * 0.45f)); dl->PathLineTo(ImVec2(c.x - r * 0.45f, c.y + r * 0.3f));
+        dl->PathStroke(col, ImDrawFlags_Closed, t);
+        dl->AddCircleFilled(ImVec2(c.x, c.y + r * 0.66f), t * 1.1f, col);
+        dl->AddLine(ImVec2(c.x, c.y - r * 0.72f), ImVec2(c.x, c.y - r * 0.55f), col, t);
+        break;
+    }
+    case IC_USERPLUS:
+        dl->AddCircle(ImVec2(c.x - r * 0.18f, c.y - r * 0.28f), r * 0.26f, col, 16, t);
+        dl->PathArcTo(ImVec2(c.x - r * 0.18f, c.y + r * 0.6f), r * 0.5f, IM_PI, IM_PI * 2, 14); dl->PathStroke(col, 0, t);
+        dl->AddLine(ImVec2(c.x + r * 0.42f, c.y - r * 0.2f), ImVec2(c.x + r * 0.82f, c.y - r * 0.2f), col, t);
+        dl->AddLine(ImVec2(c.x + r * 0.62f, c.y - r * 0.4f), ImVec2(c.x + r * 0.62f, c.y), col, t); break;
+    case IC_PARTY:   // a crown (the party leader) over 3 heads
+        dl->PathLineTo(ImVec2(c.x - r * 0.6f, c.y + r * 0.45f)); dl->PathLineTo(ImVec2(c.x - r * 0.7f, c.y - r * 0.35f)); dl->PathLineTo(ImVec2(c.x - r * 0.3f, c.y));
+        dl->PathLineTo(ImVec2(c.x, c.y - r * 0.6f)); dl->PathLineTo(ImVec2(c.x + r * 0.3f, c.y)); dl->PathLineTo(ImVec2(c.x + r * 0.7f, c.y - r * 0.35f));
+        dl->PathLineTo(ImVec2(c.x + r * 0.6f, c.y + r * 0.45f)); dl->PathStroke(col, ImDrawFlags_Closed, t); break;
+    case IC_FLAG:    // community
+        dl->AddLine(ImVec2(c.x - r * 0.5f, c.y - r * 0.7f), ImVec2(c.x - r * 0.5f, c.y + r * 0.7f), col, t);
+        dl->PathLineTo(ImVec2(c.x - r * 0.5f, c.y - r * 0.65f)); dl->PathLineTo(ImVec2(c.x + r * 0.6f, c.y - r * 0.45f));
+        dl->PathLineTo(ImVec2(c.x + r * 0.25f, c.y - r * 0.15f)); dl->PathLineTo(ImVec2(c.x + r * 0.6f, c.y + r * 0.15f)); dl->PathLineTo(ImVec2(c.x - r * 0.5f, c.y + r * 0.1f));
+        dl->PathStroke(col, 0, t); break;
+    case IC_SEND:
+        dl->PathLineTo(ImVec2(c.x - r * 0.65f, c.y - r * 0.6f)); dl->PathLineTo(ImVec2(c.x + r * 0.7f, c.y)); dl->PathLineTo(ImVec2(c.x - r * 0.65f, c.y + r * 0.6f)); dl->PathLineTo(ImVec2(c.x - r * 0.35f, c.y));
+        dl->PathStroke(col, ImDrawFlags_Closed, t); dl->AddLine(ImVec2(c.x - r * 0.35f, c.y), ImVec2(c.x + r * 0.2f, c.y), col, t); break;
+    case IC_CHECK:
+        dl->AddLine(ImVec2(c.x - r * 0.55f, c.y), ImVec2(c.x - r * 0.15f, c.y + r * 0.42f), col, t * 1.3f);
+        dl->AddLine(ImVec2(c.x - r * 0.15f, c.y + r * 0.42f), ImVec2(c.x + r * 0.6f, c.y - r * 0.45f), col, t * 1.3f); break;
     case IC_REGION:
     {   // 3.25.1: map pin = the region switch (round head, point at the bottom, a hole in the middle)
         const ImVec2 hc(c.x, c.y - r * 0.2f); const float pr = r * 0.46f, tipY = c.y + r * 0.75f;
@@ -160,8 +254,12 @@ static bool LToolButton(const char* id, int icon, const char* label, float h, bo
     bool hit = ImGui::InvisibleButton("##tb", ImVec2(w, h));
     if(!enabled) ImGui::EndDisabled();
     ImDrawList* dl = ImGui::GetWindowDrawList();
-    if(on || (enabled && ImGui::IsItemActive())) dl->AddRectFilled(p, ImVec2(p.x + w, p.y + h), on ? IM_COL32(255, 255, 255, 40) : IM_COL32(255, 255, 255, 28), UI::S(10));
-    ImU32 col = enabled ? IM_COL32(235, 235, 235, 255) : IM_COL32(120, 120, 120, 255);
+    // 3.63: Valorant look - a thin chamfered frame, teal while selected, light fill while pressed
+    const ImVec2 q(p.x + w, p.y + h), a1(p.x + UI::S(3), p.y + UI::S(5)), b1(q.x - UI::S(3), q.y - UI::S(5));
+    if(on) VChamfer(dl, a1, b1, UI::S(9), kVTealDim, VAlpha(kVTeal, 0.85f), UI::S(1.5f));
+    else if(enabled && ImGui::IsItemActive()) VChamfer(dl, a1, b1, UI::S(9), IM_COL32(236, 232, 225, 30), kVLine);
+    else if(label && enabled) VChamfer(dl, a1, b1, UI::S(9), 0, IM_COL32(236, 232, 225, 22));
+    ImU32 col = enabled ? (on ? kVTeal : kVText) : IM_COL32(110, 118, 126, 255);
     float cx = label ? p.x + h * 0.32f + isz * 0.5f : p.x + w * 0.5f;
     LIcon(dl, icon, ImVec2(cx, p.y + h * 0.5f), isz * 0.75f, col);
     if(label) dl->AddText(ImVec2(cx + isz * 0.5f + h * 0.22f, p.y + (h - ImGui::GetTextLineHeight()) * 0.5f), col, label);
@@ -176,13 +274,14 @@ static bool LInputBox(const char* id, const char* value, const char* placeholder
     ImVec2 p = ImGui::GetCursorScreenPos();
     bool hit = ImGui::InvisibleButton("##ib", ImVec2(w, h));
     ImDrawList* dl = ImGui::GetWindowDrawList();
-    dl->AddRectFilled(p, ImVec2(p.x + w, p.y + h), IM_COL32(0, 0, 0, 110), UI::S(10));
-    dl->AddRect(p, ImVec2(p.x + w, p.y + h), ImGui::IsItemActive() ? IM_COL32(255, 255, 255, 120) : IM_COL32(255, 255, 255, 38), UI::S(10), 0, UI::S(2));
+    // 3.63: Valorant field - navy glass, chamfered, a teal underline while touched
+    VChamfer(dl, p, ImVec2(p.x + w, p.y + h), UI::S(10), IM_COL32(10, 18, 26, 150), ImGui::IsItemActive() ? VAlpha(kVTeal, 0.9f) : IM_COL32(236, 232, 225, 40), UI::S(1.5f));
+    dl->AddLine(ImVec2(p.x + UI::S(12), p.y + h - UI::S(1.5f)), ImVec2(p.x + w - UI::S(14), p.y + h - UI::S(1.5f)), ImGui::IsItemActive() ? kVTeal : IM_COL32(236, 232, 225, 18), UI::S(2));
     float tx = p.x + UI::S(18);
-    if(icon >= 0) { LIcon(dl, icon, ImVec2(p.x + UI::S(30), p.y + h * 0.5f), h * 0.26f, IM_COL32(160, 160, 160, 255)); tx = p.x + UI::S(56); }
+    if(icon >= 0) { LIcon(dl, icon, ImVec2(p.x + UI::S(30), p.y + h * 0.5f), h * 0.26f, kVDim); tx = p.x + UI::S(56); }
     dl->PushClipRect(p, ImVec2(p.x + w - UI::S(8), p.y + h), true);
     bool empty = !value || !value[0];
-    dl->AddText(ImVec2(tx, p.y + (h - ImGui::GetTextLineHeight()) * 0.5f), empty ? IM_COL32(140, 140, 140, 255) : IM_COL32_WHITE, empty ? placeholder : value);
+    dl->AddText(ImVec2(tx, p.y + (h - ImGui::GetTextLineHeight()) * 0.5f), empty ? IM_COL32(125, 135, 145, 255) : kVText, empty ? placeholder : value);
     dl->PopClipRect();
     ImGui::PopID();
     return hit;
@@ -434,8 +533,8 @@ static void LRegionPicker(const std::vector<LanServer>& nearby)
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(pw, pw));
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, UI::S(14));
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, UI::S(2));
-    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.04f, 0.04f, 0.05f, 0.97f));
-    ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(1, 1, 1, 0.20f));
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.04f, 0.07f, 0.10f, 0.95f));   // 3.63: Valorant navy
+    ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.25f, 0.90f, 0.75f, 0.35f));
     ImGui::SetNextWindowFocus();
     if(ImGui::Begin("##MPRegionPick", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse))
     {
@@ -450,9 +549,9 @@ static void LRegionPicker(const std::vector<LanServer>& nearby)
             bool held = ImGui::IsItemActive();
             ImGui::PopID();
             const bool sel = i < 0 ? settings.lobbyAuto : (!settings.lobbyAuto && settings.region == i);
-            dl->AddRectFilled(a, b, sel ? IM_COL32(255, 255, 255, held ? 200 : 235) : IM_COL32(255, 255, 255, held ? 45 : 22), UI::S(10));
-            if(!sel) dl->AddRect(a, b, IM_COL32(255, 255, 255, 40), UI::S(10), 0, UI::S(1.5f));
-            const ImU32 tc = sel ? IM_COL32(15, 15, 15, 255) : IM_COL32(235, 235, 235, 255), sc = sel ? IM_COL32(60, 60, 60, 255) : IM_COL32(160, 160, 160, 255);
+            if(sel) VChamfer(dl, a, b, UI::S(10), held ? VAlpha(kVTeal, 0.8f) : kVTeal);   // 3.63
+            else VChamfer(dl, a, b, UI::S(10), IM_COL32(236, 232, 225, held ? 45 : 12), IM_COL32(236, 232, 225, 40));
+            const ImU32 tc = sel ? kVDark : kVText, sc = sel ? IM_COL32(20, 50, 50, 255) : kVDim;
             char l1[32], l2[48];
             if(i < 0)
             {
@@ -593,9 +692,10 @@ static void LTable(std::vector<LRow>& rows, float w, float h)
             DzDrawSymbol(dl, ImVec2(a.x + W - rowH * 0.7f, a.y + rowH * 0.5f), rowH * 0.55f, MP_NowMs() / 1000.0f);
             dl->PopClipRect();
         }
-        if(sel) dl->AddRectFilled(a, ImVec2(a.x + W, a.y + rowH), IM_COL32(255, 255, 255, 30), UI::S(6));
-        else if(ImGui::IsItemActive()) dl->AddRectFilled(a, ImVec2(a.x + W, a.y + rowH), IM_COL32(255, 255, 255, 16), UI::S(6));
-        dl->AddLine(ImVec2(a.x, a.y + rowH), ImVec2(a.x + W, a.y + rowH), IM_COL32(255, 255, 255, 14));
+        // 3.63: Valorant selection: teal glass + a teal bar on the left
+        if(sel) { dl->AddRectFilled(a, ImVec2(a.x + W, a.y + rowH), kVTealDim); dl->AddRectFilled(a, ImVec2(a.x + UI::S(4), a.y + rowH), kVTeal); }
+        else if(ImGui::IsItemActive()) dl->AddRectFilled(a, ImVec2(a.x + W, a.y + rowH), IM_COL32(236, 232, 225, 16));
+        dl->AddLine(ImVec2(a.x, a.y + rowH), ImVec2(a.x + W, a.y + rowH), IM_COL32(236, 232, 225, 14));
         if(tap)
         {
             LRowKey(r, key, sizeof(key));
@@ -1151,9 +1251,11 @@ static bool LSideItem(const char* id, int icon, const char* label, bool on, floa
     ImVec2 p = ImGui::GetCursorScreenPos();
     bool hit = ImGui::InvisibleButton("##si", ImVec2(w, h));
     ImDrawList* dl = ImGui::GetWindowDrawList();
-    if(on) dl->AddRectFilled(p, ImVec2(p.x + w, p.y + h), IM_COL32(255, 255, 255, 34), UI::S(10));
-    else if(ImGui::IsItemActive()) dl->AddRectFilled(p, ImVec2(p.x + w, p.y + h), IM_COL32(255, 255, 255, 18), UI::S(10));
-    ImU32 col = on ? IM_COL32_WHITE : IM_COL32(215, 215, 215, 255);
+    // 3.63: selected = teal pill + a teal bar on the left (Valorant tabs)
+    const ImVec2 a1(p.x + UI::S(6), p.y + UI::S(6)), b1(p.x + w - UI::S(4), p.y + h - UI::S(6));
+    if(on) { VPill(dl, a1, b1, kVTealDim, VAlpha(kVTeal, 0.55f)); dl->AddRectFilled(ImVec2(p.x, p.y + h * 0.28f), ImVec2(p.x + UI::S(4), p.y + h * 0.72f), kVTeal, UI::S(2)); }
+    else if(ImGui::IsItemActive()) VPill(dl, a1, b1, IM_COL32(236, 232, 225, 22));
+    ImU32 col = on ? kVTeal : IM_COL32(205, 210, 214, 255);
     LIcon(dl, icon, ImVec2(p.x + UI::S(36), p.y + h * 0.5f), h * 0.24f, col);
     dl->PushClipRect(p, ImVec2(p.x + w, p.y + h), true);
     dl->AddText(ImVec2(p.x + UI::S(74), p.y + (h - ImGui::GetTextLineHeight()) * 0.5f), col, label);
@@ -1165,11 +1267,19 @@ static bool LSideItem(const char* id, int icon, const char* label, bool on, floa
 static void LGroupLabel(const char* t)
 {
     ImGui::Dummy(ImVec2(1, UI::S(6)));
-    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.55f, 0.55f, 0.55f, 1));
-    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + UI::S(14));
-    ImGui::TextUnformatted(t);
-    ImGui::PopStyleColor();
+    // 3.63: small dim caps + a thin line to the right (Valorant section headers)
+    ImDrawList* dl = ImGui::GetWindowDrawList();
+    ImVec2 p = ImGui::GetCursorScreenPos();
+    float fs = ImGui::GetFontSize() * 0.82f, lh = ImGui::GetTextLineHeight();
+    ImVec2 ts = UI::Font()->CalcTextSizeA(fs, FLT_MAX, 0, t);
+    float x = p.x + UI::S(14), y = p.y + (lh - fs) * 0.5f;
+    dl->AddText(UI::Font(), fs, ImVec2(x, y), kVDim, t);
+    float lx = x + ts.x + UI::S(12), rx = p.x + ImGui::GetContentRegionAvail().x - UI::S(6);
+    if(rx > lx) dl->AddLine(ImVec2(lx, p.y + lh * 0.5f), ImVec2(rx, p.y + lh * 0.5f), kVLine, UI::S(1));
+    ImGui::Dummy(ImVec2(1, lh));
 }
+
+#include "mp_social.inc"   // 3.63: friends, chats, party, communities, inbox
 
 static void RenderLauncher(void* openPtr)
 {
@@ -1181,18 +1291,23 @@ static void RenderLauncher(void* openPtr)
     ImGui::SetNextWindowPos(ImVec2(mx, my));
     ImGui::SetNextWindowSize(ImVec2(ds.x - mx * 2, ds.y - my * 2));
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, UI::S(16));
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, UI::S(2));
-    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.03f, 0.03f, 0.035f, 0.60f));   // 40% transparent
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, UI::S(4));     // 3.63: Valorant: nearly square
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, UI::S(1.5f));
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.035f, 0.065f, 0.095f, 0.50f));   // 3.63: navy glass, 50% transparent
     ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0, 0, 0, 0));
-    ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(1, 1, 1, 0.10f));
+    ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.93f, 0.91f, 0.88f, 0.14f));
     if(!ImGui::Begin("##MPLauncher", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollWithMouse))
     { ImGui::End(); ImGui::PopStyleColor(3); ImGui::PopStyleVar(3); return; }
 
     ImDrawList* dl = ImGui::GetWindowDrawList();
     ImVec2 wp = ImGui::GetWindowPos(), ws = ImGui::GetWindowSize();
-    const ImU32 line = IM_COL32(255, 255, 255, 26);
+    const ImU32 line = kVLine;
     const float pad = UI::S(16);
+    // 3.63: Valorant glass: a soft teal glow at the top, darker at the bottom, corner brackets
+    dl->AddRectFilledMultiColor(wp, ImVec2(wp.x + ws.x, wp.y + ws.y * 0.5f), IM_COL32(40, 120, 120, 26), IM_COL32(40, 120, 120, 26), IM_COL32(15, 25, 35, 0), IM_COL32(15, 25, 35, 0));
+    dl->AddRectFilledMultiColor(ImVec2(wp.x, wp.y + ws.y * 0.5f), ImVec2(wp.x + ws.x, wp.y + ws.y), IM_COL32(5, 10, 15, 0), IM_COL32(5, 10, 15, 0), IM_COL32(5, 10, 15, 70), IM_COL32(5, 10, 15, 70));
+    VTicks(dl, ImVec2(wp.x + UI::S(5), wp.y + UI::S(5)), ImVec2(wp.x + ws.x - UI::S(5), wp.y + ws.y - UI::S(5)), VAlpha(kVText, 0.45f), UI::S(18));
+    VPushWidgetStyle();
 
     // ---- title bar ----
     const float titleH = UI::S(70);
@@ -1221,16 +1336,24 @@ static void RenderLauncher(void* openPtr)
         float sepX = px + pw + UI::S(20);
         dl->AddLine(ImVec2(sepX, wp.y + titleH * 0.22f), ImVec2(sepX, wp.y + titleH * 0.78f), line, UI::S(2));
         float tx = sepX + UI::S(20), ty = wp.y + (titleH - ImGui::GetTextLineHeight()) * 0.5f;
-        dl->AddText(ImVec2(tx, ty), IM_COL32_WHITE, "MP Launcher");
-        dl->AddText(ImVec2(tx + ImGui::CalcTextSize("MP Launcher").x + UI::S(16), ty), IM_COL32(150, 150, 150, 255), "v" MP_VERSION_STR);   // 3.35: always the real version
+        {   // 3.63: red Valorant diamond before the name
+            float dc = UI::S(7), dy = wp.y + titleH * 0.5f;
+            dl->AddQuadFilled(ImVec2(tx + dc, dy - dc), ImVec2(tx + dc * 2, dy), ImVec2(tx + dc, dy + dc), ImVec2(tx, dy), kVRed);
+            tx += dc * 2 + UI::S(12);
+        }
+        dl->AddText(ImVec2(tx, ty), kVText, "MP Launcher");
+        dl->AddText(ImVec2(tx + ImGui::CalcTextSize("MP Launcher").x + UI::S(16), ty), kVDim, "v" MP_VERSION_STR);   // 3.35: always the real version
         // 2.30: watermark, right side of the title bar (left of [X]), green at 50% transparency
         {
             const char* wm = "powered by HiveMQ/ThirtyFoxMC";
             ImVec2 wsz = ImGui::CalcTextSize(wm);
-            float wx = wp.x + ws.x - titleH - UI::S(6) - UI::S(18) - wsz.x;
+            float wx = wp.x + ws.x - titleH * 3 - UI::S(6) - UI::S(18) - wsz.x;   // 3.63: + bell + friends
             float minX = tx + ImGui::CalcTextSize("MP Launcher  v" MP_VERSION_STR).x + UI::S(40);   // never over the name
             if(wx > minX) dl->AddText(ImVec2(wx, ty), IM_COL32(95, 211, 95, 128), wm);
         }
+        // 3.63: friends + notification bell (red badge = unread), left of [X]
+        ImGui::SetCursorScreenPos(ImVec2(wp.x + ws.x - titleH * 3 - UI::S(6), wp.y));
+        SocTitleButtons(titleH);
         ImGui::SetCursorScreenPos(ImVec2(wp.x + ws.x - titleH - UI::S(6), wp.y));
         if(LToolButton("close", IC_CLOSE, nullptr, titleH)) { *open = false; s_bRegionPick = false; }
         if(s_bLauncherCloseReq) { s_bLauncherCloseReq = false; *open = false; s_bRegionPick = false; }
@@ -1321,6 +1444,7 @@ static void RenderLauncher(void* openPtr)
         if(LSideItem("bans", IC_BAN,   "Bans",      s_nLTab == LT_BANS,      iw, ih)) { s_nLTab = LT_BANS; }
         if(LSrvMgmtAvailable()) { if(LSideItem("srvm", IC_SLIDERS, "Server Management", s_nLTab == LT_SRVMGMT, iw, ih)) { s_nLTab = LT_SRVMGMT; } }   // 3.53: only while joined
         else if(s_nLTab == LT_SRVMGMT) s_nLTab = LT_INTERNET;
+        SocSideItems(iw, ih);   // 3.63: SOCIAL  Friends / Chats / Party / Communities / Inbox
         LGroupLabel("SETTINGS");
         for(int i = 0; i < FloatMenu::SectionCount(); ++i)
         {
@@ -1356,10 +1480,11 @@ static void RenderLauncher(void* openPtr)
                 if(ImGui::InvisibleButton("##isub", ImVec2(bw, b.y - a.y)) && s_nInetSub != i) { s_nInetSub = i; s_szLSelKey[0] = 0; s_nLSel = -1; }
                 bool held = ImGui::IsItemActive(); ImGui::PopID();
                 bool on = s_nInetSub == i;
-                dl->AddRectFilled(a, b, on ? IM_COL32(255, 255, 255, held ? 200 : 235) : IM_COL32(255, 255, 255, held ? 45 : 18), UI::S(10));
-                if(!on) dl->AddRect(a, b, IM_COL32(255, 255, 255, 40), UI::S(10), 0, UI::S(1.5f));
+                // 3.63: Valorant pill tabs (selected = teal pill, dark text)
+                if(on) VPill(dl, a, b, held ? VAlpha(kVTeal, 0.8f) : kVTeal);
+                else VPill(dl, a, b, IM_COL32(236, 232, 225, held ? 40 : 10), IM_COL32(236, 232, 225, 40));
                 ImVec2 ts = ImGui::CalcTextSize(lb[i]);
-                dl->AddText(ImVec2((a.x + b.x - ts.x) * 0.5f, (a.y + b.y - ts.y) * 0.5f), on ? IM_COL32(15, 15, 15, 255) : IM_COL32(230, 230, 230, 255), lb[i]);
+                dl->AddText(ImVec2((a.x + b.x - ts.x) * 0.5f, (a.y + b.y - ts.y) * 0.5f), on ? kVDark : kVText, lb[i]);
             }
             if(s_nInetSub == 0) { char c[24]; snprintf(c, sizeof(c), "||"); ImVec2 ts = ImGui::CalcTextSize(c); dl->AddText(ImVec2(cx0 + UI::S(4) + bw + UI::S(4) - ts.x * 0.5f, bodyY + subH * 0.5f - ts.y * 0.5f), IM_COL32(200, 200, 200, 160), c); }
             ImGui::SetCursorScreenPos(ImVec2(cx0 + UI::S(4), bodyY + subH));
@@ -1384,6 +1509,7 @@ static void RenderLauncher(void* openPtr)
         case LT_PLAYERS: LPagePlayers(); break;
         case LT_BANS:    LPageBans(); break;
         case LT_SRVMGMT: LPageServerMgmt(); break;   // 3.53
+        case LT_FRIENDS: case LT_CHATS: case LT_PARTY: case LT_COMMUNITY: case LT_INBOX: SocPage(s_nLTab, contentW - pad * 2, bodyH - pad); break;   // 3.63
         default:
             if(s_nLTab >= LT_SECTIONS && s_nLTab - LT_SECTIONS < FloatMenu::SectionCount()) FloatMenu::DrawSection(s_nLTab - LT_SECTIONS);
             else s_nLTab = LT_INTERNET;
@@ -1392,6 +1518,7 @@ static void RenderLauncher(void* openPtr)
         ImGui::EndChild();
     }
     // the Internet tab also shows the lobby state under the list title area when it is offline
+    VPopWidgetStyle();
     ImGui::End();
     ImGui::PopStyleColor(3);
     ImGui::PopStyleVar(3);

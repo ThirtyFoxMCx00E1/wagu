@@ -677,6 +677,7 @@ static bool s_bDzJoin = false;
 static bool DzOnServer();
 static bool DzHideCorner();   // 3.60
 static void DzModelsTick();   // 3.61: mp_dayz.inc
+static void SocialFrame();    // 3.63: mp_social.inc (friends, chats, party, communities)
 static int DzAdjustDamage(int hp, int dmg, bool instant);   // 3.59: helmet vs headshot, DOWN at 5%
 static bool DzHidden();
 static void DzProcess(int ped, uint64_t now);

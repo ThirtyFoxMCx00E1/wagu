@@ -76,6 +76,19 @@ namespace Online
     void AuthLinkSend(const std::string& frame);
     bool AuthLinkRecv(std::string& frame);
 
+    // 3.63: SOCIAL LINK (friends, chat, groups, party, communities - src/net/social.cpp). Its own small MQTT
+    // connection to the public HiveMQ broker (everyone on the same one, whatever lobby region). Every message on it
+    // is signed by the sender's key and private ones are end-to-end encrypted, so a public broker is fine.
+    void SocLinkStart(const char* willTopic);   // will = empty retained message (= offline) on this topic
+    void SocLinkStop();
+    bool SocLinkUp();
+    int  SocLinkGen();                          // +1 on every (re)connect: publish your presence again
+    const char* SocLinkBroker();
+    void SocLinkSub(const std::string& filter);
+    void SocLinkUnsub(const std::string& filter);
+    void SocLinkPub(const std::string& topic, const std::string& payload, bool retain);
+    bool SocLinkRecv(std::string& topic, std::string& payload);
+
     // 3.61: plain HTTPS GET (TLS 1.2, system CAs, no redirects), body up to maxBytes. Blocking.
     // got (optional): bytes received so far, updated while it downloads (3.62)
     bool HttpsFetch(const std::string& url, std::string& body, int timeoutMs, std::string& why, size_t maxBytes, std::atomic<size_t>* got = nullptr);

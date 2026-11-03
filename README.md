@@ -121,6 +121,16 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **3.63**: **MP launcher** in a Valorant-style look (same layout), **Friends / Chats / Party / Community / Inbox**, a new virtual keyboard look and **Project Day Z ambient music**.
+  - Launcher: translucent navy panels with chamfered corners, thin outlines, corner ticks, teal pill tabs and red accents (#FF4655); the layout, buttons and pages are where they were.
+  - Friends: every phone gets an 8-digit player ID (shown in the Friends page). Search by player name or ID, tap ADD + to send a request, they see it in the Inbox (bell icon in the title bar) and Accept or Decline; you can cancel a sent request. Friends show online / offline (last seen), and have Chat, Party and Remove.
+  - Chats: direct messages with friends, group chats (NEW GROUP CHAT, add members, leave) and party chat. Messages are signed (ECDSA P-256) and end-to-end encrypted (ECDH + AES-256-GCM), delivered over the HiveMQ broker even when the friend is offline.
+  - Party: invite up to 4 friends (5 players), accept / decline invites, party chat.
+  - Community: create a community (name, description), discover others in the side list, Join / Follow / Leave, post to it, the owner can delete it.
+  - Inbox: friend requests, accepts, party / group invites and new messages, with a red badge on the bell.
+  - Virtual keyboard: chamfered translucent navy keys with thin outlines, teal for Shift / ?123 / emoji when on, red Enter, red-outlined close, input line with a teal frame and a red edge. Same keys, same layout.
+  - Project Day Z ambient music: after you press Play and tap a spawn location the ambient track starts, fades in, plays to 1:00:02, fades out, waits 17 s + 20 ticks and starts again (endless). A "Now playing" card shows the title, artist, link and time. /music or the Day Z panel setting turns it on / off. The track is streamed from the phone (a second at a time, never fully in RAM).
+  - Music credits: "No Man's Land | Metro / S.T.A.L.K.E.R Atmospheric Playlist" by **Lemuria** ([YouTube channel](https://www.youtube.com/@lemurian.archives), [the video](https://youtu.be/aVTcVx1570w)). The track belongs to its owner and is not included in MP: save your own copy as `files/MP/dz_ambient.mp3`. Credits are in /credits and the Day Z credits page.
 - **3.62**: **Project Day Z Legacy** download window, like MTA's "Download progress" when you join a server.
   - On the Day Z connection screen a window shows the GitHub download of the MTA DayZ models: resource 'dayz' and its file count, where it comes from (raw.githubusercontent.com - wagu, or the mtadayz fork), the file now loading (e.g. File 34 / 166: zombies/txd/56.txd - 83 models, about 62 MB), a progress bar with %, MB done / total, speed and time left, and failed files.
   - Play shows "Downloading..." until it is done; PLAY NOW in the window starts at once and the rest keeps loading (a thin bar with % on top of the screen in game). Files already saved on the phone count at once, so the next time it finishes in a moment.

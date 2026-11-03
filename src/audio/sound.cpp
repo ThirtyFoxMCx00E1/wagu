@@ -19,6 +19,7 @@
 #include <vector>
 #include <thread>
 #include <atomic>
+#include <mutex>
 #define MINIMP3_IMPLEMENTATION
 #define MINIMP3_NO_STDIO
 #include "../../third_party/minimp3/minimp3_ex.h"
@@ -233,6 +234,174 @@ void Sound::StopMusic()
 }
 
 bool Sound::MusicPlaying() { return s_Music.state == 3 && s_Music.want; }
+
+
+// ---- 3.63: streamed music (Day Z ambient, ~1 h mp3) --------------------------------------------
+namespace
+{
+    enum { ST_SLOTS = 4 };
+    struct Stream
+    {
+        Voice v; std::mutex mx;
+        std::vector<int16_t> slot[ST_SLOTS]; int slotState[ST_SLOTS] = {0};   // 0 free, 1 ready, 2 queued
+        int head = 0;                          // next slot to play
+        std::atomic<int> gen{0};
+        std::atomic<bool> eof{false}, active{false}, failed{false};
+        std::atomic<long long> played{0};      // sample frames done
+        int ch = 0, hz = 0; float vol = 1.0f, dur = 0.0f;
+    };
+    Stream s_St;
+    bool StEnqueueNextLocked()
+    {   // the slot at head (if ready) goes into the OpenSL queue
+        for(int k = 0; k < ST_SLOTS; ++k)
+        {
+            int i = (s_St.head + k) % ST_SLOTS;
+            if(s_St.slotState[i] == 2) continue;
+            if(s_St.slotState[i] != 1) return false;
+            if(!s_St.v.bq) return false;
+            if((*s_St.v.bq)->Enqueue(s_St.v.bq, s_St.slot[i].data(), (SLuint32)(s_St.slot[i].size() * sizeof(int16_t))) != SL_RESULT_SUCCESS) return false;
+            s_St.slotState[i] = 2;
+            return true;
+        }
+        return false;
+    }
+    void StDone(SLAndroidSimpleBufferQueueItf, void*)
+    {
+        std::lock_guard<std::mutex> lk(s_St.mx);
+        int i = s_St.head;
+        if(s_St.slotState[i] == 2)
+        {
+            if(s_St.ch > 0) s_St.played += (long long)s_St.slot[i].size() / s_St.ch;
+            s_St.slotState[i] = 0; s_St.head = (i + 1) % ST_SLOTS;
+        }
+        while(StEnqueueNextLocked()) {}
+    }
+    void StDecodeThread(std::string path, int myGen)
+    {
+        FILE* f = fopen(path.c_str(), "rb");
+        if(!f) { s_St.failed = true; s_St.eof = true; return; }
+        fseek(f, 0, SEEK_END); long fileLen = ftell(f); fseek(f, 0, SEEK_SET);
+        long skip = 0;   // ID3v2 tag (cover art can be MBs)
+        unsigned char h[10];
+        if(fread(h, 1, 10, f) == 10 && h[0] == 'I' && h[1] == 'D' && h[2] == '3')
+            skip = 10 + (((long)(h[6] & 0x7F) << 21) | ((long)(h[7] & 0x7F) << 14) | ((long)(h[8] & 0x7F) << 7) | (long)(h[9] & 0x7F));
+        fseek(f, skip, SEEK_SET);
+        mp3dec_t dec; mp3dec_init(&dec);   // per thread (an old thread may still be ending)
+        std::vector<uint8_t> in(64 * 1024); size_t pos = 0, avail = 0; bool fileEof = false;
+        mp3d_sample_t pcm[MINIMP3_MAX_SAMPLES_PER_FRAME];
+        std::vector<int16_t> block; bool first = true; int ch = 0, hz = 0;
+        while(s_St.gen == myGen)
+        {
+            if(avail < 16 * 1024 && !fileEof)
+            {
+                if(pos) { memmove(in.data(), in.data() + pos, avail); pos = 0; }
+                size_t got = fread(in.data() + avail, 1, in.size() - avail, f);
+                if(got == 0) fileEof = true; avail += got;
+            }
+            if(avail == 0) break;
+            mp3dec_frame_info_t info; memset(&info, 0, sizeof(info));
+            int n = mp3dec_decode_frame(&dec, in.data() + pos, (int)avail, pcm, &info);
+            if(info.frame_bytes <= 0) { if(fileEof) break; pos += avail > 1 ? 1 : avail; avail -= avail > 1 ? 1 : avail; continue; }
+            pos += info.frame_bytes; avail -= info.frame_bytes;
+            if(n <= 0) continue;
+            if(first)
+            {
+                first = false; ch = info.channels; hz = info.hz;
+                if(ch < 1 || ch > 2 || hz < 8000) { s_St.failed = true; break; }
+                std::lock_guard<std::mutex> lk(s_St.mx);
+                if(s_St.gen != myGen) break;
+                s_St.ch = ch; s_St.hz = hz;
+                s_St.dur = info.bitrate_kbps > 0 ? (float)(fileLen - skip) * 8.0f / (info.bitrate_kbps * 1000.0f) : 0.0f;
+            }
+            if(info.channels != ch || info.hz != hz) continue;   // odd frame: skip
+            block.insert(block.end(), pcm, pcm + n * ch);
+            if((int)block.size() >= hz * ch)   // ~1 s per slot
+            {
+                for(;;)
+                {
+                    if(s_St.gen != myGen) { fclose(f); return; }
+                    {
+                        std::lock_guard<std::mutex> lk(s_St.mx);
+                        int freeSlot = -1;
+                        for(int k = 0; k < ST_SLOTS; ++k) { int i = (s_St.head + k) % ST_SLOTS; if(s_St.slotState[i] == 0) { freeSlot = i; break; } }
+                        if(freeSlot >= 0) { s_St.slot[freeSlot].swap(block); s_St.slotState[freeSlot] = 1; block.clear(); break; }
+                    }
+                    std::this_thread::sleep_for(std::chrono::milliseconds(40));
+                }
+            }
+        }
+        // the last part
+        while(!block.empty() && s_St.gen == myGen)
+        {
+            {
+                std::lock_guard<std::mutex> lk(s_St.mx);
+                int freeSlot = -1;
+                for(int k = 0; k < ST_SLOTS; ++k) { int i = (s_St.head + k) % ST_SLOTS; if(s_St.slotState[i] == 0) { freeSlot = i; break; } }
+                if(freeSlot >= 0) { s_St.slot[freeSlot].swap(block); s_St.slotState[freeSlot] = 1; block.clear(); break; }
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(40));
+        }
+        fclose(f);
+        if(s_St.gen == myGen) { if(first) s_St.failed = true; s_St.eof = true; }
+    }
+}
+
+bool Sound::StreamPlay(const char* path, float volume)
+{
+    if(!path || !*path || !EnsureEngine()) return false;
+    FILE* f = fopen(path, "rb"); if(!f) return false; fclose(f);
+    StreamStop();
+    {
+        std::lock_guard<std::mutex> lk(s_St.mx);
+        int g = s_St.gen + 1; s_St.gen = g;
+        for(int i = 0; i < ST_SLOTS; ++i) { s_St.slotState[i] = 0; s_St.slot[i].clear(); }
+        s_St.head = 0; s_St.played = 0; s_St.eof = false; s_St.failed = false; s_St.active = true;
+        s_St.ch = 0; s_St.hz = 0; s_St.dur = 0; s_St.vol = volume;
+        std::thread(StDecodeThread, std::string(path), g).detach();
+    }
+    return true;
+}
+
+void Sound::StreamUpdate()
+{
+    if(!s_St.active) return;
+    std::lock_guard<std::mutex> lk(s_St.mx);
+    if(s_St.failed) { s_St.active = false; return; }
+    if(s_St.ch <= 0) return;
+    Voice& v = s_St.v;
+    if(!v.obj || v.ch != s_St.ch || v.hz != s_St.hz)
+    {
+        bool anyQueued = false; for(int i = 0; i < ST_SLOTS; ++i) if(s_St.slotState[i] == 2) anyQueued = true;
+        if(anyQueued) return;
+        if(v.obj) { (*v.obj)->Destroy(v.obj); v = Voice(); }   // nothing queued: safe
+        if(!BuildVoice(v, s_St.ch, s_St.hz)) { s_St.failed = true; s_St.active = false; return; }
+        (*v.bq)->RegisterCallback(v.bq, StDone, nullptr);
+    }
+    SetVoiceVolume(v, s_St.vol);
+    while(StEnqueueNextLocked()) {}
+    if(s_St.eof) { bool any = false; for(int i = 0; i < ST_SLOTS; ++i) if(s_St.slotState[i]) any = true; if(!any) s_St.active = false; }
+}
+
+void Sound::StreamSetVolume(float volume)
+{
+    std::lock_guard<std::mutex> lk(s_St.mx);
+    s_St.vol = volume;
+    if(s_St.v.obj) SetVoiceVolume(s_St.v, volume);
+}
+
+void Sound::StreamStop()
+{
+    std::lock_guard<std::mutex> lk(s_St.mx);
+    s_St.gen = s_St.gen + 1;   // the decoder thread ends itself
+    if(s_St.v.obj && s_St.v.bq) (*s_St.v.bq)->Clear(s_St.v.bq);
+    for(int i = 0; i < ST_SLOTS; ++i) s_St.slotState[i] = 0;
+    s_St.head = 0; s_St.active = false;
+}
+
+bool  Sound::StreamActive() { return s_St.active; }
+bool  Sound::StreamEnded() { return !s_St.active && s_St.eof && !s_St.failed; }
+float Sound::StreamPosition() { return s_St.hz > 0 ? (float)((double)s_St.played / s_St.hz) : 0.0f; }
+float Sound::StreamDuration() { return s_St.dur; }
 
 void* Sound::EngineItf() { return EnsureEngine() ? (void*)g_EngineItf : nullptr; }   // 3.11
 void* Sound::OutputMix() { return EnsureEngine() ? (void*)g_Mix : nullptr; }

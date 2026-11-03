@@ -397,6 +397,124 @@ static int DzMagSize(int w)
                 case 28: case 32: return 50; case 29: return 30; case 30: case 31: return 30; case 33: case 34: return 1; default: return 0; }
 }
 
+// ---- 3.63: Project Day Z ambient music ---------------------------------------------------------
+// "No Man's Land | Metro / S.T.A.L.K.E.R Atmospheric Playlist" by Lemuria
+// (https://www.youtube.com/@lemurian.archives - https://youtu.be/aVTcVx1570w). Starts after you press
+// Play and tap a location on the map, fades in, plays to 1:00:02, fades out, waits 17 s + 20 ticks,
+// then starts again (endless). The track is not shipped with MP (it is Lemuria's): put your own copy
+// at files/MP/dz_ambient.mp3. /music turns it on / off.
+#define DZ_AMB_FILE      "dz_ambient.mp3"
+#define DZ_AMB_LEN_S     3602.0f              // 1:00:02
+#define DZ_AMB_FADEIN_S  4.0f
+#define DZ_AMB_FADEOUT_S 10.0f
+#define DZ_AMB_GAP_MS    (17000 + 20 * 50)     // 17 s + 20 ticks (50 ms)
+#define DZ_AMB_VOLUME    0.40f
+static const char* kDzAmbTitle  = "No Man's Land | Metro / S.T.A.L.K.E.R Atmospheric Playlist";
+static const char* kDzAmbArtist = "Lemuria";
+static const char* kDzAmbLink   = "youtu.be/aVTcVx1570w";
+struct DzAmbient
+{
+    int      phase = 0;        // 0 off, 1 playing, 2 fading out, 3 waiting for the next loop
+    bool     armed = false, muted = false, missingSaid = false, creditSaid = false;
+    uint64_t phaseAt = 0, cardAt = 0;
+    float    fadeFrom = 0.0f;
+};
+static DzAmbient s_DzAmb;
+static bool DzAmbStart(uint64_t now)
+{
+    char path[512]; snprintf(path, sizeof(path), "%s/" DZ_AMB_FILE, MP::DataDir());
+    if(!Sound::StreamPlay(path, 0.0f))
+    {
+        s_DzAmb.phase = 0;
+        if(!s_DzAmb.missingSaid)
+        {
+            s_DzAmb.missingSaid = true;
+            SysMsg(COL_SYSTEM, "[Day Z] Ambient music: put " DZ_AMB_FILE " in files/MP (No Man's Land by Lemuria, youtu.be/aVTcVx1570w).");
+        }
+        return false;
+    }
+    s_DzAmb.phase = 1; s_DzAmb.phaseAt = now; s_DzAmb.cardAt = now;
+    if(!s_DzAmb.creditSaid)
+    {
+        s_DzAmb.creditSaid = true;
+        SysMsg(COL_SYSTEM, "[Day Z] Now playing: %s - by %s (%s). /music to turn it off.", kDzAmbTitle, kDzAmbArtist, kDzAmbLink);
+    }
+    return true;
+}
+static void DzAmbStop()
+{
+    if(s_DzAmb.phase) Sound::StreamStop();
+    s_DzAmb = DzAmbient();
+}
+static void DzAmbArm()   // after the spawn (Play + a location tapped)
+{
+    if(s_DzAmb.armed) return;
+    s_DzAmb.armed = true;
+    if(!s_DzAmb.muted) DzAmbStart(MP_NowMs());
+}
+static void DzAmbToggle()
+{
+    s_DzAmb.muted = !s_DzAmb.muted;
+    if(s_DzAmb.muted) { if(s_DzAmb.phase) Sound::StreamStop(); s_DzAmb.phase = 0; DzNotice(DZ_GRY, "Ambient music off."); }
+    else { s_DzAmb.missingSaid = false; if(s_DzAmb.armed) DzAmbStart(MP_NowMs()); DzNotice(DZ_GRY, "Ambient music on."); }
+}
+static void DzAmbTick(uint64_t now)
+{
+    if(!s_DzAmb.armed || s_DzAmb.muted) return;
+    Sound::StreamUpdate();
+    const float sec = (float)(now - s_DzAmb.phaseAt) / 1000.0f;
+    if(s_DzAmb.phase == 1)
+    {
+        float pos = Sound::StreamPosition(), dur = Sound::StreamDuration();
+        float end = DZ_AMB_LEN_S; if(dur > 60.0f && dur < end) end = dur;
+        float k = sec / DZ_AMB_FADEIN_S; if(k > 1) k = 1;
+        Sound::StreamSetVolume(DZ_AMB_VOLUME * k);
+        if(pos >= end - DZ_AMB_FADEOUT_S || Sound::StreamEnded() || (!Sound::StreamActive() && sec > 5.0f))
+        { s_DzAmb.phase = 2; s_DzAmb.phaseAt = now; s_DzAmb.fadeFrom = DZ_AMB_VOLUME * k; }
+    }
+    else if(s_DzAmb.phase == 2)
+    {
+        float k = 1.0f - sec / DZ_AMB_FADEOUT_S;
+        if(k <= 0 || !Sound::StreamActive()) { Sound::StreamStop(); s_DzAmb.phase = 3; s_DzAmb.phaseAt = now; }
+        else Sound::StreamSetVolume(s_DzAmb.fadeFrom * k);
+    }
+    else if(s_DzAmb.phase == 3)
+    {
+        if(now - s_DzAmb.phaseAt >= DZ_AMB_GAP_MS) DzAmbStart(now);
+    }
+}
+static void DzAmbFmt(char* o, size_t n, float s) { int t = (int)s; if(t < 0) t = 0; if(t >= 3600) snprintf(o, n, "%d:%02d:%02d", t / 3600, t / 60 % 60, t % 60); else snprintf(o, n, "%d:%02d", t / 60, t % 60); }
+static void DzAmbDraw(ImDrawList* dl, ImVec2 ds, uint64_t now)
+{   // "now playing" card for 9 s after every (re)start, top center under the spawn name
+    if(s_DzAmb.phase != 1 || !s_DzAmb.cardAt || now - s_DzAmb.cardAt > 9000) return;
+    float age = (float)(now - s_DzAmb.cardAt) / 1000.0f;
+    float a = age < 0.4f ? age / 0.4f : (age > 8.2f ? (9.0f - age) / 0.8f : 1.0f); if(a < 0) a = 0;
+    const float w = UI::S(470), h = UI::S(96), x = (ds.x - w) * 0.5f, y = ds.y * 0.29f, c = UI::S(12);
+    ImVec2 pts[6] = { ImVec2(x + c, y), ImVec2(x + w, y), ImVec2(x + w, y + h - c), ImVec2(x + w - c, y + h), ImVec2(x, y + h), ImVec2(x, y + c) };
+    dl->AddConvexPolyFilled(pts, 6, IM_COL32(10, 20, 30, (int)(190 * a)));
+    dl->AddPolyline(pts, 6, IM_COL32(236, 232, 225, (int)(60 * a)), ImDrawFlags_Closed, UI::S(1));
+    dl->AddRectFilled(ImVec2(x, y + c), ImVec2(x + UI::S(4), y + h), IM_COL32(255, 70, 85, (int)(230 * a)));
+    // equalizer bars
+    for(int i = 0; i < 4; ++i)
+    {
+        float bh = UI::S(10) + UI::S(18) * (0.5f + 0.5f * sinf(age * (5.0f + i * 1.7f) + i));
+        float bx = x + UI::S(18) + i * UI::S(9);
+        dl->AddRectFilled(ImVec2(bx, y + UI::S(44) - bh), ImVec2(bx + UI::S(6), y + UI::S(44)), IM_COL32(64, 230, 190, (int)(230 * a)));
+    }
+    const float tx = x + UI::S(66);
+    UI::OutlinedText(dl, UI::S(13), ImVec2(tx, y + UI::S(8)), IM_COL32(64, 230, 190, (int)(255 * a)), "NOW PLAYING  -  DAY Z AMBIENT");
+    UI::OutlinedText(dl, UI::S(17), ImVec2(tx, y + UI::S(26)), IM_COL32(236, 232, 225, (int)(255 * a)), "No Man's Land | Metro / S.T.A.L.K.E.R");
+    char by[160]; snprintf(by, sizeof(by), "by %s  -  %s", kDzAmbArtist, kDzAmbLink);
+    UI::OutlinedText(dl, UI::S(13), ImVec2(tx, y + UI::S(48)), IM_COL32(190, 196, 204, (int)(230 * a)), by);
+    float pos = Sound::StreamPosition(), len = DZ_AMB_LEN_S, dur = Sound::StreamDuration(); if(dur > 60.0f && dur < len) len = dur;
+    float k = pos / len; if(k > 1) k = 1;
+    const float bx0 = tx, bx1 = x + w - UI::S(90), by0 = y + UI::S(76);
+    dl->AddRectFilled(ImVec2(bx0, by0), ImVec2(bx1, by0 + UI::S(3)), IM_COL32(236, 232, 225, (int)(50 * a)));
+    dl->AddRectFilled(ImVec2(bx0, by0), ImVec2(bx0 + (bx1 - bx0) * k, by0 + UI::S(3)), IM_COL32(255, 70, 85, (int)(255 * a)));
+    char t0[16], t1[16], tt[40]; DzAmbFmt(t0, sizeof(t0), pos); DzAmbFmt(t1, sizeof(t1), len); snprintf(tt, sizeof(tt), "%s / %s", t0, t1);
+    UI::OutlinedText(dl, UI::S(12), ImVec2(bx1 + UI::S(8), by0 - UI::S(6)), IM_COL32(190, 196, 204, (int)(230 * a)), tt);
+}
+
 // ---- spawn / death -----------------------------------------------------------------------------
 static void DzMakeBag(int ped)
 {
@@ -445,10 +563,12 @@ static void DzSpawnAt(const float* p, const char* name)
     s_Dz.view = 2; s_Dz.spawnedAt = MP_NowMs(); s_Dz.prevHp = -1; s_Dz.armourGiven = 0;
     MP_CopyStr(s_Dz.spawnName, name ? name : "", sizeof(s_Dz.spawnName)); s_Dz.spawnNameAt = MP_NowMs();
     if(s_Dz.fog) { Game::SetFogRadius(90.0f); Game::ForceWeatherNow(9); }
+    DzAmbArm();   // 3.63: the ambient music starts with the first spawn
 }
 static void DzShutdown()
 {
     logger->Info("DZ: left"); fflush(nullptr);
+    DzAmbStop();   // 3.63
     DzCabinClear();
     DzLootClear();
     for(auto& z : s_Dz.zeds) if(z.ped > 0) Game::DeleteChar(z.ped);
@@ -765,6 +885,7 @@ static void DzProcess(int ped, uint64_t now)
         s_Dz.engaged = true; s_Dz.connectedAt = now;
         DzEnterCabin(ped);
     }
+    DzAmbTick(now);   // 3.63: ambient music (fade / loop)
     if(ped <= 0) return;
     if(s_Dz.view == 1)
     {
@@ -872,6 +993,7 @@ static void DzLocalCmd(const char* cmd)
     if(!strcmp(cmd, "achievements") || !strcmp(cmd, "ach")) { DzXJournal(1); return; }
     if(!strcmp(cmd, "skills")) { DzXJournal(2); return; }
     if(!strcmp(cmd, "checkbody")) { DzSend(DZCMD_CHECKBODY, 0, 0, -1); return; }
+    if(!strcmp(cmd, "music") || !strcmp(cmd, "ambient")) { DzAmbToggle(); return; }   // 3.63
     if(!strcmp(cmd, "hud")) { s_Dz.opt.logo = !s_Dz.opt.logo; return; }
     if(!strcmp(cmd, "fps") || !strcmp(cmd, "ping")) { s_Dz.opt.fps = !s_Dz.opt.fps; return; }
     if(!strcmp(cmd, "armor") || !strcmp(cmd, "weapon")) { s_Dz.invOpen = true; return; }
@@ -907,7 +1029,7 @@ static bool DzCommand(const char* cmd, const char* arg)
     if(DzPassCmd(c)) return false;
     static const char* const local[] = { "inv", "bag", "map", "gps", "compass", "hud", "armor", "weapon", "fps", "ping", "eat", "drink", "heal",
                                          "bandage", "cure", "painkillers", "drop", "pickup", "refuel", "fuel", "list", "tab", "online", "journal", "debug",
-                                         "achievements", "ach", "skills", "checkbody" };
+                                         "achievements", "ach", "skills", "checkbody", "music", "ambient" };
     for(const char* l : local) if(!strcmp(c, l)) { DzLocalCmd(c); return true; }
     if(!strcmp(c, "panel") || !strcmp(c, "f2")) { s_Dz.panelOpen = !s_Dz.panelOpen; return true; }
     char t[100]; snprintf(t, sizeof(t), "/%s%s%s", c, arg && *arg ? " " : "", arg ? arg : "");
@@ -1414,7 +1536,7 @@ static const char* const kDzCmdList[] = {
     "/help", "/rules", "/credits", "/stats", "/level", "/humanity", "/score", "/top", "/time", "/fog", "/spawns", "/supplies", "/loot",
     "/inv", "/bag", "/map", "/gps", "/compass", "/hud", "/armor", "/weapon", "/fps", "/ping", "/eat", "/drink", "/heal", "/bandage",
     "/cure", "/painkillers", "/drop", "/pickup", "/refuel", "/fuel", "/party", "/plist", "/pcreate", "/paccept", "/pdecline", "/pleave",
-    "/admins", "/kill", "/me", "/do", "/shout", "/whisper", "/pm", "/pinvite", "/pkick", "/p", "/report" };
+    "/admins", "/kill", "/me", "/do", "/shout", "/whisper", "/pm", "/pinvite", "/pkick", "/p", "/report", "/music" };
 static void DzRunCmd(const char* full)
 {
     char c[32] = ""; const char* s = full; while(*s == '/') ++s; int n = 0; while(*s && *s != ' ' && n < 31) c[n++] = *s++; c[n] = 0; while(*s == ' ') ++s;
@@ -1489,7 +1611,12 @@ static void DzDrawPanel(ImVec2 ds)
             ImGui::Checkbox("Blood screen + drops", &s_Dz.opt.blood);
             ImGui::Checkbox("Title logo", &s_Dz.opt.logo);
             { bool r3 = s_Dz.opt.radar == 2; if(ImGui::Checkbox("3D radar (GPS)", &r3)) s_Dz.opt.radar = r3 ? 2 : 1; }
+            {   // 3.63: ambient music
+                bool on = !s_DzAmb.muted;
+                if(ImGui::Checkbox("Ambient music (No Man's Land - Lemuria)", &on)) DzAmbToggle();
+            }
             ImGui::TextWrapped("Project Day Z Legacy - gamemode Proper DAYZ. Based on Project DayZ SA-MP, made for MP by ThirtyFox.");
+            ImGui::TextWrapped("Ambient music: No Man's Land | Metro / S.T.A.L.K.E.R Atmospheric Playlist by Lemuria - youtu.be/aVTcVx1570w (put your copy at files/MP/dz_ambient.mp3).");
             break;
     }
     ImGui::EndChild();
@@ -1638,7 +1765,9 @@ static void DzDrawCabin(float t)
         {
             DzText(fg, UI::S(26), ImVec2(px + UI::S(20), ly), DzCol(DZ_YEL), "CREDITS"); ly += UI::S(44);
             static const char* const cr[] = { "Project Day Z Legacy (Proper DAYZ) for MP", "Original Project DayZ SA-MP gamemode - github.com/ThirtyFoxMCx00E1/Project-DayZ-SAMP",
-                                              "MP, the Broker 24/7 servers, the HUD and the cabin - ThirtyFox", "Psdk / AML mod loader - the AndroidModLoader team", "Thanks to every survivor testing the server." };
+                                              "MP, the Broker 24/7 servers, the HUD and the cabin - ThirtyFox", "Psdk / AML mod loader - the AndroidModLoader team",
+                                              "Ambient music: No Man's Land | Metro / S.T.A.L.K.E.R Atmospheric Playlist - Lemuria (youtube.com/@lemurian.archives, youtu.be/aVTcVx1570w)",
+                                              "Thanks to every survivor testing the server." };
             for(const char* r : cr) { fg->AddText(UI::Font(), lf, ImVec2(px + UI::S(20), ly), IM_COL32_WHITE, r, nullptr, pw - UI::S(40)); ly += lf * 1.9f; }
         }
         else
@@ -1698,6 +1827,7 @@ static void RenderDz()
         float a = nowMs - s_Dz.spawnNameAt < 5000 ? 1.0f : 1.0f - (nowMs - s_Dz.spawnNameAt - 5000) / 1000.0f;
         BcwCenterText(fg, UI::S(34), ds.y * 0.22f, DzCol(DZ_YEL, a), s_Dz.spawnName);
     }
+    DzAmbDraw(fg, ds, nowMs);   // 3.63: now playing card + credits
     // the floating names of the 15 spawn points (3D text) near me
     {
         Vec3 me; Game::GetCharPos(ped, me);

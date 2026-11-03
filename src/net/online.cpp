@@ -2370,6 +2370,133 @@ bool Online::AuthLinkRecv(std::string& frame)
     return true;
 }
 
+// ---------------------------------------------------------------------------------------------
+// 3.63: SOCIAL LINK. Same idea as the auth link: one small MQTT connection of its own. Subscriptions are
+// remembered and sent again after a reconnect (retained messages = the mailbox / directory come again).
+// ---------------------------------------------------------------------------------------------
+static const Broker kSocBrokers[] = {
+    { "broker.hivemq.com", 1883, false, false, "",      "HiveMQ" },
+    { "broker.hivemq.com", 8000, true,  false, "/mqtt", "HiveMQ ws" },
+};
+struct SocOut { std::string topic, payload; bool retain; };
+static std::mutex              s_SocM;
+static std::atomic<bool>       s_bSocRun{false}, s_bSocUp{false};
+static std::atomic<int>        s_nSocGen{0};
+static std::thread             s_SocThread;
+static std::string             s_SocWill;                       // guarded
+static std::vector<std::string> s_SocSubs;                       // guarded: wanted filters
+static std::deque<SocOut>      s_SocOut;                         // guarded
+static std::deque<std::pair<std::string, std::string>> s_SocIn;  // guarded
+static char                    s_szSocBroker[32] = "";
+
+static void SocThread()
+{
+    Mqtt mq;
+    int bi = 0, fails = 0;
+    std::vector<std::string> subbed;
+    uint64_t lastPing = 0;
+    while(s_bSocRun)
+    {
+        if(mq.fd < 0)
+        {
+            s_bSocUp = false; subbed.clear();
+            const Broker& b = kSocBrokers[bi % (int)(sizeof(kSocBrokers) / sizeof(kSocBrokers[0]))];
+            char cid[24]; snprintf(cid, sizeof(cid), "ws%08x%08x", Rand32(), Rand32());
+            std::string will; { std::lock_guard<std::mutex> lk(s_SocM); will = s_SocWill; }
+            if(!mq.Open(b, cid, will.c_str(), 6000))
+            {
+                OLOG("social link: %s failed (%s)", b.label.c_str(), mq.err);
+                ++bi; ++fails;
+                int waitMs = fails < 3 ? 1000 : 5000;
+                for(int i = 0; i < waitMs / 50 && s_bSocRun; ++i) std::this_thread::sleep_for(std::chrono::milliseconds(50));
+                continue;
+            }
+            fails = 0;
+            mq.blockingSend = false;
+            snprintf(s_szSocBroker, sizeof(s_szSocBroker), "%s", b.label.c_str());
+            s_bSocUp = true; ++s_nSocGen; lastPing = MP_NowMs();
+        }
+        std::vector<std::string> want;
+        { std::lock_guard<std::mutex> lk(s_SocM); want = s_SocSubs; }
+        bool bad = false;
+        for(auto& f : subbed) if(std::find(want.begin(), want.end(), f) == want.end()) mq.Unsubscribe(f.c_str(), 7);
+        for(auto& f : want) if(std::find(subbed.begin(), subbed.end(), f) == subbed.end()) if(!mq.Subscribe(f.c_str(), 6)) bad = true;
+        subbed = want;
+        for(int n = 0; n < 64 && !bad; ++n)
+        {
+            SocOut o;
+            { std::lock_guard<std::mutex> lk(s_SocM); if(s_SocOut.empty()) break; o = s_SocOut.front(); s_SocOut.pop_front(); }
+            if(!mq.Publish(o.topic, o.payload.data(), o.payload.size(), o.retain)) { std::lock_guard<std::mutex> lk(s_SocM); s_SocOut.push_front(o); bad = true; }
+        }
+        if(bad || !mq.FlushOut(20)) { OLOG("social link: send failed"); mq.Close(); continue; }
+        for(int n = 0; n < 128; ++n)
+        {
+            uint8_t type; std::string body;
+            int r = mq.ReadPacket(type, body, n == 0 ? 60 : 0);
+            if(r < 0) { OLOG("social link: connection lost"); mq.Close(); break; }
+            if(r == 0) break;
+            if((type >> 4) == 3 && body.size() >= 2)
+            {
+                size_t tl = ((uint8_t)body[0] << 8) | (uint8_t)body[1];
+                size_t off = 2 + tl + (((type >> 1) & 3) ? 2 : 0);
+                if(off > body.size()) continue;
+                std::lock_guard<std::mutex> lk(s_SocM);
+                if(s_SocIn.size() < 4096) s_SocIn.emplace_back(body.substr(2, tl), body.substr(off));
+            }
+        }
+        if(mq.fd < 0) continue;
+        uint64_t now = MP_NowMs();
+        if(now - lastPing > 20000) { lastPing = now; if(!mq.Ping()) mq.Close(); }
+    }
+    if(mq.fd >= 0)
+    {   // clean exit: the will is not sent, so say "offline" ourselves
+        std::string will; { std::lock_guard<std::mutex> lk(s_SocM); will = s_SocWill; }
+        if(!will.empty()) { mq.Publish(will, "", 0, true); mq.FlushOut(300); }
+        mq.Disconnect();
+    }
+    s_bSocUp = false;
+}
+
+void Online::SocLinkStart(const char* willTopic)
+{
+    { std::lock_guard<std::mutex> lk(s_SocM); s_SocWill = willTopic ? willTopic : ""; }
+    if(!s_bSocRun.exchange(true))
+    {
+        if(s_SocThread.joinable()) s_SocThread.join();
+        s_SocThread = std::thread(SocThread);
+    }
+}
+void Online::SocLinkStop()
+{
+    if(!s_bSocRun.exchange(false)) return;
+    if(s_SocThread.joinable()) s_SocThread.join();
+}
+bool Online::SocLinkUp() { return s_bSocUp; }
+int  Online::SocLinkGen() { return s_nSocGen; }
+const char* Online::SocLinkBroker() { return s_bSocUp ? s_szSocBroker : ""; }
+void Online::SocLinkSub(const std::string& f)
+{
+    std::lock_guard<std::mutex> lk(s_SocM);
+    if(std::find(s_SocSubs.begin(), s_SocSubs.end(), f) == s_SocSubs.end()) s_SocSubs.push_back(f);
+}
+void Online::SocLinkUnsub(const std::string& f)
+{
+    std::lock_guard<std::mutex> lk(s_SocM);
+    s_SocSubs.erase(std::remove(s_SocSubs.begin(), s_SocSubs.end(), f), s_SocSubs.end());
+}
+void Online::SocLinkPub(const std::string& topic, const std::string& payload, bool retain)
+{
+    std::lock_guard<std::mutex> lk(s_SocM);
+    if(s_SocOut.size() < 512) s_SocOut.push_back({ topic, payload, retain });
+}
+bool Online::SocLinkRecv(std::string& topic, std::string& payload)
+{
+    std::lock_guard<std::mutex> lk(s_SocM);
+    if(s_SocIn.empty()) return false;
+    topic.swap(s_SocIn.front().first); payload.swap(s_SocIn.front().second); s_SocIn.pop_front();
+    return true;
+}
+
 // 3.61: Day Z model pack (dff / txd from GitHub, src/game/dzmodels.cpp). Blocking, background threads only.
 bool Online::HttpsFetch(const std::string& url, std::string& body, int timeoutMs, std::string& why, size_t maxBytes, std::atomic<size_t>* got)
 {

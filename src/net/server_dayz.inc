@@ -533,7 +533,7 @@ bool MPServer::DzCommand(int slot, const char* cmd, const char* arg)
         DzMsg(slot, DZC_WHITE, "/inv /bag /map /gps /compass /hud /stats /level /humanity /top /armor /weapon /fps /ping");
         DzMsg(slot, DZC_WHITE, "/eat /drink /heal /bandage /cure /painkillers /drop /pickup /refuel /fuel /loot /supplies");
         DzMsg(slot, DZC_WHITE, "/party /pcreate /pinvite <id> /paccept /pdecline /pleave /pkick <id> /plist /p <text>");
-        DzMsg(slot, DZC_WHITE, "/pm <id> <text> /me /do /shout /whisper /time /fog /spawns /kill /rules /credits /admins /report");
+        DzMsg(slot, DZC_WHITE, "/pm <id> <text> /me /do /shout /whisper /time /fog /spawns /kill /rules /credits /admins /report /music");
         DzMsg(slot, DZC_WHITE, "/skills /skill <n> /achievements /journal /undress /weather /station /checkbody /treat <id> /chat /vars");
         DzMsg(slot, DZC_GREY, "Keys: 6 / F1 journal (debug monitor), 7 GPS, 8 compass, TAB player list. Admin: /dzset /dzvars /respawnvehicles /dzweather");
         DzMsg(slot, DZC_GREY, "Press F2 (or PANEL) for the control panel. Most commands open their window too.");
@@ -541,7 +541,9 @@ bool MPServer::DzCommand(int slot, const char* cmd, const char* arg)
         return true;
     }
     if(IS("rules")) { for(const char* r : kDzRules) DzMsg(slot, DZC_WHITE, "%s", r); DzEvent(slot, DZEV_UI, 2, 0, 0, nullptr, ""); return true; }
-    if(IS("credits")) { DzMsg(slot, DZC_YELLOW, "Project Day Z Legacy - based on Project DayZ SA-MP, made for MP by ThirtyFox."); DzEvent(slot, DZEV_UI, 5, 0, 0, nullptr, ""); return true; }
+    if(IS("credits")) { DzMsg(slot, DZC_YELLOW, "Project Day Z Legacy - based on Project DayZ SA-MP, made for MP by ThirtyFox.");
+                        DzMsg(slot, DZC_WHITE, "Ambient music: No Man's Land | Metro / S.T.A.L.K.E.R Atmospheric Playlist by Lemuria (youtube.com/@lemurian.archives, youtu.be/aVTcVx1570w). /music on / off.");
+                        DzEvent(slot, DZEV_UI, 5, 0, 0, nullptr, ""); return true; }
     if(IS("stats") || IS("level") || IS("humanity") || IS("score"))
     {
         DzMsg(slot, DZC_YELLOW, "Points: %d (level %d) | To next level: %d", z.points, DzLevel(z.points), DzToNext(z.points));
