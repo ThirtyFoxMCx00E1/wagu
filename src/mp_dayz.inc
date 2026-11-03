@@ -104,6 +104,7 @@ static bool DzOnServer()
 }
 static bool DzHideCorner() { return DzOnServer() && s_Dz.view == 2 && !Game::IsPaused(); }   // 3.60: in game on Day Z (GPS bottom-left)
 bool MP::IsOnDz() { return DzOnServer(); }
+static bool s_DzDlSkip = false;   // 3.62: PLAY NOW pressed in the download window (this connection)
 static bool DzHidden() { return s_Dz.engaged && (s_Dz.view == 1 || s_Dz.view == 3); }
 static ImU32 DzCol(uint32_t rgba, float a = 1.0f) { return UI::FromRGBA(rgba, a < 0 ? 0 : (a > 1 ? 1 : a)); }
 
@@ -145,7 +146,7 @@ static void DzModelsTick()
     DzModels::Tick(on, ids, n);
     // a line when the download starts / ends (the files stay cached, next time it is instant)
     static int shown = 0; int done, total, mbD, mbT; bool busy; DzModels::Progress(done, total, mbD, mbT, busy);
-    if(on && busy && total > 0 && done < total && shown == 0 && s_Dz.view == 2) { shown = 1; DzNotice(DZ_YEL, "Downloading the MTA DayZ models from GitHub (%d MB)...", mbT); }
+    if(on && busy && total > 0 && done < total && shown == 0) shown = 1;   // 3.62: the download window / bar shows it
     if(on && !busy && total > 0 && shown == 1) { shown = 2; if(done == total) DzNotice(DZ_YEL, "MTA DayZ models ready (%d).", done); else DzNotice(DZ_RED, "MTA DayZ models: %d of %d downloaded.", done, total); }
 }
 static int DzModel(const DzItem& d)
@@ -402,7 +403,7 @@ static void DzMakeBag(int ped)
     static int s_BagModel = 0;
     int lvl = s_Dz.haveMe ? s_Dz.me.bag : 0;
     int m = Game::IsKnownModel(3026) ? 3026 : (Game::IsKnownModel(2919) ? 2919 : 0);
-    // 3.61: MTA DayZ packs (Patrol 3026, Assault 1644, ALICE 2382) - modelled upright, back side to the body
+    // 3.61: MTA DayZ packs (Patrol 3026, Assault 1644, ALICE 2382)
     const int mta = lvl > 0 ? DzMtaModel(lvl == 3 ? DZI_BAG3 : (lvl == 2 ? DZI_BAG2 : DZI_BAG1)) : 0;
     if(mta) m = mta;
     if(s_Dz.bagObj && (lvl != s_Dz.bagLvl || m != s_BagModel || !Game::WorldObjectExists(s_Dz.bagObj))) { Game::DeleteWorldObject(s_Dz.bagObj); s_Dz.bagObj = 0; }
@@ -415,7 +416,10 @@ static void DzMakeBag(int ped)
     float back = lvl == 3 ? -0.20f : (lvl == 2 ? -0.17f : -0.14f);
     // 3.60: the parachute pack (3026) is made for the spine bone (its X axis points up the back), so it
     // lay sideways at the hip - turn it -90 around Y so it stands upright, straps to the body
-    if(mta) Game::AttachObjectToCharRot(o, ped, { 0.0f, back - 0.06f, 0.10f + 0.03f * lvl }, { 0.0f, 0.0f, 0.0f });
+    // 3.62: placed like MTA DayZ does it (backpack_player.lua: spine bone, 0 / -0.225 / 0.05, rot 90 0 0).
+    // Those models lie on their back - the Y axis runs up the spine, Z points away from the body - so
+    // they are turned +90 around X to stand upright; the spine bone sits ~0.17 above the ped origin.
+    if(mta) Game::AttachObjectToCharRot(o, ped, { 0.0f, -0.225f, 0.22f }, { 90.0f, 0.0f, 0.0f });
     else Game::AttachObjectToCharRot(o, ped, { 0.0f, back, 0.12f + 0.03f * lvl }, { 0.0f, -90.0f, 0.0f });   // on the back, bigger bag sits higher
     s_Dz.bagObj = o;
 }
@@ -466,7 +470,7 @@ static void DzShutdown()
     Game::RestoreCamera();
     Game::ShowGameHud(true); Game::SetPlayerControl(true); Game::ShowRadar(true);
     Game::SetMaxWanted(6);
-    s_Dz = DzClientState();
+    s_Dz = DzClientState(); s_DzDlSkip = false;
     s_bDzJoin = false;
 }
 
@@ -1507,6 +1511,84 @@ static bool DzMenuText(const char* id, const char* label, float cx, float y, flo
     if(hit) MpUiClick();
     return hit;
 }
+// 3.62: MTA-style "Download progress" window while the MTA DayZ models come from GitHub
+static bool DzDlActive(DzModels::Download& d)
+{
+    if(!settings.dzModels) return false;
+    DzModels::GetDownload(d);
+    return d.started && (d.busy || !d.listReady);
+}
+static void DzDlFmtBytes(char* o, size_t n, unsigned long long b) { snprintf(o, n, "%.1f MB", b / 1048576.0); }
+static float DzDlSpeed(const DzModels::Download& d)   // bytes per second, smoothed
+{
+    static uint64_t t0 = 0; static unsigned long long b0 = 0; static float sp = 0;
+    uint64_t now = MP_NowMs();
+    if(!t0 || d.bytesDone < b0) { t0 = now; b0 = d.bytesDone; return sp; }
+    if(now - t0 >= 700) { float s = (float)(d.bytesDone - b0) * 1000.0f / (float)(now - t0); sp = sp > 0 ? sp * 0.6f + s * 0.4f : s; t0 = now; b0 = d.bytesDone; }
+    return sp;
+}
+static void DzDrawDownload(ImVec2 ds, float x0, float t)
+{
+    DzModels::Download d; if(!DzDlActive(d) || s_DzDlSkip) return;
+    const float w = std::min(ds.x - x0 - UI::S(40), UI::S(700)), h = UI::S(300);
+    const float x = x0 + (ds.x - x0 - w) * 0.5f, y = ds.y * 0.5f - h * 0.5f, th = UI::S(40);
+    ImDrawList* fg = ImGui::GetForegroundDrawList();
+    fg->AddRectFilled(ImVec2(x, y), ImVec2(x + w, y + h), IM_COL32(12, 12, 12, 235), UI::S(8));
+    fg->AddRectFilledMultiColor(ImVec2(x + 1, y + 1), ImVec2(x + w - 1, y + th), IM_COL32(70, 70, 70, 255), IM_COL32(70, 70, 70, 255), IM_COL32(28, 28, 28, 255), IM_COL32(28, 28, 28, 255));
+    fg->AddRect(ImVec2(x, y), ImVec2(x + w, y + h), IM_COL32(120, 120, 120, 200), UI::S(8), 0, UI::S(1.5f));
+    fg->AddText(UI::Font(), UI::S(20), ImVec2(x + UI::S(16), y + UI::S(9)), IM_COL32_WHITE, "Download progress");
+    float ly = y + th + UI::S(16);
+    const float pct = d.bytesTotal ? (float)((double)d.bytesDone / (double)d.bytesTotal) : 0.0f;
+    char l[200];
+    if(!d.listReady) snprintf(l, sizeof(l), "Connecting to GitHub - getting the resource list...");
+    else snprintf(l, sizeof(l), "Downloading resource 'dayz' (Project Day Z Legacy) - %d files", d.filesTotal);
+    fg->AddText(UI::Font(), UI::S(18), ImVec2(x + UI::S(18), ly), DzCol(DZ_YEL), l); ly += UI::S(30);
+    snprintf(l, sizeof(l), "From: %s", d.host);
+    fg->AddText(UI::Font(), UI::S(15), ImVec2(x + UI::S(18), ly), IM_COL32(190, 190, 190, 255), l); ly += UI::S(24);
+    if(d.listReady)
+    {
+        snprintf(l, sizeof(l), "File %d / %d:  %s", std::min(d.filesDone + 1, d.filesTotal), d.filesTotal, d.file);
+        fg->AddText(UI::Font(), UI::S(15), ImVec2(x + UI::S(18), ly), IM_COL32(230, 230, 230, 255), l, nullptr, w - UI::S(36));
+    }
+    ly += UI::S(30);
+    // the bar
+    const float bx = x + UI::S(18), bw = w - UI::S(36), bh = UI::S(28);
+    fg->AddRectFilled(ImVec2(bx, ly), ImVec2(bx + bw, ly + bh), IM_COL32(40, 40, 40, 255), UI::S(4));
+    if(d.listReady) fg->AddRectFilled(ImVec2(bx, ly), ImVec2(bx + bw * pct, ly + bh), DzCol(DZ_YEL), UI::S(4));
+    else { float p = fmodf(t * 0.6f, 1.0f); fg->AddRectFilled(ImVec2(bx + bw * std::max(0.0f, p - 0.2f), ly), ImVec2(bx + bw * std::min(1.0f, p + 0.05f), ly + bh), DzCol(DZ_YEL, 0.8f), UI::S(4)); }
+    fg->AddRect(ImVec2(bx, ly), ImVec2(bx + bw, ly + bh), IM_COL32(150, 150, 150, 220), UI::S(4));
+    snprintf(l, sizeof(l), "%d%%", (int)(pct * 100.0f + 0.5f));
+    { ImVec2 ts = UI::Font()->CalcTextSizeA(UI::S(17), FLT_MAX, 0, l); UI::OutlinedText(fg, UI::S(17), ImVec2(bx + bw * 0.5f - ts.x * 0.5f, ly + bh * 0.5f - ts.y * 0.5f), IM_COL32_WHITE, l); }
+    ly += bh + UI::S(12);
+    char a[24], b[24]; DzDlFmtBytes(a, sizeof(a), d.bytesDone); DzDlFmtBytes(b, sizeof(b), d.bytesTotal);
+    const float sp = DzDlSpeed(d);
+    if(d.listReady)
+    {
+        int eta = sp > 1024.0f ? (int)((double)(d.bytesTotal - d.bytesDone) / sp) : -1;
+        if(eta >= 0) snprintf(l, sizeof(l), "%s / %s   -   %.0f KB/s   -   %d:%02d left", a, b, sp / 1024.0f, eta / 60, eta % 60);
+        else snprintf(l, sizeof(l), "%s / %s", a, b);
+        fg->AddText(UI::Font(), UI::S(15), ImVec2(bx, ly), IM_COL32(220, 220, 220, 255), l);
+        if(d.filesFailed) { snprintf(l, sizeof(l), "%d failed", d.filesFailed); fg->AddText(UI::Font(), UI::S(15), ImVec2(bx + bw - UI::S(90), ly), DzCol(DZ_RED), l); }
+    }
+    // the button: play now, the rest keeps downloading in the background
+    ImGui::SetNextWindowPos(ImVec2(x + w - UI::S(250), y + h - UI::S(58))); ImGui::SetNextWindowSize(ImVec2(UI::S(236), UI::S(50)));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+    ImGui::Begin("##DzDlWin", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoBackground);
+    if(BcwTeamButton("PLAY NOW##dzdlskip", 0x57534EFFu, ImVec2(UI::S(236), UI::S(46)), false, false)) s_DzDlSkip = true;
+    ImGui::End(); ImGui::PopStyleVar();
+    fg->AddText(UI::Font(), UI::S(13), ImVec2(x + UI::S(18), y + h - UI::S(40)), IM_COL32(160, 160, 160, 255), "Saved on the phone - next time it is instant.");
+}
+// in game: a thin bar on top while the rest is still coming
+static void DzDrawDownloadMini(ImDrawList* fg, ImVec2 ds)
+{
+    DzModels::Download d; if(!DzDlActive(d) || !d.listReady || !d.bytesTotal) return;
+    const float pct = (float)((double)d.bytesDone / (double)d.bytesTotal);
+    const float w = UI::S(300), h = UI::S(8), x = ds.x * 0.5f - w * 0.5f, y = UI::S(6);
+    fg->AddRectFilled(ImVec2(x, y), ImVec2(x + w, y + h), IM_COL32(0, 0, 0, 140), h * 0.5f);
+    fg->AddRectFilled(ImVec2(x, y), ImVec2(x + w * pct, y + h), DzCol(DZ_YEL, 0.9f), h * 0.5f);
+    char l[96]; snprintf(l, sizeof(l), "MTA DayZ models %d%%", (int)(pct * 100.0f + 0.5f));
+    UI::OutlinedText(fg, UI::S(13), ImVec2(x + w + UI::S(8), y - UI::S(4)), IM_COL32(230, 230, 230, 230), l);
+}
 static void DzDrawCabin(float t)
 {
     if(MP::AuthScreenShown() || SampDialogOpen()) return;
@@ -1527,7 +1609,8 @@ static void DzDrawCabin(float t)
     const float fs = UI::S(36), step = UI::S(58), cx = colW * 0.5f; float y = ds.y * 0.33f;
     if(s_Dz.page == 0)
     {
-        if(DzMenuText("##dzplay", s_Dz.playAsked ? "waiting..." : "Play", cx, y, fs, false) && !s_Dz.playAsked) { s_Dz.playAsked = MP_NowMs(); if(s_Dz.haveMe && s_Dz.me.spawnSel) { DzXSpawnSelect(); s_Dz.playAsked = 0; } else DzSend(DZCMD_PLAY); }
+        DzModels::Download dl; const bool dlWait = DzDlActive(dl) && !s_DzDlSkip;   // 3.62: like MTA - play after the download (or PLAY NOW)
+        if(DzMenuText("##dzplay", dlWait ? "Downloading..." : (s_Dz.playAsked ? "waiting..." : "Play"), cx, y, fs, false) && !s_Dz.playAsked && !dlWait) { s_Dz.playAsked = MP_NowMs(); if(s_Dz.haveMe && s_Dz.me.spawnSel) { DzXSpawnSelect(); s_Dz.playAsked = 0; } else DzSend(DZCMD_PLAY); }
         // 3.60: no Rules button here any more - the 10 rules window comes up after you pick a location
         if(DzMenuText("##dzcred", "Credits", cx, y + step, fs, false)) s_Dz.page = 2;
         if(DzMenuText("##dzset", "Settings", cx, y + step * 2, fs, false)) s_Dz.page = 3;
@@ -1571,6 +1654,7 @@ static void DzDrawCabin(float t)
         }
     }
     BcwCenterText(bg, UI::S(15), ds.y - UI::S(28), IM_COL32(200, 200, 200, 200), "Press PLAY: you wake up at 1 of 15 random places (or where you logged out alive).");
+    if(!s_Dz.page) DzDrawDownload(ds, colW, t);   // 3.62
 }
 
 #include "mp_dayz_mta.inc"   // 3.59: the MTA DayZ systems + textures
@@ -1593,6 +1677,7 @@ static void RenderDz()
         return;
     }
     int ped = Game::LocalPed(); if(ped <= 0) return;
+    DzDrawDownloadMini(fg, ds);   // 3.62
     DzDrawFeedback(bg, ds, nowMs);
     DzDrawCompass(fg, ds);
     ImVec2 rp0(0, 0); float rs = 0;

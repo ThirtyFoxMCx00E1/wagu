@@ -15,5 +15,14 @@ namespace DzModels
     bool Available();                      // engine checks passed (else everything stays GTA)
     // download state for the HUD: done / total files, bytes, busy = still downloading
     void Progress(int& done, int& total, int& mbDone, int& mbTotal, bool& busy);
+    // 3.62: the download window on the Day Z connection screen
+    struct Download
+    {
+        bool started, busy, listReady;
+        int filesDone, filesTotal, filesFailed, filesDownloaded, modelsReady, modelsTotal;
+        unsigned long long bytesDone, bytesTotal;
+        char file[96]; char host[80];
+    };
+    void GetDownload(Download& d);
     const char* LastError();
 }

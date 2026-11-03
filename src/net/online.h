@@ -18,6 +18,7 @@
 // non-zero token, so the existing default/custom server logic (join if it exists, otherwise
 // host it, takeover, duplicate merge) works the same for Wi-Fi and internet servers.
 #pragma once
+#include <atomic>
 #include <stdint.h>
 #include <vector>
 #include <string>
@@ -76,5 +77,6 @@ namespace Online
     bool AuthLinkRecv(std::string& frame);
 
     // 3.61: plain HTTPS GET (TLS 1.2, system CAs, no redirects), body up to maxBytes. Blocking.
-    bool HttpsFetch(const std::string& url, std::string& body, int timeoutMs, std::string& why, size_t maxBytes);
+    // got (optional): bytes received so far, updated while it downloads (3.62)
+    bool HttpsFetch(const std::string& url, std::string& body, int timeoutMs, std::string& why, size_t maxBytes, std::atomic<size_t>* got = nullptr);
 }

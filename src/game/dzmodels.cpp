@@ -68,6 +68,11 @@ std::mutex s_M;
 std::string s_Cache, s_Err;
 std::atomic<bool> s_Busy { false }, s_ListReady { false };
 std::atomic<int> s_Done { 0 }, s_Total { 0 }, s_KbDone { 0 }, s_KbTotal { 0 };
+// 3.62: per file (download window)
+std::atomic<int> s_FDone { 0 }, s_FTotal { 0 }, s_FFailed { 0 }, s_FDownloaded { 0 };
+std::atomic<uint64_t> s_BDone { 0 }, s_BTotal { 0 };
+std::atomic<size_t> s_BCur { 0 };
+std::string s_CurFile, s_CurHost;
 bool s_Started = false, s_Checked = false, s_Ok = false, s_PoolOk = false, s_Disabled = false;
 uint64_t s_NextCheck = 0;
 std::set<int> s_Bad;
@@ -167,19 +172,25 @@ bool Fetch(const std::string& rel, uint32_t size, uint32_t crc, bool firstBaseOn
 {
     std::string path = CacheName(rel);
     std::vector<uint8_t> d;
-    if(ReadFile(path, d) && d.size() == size && Crc(d) == crc) return true;
+    { std::lock_guard<std::mutex> lk(s_M); s_CurFile = rel; }
+    s_BCur = 0;
+    bool ok = ReadFile(path, d) && d.size() == size && Crc(d) == crc;   // already in the cache
     std::string why;
-    for(int b = 0; b < (firstBaseOnly ? 1 : 2); ++b)
+    for(int b = 0; !ok && b < (firstBaseOnly ? 1 : 2); ++b)
     {
         std::string body;
-        if(!Online::HttpsFetch(kBaseUrls[b] + rel, body, 180000, why, (size_t)size + 65536)) continue;
+        { std::lock_guard<std::mutex> lk(s_M); const char* u = kBaseUrls[b] + 8; s_CurHost.assign(u, strchr(u, '/') - u); s_CurHost += b ? " (mtadayz fork)" : " (wagu)"; }
+        s_BCur = 0;
+        if(!Online::HttpsFetch(kBaseUrls[b] + rel, body, 180000, why, (size_t)size + 65536, &s_BCur)) continue;
         d.assign(body.begin(), body.end());
         if(d.size() != size || Crc(d) != crc) { why = "bad file"; continue; }
-        if(WriteFile(path, d.data(), d.size())) return true;
+        if(WriteFile(path, d.data(), d.size())) { ok = true; ++s_FDownloaded; break; }
         why = "cache full?";
     }
-    std::lock_guard<std::mutex> lk(s_M); s_Err = rel + ": " + why;
-    return false;
+    s_BCur = 0;
+    s_BDone += size; ++s_FDone;
+    if(!ok) { ++s_FFailed; std::lock_guard<std::mutex> lk(s_M); s_Err = rel + ": " + why; }
+    return ok;
 }
 
 void DownloadThread(std::vector<int> objIds)
@@ -202,6 +213,7 @@ void DownloadThread(std::vector<int> objIds)
     int total = 0, kb = 0;
     for(Entry* e : list) if(e->wanted) { ++total; kb += (int)((e->dffSize + e->txdSize) / 1024); }
     s_Total = total; s_KbTotal = kb;
+    { uint64_t bt = 0; int ft = 0; for(Entry* e : list) if(e->wanted) { bt += e->dffSize + e->txdSize; ft += 2; } s_BTotal = bt; s_FTotal = ft; }
     s_E = list;
     for(Entry* e : list) if(!s_ById[e->id]) s_ById[e->id] = e;
     s_ListReady = true;
@@ -210,7 +222,8 @@ void DownloadThread(std::vector<int> objIds)
     for(Entry* e : list)
     {
         if(!e->wanted) continue;
-        bool ok = Fetch(e->dff, e->dffSize, e->dffCrc, false) && Fetch(e->txd, e->txdSize, e->txdCrc, false);
+        bool okD = Fetch(e->dff, e->dffSize, e->dffCrc, false);
+        bool ok = Fetch(e->txd, e->txdSize, e->txdCrc, false) && okD;
         e->file = ok ? 1 : 2;
         if(ok) { ++s_Done; s_KbDone += (int)((e->dffSize + e->txdSize) / 1024); }
         else logger->Error("DzModels: %d (%s) not downloaded: %s", e->id, e->dff.c_str(), s_Err.c_str());
@@ -547,5 +560,15 @@ bool DzModels::Available() { return s_Ok; }
 void DzModels::Progress(int& done, int& total, int& mbDone, int& mbTotal, bool& busy)
 {
     done = s_Done; total = s_Total; mbDone = s_KbDone / 1024; mbTotal = s_KbTotal / 1024; busy = s_Busy;
+}
+void DzModels::GetDownload(Download& d)
+{
+    d.started = s_Started; d.busy = s_Busy; d.listReady = s_ListReady;
+    d.filesDone = s_FDone; d.filesTotal = s_FTotal; d.filesFailed = s_FFailed; d.filesDownloaded = s_FDownloaded;
+    d.bytesTotal = s_BTotal; d.bytesDone = s_BDone + s_BCur; if(d.bytesDone > d.bytesTotal) d.bytesDone = d.bytesTotal;
+    d.modelsReady = s_Done; d.modelsTotal = s_Total;
+    std::lock_guard<std::mutex> lk(s_M);
+    snprintf(d.file, sizeof(d.file), "%s", s_CurFile.c_str());
+    snprintf(d.host, sizeof(d.host), "%s", s_CurHost.empty() ? "raw.githubusercontent.com (wagu)" : s_CurHost.c_str());
 }
 const char* DzModels::LastError() { static std::string c; std::lock_guard<std::mutex> lk(s_M); c = s_Err; return c.c_str(); }
