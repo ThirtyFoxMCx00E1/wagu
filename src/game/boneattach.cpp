@@ -26,14 +26,19 @@ void* (*GetHier)(void*) = nullptr;
 int   (*HAnimIdx)(void*, int) = nullptr;
 void  (*EntUpdateRW)(void*) = nullptr;
 void  (*MatUpdateRW)(void*) = nullptr;   // 4.05: CMatrix::UpdateRW() const - mobile has no CEntity::UpdateRW (the hook was never on)
+// 4.05.1: CMatrix::UpdateRW only writes to an *attached* RwMatrix - an entity's CMatrix is never attached on
+// mobile (CEntity::AttachToRwObject only copies the frame into it), so 4.05 still drew the bag from the
+// old frame. Now the matrix goes straight into the RwFrame's modelling matrix, like CEntity::UpdateRW does.
+void  (*MatToRw)(const void*, void*) = nullptr;   // CMatrix::UpdateRwMatrix(RwMatrix*) const
+void  (*RwMatUpdate)(void*) = nullptr;            // RwMatrixUpdate - clears the "orthonormal" cache flags
 void  (*EntUpdateFrame)(void*) = nullptr;
 void  (*EntUpdateRpHAnim)(void*) = nullptr;
 void  (*PRAT_orig)(void*) = nullptr;
 
 #if defined(__LP64__)
-const int kMatrixOff = 0x18, kRwObjOff = 0x20;
+const int kMatrixOff = 0x18, kRwObjOff = 0x20, kObjParentOff = 0x08, kFrameModelOff = 0x20;
 #else
-const int kMatrixOff = 0x14, kRwObjOff = 0x18;
+const int kMatrixOff = 0x14, kRwObjOff = 0x18, kObjParentOff = 0x04, kFrameModelOff = 0x10;   // RwObject.parent, RwFrame.modelling
 #endif
 
 struct Att { int obj = 0, ped = 0, bone = 3, key = 0; bool want = false, calWanted = false, cal = false; M4 L{}; };
@@ -119,8 +124,17 @@ void HookPRAT(void* self)
         M4 w{}; Mul(*bm, a.L, w);
         memcpy(om->r, w.r, 12); memcpy(om->u, w.u, 12); memcpy(om->a, w.a, 12); memcpy(om->p, w.p, 12);
         if(EntUpdateRW) EntUpdateRW(obj);
-        else if(MatUpdateRW) MatUpdateRW(om);   // copy into the RwFrame matrix the object is drawn with
-        if(EntUpdateFrame) EntUpdateFrame(obj);
+        else if(void* rw = ClumpOf(obj))
+        {   // the frame the object is drawn with
+            void* frame = *(void**)((char*)rw + kObjParentOff);
+            if(frame)
+            {
+                M4* fm = (M4*)((char*)frame + kFrameModelOff);
+                if(MatToRw) MatToRw(om, fm);
+                else { memcpy(fm->r, w.r, 12); memcpy(fm->u, w.u, 12); memcpy(fm->a, w.a, 12); memcpy(fm->p, w.p, 12); fm->f = 0; if(RwMatUpdate) RwMatUpdate(fm); }
+            }
+        }
+        if(EntUpdateFrame) EntUpdateFrame(obj);   // RwFrameUpdateObjects: the new place is used for this frame's draw
     }
 }
 void* Sym(void* h, const char* a, const char* b = nullptr)
@@ -139,10 +153,12 @@ void BoneAttach::Init(void* h)
     *(void**)&HAnimIdx = Sym(h, "_Z17RpHAnimIDGetIndexP16RpHAnimHierarchyi", "RpHAnimIDGetIndex");
     *(void**)&EntUpdateRW = Sym(h, "_ZN7CEntity8UpdateRWEv");
     *(void**)&MatUpdateRW = Sym(h, "_ZNK7CMatrix8UpdateRWEv");
+    *(void**)&MatToRw = Sym(h, "_ZNK7CMatrix14UpdateRwMatrixEP11RwMatrixTag");
+    *(void**)&RwMatUpdate = Sym(h, "_Z14RwMatrixUpdateP11RwMatrixTag", "RwMatrixUpdate");
     *(void**)&EntUpdateFrame = Sym(h, "_ZN7CEntity13UpdateRwFrameEv");
     *(void**)&EntUpdateRpHAnim = Sym(h, "_ZN7CEntity13UpdateRpHAnimEv");
     void* f = Sym(h, "_ZN4CPed18PreRenderAfterTestEv");
-    if(f && GetPed && GetObj && GetHier && HAnimIdx && (EntUpdateRW || MatUpdateRW)) aml->Hook(f, (void*)&HookPRAT, (void**)&PRAT_orig);
+    if(f && GetPed && GetObj && GetHier && HAnimIdx && (EntUpdateRW || EntUpdateFrame)) aml->Hook(f, (void*)&HookPRAT, (void**)&PRAT_orig);
     logger->Info("BoneAttach: %s (pools %d%d, hanim %d%d, rw %d%d%d%d)", PRAT_orig ? "ok" : "off", GetPed != nullptr, GetObj != nullptr,
                  GetHier != nullptr, HAnimIdx != nullptr, EntUpdateRW != nullptr, MatUpdateRW != nullptr, EntUpdateFrame != nullptr, EntUpdateRpHAnim != nullptr);
 }
