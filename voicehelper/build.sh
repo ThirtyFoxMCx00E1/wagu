@@ -7,7 +7,7 @@ SDK=${SDK:-$HOME/android-sdk}; BT=$SDK/build-tools/34.0.0; JAR=$SDK/platforms/an
 export PATH=${JAVA_HOME:-$HOME/jdk}/bin:$PATH
 rm -rf build; mkdir -p build/res build/classes build/dex
 $BT/aapt2 compile --dir res -o build/res/res.zip
-$BT/aapt2 link -I $JAR --manifest AndroidManifest.xml -o build/base.apk build/res/res.zip --min-sdk-version 21 --target-sdk-version 34
+$BT/aapt2 link -I $JAR --manifest AndroidManifest.xml -o build/base.apk -A assets build/res/res.zip --min-sdk-version 21 --target-sdk-version 34
 javac --release 8 -Xlint:-options -cp $JAR -d build/classes $(find src -name '*.java')
 $BT/d8 --min-api 21 --lib $JAR --output build/dex $(find build/classes -name '*.class')
 cp build/base.apk build/unsigned.apk

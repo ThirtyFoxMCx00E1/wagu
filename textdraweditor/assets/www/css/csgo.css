@@ -1,0 +1,42 @@
+/* 4.04: same look as the MP Launcher server UI (CS:GO community server browser): dark slate,
+   square boxes (no round corners), thin light lines, blue accent, green action button. */
+:root { --v-bg: #1a1d22; --v-panel: #282d34; --v-panel2: #20242a; --v-line: rgba(255,255,255,.12);
+  --v-text: #e2e5e9; --v-dim: #969da6; --v-blue: #7eb2e2; --v-green: #4ca030; --v-red: #aa3a2e; }
+*, *::before, *::after { border-radius: 0 !important; }
+body { font-family: "Roboto Condensed", Roboto, "Segoe UI", Arial, sans-serif; letter-spacing: .01em; }
+.btn { border-radius: 0 !important; border: 1px solid var(--v-line); font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+.btn-primary, .btn-success { background: var(--v-green); border-color: var(--v-line); color: #fff; }
+.btn-primary:hover, .btn-primary:active, .btn-success:hover, .btn-success:active { background: #2c6e1a !important; border-color: var(--v-line) !important; }
+.btn-outline-light, .btn-secondary, .btn-dark, .btn-outline-secondary { background: #3c424a; border-color: var(--v-line); color: var(--v-text); }
+.btn-danger, .btn-outline-danger { background: var(--v-red); border-color: var(--v-line); color: #fff; }
+.form-control, .form-select { background: var(--v-panel2) !important; color: var(--v-text) !important; border: 1px solid var(--v-line) !important; }
+.form-control:focus, .form-select:focus { box-shadow: none !important; border-color: var(--v-blue) !important; }
+.form-control::placeholder { color: #6c737c; }
+a { color: var(--v-blue); }
+/* login / register / forgot / reset */
+body.auth { background-color: var(--v-bg); color: var(--v-text); }
+body.auth::before { background: linear-gradient(90deg, rgba(26,29,34,.92) 0%, rgba(26,29,34,.6) 55%, rgba(26,29,34,.3) 100%); }
+.auth .card { background: rgba(40,45,52,.96); color: var(--v-text); border: 1px solid var(--v-line); box-shadow: 0 8px 30px rgba(0,0,0,.5); }
+.auth .card h1, .auth .card h2, .auth .card h3, .auth .card h4, .auth .card .card-title { color: var(--v-text); text-transform: uppercase; letter-spacing: .06em; font-weight: 800;
+  border-bottom: 2px solid var(--v-blue); padding-bottom: 6px; display: inline-block; }
+.auth .text-muted, .auth .status, .auth label, .auth .form-text { color: var(--v-dim) !important; }
+.auth .code { background: var(--v-panel2); color: var(--v-text); border: 1px solid var(--v-blue); }
+.auth .card-footer { background: var(--v-panel2); border-top: 1px solid var(--v-line); color: var(--v-dim); }
+.auth .form-check-input { background-color: var(--v-panel2); border-color: var(--v-line); }
+.auth .form-check-input:checked { background-color: var(--v-blue); border-color: var(--v-blue); }
+/* editor: left tool sidebar, stage, right panel = launcher sidebar / list / detail strip */
+html, body { background: var(--v-bg); color: var(--v-text); }
+#tools { background: #16191d; border-right: 1px solid var(--v-line); }
+.tb { border: 1px solid var(--v-line); background-color: var(--v-panel); }
+.tb.on { border-color: var(--v-blue); box-shadow: inset 3px 0 0 var(--v-blue); background-color: rgba(126,178,226,.16); }
+.tb:active { background-color: #3a4048; }
+#panel { background: #16191d; border-left: 1px solid var(--v-line); }
+#panel > .d-flex:first-child { border-bottom: 2px solid var(--v-blue); padding-bottom: 4px; text-transform: uppercase; letter-spacing: .05em; }
+#panel label { color: var(--v-dim); text-transform: uppercase; font-size: 10px; letter-spacing: .06em; }
+.list-item { border: 1px solid transparent; }
+.list-item:nth-child(odd) { background: rgba(255,255,255,.025); }
+.list-item.sel { border-color: transparent; background: rgba(126,178,226,.16); box-shadow: inset 3px 0 0 var(--v-blue); }
+#modal { background: rgba(10,12,15,.7); }
+#modal .box { background: var(--v-panel); border: 1px solid var(--v-line); }
+#modal .hd { background: var(--v-panel2); border-bottom: 2px solid var(--v-blue); text-transform: uppercase; letter-spacing: .06em; }
+.pal div, .sw { border-color: rgba(255,255,255,.2); }

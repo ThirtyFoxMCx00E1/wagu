@@ -80,14 +80,14 @@ void ServerList::Load(const char* path)
     FILE* f = fopen(path, "r");
     if(f)
     {
-        char line[256];
+        char line[640];
         while(fgets(line, sizeof(line), f) && (int)s_List.size() < MP_MAX_SERVERS)
         {
             // region|port|host|name[|password]   (2.19: optional password)
             line[strcspn(line, "\r\n")] = 0;
             if(!line[0] || line[0] == '#') continue;
-            char* p[6] = { line, nullptr, nullptr, nullptr, nullptr, nullptr };   // 2.25: |language
-            for(int i = 1; i < 6; ++i) { p[i] = p[i - 1] ? strchr(p[i - 1], '|') : nullptr; if(p[i]) *p[i]++ = 0; }
+            char* p[12] = { line };   // 2.25: |language   4.03: |cc|modeCol|mode|tags|desc|fav
+            for(int i = 1; i < 12; ++i) { p[i] = p[i - 1] ? strchr(p[i - 1], '|') : nullptr; if(p[i]) *p[i]++ = 0; }
             if(!p[3]) continue;
             ServerEntry e; memset(&e, 0, sizeof(e)); InitEntry(e);
             e.region = atoi(p[0]); if(e.region < 0 || e.region >= REGION_COUNT) e.region = REGION_ASIA;
@@ -96,6 +96,12 @@ void ServerList::Load(const char* path)
             MP_CopyStr(e.name, p[3][0] ? p[3] : "Server", sizeof(e.name));
             if(p[4]) MP_CopyStr(e.password, p[4], sizeof(e.password));
             if(p[5]) { MP_CopyStr(e.lang, p[5], sizeof(e.lang)); MP_CleanLang(e.lang); }
+            if(p[6]) MP_CopyStr(e.cc, p[6], sizeof(e.cc));
+            if(p[7]) e.modeCol = atoi(p[7]);
+            if(p[8]) MP_CopyStr(e.mode, p[8], sizeof(e.mode));
+            if(p[9]) MP_CopyStr(e.tags, p[9], sizeof(e.tags));
+            if(p[10]) MP_CopyStr(e.desc, p[10], sizeof(e.desc));
+            if(p[11]) e.fav = atoi(p[11]) != 0;
             if(!e.host[0] || IsDefaultEntry(e.host, e.name, e.port)) continue;
             // drop duplicates (same host + port, or same name + port): each server once
             bool dup = false;
@@ -118,7 +124,10 @@ void ServerList::Save()
     fprintf(f, "# MP server list (max %d). Format: region|port|host|name[|password[|language]]  (region 0=Asia 1=Europe 2=NA 3=Oceania)\n", MP_MAX_SERVERS);
     for(auto& e : s_List)
     {
-        if(e.lang[0])       fprintf(f, "%d|%d|%s|%s|%s|%s\n", e.region, e.port, e.host, e.name, e.password, e.lang);
+        if(e.cc[0] || e.mode[0] || e.tags[0] || e.desc[0] || e.fav || e.modeCol)   // 4.03
+            fprintf(f, "%d|%d|%s|%s|%s|%s|%s|%d|%s|%s|%s|%d\n", e.region, e.port, e.host, e.name, e.password, e.lang,
+                    e.cc, e.modeCol, e.mode, e.tags, e.desc, e.fav ? 1 : 0);
+        else if(e.lang[0])       fprintf(f, "%d|%d|%s|%s|%s|%s\n", e.region, e.port, e.host, e.name, e.password, e.lang);
         else if(e.password[0]) fprintf(f, "%d|%d|%s|%s|%s\n", e.region, e.port, e.host, e.name, e.password);
         else              fprintf(f, "%d|%d|%s|%s\n", e.region, e.port, e.host, e.name);
     }
@@ -137,6 +146,19 @@ void ServerList::SetPassword(int i, const char* password)
     for(char* c = pw; *c; ++c) if(*c == '|') *c = '/';
     if(strcmp(pw, s_List[i].password)) { memcpy(s_List[i].password, pw, sizeof(pw)); Save(); }
 }
+
+void ServerList::SetDetails(int i, const char* cc, int modeCol, const char* mode, const char* tags, const char* desc)   // 4.03
+{
+    if(i < 0 || i >= (int)s_List.size()) return;
+    ServerEntry& e = s_List[i];
+    MP_CopyStr(e.cc, cc ? cc : "", sizeof(e.cc)); MP_CleanField(e.cc);
+    e.modeCol = modeCol < 0 ? 0 : modeCol > 255 ? 255 : modeCol;
+    MP_CopyStr(e.mode, mode ? mode : "", sizeof(e.mode)); MP_CleanField(e.mode);
+    MP_CopyStr(e.tags, tags ? tags : "", sizeof(e.tags)); MP_CleanField(e.tags);
+    MP_CopyStr(e.desc, desc ? desc : "", sizeof(e.desc)); MP_CleanField(e.desc);
+    Save();
+}
+void ServerList::SetFav(int i, bool fav) { if(i >= 0 && i < (int)s_List.size() && s_List[i].fav != fav) { s_List[i].fav = fav; Save(); } }
 
 bool ServerList::Add(const char* name, const char* host, int port, int region, const char* password, const char* lang)
 {
@@ -225,7 +247,7 @@ void ServerList::Poll()
     uint64_t now = MP_NowMs();
     if(s_Sock >= 0)
     {
-        uint8_t buf[256];
+        uint8_t buf[640];
         for(int guard = 0; guard < 128; ++guard)
         {
             sockaddr_in from; socklen_t fl = sizeof(from);
@@ -241,6 +263,12 @@ void ServerList::Poll()
                 e.ping = (int)((uint32_t)now - in->time);
                 e.locked = r >= (int)sizeof(PktInfo2) && ((const PktInfo2*)buf)->locked;   // 2.19
                 if(r >= (int)sizeof(PktInfo4)) { MP_CopyStr(e.liveLang, ((const PktInfo4*)buf)->lang, sizeof(e.liveLang)); MP_CleanLang(e.liveLang); }   // 2.25
+                if(r >= (int)sizeof(PktInfo6))   // 4.03
+                {
+                    const PktInfo6* i6 = (const PktInfo6*)buf;
+                    MP_CopyStr(e.liveCC, i6->cc, sizeof(e.liveCC)); MP_CopyStr(e.liveMode, i6->mode, sizeof(e.liveMode));
+                    MP_CopyStr(e.liveTags, i6->tags, sizeof(e.liveTags)); MP_CopyStr(e.liveDesc, i6->desc, sizeof(e.liveDesc)); e.liveModeCol = i6->modeCol;
+                }
                 e.icon = r >= (int)sizeof(PktInfo3) ? (((const PktInfo3*)buf)->icon <= MP_ICON_MAX ? ((const PktInfo3*)buf)->icon : 0) : 0;   // 2.24
                 e.querySent = 0;
             }

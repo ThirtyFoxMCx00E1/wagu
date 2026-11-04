@@ -31,6 +31,11 @@ struct LanServer
     uint32_t startUnix;           // 2.27: when that server started (0 = older server)
     uint32_t token;     // != 0: found in the online lobby (ip is then a 127.77.x.y relay address)
     uint8_t  dedicated; // 2.29: a 24/7 machine (mp_server --persistent), not a phone: always the copy to join
+    char     cc[MP_CC_LEN];       // 4.03: server location (country code, "" = unknown)
+    uint8_t  modeCol;             // 4.03: gamemode chip colour (0 = auto)
+    char     mode[MP_MODE_LEN];   // 4.03: gamemode chip text ("" = Freeroam)
+    char     tags[MP_TAGS_LEN];   // 4.03: comma separated tags
+    char     desc[MP_DESC_LEN];   // 4.03: description
 };
 
 namespace LAN

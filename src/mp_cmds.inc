@@ -862,21 +862,27 @@ static void RenderSpawnPicker()
         float fs = UI::S(32);
         ImVec2 ts = UI::Font()->CalcTextSizeA(fs, FLT_MAX, 0, name);
         float cx = wp.x + total * 0.5f;
-        dl->AddRectFilled(ImVec2(cx - ts.x * 0.5f - UI::S(18), wp.y), ImVec2(cx + ts.x * 0.5f + UI::S(18), wp.y + fs + UI::S(16)), IM_COL32(0, 0, 0, 140), UI::S(10));
+        dl->AddRectFilled(ImVec2(cx - ts.x * 0.5f - UI::S(18), wp.y), ImVec2(cx + ts.x * 0.5f + UI::S(18), wp.y + fs + UI::S(16)), IM_COL32(40, 45, 52, 220));   // 4.04: square CS:GO box
+        dl->AddRect(ImVec2(cx - ts.x * 0.5f - UI::S(18), wp.y), ImVec2(cx + ts.x * 0.5f + UI::S(18), wp.y + fs + UI::S(16)), IM_COL32(255, 255, 255, 30));
         UI::OutlinedText(dl, fs, ImVec2(cx - ts.x * 0.5f, wp.y + UI::S(8)), IM_COL32_WHITE, name);
         ImGui::Dummy(ImVec2(total, fs + UI::S(26)));
-        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0.55f));
-        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.15f, 0.15f, 0.15f, 0.65f));
-        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.3f, 0.3f, 0.3f, 0.75f));
-        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, UI::S(16));
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.204f, 0.227f, 0.259f, 0.92f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.27f, 0.30f, 0.34f, 0.95f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.49f, 0.70f, 0.89f, 0.45f));
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 0.0f);   // 4.04: square
         ImGui::SetWindowFontScale(1.3f);
         if(ImGui::Button("<##sp", ImVec2(side, bh))) MP::SpawnStep(-1);
         ImGui::SameLine(0, gap);
         ImGui::PopStyleColor(3);
-        if(ImGui::Button("Spawn##sp", ImVec2(mid, bh))) MP::SpawnConfirm();   // white, black text
-        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0.55f));
-        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.15f, 0.15f, 0.15f, 0.65f));
-        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.3f, 0.3f, 0.3f, 0.75f));
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.298f, 0.627f, 0.188f, 1.0f));   // 4.04: green like CONNECT
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.34f, 0.69f, 0.22f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.17f, 0.43f, 0.10f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 1, 1, 1));
+        if(ImGui::Button("SPAWN##sp", ImVec2(mid, bh))) MP::SpawnConfirm();
+        ImGui::PopStyleColor(4);
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.204f, 0.227f, 0.259f, 0.92f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.27f, 0.30f, 0.34f, 0.95f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.49f, 0.70f, 0.89f, 0.45f));
         ImGui::SameLine(0, gap);
         if(ImGui::Button(">##sp", ImVec2(side, bh))) MP::SpawnStep(1);
         ImGui::SetWindowFontScale(1.0f);

@@ -74,6 +74,13 @@ struct MPSettings
     char  serverPassword[MP_PASSWORD_LEN + 1] = "";   // 2.19: password of the server you host (empty = open)
     char  uiLanguage[12] = "en";                     // 3.52: Settings > Language (files/MP/lang/<code>.lng)
     char  serverLang[MP_LANG_LEN] = "English";      // 2.25: language of the server you host (server list "Language")
+    // 4.03: CS:GO style list (+ Add server): Server location, gamemode chip, tags, description
+    char  serverCC[MP_CC_LEN] = "";
+    char  serverMode[MP_MODE_LEN] = "";
+    int   serverModeCol = 0;
+    char  serverTags[MP_TAGS_LEN] = "";
+    char  serverDesc[MP_DESC_LEN] = "";
+    char  serverPreview[48] = "";                     // 4.03: pv_mine_<crc>.jpg in files/MP (Upload preview image)
     char  deviceId[MP_UID_LEN + 1] = "";            // 2.25: this phone's id (bans), made on first start
     char  adminKey[129] = "";                         // 2.37: read from files/MP/admin.txt (never saved in the config) - proof you are SENJI
     char  hostedPassword[MP_PASSWORD_LEN + 1] = "";   // 2.19: password of the server this phone hosted last

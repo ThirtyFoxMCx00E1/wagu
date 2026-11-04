@@ -162,6 +162,13 @@ std::vector<LanServer> LAN::Discover(const std::vector<uint16_t>& ports, int tim
         s.locked = (r >= (int)sizeof(PktInfo2) && ((const PktInfo2*)buf)->locked) ? 1 : 0;   // 2.19
         if(r >= (int)sizeof(PktInfo3)) { uint8_t ic = ((const PktInfo3*)buf)->icon; s.icon = ic <= MP_ICON_MAX ? ic : 0; }   // 2.24
         if(r >= (int)sizeof(PktInfo5)) s.startUnix = ((const PktInfo5*)buf)->startUnix;   // 2.27
+        if(r >= (int)sizeof(PktInfo6))   // 4.03
+        {
+            const PktInfo6* i6 = (const PktInfo6*)buf;
+            MP_CopyStr(s.cc, i6->cc, sizeof(s.cc)); s.modeCol = i6->modeCol; MP_CopyStr(s.mode, i6->mode, sizeof(s.mode));
+            MP_CopyStr(s.tags, i6->tags, sizeof(s.tags)); MP_CopyStr(s.desc, i6->desc, sizeof(s.desc));
+            MP_CleanField(s.cc); MP_CleanField(s.mode); MP_CleanField(s.tags); MP_CleanField(s.desc);
+        }
         if(r >= (int)sizeof(PktInfo4)) { MP_CopyStr(s.lang, ((const PktInfo4*)buf)->lang, sizeof(s.lang)); MP_CleanLang(s.lang); }   // 2.25
         bool dup = false;
         for(auto& e : found) if(!strcmp(e.ip, s.ip) && e.port == s.port) dup = true;

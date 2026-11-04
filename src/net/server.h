@@ -57,6 +57,7 @@ public:
     // 2.25: server language shown in the server list ("English", "Filipino / English"...)
     void SetLang(const char* l);
     void GetLang(char* out, size_t n);
+    void SetDetails(const char* cc, int modeCol, const char* mode, const char* tags, const char* desc);   // 4.03: CS:GO style list
     // 2.16: permissions (PERM_*). Turning mission pairs off ends every pair.
     void SetPerms(uint8_t perms);
     void SetModFile(const char* path);   // 3.35: moderator list (default ./moderator.txt)
@@ -579,6 +580,8 @@ private:
     std::atomic<int>   m_nRegion;
     std::atomic<int>   m_nIcon{0};
     char               m_szLang[MP_LANG_LEN] = {0};
+    char               m_szCC[MP_CC_LEN] = {0}, m_szMode[MP_MODE_LEN] = {0}, m_szTags[MP_TAGS_LEN] = {0}, m_szDesc[MP_DESC_LEN] = {0};   // 4.03
+    uint8_t            m_nModeCol = 0;
     std::atomic<uint32_t> m_nStartUnix{0};
     std::atomic<uint8_t> m_nPerms{PERM_MISSION_PAIR};
     std::atomic<uint16_t> m_nModes{0};   // 3.02: custom servers start with no gamemodes

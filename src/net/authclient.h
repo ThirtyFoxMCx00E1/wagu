@@ -31,6 +31,8 @@ public:
     void WantRecover(int kind);         // 1 = username, 2 = password
     void ResetPassword(const char* pass);
     int  recover = 0;                   // 0 = normal sign up / login, 1 / 2 = recovering
+    bool wantNewAccount = false;        // 4.03: "Add account" (profile menu): a verified Discord with 1-2 accounts goes to Create
+    int  accountsMade = 0, accountsMax = 3; std::string accountUsers;   // 4.03: from the bot (verified push)
     // the server's answer to our ticket
     void ServerResult(bool ok, const char* msg);
 

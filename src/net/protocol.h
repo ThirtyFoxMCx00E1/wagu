@@ -13,10 +13,10 @@
 // phones refuse servers older than that too (they would let old phones in).
 // 3.10: build 31000. MP_MIN_BUILD stays 30406 and the lobby stays thirtyfox/mp5/: 3.04.6 (no cheats)
 // and 3.10 phones play together on the same servers; only 3.04.5 and older (mp4) stay shut out.
-#define MP_BUILD 40300   // 4.03
+#define MP_BUILD 40400   // 4.04
 #define MP_MIN_BUILD       30406
 #define MP_AUTH_MIN_BUILD  32106   // 3.21.6: servers with the login system refuse older phones (they could not log in)
-#define MP_VERSION_STR     "4.03"
+#define MP_VERSION_STR     "4.04"
 #define MP_VOICE_BUILD     31100   // 3.11: phones from this build on get voice packets
 #define MP_DOWNLOAD_URL    "thirtyfoxmcx00e1.github.io/wagu"   // 3.37: the website is back in the wagu repo (one repo for everything)
 #define MP_DEFAULT_HOST    "127.0.0.1"
@@ -554,6 +554,14 @@ struct PktInfo3       { PktInfo2 i2; uint8_t icon; };  // 2.24: server icon 0 = 
 struct PktInfo4       { PktInfo3 i3; char lang[MP_LANG_LEN]; };
 struct PktInfo5       { PktInfo4 i4; uint32_t startUnix; };   // 2.27: when the server started (older copy wins a duplicate merge)   // 2.25: server language ("English", "Filipino / English"...)
 // language text is shown in lists: no '|' or ':' (listing separators)
+// 4.03: CS:GO style server list - country flag, tags, description, gamemode name + colour.
+// Wi-Fi: PktInfo6 (old phones read the PktInfo5 part). Internet lobby: retained topic d/<token>.
+#define MP_CC_LEN   8      // "ph", "gb-eng" (lower case, flags.png slot)
+#define MP_TAGS_LEN 96     // "freeroam,stunts,drift" (comma separated, max 8 tags)
+#define MP_DESC_LEN 160
+#define MP_MODE_LEN 24     // gamemode chip text ("Freeroam", "Deathmatch" ...)
+struct PktInfo6       { PktInfo5 i5; char cc[MP_CC_LEN]; uint8_t modeCol; char mode[MP_MODE_LEN]; char tags[MP_TAGS_LEN]; char desc[MP_DESC_LEN]; };
+inline void MP_CleanField(char* s) { for(; *s; ++s) if(*s == '|' || *s == '\n' || *s == '\r' || *s == '\t') *s = '/'; }
 inline void MP_CleanLang(char* s) { for(; *s; ++s) if(*s == '|' || *s == ':' || *s == '\n' || *s == '\r') *s = '/'; }
 struct PktPlayerInfo  { uint8_t type; uint8_t id; uint16_t ping; int16_t score; };
 struct PktJack        { uint8_t type; uint8_t from; uint8_t victim; uint8_t seat; };

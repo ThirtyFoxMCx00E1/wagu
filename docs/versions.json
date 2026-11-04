@@ -1,6 +1,7 @@
 {
-"latest": "4.03",
+"latest": "4.04",
 "supported": [
+"4.04",
 "4.03",
 "4.02",
 "4.01",
@@ -84,6 +85,21 @@
 "3.04.6"
 ],
 "versions": [
+{
+"v": "4.04",
+"summary": "CS:GO style server browser, chat GIFs, clipboard and texdb research.",
+"items": [
+"MP launcher server list redone in the CS:GO community server browser style: almost fullscreen, square boxes (no round edges), columns for name / players / map / gamemode / ping / location. A featured / selected server strip at the top shows the description, IP (internet server IPs stay hidden), favourite star, preview image and a ping stability graph. Tapping a row opens its player list.",
+"Row backgrounds now come from bg_server.jar (bg_1.jpg .. bg_250.jpg plus bg_default / bg_bcw / bg_dz / bg_mw3 / bg_rp and flags.png) in files/MP instead of the icons. Icons.jar is still read as a fallback.",
+"Gamemode highlight colours, country flags and tags (featured / default / custom) for each server. + Add Server lets you set the server location (every country, \"Server location: {country}\"), the gamemode name and colour, custom tags, a description and a preview image (picked with the Files app, one jpg / png, through MP Voice 4.04). The preview is shared with other players over the server list.",
+"Lan list moved to the top tabs; the layout pages stay in the left sidebar. Favourites tab.",
+"Profile dropdown at the top right: Settings, About, Switch account, Log out. Up to 3 Discord accounts can be saved (the login bot allows 3 accounts too).",
+"The virtual keyboard, the spawn picker and the join loading screen (\"CONNECTING TO SERVER\") use the same square CS:GO look. The floating menu is unchanged.",
+"Virtual keyboard: COPY and PASTE (Android clipboard) on the input line. In chat a GIF button opens a GIF page (categories + animated grid from github.com/ThirtyFoxMCx00E1/animated-gifs, downloaded on demand from the wagu gifs branch). A tapped GIF is sent as [gif:N] and shown animated on its own tall chat row, so chat text never overlaps it (older lines move up).",
+"Textdraw Editor and MP Voice apps restyled to match the server UI, and both play Global_click.mp3 on every tap.",
+"texdb research (gta3 .toc / .dat): the .toc header \"checksum\" is the .dat file size, followed by one u32 offset per gta3.txt entry (0xFFFFFFFF = missing). A .dat entry is u32 id/format, u16 width, u16 height (0x8000 = has mips), u32 size, then the data; entries whose first data word is 0 are uncompressed, so a database can be written without compression. The per-texture ID is a name hash (h = h*33 + ...), only partly solved; the compressed entries are not decoded yet."
+]
+},
 {
 "v": "4.03",
 "summary": "Project Day Z Legacy UI fixes.",

@@ -635,3 +635,87 @@ namespace Voice
     bool TestPlaying(int id) { std::lock_guard<std::mutex> lk(s_StreamM); Stream* st = s_Streams[id]; return st && st->playing; }
 }
 #endif
+
+// ---- 4.03: Upload preview image (+ Add server). The game's activity never sees a Files app answer,
+// so MP Voice (com.thirtyfox.mpvoice.PickActivity) opens the picker, turns the JPG / PNG into a 512x256
+// JPEG and sends it to us over TCP 127.0.0.1:19231:  "MPIM" + uint32 length (little endian) + JPEG bytes.
+static const int MP_PICK_PORT = 19231;
+static std::atomic<int> s_nPickState{0};
+static std::mutex s_PickMx; static char s_szPickDir[400] = "", s_szPicked[48] = "";
+static void PickOpenOnUi(void*)
+{
+    JNIEnv* e = Env();
+    jobject act = aml->GetCurrentActivity();
+    if(!act) act = aml->GetAppContextObject();
+    if(!e || !act) { s_nPickState = 3; return; }
+    jclass ic = e->FindClass("android/content/Intent");
+    if(ClearEx(e) || !ic) { s_nPickState = 3; return; }
+    jobject in = e->NewObject(ic, e->GetMethodID(ic, "<init>", "()V"));
+    jmethodID scn = e->GetMethodID(ic, "setClassName", "(Ljava/lang/String;Ljava/lang/String;)Landroid/content/Intent;");
+    jmethodID pex = e->GetMethodID(ic, "putExtra", "(Ljava/lang/String;I)Landroid/content/Intent;");
+    jmethodID afl = e->GetMethodID(ic, "addFlags", "(I)Landroid/content/Intent;");
+    if(ClearEx(e) || !in || !scn || !pex || !afl) { s_nPickState = 3; return; }
+    e->CallObjectMethod(in, scn, e->NewStringUTF("com.thirtyfox.mpvoice"), e->NewStringUTF("com.thirtyfox.mpvoice.PickActivity"));
+    e->CallObjectMethod(in, pex, e->NewStringUTF("port"), (jint)MP_PICK_PORT);
+    e->CallObjectMethod(in, afl, (jint)0x10000000);   // FLAG_ACTIVITY_NEW_TASK
+    jclass cc = e->GetObjectClass(act);
+    jmethodID sa = e->GetMethodID(cc, "startActivity", "(Landroid/content/Intent;)V");
+    if(ClearEx(e) || !sa) { s_nPickState = 3; return; }
+    e->CallVoidMethod(act, sa, in);
+    if(ClearEx(e)) s_nPickState = 3;   // ActivityNotFoundException = old / no MP Voice
+}
+static void PickThread()
+{
+    int ls = socket(AF_INET, SOCK_STREAM, 0);
+    if(ls < 0) { s_nPickState = 4; return; }
+    int one = 1; setsockopt(ls, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
+    sockaddr_in a; memset(&a, 0, sizeof(a)); a.sin_family = AF_INET; a.sin_addr.s_addr = htonl(0x7F000001u); a.sin_port = htons(MP_PICK_PORT);
+    if(bind(ls, (sockaddr*)&a, sizeof(a)) < 0 || listen(ls, 1) < 0) { close(ls); s_nPickState = 4; return; }
+    if(!aml->PushToJavaUIThread(PickOpenOnUi, nullptr)) PickOpenOnUi(nullptr);
+    std::string img;
+    uint64_t until = MP_NowMs() + 180000;   // 3 minutes to choose
+    while(MP_NowMs() < until && s_nPickState == 1)
+    {
+        pollfd p = { ls, POLLIN, 0 };
+        if(poll(&p, 1, 500) <= 0) continue;
+        int c = accept(ls, nullptr, nullptr);
+        if(c < 0) continue;
+        uint8_t hd[8]; int got = 0; uint64_t t0 = MP_NowMs();
+        while(got < 8 && MP_NowMs() - t0 < 10000) { pollfd q = { c, POLLIN, 0 }; if(poll(&q, 1, 500) <= 0) continue; int r = (int)recv(c, hd + got, 8 - got, 0); if(r <= 0) break; got += r; }
+        uint32_t len = got == 8 ? (uint32_t)hd[4] | ((uint32_t)hd[5] << 8) | ((uint32_t)hd[6] << 16) | ((uint32_t)hd[7] << 24) : 0;
+        if(got == 8 && !memcmp(hd, "MPIM", 4) && len > 0 && len <= 2 * 1024 * 1024)
+        {
+            img.resize(len); size_t at = 0;
+            while(at < len && MP_NowMs() - t0 < 20000) { pollfd q = { c, POLLIN, 0 }; if(poll(&q, 1, 500) <= 0) continue; int r = (int)recv(c, &img[at], len - at, 0); if(r <= 0) break; at += r; }
+            if(at != len) img.clear();
+        }
+        else if(got == 8 && !memcmp(hd, "MPIM", 4) && len == 0) { close(c); break; }   // cancelled
+        close(c);
+        break;
+    }
+    close(ls);
+    bool jpg = img.size() > 4 && (uint8_t)img[0] == 0xFF && (uint8_t)img[1] == 0xD8;
+    if(!jpg) { s_nPickState = 4; return; }
+    uint32_t crc = 2166136261u; for(unsigned char ch : img) crc = (crc ^ ch) * 16777619u;
+    char name[48]; snprintf(name, sizeof(name), "pv_mine_%08x.jpg", crc);
+    char path[512]; { std::lock_guard<std::mutex> lk(s_PickMx); snprintf(path, sizeof(path), "%s/%s", s_szPickDir, name); }
+    FILE* f = fopen(path, "wb");
+    if(!f) { s_nPickState = 4; return; }
+    fwrite(img.data(), 1, img.size(), f); fclose(f);
+    { std::lock_guard<std::mutex> lk(s_PickMx); snprintf(s_szPicked, sizeof(s_szPicked), "%s", name); }
+    s_nPickState = 2;
+}
+void Voice::PickImage(const char* saveDir)
+{
+    if(s_nPickState == 1) return;
+    { std::lock_guard<std::mutex> lk(s_PickMx); snprintf(s_szPickDir, sizeof(s_szPickDir), "%s", saveDir ? saveDir : "."); s_szPicked[0] = 0; }
+    s_nPickState = 1;
+    std::thread(PickThread).detach();
+}
+int  Voice::PickImageState() { return s_nPickState.load(); }
+bool Voice::PickedFile(char* out, size_t n)
+{
+    std::lock_guard<std::mutex> lk(s_PickMx);
+    if(!s_szPicked[0]) return false;
+    snprintf(out, n, "%s", s_szPicked); s_szPicked[0] = 0; return true;
+}

@@ -797,7 +797,13 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             in3.icon = (uint8_t)m_nIcon.load();
             MP_CopyStr(in4.lang, m_szLang, sizeof(in4.lang));
             in5.startUnix = m_nStartUnix.load();
-            SendRaw(from, &in5, sizeof(in5));
+            PktInfo6 in6; memset(&in6, 0, sizeof(in6)); in6.i5 = in5;   // 4.03: + country, gamemode, tags, description
+            {
+                std::lock_guard<std::mutex> lk(m_Mutex);
+                MP_CopyStr(in6.cc, m_szCC, sizeof(in6.cc)); in6.modeCol = m_nModeCol; MP_CopyStr(in6.mode, m_szMode, sizeof(in6.mode));
+                MP_CopyStr(in6.tags, m_szTags, sizeof(in6.tags)); MP_CopyStr(in6.desc, m_szDesc, sizeof(in6.desc));
+            }
+            SendRaw(from, &in6, sizeof(in6));
             return;
         }
         case PKT_JOIN:
@@ -1836,6 +1842,15 @@ void MPServer::SetLang(const char* l)
     MP_CopyStr(m_szLang, l ? l : "", sizeof(m_szLang)); MP_CleanLang(m_szLang);
 }
 void MPServer::GetLang(char* out, size_t n) { std::lock_guard<std::mutex> lk(m_Mutex); MP_CopyStr(out, m_szLang, n); }
+void MPServer::SetDetails(const char* cc, int modeCol, const char* mode, const char* tags, const char* desc)   // 4.03
+{
+    std::lock_guard<std::mutex> lk(m_Mutex);
+    MP_CopyStr(m_szCC, cc ? cc : "", sizeof(m_szCC)); MP_CleanField(m_szCC);
+    m_nModeCol = (uint8_t)(modeCol < 0 ? 0 : modeCol > 255 ? 255 : modeCol);
+    MP_CopyStr(m_szMode, mode ? mode : "", sizeof(m_szMode)); MP_CleanField(m_szMode);
+    MP_CopyStr(m_szTags, tags ? tags : "", sizeof(m_szTags)); MP_CleanField(m_szTags);
+    MP_CopyStr(m_szDesc, desc ? desc : "", sizeof(m_szDesc)); MP_CleanField(m_szDesc);
+}
 
 // ---- 3.01: SA-MP features: turf wars, welcome dialog, banner textdraw ------------------------
 void MPServer::SetMotd(const char* caption, const char* text)

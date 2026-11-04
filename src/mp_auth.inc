@@ -98,6 +98,71 @@ static void AuthSaveUser(const std::string& u)
     s_szAuthSavedTok = keep ? tok : "";
 }
 
+// ---- 4.03: up to 3 accounts on this phone (profile menu: Switch account / Add account / Logout) ----
+// accounts.txt: one user name a line, the most recent first. No passwords: switching opens the login screen.
+static const int AUTH_MAX_ACCOUNTS = 3;
+static void AuthAccountsPath(char* out, size_t n) { snprintf(out, n, "%s/accounts.txt", s_szDataDir); }
+static std::vector<std::string> AuthAccounts()
+{
+    std::vector<std::string> v; char p[512]; AuthAccountsPath(p, sizeof(p));
+    if(FILE* f = fopen(p, "r"))
+    {
+        char line[96];
+        while(fgets(line, sizeof(line), f) && (int)v.size() < AUTH_MAX_ACCOUNTS)
+        {
+            line[strcspn(line, "\r\n")] = 0;
+            if(line[0] && line[0] != '#') { bool dup = false; for(auto& x : v) if(!strcasecmp(x.c_str(), line)) dup = true; if(!dup) v.push_back(line); }
+        }
+        fclose(f);
+    }
+    std::string last = AuthAccountValue("user");   // 4.02 and older: only account.txt
+    if(!last.empty()) { bool dup = false; for(auto& x : v) if(!strcasecmp(x.c_str(), last.c_str())) dup = true; if(!dup && (int)v.size() < AUTH_MAX_ACCOUNTS) v.push_back(last); }
+    return v;
+}
+static void AuthAccountsSave(const std::vector<std::string>& v)
+{
+    char p[512]; AuthAccountsPath(p, sizeof(p));
+    if(FILE* f = fopen(p, "w"))
+    {
+        fprintf(f, "# MP accounts on this phone (max %d, newest first, no passwords)\n", AUTH_MAX_ACCOUNTS);
+        for(int i = 0; i < (int)v.size() && i < AUTH_MAX_ACCOUNTS; ++i) fprintf(f, "%s\n", v[i].c_str());
+        fclose(f);
+    }
+}
+static void AuthAccountsTouch(const std::string& u)   // logged in as u: to the top
+{
+    if(u.empty()) return;
+    std::vector<std::string> v = AuthAccounts(), n{ u };
+    for(auto& x : v) if(strcasecmp(x.c_str(), u.c_str())) n.push_back(x);
+    if((int)n.size() > AUTH_MAX_ACCOUNTS) n.resize(AUTH_MAX_ACCOUNTS);
+    AuthAccountsSave(n);
+}
+static void AuthAccountsRemove(const std::string& u)
+{
+    std::vector<std::string> v = AuthAccounts(), n;
+    for(auto& x : v) if(strcasecmp(x.c_str(), u.c_str())) n.push_back(x);
+    AuthAccountsSave(n);
+}
+static void AuthReset();
+static void AuthLogout(const char* switchTo, bool addNew)   // switchTo: the login screen fills it in next time
+{
+    std::string was = s_AuthUser.empty() ? s_Auth.user : s_AuthUser;
+    AuthReset();
+    s_Auth.user.clear(); s_AuthUser.clear(); s_Auth.prefillUser = switchTo ? switchTo : "";
+    s_Auth.wantNewAccount = addNew;
+    s_AfUser.buf[0] = 0; s_AfPass.buf[0] = 0;
+    if(switchTo && switchTo[0]) MP_CopyStr(s_AfUser.buf, switchTo, sizeof(s_AfUser.buf));
+    char p[512]; AuthAccountPath(p, sizeof(p));
+    if(FILE* f = fopen(p, "w"))
+    {
+        fprintf(f, "# MP login: the account on this phone (no password is kept).\nuser=%s\n", switchTo ? switchTo : "");
+        fclose(f);
+    }
+    if(addNew) SysMsg(COL_GREEN, "Logged out. Join a login server and tap \"New account\" to make another account (max %d per Discord).", AUTH_MAX_ACCOUNTS);
+    else if(switchTo && switchTo[0]) SysMsg(COL_GREEN, "Switched to %s. Join a server and log in.", switchTo);
+    else SysMsg(COL_GREEN, "Logged out%s%s.", was.empty() ? "" : " of ", was.c_str());
+}
+
 // left the server / lost it / a new connection: the screen goes AND the session login is forgotten
 // (3.35.2: leaving the server and joining again = the login screen again, like after a game restart)
 static void AuthReset()
@@ -149,6 +214,7 @@ static void AuthOnPacket(const uint8_t* d, int len)
             s_nAuthDoneAt = MP_NowMs();
             s_AuthUser = r.user[0] ? r.user : s_Auth.user;
             AuthSaveUser(s_AuthUser);
+            AuthAccountsTouch(s_AuthUser);   // 4.03
             s_AfPass.buf[0] = 0;
             if(s_Auth.createdNow) SysMsg(COL_GREEN, "Your account was created successfully. Welcome, %s.", s_AuthUser.c_str());
             else SysMsg(COL_GREEN, "Logged in as %s.", s_AuthUser.c_str());

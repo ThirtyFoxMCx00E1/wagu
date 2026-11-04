@@ -29,6 +29,11 @@ namespace Voice
     int   HelperState();                    // 0 not used, 1 waiting for MP Voice, 2 getting your voice
     void  OpenUrl(const char* url);         // 3.21.6: open a link (browser / Discord app)
     void  OpenHelperApp();                  // opens MP Voice (it turns its mic on and comes back)
+    // 4.03: + Add server > Upload preview image: MP Voice opens the Files app (JPG / PNG), makes it a
+    // 512x256 JPEG and sends it back on 127.0.0.1:19231 (the game cannot get the Files app answer itself)
+    void  PickImage(const char* saveDir);   // the picture is saved as saveDir/pv_mine_<crc>.jpg
+    int   PickImageState();                 // 0 idle, 1 waiting, 2 got it (PickedFile), 3 MP Voice missing, 4 nothing came back
+    bool  PickedFile(char* out, size_t n);  // once after state 2: "pv_mine_<crc>.jpg"
     int   OpenHelperResult();               // 0 pending, 1 opened, 2 not installed
     void  StopMic();
     bool  MicOn();

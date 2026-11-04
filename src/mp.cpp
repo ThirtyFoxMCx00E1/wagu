@@ -35,6 +35,7 @@
 #include <time.h>
 #include "ui/i18n.h"
 #include "ui/hud.h"
+#include "ui/server_style.h"   // 4.03
 #include "ui/floatmenu.h"
 #include "ui/vkeyboard.h"
 #include "ui/ui_common.h"
@@ -5121,6 +5122,40 @@ static void ProcessLan(uint64_t now)
             if(run && FeaturedName(s_Server.GetName(), s_Server.GetPort())) lg = "";   // 3.53: featured = always "All"
             static char lastLg[MP_LANG_LEN] = "\x01";
             if(strcmp(lastLg, lg)) { MP_CopyStr(lastLg, lg, sizeof(lastLg)); s_Server.SetLang(lg); Online::SetHostLang(lg); }
+            // 4.03: Server location / gamemode / tags / description + who is inside (CS:GO style list)
+            static uint64_t lastDet = 0;
+            if(now - lastDet > 2000)
+            {
+                lastDet = now;
+                const char *cc = settings.serverCC, *md = settings.serverMode, *tg = settings.serverTags, *ds = settings.serverDesc; int mc = settings.serverModeCol;
+                if(run)
+                {
+                    int k = ServerList::FindByNamePort(s_Server.GetName(), s_Server.GetPort());
+                    if(ServerEntry* e = ServerList::Get(k)) if(e->cc[0] || e->mode[0] || e->tags[0] || e->desc[0]) { cc = e->cc; md = e->mode; tg = e->tags; ds = e->desc; mc = e->modeCol; }
+                    if(IsHostingDefault() || FeaturedName(s_Server.GetName(), s_Server.GetPort())) { cc = ""; md = ""; tg = ""; ds = ""; mc = 0; }   // built-in text
+                }
+                s_Server.SetDetails(cc, mc, md, tg, ds);
+                std::string d;
+                if(run)
+                {
+                    char hd[512]; snprintf(hd, sizeof(hd), "v1|%s|%d|%s|%s|%s|", cc, mc, md, tg, ds);
+                    d = hd;
+                    std::vector<MPServer::PlayerView> pv; s_Server.GetPlayers(pv);
+                    int n = 0;
+                    for(auto& p : pv) { if(n >= 100) break; std::string nm = p.name; for(char& c : nm) if(c == ',' || c == '|') c = ' '; if(n++) d += ','; d += nm; }
+                }
+                Online::SetHostDetails(d);
+                // 4.04: Upload preview image -> everyone in the lobby sees it in the server's detail strip
+                static char pvName[48] = ""; static std::string pvBytes;
+                bool own = run && settings.serverPreview[0] && !IsHostingDefault() && !FeaturedName(s_Server.GetName(), s_Server.GetPort());
+                if(own && strcmp(pvName, settings.serverPreview))
+                {
+                    MP_CopyStr(pvName, settings.serverPreview, sizeof(pvName)); pvBytes.clear();
+                    char pp[512]; snprintf(pp, sizeof(pp), "%s/%s", s_szDataDir, settings.serverPreview);
+                    if(FILE* f = fopen(pp, "rb")) { fseek(f, 0, SEEK_END); long n = ftell(f); fseek(f, 0, SEEK_SET); if(n > 0 && n <= 200 * 1024) { pvBytes.resize((size_t)n); if(fread(&pvBytes[0], 1, (size_t)n, f) != (size_t)n) pvBytes.clear(); } fclose(f); }
+                }
+                Online::SetHostPreview(own ? pvBytes : std::string());
+            }
         }
         // 2.20 regional brokers: until the player picks a region, use the lowest-ping one (once)
         static bool regionAutoDone = false;
@@ -5259,7 +5294,7 @@ void MP::SaveConfig()
     I("ChatFade", settings.chatFade); B("ChatFadeOn", settings.chatFadeOn); B("ChatBackground", settings.chatBg);
     B("ChatBoxBackground", settings.chatBoxBg); B("ChatBoxLabel", settings.chatBoxLabel); B("ChatBoxTap", settings.chatBoxTap);   // 2.22
     F("ChatBoxX", settings.chatBoxX); F("ChatBoxY", settings.chatBoxY); B("RealSkin", settings.realSkin);
-    I("Region", settings.region); B("LobbyAuto", settings.lobbyAuto); B("RegionPicked", settings.regionPicked); I("NameColor", (int)settings.nameColor); I("ServerChatColor", (int)settings.serverChatColor); I("PlayerChatColor", (int)settings.playerChatColor); I("MaxPlayers", settings.maxPlayers); I("HostGamemodes", settings.hostModes); I("ServerIcon", settings.serverIcon); S("ServerLang", settings.serverLang); S("DeviceId", settings.deviceId); S("UiLanguage", settings.uiLanguage);   // 3.52
+    I("Region", settings.region); B("LobbyAuto", settings.lobbyAuto); B("RegionPicked", settings.regionPicked); I("NameColor", (int)settings.nameColor); I("ServerChatColor", (int)settings.serverChatColor); I("PlayerChatColor", (int)settings.playerChatColor); I("MaxPlayers", settings.maxPlayers); I("HostGamemodes", settings.hostModes); I("ServerIcon", settings.serverIcon); S("ServerLang", settings.serverLang); S("ServerCC", settings.serverCC); S("ServerMode", settings.serverMode); I("ServerModeCol", settings.serverModeCol); S("ServerTags", settings.serverTags); S("ServerDesc", settings.serverDesc); S("ServerPreview", settings.serverPreview); S("DeviceId", settings.deviceId); S("UiLanguage", settings.uiLanguage);   // 3.52
     B("FullProgressDefault", settings.fullProgressDefault);
     B("UnlockWorld", settings.unlockWorld); B("Girlfriends", settings.girlfriends); B("EventTips", settings.eventTips);   // 2.21
     B("PermAfk", settings.permAfk); B("PermDmgInd", settings.permDmgInd); B("PermShowIds", settings.permShowIds); B("PermNeeds", settings.permNeeds); B("RulesOn", settings.rulesOn); S("RulesTitle", settings.rulesTitle);
@@ -5373,6 +5408,13 @@ static void LoadConfig()
     ::cfg->GetString(settings.serverLang, sizeof(settings.serverLang), "ServerLang", "English", "MP");   // 2.25
     ::cfg->GetString(settings.uiLanguage, sizeof(settings.uiLanguage), "UiLanguage", "en", "MP");   // 3.52
     MP_CleanLang(settings.serverLang);
+    ::cfg->GetString(settings.serverCC, sizeof(settings.serverCC), "ServerCC", "", "MP");   // 4.03
+    ::cfg->GetString(settings.serverMode, sizeof(settings.serverMode), "ServerMode", "", "MP");
+    settings.serverModeCol = ::cfg->GetInt("ServerModeCol", 0, "MP");
+    ::cfg->GetString(settings.serverTags, sizeof(settings.serverTags), "ServerTags", "", "MP");
+    ::cfg->GetString(settings.serverDesc, sizeof(settings.serverDesc), "ServerDesc", "", "MP");
+    ::cfg->GetString(settings.serverPreview, sizeof(settings.serverPreview), "ServerPreview", "", "MP");
+    MP_CleanField(settings.serverCC); MP_CleanField(settings.serverMode); MP_CleanField(settings.serverTags); MP_CleanField(settings.serverDesc);
     ::cfg->GetString(settings.deviceId, sizeof(settings.deviceId), "DeviceId", "", "MP");
     LoadAdminFile();   // 2.37: admin.txt = proof you are SENJI
     MP_StripAdminTag(settings.name);
@@ -5740,18 +5782,18 @@ static void RegionPicker(const std::vector<LanServer>& nearby)
 // 2.24: tap the icon = next icon (Default -> 1 -> 2 ... -> 250 -> Default). Long list, so also - / + buttons.
 static void ServerIconPicker()
 {
-    ImGui::TextUnformatted("Server icon (tap it for the next one)");
+    ImGui::TextUnformatted("Server background (tap it for the next one)");   // 4.03: icon_1..icon_250 = CS:GO style row backgrounds
     const float sz = UI::S(96);
     ImVec2 uv(1, 1);
     void* tex = HUD::ServerIcon(settings.serverIcon, &uv);
     bool next = false;
     ImGui::PushID("srvicon");
-    if(tex) next = ImGui::ImageButton("##ic", (ImTextureID)tex, ImVec2(sz, sz), ImVec2(0, 0), uv);
+    if(tex) next = ImGui::ImageButton("##ic", (ImTextureID)tex, ImVec2(settings.serverIcon ? sz * 2 : sz, sz), ImVec2(0, 0), uv);
     else    next = ImGui::Button(settings.serverIcon ? "?" : "MP", ImVec2(sz + UI::S(8), sz + UI::S(8)));
     ImGui::SameLine();
     ImGui::BeginGroup();
-    if(settings.serverIcon == 0) ImGui::TextUnformatted("Default (main_df_icon.png)");
-    else ImGui::TextUnformatted("Custom icon");   // 2.32: no numbers shown
+    if(settings.serverIcon == 0) ImGui::TextUnformatted("Default (no background)");
+    else ImGui::Text("Background %d / %d", settings.serverIcon, MP_ICON_MAX);   // 2.32: no numbers shown
     bool prev = ImGui::Button(" - ", ImVec2(UI::S(70), UI::S(56)));
     ImGui::SameLine();
     bool plus = ImGui::Button(" + ", ImVec2(UI::S(70), UI::S(56)));
@@ -5765,7 +5807,7 @@ static void ServerIconPicker()
     if(def) v = 0;
     if(v != settings.serverIcon) { settings.serverIcon = v; SaveConfig(); }
     if(IsHostingDefault()) ImGui::TextDisabled("The default MP LAN Server always shows the default icon.");
-    ImGui::TextDisabled("Your own pictures: icon_1.png ... icon_250.png inside files/MP/Icons.jar (or loose in files/MP, max 256x256).");
+    ImGui::TextDisabled("Backgrounds: bg_1.jpg ... bg_250.jpg inside files/MP/bg_server.jar (or a loose icon_N.png in files/MP, max 512x512).");
 }
 
 static bool ServerRow(const char* id, const char* title, const char* info, ImVec4 infoCol,
@@ -6261,6 +6303,174 @@ static void RulesSection()
     }
     ImGui::PopID();
 }
+// ---- 4.03: + Add server > Server location / Gamemode / Tags / Description / Preview image (CS:GO style list) ----
+static bool s_bCountryOpen = false; static char s_szCountryFind[32] = "", s_szNewTag[24] = "";
+static void OnCountryFind(const char* t, void*) { MP_CopyStr(s_szCountryFind, t ? t : "", sizeof(s_szCountryFind)); }
+static void OnSrvMode(const char* t, void*) { MP_CopyStr(settings.serverMode, t ? t : "", sizeof(settings.serverMode)); MP_CleanField(settings.serverMode); SaveConfig(); }
+static void OnSrvDesc(const char* t, void*) { MP_CopyStr(settings.serverDesc, t ? t : "", sizeof(settings.serverDesc)); MP_CleanField(settings.serverDesc); SaveConfig(); }
+static std::vector<std::string> TagList(const char* t)
+{
+    std::vector<std::string> v; std::string cur;
+    for(const char* c = t; ; ++c)
+    {
+        if(!*c || *c == ',') { while(!cur.empty() && cur.back() == ' ') cur.pop_back(); if(!cur.empty()) v.push_back(cur); cur.clear(); if(!*c) break; }
+        else if(!(cur.empty() && *c == ' ')) cur += (char)tolower((unsigned char)*c);
+    }
+    return v;
+}
+static void TagsSet(const std::vector<std::string>& v)
+{
+    std::string o; for(size_t i = 0; i < v.size() && i < 8; ++i) { if(i) o += ','; o += v[i]; }
+    MP_CopyStr(settings.serverTags, o.c_str(), sizeof(settings.serverTags)); MP_CleanField(settings.serverTags); SaveConfig();
+}
+static void TagToggle(const char* t)
+{
+    std::vector<std::string> v = TagList(settings.serverTags), n; bool had = false;
+    for(auto& x : v) { if(!strcasecmp(x.c_str(), t)) had = true; else n.push_back(x); }
+    if(!had) { if(n.size() >= 8) { SysMsg(COL_YELLOW, "Max 8 tags."); return; } n.push_back(t); }
+    TagsSet(n);
+}
+static void OnNewTag(const char* t, void*)
+{
+    char b[24]; MP_CopyStr(b, t ? t : "", sizeof(b));
+    for(char* c = b; *c; ++c) if(*c == ',' || *c == '|') *c = ' ';
+    if(b[0]) TagToggle(b);
+}
+static bool SquareChip(const char* id, const char* txt, bool on, ImU32 col)
+{
+    ImVec2 ts = ImGui::CalcTextSize(txt);
+    float w = ts.x + UI::S(30), h = UI::S(56);
+    if(ImGui::GetContentRegionAvail().x < w && ImGui::GetCursorPosX() > UI::S(20)) ImGui::NewLine();
+    ImGui::PushID(id);
+    ImVec2 p = ImGui::GetCursorScreenPos();
+    bool hit = ImGui::InvisibleButton("##chip", ImVec2(w, h));
+    ImDrawList* dl = ImGui::GetWindowDrawList();
+    dl->AddRectFilled(p, ImVec2(p.x + w, p.y + h), on ? col : IM_COL32(255, 255, 255, ImGui::IsItemActive() ? 40 : 14));
+    dl->AddRect(p, ImVec2(p.x + w, p.y + h), on ? IM_COL32(255, 255, 255, 160) : IM_COL32(255, 255, 255, 40));
+    dl->AddText(ImVec2(p.x + UI::S(15), p.y + (h - ts.y) * 0.5f), IM_COL32_WHITE, txt);
+    ImGui::PopID();
+    ImGui::SameLine(0, UI::S(6));
+    return hit;
+}
+static void ServerDetailsEditor()
+{
+    ImGui::Separator();
+    // Server location (country)
+    {
+        int ci = LCountryIndex(settings.serverCC);
+        ImGui::TextUnformatted("Server location");
+        ImVec2 p = ImGui::GetCursorScreenPos();
+        float fh = UI::S(42), fw = fh * 4.0f / 3.0f;
+        ImGui::Dummy(ImVec2(fw, fh));
+        LDrawFlag(ImGui::GetWindowDrawList(), ci, p, ImVec2(p.x + fw, p.y + fh));
+        ImGui::SameLine(0, UI::S(12));
+        ImGui::AlignTextToFramePadding();
+        ImGui::Text("Server location: %s", ci >= 0 ? kCountries[ci].name : "not set");
+        ImGui::SameLine(0, UI::S(16));
+        if(ImGui::Button(s_bCountryOpen ? "Close##cc" : "Customize##cc", ImVec2(UI::S(200), UI::S(56)))) s_bCountryOpen = !s_bCountryOpen;
+        if(ci >= 0) { ImGui::SameLine(0, UI::S(6)); if(ImGui::Button("Clear##cc", ImVec2(UI::S(130), UI::S(56)))) { settings.serverCC[0] = 0; SaveConfig(); } }
+        if(s_bCountryOpen)
+        {
+            FloatMenu::TextField("Find country", s_szCountryFind, "Search (e.g. Philippines)", 31, OnCountryFind);
+            const float cw = UI::S(150), chh = UI::S(118);
+            ImGui::BeginChild("##ccgrid", ImVec2(0, UI::S(480)), true);
+            int cols = ImMax(1, (int)(ImGui::GetContentRegionAvail().x / (cw + UI::S(6))));
+            int k = 0;
+            for(int i = 0; i < kCountryCount; ++i)
+            {
+                if(s_szCountryFind[0])
+                {
+                    char a[64], b[32]; MP_CopyStr(a, kCountries[i].name, sizeof(a)); MP_CopyStr(b, s_szCountryFind, sizeof(b));
+                    for(char* c = a; *c; ++c) *c = (char)tolower((unsigned char)*c);
+                    for(char* c = b; *c; ++c) *c = (char)tolower((unsigned char)*c);
+                    if(!strstr(a, b) && strcasecmp(kCountries[i].code, s_szCountryFind)) continue;
+                }
+                if(k % cols) ImGui::SameLine(0, UI::S(6));
+                ++k;
+                ImGui::PushID(i);
+                ImVec2 q = ImGui::GetCursorScreenPos();
+                if(ImGui::InvisibleButton("##c", ImVec2(cw, chh))) { MP_CopyStr(settings.serverCC, kCountries[i].code, sizeof(settings.serverCC)); SaveConfig(); s_bCountryOpen = false; }
+                ImDrawList* dl = ImGui::GetWindowDrawList();
+                bool on = !strcasecmp(settings.serverCC, kCountries[i].code);
+                dl->AddRectFilled(q, ImVec2(q.x + cw, q.y + chh), on ? IM_COL32(126, 178, 226, 70) : IM_COL32(255, 255, 255, ImGui::IsItemActive() ? 40 : 10));
+                float ffw = cw * 0.56f, ffh = ffw * 0.75f;
+                ImVec2 fa(q.x + (cw - ffw) * 0.5f, q.y + UI::S(8));
+                LDrawFlag(dl, i, fa, ImVec2(fa.x + ffw, fa.y + ffh));
+                dl->PushClipRect(q, ImVec2(q.x + cw, q.y + chh), true);
+                const char* nm = kCountries[i].name; float sc = 0.7f;
+                ImVec2 ts = ImGui::CalcTextSize(nm); ts.x *= sc;
+                dl->AddText(ImGui::GetFont(), ImGui::GetFontSize() * sc, ImVec2(q.x + ImMax(UI::S(4), (cw - ts.x) * 0.5f), fa.y + ffh + UI::S(6)), IM_COL32(220, 224, 230, 255), nm);
+                dl->PopClipRect();
+                ImGui::PopID();
+            }
+            if(!k) ImGui::TextDisabled("No country matches.");
+            ImGui::EndChild();
+        }
+    }
+    // Gamemode chip text + colour
+    ImGui::Separator();
+    FloatMenu::TextField("Gamemode (shown in the list)", settings.serverMode, "e.g. Freeroam, Deathmatch, Race", MP_MODE_LEN - 1, OnSrvMode);
+    {
+        static const char* kModes[] = { "Freeroam", "Deathmatch", "Team DM", "Race", "Stunt", "Drift", "Roleplay", "Zombies", "Cops & Robbers", "Gang War", "Minigames" };
+        for(int i = 0; i < (int)(sizeof(kModes) / sizeof(kModes[0])); ++i)
+        {
+            char id[16]; snprintf(id, sizeof(id), "md%d", i);
+            if(SquareChip(id, kModes[i], !strcasecmp(settings.serverMode, kModes[i]), IM_COL32(126, 178, 226, 120))) { MP_CopyStr(settings.serverMode, kModes[i], sizeof(settings.serverMode)); SaveConfig(); }
+        }
+        ImGui::NewLine();
+        ImGui::TextUnformatted("Gamemode colour");
+        for(int i = 0; i < kModeColCount; ++i)
+        {
+            char id[16]; snprintf(id, sizeof(id), "mc%d", i);
+            if(SquareChip(id, kModeCols[i].name, settings.serverModeCol == i, kModeCols[i].col)) { settings.serverModeCol = i; SaveConfig(); }
+        }
+        ImGui::NewLine();
+    }
+    // Tags
+    ImGui::Separator();
+    {
+        std::vector<std::string> v = TagList(settings.serverTags);
+        ImGui::Text("Tags (%d/8) - tap to add / remove", (int)v.size());
+        for(size_t i = 0; i < v.size(); ++i)
+        {
+            char id[16]; snprintf(id, sizeof(id), "tg%d", (int)i); char t[40]; snprintf(t, sizeof(t), "%s  x", v[i].c_str());
+            if(SquareChip(id, t, true, IM_COL32(76, 160, 48, 200))) TagToggle(v[i].c_str());
+        }
+        if(!v.empty()) ImGui::NewLine();
+        static const char* kTags[] = { "freeroam", "dm", "pvp", "pve", "race", "stunts", "drift", "rp", "zombies", "missions", "events", "cars", "gangs",
+                                       "24/7", "chill", "hardcore", "english", "filipino", "beginners", "no rules" };
+        for(int i = 0; i < (int)(sizeof(kTags) / sizeof(kTags[0])); ++i)
+        {
+            bool on = false; for(auto& x : v) if(!strcasecmp(x.c_str(), kTags[i])) on = true;
+            if(on) continue;
+            char id[16]; snprintf(id, sizeof(id), "pt%d", i);
+            if(SquareChip(id, kTags[i], false, 0)) TagToggle(kTags[i]);
+        }
+        ImGui::NewLine();
+        s_szNewTag[0] = 0;
+        FloatMenu::TextField("Custom tag", s_szNewTag, "Type a tag and press Done", sizeof(s_szNewTag) - 1, OnNewTag);
+    }
+    // Description
+    ImGui::Separator();
+    FloatMenu::TextField("Server description", settings.serverDesc, "What is your server about?", MP_DESC_LEN - 1, OnSrvDesc);
+    // Preview image (your own JPG / PNG, picked in the Files app by MP Voice)
+    ImGui::Separator();
+    {
+        ImGui::TextUnformatted("Preview image (JPG / PNG)");
+        ImVec2 uv(1, 1);
+        void* pv = settings.serverPreview[0] ? HUD::Texture(settings.serverPreview, &uv) : nullptr;
+        if(pv) ImGui::Image((ImTextureID)pv, ImVec2(UI::S(320), UI::S(160)), ImVec2(0, 0), uv);
+        else ImGui::TextDisabled(settings.serverPreview[0] ? "Loading..." : "No preview image: the list shows your server background.");
+        int ps = Voice::PickImageState();
+        { char f[48]; if(Voice::PickedFile(f, sizeof(f))) { MP_CopyStr(settings.serverPreview, f, sizeof(settings.serverPreview)); SaveConfig(); SysMsg(COL_GREEN, "Preview image saved."); } }
+        if(FloatMenu::BigButton(ps == 1 ? "Waiting for the Files app..." : "Upload preview image (opens Files)") && ps != 1) Voice::PickImage(s_szDataDir);
+        if(ps == 3) ImGui::TextColored(kYellowTxt, "Install MP Voice (MP-Voice.apk from the release): it opens the Files app for the game.");
+        if(ps == 4) ImGui::TextColored(kYellowTxt, "No picture came back (cancelled, or not a JPG / PNG).");
+        if(settings.serverPreview[0] && FloatMenu::BigButton("Remove preview image", kLeaveCol)) { settings.serverPreview[0] = 0; SaveConfig(); }
+        ImGui::TextDisabled("Shown in the server details (internet lobby + this phone). It is resized to 512x256.");
+    }
+}
+
 static void SectionAddServer(void*)
 {
     AddFormPrefill();
@@ -6275,6 +6485,7 @@ static void SectionAddServer(void*)
     FloatMenu::TextField("Language", s_szNewLang, "Language (e.g. English)", MP_LANG_LEN - 1, OnNewLang);   // 2.25
     LanguageChips("newlang", s_szNewLang, sizeof(s_szNewLang), false);
     ServerIconPicker();   // 2.24 (shown in the list when you host)
+    ServerDetailsEditor();   // 4.03: location, gamemode, tags, description, preview
     ImGui::TextUnformatted("Max players");
     ImGui::SetNextItemWidth(-FLT_MIN);
     if(ImGui::SliderInt("##maxpl", &settings.maxPlayers, 1, MP_STD_MAX_PLAYERS, "%d players"))
@@ -6349,6 +6560,7 @@ static void SectionAddServer(void*)
             SysMsg(COL_YELLOW, "That server is already in your list.");
         else if(ServerList::Add(s_szNewName, s_szNewHost, atoi(s_szNewPort), settings.region, s_szNewPw, s_szNewLang))
         {
+            ServerList::SetDetails(ServerList::Count() - 1, settings.serverCC, settings.serverModeCol, settings.serverMode, settings.serverTags, settings.serverDesc);   // 4.03
             SysMsg(COL_GREEN, "Added server \"%s\" (%s). Its IP stays hidden.", s_szNewName[0] ? s_szNewName : "custom", g_MPRegionNames[settings.region]);
             s_szNewName[0] = s_szNewHost[0] = s_szNewPw[0] = 0;
             ServerList::Refresh();

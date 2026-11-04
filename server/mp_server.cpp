@@ -1,3 +1,4 @@
+#include <ctype.h>
 #include <vector>
 #include <string>
 // Standalone MP server (Linux / Windows / Termux). Same core as the in-game "Host LAN server".
@@ -34,6 +35,7 @@
 static std::atomic<bool> g_bQuit(false);
 static void OnSignal(int) { g_bQuit = true; }
 
+static char dCC[MP_CC_LEN] = "", dMode[MP_MODE_LEN] = "", dTags[MP_TAGS_LEN] = "", dDesc[MP_DESC_LEN] = ""; static int dModeCol = 0;   // 4.03
 int main(int argc, char** argv)
 {
     int port = argc > 1 ? atoi(argv[1]) : MP_DEFAULT_PORT;
@@ -68,6 +70,16 @@ int main(int argc, char** argv)
     for(int i = 1; i + 1 < argc; ++i) if(!strcasecmp(argv[i], "--icon")) icon = atoi(argv[i + 1]);
     if(icon < 0 || icon > MP_ICON_MAX) icon = 0;
     Online::SetHostIcon(icon);
+    // 4.03: --country ph --mode Deathmatch --modecol 2 --tags "dm,pvp" --desc "..."
+    for(int i = 1; i + 1 < argc; ++i)
+    {
+        if(!strcasecmp(argv[i], "--country")) MP_CopyStr(dCC, argv[i + 1], sizeof(dCC));
+        else if(!strcasecmp(argv[i], "--mode")) MP_CopyStr(dMode, argv[i + 1], sizeof(dMode));
+        else if(!strcasecmp(argv[i], "--modecol")) dModeCol = atoi(argv[i + 1]);
+        else if(!strcasecmp(argv[i], "--tags")) MP_CopyStr(dTags, argv[i + 1], sizeof(dTags));
+        else if(!strcasecmp(argv[i], "--desc")) MP_CopyStr(dDesc, argv[i + 1], sizeof(dDesc));
+    }
+    for(char* c = dCC; *c; ++c) *c = (char)tolower((unsigned char)*c);
     Online::SetRegionPrefs(region, false);   // 2.20: regional brokers: this region's broker + default server
     if(!offline) Online::Start(brokerFile);
     bool dupOnline = false;
@@ -282,6 +294,20 @@ int main(int argc, char** argv)
     while(!g_bQuit)
     {
         // internet lobby: phones on any network see and join this server through the relay
+        {   // 4.03: country / tags / description + who is inside, for the CS:GO style list
+            static uint64_t lastDet = 0; uint64_t nw = MP_NowMs();
+            if(nw - lastDet > 2000)
+            {
+                lastDet = nw;
+                server.SetDetails(dCC, dModeCol, dMode, dTags, dDesc);
+                char hd[512]; snprintf(hd, sizeof(hd), "v1|%s|%d|%s|%s|%s|", dCC, dModeCol, dMode, dTags, dDesc);
+                std::string d = hd;
+                std::vector<MPServer::PlayerView> pv; server.GetPlayers(pv);
+                int n = 0;
+                for(auto& p : pv) { if(n >= 100) break; std::string nm = p.name; for(char& c : nm) if(c == ',' || c == '|') c = ' '; if(n++) d += ','; d += nm; }
+                if(!offline) Online::SetHostDetails(d);
+            }
+        }
         if(!offline) { Online::SetHostStart(server.GetStartUnix()); Online::SetHosted(true, server.GetName(), server.GetPort(), server.GetPlayerCount(), server.GetMaxPlayers(), server.GetRegion()); }   // 2.27: + start time
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }

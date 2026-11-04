@@ -24,12 +24,14 @@
 
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_ONLY_PNG
+#define STBI_ONLY_JPEG   // 4.03: icon_N.jpg server backgrounds (512x256)
 #define STBI_NO_STDIO_FAILURE_STRINGS
 #include "../../imgui/stb_image.h"
 #include "../../imgui/imgui_internal.h"   // 3.60: GImGui->ActiveIdIsJustActivated (global click sound)
 #include "../audio/sound.h"
 #include <unistd.h>
 #include "emoji.h"
+#include "gifs.h"
 #include "i18n.h"
 
 // ---- timings for the connected logo -------------------------------------------------
@@ -577,7 +579,7 @@ static bool JarRead(Jar& j, const char* name, std::vector<unsigned char>& out)
     int r = inflate(&zs, Z_FINISH); inflateEnd(&zs);
     return r == Z_STREAM_END;
 }
-static Jar s_IconsJar, s_VehJar;
+static Jar s_IconsJar, s_VehJar, s_BgJar;   // 4.04: s_BgJar = files/MP/bg_server.jar (bg_1.jpg .. bg_250.jpg)
 
 // 2.24: server icons. files/MP/main_df_icon.png = default icon, files/MP/icon_1.png .. icon_250.png =
 // the icon a host picks in Server > Host. Loaded on first use (one new file per frame, max 256x256).
@@ -599,23 +601,28 @@ void* HUD::ServerIcon(int id, ImVec2* uv)
         else        snprintf(path, sizeof(path), "%s/icon_%d.png", MP::DataDir(), id);
         int w = 0, h = 0, n = 0;
         // 3.36: icon_N.png comes from files/MP/Icons.jar first, a loose files/MP/icon_N.png still works
-        JarOpen(s_IconsJar, "Icons.jar");
+        JarOpen(s_IconsJar, "Icons.jar"); JarOpen(s_BgJar, "bg_server.jar");
         std::vector<unsigned char> mem;
-        char ent[32]; if(id == 0) snprintf(ent, sizeof(ent), "main_df_icon.png"); else snprintf(ent, sizeof(ent), "icon_%d.png", id);
-        if(JarRead(s_IconsJar, ent, mem) && stbi_info_from_memory(mem.data(), (int)mem.size(), &w, &h, &n) && w > 0 && h > 0 && w <= 256 && h <= 256)
+        // 4.04: bg_N.jpg (512x256 CS:GO style row background) from bg_server.jar first, then Icons.jar
+        // (icon_N.jpg of 4.03, the old icon_N.png), then a loose files/MP/icon_N.png
+        char ent[32]; bool got = false;
+        if(id) { snprintf(ent, sizeof(ent), "bg_%d.jpg", id); got = JarRead(s_BgJar, ent, mem); }
+        if(!got) { if(id == 0) snprintf(ent, sizeof(ent), "main_df_icon.png"); else snprintf(ent, sizeof(ent), "icon_%d.jpg", id); got = JarRead(s_IconsJar, ent, mem); }
+        if(!got && id) { snprintf(ent, sizeof(ent), "icon_%d.png", id); got = JarRead(s_IconsJar, ent, mem); }
+        if(got && stbi_info_from_memory(mem.data(), (int)mem.size(), &w, &h, &n) && w > 0 && h > 0 && w <= 512 && h <= 512)
         {
             ImVec2 keep = s_LogoUV;
             s.r = LoadPNGRasterMem(mem.data(), (int)mem.size(), &w, &h);
             s.uv = s_LogoUV; s_LogoUV = keep;
         }
         if(s.r) {}
-        else if(stbi_info(path, &w, &h, &n) && w > 0 && h > 0 && w <= 256 && h <= 256)
+        else if(stbi_info(path, &w, &h, &n) && w > 0 && h > 0 && w <= 512 && h <= 512)
         {
             ImVec2 keep = s_LogoUV;
             s.r = LoadPNGRaster(path, &w, &h);
             s.uv = s_LogoUV; s_LogoUV = keep;
         }
-        else if(w > 256 || h > 256) logger->Error("%s is %dx%d - server icons must be 256x256 or smaller", path, w, h);
+        else if(w > 512 || h > 512) logger->Error("%s is %dx%d - server icons must be 512x512 or smaller", path, w, h);
     }
     if(!s.r) return id ? ServerIcon(0, uv) : nullptr;
     if(uv) *uv = s.uv;
@@ -654,10 +661,17 @@ void* HUD::Texture(const char* file, ImVec2* uv)
     char path[512]; snprintf(path, sizeof(path), "%s/%s", MP::DataDir(), file);
     EnsureEmbeddedAsset(file, path);   // 3.25
     int w = 0, h = 0, n = 0;
+    std::vector<unsigned char> jm;
     if(stbi_info(path, &w, &h, &n) && w > 0 && h > 0 && w <= 2048 && h <= 2048)
     {
         ImVec2 keep = s_LogoUV;
         t.r = LoadPNGRaster(path, &w, &h);
+        t.uv = s_LogoUV; s_LogoUV = keep;
+    }
+    else if(((JarOpen(s_BgJar, "bg_server.jar"), JarRead(s_BgJar, file, jm)) || (JarOpen(s_IconsJar, "Icons.jar"), JarRead(s_IconsJar, file, jm))) && stbi_info_from_memory(jm.data(), (int)jm.size(), &w, &h, &n) && w <= 2048 && h <= 2048)
+    {   // 4.04: bg_default.jpg / bg_bcw.jpg ... + flags.png live in bg_server.jar (Icons.jar = fallback)
+        ImVec2 keep = s_LogoUV;
+        t.r = LoadPNGRasterMem(jm.data(), (int)jm.size(), &w, &h);
         t.uv = s_LogoUV; s_LogoUV = keep;
     }
     else logger->Error("%s missing or bigger than 2048x2048", path);
@@ -691,6 +705,46 @@ void* HUD::VehiclePic(int model, ImVec2* uv)
     }
     if(uv) *uv = v.uv;
     return (void*)v.r;
+}
+// 4.04: chat GIF sheets: a small LRU of rasters (512x512 each). A raster is only destroyed when it was not drawn
+// this frame or the last one (ImGui renders the draw lists later, a freed raster there would crash).
+struct GifTex { int id = 0; RwRaster* r = nullptr; ImVec2 uv{1, 1}; uint32_t used = 0; bool bad = false; };
+static GifTex s_GifTex[32];
+void* HUD::GifFrame(int id, ImVec2* uv0, ImVec2* uv1, float* aspect)
+{
+    const Gifs::Info* gi = Gifs::Get(id);
+    if(!gi) return nullptr;
+    if(aspect) *aspect = (float)gi->fw / (float)gi->fh;
+    uint32_t fr = (uint32_t)ImGui::GetFrameCount();
+    GifTex* t = nullptr;
+    for(auto& g : s_GifTex) if(g.id == id) { t = &g; break; }
+    if(!t)
+    {
+        std::string path;
+        if(!Gifs::SheetPath(id, path)) return nullptr;     // downloading
+        if(s_nIconLoadFrame == fr) return nullptr;         // one file per frame
+        GifTex* v = nullptr;
+        for(auto& g : s_GifTex) if(!g.id) { v = &g; break; }
+        if(!v) for(auto& g : s_GifTex) if(g.used + 1 < fr && (!v || g.used < v->used)) v = &g;
+        if(!v) return nullptr;
+        s_nIconLoadFrame = fr;
+        if(v->r) RwRasterDestroy(v->r);
+        *v = GifTex(); v->id = id;
+        int w = 0, h = 0; ImVec2 keep = s_LogoUV;
+        v->r = LoadPNGRaster(path.c_str(), &w, &h);   // stb_image reads the jpg too
+        v->uv = s_LogoUV; s_LogoUV = keep;
+        if(!v->r) { v->bad = true; unlink(path.c_str()); }
+        t = v;
+    }
+    t->used = fr;
+    if(!t->r) return nullptr;
+    int rows = (gi->frames + gi->cols - 1) / gi->cols;
+    int f = (int)((ImGui::GetTime() * 1000.0) / gi->delay) % gi->frames;
+    float cw = t->uv.x / gi->cols, ch = t->uv.y / rows;
+    int cx = f % gi->cols, cy = f / gi->cols;
+    if(uv0) *uv0 = ImVec2(cx * cw, cy * ch);
+    if(uv1) *uv1 = ImVec2((cx + 1) * cw, (cy + 1) * ch);
+    return (void*)t->r;
 }
 void HUD::FreeVehiclePics()
 {
@@ -948,7 +1002,8 @@ static void DrawVoiceList(ImDrawList* dl)
 // 2.19.6: the chat no longer covers the screen. Lines shown, text size, width (long lines wrap),
 // fade-out time and a see-through background are all set in game (Server > Chat, or
 // /pagesize /fontsize /chatwidth /chatfade). While the chat box is open every recent line shows.
-struct ChatRow { const ChatLine* l; bool first; std::string text; float alpha; ImU32 col = 0; };
+struct ChatRow { const ChatLine* l; bool first; std::string text; float alpha; ImU32 col = 0; int gif = 0; };   // 4.04: gif = a "[gif:N]" message (one tall row)
+static const int kGifRows = 4;   // 4.04: a GIF message is as tall as 4 text rows (counted in the chat line budget)
 // 3.39: SA-MP colour codes in chat lines: "{FFFF00}SERVER{FFFFFF}" -> coloured parts (the code is not shown)
 static bool ChatColCode(const char* p, const char* e, ImU32& out)
 {
@@ -1009,7 +1064,8 @@ static void DrawChat(ImDrawList* dl)
     // newest first, split into wrapped rows, until the row budget is used
     std::vector<ChatRow> rows;
     const int budget = maxRows + skip;
-    for(int i = (int)MP::chat.size() - 1; i >= 0 && (int)rows.size() < budget; --i)
+    int units = 0;   // 4.04: rows used (a GIF uses kGifRows)
+    for(int i = (int)MP::chat.size() - 1; i >= 0 && units < budget; --i)
     {
         const ChatLine& l = MP::chat[i];
         float alpha = 1.0f;
@@ -1023,6 +1079,12 @@ static void DrawChat(ImDrawList* dl)
         std::string t = UI::EmojiToPUA(l.text.c_str());   // 2.19: emojis
         float preW = pre.empty() ? 0 : f->CalcTextSizeA(fs, FLT_MAX, 0, pre.c_str()).x;
         if(st.chatTimestamps && l.stamp[0]) { std::string ts = std::string(l.stamp) + " "; preW += f->CalcTextSizeA(fs, FLT_MAX, 0, ts.c_str()).x; }   // 3.11
+        if(int gid = Gifs::ParseToken(l.text.c_str()))   // 4.04: chat GIF
+        {
+            ChatRow gr{ &l, true, std::string(), alpha, 0, gid };
+            rows.push_back(gr); units += kGifRows;
+            continue;
+        }
         std::vector<ChatRow> mine;
         const char* s = t.c_str(); const char* e = s + t.size();
         bool first = true;
@@ -1041,7 +1103,7 @@ static void DrawChat(ImDrawList* dl)
             s = cut; while(s < e && *s == ' ') ++s;
             first = false;
         } while(s < e && mine.size() < 6);
-        for(int k = (int)mine.size() - 1; k >= 0 && (int)rows.size() < budget; --k) rows.push_back(mine[k]);
+        for(int k = (int)mine.size() - 1; k >= 0 && units < budget; --k) { rows.push_back(mine[k]); ++units; }
     }
     if(skip > 0)
     {
@@ -1050,7 +1112,14 @@ static void DrawChat(ImDrawList* dl)
     }
     if(rows.empty()) return;
 
-    float h = rows.size() * rowH;
+    // 4.04: the newest rows that fit maxRows (a GIF = kGifRows), the rest is dropped instead of overlapping
+    {
+        int u = 0; size_t keep = 0;
+        for(; keep < rows.size(); ++keep) { int ru = rows[keep].gif ? kGifRows : 1; if(u + ru > maxRows && keep) break; u += ru; }
+        rows.resize(keep);
+    }
+    float h = 0;
+    for(auto& r : rows) h += r.gif ? rowH * kGifRows : rowH;
     if(st.chatBg)
     {
         float bgA = 0;
@@ -1058,9 +1127,12 @@ static void DrawChat(ImDrawList* dl)
         dl->AddRectFilled(ImVec2(x - UI::S(6), y0 - UI::S(4)), ImVec2(x + W + UI::S(6), y0 + h + UI::S(4)),
                           IM_COL32(0, 0, 0, (int)(85 * bgA)), UI::S(8));
     }
-    float y = y0 + h - rowH;
+    float yb = y0 + h;   // 4.04: bottom of the next row (rows have their own heights now)
     for(auto& r : rows)   // newest at the bottom
     {
+        const float rh = r.gif ? rowH * kGifRows : rowH;
+        float y = yb - rh;
+        yb -= rh;
         float cx = x;
         if(r.first && st.chatTimestamps && r.l->stamp[0])   // 3.11: "[18:02:48] " like SA-MP timestamps
         {
@@ -1075,6 +1147,27 @@ static void DrawChat(ImDrawList* dl)
             cx += f->CalcTextSizeA(fs, FLT_MAX, 0, pre.c_str()).x;
         }
         else if(!r.first) cx += UI::S(14) * st.chatSize * st.chatScale;   // wrapped rest: small indent
+        if(r.gif)
+        {   // 4.04: the animated GIF right after the name, inside its own tall row
+            ImVec2 a0, a1; float asp = 4.0f / 3.0f;
+            float gh = rh - UI::S(4);
+            if(void* tex = HUD::GifFrame(r.gif, &a0, &a1, &asp))
+            {
+                float gw = ImMin(gh * asp, x + W - cx);
+                ImVec2 p0(cx, y + UI::S(2)), p1(cx + gw, y + UI::S(2) + gh);
+                int ia = (int)(255 * r.alpha);
+                dl->AddRectFilled(ImVec2(p0.x - UI::S(1), p0.y - UI::S(1)), ImVec2(p1.x + UI::S(1), p1.y + UI::S(1)), IM_COL32(0, 0, 0, (int)(160 * r.alpha)));
+                dl->AddImage((ImTextureID)tex, p0, p1, a0, a1, IM_COL32(255, 255, 255, ia));
+            }
+            else
+            {
+                float gw = ImMin(gh * asp, x + W - cx);
+                dl->AddRectFilled(ImVec2(cx, y + UI::S(2)), ImVec2(cx + gw, y + UI::S(2) + gh), IM_COL32(26, 29, 34, (int)(200 * r.alpha)));
+                dl->AddRect(ImVec2(cx, y + UI::S(2)), ImVec2(cx + gw, y + UI::S(2) + gh), IM_COL32(126, 178, 226, (int)(160 * r.alpha)), 0, 0, UI::S(1));
+                UI::OutlinedText(dl, fs * 0.8f, ImVec2(cx + UI::S(8), y + UI::S(8)), IM_COL32(150, 157, 166, 255), Gifs::Get(r.gif) ? "GIF loading..." : "GIF", r.alpha);
+            }
+            continue;
+        }
         const uint32_t ov = r.l->prefix.empty() ? st.serverChatColor : st.playerChatColor;   // 3.53.1
         if(ov)
         {   // one colour for the whole line: the {RRGGBB} codes are left out
@@ -1085,7 +1178,6 @@ static void DrawChat(ImDrawList* dl)
         }
         else if(r.text.find('{') != std::string::npos) ChatColText(dl, f, fs, ImVec2(cx, y), r.col ? r.col : UI::FromRGBA(r.l->textColor), r.text, r.alpha);   // 3.39
         else UI::OutlinedText(dl, fs, ImVec2(cx, y), r.col ? r.col : UI::FromRGBA(r.l->textColor), r.text.c_str(), r.alpha);
-        y -= rowH;
     }
     if(open && skip > 0)   // 3.34: scrolled up: a hint + a small bar on the right
     {
@@ -1243,6 +1335,24 @@ void HUD::Render()
         // 2.19 join screen: full black slide overlay (under the chat + title logo)
         float ox0, ox1; bool overlay = MP::JoinOverlay(ox0, ox1);
         if(overlay) dl->AddRectFilled(ImVec2(ox0 * io.DisplaySize.x, 0), ImVec2(ox1 * io.DisplaySize.x, io.DisplaySize.y), IM_COL32(0, 0, 0, 255));
+        if(overlay && ox0 <= 0.001f && ox1 >= 0.999f)
+        {   // 4.04: CS:GO style square "connecting" box on the black join screen (the floating menu is unchanged)
+            const ImVec2 ds = io.DisplaySize;
+            float bw = UI::S(420), bh = UI::S(86);
+            ImVec2 a(ds.x * 0.5f - bw * 0.5f, ds.y * 0.62f), b(a.x + bw, a.y + bh);
+            dl->AddRectFilled(a, b, IM_COL32(40, 45, 52, 235));
+            dl->AddRect(a, b, IM_COL32(255, 255, 255, 30), 0.0f, 0, UI::S(1));
+            dl->AddRectFilled(a, ImVec2(a.x + UI::S(3), b.y), IM_COL32(126, 178, 226, 255));
+            const char* t1 = MP::IsConnected() ? "CONNECTED" : "CONNECTING TO SERVER";
+            dl->AddText(UI::Font(), UI::S(22), ImVec2(a.x + UI::S(18), a.y + UI::S(12)), IM_COL32(226, 229, 233, 255), t1);
+            dl->AddText(UI::Font(), UI::S(16), ImVec2(a.x + UI::S(18), a.y + UI::S(40)), IM_COL32(150, 157, 166, 255), MP::IsConnected() ? "Loading the world..." : "Please wait...");
+            ImVec2 pa(a.x + UI::S(18), b.y - UI::S(14)), pb(b.x - UI::S(18), b.y - UI::S(9));
+            dl->AddRectFilled(pa, pb, IM_COL32(24, 27, 32, 255));
+            float w = pb.x - pa.x, seg = w * 0.28f, ph = fmodf((float)ImGui::GetTime() * 0.6f, 1.0f) * (w + seg) - seg;
+            float s0 = pa.x + (ph < 0 ? 0 : ph), s1 = pa.x + (ph + seg > w ? w : ph + seg);
+            if(MP::IsConnected()) { s0 = pa.x; s1 = pb.x; }
+            if(s1 > s0) dl->AddRectFilled(ImVec2(s0, pa.y), ImVec2(s1, pb.y), MP::IsConnected() ? IM_COL32(76, 160, 48, 255) : IM_COL32(126, 178, 226, 255));
+        }
         MP::DrawDefaultTitle(dl);   // 3.53.1: the Broker MQQ title, also over the black join screen
         // 2.35: launcher open = nothing of the HUD behind it (tags, chat, kill feed, status)
         const bool launcher = FloatMenu::IsModal();

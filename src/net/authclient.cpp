@@ -99,7 +99,7 @@ void AuthClient::Login(const char* u, const char* p)
     m_AfterLink = LOGIN; Set(BUSY); m_nBusySince = 0;
 }
 
-void AuthClient::WantNewAccount() { if(state == LOGIN) { recover = 0; err.clear(); info.clear(); Set(CODE); NewCode(); } }
+void AuthClient::WantNewAccount() { if(state == LOGIN) { recover = 0; wantNewAccount = true; err.clear(); info.clear(); Set(CODE); NewCode(); } }
 void AuthClient::WantLogin()      { if(state == CODE || state == SIGNUP || state == RESET) { recover = 0; err.clear(); info.clear(); Set(LOGIN); } }
 void AuthClient::WantRecover(int kind)
 {
@@ -193,8 +193,21 @@ void AuthClient::OnAnswer(std::map<std::string, std::string>& a)
         if(a["vtoken"].empty() || a["vtoken"] == m_VToken) return;   // the same push again
         m_VToken = a["vtoken"]; discordName = a["dname"]; err.clear();
         if(recover && state == LOGIN) return;   // 3.56: recovering needs the new /gen (CODE screen)
+        // 4.03: up to 3 game accounts per Discord. has=1 only when all 3 are made; count / users = the ones made.
+        const int cnt = a["count"].empty() ? (a["has"] == "1" ? 1 : 0) : atoi(a["count"].c_str());
+        const int mx  = a["max"].empty() ? 1 : atoi(a["max"].c_str());
+        accountsMade = cnt; accountsMax = mx; accountUsers = a["users"];
+        if(cnt > 0 && a["has"] != "1" && (recover || !wantNewAccount))
+        {   // has some (not all): log in to one, or Create another from the login screen
+            prefillUser = a["user"];
+            if(recover == 2) { info = "Discord verified (" + discordName + "). Your accounts: " + accountUsers + ". Choose a new password."; Set(RESET); return; }
+            info = "Discord verified (" + discordName + "). Your accounts (" + std::to_string(cnt) + "/" + std::to_string(mx) + "): " + accountUsers + ".";
+            recover = 0; Set(LOGIN); return;
+        }
+        if(a["has"] == "1" && wantNewAccount) err = "This Discord already has " + std::to_string(mx) + " game accounts (the most). Log in to one of them.";
+        wantNewAccount = false;
         if(a["has"] == "1" && recover == 2) { prefillUser = a["user"]; info = "Discord verified (" + discordName + "). Your username is " + a["user"] + ". Choose a new password."; Set(RESET); return; }
-        if(a["has"] == "1" && recover == 1) { prefillUser = a["user"]; recover = 0; info = "Discord verified (" + discordName + "). Your username is " + a["user"] + "."; Set(LOGIN); return; }
+        if(a["has"] == "1" && recover == 1) { prefillUser = a["user"]; recover = 0; info = "Discord verified (" + discordName + "). Your username is " + (accountUsers.empty() ? a["user"] : accountUsers) + "."; Set(LOGIN); return; }
         if(a["has"] == "1") { prefillUser = a["user"]; info = "Discord verified (" + discordName + "). You already have the account " + a["user"] + ": log in."; Set(LOGIN); }
         else { if(recover) err = "This Discord has no game account yet - create one below."; recover = 0; info = "Discord verified: " + discordName; Set(SIGNUP); }
         return;

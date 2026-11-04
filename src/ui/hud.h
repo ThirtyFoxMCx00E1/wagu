@@ -14,6 +14,9 @@ namespace HUD
     void  ReloadTexture(const char* fileInDataDir);          // 3.24: the file changed (Discord avatar): load it again
     void* VehiclePic(int model, ImVec2* uv);   // 3.36: files/MP/Vehicles.jar (hotel computer), nullptr while loading / missing
     void  FreeVehiclePics();
+    // 4.04: the current animation frame of a chat GIF (Gifs:: sprite sheet, downloaded on demand); nullptr while
+    // loading. aspect = frame width / height.
+    void* GifFrame(int id, ImVec2* uv0, ImVec2* uv1, float* aspect);
     // 3.34: a small extra ImGui frame drawn inside the pause-menu map (Game::MenuMapLayerFn)
     bool  RenderMenuMapLayer(int layer, const void* labels /* Game::MapLabel */, int n);
 }

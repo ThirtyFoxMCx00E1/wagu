@@ -12,9 +12,12 @@
 // The administrator is the one who hosts the server (this phone's player name).
 // =============================================================================================
 
+#include "ui/server_style.h"   // 4.03: country flags + gamemode colours
+
 enum { LT_INTERNET = 0, LT_FAVORITES, LT_HOSTED, LT_ADD, LT_PLAYERS, LT_BANS, LT_SRVMGMT,   // 3.53: + Server Management
        LT_FRIENDS, LT_CHATS, LT_PARTY, LT_COMMUNITY, LT_INBOX,                           // 3.63: social (mp_social.inc)
        LT_CLOUD,                                                                         // 4.02: Cloud Storage (downloads)
+       LT_LAN,                                                                           // 4.03: Wi-Fi servers only (CS:GO style top tab)
        LT_SECTIONS };
 static int   s_nLTab = LT_INTERNET;
 static int   s_nInetSub = 0;   // 3.58: Internet = PUBLIC (default + custom servers) || FEATURED (the 24/7 Broker servers)
@@ -45,66 +48,64 @@ enum { IC_PLAY, IC_PLUS, IC_TRASH, IC_REFRESH, IC_GEAR, IC_SLIDERS, IC_INFO, IC_
        IC_BOX, IC_USERS, IC_BAN, IC_LIST, IC_SEARCH, IC_CHAT, IC_USER, IC_STOP, IC_REGION,
        IC_BELL, IC_USERPLUS, IC_PARTY, IC_FLAG, IC_SEND, IC_CHECK, IC_CLOUD };   // 3.63, 4.02 cloud
 
-// ---- 3.63: Valorant style (shapes + colours only: the layout is the same as before) ----
-// navy glass panels, thin light outlines, chamfered (cut) corners, pill tabs, red #FF4655 + teal accents
-static const ImU32 kVRed    = IM_COL32(255, 70, 85, 255);
-static const ImU32 kVRedDim = IM_COL32(255, 70, 85, 60);
-static const ImU32 kVTeal   = IM_COL32(64, 230, 190, 255);
-static const ImU32 kVTealDim= IM_COL32(64, 230, 190, 40);
-static const ImU32 kVText   = IM_COL32(236, 232, 225, 255);
-static const ImU32 kVDim    = IM_COL32(150, 160, 170, 255);
-static const ImU32 kVLine   = IM_COL32(236, 232, 225, 34);
-static const ImU32 kVPanel  = IM_COL32(15, 25, 35, 120);
-static const ImU32 kVDark   = IM_COL32(15, 25, 35, 255);
+// ---- 4.03: CS:GO community browser style (was Valorant 3.63) - same layout, square corners everywhere ----
+// slate glass panels, thin light lines, white selection, blue accent, green CONNECT
+static const ImU32 kVRed    = IM_COL32(222, 74, 60, 255);
+static const ImU32 kVRedDim = IM_COL32(222, 74, 60, 60);
+static const ImU32 kVTeal   = IM_COL32(126, 178, 226, 255);   // CS:GO blue (accent / selected)
+static const ImU32 kVTealDim= IM_COL32(126, 178, 226, 40);
+static const ImU32 kVText   = IM_COL32(226, 229, 233, 255);
+static const ImU32 kVDim    = IM_COL32(150, 157, 166, 255);
+static const ImU32 kVLine   = IM_COL32(255, 255, 255, 30);
+static const ImU32 kVPanel  = IM_COL32(52, 58, 66, 150);
+static const ImU32 kVDark   = IM_COL32(26, 29, 34, 255);
+static const ImU32 kVGreen  = IM_COL32(76, 160, 48, 255);      // CONNECT
 static inline ImU32 VAlpha(ImU32 c, float a) { int al = (int)(((c >> IM_COL32_A_SHIFT) & 0xFF) * a); return (c & ~IM_COL32_A_MASK) | ((ImU32)ImClamp(al, 0, 255) << IM_COL32_A_SHIFT); }
-// rectangle with the top-left and bottom-right corners cut (the Valorant frame)
-static void VChamferPath(ImDrawList* dl, ImVec2 a, ImVec2 b, float cut)
+// 4.03: plain square box (the old cut corners are gone, the cut size is ignored)
+static void VChamfer(ImDrawList* dl, ImVec2 a, ImVec2 b, float /*cut*/, ImU32 fill, ImU32 border = 0, float thick = 0)
 {
-    cut = ImMin(cut, ImMin(b.x - a.x, b.y - a.y) * 0.45f);
-    dl->PathLineTo(ImVec2(a.x + cut, a.y)); dl->PathLineTo(ImVec2(b.x, a.y)); dl->PathLineTo(ImVec2(b.x, b.y - cut));
-    dl->PathLineTo(ImVec2(b.x - cut, b.y)); dl->PathLineTo(ImVec2(a.x, b.y)); dl->PathLineTo(ImVec2(a.x, a.y + cut));
+    if(fill) dl->AddRectFilled(a, b, fill, 0.0f);
+    if(border) dl->AddRect(a, b, border, 0.0f, 0, thick > 0 ? thick : UI::S(1.0f));
 }
-static void VChamfer(ImDrawList* dl, ImVec2 a, ImVec2 b, float cut, ImU32 fill, ImU32 border = 0, float thick = 0)
-{
-    if(fill) { VChamferPath(dl, a, b, cut); dl->PathFillConvex(fill); }
-    if(border) { VChamferPath(dl, a, b, cut); dl->PathStroke(border, ImDrawFlags_Closed, thick > 0 ? thick : UI::S(1.5f)); }
-}
-// pill = fully round ends (selected tabs)
+// 4.03: square tab / chip (was a pill)
 static void VPill(ImDrawList* dl, ImVec2 a, ImVec2 b, ImU32 fill, ImU32 border = 0)
 {
-    float r = (b.y - a.y) * 0.5f;
-    if(fill) dl->AddRectFilled(a, b, fill, r);
-    if(border) dl->AddRect(a, b, border, r, 0, UI::S(1.5f));
+    if(fill) dl->AddRectFilled(a, b, fill, 0.0f);
+    if(border) dl->AddRect(a, b, border, 0.0f, 0, UI::S(1.0f));
 }
-// small corner ticks (the thin brackets on Valorant panels)
-static void VTicks(ImDrawList* dl, ImVec2 a, ImVec2 b, ImU32 col, float len)
+static void VTicks(ImDrawList*, ImVec2, ImVec2, ImU32, float) {}   // 4.03: no corner brackets in the CS:GO look
+// a soft vertical slate gradient (CS:GO panel)
+static void VSlate(ImDrawList* dl, ImVec2 a, ImVec2 b, float alpha = 1.0f)
 {
-    float t = UI::S(2);
-    dl->AddLine(ImVec2(a.x, a.y), ImVec2(a.x + len, a.y), col, t); dl->AddLine(ImVec2(a.x, a.y), ImVec2(a.x, a.y + len), col, t);
-    dl->AddLine(ImVec2(b.x, b.y), ImVec2(b.x - len, b.y), col, t); dl->AddLine(ImVec2(b.x, b.y), ImVec2(b.x, b.y - len), col, t);
+    dl->AddRectFilledMultiColor(a, b, IM_COL32(64, 72, 82, (int)(235 * alpha)), IM_COL32(64, 72, 82, (int)(235 * alpha)),
+                                      IM_COL32(38, 43, 50, (int)(245 * alpha)), IM_COL32(38, 43, 50, (int)(245 * alpha)));
 }
 // ImGui widgets inside the launcher pages (settings, add server, ...) get the same look
 static void VPushWidgetStyle()
 {
-    ImGui::PushStyleColor(ImGuiCol_Button,         ImVec4(0.06f, 0.10f, 0.14f, 0.55f));
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered,  ImVec4(0.25f, 0.90f, 0.75f, 0.22f));
-    ImGui::PushStyleColor(ImGuiCol_ButtonActive,   ImVec4(0.25f, 0.90f, 0.75f, 0.45f));
-    ImGui::PushStyleColor(ImGuiCol_FrameBg,        ImVec4(0.06f, 0.10f, 0.14f, 0.55f));
-    ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.10f, 0.16f, 0.22f, 0.65f));
-    ImGui::PushStyleColor(ImGuiCol_FrameBgActive,  ImVec4(0.12f, 0.20f, 0.26f, 0.75f));
-    ImGui::PushStyleColor(ImGuiCol_CheckMark,      ImVec4(0.25f, 0.90f, 0.75f, 1));
-    ImGui::PushStyleColor(ImGuiCol_SliderGrab,     ImVec4(1.0f, 0.27f, 0.33f, 1));
-    ImGui::PushStyleColor(ImGuiCol_SliderGrabActive, ImVec4(1.0f, 0.40f, 0.45f, 1));
-    ImGui::PushStyleColor(ImGuiCol_Header,         ImVec4(0.25f, 0.90f, 0.75f, 0.18f));
-    ImGui::PushStyleColor(ImGuiCol_HeaderHovered,  ImVec4(0.25f, 0.90f, 0.75f, 0.28f));
-    ImGui::PushStyleColor(ImGuiCol_HeaderActive,   ImVec4(0.25f, 0.90f, 0.75f, 0.40f));
-    ImGui::PushStyleColor(ImGuiCol_Separator,      ImVec4(0.93f, 0.91f, 0.88f, 0.14f));
-    ImGui::PushStyleColor(ImGuiCol_Border,         ImVec4(0.93f, 0.91f, 0.88f, 0.16f));
-    ImGui::PushStyleColor(ImGuiCol_Text,           ImVec4(0.93f, 0.91f, 0.88f, 1));
-    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, UI::S(3));
+    ImGui::PushStyleColor(ImGuiCol_Button,         ImVec4(0.30f, 0.34f, 0.39f, 0.70f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered,  ImVec4(0.42f, 0.47f, 0.53f, 0.80f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive,   ImVec4(0.49f, 0.70f, 0.89f, 0.60f));
+    ImGui::PushStyleColor(ImGuiCol_FrameBg,        ImVec4(0.13f, 0.15f, 0.18f, 0.85f));
+    ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.18f, 0.20f, 0.24f, 0.90f));
+    ImGui::PushStyleColor(ImGuiCol_FrameBgActive,  ImVec4(0.22f, 0.25f, 0.29f, 0.95f));
+    ImGui::PushStyleColor(ImGuiCol_CheckMark,      ImVec4(0.49f, 0.70f, 0.89f, 1));
+    ImGui::PushStyleColor(ImGuiCol_SliderGrab,     ImVec4(0.49f, 0.70f, 0.89f, 1));
+    ImGui::PushStyleColor(ImGuiCol_SliderGrabActive, ImVec4(0.65f, 0.80f, 0.95f, 1));
+    ImGui::PushStyleColor(ImGuiCol_Header,         ImVec4(0.49f, 0.70f, 0.89f, 0.20f));
+    ImGui::PushStyleColor(ImGuiCol_HeaderHovered,  ImVec4(0.49f, 0.70f, 0.89f, 0.30f));
+    ImGui::PushStyleColor(ImGuiCol_HeaderActive,   ImVec4(0.49f, 0.70f, 0.89f, 0.42f));
+    ImGui::PushStyleColor(ImGuiCol_Separator,      ImVec4(1, 1, 1, 0.12f));
+    ImGui::PushStyleColor(ImGuiCol_Border,         ImVec4(1, 1, 1, 0.14f));
+    ImGui::PushStyleColor(ImGuiCol_Text,           ImVec4(0.89f, 0.90f, 0.91f, 1));
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 0.0f);   // 4.03: square boxes
     ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, UI::S(1));
+    ImGui::PushStyleVar(ImGuiStyleVar_GrabRounding, 0.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_ScrollbarRounding, 0.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 0.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_PopupRounding, 0.0f);
 }
-static void VPopWidgetStyle() { ImGui::PopStyleVar(2); ImGui::PopStyleColor(15); }
+static void VPopWidgetStyle() { ImGui::PopStyleVar(6); ImGui::PopStyleColor(15); }
 
 static void LIcon(ImDrawList* dl, int k, ImVec2 c, float r, ImU32 col)
 {
@@ -309,7 +310,112 @@ struct LRow
     bool locked, live, on, mine, internet;
     char ip[64]; int port; int saved;
     char lang[MP_LANG_LEN];   // 2.25
+    // 4.03: CS:GO style list
+    uint32_t token;           // internet lobby token (0 = Wi-Fi / saved)
+    char cc[MP_CC_LEN];       // Server location
+    int  modeCol;             // gamemode chip colour (kModeCols, 0 = auto)
+    char mode[MP_MODE_LEN];   // gamemode chip ("" = Freeroam)
+    char tags[MP_TAGS_LEN];
+    char desc[MP_DESC_LEN];
+    const char* bg;           // featured: bg_*.jpg in bg_server.jar
 };
+
+// ---- 4.03: favourites (any row, featured too) - favorites.txt "name|port" ---------------------
+static std::set<std::string> s_Favs; static bool s_bFavsRead = false;
+static std::string LFavKey(const char* name, int port)
+{
+    std::string k = name ? name : ""; for(char& c : k) c = (char)tolower((unsigned char)c);
+    char b[16]; snprintf(b, sizeof(b), "|%d", port); return k + b;
+}
+static void LFavsRead()
+{
+    if(s_bFavsRead) return; s_bFavsRead = true;
+    char path[300]; snprintf(path, sizeof(path), "%s/favorites.txt", s_szDataDir);
+    FILE* f = fopen(path, "r"); if(!f) return;
+    char line[128];
+    while(fgets(line, sizeof(line), f)) { line[strcspn(line, "\r\n")] = 0; if(line[0]) s_Favs.insert(line); }
+    fclose(f);
+}
+static bool LIsFav(const char* name, int port) { LFavsRead(); return s_Favs.count(LFavKey(name, port)) != 0; }
+static void LSetFav(const char* name, int port, bool on)
+{
+    LFavsRead();
+    if(on) s_Favs.insert(LFavKey(name, port)); else s_Favs.erase(LFavKey(name, port));
+    char path[300]; snprintf(path, sizeof(path), "%s/favorites.txt", s_szDataDir);
+    if(FILE* f = fopen(path, "w")) { for(auto& k : s_Favs) fprintf(f, "%s\n", k.c_str()); fclose(f); }
+}
+
+static ImU32 LModeColor(const LRow& r)
+{
+    if(r.modeCol > 0 && r.modeCol < kModeColCount) return kModeCols[r.modeCol].col;
+    switch(r.kind) { case 3: return kModeCols[2].col; case 4: return kModeCols[3].col; case 5: return kModeCols[4].col; case 6: return kModeCols[5].col; }
+    // auto: a stable colour from the gamemode name
+    const char* m = r.mode[0] ? r.mode : "Freeroam"; unsigned h = 5381; for(const char* c = m; *c; ++c) h = h * 33 + (unsigned char)tolower((unsigned char)*c);
+    return !strcasecmp(m, "Freeroam") ? kModeCols[0].col : kModeCols[1 + h % (kModeColCount - 1)].col;
+}
+
+// featured / default text (nobody can change it)
+static void LFeaturedDetails(LRow& r)
+{
+    const char *md = "", *tg = "", *ds = "", *bg = nullptr;
+    switch(r.kind)
+    {
+    case 0: md = "Freeroam"; tg = "freeroam,missions,races,deathmatch,jobs,24/7"; bg = "bg_default.jpg";
+            ds = "The main MP server, always online. Free roam San Andreas with everyone: missions, races, deathmatch, jobs and events."; break;
+    case 3: md = "Brief Case War"; tg = "bcw,team,pvp,objective,24/7"; bg = "bg_bcw.jpg";
+            ds = "Two teams fight over the briefcase. Grab it, carry it home and hold the line."; break;
+    case 4: md = "MW3"; tg = "mw3,fps,pvp,killstreaks,classes,24/7"; bg = "bg_mw3.jpg";
+            ds = "Call Of Duty: Modern Warfare 3 in San Andreas: classes, killstreaks, ranked matches."; break;
+    case 5: md = "Roleplay"; tg = "rp,roleplay,jobs,houses,futuristic,24/7"; bg = "bg_rp.jpg";
+            ds = "Mega Vil Futuristic roleplay: jobs, houses, cars and a city that never sleeps."; break;
+    case 6: md = "Day Z"; tg = "dayz,zombies,survival,loot,pvp,24/7"; bg = "bg_dz.jpg";
+            ds = "Project Day Z Legacy: survive the zombies, find loot, build a camp, trust nobody."; break;
+    default: return;
+    }
+    if(!r.mode[0]) MP_CopyStr(r.mode, md, sizeof(r.mode));
+    if(!r.tags[0]) MP_CopyStr(r.tags, tg, sizeof(r.tags));
+    if(!r.desc[0]) MP_CopyStr(r.desc, ds, sizeof(r.desc));
+    r.bg = bg;
+}
+// d/<token> "v1|cc|modeCol|mode|tags|desc|players" -> row (players stay in the string, see LDetailPlayers)
+static bool LParseDetails(const std::string& d, LRow& r, std::string* players)
+{
+    if(d.compare(0, 3, "v1|")) return false;
+    std::vector<std::string> f; size_t at = 3;
+    for(int i = 0; i < 6; ++i) { size_t e = i < 5 ? d.find('|', at) : std::string::npos; f.push_back(d.substr(at, e == std::string::npos ? std::string::npos : e - at)); if(e == std::string::npos) break; at = e + 1; }
+    while(f.size() < 6) f.push_back("");
+    if(!f[0].empty()) MP_CopyStr(r.cc, f[0].c_str(), sizeof(r.cc));
+    if(atoi(f[1].c_str())) r.modeCol = atoi(f[1].c_str());
+    if(!f[2].empty()) MP_CopyStr(r.mode, f[2].c_str(), sizeof(r.mode));
+    if(!f[3].empty()) MP_CopyStr(r.tags, f[3].c_str(), sizeof(r.tags));
+    if(!f[4].empty()) MP_CopyStr(r.desc, f[4].c_str(), sizeof(r.desc));
+    if(players) *players = f[5];
+    return true;
+}
+static void LFillDetails(LRow& r, const LanServer* sv)
+{
+    if(sv)
+    {
+        r.token = sv->token;
+        if(sv->cc[0]) MP_CopyStr(r.cc, sv->cc, sizeof(r.cc));
+        if(sv->modeCol) r.modeCol = sv->modeCol;
+        if(sv->mode[0]) MP_CopyStr(r.mode, sv->mode, sizeof(r.mode));
+        if(sv->tags[0]) MP_CopyStr(r.tags, sv->tags, sizeof(r.tags));
+        if(sv->desc[0]) MP_CopyStr(r.desc, sv->desc, sizeof(r.desc));
+    }
+    std::string d;
+    if(r.token && Online::Details(r.token, d)) LParseDetails(d, r, nullptr);
+    if(r.mine && r.kind <= 2)   // our own server: what we host with
+    {
+        if(!r.cc[0]) MP_CopyStr(r.cc, settings.serverCC, sizeof(r.cc));
+        if(!r.mode[0]) MP_CopyStr(r.mode, settings.serverMode, sizeof(r.mode));
+        if(!r.modeCol) r.modeCol = settings.serverModeCol;
+        if(!r.tags[0]) MP_CopyStr(r.tags, settings.serverTags, sizeof(r.tags));
+        if(!r.desc[0]) MP_CopyStr(r.desc, settings.serverDesc, sizeof(r.desc));
+    }
+    LFeaturedDetails(r);
+}
+
 
 static bool LMatch(const char* name, const char* lang = nullptr)
 {
@@ -326,7 +432,7 @@ static bool LMatch(const char* name, const char* lang = nullptr)
 static void LBuildRows(int tab, const std::vector<LanServer>& nearby, std::vector<LRow>& rows)
 {
     rows.clear();
-    if(tab == LT_INTERNET)
+    if(tab == LT_INTERNET || tab == LT_LAN)
     {
         LRow r; memset(&r, 0, sizeof(r));
         r.kind = 0; MP_CopyStr(r.name, MP_DEFAULT_SERVER_NAME, sizeof(r.name)); r.port = MP_DEFAULT_PORT;
@@ -339,9 +445,10 @@ static void LBuildRows(int tab, const std::vector<LanServer>& nearby, std::vecto
         else if(IsHostingDefault()) { r.players = s_Server.GetPlayerCount(); r.maxp = s_Server.GetMaxPlayers(); r.ping = 0; r.live = true; r.mine = true; }
         else if(found >= 0)        { r.players = nearby[found].players; r.maxp = nearby[found].maxPlayers; r.ping = nearby[found].ping; r.live = true; r.internet = nearby[found].token != 0; }
         else                       { r.players = 0; r.maxp = MP_STD_MAX_PLAYERS; r.live = true; }   // 2.29: always there, 0/100 - Join starts it
+        LFillDetails(r, found >= 0 ? &nearby[found] : nullptr);
         MP_CopyStr(r.lang, "All", sizeof(r.lang));   // 3.53: the 4 featured servers are always "All" (nobody can change it)
-        if(s_nInetSub == 0 && LMatch(r.name)) rows.push_back(r);
-        if(s_nInetSub == 1) {   // 3.58: FEATURED page
+        if(tab == LT_INTERNET && s_nInetSub == 0 && LMatch(r.name)) rows.push_back(r);
+        if(tab == LT_INTERNET && s_nInetSub == 1) {   // 3.58: FEATURED page
         {   // 3.04: Brief Case War - pinned under the default server, always there (0/20) like it
             LRow w; memset(&w, 0, sizeof(w));
             w.kind = 3; MP_CopyStr(w.name, MP_BCW_SERVER_NAME, sizeof(w.name)); w.port = MP_BCW_PORT;
@@ -356,6 +463,7 @@ static void LBuildRows(int tab, const std::vector<LanServer>& nearby, std::vecto
             else if(bf >= 0)           { w.players = nearby[bf].players; w.maxp = nearby[bf].maxPlayers; w.ping = nearby[bf].ping; w.internet = nearby[bf].token != 0; }
             else                       { w.players = 0; w.maxp = MP_BCW_MAX_PLAYERS; w.ping = -1; }
             MP_CopyStr(w.lang, "All", sizeof(w.lang));
+            LFillDetails(w, bf >= 0 ? &nearby[bf] : nullptr);
             if(LMatch(w.name) || LMatch("briefcase war")) rows.push_back(w);
         }
         {   // 3.23: Call Of Duty: Modern Warfare 3 - 24/7 featured, pinned under Brief Case War, the VPS hosts it, or a phone when the VPS is down (3.23.1)
@@ -372,6 +480,7 @@ static void LBuildRows(int tab, const std::vector<LanServer>& nearby, std::vecto
             else if(bf >= 0)           { w.players = nearby[bf].players; w.maxp = nearby[bf].maxPlayers; w.ping = nearby[bf].ping; w.internet = nearby[bf].token != 0; }
             else                       { w.players = 0; w.maxp = MP_MW3_MAX_PLAYERS; w.ping = -1; }
             MP_CopyStr(w.lang, "All", sizeof(w.lang));
+            LFillDetails(w, bf >= 0 ? &nearby[bf] : nullptr);
             if(LMatch(w.name) || LMatch("mw3") || LMatch("modern warfare")) rows.push_back(w);
         }
         {   // 3.25: Mega Vil Futuristic - 24/7 featured Roleplay, pinned under MW3 (VPS, or the Broker standby phones)
@@ -388,6 +497,7 @@ static void LBuildRows(int tab, const std::vector<LanServer>& nearby, std::vecto
             else if(bf >= 0)           { w.players = nearby[bf].players; w.maxp = nearby[bf].maxPlayers; w.ping = nearby[bf].ping; w.internet = nearby[bf].token != 0; }
             else                       { w.players = 0; w.maxp = MP_RP_MAX_PLAYERS; w.ping = -1; }
             MP_CopyStr(w.lang, "All", sizeof(w.lang));
+            LFillDetails(w, bf >= 0 ? &nearby[bf] : nullptr);
             if(LMatch(w.name) || LMatch("roleplay") || LMatch("rp") || LMatch("mega vil")) rows.push_back(w);
         }
         {   // 3.58: Project Day Z Legacy - 24/7 featured (Broker bot on GitHub Actions)
@@ -404,25 +514,29 @@ static void LBuildRows(int tab, const std::vector<LanServer>& nearby, std::vecto
             else if(bf >= 0)           { w.players = nearby[bf].players; w.maxp = nearby[bf].maxPlayers; w.ping = nearby[bf].ping; w.internet = nearby[bf].token != 0; }
             else                       { w.players = 0; w.maxp = MP_DZ_MAX_PLAYERS; w.ping = -1; }
             MP_CopyStr(w.lang, "All", sizeof(w.lang));
+            LFillDetails(w, bf >= 0 ? &nearby[bf] : nullptr);
             if(LMatch(w.name) || LMatch("dayz") || LMatch("day z") || LMatch("zombie")) rows.push_back(w);
         }
         }   // 3.58: end of the FEATURED page
         for(auto& sv : nearby)
         {
-            if(s_nInetSub != 0) break;   // 3.58: custom servers are on the PUBLIC page
+            if(tab == LT_INTERNET && s_nInetSub != 0) break;   // 3.58: custom servers are on the PUBLIC page
+            if(tab == LT_LAN && sv.token) continue;             // 4.03: Lan = Wi-Fi only
             if(IsDefaultServer(sv.name, sv.port)) continue;
             if(MP_IsBcwServerName(sv.name)) continue;   // 3.04: the pinned row
             if(MP_IsMw3ServerName(sv.name)) continue;   // 3.23: the pinned row
             if(MP_IsRpServerName(sv.name)) continue;    // 3.25: the pinned row
             if(MP_IsDzServerName(sv.name)) continue;    // 3.58: the pinned row
-            if(!settings.lobbyAuto && sv.token != 0 && sv.region != settings.region) continue;   // 3.25: region switch (Wi-Fi servers always show)
+            if(tab == LT_INTERNET && !settings.lobbyAuto && sv.token != 0 && sv.region != settings.region) continue;   // 3.25: region switch (Wi-Fi servers always show)
             LRow q; memset(&q, 0, sizeof(q));
             q.kind = 1; MP_CopyStr(q.name, sv.name, sizeof(q.name)); MP_CopyStr(q.ip, sv.ip, sizeof(q.ip)); q.port = sv.port;
             q.players = sv.players; q.maxp = sv.maxPlayers; q.ping = sv.ping; q.region = sv.region; q.icon = sv.icon;
             q.locked = sv.locked != 0; q.live = true; q.internet = sv.token != 0; q.saved = -1;
             q.on = IsConnectedTo(sv.ip, sv.port);
             MP_CopyStr(q.lang, sv.lang, sizeof(q.lang));
-            if(LMatch(q.name, q.lang)) rows.push_back(q);
+            q.mine = s_Server.IsRunning() && s_Server.GetPort() == sv.port && !strcasecmp(s_Server.GetName(), sv.name);
+            LFillDetails(q, &sv);
+            if(LMatch(q.name, q.lang) || LMatch(q.tags) || LMatch(q.mode)) rows.push_back(q);
         }
     }
     else if(tab == LT_FAVORITES)
@@ -448,8 +562,29 @@ static void LBuildRows(int tab, const std::vector<LanServer>& nearby, std::vecto
             q.icon = q.mine ? settings.serverIcon : (e->online ? e->icon : (lan ? lan->icon : 0));
             const char* lg = e->online && e->liveLang[0] ? e->liveLang : (lan && lan->lang[0] ? lan->lang : e->lang);   // live, else saved
             MP_CopyStr(q.lang, lg, sizeof(q.lang));
+            // 4.03: details saved in + Add server, else what the running server says
+            MP_CopyStr(q.cc, e->cc[0] ? e->cc : e->liveCC, sizeof(q.cc)); q.modeCol = e->modeCol ? e->modeCol : e->liveModeCol;
+            MP_CopyStr(q.mode, e->mode[0] ? e->mode : e->liveMode, sizeof(q.mode));
+            MP_CopyStr(q.tags, e->tags[0] ? e->tags : e->liveTags, sizeof(q.tags));
+            MP_CopyStr(q.desc, e->desc[0] ? e->desc : e->liveDesc, sizeof(q.desc));
+            LFillDetails(q, lan);
             rows.push_back(q);
         }
+        // 4.03: + every starred row from Internet (featured too) that is not saved here
+        std::vector<LRow> more; int keep = s_nInetSub;
+        for(int sub = 0; sub < 2; ++sub)
+        {
+            s_nInetSub = sub; std::vector<LRow> tmp; int sc = s_nSortCol; s_nSortCol = -1;
+            LBuildRows(LT_INTERNET, nearby, tmp); s_nSortCol = sc;
+            for(auto& r : tmp)
+            {
+                if(!LIsFav(r.name, r.port)) continue;
+                bool dup = false; for(auto& q : rows) if(q.port == r.port && !strcasecmp(q.name, r.name)) dup = true;
+                if(!dup) more.push_back(r);
+            }
+        }
+        s_nInetSub = keep;
+        rows.insert(rows.begin(), more.begin(), more.end());
     }
     if(s_nSortCol >= 0 && rows.size() > 1)
     {
@@ -459,10 +594,11 @@ static void LBuildRows(int tab, const std::vector<LanServer>& nearby, std::vecto
         std::stable_sort(rows.begin() + from, rows.end(), [&](const LRow& a, const LRow& b)
         {
             int c = s_nSortCol; bool lt;
-            const char* sa = c == 4 ? a.lang : a.name; const char* sb = c == 4 ? b.lang : b.name;
-            if(c == 0 || c == 4) lt = strcasecmp(sa, sb) < 0;
+            const char* sa = c == 4 ? a.cc : (c == 3 ? a.mode : a.name); const char* sb = c == 4 ? b.cc : (c == 3 ? b.mode : b.name);
+            bool str = c == 0 || c == 3 || c == 4;
+            if(str) lt = strcasecmp(sa, sb) < 0;
             else lt = key(a, c) < key(b, c);
-            bool gt = (c == 0 || c == 4) ? strcasecmp(sb, sa) < 0 : key(b, c) < key(a, c);
+            bool gt = str ? strcasecmp(sb, sa) < 0 : key(b, c) < key(a, c);
             return s_bSortAsc ? lt : gt;
         });
     }
@@ -540,7 +676,7 @@ static void LRegionPicker(const std::vector<LanServer>& nearby)
 
     ImGui::SetNextWindowPos(ImVec2(x, y)); ImGui::SetNextWindowSize(ImVec2(w, h));
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(pw, pw));
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, UI::S(14));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);   // 4.03: square
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, UI::S(2));
     ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.04f, 0.07f, 0.10f, 0.95f));   // 3.63: Valorant navy
     ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.25f, 0.90f, 0.75f, 0.35f));
@@ -598,40 +734,135 @@ static void LRegionPicker(const std::vector<LanServer>& nearby)
 }
 
 // ---- centre table ------------------------------------------------------------------------------
+// ---- 4.03: CS:GO style table pieces ---------------------------------------------------------------
+static std::map<std::string, std::vector<int>> s_PingHist;   // row key -> last 40 pings (1 a second)
+static void LStar(ImDrawList* dl, ImVec2 c, float r, ImU32 col, bool filled)
+{
+    ImVec2 p[10];
+    for(int i = 0; i < 10; ++i) { float an = -IM_PI * 0.5f + i * IM_PI / 5, rr = (i & 1) ? r * 0.45f : r; p[i] = ImVec2(c.x + cosf(an) * rr, c.y + sinf(an) * rr); }
+    if(filled) for(int i = 0; i < 10; i += 2) dl->AddTriangleFilled(c, p[i], p[(i + 1) % 10], col), dl->AddTriangleFilled(c, p[(i + 9) % 10], p[i], col);
+    dl->AddPolyline(p, 10, col, ImDrawFlags_Closed, UI::S(1.5f));
+}
+static void* LRowBg(const LRow& r, ImVec2* uv)
+{
+    if(r.bg) if(void* t = HUD::Texture(r.bg, uv)) return t;
+    if(r.icon > 0) return HUD::ServerIcon(r.icon, uv);
+    return nullptr;
+}
+// 4.04: the host's own Upload preview image (p/<token> in the lobby), written once to files/MP/pv_<tok>_<crc>.jpg
+static void* LRowPreview(const LRow& r, ImVec2* uv)
+{
+    if(r.mine && r.kind <= 2 && settings.serverPreview[0]) if(void* t = HUD::Texture(settings.serverPreview, uv)) return t;
+    if(!r.token) return nullptr;
+    static std::map<uint32_t, std::pair<uint64_t, std::string>> s_Pv;   // token -> last check, file name ("" = none)
+    auto& c = s_Pv[r.token];
+    uint64_t now = MP_NowMs();
+    if(!c.first || now - c.first > 5000)
+    {
+        c.first = now;
+        std::string jpg;
+        if(!Online::Preview(r.token, jpg)) c.second.clear();
+        else
+        {
+            uint32_t h = 2166136261u; for(unsigned char ch : jpg) h = (h ^ ch) * 16777619u;
+            char fn[48]; snprintf(fn, sizeof(fn), "pv_%08x_%08x.jpg", r.token, h);
+            if(c.second != fn)
+            {
+                char pp[512]; snprintf(pp, sizeof(pp), "%s/%s", s_szDataDir, fn);
+                FILE* f = fopen(pp, "rb");
+                if(f) fclose(f);
+                else if((f = fopen(pp, "wb"))) { fwrite(jpg.data(), 1, jpg.size(), f); fclose(f); }
+                c.second = fn;
+            }
+        }
+    }
+    if(c.second.empty()) return nullptr;
+    return HUD::Texture(c.second.c_str(), uv);
+}
+// the picture covers [a, b] (cropped to keep its 2:1 shape)
+static void LImageCover(ImDrawList* dl, void* tex, ImVec2 uv, ImVec2 a, ImVec2 b, ImU32 tint)
+{
+    float bw = b.x - a.x, bh = b.y - a.y; if(bw <= 0 || bh <= 0) return;
+    float img = 2.0f, box = bw / bh;   // 512x256
+    ImVec2 u0(0, 0), u1(uv.x, uv.y);
+    if(box > img) { float k = img / box; u0.y = uv.y * (1 - k) * 0.5f; u1.y = uv.y - u0.y; }
+    else          { float k = box / img; u0.x = uv.x * (1 - k) * 0.5f; u1.x = uv.x - u0.x; }
+    dl->AddImage((ImTextureID)tex, a, b, u0, u1, tint);
+}
+static void LChip(ImDrawList* dl, ImVec2 p, float h, const char* txt, ImU32 col, float maxW)
+{
+    float tw = ImMin(ImGui::CalcTextSize(txt).x, maxW - UI::S(16));
+    ImVec2 b(p.x + tw + UI::S(16), p.y + h);
+    dl->AddRectFilled(p, b, col);
+    dl->AddRect(p, b, IM_COL32(255, 255, 255, 40));
+    dl->PushClipRect(p, b, true);
+    dl->AddText(ImVec2(p.x + UI::S(8), p.y + (h - ImGui::GetTextLineHeight()) * 0.5f), IM_COL32_WHITE, txt);
+    dl->PopClipRect();
+}
+// who is inside: live list when we are on it / host it, else what the host publishes (d/<token>)
+static void LDetailPlayers(const LRow& r, std::vector<std::string>& out)
+{
+    out.clear();
+    if(r.on && IsConnected())
+    {
+        for(int i = 0; i < MP_MAX_PLAYERS; ++i) if(i == myId || players[i].active) out.push_back(i == myId ? settings.name : players[i].name);
+        return;
+    }
+    if(r.mine) { std::vector<MPServer::PlayerView> pv; s_Server.GetPlayers(pv); for(auto& v : pv) out.push_back(v.name); return; }
+    std::string d, pl; LRow tmp = r;
+    if(r.token && Online::Details(r.token, d) && LParseDetails(d, tmp, &pl))
+    {
+        size_t at = 0;
+        while(at < pl.size()) { size_t e = pl.find(',', at); if(e == std::string::npos) e = pl.size(); if(e > at) out.push_back(pl.substr(at, e - at)); at = e + 1; }
+    }
+}
+static void LWrapText(ImDrawList* dl, ImVec2 p, float w, float maxY, ImU32 col, const char* txt)
+{
+    dl->PushClipRect(p, ImVec2(p.x + w, maxY), true);
+    dl->AddText(ImGui::GetFont(), ImGui::GetFontSize() * 0.86f, p, col, txt, nullptr, w);
+    dl->PopClipRect();
+}
+
 static void LTable(std::vector<LRow>& rows, float w, float h)
 {
     ImGui::BeginChild("##ltable", ImVec2(w, h), false, ImGuiWindowFlags_NoScrollbar);
     ImDrawList* dl = ImGui::GetWindowDrawList();
-    const float hdrH = UI::S(66), rowH = UI::S(70);
+    const float hdrH = UI::S(52), rowH = UI::S(62), detH = UI::S(300);
     float W = ImGui::GetContentRegionAvail().x;
-    // columns
-    float cLock = UI::S(16), cIcon = UI::S(64), cName = UI::S(134);
-    float cPl = W * 0.42f, cPing = W * 0.53f, cMode = W * 0.62f, cReg = W * 0.82f;
-    static const char* hdr[5] = { "HostName", "Players", "Ping", "Mode", "Language" };
-    const float cx[5] = { cName, cPl, cPing, cMode, cReg };
-    const float cw[5] = { cPl - cName, cPing - cPl, cMode - cPing, cReg - cMode, W - cReg };
+    // 4.03: CS:GO columns: [lock] Name | Gamemode | Tags | Players | Map | Ping | Location
+    float cLock = UI::S(10), cName = UI::S(52);
+    float cMode = W * 0.36f, cTags = W * 0.48f, cPl = W * 0.64f, cMap = W * 0.72f, cPing = W * 0.86f, cLoc = W * 0.93f;
+    static const char* hdr[6] = { "Name", "Gamemode", "Players", "Map", "Ping", "" };
+    const float cx[6] = { cName, cMode, cPl, cMap, cPing, cLoc };
+    const float cw[6] = { cMode - cName, cTags - cMode, cMap - cPl, cPing - cMap, cLoc - cPing, W - cLoc };
+    const int   sortOf[6] = { 0, 3, 1, -1, 2, 4 };
     {
         ImVec2 p = ImGui::GetCursorScreenPos();
-        for(int c = 0; c < 5; ++c)
+        dl->AddRectFilled(p, ImVec2(p.x + W, p.y + hdrH), IM_COL32(30, 34, 40, 200));
+        for(int c = 0; c < 6; ++c)
         {
             ImGui::SetCursorScreenPos(ImVec2(p.x + cx[c], p.y));
             ImGui::PushID(c);
-            if(ImGui::InvisibleButton("##hdr", ImVec2(cw[c], hdrH)))
+            if(ImGui::InvisibleButton("##hdr", ImVec2(cw[c], hdrH)) && sortOf[c] >= 0)
             {
-                if(s_nSortCol == c) { if(!s_bSortAsc) s_nSortCol = -1; s_bSortAsc = !s_bSortAsc; }
-                else { s_nSortCol = c; s_bSortAsc = true; }
+                int k = sortOf[c];
+                if(s_nSortCol == k) { if(!s_bSortAsc) s_nSortCol = -1; s_bSortAsc = !s_bSortAsc; }
+                else { s_nSortCol = k; s_bSortAsc = true; }
             }
             ImGui::PopID();
-            ImU32 tc = IM_COL32(205, 205, 205, 255);
+            const char* ht = c == 5 ? "Loc" : hdr[c];
             float ty = p.y + (hdrH - ImGui::GetTextLineHeight()) * 0.5f;
-            dl->AddText(ImVec2(p.x + cx[c], ty), tc, hdr[c]);
-            float ax = p.x + cx[c] + ImGui::CalcTextSize(hdr[c]).x + UI::S(16), ay = p.y + hdrH * 0.5f, s = UI::S(6);
-            ImU32 up = (s_nSortCol == c && s_bSortAsc) ? IM_COL32_WHITE : IM_COL32(120, 120, 120, 255);
-            ImU32 dn = (s_nSortCol == c && !s_bSortAsc) ? IM_COL32_WHITE : IM_COL32(120, 120, 120, 255);
-            dl->AddTriangleFilled(ImVec2(ax - s, ay - UI::S(3)), ImVec2(ax + s, ay - UI::S(3)), ImVec2(ax, ay - UI::S(3) - s * 1.2f), up);
-            dl->AddTriangleFilled(ImVec2(ax - s, ay + UI::S(3)), ImVec2(ax + s, ay + UI::S(3)), ImVec2(ax, ay + UI::S(3) + s * 1.2f), dn);
+            bool act = sortOf[c] >= 0 && s_nSortCol == sortOf[c];
+            dl->AddText(ImVec2(p.x + cx[c], ty), act ? IM_COL32_WHITE : IM_COL32(170, 176, 184, 255), ht);
+            if(act)
+            {
+                float ax = p.x + cx[c] + ImGui::CalcTextSize(ht).x + UI::S(12), ay = p.y + hdrH * 0.5f, s = UI::S(5);
+                if(s_bSortAsc) dl->AddTriangleFilled(ImVec2(ax - s, ay + s * 0.5f), ImVec2(ax + s, ay + s * 0.5f), ImVec2(ax, ay - s * 0.7f), IM_COL32_WHITE);
+                else           dl->AddTriangleFilled(ImVec2(ax - s, ay - s * 0.5f), ImVec2(ax + s, ay - s * 0.5f), ImVec2(ax, ay + s * 0.7f), IM_COL32_WHITE);
+            }
         }
-        dl->AddLine(ImVec2(p.x, p.y + hdrH), ImVec2(p.x + W, p.y + hdrH), IM_COL32(255, 255, 255, 30), UI::S(2));
+        dl->AddText(ImVec2(p.x + cTags, p.y + (hdrH - ImGui::GetTextLineHeight()) * 0.5f), IM_COL32(170, 176, 184, 255), "Tags");
+        dl->AddLine(ImVec2(p.x, p.y + hdrH), ImVec2(p.x + W, p.y + hdrH), IM_COL32(255, 255, 255, 34), UI::S(1));
         ImGui::SetCursorScreenPos(ImVec2(p.x, p.y + hdrH + UI::S(2)));
     }
     ImGui::BeginChild("##lrows", ImVec2(0, 0), false);
@@ -640,6 +871,15 @@ static void LTable(std::vector<LRow>& rows, float w, float h)
     char key[48];
     s_nLSel = -1;
     for(int i = 0; i < (int)rows.size(); ++i) { LRowKey(rows[i], key, sizeof(key)); if(s_szLSelKey[0] && !strcmp(key, s_szLSelKey)) s_nLSel = i; }
+    {   // ping stability graph samples (every row, once a second)
+        static uint64_t last = 0; uint64_t now = MP_NowMs();
+        if(now - last >= 1000)
+        {
+            last = now;
+            for(auto& r : rows) { if(r.ping < 0) continue; LRowKey(r, key, sizeof(key)); auto& v = s_PingHist[key]; v.push_back(r.ping); if(v.size() > 40) v.erase(v.begin()); }
+            if(s_PingHist.size() > 300) s_PingHist.clear();
+        }
+    }
     for(int i = 0; i < (int)rows.size(); ++i)
     {
         LRow& r = rows[i];
@@ -647,119 +887,181 @@ static void LTable(std::vector<LRow>& rows, float w, float h)
         ImVec2 a = ImGui::GetCursorScreenPos();
         bool tap = ImGui::InvisibleButton("##r", ImVec2(W, rowH));
         bool sel = s_nLSel == i;
-        if(r.kind == 3)
-        {   // 3.04: Brief Case War banner: red highlight + red outline + briefcase texture
-            float pulse = 0.75f + 0.25f * sinf(MP_NowMs() * 0.004f);
-            dl->AddRectFilledMultiColor(a, ImVec2(a.x + W, a.y + rowH), IM_COL32(200, 20, 30, (int)(150 * pulse)), IM_COL32(120, 10, 18, 70), IM_COL32(120, 10, 18, 70), IM_COL32(200, 20, 30, (int)(150 * pulse)));
-            dl->AddRect(a, ImVec2(a.x + W, a.y + rowH), IM_COL32(255, 50, 60, 255), UI::S(6), 0, UI::S(sel ? 4 : 2.5f));
-            ImVec2 buv(1, 1);
-            if(void* bt = HUD::Texture("bcw_briefcase.png", &buv))
-            {   // big faded briefcase on the right of the banner
-                float bs = rowH * 1.25f;
-                ImVec2 ba(a.x + W - bs - UI::S(10), a.y + rowH * 0.5f - bs * 0.5f);
-                dl->PushClipRect(a, ImVec2(a.x + W, a.y + rowH), true);
-                dl->AddImage((ImTextureID)bt, ba, ImVec2(ba.x + bs, ba.y + bs), ImVec2(0, 0), buv, IM_COL32(255, 255, 255, 70));
-                dl->PopClipRect();
-            }
-        }
-        if(r.kind == 4)
-        {   // 3.23: MW3 banner: green highlight + green outline + two guns
-            float pulse = 0.75f + 0.25f * sinf(MP_NowMs() * 0.004f);
-            dl->AddRectFilledMultiColor(a, ImVec2(a.x + W, a.y + rowH), IM_COL32(25, 170, 60, (int)(150 * pulse)), IM_COL32(10, 90, 30, 70), IM_COL32(10, 90, 30, 70), IM_COL32(25, 170, 60, (int)(150 * pulse)));
-            dl->AddRect(a, ImVec2(a.x + W, a.y + rowH), IM_COL32(60, 255, 106, 255), UI::S(6), 0, UI::S(sel ? 4 : 2.5f));
-            ImVec2 buv(1, 1);
-            if(void* bt = HUD::Texture("mw3_guns.png", &buv))
+        bool vis = ImGui::IsItemVisible() || sel;
+        ImU32 mc = LModeColor(r);
+        if(vis)
+        {
+            // row: slate base, the server background picture on the left fading into the row (CS:GO)
+            dl->AddRectFilled(a, ImVec2(a.x + W, a.y + rowH), (i & 1) ? IM_COL32(44, 49, 56, 235) : IM_COL32(50, 56, 64, 235));
+            ImVec2 uv(1, 1);
+            if(void* bt = LRowBg(r, &uv))
             {
-                float bs = rowH * 1.25f;
-                ImVec2 ba(a.x + W - bs - UI::S(10), a.y + rowH * 0.5f - bs * 0.5f);
-                dl->PushClipRect(a, ImVec2(a.x + W, a.y + rowH), true);
-                dl->AddImage((ImTextureID)bt, ba, ImVec2(ba.x + bs, ba.y + bs), ImVec2(0, 0), buv, IM_COL32(255, 255, 255, 70));
-                dl->PopClipRect();
+                float bw = W * 0.46f;
+                LImageCover(dl, bt, uv, a, ImVec2(a.x + bw, a.y + rowH), IM_COL32(255, 255, 255, 150));
+                dl->AddRectFilledMultiColor(a, ImVec2(a.x + bw, a.y + rowH), IM_COL32(44, 49, 56, 70), IM_COL32(48, 53, 60, 255), IM_COL32(48, 53, 60, 255), IM_COL32(44, 49, 56, 70));
             }
+            if(r.kind >= 3 && r.kind <= 6)   // featured: gamemode colour highlight
+                dl->AddRectFilledMultiColor(a, ImVec2(a.x + W, a.y + rowH), VAlpha(mc, 0.30f), VAlpha(mc, 0.04f), VAlpha(mc, 0.04f), VAlpha(mc, 0.30f));
+            if((r.kind != 1 && r.kind != 2) || r.modeCol) dl->AddRectFilled(a, ImVec2(a.x + UI::S(4), a.y + rowH), mc);   // gamemode colour stripe
+            if(sel) dl->AddRectFilled(a, ImVec2(a.x + W, a.y + rowH), IM_COL32(255, 255, 255, 26));
+            else if(ImGui::IsItemActive()) dl->AddRectFilled(a, ImVec2(a.x + W, a.y + rowH), IM_COL32(255, 255, 255, 14));
+            dl->AddLine(ImVec2(a.x, a.y + rowH), ImVec2(a.x + W, a.y + rowH), IM_COL32(0, 0, 0, 90));
         }
-        if(r.kind == 5)
-        {   // 3.25: Mega Vil Futuristic banner: sky blue highlight + sky blue outline + the RP phone faded on the right
-            float pulse = 0.75f + 0.25f * sinf(MP_NowMs() * 0.004f);
-            dl->AddRectFilledMultiColor(a, ImVec2(a.x + W, a.y + rowH), IM_COL32(56, 189, 248, (int)(150 * pulse)), IM_COL32(12, 74, 110, 70), IM_COL32(12, 74, 110, 70), IM_COL32(56, 189, 248, (int)(150 * pulse)));
-            dl->AddRect(a, ImVec2(a.x + W, a.y + rowH), IM_COL32(56, 189, 248, 255), UI::S(6), 0, UI::S(sel ? 4 : 2.5f));
-            ImVec2 buv(1, 1);
-            if(void* bt = HUD::Texture("rp_phone.png", &buv))
-            {
-                float bs = rowH * 1.25f;
-                ImVec2 ba(a.x + W - bs - UI::S(10), a.y + rowH * 0.5f - bs * 0.5f);
-                dl->PushClipRect(a, ImVec2(a.x + W, a.y + rowH), true);
-                dl->AddImage((ImTextureID)bt, ba, ImVec2(ba.x + bs, ba.y + bs), ImVec2(0, 0), buv, IM_COL32(255, 255, 255, 70));
-                dl->PopClipRect();
-            }
-        }
-        if(r.kind == 6)
-        {   // 3.58: Project Day Z banner: yellow highlight + yellow outline + the hand print symbol
-            float pulse = 0.75f + 0.25f * sinf(MP_NowMs() * 0.004f);
-            dl->AddRectFilledMultiColor(a, ImVec2(a.x + W, a.y + rowH), IM_COL32(202, 150, 10, (int)(150 * pulse)), IM_COL32(90, 64, 4, 70), IM_COL32(90, 64, 4, 70), IM_COL32(202, 150, 10, (int)(150 * pulse)));
-            dl->AddRect(a, ImVec2(a.x + W, a.y + rowH), IM_COL32(250, 204, 21, 255), UI::S(6), 0, UI::S(sel ? 4 : 2.5f));
-            ImVec2 buv(1, 1);   // 4.02: the faded transparent dz_icon.png like the other featured rows (was an opaque drawn badge)
-            if(void* bt = HUD::Texture("dz_icon.png", &buv))
-            {
-                float bs = rowH * 1.25f;
-                ImVec2 ba(a.x + W - bs - UI::S(10), a.y + rowH * 0.5f - bs * 0.5f);
-                dl->PushClipRect(a, ImVec2(a.x + W, a.y + rowH), true);
-                dl->AddImage((ImTextureID)bt, ba, ImVec2(ba.x + bs, ba.y + bs), ImVec2(0, 0), buv, IM_COL32(255, 255, 255, 70));
-                dl->PopClipRect();
-            }
-        }
-        // 3.63: Valorant selection: teal glass + a teal bar on the left
-        if(sel) { dl->AddRectFilled(a, ImVec2(a.x + W, a.y + rowH), kVTealDim); dl->AddRectFilled(a, ImVec2(a.x + UI::S(4), a.y + rowH), kVTeal); }
-        else if(ImGui::IsItemActive()) dl->AddRectFilled(a, ImVec2(a.x + W, a.y + rowH), IM_COL32(236, 232, 225, 16));
-        dl->AddLine(ImVec2(a.x, a.y + rowH), ImVec2(a.x + W, a.y + rowH), IM_COL32(236, 232, 225, 14));
         if(tap)
         {
             LRowKey(r, key, sizeof(key));
-            if(sel) LJoin(r);                       // tap the selected row again = join / leave
-            else { MP_CopyStr(s_szLSelKey, key, sizeof(s_szLSelKey)); s_nLSel = i; }
+            if(sel) { MP_CopyStr(s_szLSelKey, "", sizeof(s_szLSelKey)); s_nLSel = -1; sel = false; }   // tap again = close the details (CONNECT joins)
+            else { MP_CopyStr(s_szLSelKey, key, sizeof(s_szLSelKey)); s_nLSel = i; sel = true; }
         }
-        float ty = a.y + (rowH - ImGui::GetTextLineHeight()) * 0.5f;
-        LPadlock(dl, ImVec2(a.x + cLock + UI::S(18), a.y + rowH * 0.5f - UI::S(4)), UI::S(24), r.locked, r.locked ? IM_COL32(240, 200, 60, 255) : IM_COL32(70, 200, 110, 255));
-        ImVec2 uv(1, 1);
-        void* rtex = r.kind == 3 ? HUD::Texture("bcw_icon.png", &uv) : (r.kind == 4 ? HUD::Texture("mw3_icon.png", &uv) : (r.kind == 5 ? HUD::Texture("rp_icon.png", &uv) : (r.kind == 6 ? HUD::Texture("dz_icon.png", &uv) : nullptr)));   // 3.04: Brief Case War icon (briefcase)
-        // 4.02: Day Z uses its transparent dz_icon.png like the other featured rows (the old drawn badge -
-        // an opaque dark disc - showed whenever the PNG was not loaded yet / the texture cache was full)
-        if(r.kind >= 3 && r.kind <= 6 && !rtex) { /* featured icon loads next frame */ }
-        else if(void* tex = rtex ? rtex : HUD::ServerIcon(r.icon, &uv))
+        if(ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0)) LJoin(r);   // double tap = join
+        if(vis)
         {
-            float is = rowH - UI::S(18);
-            ImVec2 ia(a.x + cIcon, a.y + UI::S(9));
-            dl->AddImageRounded((ImTextureID)tex, ia, ImVec2(ia.x + is, ia.y + is), ImVec2(0, 0), uv, IM_COL32_WHITE, UI::S(8));
+            float ty = a.y + (rowH - ImGui::GetTextLineHeight()) * 0.5f;
+            if(r.locked) LPadlock(dl, ImVec2(a.x + cLock + UI::S(16), a.y + rowH * 0.5f - UI::S(3)), UI::S(20), true, IM_COL32(230, 230, 230, 255));
+            ImU32 nameCol = (r.live || sel) ? IM_COL32_WHITE : IM_COL32(175, 180, 186, 255);
+            dl->PushClipRect(ImVec2(a.x + cName, a.y), ImVec2(a.x + cMode - UI::S(10), a.y + rowH), true);
+            float nx = a.x + cName;
+            if(r.on) { dl->AddCircleFilled(ImVec2(nx + UI::S(7), a.y + rowH * 0.5f), UI::S(6), IM_COL32(90, 200, 90, 255)); nx += UI::S(22); }
+            if(LIsFav(r.name, r.port)) { LStar(dl, ImVec2(nx + UI::S(9), a.y + rowH * 0.5f), UI::S(9), IM_COL32(240, 200, 60, 255), true); nx += UI::S(24); }
+            char nm[80]; snprintf(nm, sizeof(nm), "%s%s", r.name, r.kind == 0 ? "  (default)" : (r.mine ? "  (yours)" : ""));
+            dl->AddText(ImVec2(nx, ty), nameCol, nm);
+            dl->PopClipRect();
+            // gamemode chip
+            const char* md = r.mode[0] ? r.mode : "Freeroam";
+            LChip(dl, ImVec2(a.x + cMode, a.y + rowH * 0.5f - UI::S(15)), UI::S(30), md, mc, cTags - cMode - UI::S(8));
+            // tags (comma list, dim)
+            dl->PushClipRect(ImVec2(a.x + cTags, a.y), ImVec2(a.x + cPl - UI::S(10), a.y + rowH), true);
+            {
+                char tg[MP_TAGS_LEN + 16]; MP_CopyStr(tg, r.tags[0] ? r.tags : (r.lang[0] ? r.lang : "-"), sizeof(tg));
+                for(char* c = tg; *c; ++c) if(*c == ',') *c = ' ';
+                std::string t2; for(char* c = tg; *c; ++c) { t2 += *c; if(*c == ' ' && c[1] && c[1] != ' ') t2.insert(t2.size() - 1, ","); }
+                dl->AddText(ImGui::GetFont(), ImGui::GetFontSize() * 0.82f, ImVec2(a.x + cTags, a.y + (rowH - ImGui::GetFontSize() * 0.82f) * 0.5f), IM_COL32(160, 166, 174, 255), t2.c_str());
+            }
+            dl->PopClipRect();
+            char b[48];
+            if(r.players >= 0) snprintf(b, sizeof(b), "%d/%d", r.players, r.maxp); else snprintf(b, sizeof(b), "-");
+            bool full = r.players >= 0 && r.maxp > 0 && r.players >= r.maxp;
+            dl->AddText(ImVec2(a.x + cPl, ty), full ? IM_COL32(222, 74, 60, 255) : (r.players > 0 ? IM_COL32(230, 200, 90, 255) : IM_COL32(200, 204, 210, 255)), b);
+            const char* map = r.kind == 3 ? "Bone County" : r.kind == 5 ? "Mega Vil" : r.kind == 6 ? "SA Wasteland" : r.kind == 4 ? "SA Warzone" : "San Andreas";
+            dl->PushClipRect(ImVec2(a.x + cMap, a.y), ImVec2(a.x + cPing - UI::S(8), a.y + rowH), true);
+            dl->AddText(ImVec2(a.x + cMap, ty), IM_COL32(200, 204, 210, 255), map);
+            dl->PopClipRect();
+            if(r.ping >= 0) snprintf(b, sizeof(b), "%d", r.ping); else snprintf(b, sizeof(b), "-");
+            ImU32 pc = r.ping < 0 ? IM_COL32(150, 150, 150, 255) : r.ping < 80 ? IM_COL32(110, 200, 90, 255) : r.ping < 150 ? IM_COL32(230, 200, 90, 255) : IM_COL32(222, 74, 60, 255);
+            dl->AddText(ImVec2(a.x + cPing, ty), pc, b);
+            float fh = rowH * 0.40f, fw = fh * 4.0f / 3.0f;
+            ImVec2 fa(a.x + cLoc, a.y + (rowH - fh) * 0.5f);
+            LDrawFlag(dl, LCountryIndex(r.cc), fa, ImVec2(fa.x + fw, fa.y + fh));
         }
-        ImU32 nameCol = r.kind == 3 ? IM_COL32(255, 235, 235, 255) : r.kind == 4 ? IM_COL32(230, 255, 235, 255) : r.kind == 5 ? IM_COL32(224, 242, 254, 255) : r.kind == 6 ? IM_COL32(254, 249, 195, 255) : ((r.live || sel) ? IM_COL32_WHITE : IM_COL32(175, 175, 175, 255));
-        dl->PushClipRect(ImVec2(a.x + cName, a.y), ImVec2(a.x + cPl - UI::S(12), a.y + rowH), true);
-        float nx = a.x + cName;
-        if(r.on) { dl->AddCircleFilled(ImVec2(nx + UI::S(8), a.y + rowH * 0.5f), UI::S(7), IM_COL32(70, 200, 110, 255)); nx += UI::S(26); }
-        char nm[80]; snprintf(nm, sizeof(nm), "%s%s", r.name, r.kind == 0 ? "  (default)" : (r.kind == 3 ? "  (gamemode)" : r.kind == 4 ? "  (24/7)" : r.kind == 5 ? "  (Roleplay 24/7)" : r.kind == 6 ? "  (Survival 24/7)" : (r.mine ? "  (yours)" : "")));
-        dl->AddText(ImVec2(nx, ty), nameCol, nm);
-        dl->PopClipRect();
-        char b[48];
-        ImU32 dim = IM_COL32(175, 175, 175, 255);
-        if(r.players >= 0) snprintf(b, sizeof(b), "%d/%d", r.players, r.maxp); else snprintf(b, sizeof(b), "-");
-        dl->AddText(ImVec2(a.x + cPl, ty), r.live ? IM_COL32_WHITE : dim, b);
-        if(r.ping >= 0) snprintf(b, sizeof(b), "%d", r.ping); else snprintf(b, sizeof(b), "-");
-        dl->AddText(ImVec2(a.x + cPing, ty), r.live ? IM_COL32_WHITE : dim, b);
-        dl->PushClipRect(ImVec2(a.x + cMode, a.y), ImVec2(a.x + cReg - UI::S(10), a.y + rowH), true);
-        {   // Mode = game mode + region ("Freeroam Asia"), Wi-Fi servers say so
-            char md[48]; snprintf(md, sizeof(md), "Freeroam %s%s", r.region >= 0 && r.region < REGION_COUNT ? g_MPRegionNames[r.region] : "(all)", (r.kind == 1 && !r.internet) ? " (LAN)" : "");
-            if(r.kind == 3) snprintf(md, sizeof(md), "Brief Case War");   // 3.04
-            if(r.kind == 4) snprintf(md, sizeof(md), "MW3 Team DM");      // 3.23
-            if(r.kind == 5) snprintf(md, sizeof(md), MP_RP_GAMEMODE);     // 3.25: Roleplay RP
-            if(r.kind == 6) snprintf(md, sizeof(md), MP_DZ_GAMEMODE);     // 3.58: Proper DAYZ
-            dl->AddText(ImVec2(a.x + cMode, ty), r.live ? IM_COL32_WHITE : dim, md);
+        if(sel)
+        {   // ---- expanded CS:GO detail strip ----
+            ImVec2 d = ImGui::GetCursorScreenPos();
+            ImGui::Dummy(ImVec2(W, detH));
+            ImVec2 e(d.x + W, d.y + detH);
+            dl->AddRectFilled(d, e, IM_COL32(34, 38, 44, 245));
+            dl->AddRect(ImVec2(a.x, a.y), e, IM_COL32(235, 238, 242, 220), 0.0f, 0, UI::S(2));   // white selection frame (row + details)
+            const float pad = UI::S(14), lh = ImGui::GetTextLineHeight();
+            float c1 = d.x + pad, c2 = d.x + W * 0.34f, c3 = d.x + W * 0.52f, c4 = d.x + W * 0.67f, c5 = d.x + W * 0.84f;
+            ImU32 hc = IM_COL32(150, 157, 166, 255), tc = IM_COL32(222, 226, 231, 255);
+            float y0 = d.y + pad;
+            // 1: description, IP, favourite
+            dl->AddText(ImVec2(c1, y0), hc, "Server Description");
+            LWrapText(dl, ImVec2(c1, y0 + lh + UI::S(6)), c2 - c1 - pad, e.y - lh * 2.6f, tc, r.desc[0] ? r.desc : "No description.");
+            {
+                char ip[96];
+                if(r.kind == 2 && r.saved >= 0) { ServerEntry* se = ServerList::Get(r.saved); snprintf(ip, sizeof(ip), "IP: %s:%d", se ? se->host : "?", r.port); }
+                else if(r.kind == 1 && !r.internet && r.ip[0]) snprintf(ip, sizeof(ip), "IP: %s:%d (Wi-Fi)", r.ip, r.port);
+                else if(r.kind == 0 || r.kind >= 3) snprintf(ip, sizeof(ip), "IP: 24/7 internet lobby, port %d", r.port);
+                else if(r.internet) snprintf(ip, sizeof(ip), "IP: internet lobby, port %d", r.port);
+                else snprintf(ip, sizeof(ip), "IP: hidden, port %d", r.port);
+                dl->AddText(ImGui::GetFont(), ImGui::GetFontSize() * 0.86f, ImVec2(c1, e.y - pad - lh), hc, ip);
+                // Favourite toggle (star)
+                bool fav = LIsFav(r.name, r.port);
+                ImVec2 sa(c2 - pad - UI::S(150), e.y - pad - lh - UI::S(10)), sb(c2 - pad, e.y - pad + UI::S(4));
+                ImGui::SetCursorScreenPos(sa);
+                if(ImGui::InvisibleButton("##fav", ImVec2(sb.x - sa.x, sb.y - sa.y))) { LSetFav(r.name, r.port, !fav); fav = !fav; }
+                dl->AddRectFilled(sa, sb, ImGui::IsItemActive() ? IM_COL32(255, 255, 255, 40) : IM_COL32(255, 255, 255, 14));
+                dl->AddText(ImVec2(sa.x + UI::S(10), sa.y + (sb.y - sa.y - lh) * 0.5f), tc, "Favorite");
+                LStar(dl, ImVec2(sb.x - UI::S(22), (sa.y + sb.y) * 0.5f), UI::S(11), IM_COL32(240, 200, 60, 255), fav);
+                if(r.kind == 2 && r.saved >= 0 && !r.mine)
+                {   // saved server: Delete (the old trash button)
+                    ImVec2 da(sa.x - UI::S(130), sa.y), db(sa.x - UI::S(10), sb.y);
+                    ImGui::SetCursorScreenPos(da);
+                    if(ImGui::InvisibleButton("##del", ImVec2(db.x - da.x, db.y - da.y))) { ServerList::Remove(r.saved); s_szLSelKey[0] = 0; }
+                    dl->AddRectFilled(da, db, ImGui::IsItemActive() ? IM_COL32(222, 74, 60, 120) : IM_COL32(222, 74, 60, 50));
+                    dl->AddText(ImVec2(da.x + UI::S(14), da.y + (db.y - da.y - lh) * 0.5f), tc, "Delete");
+                }
+            }
+            // 2: gamemode + tags
+            dl->AddText(ImVec2(c2, y0), hc, r.mode[0] ? r.mode : "Freeroam");
+            {
+                char tl[MP_TAGS_LEN + 8]; MP_CopyStr(tl, r.tags[0] ? r.tags : "-", sizeof(tl));
+                std::string t; for(char* c = tl; *c; ++c) { t += *c == ',' ? ", " : std::string(1, *c); }
+                dl->AddText(ImVec2(c3 - UI::S(40) > c2 ? c2 : c2, y0 + lh * 1.3f), hc, "Tags");
+                LWrapText(dl, ImVec2(c2, y0 + lh * 2.4f), c3 - c2 - pad, e.y - pad, tc, t.c_str());
+            }
+            // 3: all players
+            {
+                std::vector<std::string> pl; LDetailPlayers(r, pl);
+                char hd[48]; snprintf(hd, sizeof(hd), "All players (%d)", r.players >= 0 ? r.players : (int)pl.size());
+                dl->AddText(ImVec2(c3, y0), hc, hd);
+                float yy = y0 + lh + UI::S(8); int shown = 0;
+                dl->PushClipRect(ImVec2(c3, d.y), ImVec2(c4 - pad, e.y), true);
+                for(auto& n : pl)
+                {
+                    if(yy + lh > e.y - pad - lh) { char more[32]; snprintf(more, sizeof(more), "+%d more", (int)pl.size() - shown); dl->AddText(ImVec2(c3, yy), hc, more); break; }
+                    dl->AddRectFilled(ImVec2(c3, yy + lh * 0.2f), ImVec2(c3 + lh * 0.6f, yy + lh * 0.8f), IM_COL32(126, 178, 226, 255));
+                    dl->AddText(ImVec2(c3 + lh, yy), tc, n.c_str()); yy += lh * 1.15f; ++shown;
+                }
+                if(pl.empty()) dl->AddText(ImVec2(c3, yy), hc, r.players > 0 ? "Join to see who is playing." : "Nobody inside yet.");
+                dl->PopClipRect();
+            }
+            // 4: preview image
+            {
+                ImVec2 uv(1, 1); ImVec2 pa(c4, y0), pb(c5 - pad, e.y - pad);
+                float ph = (pb.x - pa.x) * 0.5f; if(ph < pb.y - pa.y) { pa.y += (pb.y - pa.y - ph) * 0.5f; pb.y = pa.y + ph; }
+                void* bt = LRowPreview(r, &uv);
+                if(!bt) bt = LRowBg(r, &uv);
+                if(bt) LImageCover(dl, bt, uv, pa, pb, IM_COL32_WHITE);
+                else { dl->AddRectFilled(pa, pb, IM_COL32(24, 27, 32, 255)); dl->AddText(ImVec2(pa.x + UI::S(10), pa.y + UI::S(8)), hc, "No preview"); }
+                dl->AddRect(pa, pb, IM_COL32(255, 255, 255, 50));
+            }
+            // 5: Server location + ping stability graph
+            {
+                const char* cn = LCountryName(r.cc);
+                char loc[96]; snprintf(loc, sizeof(loc), "Server location: %s", cn ? cn : (r.region >= 0 && r.region < REGION_COUNT ? g_MPRegionNames[r.region] : "Worldwide"));
+                float fh = lh, fw = fh * 4.0f / 3.0f;
+                LDrawFlag(dl, LCountryIndex(r.cc), ImVec2(c5, y0), ImVec2(c5 + fw, y0 + fh));
+                dl->PushClipRect(ImVec2(c5, d.y), ImVec2(e.x - UI::S(6), e.y), true);
+                dl->AddText(ImGui::GetFont(), ImGui::GetFontSize() * 0.82f, ImVec2(c5 + fw + UI::S(6), y0 + UI::S(2)), tc, loc);
+                LRowKey(r, key, sizeof(key));
+                const std::vector<int>* hv = nullptr; auto it = s_PingHist.find(key); if(it != s_PingHist.end()) hv = &it->second;
+                ImVec2 ga(c5, y0 + lh * 2.2f), gb(e.x - pad, e.y - pad - lh * 1.2f);
+                dl->AddRectFilled(ga, gb, IM_COL32(20, 23, 27, 255)); dl->AddRect(ga, gb, IM_COL32(255, 255, 255, 40));
+                dl->AddText(ImGui::GetFont(), ImGui::GetFontSize() * 0.78f, ImVec2(c5, ga.y - lh * 0.95f), hc, "Ping stability");
+                int mx = 100, sum = 0, mn = 99999, mxp = 0, n = hv ? (int)hv->size() : 0;
+                for(int k = 0; k < n; ++k) { int v = (*hv)[k]; mx = ImMax(mx, v); sum += v; mn = ImMin(mn, v); mxp = ImMax(mxp, v); }
+                float bw = (gb.x - ga.x) / 40.0f;
+                for(int k = 0; k < n; ++k)
+                {
+                    int v = (*hv)[k]; float hh = (gb.y - ga.y - UI::S(4)) * ImClamp((float)v / mx, 0.04f, 1.0f);
+                    float x = gb.x - (n - k) * bw;
+                    ImU32 bc = v < 80 ? IM_COL32(96, 186, 80, 255) : v < 150 ? IM_COL32(220, 190, 70, 255) : IM_COL32(210, 70, 56, 255);
+                    dl->AddRectFilled(ImVec2(x + 1, gb.y - hh), ImVec2(x + bw - 1, gb.y - 1), bc);
+                }
+                char st[64];
+                if(n) snprintf(st, sizeof(st), "avg %d ms   jitter %d ms", sum / n, mxp - mn); else snprintf(st, sizeof(st), "no ping yet");
+                dl->AddText(ImGui::GetFont(), ImGui::GetFontSize() * 0.78f, ImVec2(c5, e.y - pad - lh), hc, st);
+                dl->PopClipRect();
+            }
+            ImGui::SetCursorScreenPos(ImVec2(d.x, e.y));
+            ImGui::Dummy(ImVec2(W, 0));
         }
-        dl->PopClipRect();
-        dl->PushClipRect(ImVec2(a.x + cReg, a.y), ImVec2(a.x + W, a.y + rowH), true);
-        dl->AddText(ImVec2(a.x + cReg, ty), r.live ? IM_COL32_WHITE : dim, r.lang[0] ? r.lang : "-");
-        dl->PopClipRect();
         ImGui::PopID();
     }
     if(rows.empty())
-        ImGui::TextDisabled(s_szSearch[0] ? "No server matches \"%s\"." : (s_nLTab == LT_FAVORITES ? "No favourite servers yet. Tap + to add one." : "Searching..."), s_szSearch);
+        ImGui::TextDisabled(s_szSearch[0] ? "No server matches \"%s\"." : (s_nLTab == LT_FAVORITES ? "No favourite servers yet. Tap a server and press Favorite, or tap + to add one." :
+                            s_nLTab == LT_LAN ? "No Wi-Fi servers on this network." : "Searching..."), s_szSearch);
     LDragScroll();
     ImGui::EndChild();
     ImGui::EndChild();
@@ -1013,7 +1315,7 @@ static void LPagePlayersAdmin()
         ImVec2 a = ImGui::GetCursorScreenPos();
         if(ImGui::InvisibleButton("##p", ImVec2(W, rh))) s_nMgmtSel = (s_nMgmtSel == i) ? -1 : i;
         bool sel = s_nMgmtSel == i;
-        if(sel) { dl->AddRectFilled(a, ImVec2(a.x + W, a.y + rh), IM_COL32(190, 25, 25, 200), UI::S(6)); selOk = true; }
+        if(sel) { dl->AddRectFilled(a, ImVec2(a.x + W, a.y + rh), IM_COL32(190, 25, 25, 200), 0.0f); selOk = true; }
         float ty = a.y + (rh - ImGui::GetTextLineHeight()) * 0.5f;
         char b[24]; snprintf(b, sizeof(b), "%d", i);
         dl->AddText(ImVec2(a.x + UI::S(14), ty), IM_COL32_WHITE, b);
@@ -1109,7 +1411,7 @@ static void LPagePlayers()
         ImVec2 a = ImGui::GetCursorScreenPos();
         if(ImGui::InvisibleButton("##p", ImVec2(W, rh))) s_nMgmtSel = (s_nMgmtSel == v.id) ? -1 : v.id;
         bool sel = s_nMgmtSel == v.id;
-        if(sel) { dl->AddRectFilled(a, ImVec2(a.x + W, a.y + rh), IM_COL32(190, 25, 25, 200), UI::S(6)); selOk = true; selP = &v; }
+        if(sel) { dl->AddRectFilled(a, ImVec2(a.x + W, a.y + rh), IM_COL32(190, 25, 25, 200), 0.0f); selOk = true; selP = &v; }
         float ty = a.y + (rh - ImGui::GetTextLineHeight()) * 0.5f;
         char b[64]; snprintf(b, sizeof(b), "%d", v.id);
         dl->AddText(ImVec2(a.x + UI::S(14), ty), IM_COL32_WHITE, b);
@@ -1219,7 +1521,7 @@ static void LPageBans()
         ImGui::PushID(i);
         ImVec2 a = ImGui::GetCursorScreenPos();
         if(ImGui::InvisibleButton("##b", ImVec2(W, rh))) s_nBanSel = (s_nBanSel == i) ? -1 : i;
-        if(s_nBanSel == i) dl->AddRectFilled(a, ImVec2(a.x + W, a.y + rh), IM_COL32(255, 255, 255, 30), UI::S(6));
+        if(s_nBanSel == i) dl->AddRectFilled(a, ImVec2(a.x + W, a.y + rh), IM_COL32(255, 255, 255, 30), 0.0f);
         float ty = a.y + (rh - ImGui::GetTextLineHeight()) * 0.5f;
         char d[32]; time_t tt = (time_t)b.when; struct tm lt; localtime_r(&tt, &lt); strftime(d, sizeof(d), "%Y-%m-%d %H:%M", &lt);
         auto col = [&](float x0, float x1, const char* s, ImU32 c) { dl->PushClipRect(ImVec2(a.x + x0, a.y), ImVec2(a.x + x1, a.y + rh), true); dl->AddText(ImVec2(a.x + x0, ty), c, s); dl->PopClipRect(); };
@@ -1373,7 +1675,7 @@ static bool LSideItem(const char* id, int icon, const char* label, bool on, floa
     ImDrawList* dl = ImGui::GetWindowDrawList();
     // 3.63: selected = teal pill + a teal bar on the left (Valorant tabs)
     const ImVec2 a1(p.x + UI::S(6), p.y + UI::S(6)), b1(p.x + w - UI::S(4), p.y + h - UI::S(6));
-    if(on) { VPill(dl, a1, b1, kVTealDim, VAlpha(kVTeal, 0.55f)); dl->AddRectFilled(ImVec2(p.x, p.y + h * 0.28f), ImVec2(p.x + UI::S(4), p.y + h * 0.72f), kVTeal, UI::S(2)); }
+    if(on) { VPill(dl, a1, b1, kVTealDim, VAlpha(kVTeal, 0.55f)); dl->AddRectFilled(ImVec2(p.x, p.y + h * 0.28f), ImVec2(p.x + UI::S(4), p.y + h * 0.72f), kVTeal, 0.0f); }
     else if(ImGui::IsItemActive()) VPill(dl, a1, b1, IM_COL32(236, 232, 225, 22));
     ImU32 col = on ? kVTeal : IM_COL32(205, 210, 214, 255);
     LIcon(dl, icon, ImVec2(p.x + UI::S(36), p.y + h * 0.5f), h * 0.24f, col);
@@ -1405,17 +1707,17 @@ static void RenderLauncher(void* openPtr)
 {
     bool* open = (bool*)openPtr;
     const ImVec2 ds = ImGui::GetIO().DisplaySize;
-    const float mx = 0.0f, my = 0.0f;   // 4.00: full screen (was 2.5 % / 3 % margins)
+    const float mx = ds.x * 0.025f, my = ds.y * 0.03f;   // 4.03: almost full screen (CS:GO browser), the game shows around it
     // 2.26: dim the game behind the launcher (touches never reach it while this is open)
-    ImGui::GetBackgroundDrawList()->AddRectFilled(ImVec2(0, 0), ds, IM_COL32(0, 0, 0, 110));
+    ImGui::GetBackgroundDrawList()->AddRectFilled(ImVec2(0, 0), ds, IM_COL32(0, 0, 0, 150));
     ImGui::SetNextWindowPos(ImVec2(mx, my));
     ImGui::SetNextWindowSize(ImVec2(ds.x - mx * 2, ds.y - my * 2));
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);         // 4.00: full screen, square
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.035f, 0.065f, 0.095f, 0.50f));   // 3.63: navy glass, 50% transparent
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);         // square
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, UI::S(1));
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.17f, 0.19f, 0.22f, 0.94f));   // 4.03: CS:GO slate glass
     ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0, 0, 0, 0));
-    ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.93f, 0.91f, 0.88f, 0.14f));
+    ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0, 0, 0, 0.6f));
     if(!ImGui::Begin("##MPLauncher", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollWithMouse))
     { ImGui::End(); ImGui::PopStyleColor(3); ImGui::PopStyleVar(3); return; }
 
@@ -1423,19 +1725,26 @@ static void RenderLauncher(void* openPtr)
     ImVec2 wp = ImGui::GetWindowPos(), ws = ImGui::GetWindowSize();
     const ImU32 line = kVLine;
     const float pad = UI::S(16);
-    // 3.63: Valorant glass: a soft teal glow at the top, darker at the bottom, corner brackets
-    dl->AddRectFilledMultiColor(wp, ImVec2(wp.x + ws.x, wp.y + ws.y * 0.5f), IM_COL32(40, 120, 120, 26), IM_COL32(40, 120, 120, 26), IM_COL32(15, 25, 35, 0), IM_COL32(15, 25, 35, 0));
-    dl->AddRectFilledMultiColor(ImVec2(wp.x, wp.y + ws.y * 0.5f), ImVec2(wp.x + ws.x, wp.y + ws.y), IM_COL32(5, 10, 15, 0), IM_COL32(5, 10, 15, 0), IM_COL32(5, 10, 15, 70), IM_COL32(5, 10, 15, 70));
-    VTicks(dl, ImVec2(wp.x + UI::S(5), wp.y + UI::S(5)), ImVec2(wp.x + ws.x - UI::S(5), wp.y + ws.y - UI::S(5)), VAlpha(kVText, 0.45f), UI::S(18));
+    // 4.03: CS:GO panel: lighter at the top, darker at the bottom
+    VSlate(dl, wp, ImVec2(wp.x + ws.x, wp.y + ws.y), 0.55f);
     VPushWidgetStyle();
 
-    // ---- title bar ----
+    // ---- title bar: PLAY ... profile (top right) ----
     const float titleH = UI::S(70);
+    static bool s_bProfMenu = false, s_bAbout = false;
+    ImVec2 profA(0, 0), profB(0, 0);
     {
-        // 3.24: profile at the top left: your Discord picture + account (blank default when no account)
-        ImVec2 c(wp.x + pad + UI::S(26), wp.y + titleH * 0.5f);
-        const float ar = UI::S(25);
-        ProfileDrawAvatar(dl, c, ar);
+        float tx = wp.x + pad + UI::S(6), ty = wp.y + (titleH - ImGui::GetTextLineHeight() * 1.25f) * 0.5f;
+        dl->AddText(UI::Font(), ImGui::GetFontSize() * 1.25f, ImVec2(tx, ty), IM_COL32_WHITE, "PLAY");
+        float px = tx + ImGui::CalcTextSize("PLAY").x * 1.25f + UI::S(22);
+        float ty2 = wp.y + (titleH - ImGui::GetTextLineHeight()) * 0.5f;
+        dl->AddText(ImVec2(px, ty2), kVDim, "MP Launcher  v" MP_VERSION_STR);
+        // [X] at the far right, then friends + bell, then the profile (avatar + name) with its menu
+        ImGui::SetCursorScreenPos(ImVec2(wp.x + ws.x - titleH - UI::S(6), wp.y));
+        if(LToolButton("close", IC_CLOSE, nullptr, titleH)) { *open = false; s_bRegionPick = false; s_bProfMenu = false; }
+        if(s_bLauncherCloseReq) { s_bLauncherCloseReq = false; *open = false; s_bRegionPick = false; s_bProfMenu = false; }
+        ImGui::SetCursorScreenPos(ImVec2(wp.x + ws.x - titleH * 3 - UI::S(6), wp.y));
+        SocTitleButtons(titleH);
         const std::string pu = ProfileUser();
         const bool online = s_Auth.LoggedIn() && !s_AuthUser.empty();
         const char* l1 = pu.empty() ? "Guest" : pu.c_str();
@@ -1443,43 +1752,32 @@ static void RenderLauncher(void* openPtr)
         if(pu.empty()) snprintf(l2, sizeof(l2), "Not logged in");
         else if(!s_ProfDiscord.empty() && !strcasecmp(pu.c_str(), s_ProfOwner.c_str())) snprintf(l2, sizeof(l2), "@%s%s", s_ProfDiscord.c_str(), online ? "" : "  (offline)");
         else snprintf(l2, sizeof(l2), online ? "Logged in" : "Log in on a server");
-        const float lh = ImGui::GetTextLineHeight();
-        float px = c.x + ar + UI::S(12);
-        float sc = 0.78f;
-        ImFont* fnt = ImGui::GetFont();
-        dl->AddText(ImVec2(px, c.y - lh * 0.5f - lh * sc * 0.5f), IM_COL32_WHITE, l1);
-        dl->AddText(fnt, ImGui::GetFontSize() * sc, ImVec2(px, c.y + lh * 0.5f - lh * sc * 0.45f), online ? IM_COL32(95, 211, 95, 255) : IM_COL32(150, 150, 150, 255), l2);
+        const float sc = 0.78f, lh = ImGui::GetTextLineHeight(), ar = UI::S(24);
         float pw = std::max(ImGui::CalcTextSize(l1).x, ImGui::CalcTextSize(l2).x * sc);
-        // a status dot on the picture: green = logged in this game session
+        float right = wp.x + ws.x - titleH * 3 - UI::S(18);
+        profA = ImVec2(right - pw - ar * 2 - UI::S(44), wp.y + UI::S(6)); profB = ImVec2(right, wp.y + titleH - UI::S(6));
+        ImGui::SetCursorScreenPos(profA);
+        if(ImGui::InvisibleButton("##prof", ImVec2(profB.x - profA.x, profB.y - profA.y))) s_bProfMenu = !s_bProfMenu;
+        if(s_bProfMenu || ImGui::IsItemActive()) dl->AddRectFilled(profA, profB, IM_COL32(255, 255, 255, s_bProfMenu ? 24 : 14));
+        ImVec2 c(profB.x - ar - UI::S(10), (profA.y + profB.y) * 0.5f);
+        ProfileDrawAvatar(dl, c, ar);
         dl->AddCircleFilled(ImVec2(c.x + ar * 0.72f, c.y + ar * 0.72f), UI::S(6), online ? IM_COL32(67, 181, 129, 255) : IM_COL32(116, 127, 141, 255), 16);
-        dl->AddCircle(ImVec2(c.x + ar * 0.72f, c.y + ar * 0.72f), UI::S(6), IM_COL32(15, 15, 18, 255), 16, UI::S(2));
-        float sepX = px + pw + UI::S(20);
-        dl->AddLine(ImVec2(sepX, wp.y + titleH * 0.22f), ImVec2(sepX, wp.y + titleH * 0.78f), line, UI::S(2));
-        float tx = sepX + UI::S(20), ty = wp.y + (titleH - ImGui::GetTextLineHeight()) * 0.5f;
-        {   // 3.63: red Valorant diamond before the name
-            float dc = UI::S(7), dy = wp.y + titleH * 0.5f;
-            dl->AddQuadFilled(ImVec2(tx + dc, dy - dc), ImVec2(tx + dc * 2, dy), ImVec2(tx + dc, dy + dc), ImVec2(tx, dy), kVRed);
-            tx += dc * 2 + UI::S(12);
+        float nx = c.x - ar - UI::S(12);
+        dl->AddText(ImVec2(nx - ImGui::CalcTextSize(l1).x, c.y - lh * 0.5f - lh * sc * 0.5f), IM_COL32_WHITE, l1);
+        dl->AddText(ImGui::GetFont(), ImGui::GetFontSize() * sc, ImVec2(nx - ImGui::CalcTextSize(l2).x * sc, c.y + lh * 0.5f - lh * sc * 0.45f), online ? IM_COL32(95, 211, 95, 255) : IM_COL32(150, 150, 150, 255), l2);
+        {   // small down arrow
+            float ax = profA.x + UI::S(14), ay = c.y, s2 = UI::S(5);
+            dl->AddTriangleFilled(ImVec2(ax - s2, ay - s2 * 0.5f), ImVec2(ax + s2, ay - s2 * 0.5f), ImVec2(ax, ay + s2 * 0.6f), kVDim);
         }
-        dl->AddText(ImVec2(tx, ty), kVText, "MP Launcher");
-        dl->AddText(ImVec2(tx + ImGui::CalcTextSize("MP Launcher").x + UI::S(16), ty), kVDim, "v" MP_VERSION_STR);   // 3.35: always the real version
-        // 2.30: watermark, right side of the title bar (left of [X]), green at 50% transparency
+        // watermark (2.30), between the version and the profile
         {
             const char* wm = "powered by HiveMQ/ThirtyFoxMC";
             ImVec2 wsz = ImGui::CalcTextSize(wm);
-            float wx = wp.x + ws.x - titleH * 3 - UI::S(6) - UI::S(18) - wsz.x;   // 3.63: + bell + friends
-            float minX = tx + ImGui::CalcTextSize("MP Launcher  v" MP_VERSION_STR).x + UI::S(40);   // never over the name
-            if(wx > minX) dl->AddText(ImVec2(wx, ty), IM_COL32(95, 211, 95, 128), wm);
+            float wx = profA.x - UI::S(20) - wsz.x * 0.8f, minX = px + ImGui::CalcTextSize("MP Launcher  v" MP_VERSION_STR).x + UI::S(30);
+            if(wx > minX) dl->AddText(ImGui::GetFont(), ImGui::GetFontSize() * 0.8f, ImVec2(wx, ty2 + lh * 0.1f), IM_COL32(95, 211, 95, 110), wm);
         }
-        // 3.63: friends + notification bell (red badge = unread), left of [X]
-        ImGui::SetCursorScreenPos(ImVec2(wp.x + ws.x - titleH * 3 - UI::S(6), wp.y));
-        SocTitleButtons(titleH);
-        ImGui::SetCursorScreenPos(ImVec2(wp.x + ws.x - titleH - UI::S(6), wp.y));
-        if(LToolButton("close", IC_CLOSE, nullptr, titleH)) { *open = false; s_bRegionPick = false; }
-        if(s_bLauncherCloseReq) { s_bLauncherCloseReq = false; *open = false; s_bRegionPick = false; }
-        dl->AddLine(ImVec2(wp.x, wp.y + titleH), ImVec2(wp.x + ws.x, wp.y + titleH), line, UI::S(2));
+        dl->AddLine(ImVec2(wp.x, wp.y + titleH), ImVec2(wp.x + ws.x, wp.y + titleH), line, UI::S(1));
     }
-
     // ---- data ----
     ServerList::Poll();
     if(MP_NowMs() - ServerList::LastRefreshMs() > 10000) ServerList::Refresh();
@@ -1494,62 +1792,68 @@ static void RenderLauncher(void* openPtr)
             if(n.token) for(auto& l : live) if(l.token == n.token) { n.players = l.players; n.maxPlayers = l.maxPlayers; break; }
     }
     if(s_bHasNetwork && !IsSearching() && MP_NowMs() - s_nNearbyTime > 15000) { s_nNearbyTime = MP_NowMs(); StartJob(JOB_SCAN, false, "", MP_DEFAULT_PORT); }
-    bool listTab = s_nLTab == LT_INTERNET || s_nLTab == LT_FAVORITES;
+    bool listTab = s_nLTab == LT_INTERNET || s_nLTab == LT_FAVORITES || s_nLTab == LT_LAN;
     std::vector<LRow> rows;
     if(listTab) LBuildRows(s_nLTab, nearby, rows);
-    // keep the selection valid for the toolbar (LTable re-resolves it by key)
+    // keep the selection valid for CONNECT (LTable re-resolves it by key)
     s_nLSel = -1;
     { char key[48]; for(int i = 0; i < (int)rows.size(); ++i) { LRowKey(rows[i], key, sizeof(key)); if(s_szLSelKey[0] && !strcmp(key, s_szLSelKey)) s_nLSel = i; } }
     const LRow* sel = (s_nLSel >= 0 && s_nLSel < (int)rows.size()) ? &rows[s_nLSel] : nullptr;
 
-    // ---- toolbar ----
-    const float tbH = UI::S(96), btnH = UI::S(72);
+    // ---- 4.03: CS:GO top tabs  Internet | Featured | Favorites | Lan     [search] refresh region gear + help ----
+    const float tbH = UI::S(78), btnH = UI::S(60);
     {
         float y = wp.y + titleH + (tbH - btnH) * 0.5f;
-        ImGui::SetCursorScreenPos(ImVec2(wp.x + pad, y));
         float sideW = ImMax(UI::S(300), ws.x * 0.17f);
-        if(LInputBox("search", s_szSearch, "Search server", sideW - pad, btnH, IC_SEARCH)) VKeyboard::Open("Search server", s_szSearch, 31, OnSearch);
-        ImGui::SameLine(0, UI::S(18));
-        bool onSel = sel ? sel->on : IsOnDefault();
-        const char* cl = onSel ? (client.GetState() == NET_CONNECTING ? "Cancel" : "Leave") : (IsBusy() ? "Searching..." : "Connect");
-        if(LToolButton("connect", onSel ? IC_STOP : IC_PLAY, cl, btnH, s_bHasNetwork || onSel))
-        {
-            if(sel) { if(sel->on) LLeave(*sel); else LJoin(*sel); }   // 3.10: Leave really leaves, Connect never reconnects
-            else { if(IsOnDefault()) MP::ToggleConnect(); else { LeaveServer(nullptr); MP::ToggleConnect(); } }
+        float x = wp.x + UI::S(10) + sideW + UI::S(18);
+        struct { const char* t; int tab, sub; } tabs[4] = { { "Internet", LT_INTERNET, 0 }, { "Featured", LT_INTERNET, 1 }, { "Favorites", LT_FAVORITES, -1 }, { "Lan", LT_LAN, -1 } };
+        if(!listTab)
+        {   // 4.03: pages stay in the left sidebar - the top row only shows the page name
+            const char* pt = s_nLTab == LT_ADD || s_nLTab == LT_HOSTED ? "Add server" : s_nLTab == LT_CLOUD ? "Cloud Storage" : s_nLTab == LT_PLAYERS ? "Players" :
+                             s_nLTab == LT_BANS ? "Bans" : s_nLTab == LT_SRVMGMT ? "Server Management" : s_nLTab == LT_FRIENDS ? "Friends" : s_nLTab == LT_CHATS ? "Chats" :
+                             s_nLTab == LT_PARTY ? "Party" : s_nLTab == LT_COMMUNITY ? "Communities" : s_nLTab == LT_INBOX ? "Inbox" :
+                             (s_nLTab >= LT_SECTIONS && s_nLTab - LT_SECTIONS < FloatMenu::SectionCount()) ? FloatMenu::SectionTitle(s_nLTab - LT_SECTIONS) : "";
+            dl->AddText(ImVec2(x, y + (btnH - ImGui::GetTextLineHeight()) * 0.5f), IM_COL32_WHITE, pt);
         }
-        ImGui::SameLine(0, UI::S(6));
-        if(LToolButton("add", IC_PLUS, nullptr, btnH, true, s_nLTab == LT_ADD)) s_nLTab = LT_ADD;
-        ImGui::SameLine(0, UI::S(6));
-        bool canDel = sel && sel->kind == 2;
-        if(LToolButton("del", IC_TRASH, nullptr, btnH, canDel) && canDel) { ServerList::Remove(sel->saved); s_szLSelKey[0] = 0; sel = nullptr; }
+        for(int i = 0; i < 4 && listTab; ++i)
+        {
+            ImVec2 ts = ImGui::CalcTextSize(tabs[i].t);
+            float tw = ts.x + UI::S(44);
+            ImVec2 ta(x, y), tb(x + tw, y + btnH);
+            ImGui::SetCursorScreenPos(ta); ImGui::PushID(950 + i);
+            bool on = s_nLTab == tabs[i].tab && (tabs[i].sub < 0 || s_nInetSub == tabs[i].sub);
+            if(ImGui::InvisibleButton("##ttab", ImVec2(tw, btnH)) && !on) { s_nLTab = tabs[i].tab; if(tabs[i].sub >= 0) s_nInetSub = tabs[i].sub; s_szLSelKey[0] = 0; s_nLSel = -1; }
+            bool held = ImGui::IsItemActive(); ImGui::PopID();
+            if(held) dl->AddRectFilled(ta, tb, IM_COL32(255, 255, 255, 18));
+            dl->AddText(ImVec2(x + (tw - ts.x) * 0.5f, y + (btnH - ts.y) * 0.5f), on ? IM_COL32_WHITE : IM_COL32(165, 172, 180, 255), tabs[i].t);
+            if(on) dl->AddRectFilled(ImVec2(ta.x + UI::S(8), tb.y - UI::S(3)), ImVec2(tb.x - UI::S(8), tb.y), IM_COL32_WHITE);
+            x += tw + UI::S(6);
+        }
+        // right side: search, refresh, region, connection settings, add server, help
+        float searchW = ImMax(UI::S(260), ws.x * 0.16f);
+        float rx = wp.x + ws.x - pad - btnH * 5 - UI::S(6) * 5 - searchW;
+        if(rx < x + UI::S(10)) { searchW = ImMax(UI::S(140), searchW - (x + UI::S(10) - rx)); rx = wp.x + ws.x - pad - btnH * 5 - UI::S(6) * 5 - searchW; }
+        ImGui::SetCursorScreenPos(ImVec2(rx, y));
+        if(LInputBox("search", s_szSearch, "Search", searchW, btnH, IC_SEARCH)) VKeyboard::Open("Search server", s_szSearch, 31, OnSearch);
         ImGui::SameLine(0, UI::S(6));
         if(LToolButton("refresh", IC_REFRESH, nullptr, btnH)) { ServerList::Refresh(); if(s_bHasNetwork) { s_nNearbyTime = MP_NowMs(); StartJob(JOB_SCAN, false, "", MP_DEFAULT_PORT); } }
+        ImGui::SameLine(0, UI::S(6));
+        s_vRegionBtn = ImGui::GetCursorScreenPos(); s_fRegionBtn = btnH;   // 3.25.1: region switch
+        if(LToolButton("region", IC_REGION, nullptr, btnH, true, s_bRegionPick)) s_bRegionPick = !s_bRegionPick;
         ImGui::SameLine(0, UI::S(6));
         int connTab = -1;
         for(int i = 0; i < FloatMenu::SectionCount(); ++i) if(!strcasecmp(FloatMenu::SectionTitle(i), "Connection")) connTab = LT_SECTIONS + i;
         if(LToolButton("gear", IC_GEAR, nullptr, btnH, connTab >= 0, s_nLTab == connTab) && connTab >= 0) s_nLTab = connTab;
         ImGui::SameLine(0, UI::S(6));
-        s_vRegionBtn = ImGui::GetCursorScreenPos(); s_fRegionBtn = btnH;   // 3.25.1: region switch icon, right after the gear
-        if(LToolButton("region", IC_REGION, nullptr, btnH, true, s_bRegionPick)) s_bRegionPick = !s_bRegionPick;
-
-        // right side: nickname, display settings, help
-        float nickW = ImMax(UI::S(280), ws.x * 0.15f);
-        float rx = wp.x + ws.x - pad - btnH * 2 - UI::S(12) - nickW;
-        ImGui::SetCursorScreenPos(ImVec2(rx, y));
-        bool idle = client.GetState() == NET_DISCONNECTED;
-        if(LInputBox("nick", settings.name, "Nickname", nickW, btnH) && idle) VKeyboard::Open("Nickname", settings.name, MP_NAME_LEN - 1, OnName);
-        ImGui::SameLine(0, UI::S(6));
-        int dispTab = -1;
-        for(int i = 0; i < FloatMenu::SectionCount(); ++i) if(!strcasecmp(FloatMenu::SectionTitle(i), "Display")) dispTab = LT_SECTIONS + i;
-        if(LToolButton("disp", IC_SLIDERS, nullptr, btnH, dispTab >= 0, s_nLTab == dispTab) && dispTab >= 0) s_nLTab = dispTab;
+        if(LToolButton("add", IC_PLUS, nullptr, btnH, true, s_nLTab == LT_ADD)) s_nLTab = LT_ADD;
         ImGui::SameLine(0, UI::S(6));
         if(LToolButton("help", IC_INFO, nullptr, btnH)) FloatMenu::OpenPage(FloatMenu::PAGE_HELP);
-        dl->AddLine(ImVec2(wp.x, wp.y + titleH + tbH), ImVec2(wp.x + ws.x, wp.y + titleH + tbH), line, UI::S(2));
+        dl->AddLine(ImVec2(wp.x, wp.y + titleH + tbH), ImVec2(wp.x + ws.x, wp.y + titleH + tbH), line, UI::S(1));
     }
-
     // ---- body ----
     float bodyY = wp.y + titleH + tbH + UI::S(2);
-    float bodyH = wp.y + ws.y - bodyY - UI::S(6);
+    const float barH = UI::S(88);   // 4.03: bottom bar (status + nickname + CONNECT)
+    float bodyH = wp.y + ws.y - bodyY - UI::S(6) - barH;
     float sideW = ImMax(UI::S(300), ws.x * 0.17f);
     ImGui::SetCursorScreenPos(ImVec2(wp.x + UI::S(10), bodyY + UI::S(8)));
     ImGui::BeginChild("##lside", ImVec2(sideW, bodyH - UI::S(10)), false);
@@ -1558,6 +1862,7 @@ static void RenderLauncher(void* openPtr)
         LGroupLabel("SERVERS");
         if(LSideItem("inet", IC_GLOBE, "Internet",  s_nLTab == LT_INTERNET,  iw, ih)) { s_nLTab = LT_INTERNET; }
         if(LSideItem("fav",  IC_HEART, "Favorites", s_nLTab == LT_FAVORITES, iw, ih)) { s_nLTab = LT_FAVORITES; }
+        if(LSideItem("lan",  IC_LIST,  "Lan",       s_nLTab == LT_LAN,       iw, ih)) { s_nLTab = LT_LAN; }   // 4.03: Wi-Fi servers
         if(LSideItem("add",  IC_PLUS,  "Add server",s_nLTab == LT_ADD,       iw, ih)) { s_nLTab = LT_ADD; }
         LGroupLabel("STORAGE");   // 4.02
         if(LSideItem("cloud", IC_CLOUD, "Cloud Storage", s_nLTab == LT_CLOUD, iw, ih)) { s_nLTab = LT_CLOUD; }
@@ -1584,41 +1889,12 @@ static void RenderLauncher(void* openPtr)
 
     if(listTab)
     {
-        float rightW = ImMax(UI::S(330), ws.x * 0.22f);
-        float tableW = contentW - rightW - UI::S(6);
-        ImGui::SetCursorScreenPos(ImVec2(cx0 + UI::S(4), bodyY + UI::S(6)));
-        // 3.25.1: the region switch is an icon in the toolbar now, the table gets the whole height again
-        ImGui::SetCursorScreenPos(ImVec2(cx0 + UI::S(4), bodyY));
-        float subH = 0;
-        if(s_nLTab == LT_INTERNET)
-        {   // 3.58: PUBLIC || FEATURED
-            subH = UI::S(58);
-            const char* lb[2] = { "PUBLIC", "FEATURED" };
-            float bw = (tableW - UI::S(12)) * 0.5f;
-            for(int i = 0; i < 2; ++i)
-            {
-                ImVec2 a(cx0 + UI::S(4) + i * (bw + UI::S(8)), bodyY + UI::S(6)), b(a.x + bw, a.y + subH - UI::S(12));
-                ImGui::SetCursorScreenPos(a); ImGui::PushID(900 + i);
-                if(ImGui::InvisibleButton("##isub", ImVec2(bw, b.y - a.y)) && s_nInetSub != i) { s_nInetSub = i; s_szLSelKey[0] = 0; s_nLSel = -1; }
-                bool held = ImGui::IsItemActive(); ImGui::PopID();
-                bool on = s_nInetSub == i;
-                // 3.63: Valorant pill tabs (selected = teal pill, dark text)
-                if(on) VPill(dl, a, b, held ? VAlpha(kVTeal, 0.8f) : kVTeal);
-                else VPill(dl, a, b, IM_COL32(236, 232, 225, held ? 40 : 10), IM_COL32(236, 232, 225, 40));
-                ImVec2 ts = ImGui::CalcTextSize(lb[i]);
-                dl->AddText(ImVec2((a.x + b.x - ts.x) * 0.5f, (a.y + b.y - ts.y) * 0.5f), on ? kVDark : kVText, lb[i]);
-            }
-            if(s_nInetSub == 0) { char c[24]; snprintf(c, sizeof(c), "||"); ImVec2 ts = ImGui::CalcTextSize(c); dl->AddText(ImVec2(cx0 + UI::S(4) + bw + UI::S(4) - ts.x * 0.5f, bodyY + subH * 0.5f - ts.y * 0.5f), IM_COL32(200, 200, 200, 160), c); }
-            ImGui::SetCursorScreenPos(ImVec2(cx0 + UI::S(4), bodyY + subH));
-        }
-        LTable(rows, tableW, bodyH - subH);
-        float rx0 = cx0 + UI::S(4) + tableW + UI::S(2);
-        dl->AddLine(ImVec2(rx0, bodyY), ImVec2(rx0, wp.y + ws.y), line, UI::S(2));
-        ImGui::SetCursorScreenPos(ImVec2(rx0 + UI::S(4), bodyY));
+        float tableW = contentW - UI::S(10);
+        ImGui::SetCursorScreenPos(ImVec2(cx0 + UI::S(4), bodyY + UI::S(4)));
+        LTable(rows, tableW, bodyH - UI::S(4));
         // the table may have changed the selection
         sel = nullptr;
         { char key[48]; for(auto& r : rows) { LRowKey(r, key, sizeof(key)); if(s_szLSelKey[0] && !strcmp(key, s_szLSelKey)) { sel = &r; break; } } }
-        LRightPanel(sel, rightW - UI::S(6), bodyH);
     }
     else
     {
@@ -1640,6 +1916,118 @@ static void RenderLauncher(void* openPtr)
         LDragScroll();
         ImGui::EndChild();
     }
+    // ---- 4.03: bottom bar: status | nickname | green CONNECT ----
+    {
+        ImVec2 ba(wp.x, wp.y + ws.y - barH), bb(wp.x + ws.x, wp.y + ws.y);
+        dl->AddRectFilled(ba, bb, IM_COL32(24, 27, 32, 220));
+        dl->AddLine(ba, ImVec2(bb.x, ba.y), IM_COL32(0, 0, 0, 160), UI::S(1));
+        const float bh = barH - UI::S(26), by = ba.y + UI::S(13);
+        // status
+        char st[160];
+        int n = 0, pl = 0; for(auto& r : rows) { ++n; if(r.players > 0) pl += r.players; }
+        if(listTab) snprintf(st, sizeof(st), "%d server%s   %d player%s%s", n, n == 1 ? "" : "s", pl, pl == 1 ? "" : "s", IsBusy() ? "   searching..." : "");
+        else snprintf(st, sizeof(st), "%s", IsConnected() ? "Connected" : "Not connected");
+        dl->AddText(ImVec2(ba.x + pad + UI::S(6), by + (bh - ImGui::GetTextLineHeight()) * 0.5f), kVDim, st);
+        // nickname (was in the toolbar)
+        float cw = ImMax(UI::S(300), ws.x * 0.18f);
+        float nickW = ImMax(UI::S(260), ws.x * 0.15f);
+        ImGui::SetCursorScreenPos(ImVec2(bb.x - pad - cw - UI::S(14) - nickW, by));
+        bool idle = client.GetState() == NET_DISCONNECTED;
+        if(LInputBox("nick", settings.name, "Nickname", nickW, bh) && idle) VKeyboard::Open("Nickname", settings.name, MP_NAME_LEN - 1, OnName);
+        // CONNECT (Leave / Cancel while on the selected server)
+        bool onSel = sel ? sel->on : (listTab ? false : IsOnDefault());
+        const char* cl = onSel ? (client.GetState() == NET_CONNECTING ? "CANCEL" : "DISCONNECT") : (IsBusy() ? "SEARCHING..." : "CONNECT");
+        bool can = (s_bHasNetwork || onSel) && (sel || !listTab || IsOnDefault());
+        ImVec2 ca(bb.x - pad - cw, by), cb(bb.x - pad, by + bh);
+        ImGui::SetCursorScreenPos(ca);
+        if(!can) ImGui::BeginDisabled();
+        bool hit = ImGui::InvisibleButton("##connect", ImVec2(cw, bh));
+        bool held = ImGui::IsItemActive();
+        if(!can) ImGui::EndDisabled();
+        ImU32 g0 = onSel ? IM_COL32(170, 58, 46, 255) : kVGreen, g1 = onSel ? IM_COL32(120, 36, 28, 255) : IM_COL32(44, 110, 26, 255);
+        if(!can) { g0 = IM_COL32(70, 76, 84, 255); g1 = IM_COL32(52, 56, 62, 255); }
+        if(held) { g0 = VAlpha(g0, 0.8f); }
+        dl->AddRectFilledMultiColor(ca, cb, g0, g0, g1, g1);
+        dl->AddRect(ca, cb, can ? IM_COL32(150, 220, 120, onSel ? 0 : 160) : IM_COL32(255, 255, 255, 30));
+        ImVec2 ts = ImGui::CalcTextSize(cl);
+        dl->AddText(UI::Font(), ImGui::GetFontSize() * 1.1f, ImVec2((ca.x + cb.x - ts.x * 1.1f) * 0.5f, (ca.y + cb.y - ts.y * 1.1f) * 0.5f), can ? IM_COL32_WHITE : IM_COL32(150, 150, 150, 255), cl);
+        if(hit && can)
+        {
+            if(sel) { if(sel->on) LLeave(*sel); else LJoin(*sel); }   // 3.10: Leave really leaves, Connect never reconnects
+            else if(IsOnDefault()) MP::ToggleConnect();
+        }
+    }
+    // ---- 4.03: profile menu (top right): Settings, About, Switch account, Logout ----
+    if(s_bProfMenu)
+    {
+        std::vector<std::string> accs = AuthAccounts();
+        const float iw = ImMax(UI::S(380), profB.x - profA.x), ih = UI::S(62);
+        ImVec2 ma(profB.x - iw, profB.y + UI::S(4));
+        int items = 4 + (int)accs.size() + ((int)accs.size() < AUTH_MAX_ACCOUNTS ? 1 : 0);
+        ImVec2 mb(profB.x, ma.y + ih * items + UI::S(30));
+        ImDrawList* fg = ImGui::GetForegroundDrawList();
+        fg->AddRectFilled(ma, mb, IM_COL32(36, 40, 46, 250));
+        fg->AddRect(ma, mb, IM_COL32(0, 0, 0, 200));
+        float yy = ma.y + UI::S(4);
+        auto item = [&](const char* id, const char* t, ImU32 col, bool sub) -> bool
+        {
+            ImVec2 a(ma.x, yy), b(mb.x, yy + ih);
+            ImGui::SetCursorScreenPos(a); ImGui::PushID(id);
+            bool h = ImGui::InvisibleButton("##pm", ImVec2(b.x - a.x, ih));
+            bool act = ImGui::IsItemActive(); ImGui::PopID();
+            if(act) fg->AddRectFilled(a, b, IM_COL32(255, 255, 255, 24));
+            fg->AddText(ImVec2(a.x + UI::S(sub ? 46 : 22), a.y + (ih - ImGui::GetTextLineHeight()) * 0.5f), col, t);
+            yy += ih; return h;
+        };
+        int setTab = -1;
+        for(int i = 0; i < FloatMenu::SectionCount(); ++i) if(!strcasecmp(FloatMenu::SectionTitle(i), "Player")) setTab = LT_SECTIONS + i;
+        if(setTab < 0) for(int i = 0; i < FloatMenu::SectionCount(); ++i) if(strcasecmp(FloatMenu::SectionTitle(i), "Servers")) { setTab = LT_SECTIONS + i; break; }
+        if(item("set", "Settings", kVText, false)) { if(setTab >= 0) s_nLTab = setTab; s_bProfMenu = false; }
+        if(item("about", "About", kVText, false)) { s_bAbout = true; s_bProfMenu = false; }
+        fg->AddText(ImGui::GetFont(), ImGui::GetFontSize() * 0.8f, ImVec2(ma.x + UI::S(22), yy + UI::S(6)), kVDim, "Switch account");
+        yy += UI::S(30);
+        const std::string cur = ProfileUser();
+        for(int i = 0; i < (int)accs.size(); ++i)
+        {
+            bool me = !strcasecmp(accs[i].c_str(), cur.c_str());
+            char t[64]; snprintf(t, sizeof(t), "%s%s", accs[i].c_str(), me ? "   (this one)" : "");
+            char id[8]; snprintf(id, sizeof(id), "a%d", i);
+            if(item(id, t, me ? IM_COL32(95, 211, 95, 255) : kVText, true) && !me) { AuthLogout(accs[i].c_str(), false); s_bProfMenu = false; }
+        }
+        if((int)accs.size() < AUTH_MAX_ACCOUNTS)
+        {
+            char t[64]; snprintf(t, sizeof(t), "+ Add account  (%d/%d)", (int)accs.size(), AUTH_MAX_ACCOUNTS);
+            if(item("add", t, kVTeal, true)) { AuthLogout("", true); s_bProfMenu = false; }
+        }
+        fg->AddLine(ImVec2(ma.x, yy + UI::S(2)), ImVec2(mb.x, yy + UI::S(2)), IM_COL32(255, 255, 255, 30));
+        if(item("out", "Logout", IM_COL32(230, 110, 96, 255), false))
+        {
+            if(!cur.empty()) AuthAccountsRemove(cur);
+            AuthLogout("", false); s_bProfMenu = false;
+        }
+        // tap outside = close
+        if(ImGui::IsMouseClicked(0) && !ImGui::IsMouseHoveringRect(ma, mb, false) && !ImGui::IsMouseHoveringRect(profA, profB, false)) s_bProfMenu = false;
+    }
+    if(s_bAbout)
+    {
+        ImGui::SetNextWindowPos(ImVec2(ds.x * 0.5f, ds.y * 0.5f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+        ImGui::SetNextWindowSize(ImVec2(ImMin(ds.x * 0.5f, UI::S(900)), 0));
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(UI::S(26), UI::S(22)));
+        ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.14f, 0.16f, 0.19f, 0.98f));
+        if(ImGui::Begin("##MPAbout", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize))
+        {
+            ImGui::TextUnformatted("MP Launcher v" MP_VERSION_STR);
+            ImGui::TextDisabled("GTA San Andreas multiplayer mod by ThirtyFoxMC");
+            ImGui::Separator();
+            ImGui::TextWrapped("Servers: internet lobby (HiveMQ / public MQTT brokers), Wi-Fi (Lan) and saved servers. "
+                               "Logins and Discord verification: the MP Discord bot (max %d game accounts per Discord).", AUTH_MAX_ACCOUNTS);
+            ImGui::TextWrapped("Server backgrounds: Wikimedia Commons photos (see ICONS_CREDITS.txt). Flags: flag-icons (MIT).");
+            ImGui::Spacing();
+            if(ImGui::Button("Close", ImVec2(-1, UI::S(64)))) s_bAbout = false;
+        }
+        ImGui::End();
+        ImGui::PopStyleColor(); ImGui::PopStyleVar();
+    }
     // the Internet tab also shows the lobby state under the list title area when it is offline
     VPopWidgetStyle();
     ImGui::End();
@@ -1657,7 +2045,7 @@ static void RenderKickDialog(void*)
     ImGui::SetNextWindowPos(ImVec2(ds.x * 0.5f, ds.y * 0.5f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
     ImGui::SetNextWindowSize(ImVec2(w, 0));
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(UI::S(28), UI::S(24)));
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, UI::S(14));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);   // 4.03: square
     ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.02f, 0.02f, 0.025f, 0.90f));
     ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.85f, 0.15f, 0.15f, 0.65f));
     ImGui::SetNextWindowFocus();
@@ -1711,7 +2099,7 @@ static void RenderCheatGateDialog(void*)
     ImGui::SetNextWindowPos(ImVec2(ds.x * 0.5f, ds.y * 0.5f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
     ImGui::SetNextWindowSize(ImVec2(w, 0));
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(UI::S(28), UI::S(24)));
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, UI::S(14));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);   // 4.03: square
     ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.02f, 0.02f, 0.025f, 0.92f));
     ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.95f, 0.55f, 0.10f, 0.70f));
     ImGui::SetNextWindowFocus();

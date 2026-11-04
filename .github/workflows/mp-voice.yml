@@ -1,0 +1,64 @@
+name: MP Voice
+# 4.04: builds the MP Voice APK (voicehelper/, no Gradle: aapt2 + javac + d8 + apksigner).
+# Signing key: repository secrets MPVOICE_KEYSTORE (base64 of a .jks / .p12) + MPVOICE_KEYPASS. Without
+# them a new key is made for that run (fine for testing; an update then needs an uninstall first).
+# The APK is an artifact of the run; with "release" set it is also added to that GitHub release.
+on:
+  workflow_dispatch:
+    inputs:
+      release:
+        description: "Also attach the APK to this release tag (e.g. v3.50, empty = no)"
+        required: false
+        default: ""
+  push:
+    paths:
+      - 'voicehelper/**'
+      - '.github/workflows/mp-voice.yml'
+permissions:
+  contents: write
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Android SDK parts
+        run: |
+          set -e
+          SM=$(ls -d $ANDROID_HOME/cmdline-tools/*/bin | tail -1)/sdkmanager
+          yes | $SM --licenses > /dev/null || true
+          $SM "platforms;android-34" "build-tools;34.0.0" > /dev/null
+      - name: Signing key
+        env:
+          KS_B64: ${{ secrets.MPVOICE_KEYSTORE }}
+          KS_PASS: ${{ secrets.MPVOICE_KEYPASS }}
+        run: |
+          set -e
+          if [ -n "$KS_B64" ] && [ -n "$KS_PASS" ]; then
+            echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/mpvoice.jks"; echo "KEYPASS=$KS_PASS" >> "$GITHUB_ENV"
+          else
+            echo "::warning::No MPVOICE_KEYSTORE secret: signing with a new key made for this run"
+            P=$(openssl rand -hex 16)
+            keytool -genkeypair -keystore "$RUNNER_TEMP/mpvoice.jks" -storepass "$P" -keypass "$P" -alias mpvoice \
+              -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=MP Voice, O=ThirtyFox" > /dev/null
+            echo "::add-mask::$P"; echo "KEYPASS=$P" >> "$GITHUB_ENV"
+          fi
+          echo "KEYSTORE=$RUNNER_TEMP/mpvoice.jks" >> "$GITHUB_ENV"
+      - name: Build
+        run: |
+          SDK=$ANDROID_HOME bash voicehelper/build.sh
+          mv voicehelper/MP-Voice.apk .
+          unzip -l MP-Voice.apk | grep -E "classes.dex|assets/global_click.mp3"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MP-Voice
+          path: MP-Voice.apk
+          if-no-files-found: error
+      - name: Attach to the release
+        if: inputs.release != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ inputs.release }}" MP-Voice.apk --clobber

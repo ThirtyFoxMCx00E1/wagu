@@ -677,6 +677,13 @@ public:   // 2.20: HttpsGet uses these too
 static std::string TopicList(uint32_t tok) { char h[9]; Hex8(h, tok); return (TOPIC_ROOT + "l/") + h; }
 static std::string TopicUp(uint32_t tok, const char* cid) { char h[9]; Hex8(h, tok); return (TOPIC_ROOT + "s/") + h + "/" + cid; }
 static std::string TopicDown(const char* cid) { return (TOPIC_ROOT + "c/") + cid; }
+static std::string TopicDetails(uint32_t tok) { char h[9]; Hex8(h, tok); return (TOPIC_ROOT + "d/") + h; }   // 4.03
+static std::mutex        s_DetMx;                          // 4.03: CS:GO style list details
+static std::string       s_HostDetails;                    // what we publish on d/<our token>
+static std::map<uint32_t, std::pair<std::string, uint64_t>> s_Details;   // token -> details, arrival
+static std::string TopicPreview(uint32_t tok) { char h[9]; Hex8(h, tok); return (TOPIC_ROOT + "p/") + h; }   // 4.04
+static std::string       s_HostPreview;                    // 4.04: JPEG bytes we publish on p/<our token>
+static std::map<uint32_t, std::string> s_Previews;         // token -> JPEG (Upload preview image of that host)
 static std::string TopicShared(uint32_t tok) { char h[9]; Hex8(h, tok); return (TOPIC_ROOT + "b/") + h; }   // 2.18.3
 
 static void AppendFrame(std::string& b, const uint8_t* d, int n)
@@ -817,6 +824,8 @@ static void NetThread()
     uint32_t curHostToken = 0;                   // token our current MQTT session is set up for
     uint16_t curHostPort = 0;
     uint64_t lastList = 0, lastFlush = 0, lastPing = 0, pingSent = 0, lastRx = 0, nextTry = 0;
+    std::string lastDet; uint64_t lastDetAt = 0;   // 4.03
+    std::string lastPv; uint32_t lastPvTok = 0; uint64_t lastPvAt = 0;   // 4.04
     int baseRtt = -1, lastQueueMs = 0;           // 2.15: fastest broker round trip seen / queueing on top of it
     uint64_t lastBaseDecay = 0;
     uint64_t upHeld = 0;                         // 2.18.3: client side positions held since
@@ -865,7 +874,7 @@ static void NetThread()
         if(mq.fd >= 0 && wantRegion >= 0 && wantRegion != s_nCurRegion && (wantRegion != lastWant || now - lastSwitch > 60000))
         {
             OLOG("switching lobby to %s (was %d)", g_MPRegionNames[wantRegion], s_nCurRegion.load());
-            if(curHostToken) mq.Publish(TopicList(curHostToken), "", 0, true);
+            if(curHostToken) { mq.Publish(TopicList(curHostToken), "", 0, true); mq.Publish(TopicDetails(curHostToken), "", 0, true); mq.Publish(TopicPreview(curHostToken), "", 0, true); }
             mq.Disconnect();
             s_bConnected = false;
             nextTry = 0;
@@ -895,6 +904,8 @@ static void NetThread()
                         }
                     }
                     mq.Publish(TopicList(curHostToken), "", 0, true);
+                    mq.Publish(TopicDetails(curHostToken), "", 0, true);   // 4.03
+                    mq.Publish(TopicPreview(curHostToken), "", 0, true);   // 4.04
                 }
                 mq.Disconnect();
                 s_bConnected = false;
@@ -962,6 +973,9 @@ static void NetThread()
                     mq.blockingSend = false;   // 2.14: from now on the relay never waits for the upload
                     std::string down = TopicDown(s_szCid);
                     mq.Subscribe((TOPIC_ROOT + "l/+").c_str(), 1);
+                    mq.Subscribe((TOPIC_ROOT + "d/+").c_str(), 1);   // 4.03
+                    mq.Subscribe((TOPIC_ROOT + "p/+").c_str(), 1);   // 4.04: preview pictures
+                    lastDet.clear(); lastPv.clear(); lastPvTok = 0;
                     mq.Subscribe(down.c_str(), 2);
                     sharedSubTok = 0; lastCap = 0;   // 2.18.3: new session -> subscribe to b/<token> again
                     if(curHostToken)
@@ -1044,6 +1058,22 @@ static void NetThread()
             {
                 uint32_t tok = ParseHex8(t + 2);
                 if(tok && tok != curHostToken) HandleListing(tok, std::string((const char*)pl, pn), retained);
+            }
+            else if(!strncmp(t, "d/", 2) && strlen(t) == 10)   // 4.03: details of a listed server
+            {
+                uint32_t tok = ParseHex8(t + 2);
+                std::lock_guard<std::mutex> lk(s_DetMx);
+                if(!tok) {}
+                else if(!pn) s_Details.erase(tok);
+                else if(pn < 4096) s_Details[tok] = { std::string((const char*)pl, pn), now };
+            }
+            else if(!strncmp(t, "p/", 2) && strlen(t) == 10)   // 4.04: preview picture of a listed server
+            {
+                uint32_t tok = ParseHex8(t + 2);
+                std::lock_guard<std::mutex> lk(s_DetMx);
+                if(!tok) {}
+                else if(pn < 4 || pl[0] != 0xFF || pl[1] != 0xD8) s_Previews.erase(tok);
+                else if(pn <= 200 * 1024 && (s_Previews.size() < 300 || s_Previews.count(tok))) s_Previews[tok] = std::string((const char*)pl, pn);
             }
             else if(!strncmp(t, "c/", 2) && pn >= 4)              // to us, from a host
             {
@@ -1329,6 +1359,22 @@ static void NetThread()
             else if(ic > 0) snprintf(p, sizeof(p), "v1|%u|%d|%d|%d|%d:%d|%s", hostPort, hp, hm, hr, MP_PROTO_VERSION, ic, hostName);
             else       snprintf(p, sizeof(p), "v1|%u|%d|%d|%d|%d|%s", hostPort, hp, hm, hr, MP_PROTO_VERSION, hostName);
             if(!mq.Publish(TopicList(curHostToken), p, strlen(p), true)) broken = true;
+        }
+        // 4.03: country / tags / description / players on d/<token>, only when it changed
+        if(curHostToken)
+        {
+            std::string det; { std::lock_guard<std::mutex> lk(s_DetMx); det = s_HostDetails; }
+            if(det != lastDet && now - lastDetAt >= 3000)
+            {
+                lastDet = det; lastDetAt = now;
+                if(!mq.Publish(TopicDetails(curHostToken), det.data(), det.size(), true)) broken = true;
+            }
+            std::string pv; { std::lock_guard<std::mutex> lk(s_DetMx); pv = s_HostPreview; }
+            if((pv != lastPv || lastPvTok != curHostToken) && now - lastPvAt >= 5000)   // 4.04
+            {
+                lastPv = pv; lastPvTok = curHostToken; lastPvAt = now;
+                if(!mq.Publish(TopicPreview(curHostToken), pv.data(), pv.size(), true)) broken = true;
+            }
         }
 
         // ---- keepalive ----
@@ -2023,6 +2069,22 @@ void Online::SetHostLang(const char* lang)   // 2.25
 {
     std::lock_guard<std::mutex> lk(s_LangMx);
     MP_CopyStr(s_szHostLang, lang ? lang : "", sizeof(s_szHostLang)); MP_CleanLang(s_szHostLang);
+}
+void Online::SetHostDetails(const std::string& d) { std::lock_guard<std::mutex> lk(s_DetMx); s_HostDetails = d.size() > 2000 ? d.substr(0, 2000) : d; }   // 4.03
+void Online::SetHostPreview(const std::string& jpeg) { std::lock_guard<std::mutex> lk(s_DetMx); s_HostPreview = jpeg.size() <= 200 * 1024 ? jpeg : std::string(); }   // 4.04
+bool Online::Preview(uint32_t tok, std::string& out)
+{
+    std::lock_guard<std::mutex> lk(s_DetMx);
+    auto it = s_Previews.find(tok);
+    if(it == s_Previews.end()) return false;
+    out = it->second; return true;
+}
+bool Online::Details(uint32_t tok, std::string& out)
+{
+    std::lock_guard<std::mutex> lk(s_DetMx);
+    auto it = s_Details.find(tok);
+    if(it == s_Details.end()) return false;
+    out = it->second.first; return true;
 }
 void Online::SetHostIcon(int icon) { s_nHostIcon = (icon >= 0 && icon <= MP_ICON_MAX) ? icon : 0; }   // 2.24
 
