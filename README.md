@@ -121,6 +121,11 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **4.04.2**: fix: crash / freeze on the game's loading screen ("Loading..." never ends).
+  - Crash log: SIGSEGV in memcpy from libGTASA + 0x1E73DD (RLEDecompress) <- TextureDatabaseRuntime::LoadFullTexture <- RwTextureRead <- CTouchInterface::CreateAll. The game unpacks an RLE packed texture from a texture database (texdb) without checking the end of the buffer, so one damaged or mismatched texture entry (a replaced texdb .dat / .toc, a texture pack for another game version) wrote past the texture and killed the game while loading.
+  - MP now hooks RLEDecompress with the same decoder plus an end-of-buffer check: a bad texture is cut off (and logged) instead of crashing.
+  - The AML crash log now shows the real MP version (it said 3.37).
+  - texdb research: the "compressed" entries are this RLE (escape byte, count, one pixel unit).
 - **4.04.1**: fix: the game looked stuck on the loading screen.
   - On a fresh install (no MP config yet) the full-screen server browser opened by itself at the first start, on top of the game's loading screen, and took every touch. It now never opens by itself: open it from the ⋮ menu -> Server.
   - The server browser can not be open before the game has loaded (no player yet).

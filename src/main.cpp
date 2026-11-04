@@ -26,7 +26,7 @@
 #include "../imgui/rw_glue.h"
 #include "net/server.h"
 
-MYMODCFG(net.thirtyfox.mp, MP Multiplayer, 3.37, ThirtyFoxMCx00E1)   // 3.21: was stuck at 3.04.6 (crash logs showed the wrong version)
+MYMODCFG(net.thirtyfox.mp, MP Multiplayer, 4.04.2, ThirtyFoxMCx00E1)   // 3.21: was stuck at 3.04.6 (crash logs showed the wrong version)
 NEEDGAME(com.rockstargames.gtasa)
 
 // Globals used by the embedded RenderWare ImGui backend
@@ -510,6 +510,44 @@ DECL_HOOK(void*, RwCamFogDist, void* cam, float f)
     if(r > 0.0f && f > r * 0.18f) f = r * 0.18f;
     return RwCamFogDist(cam, f);
 }
+// 4.04.2: crash on the game's loading screen (SIGSEGV libc memcpy <- libGTASA + 0x1E73DD RLEDecompress <-
+// TextureDatabaseRuntime::LoadFullTexture <- RwTextureRead <- CSprite2d::SetTexture <- CTouchInterface::CreateAll).
+// The texture databases (texdb/*/ *.dat) keep some textures RLE packed: [esc][count][unit bytes] = a run,
+// anything else = one literal unit. The game never checks the end of the output buffer, so one bad /
+// mismatched entry (a replaced or half-copied texdb file, another mod's texture pack) writes past the
+// texture and the game dies (or hangs) while loading. Same decoder here, but it stops at the buffer end.
+static std::atomic<int> s_nRleClamped{0};
+DECL_HOOKv(TexRLEDecompress, uint8_t* dst, unsigned int dstSize, const uint8_t* src, unsigned int unit, unsigned int esc)
+{
+    if(!dst || !src || !unit || unit > 64) { TexRLEDecompress(dst, dstSize, src, unit, esc); return; }
+    uint8_t* const end = dst + dstSize;
+    uint8_t* d = dst;
+    bool clamped = false;
+    while(d < end)
+    {
+        if(src[0] == (uint8_t)esc)
+        {
+            unsigned n = src[1];
+            const uint8_t* v = src + 2;
+            for(unsigned k = 0; k < n; ++k)
+            {
+                size_t left = (size_t)(end - d);
+                if(left < unit) { if(left) memcpy(d, v, left); d = end; clamped = true; break; }
+                memcpy(d, v, unit); d += unit;
+            }
+            src += unit + 2;
+        }
+        else
+        {
+            size_t left = (size_t)(end - d);
+            if(left < unit) { memcpy(d, src, left); d = end; clamped = true; break; }
+            memcpy(d, src, unit); d += unit; src += unit;
+        }
+    }
+    if(clamped && s_nRleClamped.fetch_add(1) < 20)
+        logger->Error("Texture database: a packed texture is bigger than its buffer (%u bytes) - cut off instead of crashing. A texdb file (texdb/*.dat / .toc) is damaged or from another game version / texture mod.", dstSize);
+}
+
 #define HOOK_IF(_name, _sym) do { void* _a = (void*)aml->GetSym(pGameHandle, _sym); if(_a) { HOOK(_name, _a); ++hooked; } } while(0)
 static void HookTouchInterface()
 {
@@ -616,6 +654,7 @@ extern "C" void OnModLoad()
     HOOKSYM(CGame_Process, pGameHandle, "_ZN5CGame7ProcessEv");
     HOOKSYM(Render2dStuff, pGameHandle, "_Z13Render2dStuffv");
     HookTouchInterface();   // 2.19.5
+    if(void* rle = (void*)aml->GetSym(pGameHandle, "_Z13RLEDecompressPhjPKhjj")) { HOOK(TexRLEDecompress, rle); logger->Info("Texture database RLE guard on"); }   // 4.04.2
     { int hooked = 0; HOOK_IF(RwCamFarClip, "_Z23RwCameraSetFarClipPlaneP8RwCameraf"); HOOK_IF(RwCamFogDist, "_Z22RwCameraSetFogDistanceP8RwCameraf"); logger->Info("Fog: %d camera hooks", hooked); }   // 3.58
     HookGamepad();          // 3.39.2: controller
 

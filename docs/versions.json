@@ -1,6 +1,7 @@
 {
-"latest": "4.04.1",
+"latest": "4.04.2",
 "supported": [
+"4.04.2",
 "4.04.1",
 "4.04",
 "4.03",
@@ -86,6 +87,16 @@
 "3.04.6"
 ],
 "versions": [
+{
+"v": "4.04.2",
+"summary": "fix: crash / freeze on the game's loading screen (\"Loading...\" never ends).",
+"items": [
+"Crash log: SIGSEGV in memcpy from libGTASA + 0x1E73DD (RLEDecompress) <- TextureDatabaseRuntime::LoadFullTexture <- RwTextureRead <- CTouchInterface::CreateAll. The game unpacks an RLE packed texture from a texture database (texdb) without checking the end of the buffer, so one damaged or mismatched texture entry (a replaced texdb .dat / .toc, a texture pack for another game version) wrote past the texture and killed the game while loading.",
+"MP now hooks RLEDecompress with the same decoder plus an end-of-buffer check: a bad texture is cut off (and logged) instead of crashing.",
+"The AML crash log now shows the real MP version (it said 3.37).",
+"texdb research: the \"compressed\" entries are this RLE (escape byte, count, one pixel unit)."
+]
+},
 {
 "v": "4.04.1",
 "summary": "fix: the game looked stuck on the loading screen.",
