@@ -59,3 +59,20 @@ with zf("release/MP-%s-full.zip" % V) as z:
     z.write("termux/install.sh", f + "/termux/install.sh")
 for n in ("client", "full"): print("release/MP-%s-%s.zip" % (V, n), os.path.getsize("release/MP-%s-%s.zip" % (V, n)))
 print("release/HiveMQ-kit-%s.zip" % V, os.path.getsize("release/HiveMQ-kit-%s.zip" % V))
+# 4.05.4: keep docs/release.json on the new version (it was stuck at 4.01, so the website's
+# downloads/ still handed out the 4.01 files). The website builds downloads/ from this file.
+import json, datetime, re as _re
+_rp = "docs/release.json"; _r = json.load(open(_rp))
+_sup = []
+try:
+    _m = _re.search(r"SUPPORTED = \[([^\]]*)\]", open("tools/make_versions.py").read())
+    _sup = [x.strip().strip("'\"") for x in _m.group(1).split(",") if x.strip()]
+except Exception: pass
+_r["tag_name"] = "v" + V; _r["name"] = "MP Multiplayer " + V
+_r["published_at"] = datetime.date.today().isoformat()
+if _sup: _r["also_supported"] = ", ".join("v" + x for x in _sup if x != V)
+_r["assets"] = [{"name": n, "size": os.path.getsize(n), "download_count": 0} for n in (
+    "bin/libMP32.so", "bin/libMP64.so", "release/MP-%s-full.zip" % V, "release/MP-%s-client.zip" % V,
+    "release/HiveMQ-kit-%s.zip" % V, "release/MP-Textdraw-Editor.apk", "release/MP-Voice.apk") if os.path.isfile(n)]
+json.dump(_r, open(_rp, "w"), indent=1); open(_rp, "a").write("\n")
+print(_rp, _r["tag_name"])
