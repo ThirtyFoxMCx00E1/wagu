@@ -1,0 +1,153 @@
+# MP region VPS (4.05.2): point one region at its own VPS in one click.
+#   1. Rent a VPS in the region (Ubuntu 22.04 / 24.04 or Debian 12, 2 GB+ RAM; HiveMQ/global/README.md
+#      lists fast locations) and put the public key of VPS_SSH_KEY in root's ~/.ssh/authorized_keys
+#      (most providers have an "SSH key" box when you create the server).
+#   2. Repo Settings -> Secrets and variables -> Actions -> New secret (once for all regions):
+#        VPS_SSH_KEY     private SSH key (the whole text, -----BEGIN ... END-----)
+#        DUCKDNS_TOKEN   duckdns.org token (the account that owns mpsamp / eusamp / nasamp / ocsamp)
+#        MP_BRIDGE_PASS  any long random text (the same on every region - MpBridge login)
+#        MP_ADMIN_PASS   any long random text (admin / console login)
+#      optional variable MP_EMAIL (Let's Encrypt e-mail)
+#   3. Actions -> MP region VPS -> Run: region + the VPS IP.
+# The run points the region's DuckDNS name at the VPS, installs HiveMQ + the region's 24/7 server +
+# TLS + tuning (HiveMQ/install.sh, MpBridge on Asia), and checks the broker answers with the "mp" login.
+# The mod, website and other regions pick it up by themselves (same names, same logins as regions.txt).
+name: MP region VPS
+on:
+  workflow_dispatch:
+    inputs:
+      region:
+        description: "Region"
+        type: choice
+        options: [Asia, Europe, NA, Oceania]
+        required: true
+      ip:
+        description: "Public IPv4 of the VPS"
+        required: true
+      ssh_user:
+        description: "SSH user (root, or a sudo user)"
+        default: "root"
+      ssh_port:
+        description: "SSH port"
+        default: "22"
+      dns_only:
+        description: "Only point the DuckDNS name (no install)"
+        type: boolean
+        default: false
+concurrency:
+  group: mp-region-${{ inputs.region }}
+  cancel-in-progress: false
+permissions:
+  contents: read
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      REGION: ${{ inputs.region }}
+      IP: ${{ inputs.ip }}
+      SSH_USER: ${{ inputs.ssh_user }}
+      SSH_PORT: ${{ inputs.ssh_port }}
+      VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+      DUCKDNS_TOKEN: ${{ secrets.DUCKDNS_TOKEN }}
+      MP_BRIDGE_PASS: ${{ secrets.MP_BRIDGE_PASS }}
+      MP_ADMIN_PASS: ${{ secrets.MP_ADMIN_PASS }}
+      MP_EMAIL: ${{ vars.MP_EMAIL }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            docs/regions.txt
+            HiveMQ
+      - name: Check the inputs and secrets
+        run: |
+          case "$REGION" in Asia) sub=mpsamp;; Europe) sub=eusamp;; NA) sub=nasamp;; Oceania) sub=ocsamp;; esac
+          echo "SUB=$sub" >> "$GITHUB_ENV"; echo "DOMAIN=$sub.duckdns.org" >> "$GITHUB_ENV"
+          echo "$IP" | grep -Eq '^([0-9]{1,3}\.){3}[0-9]{1,3}$' || { echo "::error::ip must be an IPv4 address"; exit 1; }
+          case "$IP" in 10.*|127.*|192.168.*|172.1[6-9].*|172.2[0-9].*|172.3[01].*) echo "::error::$IP is a private address - use the VPS public IP"; exit 1;; esac
+          miss=""
+          [ -n "$DUCKDNS_TOKEN" ] || miss="$miss DUCKDNS_TOKEN"
+          if [ "${{ inputs.dns_only }}" != "true" ]; then
+            [ -n "$VPS_SSH_KEY" ] || miss="$miss VPS_SSH_KEY"
+            [ -n "$MP_BRIDGE_PASS" ] || miss="$miss MP_BRIDGE_PASS"
+            [ -n "$MP_ADMIN_PASS" ] || miss="$miss MP_ADMIN_PASS"
+          fi
+          [ -z "$miss" ] || { echo "::error::Missing repo secrets:$miss (Settings -> Secrets and variables -> Actions)"; exit 1; }
+          # public logins = the ones regions.txt already ships (phones and the website use them)
+          MP_PASS=$(awk -v r="[$REGION]" '$0==r{f=1;next} /^\[/{f=0} f&&/^pass=/{sub(/^pass=/,"");print;exit}' docs/regions.txt)
+          WEB_PASS=$(awk -v r="[$REGION]" '$0==r{f=1;next} /^\[/{f=0} f&&/^web_pass=/{sub(/^web_pass=/,"");print;exit}' docs/regions.txt)
+          [ -n "$MP_PASS" ] && [ -n "$WEB_PASS" ] || { echo "::error::no [$REGION] logins in docs/regions.txt"; exit 1; }
+          echo "::add-mask::$MP_BRIDGE_PASS"; echo "::add-mask::$MP_ADMIN_PASS"
+          echo "MP_PASS=$MP_PASS" >> "$GITHUB_ENV"; echo "WEB_PASS=$WEB_PASS" >> "$GITHUB_ENV"
+      - name: Point the DuckDNS name at the VPS
+        run: |
+          r=$(curl -fsS "https://www.duckdns.org/update?domains=$SUB&token=$DUCKDNS_TOKEN&ip=$IP" || true)
+          [ "$r" = "OK" ] || { echo "::error::DuckDNS said '$r' (wrong token, or $SUB.duckdns.org is on another DuckDNS account)"; exit 1; }
+          for i in $(seq 1 30); do
+            got=$(dig +short @1.1.1.1 "$DOMAIN" A | tail -1)
+            [ "$got" = "$IP" ] && { echo "$DOMAIN -> $IP"; break; }
+            sleep 10
+          done
+          [ "$got" = "$IP" ] || echo "::warning::$DOMAIN still answers '$got' (DNS cache) - the install continues"
+      - name: Install HiveMQ + the 24/7 server on the VPS
+        if: ${{ !inputs.dns_only }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/id_vps; chmod 600 ~/.ssh/id_vps
+          SSH="ssh -i $HOME/.ssh/id_vps -p $SSH_PORT -o StrictHostKeyChecking=accept-new -o ServerAliveInterval=30 -o ConnectTimeout=20 $SSH_USER@$IP"
+          for i in 1 2 3 4 5; do $SSH true && break; echo "SSH not ready ($i)"; sleep 15; done
+          bridge=""; [ "$REGION" = "Asia" ] && bridge="--bridge"
+          email="${MP_EMAIL:-admin@$DOMAIN}"
+          # the same shared logins on every region (install.sh keeps an existing mp.env)
+          $SSH "sudo bash -s" <<EOF
+          set -e
+          install -d -m 700 /etc/mp-hivemq
+          if [ ! -f /etc/mp-hivemq/mp.env ]; then
+          cat > /etc/mp-hivemq/mp.env <<'ENV'
+          REGION=$REGION
+          DOMAIN=$DOMAIN
+          EMAIL=$email
+          HOST_ASIA=mpsamp.duckdns.org
+          HOST_EUROPE=eusamp.duckdns.org
+          HOST_NA=nasamp.duckdns.org
+          HOST_OCEANIA=ocsamp.duckdns.org
+          MP_USER=mp
+          MP_PASS=$MP_PASS
+          WEB_USER=web
+          WEB_PASS=$WEB_PASS
+          BRIDGE_PASS=$MP_BRIDGE_PASS
+          ADMIN_PASS=$MP_ADMIN_PASS
+          RUN_SERVER=1
+          SERVER_PORT=1922
+          SERVER_NAME="MP LAN Server"
+          MAX_PLAYERS=100
+          RUN_BRIDGE=$([ "$REGION" = Asia ] && echo 1 || echo 0)
+          HIVEMQ_SOURCE=fork
+          MAX_CONNECTIONS=20000
+          BANDWIDTH_PER_CLIENT=4194304
+          ENV
+          sed -i 's/^ *//' /etc/mp-hivemq/mp.env; chmod 600 /etc/mp-hivemq/mp.env
+          fi
+          command -v git >/dev/null || { apt-get update -y && apt-get install -y git curl; }
+          rm -rf /opt/mp-kit && git clone -q --depth 1 --filter=blob:none --sparse https://github.com/$GITHUB_REPOSITORY /opt/mp-kit
+          cd /opt/mp-kit && git sparse-checkout set HiveMQ docs
+          cd HiveMQ && bash install.sh --region $REGION --domain $DOMAIN --email $email $bridge
+          EOF
+      - name: Check the broker answers
+        run: |
+          pip install -q paho-mqtt
+          python3 - <<'PY'
+          import os, ssl, time, paho.mqtt.client as m
+          host = os.environ["IP"]; ok = {}
+          for port, tls in ((1883, False), (8883, True)):
+              c = m.Client(m.CallbackAPIVersion.VERSION2)
+              c.username_pw_set("mp", os.environ["MP_PASS"])
+              if tls: c.tls_set(cert_reqs=ssl.CERT_NONE); c.tls_insecure_set(True)
+              c.on_connect = lambda c, u, f, rc, p, port=port: ok.__setitem__(port, str(rc))
+              try:
+                  t0 = time.time(); c.connect(host, port, 20); c.loop_start(); time.sleep(4); c.loop_stop()
+                  print(port, "->", ok.get(port, "no answer"), "%.0f ms" % ((time.time() - t0 - 4) * 1000))
+              except Exception as e: print(port, "->", e)
+          if ok.get(1883) != "Success": raise SystemExit("broker on 1883 did not accept the mp login")
+          PY
+          echo "### ${REGION}: ${DOMAIN} -> ${IP} is online" >> "$GITHUB_STEP_SUMMARY"

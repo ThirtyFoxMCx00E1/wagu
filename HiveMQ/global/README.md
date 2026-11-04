@@ -39,6 +39,21 @@ is enough, more hubs only help when players are far apart (US East vs US West).
 3. Add its block to `docs/regions.txt` (see `regions-template.txt`) and a line to `bridge.conf`,
    restart `mp-bridge`. Phones pick it up at the next start.
 
+## One click per region (4.05.2)
+
+Right now mpsamp / eusamp / nasamp / ocsamp all point to one home connection. To give every region
+its own VPS:
+
+1. Rent one VPS per region (Ubuntu 22.04 / 24.04 or Debian 12, 2 GB+ RAM) and add your SSH public key
+   when you create it.
+2. Repo secrets (Settings -> Secrets and variables -> Actions), once: `VPS_SSH_KEY` (the private key),
+   `DUCKDNS_TOKEN`, `MP_BRIDGE_PASS`, `MP_ADMIN_PASS` (two long random texts). Optional variable `MP_EMAIL`.
+3. Actions -> **MP region VPS** -> Run with the region and the VPS IP. It points the region's DuckDNS
+   name at the VPS, installs HiveMQ + the region's 24/7 server + TLS + tuning (MpBridge on Asia) and
+   checks that the broker accepts the `mp` login. Phones, the website and the other regions use it at once.
+
+Do Asia first (Singapore / Hong Kong / Tokyo) - that is where most players are.
+
 ## Consoles
 
 - MQTTX (desktop / CLI / web): connect with `admin` to watch `thirtyfox/#` live.
