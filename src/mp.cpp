@@ -563,15 +563,28 @@ static void RenderLoadWindow()
     const float cx = ds.x * 0.5f, cy = ds.y * 0.53f + (1.0f - k) * H * 0.02f;
     const ImVec2 a(cx - w * 0.5f, cy - h * 0.5f), b(cx + w * 0.5f, cy + h * 0.5f);
     auto A = [&](int al) { return (int)(al * k); };
-    // the window: dark see-through, a darker title strip
-    dl->AddRectFilled(a, b, IM_COL32(18, 22, 28, A(225)), H * 0.006f);
+    // 4.05.1: CS:GO launcher look - square, the blurred night city (ui_bg.jpg) inside, see-through slate
+    // glass on it, a thin blue line under the title, flat blue / green bars
+    {
+        ImVec2 uv(1, 1);
+        if(void* t = HUD::Texture("ui_bg.jpg", &uv))
+        {
+            const float box = w / h, img = 2.0f;   // 1024x512
+            float u0 = 0, u1 = uv.x, v0 = 0, v1 = uv.y;
+            if(box < img) { const float cw = uv.x * box / img; u0 = (uv.x - cw) * 0.5f; u1 = u0 + cw; }
+            else          { const float chh = uv.y * img / box; v0 = (uv.y - chh) * 0.5f; v1 = v0 + chh; }
+            dl->AddImage((ImTextureID)t, a, b, ImVec2(u0, v0), ImVec2(u1, v1), IM_COL32(255, 255, 255, A(255)));
+        }
+        else dl->AddRectFilled(a, b, IM_COL32(26, 29, 34, A(255)));
+    }
+    dl->AddRectFilledMultiColor(a, b, IM_COL32(58, 66, 76, A(150)), IM_COL32(58, 66, 76, A(150)), IM_COL32(18, 21, 26, A(205)), IM_COL32(18, 21, 26, A(205)));
     const float th = fsT * 1.45f;
-    dl->AddRectFilled(a, ImVec2(b.x, a.y + th), IM_COL32(8, 10, 14, A(235)), H * 0.006f, ImDrawFlags_RoundCornersTop);
-    dl->AddRect(a, b, IM_COL32(70, 80, 92, A(200)), H * 0.006f, 0, std::max(1.0f, H * 0.002f));
-    const char* title = "Please Wait, Loading Server Data...";
+    dl->AddRectFilled(a, ImVec2(b.x, a.y + th), IM_COL32(10, 12, 16, A(150)));
+    dl->AddRectFilled(ImVec2(a.x, a.y + th - std::max(1.0f, H * 0.002f)), ImVec2(b.x, a.y + th), IM_COL32(126, 178, 226, A(255)));
+    dl->AddRect(a, b, IM_COL32(0, 0, 0, A(170)), 0.0f, 0, std::max(1.0f, H * 0.002f));
+    const char* title = "PLEASE WAIT, LOADING SERVER DATA...";
     ImVec2 ts = f->CalcTextSizeA(fsT, FLT_MAX, 0, title);
-    dl->AddText(f, fsT, ImVec2(cx - ts.x * 0.5f + 1, a.y + (th - ts.y) * 0.5f + 1), IM_COL32(0, 0, 0, A(255)), title);
-    dl->AddText(f, fsT, ImVec2(cx - ts.x * 0.5f, a.y + (th - ts.y) * 0.5f), IM_COL32(255, 255, 255, A(255)), title);
+    dl->AddText(f, fsT, ImVec2(a.x + pad, a.y + (th - ts.y) * 0.5f), IM_COL32(226, 229, 233, A(255)), title);
     // what is happening now + the two bars
     char status[160], c1[32], c2[32]; float t1 = 0, t2 = 0; bool busy = false;
     if(loading && s_nFeedStages > 0)
@@ -598,15 +611,15 @@ static void RenderLoadWindow()
     {   // status line (cut to the window)
         std::string st = status; const float maxw = w - pad * 2;
         while(st.size() > 4 && f->CalcTextSizeA(fs, FLT_MAX, 0, st.c_str()).x > maxw) st.erase(st.size() - 4), st += "...";
-        dl->AddText(f, fs, ImVec2(a.x + pad, y), IM_COL32(225, 230, 235, A(255)), st.c_str());
+        dl->AddText(f, fs, ImVec2(a.x + pad, y), IM_COL32(150, 157, 166, A(255)), st.c_str());
     }
     y += fs * 1.35f;
     const float bh = H * 0.026f, bw = w - pad * 2;
     auto bar = [&](float yy, float t, ImU32 fill, ImU32 hi, const char* cnt, bool indeterminate)
     {
         ImVec2 p0(a.x + pad, yy), p1(a.x + pad + bw, yy + bh);
-        dl->AddRectFilled(p0, p1, IM_COL32(96, 112, 122, A(255)));
-        dl->AddRect(p0, p1, IM_COL32(0, 0, 0, A(255)), 0, 0, std::max(1.0f, H * 0.0025f));
+        dl->AddRectFilled(p0, p1, IM_COL32(14, 16, 20, A(170)));   // 4.05.1: flat CS:GO track
+        dl->AddRect(p0, p1, IM_COL32(255, 255, 255, A(30)), 0, 0, std::max(1.0f, H * 0.0015f));
         const float in = std::max(1.0f, H * 0.003f);
         if(indeterminate)
         {   // a block sliding back and forth
@@ -618,17 +631,17 @@ static void RenderLoadWindow()
         {
             const float x1 = p0.x + in + (bw - in * 2) * std::min(1.0f, t);
             dl->AddRectFilled(ImVec2(p0.x + in, p0.y + in), ImVec2(x1, p1.y - in), fill);
-            dl->AddRectFilled(ImVec2(p0.x + in, p0.y + in), ImVec2(x1, p0.y + bh * 0.42f), hi);   // glossy top
+            dl->AddRectFilledMultiColor(ImVec2(p0.x + in, p0.y + in), ImVec2(x1, p0.y + bh * 0.5f), hi, hi, fill, fill);   // soft top
             const float ph = (float)(now % 1400) / 1400.0f, sx = p0.x + (x1 - p0.x) * ph;   // moving shine
             if(x1 - p0.x > bh * 2) dl->AddRectFilledMultiColor(ImVec2(std::max(p0.x + in, sx - bh * 1.5f), p0.y + in), ImVec2(std::min(x1, sx + bh * 1.5f), p1.y - in),
                 IM_COL32(255, 255, 255, 0), IM_COL32(255, 255, 255, A(70)), IM_COL32(255, 255, 255, A(70)), IM_COL32(255, 255, 255, 0));
         }
         ImVec2 cs = f->CalcTextSizeA(fsC, FLT_MAX, 0, cnt);
-        dl->AddText(f, fsC, ImVec2(p1.x - cs.x, p1.y + H * 0.006f), IM_COL32(215, 220, 225, A(255)), cnt);
+        dl->AddText(f, fsC, ImVec2(p1.x - cs.x, p1.y + H * 0.006f), IM_COL32(150, 157, 166, A(255)), cnt);
     };
-    bar(y, s_fA, IM_COL32(172, 188, 196, A(255)), IM_COL32(205, 218, 224, A(255)), c1, busy);
+    bar(y, s_fA, IM_COL32(126, 178, 226, A(255)), IM_COL32(160, 200, 236, A(255)), c1, busy);   // CS:GO blue
     y += bh + fsC * 1.5f + pad * 0.3f;
-    bar(y, busy ? 0.0f : s_fB, IM_COL32(34, 177, 52, A(255)), IM_COL32(78, 214, 92, A(255)), c2, false);
+    bar(y, busy ? 0.0f : s_fB, IM_COL32(76, 160, 48, A(255)), IM_COL32(104, 188, 74, A(255)), c2, false);   // CONNECT green
 }
 
 // ---- 2.19: chat commands (cheats, local only; /invisible is also told to the others) ----------

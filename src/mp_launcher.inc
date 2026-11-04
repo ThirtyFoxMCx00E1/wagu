@@ -80,6 +80,23 @@ static void VSlate(ImDrawList* dl, ImVec2 a, ImVec2 b, float alpha = 1.0f)
     dl->AddRectFilledMultiColor(a, b, IM_COL32(64, 72, 82, (int)(235 * alpha)), IM_COL32(64, 72, 82, (int)(235 * alpha)),
                                       IM_COL32(38, 43, 50, (int)(245 * alpha)), IM_COL32(38, 43, 50, (int)(245 * alpha)));
 }
+// 4.05.1: the CS:GO backdrop = ui_bg.jpg (blurred night city, built into the .so) covering the screen + a
+// dark tint; pages are VGlass (see-through slate) on top, so the picture shows through every page
+static void LImageCover(ImDrawList* dl, void* tex, ImVec2 uvMax, ImVec2 a, ImVec2 b, ImU32 tint);
+static void VBackdrop(ImDrawList* dl, ImVec2 a, ImVec2 b)
+{
+    ImVec2 uv(1, 1);
+    if(void* t = HUD::Texture("ui_bg.jpg", &uv))
+    {
+        LImageCover(dl, t, uv, a, b, IM_COL32(255, 255, 255, 255));
+        dl->AddRectFilled(a, b, IM_COL32(8, 10, 14, 95));
+    }
+    else dl->AddRectFilled(a, b, IM_COL32(0, 0, 0, 150));
+}
+static void VGlass(ImDrawList* dl, ImVec2 a, ImVec2 b)
+{
+    dl->AddRectFilledMultiColor(a, b, IM_COL32(58, 66, 76, 95), IM_COL32(58, 66, 76, 95), IM_COL32(18, 21, 26, 150), IM_COL32(18, 21, 26, 150));
+}
 // ImGui widgets inside the launcher pages (settings, add server, ...) get the same look
 static void VPushWidgetStyle()
 {
@@ -838,7 +855,7 @@ static void LTable(std::vector<LRow>& rows, float w, float h)
     const int   sortOf[6] = { 0, 3, 1, -1, 2, 4 };
     {
         ImVec2 p = ImGui::GetCursorScreenPos();
-        dl->AddRectFilled(p, ImVec2(p.x + W, p.y + hdrH), IM_COL32(30, 34, 40, 200));
+        dl->AddRectFilled(p, ImVec2(p.x + W, p.y + hdrH), IM_COL32(20, 23, 28, 130));
         for(int c = 0; c < 6; ++c)
         {
             ImGui::SetCursorScreenPos(ImVec2(p.x + cx[c], p.y));
@@ -892,13 +909,13 @@ static void LTable(std::vector<LRow>& rows, float w, float h)
         if(vis)
         {
             // row: slate base, the server background picture on the left fading into the row (CS:GO)
-            dl->AddRectFilled(a, ImVec2(a.x + W, a.y + rowH), (i & 1) ? IM_COL32(44, 49, 56, 235) : IM_COL32(50, 56, 64, 235));
+            dl->AddRectFilled(a, ImVec2(a.x + W, a.y + rowH), (i & 1) ? IM_COL32(30, 34, 40, 110) : IM_COL32(44, 49, 56, 110));   // 4.05.1: see-through rows
             ImVec2 uv(1, 1);
             if(void* bt = LRowBg(r, &uv))
             {
                 float bw = W * 0.46f;
                 LImageCover(dl, bt, uv, a, ImVec2(a.x + bw, a.y + rowH), IM_COL32(255, 255, 255, 150));
-                dl->AddRectFilledMultiColor(a, ImVec2(a.x + bw, a.y + rowH), IM_COL32(44, 49, 56, 70), IM_COL32(48, 53, 60, 255), IM_COL32(48, 53, 60, 255), IM_COL32(44, 49, 56, 70));
+                dl->AddRectFilledMultiColor(a, ImVec2(a.x + bw, a.y + rowH), IM_COL32(30, 34, 40, 40), IM_COL32(30, 34, 40, 150), IM_COL32(30, 34, 40, 150), IM_COL32(30, 34, 40, 40));
             }
             if(r.kind >= 3 && r.kind <= 6)   // featured: gamemode colour highlight
                 dl->AddRectFilledMultiColor(a, ImVec2(a.x + W, a.y + rowH), VAlpha(mc, 0.30f), VAlpha(mc, 0.04f), VAlpha(mc, 0.04f), VAlpha(mc, 0.30f));
@@ -958,7 +975,7 @@ static void LTable(std::vector<LRow>& rows, float w, float h)
             ImVec2 d = ImGui::GetCursorScreenPos();
             ImGui::Dummy(ImVec2(W, detH));
             ImVec2 e(d.x + W, d.y + detH);
-            dl->AddRectFilled(d, e, IM_COL32(34, 38, 44, 245));
+            dl->AddRectFilled(d, e, IM_COL32(24, 27, 32, 200));
             dl->AddRect(ImVec2(a.x, a.y), e, IM_COL32(235, 238, 242, 220), 0.0f, 0, UI::S(2));   // white selection frame (row + details)
             const float pad = UI::S(14), lh = ImGui::GetTextLineHeight();
             float c1 = d.x + pad, c2 = d.x + W * 0.34f, c3 = d.x + W * 0.52f, c4 = d.x + W * 0.67f, c5 = d.x + W * 0.84f;
@@ -1709,13 +1726,14 @@ static void RenderLauncher(void* openPtr)
     const ImVec2 ds = ImGui::GetIO().DisplaySize;
     const float mx = ds.x * 0.025f, my = ds.y * 0.03f;   // 4.03: almost full screen (CS:GO browser), the game shows around it
     // 2.26: dim the game behind the launcher (touches never reach it while this is open)
-    ImGui::GetBackgroundDrawList()->AddRectFilled(ImVec2(0, 0), ds, IM_COL32(0, 0, 0, 150));
+    // 4.05.1: CS:GO look - a blurred night Los Santos picture behind everything, then see-through pages
+    VBackdrop(ImGui::GetBackgroundDrawList(), ImVec2(0, 0), ds);
     ImGui::SetNextWindowPos(ImVec2(mx, my));
     ImGui::SetNextWindowSize(ImVec2(ds.x - mx * 2, ds.y - my * 2));
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);         // square
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, UI::S(1));
-    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.17f, 0.19f, 0.22f, 0.94f));   // 4.03: CS:GO slate glass
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 0));   // 4.05.1: see-through (VGlass below), the backdrop shows
     ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0, 0, 0, 0));
     ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0, 0, 0, 0.6f));
     if(!ImGui::Begin("##MPLauncher", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollWithMouse))
@@ -1726,7 +1744,7 @@ static void RenderLauncher(void* openPtr)
     const ImU32 line = kVLine;
     const float pad = UI::S(16);
     // 4.03: CS:GO panel: lighter at the top, darker at the bottom
-    VSlate(dl, wp, ImVec2(wp.x + ws.x, wp.y + ws.y), 0.55f);
+    VGlass(dl, wp, ImVec2(wp.x + ws.x, wp.y + ws.y));
     VPushWidgetStyle();
 
     // ---- title bar: PLAY ... profile (top right) ----
