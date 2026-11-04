@@ -121,6 +121,13 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **4.05.2**: fixes.
+  - Launcher: the ui_bg.jpg picture now only fills the launcher panel (almost full screen), like the server list; around it the game shows dimmed again instead of the picture covering the whole screen.
+  - Launcher toolbar: refresh, switch region, settings (gear) and add server (+) could not be tapped - they sit over the GTA weapon icon and the weapon switch took the tap. While the launcher or the keyboard is open the game now sees no finger, no weapon cycle and no HID button (pointer state, CPad, CHID and every CWidget check), and the toolbar buttons and top tabs fire on the press. The gear never shows disabled any more.
+  - Day Z download window: the panel was drawn over its own button. Panel and button are one window now; the button says DOWNLOAD IN BACKGROUND (play now, the thin bar on top keeps showing the rest) and when the download is done the window and its button are gone together.
+  - Day Z connection screen: the chat lines no longer show over it (the chat box was already hidden).
+  - Day Z status column: the temperature number (36.9C) is removed - only the thermometer icon.
+
 - **4.05.1**: fixes.
   - 24/7 servers were listed twice: two chains of GitHub shifts ran side by side (a failed "is a shift running?" check started a second chain, and each shift queues the next). Now a failed check starts nothing, and a shift that sees a newer shift online hands over and stops instead of queueing another. The website and the launcher also show a 24/7 server only once (the newest copy).
   - Day Z backpack, again: 4.05 updated the object's CMatrix, but on mobile that matrix isn't linked to the RenderWare frame the bag is drawn from. The bone matrix now goes straight into the frame, so the bag stays on the spine when driving, crouching, leaning and prone.

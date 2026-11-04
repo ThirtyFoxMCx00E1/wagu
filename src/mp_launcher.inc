@@ -271,6 +271,7 @@ static void LDragScroll()
 }
 
 // toolbar button: icon + optional label, flat, white highlight while pressed
+#define L_PRESS_ON_CLICK ((ImGuiButtonFlags)(1 << 4))   // 4.05.2: ImGuiButtonFlags_PressedOnClick (imgui_internal.h)
 static bool LToolButton(const char* id, int icon, const char* label, float h, bool enabled = true, bool on = false)
 {
     float isz = h * 0.42f;
@@ -278,7 +279,9 @@ static bool LToolButton(const char* id, int icon, const char* label, float h, bo
     ImGui::PushID(id);
     ImVec2 p = ImGui::GetCursorScreenPos();
     if(!enabled) ImGui::BeginDisabled();
-    bool hit = ImGui::InvisibleButton("##tb", ImVec2(w, h));
+    // 4.05.2: fires on the press (not the release) - the toolbar sits over the GTA weapon icon and a
+    // release could get lost there, so refresh / region / settings / add server did nothing
+    bool hit = ImGui::InvisibleButton("##tb", ImVec2(w, h), L_PRESS_ON_CLICK);
     if(!enabled) ImGui::EndDisabled();
     ImDrawList* dl = ImGui::GetWindowDrawList();
     // 3.63: Valorant look - a thin chamfered frame, teal while selected, light fill while pressed
@@ -1727,7 +1730,13 @@ static void RenderLauncher(void* openPtr)
     const float mx = ds.x * 0.025f, my = ds.y * 0.03f;   // 4.03: almost full screen (CS:GO browser), the game shows around it
     // 2.26: dim the game behind the launcher (touches never reach it while this is open)
     // 4.05.1: CS:GO look - a blurred night Los Santos picture behind everything, then see-through pages
-    VBackdrop(ImGui::GetBackgroundDrawList(), ImVec2(0, 0), ds);
+    // 4.05.2: the picture only fills the launcher panel (almost full screen), not the whole screen -
+    //         the game shows dimmed around it like before
+    {
+        ImDrawList* bg = ImGui::GetBackgroundDrawList();
+        bg->AddRectFilled(ImVec2(0, 0), ds, IM_COL32(0, 0, 0, 150));
+        VBackdrop(bg, ImVec2(mx, my), ImVec2(ds.x - mx, ds.y - my));
+    }
     ImGui::SetNextWindowPos(ImVec2(mx, my));
     ImGui::SetNextWindowSize(ImVec2(ds.x - mx * 2, ds.y - my * 2));
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
@@ -1840,7 +1849,7 @@ static void RenderLauncher(void* openPtr)
             ImVec2 ta(x, y), tb(x + tw, y + btnH);
             ImGui::SetCursorScreenPos(ta); ImGui::PushID(950 + i);
             bool on = s_nLTab == tabs[i].tab && (tabs[i].sub < 0 || s_nInetSub == tabs[i].sub);
-            if(ImGui::InvisibleButton("##ttab", ImVec2(tw, btnH)) && !on) { s_nLTab = tabs[i].tab; if(tabs[i].sub >= 0) s_nInetSub = tabs[i].sub; s_szLSelKey[0] = 0; s_nLSel = -1; }
+            if(ImGui::InvisibleButton("##ttab", ImVec2(tw, btnH), L_PRESS_ON_CLICK) && !on) { s_nLTab = tabs[i].tab; if(tabs[i].sub >= 0) s_nInetSub = tabs[i].sub; s_szLSelKey[0] = 0; s_nLSel = -1; }   // 4.05.2: on the press
             bool held = ImGui::IsItemActive(); ImGui::PopID();
             if(held) dl->AddRectFilled(ta, tb, IM_COL32(255, 255, 255, 18));
             dl->AddText(ImVec2(x + (tw - ts.x) * 0.5f, y + (btnH - ts.y) * 0.5f), on ? IM_COL32_WHITE : IM_COL32(165, 172, 180, 255), tabs[i].t);
@@ -1861,7 +1870,8 @@ static void RenderLauncher(void* openPtr)
         ImGui::SameLine(0, UI::S(6));
         int connTab = -1;
         for(int i = 0; i < FloatMenu::SectionCount(); ++i) if(!strcasecmp(FloatMenu::SectionTitle(i), "Connection")) connTab = LT_SECTIONS + i;
-        if(LToolButton("gear", IC_GEAR, nullptr, btnH, connTab >= 0, s_nLTab == connTab) && connTab >= 0) s_nLTab = connTab;
+        if(connTab < 0) for(int i = 0; i < FloatMenu::SectionCount(); ++i) if(strcasecmp(FloatMenu::SectionTitle(i), "Servers")) { connTab = LT_SECTIONS + i; break; }   // 4.05.2: never a dead gear
+        if(LToolButton("gear", IC_GEAR, nullptr, btnH, connTab >= 0, s_nLTab == connTab) && connTab >= 0) { s_nLTab = connTab; s_bRegionPick = false; }
         ImGui::SameLine(0, UI::S(6));
         if(LToolButton("add", IC_PLUS, nullptr, btnH, true, s_nLTab == LT_ADD)) s_nLTab = LT_ADD;
         ImGui::SameLine(0, UI::S(6));

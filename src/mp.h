@@ -294,6 +294,7 @@ namespace MP
     const char* SpawnSpotName(int i);
     int  SpawnSpotCount();
     bool SpawnPickerShown();
+    bool DzConnScreenShown();       // 4.05.2: Project Day Z connection screen (cabin) - no chat over it
     int  SpawnSelected();
     void SpawnStep(int d);
     void SpawnConfirm();

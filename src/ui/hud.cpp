@@ -1342,7 +1342,7 @@ void HUD::Render()
         if(!launcher)
         {
             if(MP::IsConnected() && !overlay && !MP::JoinScreenActive()) DrawNameTags(dl);   // 2.19.1: no tags (not even yours) on the join view
-            if(MP::settings.showChat) DrawChat(dl);
+            if(MP::settings.showChat && !MP::DzConnScreenShown()) DrawChat(dl);   // 4.05.2: not over the Day Z connection screen
             if(MP::IsConnected() && !overlay) DrawVoiceList(dl);   // 3.11
             if(MP::settings.showKillFeed && MP::IsConnected()) DrawKillFeed(dl);   // 2.35: not after leaving
             (void)&DrawStatus;   // 3.34: the "MP: Connected to ..." status line is gone (it showed the server, region, players, ping and host)

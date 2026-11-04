@@ -1,6 +1,7 @@
 {
-"latest": "4.05.1",
+"latest": "4.05.2",
 "supported": [
+"4.05.2",
 "4.05.1",
 "4.05",
 "4.04.2",
@@ -89,6 +90,17 @@
 "3.04.6"
 ],
 "versions": [
+{
+"v": "4.05.2",
+"summary": "fixes.",
+"items": [
+"Launcher: the ui_bg.jpg picture now only fills the launcher panel (almost full screen), like the server list; around it the game shows dimmed again instead of the picture covering the whole screen.",
+"Launcher toolbar: refresh, switch region, settings (gear) and add server (+) could not be tapped - they sit over the GTA weapon icon and the weapon switch took the tap. While the launcher or the keyboard is open the game now sees no finger, no weapon cycle and no HID button (pointer state, CPad, CHID and every CWidget check), and the toolbar buttons and top tabs fire on the press. The gear never shows disabled any more.",
+"Day Z download window: the panel was drawn over its own button. Panel and button are one window now; the button says DOWNLOAD IN BACKGROUND (play now, the thin bar on top keeps showing the rest) and when the download is done the window and its button are gone together.",
+"Day Z connection screen: the chat lines no longer show over it (the chat box was already hidden).",
+"Day Z status column: the temperature number (36.9C) is removed - only the thermometer icon."
+]
+},
 {
 "v": "4.05.1",
 "summary": "fixes.",

@@ -594,7 +594,7 @@ static void DzDrawStatusMta(ImDrawList* dl, ImVec2 ds, int ped, float t)
     float r = s_DzX.tempRate; int arrows = fabsf(r) < 0.0008f ? 0 : fabsf(r) < 0.003f ? 1 : fabsf(r) < 0.006f ? 2 : 3;
     (void)arrows;   // 4.05: the rise / fall arrow showed as a stray orange dot left of the thermometer - removed
     if(false) DzStatus(dl, r < 0 ? DZST_TARROW0 + arrows : DZST_TARROW3 + arrows, ImVec2(x - s * 0.62f, y + s * 0.18f), s * 0.62f, r < 0 ? IM_COL32(120, 180, 255, 255) : DzCol(DZ_ORG));
-    char tt[16]; snprintf(tt, sizeof(tt), "%.1fC", temp); DzTextR(dl, UI::S(17), x + s + UI::S(4), y + s - UI::S(16), IM_COL32(230, 230, 230, 220), tt);
+    // 4.05.2: icon only - no "36.9C" number next to the thermometer
     y += s + UI::S(2);
     // blood / food / drink
     struct L { int border, base; float k; bool warn; } ls[3] = {

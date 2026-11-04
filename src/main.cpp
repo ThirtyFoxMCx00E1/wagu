@@ -26,7 +26,7 @@
 #include "../imgui/rw_glue.h"
 #include "net/server.h"
 
-MYMODCFG(net.thirtyfox.mp, MP Multiplayer, 4.05.1, ThirtyFoxMCx00E1)   // 3.21: was stuck at 3.04.6 (crash logs showed the wrong version)
+MYMODCFG(net.thirtyfox.mp, MP Multiplayer, 4.05.2, ThirtyFoxMCx00E1)   // 3.21: was stuck at 3.04.6 (crash logs showed the wrong version)
 NEEDGAME(com.rockstargames.gtasa)
 
 // Globals used by the embedded RenderWare ImGui backend
@@ -232,6 +232,32 @@ DECL_HOOK(bool, TI_IsSwipedRight, int w, int i)             { return BlockGameTo
 DECL_HOOK(bool, TI_IsSwipedUp, int w, int i)                { return BlockGameTouch() ? false : TI_IsSwipedUp(w, i); }
 DECL_HOOK(bool, TI_IsSwipedDown, int w, int i)              { return BlockGameTouch() ? false : TI_IsSwipedDown(w, i); }
 DECL_HOOK(bool, Widget_IsTouched, void* self, void* v)      { return BlockGameTouch() ? false : Widget_IsTouched(self, v); }
+// 4.05.2: the launcher's toolbar (refresh, region, settings, add server) sits at the top right, right over
+// the GTA weapon icon. On some builds the weapon widget still saw the finger (it reads the pointer state /
+// CHID / CPad itself, not only CTouchInterface), so a tap on the region or gear icon switched the weapon
+// and the launcher lost the tap. While the launcher / keyboard is open the game is now told: no finger is
+// down, no weapon cycle, no HID button - MP keeps reading the real pointer through the original function.
+static int  (*LIB_PointerGetButton)(int, int) = nullptr;
+static uint64_t s_nScreenBlockMs = 0;
+static inline bool ScreenBlocksGame()
+{
+    if(VKeyboard::IsOpen() || FloatMenu::IsModal()) { s_nScreenBlockMs = MP_NowMs(); return true; }
+    return s_nScreenBlockMs && MP_NowMs() - s_nScreenBlockMs < 350;   // the release of the last tap too
+}
+DECL_HOOK(int,  Ptr_GetButton, int f, int b)                { const int r = Ptr_GetButton(f, b); return ScreenBlocksGame() ? 0 : r; }
+DECL_HOOK(bool, Pad_CycleWeapL, void* self)                 { return ScreenBlocksGame() ? false : Pad_CycleWeapL(self); }
+DECL_HOOK(bool, Pad_CycleWeapR, void* self)                 { return ScreenBlocksGame() ? false : Pad_CycleWeapR(self); }
+DECL_HOOK(bool, Hid_JustPressed, int m)                     { return ScreenBlocksGame() ? false : Hid_JustPressed(m); }
+DECL_HOOK(bool, Hid_Released, int m)                        { return ScreenBlocksGame() ? false : Hid_Released(m); }
+DECL_HOOK(bool, Hid_DoubleTapped, int m)                    { return ScreenBlocksGame() ? false : Hid_DoubleTapped(m); }
+DECL_HOOK(bool, Hid_Pressed, int m, float* v)               { if(ScreenBlocksGame()) { if(v) *v = 0.0f; return false; } return Hid_Pressed(m, v); }
+DECL_HOOK(bool, Widget_IsReleased, void* self, void* v)     { return BlockGameTouch() ? false : Widget_IsReleased(self, v); }
+DECL_HOOK(bool, Widget_IsDoubleTapped, void* self)          { return BlockGameTouch() ? false : Widget_IsDoubleTapped(self); }
+DECL_HOOK(bool, Widget_IsHeldDown, void* self)              { return BlockGameTouch() ? false : Widget_IsHeldDown(self); }
+DECL_HOOK(bool, Widget_IsSwipedLeft, void* self)            { return BlockGameTouch() ? false : Widget_IsSwipedLeft(self); }
+DECL_HOOK(bool, Widget_IsSwipedRight, void* self)           { return BlockGameTouch() ? false : Widget_IsSwipedRight(self); }
+DECL_HOOK(bool, Widget_IsSwipedUp, void* self)              { return BlockGameTouch() ? false : Widget_IsSwipedUp(self); }
+DECL_HOOK(bool, Widget_IsSwipedDown, void* self)            { return BlockGameTouch() ? false : Widget_IsSwipedDown(self); }
 
 
 // ---- 3.39.2: controller (gamepad) support for MP's screens ---------------------------------
@@ -561,13 +587,31 @@ static void HookTouchInterface()
     HOOK_IF(TI_IsSwipedUp,     "_ZN15CTouchInterface10IsSwipedUpENS_9WidgetIDsEi");
     HOOK_IF(TI_IsSwipedDown,   "_ZN15CTouchInterface12IsSwipedDownENS_9WidgetIDsEi");
     HOOK_IF(Widget_IsTouched,  "_ZN7CWidget9IsTouchedEP9CVector2D");
+    // 4.05.2: the weapon icon (and every other widget) behind the launcher / keyboard
+    HOOK_IF(Widget_IsReleased,     "_ZN7CWidget10IsReleasedEP9CVector2D");
+    HOOK_IF(Widget_IsDoubleTapped, "_ZN7CWidget14IsDoubleTappedEv");
+    HOOK_IF(Widget_IsHeldDown,     "_ZN7CWidget10IsHeldDownEv");
+    HOOK_IF(Widget_IsSwipedLeft,   "_ZN7CWidget12IsSwipedLeftEv");
+    HOOK_IF(Widget_IsSwipedRight,  "_ZN7CWidget13IsSwipedRightEv");
+    HOOK_IF(Widget_IsSwipedUp,     "_ZN7CWidget10IsSwipedUpEv");
+    HOOK_IF(Widget_IsSwipedDown,   "_ZN7CWidget12IsSwipedDownEv");
+    HOOK_IF(Pad_CycleWeapL,    "_ZN4CPad23CycleWeaponLeftJustDownEv");
+    HOOK_IF(Pad_CycleWeapR,    "_ZN4CPad24CycleWeaponRightJustDownEv");
+    HOOK_IF(Hid_JustPressed,   "_ZN4CHID13IsJustPressedE10HIDMapping");
+    HOOK_IF(Hid_Released,      "_ZN4CHID10IsReleasedE10HIDMapping");
+    HOOK_IF(Hid_DoubleTapped,  "_ZN4CHID14IsDoubleTappedE10HIDMapping");
+    HOOK_IF(Hid_Pressed,       "_ZN4CHID9IsPressedE10HIDMappingPf");
+    if(void* a = (void*)aml->GetSym(pGameHandle, "_Z20LIB_PointerGetButtonii"))
+    {   // MP's own touch poll keeps the real state (the original function), the game sees "up" behind the launcher
+        HOOK(Ptr_GetButton, a); ++hooked;
+        LIB_PointerGetButton = Ptr_GetButton;
+    }
     logger->Info("Keyboard HUD block: %d touch checks hooked", hooked);
 }
 
 // ---- Fallback: read the touch state straight from the game every frame --------------------
 // Works even if the AND_TouchEvent hook isn't reached on this game build.
 // LIB_PointerGetButton(finger, 0): 0/1 = up, 2/3 = down (same test as the game's IsPointerDown).
-static int  (*LIB_PointerGetButton)(int, int) = nullptr;
 static int  (*LIB_PointerGetCoordinates)(int, int*, int*, float*) = nullptr;
 struct PolledFinger { bool down; int x, y; };
 static PolledFinger s_Poll[4] = {};

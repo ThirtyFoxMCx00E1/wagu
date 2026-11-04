@@ -1310,8 +1310,7 @@ static void DzDrawArmor(ImDrawList* dl, ImVec2 ds)
     dl->AddRectFilled(ImVec2(th.x - s * 0.1f, th.y - s * 0.5f), ImVec2(th.x + s * 0.1f, th.y + s * 0.25f), IM_COL32(255, 255, 255, 200), s * 0.1f);
     dl->AddRectFilled(ImVec2(th.x - s * 0.06f, th.y - s * 0.5f + s * 0.75f * (1.0f - (temp - 33.0f) / 5.0f)), ImVec2(th.x + s * 0.06f, th.y + s * 0.25f), tc);
     dl->AddCircleFilled(ImVec2(th.x, th.y + s * 0.35f), s * 0.18f, tc, 12);
-    char tt[16]; snprintf(tt, sizeof(tt), "%.1f C", temp);
-    DzTextR(dl, UI::S(14), x - s * 0.45f, th.y - UI::S(7), IM_COL32(255, 255, 255, 220), tt);
+    // 4.05.2: icon only (no temperature number)
     (void)t;
 }
 // scoreboard (right, under FPS)
@@ -1869,7 +1868,14 @@ static void DzDrawDownload(ImVec2 ds, float x0, float t)
     DzModels::Download d; if(!DzDlActive(d) || s_DzDlSkip) return;
     const float w = std::min(ds.x - x0 - UI::S(40), UI::S(700)), h = UI::S(300);
     const float x = x0 + (ds.x - x0 - w) * 0.5f, y = ds.y * 0.5f - h * 0.5f, th = UI::S(40);
-    ImDrawList* fg = ImGui::GetForegroundDrawList();
+    // 4.05.2: the panel and its button are ONE window now. Before, the panel was painted on the foreground
+    // layer (over every window), so it covered its own button - and the two did not go away together.
+    // Now the button sits on the panel, and when the download is done the panel + button are gone at once
+    ImGui::SetNextWindowPos(ImVec2(x, y)); ImGui::SetNextWindowSize(ImVec2(w, h));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+    ImGui::Begin("##DzDlWin", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoFocusOnAppearing);
+    ImDrawList* fg = ImGui::GetWindowDrawList();
     fg->AddRectFilled(ImVec2(x, y), ImVec2(x + w, y + h), IM_COL32(12, 12, 12, 235), UI::S(8));
     fg->AddRectFilledMultiColor(ImVec2(x + 1, y + 1), ImVec2(x + w - 1, y + th), IM_COL32(70, 70, 70, 255), IM_COL32(70, 70, 70, 255), IM_COL32(28, 28, 28, 255), IM_COL32(28, 28, 28, 255));
     fg->AddRect(ImVec2(x, y), ImVec2(x + w, y + h), IM_COL32(120, 120, 120, 200), UI::S(8), 0, UI::S(1.5f));
@@ -1907,13 +1913,13 @@ static void DzDrawDownload(ImVec2 ds, float x0, float t)
         fg->AddText(UI::Font(), UI::S(15), ImVec2(bx, ly), IM_COL32(220, 220, 220, 255), l);
         if(d.filesFailed) { snprintf(l, sizeof(l), "%d failed", d.filesFailed); fg->AddText(UI::Font(), UI::S(15), ImVec2(bx + bw - UI::S(90), ly), DzCol(DZ_RED), l); }
     }
-    // the button: play now, the rest keeps downloading in the background
-    ImGui::SetNextWindowPos(ImVec2(x + w - UI::S(250), y + h - UI::S(58))); ImGui::SetNextWindowSize(ImVec2(UI::S(236), UI::S(50)));
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-    ImGui::Begin("##DzDlWin", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoBackground);
-    if(BcwTeamButton("PLAY NOW##dzdlskip", 0x57534EFFu, ImVec2(UI::S(236), UI::S(46)), false, false)) s_DzDlSkip = true;
-    ImGui::End(); ImGui::PopStyleVar();
-    fg->AddText(UI::Font(), UI::S(13), ImVec2(x + UI::S(18), y + h - UI::S(40)), IM_COL32(160, 160, 160, 255), "Saved on the phone - next time it is instant.");
+    // the button: close this window and play now - the rest keeps downloading in the background
+    // (the thin bar on top shows it; Play on the left works right away)
+    const float bw2 = std::min(UI::S(330), w * 0.5f), bh2 = UI::S(46);
+    ImGui::SetCursorScreenPos(ImVec2(x + w - bw2 - UI::S(14), y + h - bh2 - UI::S(12)));
+    if(BcwTeamButton("DOWNLOAD IN BACKGROUND##dzdlskip", 0x57534EFFu, ImVec2(bw2, bh2), false, false)) s_DzDlSkip = true;
+    fg->AddText(UI::Font(), UI::S(13), ImVec2(x + UI::S(18), y + h - UI::S(40)), IM_COL32(160, 160, 160, 255), "Saved on the phone - next time it is instant.", nullptr, w - bw2 - UI::S(50));
+    ImGui::End(); ImGui::PopStyleVar(2);
 }
 // in game: a thin bar on top while the rest is still coming
 static void DzDrawDownloadMini(ImDrawList* fg, ImVec2 ds)
