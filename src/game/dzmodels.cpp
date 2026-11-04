@@ -82,6 +82,7 @@ std::atomic<int> s_FDone { 0 }, s_FTotal { 0 }, s_FFailed { 0 }, s_FDownloaded {
 std::atomic<uint64_t> s_BDone { 0 }, s_BTotal { 0 };
 std::atomic<size_t> s_BCur { 0 };
 std::string s_CurFile, s_CurHost;
+std::atomic<bool> s_CloudBusy { false };   // 4.02: the launcher Cloud Storage page is downloading
 bool s_Started = false, s_Checked = false, s_Ok = false, s_PoolOk = false, s_Disabled = false;
 int s_Engine = 0;                 // 4.00: the engine check result (1 ok, 0 not yet, < 0 failed)
 std::string s_LogPath;            // 4.00: files/MP/dzmodels_log.txt (readable on the phone)
@@ -166,6 +167,29 @@ void HookPedSetClump(void* mi, void* clump)
     }
     PedSetClump_orig(mi, clump);
 }
+
+// 4.02: the mobile texture database (gta3 / txd .dxt/.etc/.pvr + .txt index, see the txd+gta3.zip
+// release asset) is ONE flat table keyed only by texture name - it does not know about txd slots. When
+// a dff is read the material names go through TextureDatabaseRuntime::GetTexture(name), so any MTA
+// texture whose name is also a stock one ("army", "sweet", "wmopj", "ak47", "white64", weapon icons...)
+// came out as the GTA texture, and the rest only worked when the dictionary was asked first. While one of
+// our models is being read, our dictionary (then the other MTA dictionaries, for shared item textures)
+// answers first - XkiLoader does the same (research/xkiloader-findings.md).
+void* (*DbGetTexture_orig)(const char*) = nullptr;
+void* (*DictFindTex)(void*, const char*) = nullptr;
+void* s_LoadDict = nullptr;                 // the dictionary of the MTA model being read now
+std::vector<void*> s_AllDicts;              // every MTA dictionary we filled
+std::atomic<int> s_DbHits { 0 };
+void* HookDbGetTexture(const char* name)
+{
+    if(s_LoadDict && name && *name && DictFindTex)
+    {
+        if(void* t = DictFindTex(s_LoadDict, name)) { ++s_DbHits; return t; }
+        for(void* d : s_AllDicts) if(d != s_LoadDict) if(void* t = DictFindTex(d, name)) { ++s_DbHits; return t; }
+    }
+    return DbGetTexture_orig(name);
+}
+struct LoadScope { void* prev; explicit LoadScope(void* d) : prev(s_LoadDict) { s_LoadDict = d; } ~LoadScope() { s_LoadDict = prev; } };
 
 uint64_t NowMs() { timespec t; clock_gettime(CLOCK_MONOTONIC, &t); return (uint64_t)t.tv_sec * 1000 + t.tv_nsec / 1000000; }
 
@@ -272,8 +296,36 @@ bool Fetch(const std::string& rel, uint32_t size, uint32_t crc, bool firstBaseOn
     return ok;
 }
 
+void FetchWanted(int total)
+{
+    for(Entry* e : s_E)
+    {
+        if(!e->wanted || e->file == 1) continue;
+        bool okD = Fetch(e->dff, e->dffSize, e->dffCrc, false);
+        bool ok = Fetch(e->txd, e->txdSize, e->txdCrc, false) && okD;
+        e->file = ok ? 1 : 2;
+        if(ok) { ++s_Done; s_KbDone += (int)((e->dffSize + e->txdSize) / 1024); }
+        else DzLog(true, "DzModels: %d (%s) not downloaded: %s", e->id, e->dff.c_str(), s_Err.c_str());
+    }
+    DzLog(false, "DzModels: %d / %d models ready", s_Done.load(), total);
+}
+
 void DownloadThread(std::vector<int> objIds)
 {
+    s_BDone = 0; s_FDone = 0; s_FFailed = 0; s_FDownloaded = 0;   // 4.02: the Cloud Storage page uses Fetch too
+    if(s_ListReady && !s_E.empty())
+    {   // 4.02: deleted from the Cloud Storage page: get those files again (same list, same entries)
+        int total = 0, kb = 0, done = 0, kbDone = 0; uint64_t bt = 0; int ft = 0;
+        for(Entry* e : s_E) if(e->wanted)
+        {
+            ++total; kb += (int)((e->dffSize + e->txdSize) / 1024);
+            if(e->file == 1) { ++done; kbDone += (int)((e->dffSize + e->txdSize) / 1024); } else { bt += e->dffSize + e->txdSize; ft += 2; }
+        }
+        s_Total = total; s_KbTotal = kb; s_Done = done; s_KbDone = kbDone; s_BTotal = bt; s_FTotal = ft;
+        FetchWanted(total);
+        s_Busy = false;
+        return;
+    }
     // 1) the list (fresh from GitHub, else the copy from last time)
     std::string text, why; const std::string mpath = s_Cache + "/manifest.txt";
     if(Online::HttpsFetch(std::string(kBaseUrls[0]) + "manifest.txt", text, 30000, why, 512 * 1024) && text.find("Project Day Z") != std::string::npos)
@@ -298,16 +350,7 @@ void DownloadThread(std::vector<int> objIds)
     s_ListReady = true;
     DzLog(false, "DzModels: %d models in the list, %d wanted (%d MB)", (int)list.size(), total, kb / 1024);
     // 2) the files
-    for(Entry* e : list)
-    {
-        if(!e->wanted) continue;
-        bool okD = Fetch(e->dff, e->dffSize, e->dffCrc, false);
-        bool ok = Fetch(e->txd, e->txdSize, e->txdCrc, false) && okD;
-        e->file = ok ? 1 : 2;
-        if(ok) { ++s_Done; s_KbDone += (int)((e->dffSize + e->txdSize) / 1024); }
-        else DzLog(true, "DzModels: %d (%s) not downloaded: %s", e->id, e->dff.c_str(), s_Err.c_str());
-    }
-    DzLog(false, "DzModels: %d / %d models ready", s_Done.load(), total);
+    FetchWanted(total);
     s_Busy = false;
 }
 
@@ -492,6 +535,7 @@ bool BuildTxd(Entry* e)
     }
     if(SetupTxdParent && def->parent >= 0) SetupTxdParent(e->slot);
     e->texMade = made;
+    if(made > 0 && std::find(s_AllDicts.begin(), s_AllDicts.end(), dict) == s_AllDicts.end()) s_AllDicts.push_back(dict);   // 4.02
     DzLog(made > 0 ? false : true, "DzModels: %d of %d textures decoded for %d (%s)", made, count, e->id, e->txd.c_str());
     return made > 0;
 }
@@ -502,6 +546,8 @@ bool HookCBTO(char* buf, int idx, int ch)
     if(!e || !e->swapped || e->bad || !s_MI[idx] || s_MI[idx]->txd != e->slot) return CBTO_orig(buf, idx, ch);
     Mark(idx);
     BuildTxd(e);
+    // 4.02: our textures answer the texture-database lookups while this dff is read
+    LoadScope scope(s_PoolOk && e->slot >= 0 ? (*s_TxdPool)->objs[e->slot].dict : nullptr);
     std::vector<uint8_t> dff;
     if(!ReadFile(CacheName(e->dff), dff) || dff.size() < 12) { e->bad = true; Mark(0); return CBTO_orig(buf, idx, ch); }
     bool r;
@@ -535,7 +581,7 @@ bool HookCBTO(char* buf, int idx, int ch)
         if(added == (int)sectors * 2048) *s_MemUsed -= ((int)sectors - (int)oldSize) * 2048;
     }
     Mark(0);
-    if(r && !e->loadedOnce) { e->loadedOnce = true; DzLog(false, "DzModels: model %d (%s) is in the game now (MTA dff via %s)", idx, e->dff.c_str(), how); }
+    if(r && !e->loadedOnce) { e->loadedOnce = true; DzLog(false, "DzModels: model %d (%s) is in the game now (MTA dff via %s, %d textures from our txd)", idx, e->dff.c_str(), how, s_DbHits.exchange(0)); }
     if(!r) DzLog(true, "DzModels: the game could not read %s for model %d via %s (try %d)", e->dff.c_str(), idx, how, e->fails + 1);
     if(!r && ++e->fails >= 2) { e->bad = true; DzLog(true, "DzModels: model %d (%s) did not load - GTA model kept", idx, e->dff.c_str()); }
     return r;
@@ -620,6 +666,11 @@ void DzModels::Init(void* h)
     *(void**)&RemoveModel = (void*)aml->GetSym(h, "_ZN10CStreaming11RemoveModelEi");
     *(void**)&TexCreate = (void*)aml->GetSym(h, "_Z15RwTextureCreateP8RwRaster");
     *(void**)&DictAddTex = (void*)aml->GetSym(h, "_Z25RwTexDictionaryAddTextureP15RwTexDictionaryP9RwTexture");
+    // 4.02: the mobile texture database lookup (flat, by name) - ours first while an MTA dff is read
+    *(void**)&DictFindTex = (void*)aml->GetSym(h, "_Z31RwTexDictionaryFindNamedTextureP15RwTexDictionaryPKc");
+    if(!DictFindTex) *(void**)&DictFindTex = (void*)aml->GetSym(h, "RwTexDictionaryFindNamedTexture");
+    if(DictFindTex)
+        if(void* g = (void*)aml->GetSym(h, "_ZN22TextureDatabaseRuntime10GetTextureEPKc")) aml->Hook(g, (void*)&HookDbGetTexture, (void**)&DbGetTexture_orig);
     if(!TexCreate) *(void**)&TexCreate = (void*)aml->GetSym(h, "RwTextureCreate");
     if(!DictAddTex) *(void**)&DictAddTex = (void*)aml->GetSym(h, "RwTexDictionaryAddTexture");
     void* f = (void*)aml->GetSym(h, "_ZN10CStreaming21ConvertBufferToObjectEPcii");
@@ -639,7 +690,7 @@ void DzModels::Init(void* h)
     }
     s_Cache = FindCacheDir();
     if(!s_Cache.empty()) LoadBad();
-    DzLog(false, "DzModels: loader hooks clump %s atomic %s ped %s", LoadClump_orig ? "ok" : "-", LoadAtomic_orig ? "ok" : "-", PedSetClump_orig ? "ok" : "-");
+    DzLog(false, "DzModels: loader hooks clump %s atomic %s ped %s texdb %s", LoadClump_orig ? "ok" : "-", LoadAtomic_orig ? "ok" : "-", PedSetClump_orig ? "ok" : "-", DbGetTexture_orig ? "ok" : "-");
     DzLog(false, "DzModels: hook %s, txd %s, rw %s, cache %s", CBTO_orig ? "ok" : "-", (AddTxdSlot && TxdCreate && s_TxdPool) ? "ok" : "-",
                  (TexCreate && DictAddTex) ? "ok" : "-", s_Cache.empty() ? "-" : s_Cache.c_str());
 }
@@ -647,7 +698,7 @@ void DzModels::Init(void* h)
 void DzModels::Tick(bool on, const int* objIds, int nObj)
 {
     if(s_Disabled) return;
-    if(on && !s_Started && !s_Cache.empty() && CBTO_orig)
+    if(on && !s_Started && !s_Cache.empty() && CBTO_orig && !s_CloudBusy)
     {
         s_Started = true; s_Busy = true;
         std::vector<int> ids(objIds, objIds + (nObj > 0 ? nObj : 0));
@@ -742,3 +793,135 @@ void DzModels::GetDownload(Download& d)
     snprintf(d.host, sizeof(d.host), "%s", s_CurHost.empty() ? "raw.githubusercontent.com (wagu)" : s_CurHost.c_str());
 }
 const char* DzModels::LastError() { static std::string c; std::lock_guard<std::mutex> lk(s_M); c = s_Err; return c.c_str(); }
+
+// ---------------- 4.02: Cloud Storage page (launcher) ----------------
+// The same files as the in-game download (Host/DayZ/models on GitHub, the mtadayz fork as the second
+// host), grouped by folder. The player can get a group before joining, or delete it from the phone and
+// download it again (a broken / old copy, or just to free the space).
+namespace
+{
+struct CItem { int id = 0; std::string dff, txd; uint32_t dffSize = 0, txdSize = 0, dffCrc = 0, txdCrc = 0; int group = 0; };
+const char* const kGroupDir[DzModels::kCloudGroups] = { "zombies", "players", "weapons", "items", "vehicles", "buildings", "animals" };
+std::vector<CItem> s_Cl;                 // the manifest (cloud page copy)
+std::atomic<bool> s_ClReady { false }, s_ClListBusy { false };
+std::atomic<int> s_ClDone { 0 }, s_ClTotal { 0 }, s_ClFailed { 0 }, s_ClGroup { -2 };
+std::atomic<uint64_t> s_ClBDone { 0 }, s_ClBTotal { 0 };
+std::string s_ClMsg;                     // last result line (under s_M)
+struct ClOnPhone { uint64_t bytes = 0; int files = 0; };
+ClOnPhone s_ClHave[DzModels::kCloudGroups];
+uint64_t s_ClScanAt = 0;
+
+int GroupOf(const std::string& dff)
+{
+    size_t sl = dff.find('/'); std::string d = sl == std::string::npos ? dff : dff.substr(0, sl);
+    for(int g = 0; g < DzModels::kCloudGroups; ++g) if(d == kGroupDir[g]) return g;
+    return 3;   // anything else = items
+}
+uint64_t FileSize(const std::string& p) { struct stat st; return stat(p.c_str(), &st) == 0 ? (uint64_t)st.st_size : 0; }
+void ClMsg(const std::string& m) { std::lock_guard<std::mutex> lk(s_M); s_ClMsg = m; }
+
+bool ClLoadList()
+{
+    std::string text, why; const std::string mpath = s_Cache + "/manifest.txt";
+    if(Online::HttpsFetch(std::string(kBaseUrls[0]) + "manifest.txt", text, 30000, why, 512 * 1024) && text.find("Project Day Z") != std::string::npos)
+        WriteFile(mpath, text.data(), text.size());
+    else { std::vector<uint8_t> d; if(ReadFile(mpath, d)) text.assign(d.begin(), d.end()); else { ClMsg("Could not get the file list: " + why); return false; } }
+    std::vector<Entry*> tmp; ParseManifest(text, tmp);
+    std::vector<CItem> out;
+    for(Entry* e : tmp)
+    {
+        CItem c; c.id = e->id; c.dff = e->dff; c.txd = e->txd; c.dffSize = e->dffSize; c.txdSize = e->txdSize;
+        c.dffCrc = e->dffCrc; c.txdCrc = e->txdCrc; c.group = GroupOf(e->dff); out.push_back(c); delete e;
+    }
+    { std::lock_guard<std::mutex> lk(s_M); s_Cl.swap(out); }
+    s_ClReady = true; s_ClScanAt = 0;
+    return true;
+}
+void ClListThread() { ClLoadList(); s_ClListBusy = false; }
+void ClDownloadThread(int group)
+{
+    if(!s_ClReady && !ClLoadList()) { s_CloudBusy = false; s_ClGroup = -2; return; }
+    std::vector<CItem> list; { std::lock_guard<std::mutex> lk(s_M); list = s_Cl; }
+    uint64_t bt = 0; int ft = 0;
+    for(auto& c : list) if(group < 0 || c.group == group) { bt += c.dffSize + c.txdSize; ft += 2; }
+    s_ClBTotal = bt; s_ClTotal = ft; s_ClBDone = 0; s_ClDone = 0; s_ClFailed = 0;
+    for(auto& c : list)
+    {
+        if(group >= 0 && c.group != group) continue;
+        const std::string* f[2] = { &c.dff, &c.txd }; uint32_t sz[2] = { c.dffSize, c.txdSize }, cr[2] = { c.dffCrc, c.txdCrc };
+        bool okAll = true;
+        for(int k = 0; k < 2; ++k)
+        {
+            bool ok = Fetch(*f[k], sz[k], cr[k], false); okAll = okAll && ok;
+            if(!ok) ++s_ClFailed;
+            s_ClBDone += sz[k]; ++s_ClDone;
+        }
+        if(okAll) if(Entry* e = (c.id > 0 && c.id < kTxdBase) ? s_ById[c.id] : nullptr) if(e->dff == c.dff && e->file != 1) e->file = 1;   // the game can use it now
+    }
+    char m[160]; snprintf(m, sizeof(m), s_ClFailed ? "Download finished: %d of %d files failed (%s)." : "Download finished: %d files on the phone.",
+                          s_ClFailed ? s_ClFailed.load() : s_ClDone.load(), s_ClTotal.load(), s_Err.c_str());
+    ClMsg(m); DzLog(s_ClFailed > 0, "DzModels: cloud page %s", m);
+    s_ClScanAt = 0; s_ClGroup = -2; s_CloudBusy = false;
+}
+} // namespace
+
+void DzModels::CloudRefresh()
+{
+    if(s_Cache.empty() || s_ClListBusy || s_CloudBusy) return;
+    s_ClListBusy = true; std::thread(ClListThread).detach();
+}
+bool DzModels::CloudDownload(int group)
+{
+    if(s_Cache.empty() || s_CloudBusy || s_Busy || s_ClListBusy) return false;
+    s_CloudBusy = true; s_ClGroup = group; ClMsg("");
+    std::thread(ClDownloadThread, group).detach();
+    return true;
+}
+int DzModels::CloudDelete(int group)
+{
+    if(s_Cache.empty() || s_CloudBusy || s_Busy) return -1;
+    std::vector<CItem> list; { std::lock_guard<std::mutex> lk(s_M); list = s_Cl; }
+    int removed = 0, kept = 0;
+    for(auto& c : list)
+    {
+        if(group >= 0 && c.group != group) continue;
+        Entry* e = (c.id > 0 && c.id < kTxdBase) ? s_ById[c.id] : nullptr;
+        if(e && e->dff == c.dff && e->swapped) { ++kept; continue; }   // the game is using this model right now
+        if(unlink(CacheName(c.dff).c_str()) == 0) ++removed;
+        if(unlink(CacheName(c.txd).c_str()) == 0) ++removed;
+        if(e && e->dff == c.dff) e->file = 0;   // the next Day Z visit downloads it again
+    }
+    if(s_Started && !s_Busy) s_Started = false;   // DzModels::Tick starts the download again on the Day Z server
+    char m[160];
+    if(kept) snprintf(m, sizeof(m), "Deleted %d files. %d models are in use on the Day Z server - leave it to delete them.", removed, kept);
+    else snprintf(m, sizeof(m), "Deleted %d files. Download again here or join the Day Z server.", removed);
+    ClMsg(m); DzLog(false, "DzModels: cloud page %s", m);
+    s_ClScanAt = 0;
+    return removed;
+}
+void DzModels::GetCloud(Cloud& c)
+{
+    c = Cloud();
+    c.cache = !s_Cache.empty(); c.listReady = s_ClReady; c.listBusy = s_ClListBusy; c.busy = s_CloudBusy || s_Busy; c.gameDownload = s_Busy;
+    c.group = s_ClGroup; c.filesDone = s_ClDone; c.filesTotal = s_ClTotal; c.filesFailed = s_ClFailed;
+    c.bytesTotal = s_ClBTotal; c.bytesDone = s_ClBDone + (s_CloudBusy ? (uint64_t)s_BCur : 0); if(c.bytesDone > c.bytesTotal) c.bytesDone = c.bytesTotal;
+    c.inUse = SwapCount();
+    std::lock_guard<std::mutex> lk(s_M);
+    snprintf(c.msg, sizeof(c.msg), "%s", s_ClMsg.c_str());
+    snprintf(c.file, sizeof(c.file), "%s", s_CloudBusy ? s_CurFile.c_str() : "");
+    // what is on the phone (a stat per file, at most twice a second)
+    uint64_t now = NowMs();
+    if(s_ClReady && now - s_ClScanAt > 500)
+    {
+        s_ClScanAt = now;
+        for(auto& h : s_ClHave) h = ClOnPhone();
+        for(auto& it : s_Cl)
+        {
+            uint64_t a = FileSize(CacheName(it.dff)), b = FileSize(CacheName(it.txd));
+            if(a == it.dffSize) { s_ClHave[it.group].bytes += a; ++s_ClHave[it.group].files; }
+            if(b == it.txdSize) { s_ClHave[it.group].bytes += b; ++s_ClHave[it.group].files; }
+        }
+    }
+    for(int g = 0; g < kCloudGroups; ++g) { c.g[g].name = kGroupDir[g]; c.g[g].bytesOnPhone = s_ClHave[g].bytes; c.g[g].filesOnPhone = s_ClHave[g].files; }
+    for(auto& it : s_Cl) { CloudGroup& g = c.g[it.group]; ++g.models; g.filesTotal += 2; g.bytesTotal += it.dffSize + it.txdSize; }
+}

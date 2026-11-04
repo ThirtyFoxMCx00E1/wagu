@@ -4082,13 +4082,17 @@ void MP::Process()
     // like CheatMenu (libCheatMenu.so / libCheatMenu64.so); only a custom server with the "Cheat Menu"
     // permission on allows them. The MP cheats (/fly, /god, ...) stay allowed until the host / [ADMIN] /
     // [MOD] switches "Disable cheats" on.
-    CleoBlock::Process(MP::CheatsBlocked() || (client.GetState() == NET_CONNECTED && !MP::CheatMenuAllowed()));
+    // 4.02: off a server (single player, not hosting) the CLEO menu / CLEO touch scripts are never blocked
+    const bool offline = client.GetState() == NET_DISCONNECTED && !s_Server.IsRunning();
+    CleoBlock::Process(!offline && (MP::CheatsBlocked() || (client.GetState() == NET_CONNECTED && !MP::CheatMenuAllowed())));
     ExpireKillPredictions(now);                // 2.37
     {   // 2.37 / 3.00: CheatMenu installed -> allowed only where the server says so (PERM_CHEAT_MENU)
         static uint64_t s_nCmT = 0, s_nConnT = 0;
         if(client.GetState() != NET_CONNECTED) s_nConnT = 0;
         else if(!s_nConnT) s_nConnT = now;
-        ModScan::SetAllowed(MP::CheatMenuAllowed());   // its button / window come back only there
+        // 4.02: offline (not on a server, not hosting) the menus are yours: CheatMenu / CLEO menu buttons and
+        // windows are no longer hidden in single player. On a server only its Cheat Menu permission allows them.
+        ModScan::SetAllowed(offline || MP::CheatMenuAllowed());   // its button / window come back there
         // connected: decided as soon as the server's permissions arrive (right after the welcome; an
         // old server never sends the bit -> not allowed after 4 s). Allowed = you just play, no
         // message. Not allowed = leave at once + "This server doesn't allow cheat menus".

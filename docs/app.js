@@ -234,3 +234,27 @@
   }
   loadVersions();
 })();
+
+// 4.02: Cloud Storage - the Day Z model pack, grouped by folder (same list the game reads)
+(function cloudStorage(){
+  var rows = document.getElementById('cloud-rows'); if(!rows) return;
+  var base = 'https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/Host/DayZ/models/';
+  function mb(b){ return b >= 1048576 ? (b / 1048576).toFixed(1) + ' MB' : Math.ceil(b / 1024) + ' KB'; }
+  fetch(base + 'manifest.txt', { cache: 'no-store' }).then(function(r){ if(!r.ok) throw new Error(r.status); return r.text(); }).then(function(t){
+    var g = {}, order = [], total = 0;
+    t.split('\n').forEach(function(l){
+      if(!l || l[0] === '#') return; var f = l.trim().split(/\s+/); if(f.length < 6) return;
+      var dir = f[2].split('/')[0];
+      if(!g[dir]){ g[dir] = { models: 0, bytes: 0, files: [] }; order.push(dir); }
+      g[dir].models++; g[dir].bytes += (+f[4]) + (+f[5]); g[dir].files.push(f[2], f[3]); total += (+f[4]) + (+f[5]);
+    });
+    rows.innerHTML = '';
+    order.forEach(function(d){
+      var tr = document.createElement('tr'), x = g[d];
+      var links = x.files.map(function(p){ return '<a class="link" href="' + base + p + '">' + p.split('/').pop() + '</a>'; }).join(' ');
+      tr.innerHTML = '<td><strong>' + d.charAt(0).toUpperCase() + d.slice(1) + '</strong></td><td>' + x.models + '</td><td>' + mb(x.bytes) + '</td><td><details><summary>' + x.files.length + ' files</summary>' + links + '</details></td>';
+      rows.appendChild(tr);
+    });
+    var st = document.getElementById('cloud-status'); if(st) st.textContent = 'Project Day Z Legacy model pack: ' + mb(total) + ' in ' + order.length + ' groups. In the game: MP launcher > STORAGE > Cloud Storage to download or delete them.';
+  }).catch(function(){ rows.innerHTML = '<tr><td colspan="4" class="muted">Could not load the list right now.</td></tr>'; });
+})();

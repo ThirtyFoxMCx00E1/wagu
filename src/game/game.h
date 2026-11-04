@@ -68,7 +68,7 @@ namespace Game
     int   CreateRemoteClothedCJ(const PktClothes& c, const Vec3& pos);   // 0 = can't (use CreateRemotePed)
     void  DeleteChar(int ped);
     bool  GiveAndSelectWeapon(int ped, int weapon);   // 3.32: false = weapon model still streaming in (call again)
-    void  TaskGoTo(int ped, const Vec3& p, int moveState);
+    void  TaskGoTo(int ped, const Vec3& p, int moveState, int warpMs = 2000);   // 4.02: warpMs -1 = walk only, never warp (zombies)
     void  TaskStandStill(int ped);
     void  TaskShootAt(int ped, const Vec3& p, int timeMs);
     void  TaskAimAt(int ped, const Vec3& p, int timeMs);

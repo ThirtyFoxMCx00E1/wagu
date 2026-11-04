@@ -14,6 +14,7 @@
 
 enum { LT_INTERNET = 0, LT_FAVORITES, LT_HOSTED, LT_ADD, LT_PLAYERS, LT_BANS, LT_SRVMGMT,   // 3.53: + Server Management
        LT_FRIENDS, LT_CHATS, LT_PARTY, LT_COMMUNITY, LT_INBOX,                           // 3.63: social (mp_social.inc)
+       LT_CLOUD,                                                                         // 4.02: Cloud Storage (downloads)
        LT_SECTIONS };
 static int   s_nLTab = LT_INTERNET;
 static int   s_nInetSub = 0;   // 3.58: Internet = PUBLIC (default + custom servers) || FEATURED (the 24/7 Broker servers)
@@ -42,7 +43,7 @@ static void ShowKicked(const PktKicked& k)
 // ---- small drawing helpers -------------------------------------------------------------------
 enum { IC_PLAY, IC_PLUS, IC_TRASH, IC_REFRESH, IC_GEAR, IC_SLIDERS, IC_INFO, IC_CLOSE, IC_GLOBE, IC_HEART,
        IC_BOX, IC_USERS, IC_BAN, IC_LIST, IC_SEARCH, IC_CHAT, IC_USER, IC_STOP, IC_REGION,
-       IC_BELL, IC_USERPLUS, IC_PARTY, IC_FLAG, IC_SEND, IC_CHECK };   // 3.63
+       IC_BELL, IC_USERPLUS, IC_PARTY, IC_FLAG, IC_SEND, IC_CHECK, IC_CLOUD };   // 3.63, 4.02 cloud
 
 // ---- 3.63: Valorant style (shapes + colours only: the layout is the same as before) ----
 // navy glass panels, thin light outlines, chamfered (cut) corners, pill tabs, red #FF4655 + teal accents
@@ -153,6 +154,14 @@ static void LIcon(ImDrawList* dl, int k, ImVec2 c, float r, ImU32 col)
         dl->PathBezierCubicCurveTo(ImVec2(c.x + r * 0.6f, c.y - r * 0.85f), ImVec2(c.x + r * 0.95f, c.y), p0, 12);
         dl->PathStroke(col, ImDrawFlags_Closed, t); break;
     }
+    case IC_CLOUD:   // 4.02: Cloud Storage
+        dl->PathArcTo(ImVec2(c.x - r * 0.38f, c.y + r * 0.12f), r * 0.32f, IM_PI * 0.5f, IM_PI * 1.5f, 10);
+        dl->PathArcTo(ImVec2(c.x - r * 0.05f, c.y - r * 0.18f), r * 0.40f, IM_PI * 1.05f, IM_PI * 1.95f, 12);
+        dl->PathArcTo(ImVec2(c.x + r * 0.40f, c.y + r * 0.10f), r * 0.34f, IM_PI * 1.5f, IM_PI * 2.5f, 10);
+        dl->PathStroke(col, ImDrawFlags_Closed, t);
+        dl->AddLine(ImVec2(c.x, c.y - r * 0.02f), ImVec2(c.x, c.y + r * 0.62f), col, t);
+        dl->AddLine(ImVec2(c.x - r * 0.2f, c.y + r * 0.40f), ImVec2(c.x, c.y + r * 0.62f), col, t);
+        dl->AddLine(ImVec2(c.x + r * 0.2f, c.y + r * 0.40f), ImVec2(c.x, c.y + r * 0.62f), col, t); break;
     case IC_BOX:
         dl->AddQuad(ImVec2(c.x, c.y - r * 0.7f), ImVec2(c.x + r * 0.65f, c.y - r * 0.35f), ImVec2(c.x, c.y), ImVec2(c.x - r * 0.65f, c.y - r * 0.35f), col, t);
         dl->AddLine(ImVec2(c.x - r * 0.65f, c.y - r * 0.35f), ImVec2(c.x - r * 0.65f, c.y + r * 0.35f), col, t);
@@ -966,7 +975,7 @@ bool MP::LauncherPadPage(int dir)
 {
     if(!FloatMenu::IsModal()) return false;
     int order[64]; int n = 0;
-    order[n++] = LT_INTERNET; order[n++] = LT_FAVORITES; order[n++] = LT_ADD; order[n++] = LT_PLAYERS; order[n++] = LT_BANS;
+    order[n++] = LT_INTERNET; order[n++] = LT_FAVORITES; order[n++] = LT_ADD; order[n++] = LT_CLOUD; order[n++] = LT_PLAYERS; order[n++] = LT_BANS;
     if(LSrvMgmtAvailable()) order[n++] = LT_SRVMGMT;
     for(int i = 0; i < FloatMenu::SectionCount() && n < 64; ++i) order[n++] = LT_SECTIONS + i;
     int at = 0; for(int i = 0; i < n; ++i) if(order[i] == s_nLTab) { at = i; break; }
@@ -1233,6 +1242,109 @@ static void LPageBans()
 }
 
 // ---- the window -----------------------------------------------------------------------------------
+// ---- 4.02: Cloud Storage - the resources the servers download (Project Day Z Legacy MTA models from
+// the wagu repo / website hosting, Host/DayZ/models). Download a group before joining, or delete it
+// from the phone and download it again (a broken copy, a new version, or to free space).
+static void LFmtBytes(char* o, size_t n, unsigned long long b)
+{
+    if(b >= 1024ull * 1024 * 1024) snprintf(o, n, "%.2f GB", b / (1024.0 * 1024 * 1024));
+    else if(b >= 1024ull * 1024) snprintf(o, n, "%.1f MB", b / (1024.0 * 1024));
+    else snprintf(o, n, "%llu KB", (b + 1023) / 1024);
+}
+static int s_nCloudAsk = -3;   // a delete waiting for "tap again" (group, -1 = all, -3 = none)
+static uint64_t s_nCloudAskAt = 0;
+static void LPageCloud(float w)
+{
+    static uint64_t askedAt = 0;
+    DzModels::Cloud c; DzModels::GetCloud(c);
+    if(!askedAt || (!c.listReady && !c.listBusy && !c.busy && c.cache && MP_NowMs() - askedAt > 15000)) { askedAt = MP_NowMs(); DzModels::CloudRefresh(); }
+    ImDrawList* dl = ImGui::GetWindowDrawList();
+    ImGui::TextColored(ImVec4(0.25f, 0.9f, 0.75f, 1), "CLOUD STORAGE");
+    ImGui::TextDisabled("Server resources hosted on GitHub (wagu repo + website downloads). They are kept in the game cache.");
+    ImGui::Separator();
+    if(!c.cache) { ImGui::TextWrapped("No writable cache folder on this phone - nothing can be downloaded."); return; }
+
+    unsigned long long tot = 0, have = 0; int models = 0, fTot = 0, fHave = 0;
+    for(auto& g : c.g) { tot += g.bytesTotal; have += g.bytesOnPhone; models += g.models; fTot += g.filesTotal; fHave += g.filesOnPhone; }
+    // storage bar
+    {
+        char a[32], b[32], t[160]; LFmtBytes(a, sizeof(a), have); LFmtBytes(b, sizeof(b), tot);
+        snprintf(t, sizeof(t), "Project Day Z Legacy model pack   %s of %s on this phone   (%d / %d files, %d models)", a, b, fHave, fTot, models);
+        ImGui::TextUnformatted(t);
+        ImVec2 p = ImGui::GetCursorScreenPos(); float bw = ImMax(UI::S(200), w - UI::S(20)), bh = UI::S(16);
+        dl->AddRectFilled(p, ImVec2(p.x + bw, p.y + bh), IM_COL32(236, 232, 225, 30), bh * 0.5f);
+        float k = tot ? (float)((double)have / (double)tot) : 0.0f;
+        if(k > 0) dl->AddRectFilled(p, ImVec2(p.x + bw * ImClamp(k, 0.02f, 1.0f), p.y + bh), IM_COL32(64, 230, 190, 230), bh * 0.5f);
+        ImGui::Dummy(ImVec2(bw, bh + UI::S(6)));
+    }
+    if(!c.listReady) { ImGui::TextDisabled("%s", c.listBusy ? "Getting the file list from GitHub..." : (c.msg[0] ? c.msg : "No file list yet.")); if(!c.listBusy && FloatMenu::BigButton("Try again")) DzModels::CloudRefresh(); return; }
+    // progress
+    if(c.busy)
+    {
+        if(c.gameDownload && c.group == -2) ImGui::TextColored(ImVec4(1, 0.8f, 0.3f, 1), "The Day Z server download is running - wait for it to finish.");
+        else
+        {
+            char a[32], b[32]; LFmtBytes(a, sizeof(a), c.bytesDone); LFmtBytes(b, sizeof(b), c.bytesTotal);
+            ImGui::Text("Downloading %s: %s / %s  (%d / %d files)", c.group < 0 ? "everything" : c.g[c.group].name, a, b, c.filesDone, c.filesTotal);
+            ImGui::ProgressBar(c.bytesTotal ? (float)((double)c.bytesDone / (double)c.bytesTotal) : 0.0f, ImVec2(ImMax(UI::S(200), w - UI::S(20)), UI::S(22)), c.file);
+        }
+    }
+    else if(c.msg[0]) ImGui::TextColored(ImVec4(0.6f, 0.95f, 0.7f, 1), "%s", c.msg);
+    if(c.inUse > 0) ImGui::TextDisabled("%d models are in the game right now (Day Z server) - those are kept when you delete.", c.inUse);
+    ImGui::Dummy(ImVec2(0, UI::S(6)));
+
+    // "tap again" for a delete (3 s)
+    if(s_nCloudAsk != -3 && MP_NowMs() - s_nCloudAskAt > 3000) s_nCloudAsk = -3;
+    auto delButton = [&](int group, const char* id, float bw, bool enabled) -> void
+    {
+        const bool armed = s_nCloudAsk == group;
+        char lb[48]; snprintf(lb, sizeof(lb), "%s%s", armed ? "Tap again to delete" : "Delete", id);
+        if(!enabled) ImGui::BeginDisabled();
+        ImGui::PushStyleColor(ImGuiCol_Button, armed ? ImVec4(0.75f, 0.12f, 0.15f, 1) : ImVec4(0.45f, 0.1f, 0.12f, 0.85f));
+        if(ImGui::Button(lb, ImVec2(bw, UI::S(52))))
+        {
+            if(armed) { DzModels::CloudDelete(group); s_nCloudAsk = -3; }
+            else { s_nCloudAsk = group; s_nCloudAskAt = MP_NowMs(); }
+        }
+        ImGui::PopStyleColor();
+        if(!enabled) ImGui::EndDisabled();
+    };
+    // one row per folder
+    const float bw = UI::S(190), rowH = UI::S(64);
+    for(int i = 0; i < DzModels::kCloudGroups; ++i)
+    {
+        const DzModels::CloudGroup& g = c.g[i];
+        if(!g.models) continue;
+        ImGui::PushID(4200 + i);
+        ImVec2 p = ImGui::GetCursorScreenPos(); float rw = ImMax(UI::S(300), w - UI::S(20));
+        VChamfer(dl, p, ImVec2(p.x + rw, p.y + rowH), UI::S(8), kVPanel, kVLine, UI::S(1));
+        LIcon(dl, g.filesOnPhone >= g.filesTotal ? IC_CHECK : IC_CLOUD, ImVec2(p.x + UI::S(30), p.y + rowH * 0.5f), UI::S(18), g.filesOnPhone >= g.filesTotal ? kVTeal : kVText);
+        char a[32], b[32], t[160]; LFmtBytes(a, sizeof(a), g.bytesOnPhone); LFmtBytes(b, sizeof(b), g.bytesTotal);
+        char nm[24]; snprintf(nm, sizeof(nm), "%s", g.name); if(nm[0]) nm[0] = (char)toupper(nm[0]);
+        snprintf(t, sizeof(t), "%s  -  %d models", nm, g.models);
+        dl->AddText(ImVec2(p.x + UI::S(60), p.y + UI::S(8)), kVText, t);
+        snprintf(t, sizeof(t), "%s / %s on the phone  (%d / %d files)", a, b, g.filesOnPhone, g.filesTotal);
+        dl->AddText(ImVec2(p.x + UI::S(60), p.y + UI::S(34)), kVDim, t);
+        const float bx = p.x + rw - bw * 2 - UI::S(16);
+        ImGui::SetCursorScreenPos(ImVec2(bx, p.y + (rowH - UI::S(52)) * 0.5f));
+        const bool full = g.filesOnPhone >= g.filesTotal;
+        if(c.busy || full) ImGui::BeginDisabled();
+        if(ImGui::Button(full ? "Downloaded" : "Download", ImVec2(bw, UI::S(52)))) DzModels::CloudDownload(i);
+        if(c.busy || full) ImGui::EndDisabled();
+        ImGui::SameLine(0, UI::S(8));
+        delButton(i, "", bw, !c.busy && g.filesOnPhone > 0);
+        ImGui::SetCursorScreenPos(ImVec2(p.x, p.y + rowH + UI::S(6)));
+        ImGui::PopID();
+    }
+    ImGui::Dummy(ImVec2(0, UI::S(6)));
+    if(c.busy || fHave >= fTot) ImGui::BeginDisabled();
+    if(FloatMenu::BigButton("Download everything")) DzModels::CloudDownload(-1);
+    if(c.busy || fHave >= fTot) ImGui::EndDisabled();
+    ImGui::PushID(4299); delButton(-1, " everything (download again later)", ImMax(UI::S(300), w - UI::S(20)), !c.busy && fHave > 0); ImGui::PopID();
+    if(!c.busy && FloatMenu::BigButton("Refresh the file list")) DzModels::CloudRefresh();
+    ImGui::TextDisabled("Files: github.com/ThirtyFoxMCx00E1/wagu  Host/DayZ/models  (second host: the mtadayz fork)");
+}
+
 static int LSectionIcon(const char* t)
 {
     if(!strcasecmp(t, "Connection")) return IC_GLOBE;
@@ -1439,6 +1551,8 @@ static void RenderLauncher(void* openPtr)
         if(LSideItem("inet", IC_GLOBE, "Internet",  s_nLTab == LT_INTERNET,  iw, ih)) { s_nLTab = LT_INTERNET; }
         if(LSideItem("fav",  IC_HEART, "Favorites", s_nLTab == LT_FAVORITES, iw, ih)) { s_nLTab = LT_FAVORITES; }
         if(LSideItem("add",  IC_PLUS,  "Add server",s_nLTab == LT_ADD,       iw, ih)) { s_nLTab = LT_ADD; }
+        LGroupLabel("STORAGE");   // 4.02
+        if(LSideItem("cloud", IC_CLOUD, "Cloud Storage", s_nLTab == LT_CLOUD, iw, ih)) { s_nLTab = LT_CLOUD; }
         LGroupLabel("ADMIN");
         if(LSideItem("pl",   IC_USERS, "Players",   s_nLTab == LT_PLAYERS,   iw, ih)) { s_nLTab = LT_PLAYERS; }
         if(LSideItem("bans", IC_BAN,   "Bans",      s_nLTab == LT_BANS,      iw, ih)) { s_nLTab = LT_BANS; }
@@ -1509,6 +1623,7 @@ static void RenderLauncher(void* openPtr)
         case LT_PLAYERS: LPagePlayers(); break;
         case LT_BANS:    LPageBans(); break;
         case LT_SRVMGMT: LPageServerMgmt(); break;   // 3.53
+        case LT_CLOUD:   LPageCloud(contentW - pad * 2); break;   // 4.02
         case LT_FRIENDS: case LT_CHATS: case LT_PARTY: case LT_COMMUNITY: case LT_INBOX: SocPage(s_nLTab, contentW - pad * 2, bodyH - pad); break;   // 3.63
         default:
             if(s_nLTab >= LT_SECTIONS && s_nLTab - LT_SECTIONS < FloatMenu::SectionCount()) FloatMenu::DrawSection(s_nLTab - LT_SECTIONS);

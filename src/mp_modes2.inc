@@ -459,7 +459,7 @@ static void SvProcess(int ped, uint64_t now, float dt)
             Vec3 zp; if(!Game::GetCharPos(z, zp)) { z = 0; continue; }
             const float d = sqrtf((zp.x - myDrawPos.x) * (zp.x - myDrawPos.x) + (zp.y - myDrawPos.y) * (zp.y - myDrawPos.y));
             if(!night || d > 120.0f) { Game::DeleteChar(z); z = 0; continue; }
-            Game::TaskGoTo(z, myDrawPos, d > 8.0f ? 6 : 4);
+            Game::TaskGoTo(z, myDrawPos, d > 8.0f ? 6 : 4, -1);   // 4.02: walk/run to us, no 2 s warp onto the player
             if(d < 1.6f && fabsf(zp.z - myDrawPos.z) < 2.0f && now - s_Sv.biteAt > 900 && !Game::IsCharInAnyCar(ped))
             { s_Sv.biteAt = now; int hp = Game::GetCharHealth(ped); Game::SetCharHealth(ped, std::max(1, hp - 6)); }
         }

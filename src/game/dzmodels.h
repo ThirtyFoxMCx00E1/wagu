@@ -32,4 +32,22 @@ namespace DzModels
     void GetStatus(Status& st);
     void SetLogPath(const char* path);
     void ResetBad();                       // /dzmodels reset: try the skipped models again
+
+    // 4.02: the launcher Cloud Storage page - the model pack per folder: download before joining,
+    // or delete it from the phone (then download it again here or on the Day Z server)
+    enum { kCloudGroups = 7 };             // zombies, players, weapons, items, vehicles, buildings, animals
+    struct CloudGroup { const char* name = ""; int models = 0, filesTotal = 0, filesOnPhone = 0; unsigned long long bytesTotal = 0, bytesOnPhone = 0; };
+    struct Cloud
+    {
+        bool cache = false, listReady = false, listBusy = false, busy = false, gameDownload = false;
+        int group = -2;                    // being downloaded: -1 = everything, -2 = none
+        int filesDone = 0, filesTotal = 0, filesFailed = 0, inUse = 0;
+        unsigned long long bytesDone = 0, bytesTotal = 0;
+        CloudGroup g[kCloudGroups];
+        char msg[192] = ""; char file[96] = "";
+    };
+    void GetCloud(Cloud& c);               // main thread
+    void CloudRefresh();                   // get the file list (background)
+    bool CloudDownload(int group);         // -1 = everything. false = busy
+    int  CloudDelete(int group);           // -1 = everything. models in use stay. returns files deleted (-1 busy)
 }

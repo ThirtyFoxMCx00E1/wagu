@@ -532,7 +532,7 @@ void Game::SetDriveByAllowed(bool on)
     CALLSCM(SET_PLAYER_CAN_DO_DRIVE_BY, 0, on);
 }
 
-void Game::TaskGoTo(int ped, const Vec3& p0, int moveState) { Vec3 p = p0; if(!MP_WorldPos(p)) return; CALLSCM(TASK_GO_STRAIGHT_TO_COORD, ped, p.x, p.y, p.z, moveState, 2000); }
+void Game::TaskGoTo(int ped, const Vec3& p0, int moveState, int warpMs) { Vec3 p = p0; if(!MP_WorldPos(p)) return; CALLSCM(TASK_GO_STRAIGHT_TO_COORD, ped, p.x, p.y, p.z, moveState, warpMs); }   // 4.02: warpMs -1 = never warp
 void Game::TaskStandStill(int ped) { CALLSCM(TASK_STAND_STILL, ped, 1000); }
 void Game::TaskShootAt(int ped, const Vec3& p0, int t) { Vec3 p = p0; if(!MP_WorldPos(p)) return; CALLSCM(TASK_SHOOT_AT_COORD, ped, p.x, p.y, p.z, t); }
 void Game::TaskAimAt(int ped, const Vec3& p0, int t) { Vec3 p = p0; if(!MP_WorldPos(p)) return; CALLSCM(TASK_AIM_GUN_AT_COORD, ped, p.x, p.y, p.z, t); }

@@ -2120,8 +2120,13 @@ static void RenderDz()
     }
     DzDrawKnock(fg, ds, nowMs);   // 4.00
     if(!s_DzX.downed && !Game::IsCharInAnyCar(ped))
-    {   // 4.00: PRONE button - only a white icon (no background), right side above the crouch / jump buttons
-        const float w = UI::S(70), h = UI::S(58), x = ds.x - UI::S(120), y = ds.y * 0.43f;
+    {   // 4.00: PRONE button - only a white icon (no background), right side
+        // 4.02: it sat on top of the ear / eye status icons (DzDrawStatusMta: x ds.x - 132, from ds.y * 0.40,
+        // two rows of 60). Now it is centred over that column, just above the ear, below the top-right bar.
+        const float w = UI::S(70), h = UI::S(58);
+        const float senseX = ds.x - UI::S(132), senseW = UI::S(60) * 1.86f, senseTop = ds.y * 0.40f;
+        const float x = senseX + (senseW - w) * 0.5f;
+        const float y = std::max(senseTop - h - UI::S(6), UI::S(16) + UI::S(52) + UI::S(10));
         ImGui::SetNextWindowPos(ImVec2(x, y)); ImGui::SetNextWindowSize(ImVec2(w, h));
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
         ImGui::Begin("##DzProne", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoFocusOnAppearing);

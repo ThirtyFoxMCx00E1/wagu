@@ -67,7 +67,7 @@ float Game::FogRadius() { return s_fFogRadius; }
 
 // ---- 3.58: Project DayZ zombies (local peds that hunt you) ----
 DEFOPCODE(05E2, TASK_KILL_CHAR_ON_FOOT_358, ii);
-DEFOPCODE(05D3, TASK_GO_STRAIGHT_TO_COORD_358, iffffi);
+DEFOPCODE(05D3, TASK_GO_STRAIGHT_TO_COORD_358, ifffii);   // 4.02: mode is an int (was "iffffi": the time slot got the mode -> warp to the player)
 DEFOPCODE(0223, SET_CHAR_HEALTH_358, ii);
 void Game::ZombieHunt(int ped, int target)
 {
@@ -77,7 +77,9 @@ void Game::ZombieHunt(int ped, int target)
 void Game::NpcGoTo(int ped, const Vec3& p, bool run)
 {
     if(ped <= 0 || !PedPtr(ped)) return;
-    CALLSCM(TASK_GO_STRAIGHT_TO_COORD_358, ped, p.x, p.y, p.z, run ? 6 : 4, -1);
+    Vec3 q = p; if(!MP_WorldPos(q)) return;
+    // 4.02: time -1 = the ped only walks / runs there by itself (any other value warps it to the point)
+    CALLSCM(TASK_GO_STRAIGHT_TO_COORD_358, ped, q.x, q.y, q.z, (int)(run ? 6 : 4), (int)-1);
 }
 void Game::SetNpcHealth(int ped, int hp)
 {
