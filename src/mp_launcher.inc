@@ -392,6 +392,7 @@ static void LFeaturedDetails(LRow& r)
             ds = "Project Day Z Legacy: survive the zombies, find loot, build a camp, trust nobody."; break;
     default: return;
     }
+    MP_CopyStr(r.cc, MP_CC_GLOBAL, sizeof(r.cc));   // 4.05.3: the featured 24/7 servers are worldwide - Global flag
     if(!r.mode[0]) MP_CopyStr(r.mode, md, sizeof(r.mode));
     if(!r.tags[0]) MP_CopyStr(r.tags, tg, sizeof(r.tags));
     if(!r.desc[0]) MP_CopyStr(r.desc, ds, sizeof(r.desc));
@@ -655,6 +656,7 @@ static void LRowKey(const LRow& r, char* out, size_t n) { snprintf(out, n, "%d|%
 // the lobby to that region's broker, makes it your hosting region and shows only its servers (the
 // featured 24/7 servers and Wi-Fi servers always stay in the list).
 static bool   s_bRegionPick = false;            // the region list is open
+static uint64_t s_nRegionToggleMs = 0;          // 4.05.3: last open / close of the region list
 static ImVec2 s_vRegionBtn(0, 0);               // top-left of the toolbar icon (set every frame by the toolbar)
 static float  s_fRegionBtn = 0;                 // its size
 
@@ -747,7 +749,7 @@ static void LRegionPicker(const std::vector<LanServer>& nearby)
     ImGui::PopStyleColor(2);
     ImGui::PopStyleVar(3);
     // a tap anywhere else (not on the picker, not on the icon that toggles it) closes the list
-    if(s_bRegionPick && ImGui::IsMouseClicked(0)
+    if(s_bRegionPick && ImGui::IsMouseClicked(0) && MP_NowMs() - s_nRegionToggleMs > 300   // 4.05.3: not the opening tap itself
        && !ImGui::IsMouseHoveringRect(ImVec2(x, y), ImVec2(x + w, y + h), false)
        && !ImGui::IsMouseHoveringRect(s_vRegionBtn, ImVec2(s_vRegionBtn.x + s_fRegionBtn, s_vRegionBtn.y + s_fRegionBtn), false))
         s_bRegionPick = false;
@@ -851,7 +853,8 @@ static void LTable(std::vector<LRow>& rows, float w, float h)
     float W = ImGui::GetContentRegionAvail().x;
     // 4.03: CS:GO columns: [lock] Name | Gamemode | Tags | Players | Map | Ping | Location
     float cLock = UI::S(10), cName = UI::S(52);
-    float cMode = W * 0.36f, cTags = W * 0.48f, cPl = W * 0.64f, cMap = W * 0.72f, cPing = W * 0.86f, cLoc = W * 0.93f;
+    // 4.05.3: Language has its own column now (it used to show inside Tags when a server had no tags)
+    float cMode = W * 0.33f, cTags = W * 0.45f, cLang = W * 0.59f, cPl = W * 0.69f, cMap = W * 0.765f, cPing = W * 0.88f, cLoc = W * 0.935f;
     static const char* hdr[6] = { "Name", "Gamemode", "Players", "Map", "Ping", "" };
     const float cx[6] = { cName, cMode, cPl, cMap, cPing, cLoc };
     const float cw[6] = { cMode - cName, cTags - cMode, cMap - cPl, cPing - cMap, cLoc - cPing, W - cLoc };
@@ -882,6 +885,9 @@ static void LTable(std::vector<LRow>& rows, float w, float h)
             }
         }
         dl->AddText(ImVec2(p.x + cTags, p.y + (hdrH - ImGui::GetTextLineHeight()) * 0.5f), IM_COL32(170, 176, 184, 255), "Tags");
+        dl->PushClipRect(ImVec2(p.x + cLang, p.y), ImVec2(p.x + cPl - UI::S(6), p.y + hdrH), true);
+        dl->AddText(ImVec2(p.x + cLang, p.y + (hdrH - ImGui::GetTextLineHeight()) * 0.5f), IM_COL32(170, 176, 184, 255), "Language");
+        dl->PopClipRect();
         dl->AddLine(ImVec2(p.x, p.y + hdrH), ImVec2(p.x + W, p.y + hdrH), IM_COL32(255, 255, 255, 34), UI::S(1));
         ImGui::SetCursorScreenPos(ImVec2(p.x, p.y + hdrH + UI::S(2)));
     }
@@ -950,13 +956,17 @@ static void LTable(std::vector<LRow>& rows, float w, float h)
             const char* md = r.mode[0] ? r.mode : "Freeroam";
             LChip(dl, ImVec2(a.x + cMode, a.y + rowH * 0.5f - UI::S(15)), UI::S(30), md, mc, cTags - cMode - UI::S(8));
             // tags (comma list, dim)
-            dl->PushClipRect(ImVec2(a.x + cTags, a.y), ImVec2(a.x + cPl - UI::S(10), a.y + rowH), true);
+            dl->PushClipRect(ImVec2(a.x + cTags, a.y), ImVec2(a.x + cLang - UI::S(10), a.y + rowH), true);
             {
-                char tg[MP_TAGS_LEN + 16]; MP_CopyStr(tg, r.tags[0] ? r.tags : (r.lang[0] ? r.lang : "-"), sizeof(tg));
+                char tg[MP_TAGS_LEN + 16]; MP_CopyStr(tg, r.tags[0] ? r.tags : "-", sizeof(tg));   // 4.05.3: tags only
                 for(char* c = tg; *c; ++c) if(*c == ',') *c = ' ';
                 std::string t2; for(char* c = tg; *c; ++c) { t2 += *c; if(*c == ' ' && c[1] && c[1] != ' ') t2.insert(t2.size() - 1, ","); }
                 dl->AddText(ImGui::GetFont(), ImGui::GetFontSize() * 0.82f, ImVec2(a.x + cTags, a.y + (rowH - ImGui::GetFontSize() * 0.82f) * 0.5f), IM_COL32(160, 166, 174, 255), t2.c_str());
             }
+            dl->PopClipRect();
+            // 4.05.3: language column
+            dl->PushClipRect(ImVec2(a.x + cLang, a.y), ImVec2(a.x + cPl - UI::S(10), a.y + rowH), true);
+            dl->AddText(ImGui::GetFont(), ImGui::GetFontSize() * 0.82f, ImVec2(a.x + cLang, a.y + (rowH - ImGui::GetFontSize() * 0.82f) * 0.5f), IM_COL32(190, 196, 204, 255), r.lang[0] ? r.lang : "-");
             dl->PopClipRect();
             char b[48];
             if(r.players >= 0) snprintf(b, sizeof(b), "%d/%d", r.players, r.maxp); else snprintf(b, sizeof(b), "-");
@@ -1866,7 +1876,10 @@ static void RenderLauncher(void* openPtr)
         if(LToolButton("refresh", IC_REFRESH, nullptr, btnH)) { ServerList::Refresh(); if(s_bHasNetwork) { s_nNearbyTime = MP_NowMs(); StartJob(JOB_SCAN, false, "", MP_DEFAULT_PORT); } }
         ImGui::SameLine(0, UI::S(6));
         s_vRegionBtn = ImGui::GetCursorScreenPos(); s_fRegionBtn = btnH;   // 3.25.1: region switch
-        if(LToolButton("region", IC_REGION, nullptr, btnH, true, s_bRegionPick)) s_bRegionPick = !s_bRegionPick;
+        // 4.05.3: the only toolbar button that TOGGLES - one tap that arrived twice (press seen twice) opened
+        //         and closed the list in the same moment, so it looked dead. Now one toggle per 400 ms
+        if(LToolButton("region", IC_REGION, nullptr, btnH, true, s_bRegionPick) && MP_NowMs() - s_nRegionToggleMs > 400)
+        { s_bRegionPick = !s_bRegionPick; s_nRegionToggleMs = MP_NowMs(); s_bProfMenu = false; }
         ImGui::SameLine(0, UI::S(6));
         int connTab = -1;
         for(int i = 0; i < FloatMenu::SectionCount(); ++i) if(!strcasecmp(FloatMenu::SectionTitle(i), "Connection")) connTab = LT_SECTIONS + i;

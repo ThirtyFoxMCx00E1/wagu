@@ -1,6 +1,7 @@
 {
-"latest": "4.05.2",
+"latest": "4.05.3",
 "supported": [
+"4.05.3",
 "4.05.2",
 "4.05.1",
 "4.05",
@@ -90,6 +91,15 @@
 "3.04.6"
 ],
 "versions": [
+{
+"v": "4.05.3",
+"summary": "fixes.",
+"items": [
+"Launcher: the switch region icon (the map pin) did nothing - it is the only toolbar button that toggles, and one tap that arrived twice opened and closed the region list in the same moment. Now it toggles at most once per 400 ms and the opening tap can't close the list again.",
+"Server list: Language has its own column. It used to show in the Tags column when a server had no tags; Tags now shows only tags.",
+"New \"Global\" location with its own flag (a white globe on blue, drawn in the game so it works with any bg_server.jar). The default server, Brief Case War, MW3, Mega Vil Futuristic roleplay and Project Day Z Legacy show the Global flag. Hosts can pick Global first in + Add server > Server location."
+]
+},
 {
 "v": "4.05.2",
 "summary": "fixes.",

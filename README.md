@@ -121,6 +121,11 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **4.05.3**: fixes.
+  - Launcher: the switch region icon (the map pin) did nothing - it is the only toolbar button that toggles, and one tap that arrived twice opened and closed the region list in the same moment. Now it toggles at most once per 400 ms and the opening tap can't close the list again.
+  - Server list: Language has its own column. It used to show in the Tags column when a server had no tags; Tags now shows only tags.
+  - New "Global" location with its own flag (a white globe on blue, drawn in the game so it works with any bg_server.jar). The default server, Brief Case War, MW3, Mega Vil Futuristic roleplay and Project Day Z Legacy show the Global flag. Hosts can pick Global first in + Add server > Server location.
+
 - **4.05.2**: fixes.
   - Launcher: the ui_bg.jpg picture now only fills the launcher panel (almost full screen), like the server list; around it the game shows dimmed again instead of the picture covering the whole screen.
   - Launcher toolbar: refresh, switch region, settings (gear) and add server (+) could not be tapped - they sit over the GTA weapon icon and the weapon switch took the tap. While the launcher or the keyboard is open the game now sees no finger, no weapon cycle and no HID button (pointer state, CPad, CHID and every CWidget check), and the toolbar buttons and top tabs fire on the press. The gear never shows disabled any more.

@@ -6379,7 +6379,7 @@ static void ServerDetailsEditor()
         LDrawFlag(ImGui::GetWindowDrawList(), ci, p, ImVec2(p.x + fw, p.y + fh));
         ImGui::SameLine(0, UI::S(12));
         ImGui::AlignTextToFramePadding();
-        ImGui::Text("Server location: %s", ci >= 0 ? kCountries[ci].name : "not set");
+        ImGui::Text("Server location: %s", ci >= 0 ? LCountryNameAt(ci) : "not set");
         ImGui::SameLine(0, UI::S(16));
         if(ImGui::Button(s_bCountryOpen ? "Close##cc" : "Customize##cc", ImVec2(UI::S(200), UI::S(56)))) s_bCountryOpen = !s_bCountryOpen;
         if(ci >= 0) { ImGui::SameLine(0, UI::S(6)); if(ImGui::Button("Clear##cc", ImVec2(UI::S(130), UI::S(56)))) { settings.serverCC[0] = 0; SaveConfig(); } }
@@ -6390,28 +6390,29 @@ static void ServerDetailsEditor()
             ImGui::BeginChild("##ccgrid", ImVec2(0, UI::S(480)), true);
             int cols = ImMax(1, (int)(ImGui::GetContentRegionAvail().x / (cw + UI::S(6))));
             int k = 0;
-            for(int i = 0; i < kCountryCount; ++i)
+            for(int j = 0; j <= kCountryCount; ++j)
             {
+                const int i = j == 0 ? kCountryGlobal : j - 1;   // 4.05.3: Global first
                 if(s_szCountryFind[0])
                 {
-                    char a[64], b[32]; MP_CopyStr(a, kCountries[i].name, sizeof(a)); MP_CopyStr(b, s_szCountryFind, sizeof(b));
+                    char a[64], b[32]; MP_CopyStr(a, LCountryNameAt(i), sizeof(a)); MP_CopyStr(b, s_szCountryFind, sizeof(b));
                     for(char* c = a; *c; ++c) *c = (char)tolower((unsigned char)*c);
                     for(char* c = b; *c; ++c) *c = (char)tolower((unsigned char)*c);
-                    if(!strstr(a, b) && strcasecmp(kCountries[i].code, s_szCountryFind)) continue;
+                    if(!strstr(a, b) && strcasecmp(LCountryCodeAt(i), s_szCountryFind)) continue;
                 }
                 if(k % cols) ImGui::SameLine(0, UI::S(6));
                 ++k;
                 ImGui::PushID(i);
                 ImVec2 q = ImGui::GetCursorScreenPos();
-                if(ImGui::InvisibleButton("##c", ImVec2(cw, chh))) { MP_CopyStr(settings.serverCC, kCountries[i].code, sizeof(settings.serverCC)); SaveConfig(); s_bCountryOpen = false; }
+                if(ImGui::InvisibleButton("##c", ImVec2(cw, chh))) { MP_CopyStr(settings.serverCC, LCountryCodeAt(i), sizeof(settings.serverCC)); SaveConfig(); s_bCountryOpen = false; }
                 ImDrawList* dl = ImGui::GetWindowDrawList();
-                bool on = !strcasecmp(settings.serverCC, kCountries[i].code);
+                bool on = !strcasecmp(settings.serverCC, LCountryCodeAt(i));
                 dl->AddRectFilled(q, ImVec2(q.x + cw, q.y + chh), on ? IM_COL32(126, 178, 226, 70) : IM_COL32(255, 255, 255, ImGui::IsItemActive() ? 40 : 10));
                 float ffw = cw * 0.56f, ffh = ffw * 0.75f;
                 ImVec2 fa(q.x + (cw - ffw) * 0.5f, q.y + UI::S(8));
                 LDrawFlag(dl, i, fa, ImVec2(fa.x + ffw, fa.y + ffh));
                 dl->PushClipRect(q, ImVec2(q.x + cw, q.y + chh), true);
-                const char* nm = kCountries[i].name; float sc = 0.7f;
+                const char* nm = LCountryNameAt(i); float sc = 0.7f;
                 ImVec2 ts = ImGui::CalcTextSize(nm); ts.x *= sc;
                 dl->AddText(ImGui::GetFont(), ImGui::GetFontSize() * sc, ImVec2(q.x + ImMax(UI::S(4), (cw - ts.x) * 0.5f), fa.y + ffh + UI::S(6)), IM_COL32(220, 224, 230, 255), nm);
                 dl->PopClipRect();
