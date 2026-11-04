@@ -121,6 +121,13 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **4.05**: fixes + global hubs.
+  - Join screen: the second small "CONNECTING TO SERVER" box (4.04) is removed; the main "Please Wait, Loading Server Data" window shows the connecting state alone.
+  - Day Z backpack: it now really follows the spine bone (driving, crouch, lean, prone). The bone follow never switched on: it looked for `CEntity::UpdateRW`, which GTA SA mobile doesn't have; it now uses `CMatrix::UpdateRW`. The calibration is kept per bag model / level (`files/MP/dz_bagcal.bin`), so a bag made again in a car or prone sits right at once.
+  - Day Z status column: the small orange dot left of the thermometer (the temperature rising arrow) is removed.
+  - Global hubs: `HiveMQ/global/` - `edge-mosquitto.sh` (Eclipse Mosquitto, 5-20 MB RAM) and `edge-emqx.sh` (EMQX with dashboard) turn any small VPS into another region with the same logins, topic rules and TCP tuning; `emqx/Dockerfile` for Sidekick; `regions-template.txt`; a table of fast locations per region (Singapore, Hong Kong / Tokyo CN2 GIA, Amsterdam AS9929, Los Angeles CN2 GIA, Fremont, New York, Vancouver, Sydney). The website has a new Global section.
+  - Credits (website, README, Project Day Z Legacy): libks, signalwire-c, FreeSWITCH, Eclipse Mosquitto, EMQX, MQTTX, Mainflux, awesome-mqtt, vps-hosting-providers, Sidekick, Aeon-MLTB, whmcs-vps-reseller and the GitHub topics kvm-vps, vps-admin, vps-managment, vpshosting.
+
 - **4.04.2**: fix: crash / freeze on the game's loading screen ("Loading..." never ends).
   - Crash log: SIGSEGV in memcpy from libGTASA + 0x1E73DD (RLEDecompress) <- TextureDatabaseRuntime::LoadFullTexture <- RwTextureRead <- CTouchInterface::CreateAll. The game unpacks an RLE packed texture from a texture database (texdb) without checking the end of the buffer, so one damaged or mismatched texture entry (a replaced texdb .dat / .toc, a texture pack for another game version) wrote past the texture and killed the game while loading.
   - MP now hooks RLEDecompress with the same decoder plus an end-of-buffer check: a bad texture is cut off (and logged) instead of crashing.
@@ -1496,3 +1503,4 @@ MP 3.04.5 and older let players use cheats. From 3.04.6 on:
 AndroidModLoader, SAUtils, AML_ImGui (RusJJ), Dear ImGui (ocornut), stb_image (Sean Barrett).
 Opus 1.6.1 voice codec (Xiph.Org, BSD license, `third_party/opus/COPYING`), from the Opus source in [Samp-voice_chat](https://github.com/ThirtyFoxMCx00E1/Samp-voice_chat). The voice chat design follows SampVoice (CyberMor).
 The logo was made with the Pricedown typeface (Typodermic).
+Global network (4.05): [libks](https://github.com/signalwire/libks), [signalwire-c](https://github.com/signalwire/signalwire-c), [FreeSWITCH](https://github.com/signalwire/freeswitch) (SignalWire), [Eclipse Mosquitto](https://github.com/eclipse-mosquitto/mosquitto), [EMQX](https://github.com/emqx/emqx), [MQTTX](https://github.com/emqx/MQTTX), [Mainflux](https://github.com/mainflux/mainflux), [awesome-mqtt](https://github.com/awesome-mqtt/awesome-mqtt), [vps-hosting-providers](https://github.com/qfft560/vps-hosting-providers), [Sidekick](https://github.com/MightyMoud/sidekick). VPS hosting references: [Aeon-MLTB](https://github.com/AeonOrg/Aeon-MLTB), [whmcs-vps-reseller](https://github.com/Rad-Web-Hosting/whmcs-vps-reseller), [kvm-vps](https://github.com/topics/kvm-vps), [vps-admin](https://github.com/topics/vps-admin), [vps-managment](https://github.com/topics/vps-managment), [vpshosting](https://github.com/topics/vpshosting).

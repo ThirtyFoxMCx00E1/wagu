@@ -1,0 +1,22 @@
+# 4.05: add a global hub to docs/regions.txt (the mod downloads it at every start, pings every
+# block and uses the fastest). "branch = 1" = phones stay on this hub and MpBridge carries the game
+# frames VPS to VPS to the server's home region (lower ping than a phone talking across the ocean).
+
+[Asia-HK]
+host=hk.example.duckdns.org
+port=1883
+tls=0
+user=mp
+pass=MP_PASS_FROM_THE_INSTALLER
+branch=1
+# fallback for networks that block 1883 (needs DOMAIN when installing)
+host=mqtts://hk.example.duckdns.org:8883
+user=mp
+pass=MP_PASS_FROM_THE_INSTALLER
+web=wss://hk.example.duckdns.org:8884/mqtt
+web_user=web
+web_pass=WEB_PASS_FROM_THE_INSTALLER
+
+# and in /opt/mp/bridge.conf on the bridge server (bridge password stays private):
+#   Asia-HK = mqtt://bridge:BRIDGE_PASS@hk.example.duckdns.org:1883
+#   branch  = on

@@ -60,6 +60,7 @@
     <a href="#versions">Versions</a>
     <a href="#host">Host a region</a>
     <a href="#fast">Fast VPS</a>
+    <a href="#global">Global</a>
     <a href="#security">Security</a>
   </div>
   <h2>Tools</h2>
@@ -208,6 +209,25 @@ sudo /opt/mp/console/mp-xdp.sh status</code></pre>
         <article><h3>Public lobby mirror</h3><p>A phone that can't reach its region's broker lands in the free public lobby. The 4 bot servers are listed there too, so that phone joins the bot host instead of hosting a copy of its own.</p></article>
         <article><h3>Any always-on machine</h3><p>No VPS yet? <code>curl -fsSL https://thirtyfoxmcx00e1.github.io/wagu/install.sh | bash</code> starts the 4 bot servers on a Termux phone or any Linux box (Termius / SSH). Or deploy the wagu repo on Railway. The <a href="termux.html">Termux console</a> shows them live.</p></article>
       </div>
+    </div>
+  </section>
+
+  <section id="global" class="card">
+    <div class="wrap">
+      <h2>Global network</h2>
+      <p>Phones ping every regional broker at start and use the fastest. Server lists are shared between all regions, and game frames travel VPS to VPS to the server's home region, so each phone only talks to its nearest hub. New hubs can run HiveMQ, Eclipse Mosquitto (5-20 MB RAM, fine for 100+ phones) or EMQX (web dashboard), all with the same logins, topic rules and low-latency TCP tuning.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Region</th><th>Fast locations</th></tr></thead>
+        <tbody>
+          <tr><td>Asia</td><td>Singapore, Hong Kong CN2 GIA / CMI, Tokyo CN2 GIA, Osaka Softbank</td></tr>
+          <tr><td>Europe</td><td>Amsterdam AS9929 premium, Amsterdam, Frankfurt, London</td></tr>
+          <tr><td>NA</td><td>Los Angeles CN2 GIA / GIA-E (DC6, DC9) and DC2 / DC3 / DC4 / DC8, Fremont, New York, New Jersey, Vancouver CN2 GIA</td></tr>
+          <tr><td>Oceania</td><td>Sydney</td></tr>
+        </tbody>
+      </table></div>
+      <h3>Credits</h3>
+      <p class="note">Built with ideas and tools from <a class="link" href="https://github.com/signalwire/libks">libks</a>, <a class="link" href="https://github.com/signalwire/signalwire-c">signalwire-c</a>, <a class="link" href="https://github.com/signalwire/freeswitch">FreeSWITCH</a>, <a class="link" href="https://github.com/eclipse-mosquitto/mosquitto">Eclipse Mosquitto</a>, <a class="link" href="https://github.com/emqx/emqx">EMQX</a>, <a class="link" href="https://github.com/emqx/MQTTX">MQTTX</a>, <a class="link" href="https://github.com/mainflux/mainflux">Mainflux</a>, <a class="link" href="https://github.com/awesome-mqtt/awesome-mqtt">awesome-mqtt</a>, <a class="link" href="https://github.com/qfft560/vps-hosting-providers">vps-hosting-providers</a>, <a class="link" href="https://github.com/MightyMoud/sidekick">Sidekick</a>.</p>
+      <p class="note">VPS hosting references: <a class="link" href="https://github.com/AeonOrg/Aeon-MLTB">Aeon-MLTB</a>, <a class="link" href="https://github.com/Rad-Web-Hosting/whmcs-vps-reseller">whmcs-vps-reseller</a>, <a class="link" href="https://github.com/topics/kvm-vps">kvm-vps</a>, <a class="link" href="https://github.com/topics/vps-admin">vps-admin</a>, <a class="link" href="https://github.com/topics/vps-managment">vps-managment</a>, <a class="link" href="https://github.com/topics/vpshosting">vpshosting</a>.</p>
     </div>
   </section>
 

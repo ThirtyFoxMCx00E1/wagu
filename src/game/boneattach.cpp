@@ -12,6 +12,7 @@
 #include <mod/logger.h>
 #include <string.h>
 #include <math.h>
+#include <stdio.h>
 #include "boneattach.h"
 
 namespace
@@ -24,6 +25,7 @@ void* (*GetObj)(int) = nullptr;
 void* (*GetHier)(void*) = nullptr;
 int   (*HAnimIdx)(void*, int) = nullptr;
 void  (*EntUpdateRW)(void*) = nullptr;
+void  (*MatUpdateRW)(void*) = nullptr;   // 4.05: CMatrix::UpdateRW() const - mobile has no CEntity::UpdateRW (the hook was never on)
 void  (*EntUpdateFrame)(void*) = nullptr;
 void  (*EntUpdateRpHAnim)(void*) = nullptr;
 void  (*PRAT_orig)(void*) = nullptr;
@@ -34,8 +36,38 @@ const int kMatrixOff = 0x18, kRwObjOff = 0x20;
 const int kMatrixOff = 0x14, kRwObjOff = 0x18;
 #endif
 
-struct Att { int obj = 0, ped = 0, bone = 3; bool want = false, calWanted = false, cal = false; M4 L{}; };
+struct Att { int obj = 0, ped = 0, bone = 3, key = 0; bool want = false, calWanted = false, cal = false; M4 L{}; };
 Att s_A[4];
+// 4.05: one calibration per bag model / level, kept (and saved) so a bag made again while driving,
+// crouching or prone follows the bone at once instead of waiting for the next stand-still
+struct Cal { int key = 0; M4 L{}; };
+Cal s_Cal[16]; int s_nCal = 0;
+char s_szCalFile[512] = "";
+const Cal* FindCal(int key) { if(key) for(int i = 0; i < s_nCal; ++i) if(s_Cal[i].key == key) return &s_Cal[i]; return nullptr; }
+void SaveCals()
+{
+    if(!s_szCalFile[0]) return;
+    if(FILE* f = fopen(s_szCalFile, "wb")) { fwrite(&s_nCal, sizeof(int), 1, f); fwrite(s_Cal, sizeof(Cal), (size_t)s_nCal, f); fclose(f); }
+}
+void LoadCals()
+{
+    s_nCal = 0;
+    if(FILE* f = fopen(s_szCalFile, "rb"))
+    {
+        int n = 0;
+        if(fread(&n, sizeof(int), 1, f) == 1 && n > 0 && n <= 16 && fread(s_Cal, sizeof(Cal), (size_t)n, f) == (size_t)n) s_nCal = n;
+        fclose(f);
+        for(int i = 0; i < s_nCal; ++i)   // sanity: a bag is within 1.5 m of the spine
+            if(!(fabsf(s_Cal[i].L.p[0]) < 1.5f && fabsf(s_Cal[i].L.p[1]) < 1.5f && fabsf(s_Cal[i].L.p[2]) < 1.5f)) { s_nCal = 0; break; }
+    }
+}
+void StoreCal(int key, const M4& L)
+{
+    if(!key) return;
+    Cal* c = const_cast<Cal*>(FindCal(key));
+    if(!c) { if(s_nCal >= 16) s_nCal = 15; c = &s_Cal[s_nCal++]; c->key = key; }
+    c->L = L; SaveCals();
+}
 
 inline M4* MatOf(void* ent) { return ent ? *(M4**)((char*)ent + kMatrixOff) : nullptr; }
 inline void* ClumpOf(void* ent) { return ent ? *(void**)((char*)ent + kRwObjOff) : nullptr; }
@@ -81,11 +113,13 @@ void HookPRAT(void* self)
         {   // the script attach placed it right for the standing pose: keep that, relative to the bone
             M4 inv{}; InvRigid(*bm, inv); Mul(inv, *om, a.L);
             a.calWanted = false; a.cal = true;
+            StoreCal(a.key, a.L);
         }
         if(!a.cal) continue;
         M4 w{}; Mul(*bm, a.L, w);
         memcpy(om->r, w.r, 12); memcpy(om->u, w.u, 12); memcpy(om->a, w.a, 12); memcpy(om->p, w.p, 12);
         if(EntUpdateRW) EntUpdateRW(obj);
+        else if(MatUpdateRW) MatUpdateRW(om);   // copy into the RwFrame matrix the object is drawn with
         if(EntUpdateFrame) EntUpdateFrame(obj);
     }
 }
@@ -104,19 +138,26 @@ void BoneAttach::Init(void* h)
     *(void**)&GetHier = Sym(h, "_Z29GetAnimHierarchyFromSkinClumpP7RpClump", "GetAnimHierarchyFromSkinClump");
     *(void**)&HAnimIdx = Sym(h, "_Z17RpHAnimIDGetIndexP16RpHAnimHierarchyi", "RpHAnimIDGetIndex");
     *(void**)&EntUpdateRW = Sym(h, "_ZN7CEntity8UpdateRWEv");
+    *(void**)&MatUpdateRW = Sym(h, "_ZNK7CMatrix8UpdateRWEv");
     *(void**)&EntUpdateFrame = Sym(h, "_ZN7CEntity13UpdateRwFrameEv");
     *(void**)&EntUpdateRpHAnim = Sym(h, "_ZN7CEntity13UpdateRpHAnimEv");
     void* f = Sym(h, "_ZN4CPed18PreRenderAfterTestEv");
-    if(f && GetPed && GetObj && GetHier && HAnimIdx && EntUpdateRW) aml->Hook(f, (void*)&HookPRAT, (void**)&PRAT_orig);
-    logger->Info("BoneAttach: %s (pools %d%d, hanim %d%d, rw %d%d%d)", PRAT_orig ? "ok" : "off", GetPed != nullptr, GetObj != nullptr,
-                 GetHier != nullptr, HAnimIdx != nullptr, EntUpdateRW != nullptr, EntUpdateFrame != nullptr, EntUpdateRpHAnim != nullptr);
+    if(f && GetPed && GetObj && GetHier && HAnimIdx && (EntUpdateRW || MatUpdateRW)) aml->Hook(f, (void*)&HookPRAT, (void**)&PRAT_orig);
+    logger->Info("BoneAttach: %s (pools %d%d, hanim %d%d, rw %d%d%d%d)", PRAT_orig ? "ok" : "off", GetPed != nullptr, GetObj != nullptr,
+                 GetHier != nullptr, HAnimIdx != nullptr, EntUpdateRW != nullptr, MatUpdateRW != nullptr, EntUpdateFrame != nullptr, EntUpdateRpHAnim != nullptr);
 }
 bool BoneAttach::Available() { return PRAT_orig != nullptr; }
-void BoneAttach::Follow(int obj, int ped, int boneId)
+void BoneAttach::SetCalFile(const char* path)
+{
+    snprintf(s_szCalFile, sizeof(s_szCalFile), "%s", path ? path : "");
+    LoadCals();
+}
+void BoneAttach::Follow(int obj, int ped, int boneId, int key)
 {
     if(!PRAT_orig || obj <= 0 || ped <= 0) return;
-    for(Att& a : s_A) if(a.want && a.obj == obj) { a.ped = ped; a.bone = boneId; return; }
-    for(Att& a : s_A) if(!a.want) { a = Att(); a.obj = obj; a.ped = ped; a.bone = boneId; a.want = true; return; }
+    const Cal* c = FindCal(key);
+    for(Att& a : s_A) if(a.want && a.obj == obj) { a.ped = ped; a.bone = boneId; a.key = key; if(c && !a.cal) { a.L = c->L; a.cal = true; } return; }
+    for(Att& a : s_A) if(!a.want) { a = Att(); a.obj = obj; a.ped = ped; a.bone = boneId; a.key = key; a.want = true; if(c) { a.L = c->L; a.cal = true; } return; }
 }
 void BoneAttach::Calibrate(int obj) { for(Att& a : s_A) if(a.want && a.obj == obj && !a.cal) a.calWanted = true; }
 bool BoneAttach::Calibrated(int obj) { for(Att& a : s_A) if(a.want && a.obj == obj) return a.cal; return false; }

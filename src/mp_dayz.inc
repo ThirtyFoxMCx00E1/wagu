@@ -626,7 +626,9 @@ static void DzMakeBag(int ped)
     if(mta) Game::AttachObjectToCharRot(o, ped, { 0.0f, -0.225f, 0.22f }, { 90.0f, 0.0f, 0.0f });
     else Game::AttachObjectToCharRot(o, ped, { 0.0f, back, 0.12f + 0.03f * lvl }, { 0.0f, -90.0f, 0.0f });   // on the back, bigger bag sits higher
     s_Dz.bagObj = o; s_Dz.bagAt = MP_NowMs();
-    BoneAttach::Follow(o, ped, 3);   // 4.00: spine1 - moves with the torso, no lag in cars
+    // 4.05: the calibration is kept per model / level (dz_bagcal.bin) - a bag made in a car or prone follows at once
+    { static bool calSet = false; if(!calSet) { calSet = true; char cp[512]; snprintf(cp, sizeof(cp), "%s/dz_bagcal.bin", MP::DataDir()); BoneAttach::SetCalFile(cp); } }
+    BoneAttach::Follow(o, ped, 3, m * 10 + lvl);   // 4.00: spine1 - moves with the torso, no lag in cars
 }
 static void DzSpawnAt(const float* p, const char* name)
 {
@@ -1824,6 +1826,7 @@ static void DzDrawPanel(ImVec2 ds)
             }
             ImGui::TextWrapped("Project Day Z Legacy - gamemode Proper DAYZ. Based on Project DayZ SA-MP, made for MP by ThirtyFox.");
             ImGui::TextWrapped("Ambient music: No Man's Land | Metro / S.T.A.L.K.E.R Atmospheric Playlist by Lemuria - youtu.be/aVTcVx1570w (put your copy at files/MP/dz_ambient.mp3).");
+            ImGui::TextWrapped("Global network (4.05): libks, signalwire-c, FreeSWITCH (SignalWire), Eclipse Mosquitto, EMQX, MQTTX, Mainflux, awesome-mqtt, vps-hosting-providers, Sidekick, Aeon-MLTB, whmcs-vps-reseller.");
             break;
     }
     ImGui::EndChild();
@@ -1974,6 +1977,7 @@ static void DzDrawCabin(float t)
             static const char* const cr[] = { "Project Day Z Legacy (Proper DAYZ) for MP", "Original Project DayZ SA-MP gamemode - github.com/ThirtyFoxMCx00E1/Project-DayZ-SAMP",
                                               "MP, the Broker 24/7 servers, the HUD and the cabin - ThirtyFox", "Psdk / AML mod loader - the AndroidModLoader team",
                                               "Ambient music: No Man's Land | Metro / S.T.A.L.K.E.R Atmospheric Playlist - Lemuria (youtube.com/@lemurian.archives, youtu.be/aVTcVx1570w)",
+                                              "Global network (4.05): signalwire/libks, signalwire/signalwire-c, signalwire/freeswitch, eclipse-mosquitto/mosquitto, emqx/emqx, emqx/MQTTX, mainflux/mainflux, awesome-mqtt/awesome-mqtt, qfft560/vps-hosting-providers, MightyMoud/sidekick, AeonOrg/Aeon-MLTB, Rad-Web-Hosting/whmcs-vps-reseller (github.com)",
                                               "Thanks to every survivor testing the server." };
             for(const char* r : cr) { fg->AddText(UI::Font(), lf, ImVec2(px + UI::S(20), ly), IM_COL32_WHITE, r, nullptr, pw - UI::S(40)); ly += lf * 1.9f; }
         }

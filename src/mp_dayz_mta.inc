@@ -592,7 +592,8 @@ static void DzDrawStatusMta(ImDrawList* dl, ImVec2 ds, int ped, float t)
     ImU32 tc = temp < 34.5f ? IM_COL32(120, 180, 255, 255) : (temp > 38.5f ? DzCol(DZ_ORG) : G);
     DzStatus(dl, DZST_TEMP_BORDER, ImVec2(x, y), s, tc); if(tl) DzStatus(dl, DZST_TEMP0 + tl, ImVec2(x, y), s, tc);
     float r = s_DzX.tempRate; int arrows = fabsf(r) < 0.0008f ? 0 : fabsf(r) < 0.003f ? 1 : fabsf(r) < 0.006f ? 2 : 3;
-    if(arrows) DzStatus(dl, r < 0 ? DZST_TARROW0 + arrows : DZST_TARROW3 + arrows, ImVec2(x - s * 0.62f, y + s * 0.18f), s * 0.62f, r < 0 ? IM_COL32(120, 180, 255, 255) : DzCol(DZ_ORG));
+    (void)arrows;   // 4.05: the rise / fall arrow showed as a stray orange dot left of the thermometer - removed
+    if(false) DzStatus(dl, r < 0 ? DZST_TARROW0 + arrows : DZST_TARROW3 + arrows, ImVec2(x - s * 0.62f, y + s * 0.18f), s * 0.62f, r < 0 ? IM_COL32(120, 180, 255, 255) : DzCol(DZ_ORG));
     char tt[16]; snprintf(tt, sizeof(tt), "%.1fC", temp); DzTextR(dl, UI::S(17), x + s + UI::S(4), y + s - UI::S(16), IM_COL32(230, 230, 230, 220), tt);
     y += s + UI::S(2);
     // blood / food / drink

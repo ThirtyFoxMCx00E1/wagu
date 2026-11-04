@@ -542,6 +542,7 @@ bool MPServer::DzCommand(int slot, const char* cmd, const char* arg)
     if(IS("rules")) { for(const char* r : kDzRules) DzMsg(slot, DZC_WHITE, "%s", r); DzEvent(slot, DZEV_UI, 2, 0, 0, nullptr, ""); return true; }
     if(IS("credits")) { DzMsg(slot, DZC_YELLOW, "Project Day Z Legacy - based on Project DayZ SA-MP, made for MP by ThirtyFox.");
                         DzMsg(slot, DZC_WHITE, "Ambient music: No Man's Land | Metro / S.T.A.L.K.E.R Atmospheric Playlist by Lemuria (youtube.com/@lemurian.archives, youtu.be/aVTcVx1570w). /music on / off.");
+                        DzMsg(slot, DZC_WHITE, "Global network: libks, signalwire-c, FreeSWITCH (SignalWire), Eclipse Mosquitto, EMQX, MQTTX, Mainflux, awesome-mqtt, vps-hosting-providers, Sidekick, Aeon-MLTB, whmcs-vps-reseller.");
                         DzEvent(slot, DZEV_UI, 5, 0, 0, nullptr, ""); return true; }
     if(IS("stats") || IS("level") || IS("humanity") || IS("score"))
     {

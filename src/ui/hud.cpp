@@ -1335,24 +1335,7 @@ void HUD::Render()
         // 2.19 join screen: full black slide overlay (under the chat + title logo)
         float ox0, ox1; bool overlay = MP::JoinOverlay(ox0, ox1);
         if(overlay) dl->AddRectFilled(ImVec2(ox0 * io.DisplaySize.x, 0), ImVec2(ox1 * io.DisplaySize.x, io.DisplaySize.y), IM_COL32(0, 0, 0, 255));
-        if(overlay && ox0 <= 0.001f && ox1 >= 0.999f)
-        {   // 4.04: CS:GO style square "connecting" box on the black join screen (the floating menu is unchanged)
-            const ImVec2 ds = io.DisplaySize;
-            float bw = UI::S(420), bh = UI::S(86);
-            ImVec2 a(ds.x * 0.5f - bw * 0.5f, ds.y * 0.62f), b(a.x + bw, a.y + bh);
-            dl->AddRectFilled(a, b, IM_COL32(40, 45, 52, 235));
-            dl->AddRect(a, b, IM_COL32(255, 255, 255, 30), 0.0f, 0, UI::S(1));
-            dl->AddRectFilled(a, ImVec2(a.x + UI::S(3), b.y), IM_COL32(126, 178, 226, 255));
-            const char* t1 = MP::IsConnected() ? "CONNECTED" : "CONNECTING TO SERVER";
-            dl->AddText(UI::Font(), UI::S(22), ImVec2(a.x + UI::S(18), a.y + UI::S(12)), IM_COL32(226, 229, 233, 255), t1);
-            dl->AddText(UI::Font(), UI::S(16), ImVec2(a.x + UI::S(18), a.y + UI::S(40)), IM_COL32(150, 157, 166, 255), MP::IsConnected() ? "Loading the world..." : "Please wait...");
-            ImVec2 pa(a.x + UI::S(18), b.y - UI::S(14)), pb(b.x - UI::S(18), b.y - UI::S(9));
-            dl->AddRectFilled(pa, pb, IM_COL32(24, 27, 32, 255));
-            float w = pb.x - pa.x, seg = w * 0.28f, ph = fmodf((float)ImGui::GetTime() * 0.6f, 1.0f) * (w + seg) - seg;
-            float s0 = pa.x + (ph < 0 ? 0 : ph), s1 = pa.x + (ph + seg > w ? w : ph + seg);
-            if(MP::IsConnected()) { s0 = pa.x; s1 = pb.x; }
-            if(s1 > s0) dl->AddRectFilled(ImVec2(s0, pa.y), ImVec2(s1, pb.y), MP::IsConnected() ? IM_COL32(76, 160, 48, 255) : IM_COL32(126, 178, 226, 255));
-        }
+        // 4.05: the 4.04 "CONNECTING TO SERVER" box is gone - the main "Please Wait, Loading Server Data" window shows it
         MP::DrawDefaultTitle(dl);   // 3.53.1: the Broker MQQ title, also over the black join screen
         // 2.35: launcher open = nothing of the HUD behind it (tags, chat, kill feed, status)
         const bool launcher = FloatMenu::IsModal();

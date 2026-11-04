@@ -1,6 +1,7 @@
 {
-"latest": "4.04.2",
+"latest": "4.05",
 "supported": [
+"4.05",
 "4.04.2",
 "4.04.1",
 "4.04",
@@ -87,6 +88,17 @@
 "3.04.6"
 ],
 "versions": [
+{
+"v": "4.05",
+"summary": "fixes + global hubs.",
+"items": [
+"Join screen: the second small \"CONNECTING TO SERVER\" box (4.04) is removed; the main \"Please Wait, Loading Server Data\" window shows the connecting state alone.",
+"Day Z backpack: it now really follows the spine bone (driving, crouch, lean, prone). The bone follow never switched on: it looked for `CEntity::UpdateRW`, which GTA SA mobile doesn't have; it now uses `CMatrix::UpdateRW`. The calibration is kept per bag model / level (`files/MP/dz_bagcal.bin`), so a bag made again in a car or prone sits right at once.",
+"Day Z status column: the small orange dot left of the thermometer (the temperature rising arrow) is removed.",
+"Global hubs: `HiveMQ/global/` - `edge-mosquitto.sh` (Eclipse Mosquitto, 5-20 MB RAM) and `edge-emqx.sh` (EMQX with dashboard) turn any small VPS into another region with the same logins, topic rules and TCP tuning; `emqx/Dockerfile` for Sidekick; `regions-template.txt`; a table of fast locations per region (Singapore, Hong Kong / Tokyo CN2 GIA, Amsterdam AS9929, Los Angeles CN2 GIA, Fremont, New York, Vancouver, Sydney). The website has a new Global section.",
+"Credits (website, README, Project Day Z Legacy): libks, signalwire-c, FreeSWITCH, Eclipse Mosquitto, EMQX, MQTTX, Mainflux, awesome-mqtt, vps-hosting-providers, Sidekick."
+]
+},
 {
 "v": "4.04.2",
 "summary": "fix: crash / freeze on the game's loading screen (\"Loading...\" never ends).",
