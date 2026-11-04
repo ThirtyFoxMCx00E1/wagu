@@ -4135,6 +4135,7 @@ void MP::Process()
         else if(!modal && s_bLaunchHud) { s_bLaunchHud = false; if(!JoinHudOff()) Game::ShowGameHud(true); }
     }
     int ped = Game::LocalPed();
+    if(ped > 0) FloatMenu::SetGameRunning();   // 4.04.1: from now on ⋮ -> Server can open the launcher
 
     if(s_bWantTeleport)
     {
@@ -7292,12 +7293,8 @@ void MP::Init(const char* dataDir)
     VKeyboard::SetValidator(OnName, NameBlocked);       // 2.37: SENJI turns red, Enter refused
     { char bp[512]; snprintf(bp, sizeof(bp), "%s/bans.txt", s_szDataDir); s_Server.SetBanFile(bp); }
     FloatMenu::SetBarPos(::cfg->GetFloat("ButtonsX", 0.5f, "MP"), ::cfg->GetFloat("ButtonsY", 0.07f, "MP"));
-    // first launch: open the menu once so it's easy to find
-    if(!::cfg->GetBool("MenuShownOnce", false, "MP"))
-    {
-        FloatMenu::Toggle();
-        ConfigEntry* e = ::cfg->Bind("MenuShownOnce", true, "MP"); e->SetBool(true); delete e; ::cfg->Save();
-    }
+    // 4.04.1: the launcher no longer opens by itself on the first start (it covered the game's loading
+    // screen and took every touch, so the game looked stuck). It opens only from the ⋮ menu -> Server.
 
     // saved server comes back on start; if someone else already runs it, we join that one instead
     if(settings.hostLan && LAN::HasNetwork())

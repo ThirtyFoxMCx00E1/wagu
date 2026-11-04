@@ -121,6 +121,9 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **4.04.1**: fix: the game looked stuck on the loading screen.
+  - On a fresh install (no MP config yet) the full-screen server browser opened by itself at the first start, on top of the game's loading screen, and took every touch. It now never opens by itself: open it from the ⋮ menu -> Server.
+  - The server browser can not be open before the game has loaded (no player yet).
 - **4.04**: CS:GO style server browser, chat GIFs, clipboard and texdb research.
   - MP launcher server list redone in the CS:GO community server browser style: almost fullscreen, square boxes (no round edges), columns for name / players / map / gamemode / ping / location. A featured / selected server strip at the top shows the description, IP (internet server IPs stay hidden), favourite star, preview image and a ping stability graph. Tapping a row opens its player list.
   - Row backgrounds now come from bg_server.jar (bg_1.jpg .. bg_250.jpg plus bg_default / bg_bcw / bg_dz / bg_mw3 / bg_rp and flags.png) in files/MP instead of the icons. Icons.jar is still read as a fallback.

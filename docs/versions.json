@@ -1,6 +1,7 @@
 {
-"latest": "4.04",
+"latest": "4.04.1",
 "supported": [
+"4.04.1",
 "4.04",
 "4.03",
 "4.02",
@@ -85,6 +86,14 @@
 "3.04.6"
 ],
 "versions": [
+{
+"v": "4.04.1",
+"summary": "fix: the game looked stuck on the loading screen.",
+"items": [
+"On a fresh install (no MP config yet) the full-screen server browser opened by itself at the first start, on top of the game's loading screen, and took every touch. It now never opens by itself: open it from the ⋮ menu -> Server.",
+"The server browser can not be open before the game has loaded (no player yet)."
+]
+},
 {
 "v": "4.04",
 "summary": "CS:GO style server browser, chat GIFs, clipboard and texdb research.",

@@ -32,6 +32,7 @@ namespace FloatMenu
     bool OnTouch(int type, int finger, float x, float y);
 
     void Toggle();
+    void SetGameRunning();   // 4.04.1: the player exists (before that the launcher can not open)
     bool IsOpen();
     bool IsModal();   // 2.26: full-screen launcher open -> it gets every touch, floating buttons hidden
     void Render();        // inside an ImGui frame

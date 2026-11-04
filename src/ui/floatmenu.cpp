@@ -461,8 +461,13 @@ static void RenderServerPage(const ImVec2& ds)
     ImGui::End();
 }
 
+static std::atomic<bool> s_bGameRunning{false};   // 4.04.1: set once the player exists (MP game loop)
+void FloatMenu::SetGameRunning() { s_bGameRunning.store(true); }
 void FloatMenu::Render()
 {
+    // 4.04.1: no full-screen launcher while the game is still loading (no player yet): it hid the
+    // loading screen and blocked its touches. It can be opened from ⋮ -> Server once the game runs.
+    if(s_Pages[PAGE_SERVER].open && !s_bGameRunning.load()) { s_Pages[PAGE_SERVER].open = false; s_bModal.store(false); }
     const bool modal = s_fnServerPage && s_Pages[PAGE_SERVER].open;   // 2.26
     s_bModal.store(modal);
     if(modal) { s_bDropdown = false; s_nPendingTap.store(-1); }
