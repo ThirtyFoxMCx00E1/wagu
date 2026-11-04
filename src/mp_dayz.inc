@@ -167,7 +167,7 @@ static void DzModelsStatusLine(char* o, size_t n)
     else snprintf(o, n, "MTA models: %s | %d/%d downloaded | %d in game (%d loaded) | %d waiting (in use) | %d failed%s",
                   eng, st.files, st.wanted, st.swapped, st.loaded, st.waiting, st.failed, st.noTex ? " | some without textures" : "");
     int wm = 0, wh = 0; bool wr = false; DzModels::World(wm, wh, wr);   // 4.05.5
-    size_t l = strlen(o); if(l < n) snprintf(o + l, n - l, " | world textures %s (%d made, %d used)", !settings.dzWorldTex ? "off" : wr ? "ready" : "not downloaded", wm, wh);
+    size_t l = strlen(o); if(l < n) snprintf(o + l, n - l, " | world textures %s (%d GTA textures replaced)", !settings.dzWorldTex ? "off" : wr ? "ready" : "not downloaded", wm); (void)wh;
 }
 static void DzModelsReport(bool reset)
 {

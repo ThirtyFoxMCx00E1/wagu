@@ -328,7 +328,7 @@ void MPServer::DzOnJoin(int slot, bool fresh)
     if(fresh)
     {
         DzMsg(slot, DZC_YELLOW, "Welcome to Project Day Z Legacy (Proper DAYZ). Survive. Trust nobody.");
-        DzMsg(slot, DZC_GREY, "Press F2 to open the control panel - /help for all commands, /rules for the rules.");
+        DzMsg(slot, DZC_GREY, "Tap the gear button next to the top bar for the control panel - /help for all commands, /rules for the rules.");
     }
     if(m_Dz[slot].relogNotice)
     {   // 3.58b
@@ -535,7 +535,7 @@ bool MPServer::DzCommand(int slot, const char* cmd, const char* arg)
         DzMsg(slot, DZC_WHITE, "/pm <id> <text> /me /do /shout /whisper /time /fog /spawns /kill /rules /credits /admins /report /music");
         DzMsg(slot, DZC_WHITE, "/skills /skill <n> /achievements /journal /undress /weather /station /checkbody /treat <id> /chat /vars");
         DzMsg(slot, DZC_GREY, "Keys: 6 / F1 journal (debug monitor), 7 GPS, 8 compass, TAB player list. Admin: /dzset /dzvars /respawnvehicles /dzweather");
-        DzMsg(slot, DZC_GREY, "Press F2 (or PANEL) for the control panel. Most commands open their window too.");
+        DzMsg(slot, DZC_GREY, "Tap the gear button or type /panel for the control panel. Most commands open their window too.");
         DzEvent(slot, DZEV_UI, 1, 0, 0, nullptr, "");
         return true;
     }

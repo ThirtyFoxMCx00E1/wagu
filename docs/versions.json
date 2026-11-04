@@ -1,6 +1,7 @@
 {
-"latest": "4.05.6",
+"latest": "4.05.7",
 "supported": [
+"4.05.7",
 "4.05.6",
 "4.05.5",
 "4.05.4",
@@ -94,6 +95,15 @@
 "3.04.6"
 ],
 "versions": [
+{
+"v": "4.05.7",
+"summary": "launcher clean-up, Day Z chat text.",
+"items": [
+"Favorites and Lan are only the top tabs now. They were in the side bar too. The side bar's Internet item stays lit on all server list tabs.",
+"The + (add server) icon is gone from the toolbar. Add server is in the side bar.",
+"Day Z Legacy chat: \"Press F2 to open the control panel\" now says to tap the gear button next to the top bar (or type /panel)."
+]
+},
 {
 "v": "4.05.6",
 "summary": "region icon fix, part 2.",

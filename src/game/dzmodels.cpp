@@ -182,7 +182,7 @@ void* (*DictFindTex)(void*, const char*) = nullptr;
 void* s_LoadDict = nullptr;                 // the dictionary of the MTA model being read now
 std::vector<void*> s_AllDicts;              // every MTA dictionary we filled
 std::atomic<int> s_DbHits { 0 };
-void* WorldGet(const char* name);           // 4.05.5 (below)
+void WorldSwap(void* tex);                  // 4.05.7 (below)
 void* HookDbGetTexture(const char* name)
 {
     if(s_LoadDict && name && *name && DictFindTex)
@@ -190,8 +190,9 @@ void* HookDbGetTexture(const char* name)
         if(void* t = DictFindTex(s_LoadDict, name)) { ++s_DbHits; return t; }
         for(void* d : s_AllDicts) if(d != s_LoadDict) if(void* t = DictFindTex(d, name)) { ++s_DbHits; return t; }
     }
-    if(name && *name) if(void* t = WorldGet(name)) return t;   // 4.05.5: GTA V world textures (Day Z)
-    return DbGetTexture_orig(name);
+    void* t = DbGetTexture_orig(name);
+    WorldSwap(t);                         // 4.05.7: GTA V world textures (Day Z) - raster swap
+    return t;
 }
 struct LoadScope { void* prev; explicit LoadScope(void* d) : prev(s_LoadDict) { s_LoadDict = d; } ~LoadScope() { s_LoadDict = prev; } };
 
@@ -334,11 +335,9 @@ std::unordered_map<std::string, WEnt> s_WIdx;      // lower-case name -> where
 std::unordered_map<std::string, std::string> s_WAlias;
 std::vector<std::string> s_WPath;                  // index file column -> cache path
 std::vector<FILE*> s_WF;
-std::unordered_map<std::string, void*> s_WCache;   // lower-case name -> our RwTexture (nullptr = could not)
-void* s_WDict = nullptr; int s_WSlot = -1;
-std::atomic<int> s_WMade { 0 }, s_WHits { 0 }, s_WFail { 0 };
+std::atomic<int> s_WMade { 0 }, s_WHits { 0 }, s_WFail { 0 };   // made = GTA textures swapped now
 const int kWorldCap = 128;                         // pixels: our textures are RGBA on the GPU
-const int kWorldMax = 3000;                        // textures at most (then GTA ones again)
+const int kWorldMax = 2500;                        // textures at most (then GTA ones again)
 
 std::string Lower(const char* n) { std::string s(n); for(char& c : s) c = (char)tolower((unsigned char)c); return s; }
 bool LoadWorldIdx()
@@ -705,58 +704,102 @@ bool MakeSlot(Entry* e)
     return true;
 }
 
-// 4.05.5: one world texture (main thread, inside the game's texture lookup). nullptr = not ours / off
-bool WorldDict()
+// 4.05.7: the world textures as RASTER SWAPS (4.05.5 only answered TextureDatabaseRuntime::GetTexture,
+// but the map's textures mostly come out of the txd slots - RwTextureGtaStreamRead - and are found in the
+// slot's dictionary, so the lookup was never asked and nothing changed). Now every GTA texture whose
+// name is in the world index gets our raster put in (texture->raster), the way XkiLoader does it:
+//  - when the game reads it (RwTextureGtaStreamRead / RwTextureStreamRead / GetTexture, hooks below)
+//  - for all txd slots already loaded, the moment the world textures switch on (so it shows at once)
+// The original raster is kept and put back when the texture is destroyed (RwTextureDestroy hook) and
+// when you leave the Day Z server, so nothing leaks and GTA's own streaming never frees ours.
+struct WSwap { void* r0; void* r1; uint32_t fa; };
+std::unordered_map<void*, WSwap> s_Swap;          // GTA texture -> its rasters
+std::recursive_mutex s_SM;
+void (*TexDestroy_orig)(void*) = nullptr;
+void (*RasterDestroy)(void*) = nullptr;
+void* (*TexGtaRead_orig)(void*) = nullptr;
+void* (*TexRead_orig)(void*) = nullptr;
+
+void WorldSwap(void* texp)
 {
-    if(s_WDict) return true;
-    if(s_WSlot == -2 || !s_PoolOk || !AddTxdSlot || !TxdCreate || !TxdAddRef) return false;
-    int slot = FindTxdSlot ? FindTxdSlot("dzm_world") : -1;
-    if(slot < 0) slot = AddTxdSlot("dzm_world", "", false);
-    if(slot < 0 || slot >= 5000 || slot >= (*s_TxdPool)->size) { s_WSlot = -2; return false; }
-    TxdDef& d = (*s_TxdPool)->objs[slot];
-    if(!d.dict) TxdCreate(slot);
-    if(!d.dict) { s_WSlot = -2; return false; }
-    TxdAddRef(slot);                        // ours forever, never freed (models may still use the textures)
-    s_SI[kTxdBase + slot].loadState = 1;
-    s_WSlot = slot; s_WDict = d.dict;
-    return true;
-}
-void* WorldGet(const char* name)
-{
-    if(!s_WOn || !s_WReady || !s_Ok) return nullptr;
-    std::string k = Lower(name);
-    std::lock_guard<std::mutex> lk(s_WM);
-    auto c = s_WCache.find(k);
-    if(c != s_WCache.end())
+    if(!texp || !s_WOn || !s_WReady || !s_Ok || !TexDestroy_orig || !RasterDestroy) return;
+    RwTex* T = (RwTex*)texp;
+    if(!T->raster || !T->name[0]) return;
+    std::lock_guard<std::recursive_mutex> lk(s_SM);
+    auto it = s_Swap.find(T);
+    if(it != s_Swap.end()) { if(T->raster == it->second.r1) return; s_Swap.erase(it); }   // reused memory
+    char nm[33]; memcpy(nm, T->name, 32); nm[32] = 0;
+    WEnt w; std::string path;
     {
-        if(!c->second) return nullptr;
-        ++((RwTex*)c->second)->refCount; ++s_WHits;   // the game's GetTexture hands out a reference too
-        return c->second;
-    }
-    std::string n = k;
-    auto it = s_WIdx.find(n);
-    for(int i = 0; i < 4 && it == s_WIdx.end(); ++i) { auto a = s_WAlias.find(n); if(a == s_WAlias.end()) break; n = a->second; it = s_WIdx.find(n); }
-    if(it == s_WIdx.end()) return nullptr;                       // not in the pack: GTA's own
-    if(s_WMade >= kWorldMax || !WorldDict()) return nullptr;
-    void* tex = nullptr;
-    const WEnt& w = it->second;
-    if(w.file < s_WF.size() && w.size >= 88 && w.size < 8 * 1024 * 1024)
-    {
+        std::lock_guard<std::mutex> l2(s_WM);
+        std::string n = Lower(nm);
+        auto e = s_WIdx.find(n);
+        for(int i = 0; i < 4 && e == s_WIdx.end(); ++i) { auto a = s_WAlias.find(n); if(a == s_WAlias.end()) break; n = a->second; e = s_WIdx.find(n); }
+        if(e == s_WIdx.end()) return;                     // not in the pack: GTA's own stays
+        if((int)s_Swap.size() >= kWorldMax) return;
+        w = e->second;
+        if(w.file >= s_WF.size() || w.size < 88 || w.size >= 8 * 1024 * 1024) return;
         FILE*& f = s_WF[w.file];
         if(!f) f = fopen(s_WPath[w.file].c_str(), "rb");
         std::vector<uint8_t> d(w.size); Tex t;
-        if(f && fseek(f, (long)w.off, SEEK_SET) == 0 && fread(d.data(), 1, d.size(), f) == d.size() && DecodeNative(d.data(), d.size(), kWorldCap, t))
+        if(!f || fseek(f, (long)w.off, SEEK_SET) != 0 || fread(d.data(), 1, d.size(), f) != d.size() || !DecodeNative(d.data(), d.size(), kWorldCap, t))
+        { if(++s_WFail <= 5) DzLog(true, "DzModels: world texture %s could not be read", nm); return; }
+        t.name = nm;
+        RwTex* tmp = (RwTex*)MakeTexture(t);
+        if(!tmp) { ++s_WFail; return; }
+        WSwap s; s.r0 = T->raster; s.r1 = tmp->raster; s.fa = T->filterAddr;
+        tmp->raster = nullptr; TexDestroy_orig(tmp);      // only the raster is kept
+        T->raster = s.r1;
+        T->filterAddr = (s.fa & ~0xFFu) | 2u;             // linear: ours has no mip levels (mip filter = black)
+        s_Swap[T] = s;
+    }
+    ++s_WMade;
+    if(s_WMade == 1 || s_WMade % 500 == 0) DzLog(false, "DzModels: world textures in the game: %d (last %s)", s_WMade.load(), nm);
+}
+void HookTexDestroy(void* texp)
+{
+    if(texp && !s_Swap.empty())
+    {
+        std::lock_guard<std::recursive_mutex> lk(s_SM);
+        auto it = s_Swap.find(texp);
+        RwTex* T = (RwTex*)texp;
+        if(it != s_Swap.end() && T->refCount <= 1)
         {
-            t.name = name;                                       // the name the game asked for (aliases)
-            tex = MakeTexture(t);
-            if(tex) { DictAddTex(s_WDict, tex); ++s_WMade; }
+            if(T->raster == it->second.r1) { T->raster = it->second.r0; T->filterAddr = it->second.fa; RasterDestroy(it->second.r1); }
+            s_Swap.erase(it);
         }
     }
-    s_WCache[k] = tex;
-    if(!tex) { if(++s_WFail <= 5) DzLog(true, "DzModels: world texture %s could not be read", name); return nullptr; }
-    if(s_WMade == 1 || s_WMade % 500 == 0) DzLog(false, "DzModels: world textures in the game: %d", s_WMade.load());
-    ++((RwTex*)tex)->refCount; ++s_WHits;
-    return tex;
+    TexDestroy_orig(texp);
+}
+void* HookTexGtaRead(void* stream) { void* t = TexGtaRead_orig(stream); WorldSwap(t); return t; }
+void* HookTexRead(void* stream) { void* t = TexRead_orig(stream); WorldSwap(t); return t; }
+void WorldRestoreAll()
+{
+    std::lock_guard<std::recursive_mutex> lk(s_SM);
+    for(auto& p : s_Swap) { RwTex* T = (RwTex*)p.first; if(T->raster == p.second.r1) { T->raster = p.second.r0; T->filterAddr = p.second.fa; RasterDestroy(p.second.r1); } }
+    DzLog(false, "DzModels: world textures off - %d GTA textures put back", (int)s_Swap.size());
+    s_Swap.clear(); s_WMade = 0;
+}
+// every texture of every loaded txd slot (main thread)
+void WorldSwapLoaded()
+{
+    if(!s_TxdPool || !*s_TxdPool || !s_PoolOk) return;
+    Pool* p = *s_TxdPool; int n = 0;
+    for(int i = 0; i < p->size && i < 8000; ++i)
+    {
+        if(p->flags[i] & 0x80) continue;                  // free slot
+        void* dict = p->objs[i].dict; if(!dict) continue;
+        if(std::find(s_AllDicts.begin(), s_AllDicts.end(), dict) != s_AllDicts.end()) continue;   // MTA models: ours already
+        void** head = (void**)((char*)dict + 2 * sizeof(void*));    // RwTexDictionary.texturesInDict (after RwObject)
+        void** l = (void**)*head;
+        for(int k = 0; l && l != head && k < 4096; ++k)
+        {
+            void** next = (void**)*l;
+            WorldSwap((char*)l - 2 * sizeof(void*));      // RwTexture.lInDictionary (after raster, dict)
+            l = next; ++n;
+        }
+    }
+    DzLog(false, "DzModels: world textures on - %d loaded GTA textures checked, %d swapped", n, s_WMade.load());
 }
 
 // switch one model (only while the game has it unloaded). true = done
@@ -799,6 +842,18 @@ void DzModels::Init(void* h)
     if(DictFindTex)
         if(void* g = (void*)aml->GetSym(h, "_ZN22TextureDatabaseRuntime10GetTextureEPKc")) aml->Hook(g, (void*)&HookDbGetTexture, (void**)&DbGetTexture_orig);
     if(!TexCreate) *(void**)&TexCreate = (void*)aml->GetSym(h, "RwTextureCreate");
+    // 4.05.7: world textures = raster swap (see WorldSwap)
+    *(void**)&RasterDestroy = (void*)aml->GetSym(h, "_Z15RwRasterDestroyP8RwRaster");
+    if(RasterDestroy)
+    {
+        if(void* g = (void*)aml->GetSym(h, "_Z16RwTextureDestroyP9RwTexture")) aml->Hook(g, (void*)&HookTexDestroy, (void**)&TexDestroy_orig);
+        if(TexDestroy_orig)
+        {
+            if(void* g = (void*)aml->GetSym(h, "_Z22RwTextureGtaStreamReadP8RwStream")) aml->Hook(g, (void*)&HookTexGtaRead, (void**)&TexGtaRead_orig);
+            if(void* g = (void*)aml->GetSym(h, "_Z19RwTextureStreamReadP8RwStream")) aml->Hook(g, (void*)&HookTexRead, (void**)&TexRead_orig);
+        }
+    }
+    DzLog(false, "DzModels: world texture hooks destroy %s gtaread %s read %s", TexDestroy_orig ? "ok" : "-", TexGtaRead_orig ? "ok" : "-", TexRead_orig ? "ok" : "-");
     if(!DictAddTex) *(void**)&DictAddTex = (void*)aml->GetSym(h, "RwTexDictionaryAddTexture");
     void* f = (void*)aml->GetSym(h, "_ZN10CStreaming21ConvertBufferToObjectEPcii");
     if(f && s_SI && s_MemUsed && s_MI) aml->Hook(f, (void*)&HookCBTO, (void**)&CBTO_orig);
@@ -846,7 +901,10 @@ void DzModels::Tick(bool on, const int* objIds, int nObj)
         }
     }
     if(!s_Ok) return;
-    s_WOn = on && s_WWant && s_WReady;   // 4.05.5
+    {   // 4.05.5 / 4.05.7: on -> swap what is loaded now, off -> put GTA's back
+        const bool w = on && s_WWant && s_WReady;
+        if(w != s_WOn.load()) { s_WOn = w; if(w) WorldSwapLoaded(); else WorldRestoreAll(); }
+    }
     // ~110 entries, a switch is a few field checks (a model in use simply waits)
     for(Entry* e : s_E)
     {

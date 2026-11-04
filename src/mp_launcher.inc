@@ -1890,8 +1890,8 @@ static void RenderLauncher(void* openPtr)
         }
         // right side: search, refresh, region, connection settings, add server, help
         float searchW = ImMax(UI::S(260), ws.x * 0.16f);
-        float rx = wp.x + ws.x - pad - btnH * 5 - UI::S(6) * 5 - searchW;
-        if(rx < x + UI::S(10)) { searchW = ImMax(UI::S(140), searchW - (x + UI::S(10) - rx)); rx = wp.x + ws.x - pad - btnH * 5 - UI::S(6) * 5 - searchW; }
+        float rx = wp.x + ws.x - pad - btnH * 4 - UI::S(6) * 4 - searchW;   // 4.05.7: 4 icons (no +)
+        if(rx < x + UI::S(10)) { searchW = ImMax(UI::S(140), searchW - (x + UI::S(10) - rx)); rx = wp.x + ws.x - pad - btnH * 4 - UI::S(6) * 4 - searchW; }
         ImGui::SetCursorScreenPos(ImVec2(rx, y));
         if(LInputBox("search", s_szSearch, "Search", searchW, btnH, IC_SEARCH)) VKeyboard::Open("Search server", s_szSearch, 31, OnSearch);
         ImGui::SameLine(0, UI::S(6));
@@ -1908,8 +1908,7 @@ static void RenderLauncher(void* openPtr)
         if(connTab < 0) for(int i = 0; i < FloatMenu::SectionCount(); ++i) if(strcasecmp(FloatMenu::SectionTitle(i), "Servers")) { connTab = LT_SECTIONS + i; break; }   // 4.05.2: never a dead gear
         if(LToolButton("gear", IC_GEAR, nullptr, btnH, connTab >= 0, s_nLTab == connTab) && connTab >= 0) { s_nLTab = connTab; s_bRegionPick = false; }
         ImGui::SameLine(0, UI::S(6));
-        if(LToolButton("add", IC_PLUS, nullptr, btnH, true, s_nLTab == LT_ADD)) s_nLTab = LT_ADD;
-        ImGui::SameLine(0, UI::S(6));
+        // 4.05.7: no + icon here any more - "Add server" is in the side bar (it was there twice)
         if(LToolButton("help", IC_INFO, nullptr, btnH)) FloatMenu::OpenPage(FloatMenu::PAGE_HELP);
         dl->AddLine(ImVec2(wp.x, wp.y + titleH + tbH), ImVec2(wp.x + ws.x, wp.y + titleH + tbH), line, UI::S(1));
     }
@@ -1923,9 +1922,9 @@ static void RenderLauncher(void* openPtr)
     {
         float iw = ImGui::GetContentRegionAvail().x, ih = UI::S(70);
         LGroupLabel("SERVERS");
-        if(LSideItem("inet", IC_GLOBE, "Internet",  s_nLTab == LT_INTERNET,  iw, ih)) { s_nLTab = LT_INTERNET; }
-        if(LSideItem("fav",  IC_HEART, "Favorites", s_nLTab == LT_FAVORITES, iw, ih)) { s_nLTab = LT_FAVORITES; }
-        if(LSideItem("lan",  IC_LIST,  "Lan",       s_nLTab == LT_LAN,       iw, ih)) { s_nLTab = LT_LAN; }   // 4.03: Wi-Fi servers
+        // 4.05.7: Favorites and Lan are only the top tabs now (they were in the side bar too). The server
+        // list item stays lit on all of its tabs (Internet / Featured / Favorites / Lan)
+        if(LSideItem("inet", IC_GLOBE, "Internet",  listTab, iw, ih)) { if(!listTab) s_nLTab = LT_INTERNET; }
         if(LSideItem("add",  IC_PLUS,  "Add server",s_nLTab == LT_ADD,       iw, ih)) { s_nLTab = LT_ADD; }
         LGroupLabel("STORAGE");   // 4.02
         if(LSideItem("cloud", IC_CLOUD, "Cloud Storage", s_nLTab == LT_CLOUD, iw, ih)) { s_nLTab = LT_CLOUD; }

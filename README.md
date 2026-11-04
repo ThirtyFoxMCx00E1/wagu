@@ -121,6 +121,11 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **4.05.7**: launcher clean-up, Day Z chat text.
+  - Favorites and Lan are only the top tabs now. They were in the side bar too. The side bar's Internet item stays lit on all server list tabs.
+  - The + (add server) icon is gone from the toolbar. Add server is in the side bar.
+  - Day Z world textures now actually show. 4.05.5 only answered the texture database lookup, but the map's textures come out of the TXD slots, so the game never asked and nothing changed. Now every GTA texture with a name from the pack gets the GTA V image put in when the game reads it, and every TXD already loaded is updated the moment the world textures turn on (you see it right away, no restreaming). The GTA originals come back when you leave the Day Z server. The log says how many were replaced ("DzModels: world textures on - ... swapped").
+  - Day Z Legacy chat: "Press F2 to open the control panel" now says to tap the gear button next to the top bar (or type /panel).
 - **4.05.6**: region icon fix, part 2.
   - Lost "finger lifted" events: if the game never reported a release, the next taps were dropped for as long as you kept tapping (the 1.5 s timeout restarted with every tap). So the region icon, and sometimes other launcher buttons, looked dead. A new press now frees a stuck finger right away when it's the same finger again or the launcher / keyboard is open.
   - Second hit test for the launcher toolbar and title icons (region, refresh, settings, +, help, friends, bell, close). A press inside the icon counts even when ImGui gave it to another window, as long as nothing of MP's is drawn over it. The log says which window took it ("4.05.6: toolbar ... tapped but ImGui gave it to ...").
