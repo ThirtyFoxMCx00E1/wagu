@@ -121,6 +121,13 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **4.05.1**: fixes.
+  - 24/7 servers were listed twice: two chains of GitHub shifts ran side by side (a failed "is a shift running?" check started a second chain, and each shift queues the next). Now a failed check starts nothing, and a shift that sees a newer shift online hands over and stops instead of queueing another. The website and the launcher also show a 24/7 server only once (the newest copy).
+  - Day Z backpack, again: 4.05 updated the object's CMatrix, but on mobile that matrix isn't linked to the RenderWare frame the bag is drawn from. The bone matrix now goes straight into the frame, so the bag stays on the spine when driving, crouching, leaning and prone.
+  - CS:GO look: a blurred night Los Santos picture (ui_bg.jpg, built into the .so) sits behind the launcher; the pages, the server list rows and the header are see-through glass on it. The "Please Wait, Loading Server Data" window uses the same look (square, blue title line, flat blue / green bars).
+  - Real ping: a 24/7 or player host now sends its own broker round trip in its listing, so the ping column is your ping plus the host's (it used to guess the host's leg = yours). Older hosts still show the old estimate.
+  - broker.txt now has the 4 region blocks (Asia, Europe, NA, Oceania): picking a region in the launcher moves the lobby to that region's broker.
+
 - **4.05**: fixes + global hubs.
   - Join screen: the second small "CONNECTING TO SERVER" box (4.04) is removed; the main "Please Wait, Loading Server Data" window shows the connecting state alone.
   - Day Z backpack: it now really follows the spine bone (driving, crouch, lean, prone). The bone follow never switched on: it looked for `CEntity::UpdateRW`, which GTA SA mobile doesn't have; it now uses `CMatrix::UpdateRW`. The calibration is kept per bag model / level (`files/MP/dz_bagcal.bin`), so a bag made again in a car or prone sits right at once.
