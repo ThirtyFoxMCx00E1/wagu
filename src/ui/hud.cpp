@@ -639,13 +639,13 @@ static void EnsureEmbeddedAsset(const char* file, const char* path)
 }
 // 3.04: any other PNG in files/MP by file name (Brief Case War briefcase / lock / banner), max 512x512
 struct NamedTex { char file[48]; RwRaster* r; ImVec2 uv; };
-static NamedTex s_NamedTex[96]; static int s_nNamedTex = 0;   // 3.60: 48 -> 96 (Day Z + RP + BCW + MW3 textures)
+static NamedTex s_NamedTex[192]; static int s_nNamedTex = 0;   // 3.60: 48 -> 96, 4.02: 192 (the featured icons kept failing once Day Z + RP filled it)
 void* HUD::Texture(const char* file, ImVec2* uv)
 {
     if(!file || !*file) return nullptr;
     for(int i = 0; i < s_nNamedTex; ++i)
         if(!strcmp(s_NamedTex[i].file, file)) { if(uv) *uv = s_NamedTex[i].uv; return (void*)s_NamedTex[i].r; }
-    if(s_nNamedTex >= 96) return nullptr;
+    if(s_nNamedTex >= (int)(sizeof(s_NamedTex) / sizeof(s_NamedTex[0]))) return nullptr;
     uint32_t fr = (uint32_t)ImGui::GetFrameCount();
     if(s_nIconLoadFrame == fr) return nullptr;   // one file per frame
     s_nIconLoadFrame = fr;

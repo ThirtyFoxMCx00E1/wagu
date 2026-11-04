@@ -121,6 +121,11 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **4.03**: Project Day Z Legacy UI fixes.
+  - The prone button no longer overlaps the scoreboard / stats board: it now sits left of the status icons and below the stats board.
+  - The chat box and the floating mod menu are hidden on the Day Z connection screen (like the join screen).
+  - Credits / Settings / Rules panels: the yellow outline (and the window / frame borders) are removed.
+  - Server list: the Project Day Z Legacy row now uses the transparent dz_icon.png like the other featured servers (left icon + faded icon on the right). The old drawn badge (an opaque dark disc) is gone; the icon texture cache was also raised 96 -> 192 so the featured icons no longer fail to load after Day Z / RP textures fill it.
 - **4.02**: Project Day Z Legacy fixes + Cloud Storage.
   - Zombies no longer teleport onto you: the Day Z zombie walk command had its parameter types wrong ("iffffi"), so the walk mode landed in the time slot and the game warped every zombie to the player after ~2 s. They now walk / run to you by themselves (time -1 = never warp). The survival-mode zombies lost their 2 s warp too.
   - The PRONE button no longer sits on top of the ear / eye status icons on the right side; it is centred just above that column.

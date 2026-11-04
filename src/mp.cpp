@@ -681,6 +681,7 @@ static void DzModelsTick();   // 3.61: mp_dayz.inc
 static void SocialFrame();    // 3.63: mp_social.inc (friends, chats, party, communities)
 static int DzAdjustDamage(int hp, int dmg, bool instant);   // 3.59: helmet vs headshot, DOWN at 5%
 static bool DzHidden();
+static bool DzConnScreen();   // 4.02: Project Day Z cabin connection screen (PLAY / RULES / CREDITS / SETTINGS)
 static void DzProcess(int ped, uint64_t now);
 static void DzOnPacket(const uint8_t* d, int len);
 static bool DzCommand(const char* cmd, const char* arg);

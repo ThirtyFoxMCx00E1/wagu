@@ -111,6 +111,7 @@ static bool DzHideCorner() { return DzOnServer() && s_Dz.view == 2 && !Game::IsP
 bool MP::IsOnDz() { return DzOnServer(); }
 static bool s_DzDlSkip = false;   // 3.62: PLAY NOW pressed in the download window (this connection)
 static bool DzHidden() { return s_Dz.engaged && (s_Dz.view == 1 || s_Dz.view == 3); }
+static bool DzConnScreen() { return s_Dz.engaged && s_Dz.view == 1; }   // 4.02: no MP top bar / chat over it
 static ImU32 DzCol(uint32_t rgba, float a = 1.0f) { return UI::FromRGBA(rgba, a < 0 ? 0 : (a > 1 ? 1 : a)); }
 
 static void DzSend(uint8_t cmd, int a = 0, int b = 0, int32_t val = 0, const char* text = nullptr)
@@ -1960,7 +1961,7 @@ static void DzDrawCabin(float t)
         float px = colW + UI::S(30), py = ds.y * 0.14f, pw = ds.x - px - UI::S(30), ph = ds.y * 0.72f;
         ImDrawList* fg = ImGui::GetForegroundDrawList();
         fg->AddRectFilled(ImVec2(px, py), ImVec2(px + pw, py + ph), IM_COL32(8, 6, 2, 215), UI::S(10));
-        fg->AddRect(ImVec2(px, py), ImVec2(px + pw, py + ph), DzCol(DZ_YEL, 0.7f), UI::S(10), 0, UI::S(2));
+        // 4.02: no yellow outline around the Credits / Settings / Rules panel (plain dark glass)
         float ly = py + UI::S(20); const float lf = UI::S(19);
         if(s_Dz.page == 1)
         {
@@ -1980,12 +1981,13 @@ static void DzDrawCabin(float t)
         {
             DzText(fg, UI::S(26), ImVec2(px + UI::S(20), ly), DzCol(DZ_YEL), "SETTINGS");
             ImGui::SetNextWindowPos(ImVec2(px + UI::S(20), ly + UI::S(50))); ImGui::SetNextWindowSize(ImVec2(pw - UI::S(40), ph - UI::S(90)));
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f); ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.0f);   // 4.02: no outlines
             ImGui::Begin("##DzCabinSet", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoBackground);
             ImGui::SetWindowFontScale(1.2f);
             ImGui::Checkbox("FPS | PING", &s_Dz.opt.fps); ImGui::Checkbox("Damage numbers", &s_Dz.opt.dmg); ImGui::Checkbox("Compass", &s_Dz.opt.compass);
             ImGui::Checkbox("Blood screen + drops", &s_Dz.opt.blood); ImGui::Checkbox("Title logo in game", &s_Dz.opt.logo);
             { bool r3 = s_Dz.opt.radar == 2; if(ImGui::Checkbox("3D radar (GPS)", &r3)) s_Dz.opt.radar = r3 ? 2 : 1; }
-            ImGui::End();
+            ImGui::End(); ImGui::PopStyleVar(2);
         }
     }
     BcwCenterText(bg, UI::S(15), ds.y - UI::S(28), IM_COL32(200, 200, 200, 200), "Press PLAY: you wake up at 1 of 15 random places (or where you logged out alive).");
@@ -2121,12 +2123,15 @@ static void RenderDz()
     DzDrawKnock(fg, ds, nowMs);   // 4.00
     if(!s_DzX.downed && !Game::IsCharInAnyCar(ped))
     {   // 4.00: PRONE button - only a white icon (no background), right side
-        // 4.02: it sat on top of the ear / eye status icons (DzDrawStatusMta: x ds.x - 132, from ds.y * 0.40,
-        // two rows of 60). Now it is centred over that column, just above the ear, below the top-right bar.
+        // 4.02: the right side is full - stats board (DzDrawStats: ds.x - 328 .. ds.x, ds.y * 0.235 + 8 lines),
+        // ear / eye icons (ds.x - 132, from ds.y * 0.40), status column (ds.x - 256, from ds.y * 0.42, with the
+        // temperature arrows to its left) and the armour column. The button goes left of the status column
+        // (and its arrows), just under the stats board, so it touches none of them.
         const float w = UI::S(70), h = UI::S(58);
-        const float senseX = ds.x - UI::S(132), senseW = UI::S(60) * 1.86f, senseTop = ds.y * 0.40f;
-        const float x = senseX + (senseW - w) * 0.5f;
-        const float y = std::max(senseTop - h - UI::S(6), UI::S(16) + UI::S(52) + UI::S(10));
+        const float statsBottom = ds.y * 0.235f + UI::S(21) * 8 + UI::S(4);
+        const float statusLeft = ds.x - UI::S(256) - UI::S(62) * 0.62f;
+        const float x = statusLeft - UI::S(14) - w;
+        const float y = std::max(statsBottom + UI::S(12), ds.y * 0.42f);
         ImGui::SetNextWindowPos(ImVec2(x, y)); ImGui::SetNextWindowSize(ImVec2(w, h));
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
         ImGui::Begin("##DzProne", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoFocusOnAppearing);

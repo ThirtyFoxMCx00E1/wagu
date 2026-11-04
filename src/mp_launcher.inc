@@ -697,9 +697,15 @@ static void LTable(std::vector<LRow>& rows, float w, float h)
             float pulse = 0.75f + 0.25f * sinf(MP_NowMs() * 0.004f);
             dl->AddRectFilledMultiColor(a, ImVec2(a.x + W, a.y + rowH), IM_COL32(202, 150, 10, (int)(150 * pulse)), IM_COL32(90, 64, 4, 70), IM_COL32(90, 64, 4, 70), IM_COL32(202, 150, 10, (int)(150 * pulse)));
             dl->AddRect(a, ImVec2(a.x + W, a.y + rowH), IM_COL32(250, 204, 21, 255), UI::S(6), 0, UI::S(sel ? 4 : 2.5f));
-            dl->PushClipRect(a, ImVec2(a.x + W, a.y + rowH), true);
-            DzDrawSymbol(dl, ImVec2(a.x + W - rowH * 0.7f, a.y + rowH * 0.5f), rowH * 0.55f, MP_NowMs() / 1000.0f);
-            dl->PopClipRect();
+            ImVec2 buv(1, 1);   // 4.02: the faded transparent dz_icon.png like the other featured rows (was an opaque drawn badge)
+            if(void* bt = HUD::Texture("dz_icon.png", &buv))
+            {
+                float bs = rowH * 1.25f;
+                ImVec2 ba(a.x + W - bs - UI::S(10), a.y + rowH * 0.5f - bs * 0.5f);
+                dl->PushClipRect(a, ImVec2(a.x + W, a.y + rowH), true);
+                dl->AddImage((ImTextureID)bt, ba, ImVec2(ba.x + bs, ba.y + bs), ImVec2(0, 0), buv, IM_COL32(255, 255, 255, 70));
+                dl->PopClipRect();
+            }
         }
         // 3.63: Valorant selection: teal glass + a teal bar on the left
         if(sel) { dl->AddRectFilled(a, ImVec2(a.x + W, a.y + rowH), kVTealDim); dl->AddRectFilled(a, ImVec2(a.x + UI::S(4), a.y + rowH), kVTeal); }
@@ -715,7 +721,9 @@ static void LTable(std::vector<LRow>& rows, float w, float h)
         LPadlock(dl, ImVec2(a.x + cLock + UI::S(18), a.y + rowH * 0.5f - UI::S(4)), UI::S(24), r.locked, r.locked ? IM_COL32(240, 200, 60, 255) : IM_COL32(70, 200, 110, 255));
         ImVec2 uv(1, 1);
         void* rtex = r.kind == 3 ? HUD::Texture("bcw_icon.png", &uv) : (r.kind == 4 ? HUD::Texture("mw3_icon.png", &uv) : (r.kind == 5 ? HUD::Texture("rp_icon.png", &uv) : (r.kind == 6 ? HUD::Texture("dz_icon.png", &uv) : nullptr)));   // 3.04: Brief Case War icon (briefcase)
-        if(r.kind == 6 && !rtex) DzDrawSymbol(dl, ImVec2(a.x + cIcon + (rowH - UI::S(18)) * 0.5f, a.y + rowH * 0.5f), (rowH - UI::S(18)) * 0.5f, MP_NowMs() / 1000.0f);   // 3.58
+        // 4.02: Day Z uses its transparent dz_icon.png like the other featured rows (the old drawn badge -
+        // an opaque dark disc - showed whenever the PNG was not loaded yet / the texture cache was full)
+        if(r.kind >= 3 && r.kind <= 6 && !rtex) { /* featured icon loads next frame */ }
         else if(void* tex = rtex ? rtex : HUD::ServerIcon(r.icon, &uv))
         {
             float is = rowH - UI::S(18);

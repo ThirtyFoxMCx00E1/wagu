@@ -988,10 +988,12 @@ static void RenderStats();
 static void RenderSamp();   // 3.01 (mp_world.inc): 3D labels, textdraws, class selection, dialogs
 static void Render219(void*)
 {
-    FloatMenu::SetHidden(JoinFlowActive());   // join screen: no top bar
+    // 4.02: the Project Day Z connection screen (cabin) is a join screen too: no top bar, no chat box
+    const bool joinScreen = JoinFlowActive() || DzConnScreen();
+    FloatMenu::SetHidden(joinScreen);   // join screen: no top bar
     RenderPairPopup();
     RenderBehindCountdown();   // 2.28
-    if(!JoinFlowActive() || MP::SpawnPickerShown()) RenderChatBox();
+    if(!joinScreen || MP::SpawnPickerShown()) RenderChatBox();
     RenderSpawnPicker();
     RenderPassengerButton();   // 2.19.1
     RenderGames();             // 2.21: score bar + race / DM / job HUD
