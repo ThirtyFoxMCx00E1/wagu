@@ -121,6 +121,13 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **4.05.5**: Day Z world textures, launcher buttons fix.
+  - Project Day Z Legacy: the GTA V texture pack from release v4.02 (texdb gta3 `.dat` / `.toc` / `.tmb`) is converted to normal TXDs (`Host/DayZ/models/world`, 6 files, 129 MB, plus `world.idx`). On the Day Z server the game downloads them, like the MTA models, and uses them for the map textures. They're read one texture at a time when the game asks for one. New setting: **Day Z: GTA V world textures**. They also show up on Cloud Storage as a new **World** folder.
+  - The pack's road models (cuntwroad22 / 68 / 71) are swapped in on the Day Z server with TXDs made from their textures.
+  - The texture-database RLE hook (4.04.2 crash guard) is turned off. The new world textures are already unpacked.
+  - Launcher: the switch region icon and the other profile / toolbar buttons can be tapped again. A floating game window was drawn on top of the launcher and took the taps. Windows like that now go behind the launcher, and the log names any window that was above it.
+  - Website: the small GTA SA multiplayer logo with the green outline in the top-left corner is gone.
+  - New tools: `tools/texdb2txd.py` (mobile texdb -> PC TXD: RLE undone, DXT kept, 8888 / 565 converted to DXT) and `tools/make_dz_world.py` (builds the Day Z world folder and its manifest lines).
 - **4.05.4**: new website address.
   - The website moved to **[mpsamp-open.github.io](https://mpsamp-open.github.io)** (the new mpsamp.open GitHub organization). The old address thirtyfoxmcx00e1.github.io/wagu forwards there and stays online as a backup.
   - The game downloads regions.txt from the new site and falls back to the old one if it can't reach it. The "update your MP" message, the login bot status link, the Termux installer, vps-setup.sh and the HiveMQ docs use the new address too.

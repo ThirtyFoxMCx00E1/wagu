@@ -267,7 +267,7 @@ body{background:#05070a}
 #Launcher{max-width:1280px;margin:clamp(0px,3vw,40px) auto;background:#0d0f12;border:1px solid #23272d;box-shadow:0 30px 80px rgba(0,0,0,.75),0 0 0 1px rgba(0,0,0,.6);overflow:hidden}
 #TitleBar{display:flex;align-items:center;gap:18px;height:58px;padding:0 18px;background:linear-gradient(180deg,#16191d,#101215);border-bottom:1px solid #23272d}
 .tlogo{display:flex;align-items:center;gap:10px;color:#fff;text-decoration:none!important}
-.tlogo img{border:2px solid var(--green);border-radius:4px}
+.tlogo img{display:none}   /* 4.05.5: no small logo in the title bar */
 .tlogo span{display:flex;flex-direction:column;line-height:1}
 .tlogo small{font-size:.62rem;color:#9aa3ad;letter-spacing:.06em}
 .tlogo b{font-family:var(--f-display);font-size:1.15rem;letter-spacing:.04em;text-transform:uppercase}

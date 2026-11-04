@@ -31,11 +31,14 @@ namespace DzModels
     struct Status { int engine = 0; bool disabled = false, hooked = false, cache = false; int wanted = 0, files = 0, swapped = 0, loaded = 0, waiting = 0, failed = 0, noTex = 0; };
     void GetStatus(Status& st);
     void SetLogPath(const char* path);
-    void ResetBad();                       // /dzmodels reset: try the skipped models again
+    void ResetBad();
+    // 4.05.5: GTA V world textures (Host/DayZ/models/world) - downloaded + used on the Day Z server
+    void SetWorld(bool want);
+    void World(int& made, int& hits, bool& ready);                       // /dzmodels reset: try the skipped models again
 
     // 4.02: the launcher Cloud Storage page - the model pack per folder: download before joining,
     // or delete it from the phone (then download it again here or on the Day Z server)
-    enum { kCloudGroups = 7 };             // zombies, players, weapons, items, vehicles, buildings, animals
+    enum { kCloudGroups = 8 };             // zombies, players, weapons, items, vehicles, buildings, animals, world (4.05.5)
     struct CloudGroup { const char* name = ""; int models = 0, filesTotal = 0, filesOnPhone = 0; unsigned long long bytesTotal = 0, bytesOnPhone = 0; };
     struct Cloud
     {

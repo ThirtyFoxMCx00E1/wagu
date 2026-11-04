@@ -151,6 +151,7 @@ static void DzModelsTick()
     const bool on = settings.dzModels && DzOnServer();
     static bool logSet = false;
     if(!logSet) { logSet = true; char lp[512]; snprintf(lp, sizeof(lp), "%s/dzmodels_log.txt", MP::DataDir()); DzModels::SetLogPath(lp); }   // 4.00
+    DzModels::SetWorld(settings.dzWorldTex);   // 4.05.5
     DzModels::Tick(on, ids, n);
     // a line when the download starts / ends (the files stay cached, next time it is instant)
     static int shown = 0; int done, total, mbD, mbT; bool busy; DzModels::Progress(done, total, mbD, mbT, busy);
@@ -165,6 +166,8 @@ static void DzModelsStatusLine(char* o, size_t n)
     if(st.engine < 0) snprintf(o, n, "MTA models: %s (%d) - models stay GTA. See files/MP/dzmodels_log.txt", eng, st.engine);
     else snprintf(o, n, "MTA models: %s | %d/%d downloaded | %d in game (%d loaded) | %d waiting (in use) | %d failed%s",
                   eng, st.files, st.wanted, st.swapped, st.loaded, st.waiting, st.failed, st.noTex ? " | some without textures" : "");
+    int wm = 0, wh = 0; bool wr = false; DzModels::World(wm, wh, wr);   // 4.05.5
+    size_t l = strlen(o); if(l < n) snprintf(o + l, n - l, " | world textures %s (%d made, %d used)", !settings.dzWorldTex ? "off" : wr ? "ready" : "not downloaded", wm, wh);
 }
 static void DzModelsReport(bool reset)
 {

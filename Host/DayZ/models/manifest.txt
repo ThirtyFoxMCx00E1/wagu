@@ -113,3 +113,14 @@
 3026 o items/dff/backpack_patrol.dff items/txd/backpack_patrol.txd 15722 1048744 00390a49 f51da3cb
 3104 o items/dff/windscreenglass.dff items/txd/windscreenglass.txd 5413 1048744 eb5036f1 f2f1f2cf
 3243 o items/dff/tent.dff items/txd/tent.txd 4400 8360 54735d0f ecd58551
+# world (4.05.5, tools/make_dz_world.py): m = map model (always swapped on Day Z), tex = world texture dictionaries + index
+17303 m world/roads/cuntwroad22.dff world/roads/cuntwroad22.txd 32615 172712 1a001c04 2abee9e8
+17279 m world/roads/cuntwroad68.dff world/roads/cuntwroad68.txd 40707 246824 a6cfc3bc 87998edc
+17281 m world/roads/cuntwroad71.dff world/roads/cuntwroad71.txd 228163 263208 1c0d41ff 0f8022e8
+tex world/tex/world.idx 532076 22cf272e
+tex world/tex/world_000.txd 25157672 ffee1b19
+tex world/tex/world_001.txd 25150632 a392d928
+tex world/tex/world_002.txd 25151272 ed4d4ca3
+tex world/tex/world_003.txd 25149864 edc57f9c
+tex world/tex/world_004.txd 25142568 1ae23d57
+tex world/tex/world_005.txd 9476136 54272186

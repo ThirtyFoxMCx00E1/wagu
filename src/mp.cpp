@@ -5321,6 +5321,7 @@ void MP::SaveConfig()
     B("ShowNameTags", settings.showNameTags); B("ShowDmgInd", settings.showDmgInd); B("GlobalChat", settings.globalChat);   // 3.35
     I("RadarStyle", settings.radarStyle); B("PubgCompass", settings.pubgCompass);   // 3.27
     B("DzModels", settings.dzModels);   // 3.61
+    B("DzWorldTex", settings.dzWorldTex);   // 4.05.5
     S("ServerPassword", settings.serverPassword); S("HostedPassword", settings.hostedPassword);   // 2.19
     ::cfg->Save();
 }
@@ -5411,6 +5412,7 @@ static void LoadConfig()
     if(settings.radarStyle < 0 || settings.radarStyle > 2) settings.radarStyle = 2;
     settings.pubgCompass     = ::cfg->GetBool("PubgCompass", true, "MP");
     settings.dzModels        = ::cfg->GetBool("DzModels", true, "MP");
+    settings.dzWorldTex      = ::cfg->GetBool("DzWorldTex", true, "MP");   // 4.05.5
     if(settings.team < 0 || settings.team >= 8) settings.team = 0;
     settings.regionPicked    = ::cfg->GetBool("RegionPicked", false, "MP");
     settings.nameColor       = (uint32_t)::cfg->GetInt("NameColor", 0, "MP");
@@ -6970,6 +6972,7 @@ static void SectionDisplay(void*)
         changed |= ImGui::Combo("##radarstyle", &settings.radarStyle, kStyles, 3);
         changed |= FloatMenu::ToggleSwitch("MW3: PUBG compass on top", &settings.pubgCompass);
         changed |= FloatMenu::ToggleSwitch("Day Z: MTA DayZ models (download)", &settings.dzModels);   // 3.61
+        changed |= FloatMenu::ToggleSwitch("Day Z: GTA V world textures (129 MB download)", &settings.dzWorldTex);   // 4.05.5
     }
     NpcStatusLine();
     SyncStatusLines();   // 2.19.6

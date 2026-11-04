@@ -23,6 +23,7 @@ struct MPSettings
     bool  showRadarIcons    = true;
     int   radarStyle        = 2;       // 3.27: Mega Vil radar - 0 game radar, 1 Google 2D, 2 Google 3D
     bool  pubgCompass       = true;    // 3.27: MW3 - PUBG compass strip on top
+    bool  dzWorldTex        = true;    // 4.05.5: Day Z - GTA V world textures (129 MB download)
     bool  dzModels          = true;    // 3.61: Day Z - MTA DayZ models (dff / txd) downloaded from GitHub
     bool  showChat          = true;
     bool  showKillFeed      = true;

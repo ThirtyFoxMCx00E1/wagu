@@ -40,6 +40,8 @@
 #include <vector>
 #include <set>
 #include <map>
+#include <unordered_map>
+#include <ctype.h>
 #include <algorithm>
 #include "dzmodels.h"
 #include "../net/online.h"
@@ -180,6 +182,7 @@ void* (*DictFindTex)(void*, const char*) = nullptr;
 void* s_LoadDict = nullptr;                 // the dictionary of the MTA model being read now
 std::vector<void*> s_AllDicts;              // every MTA dictionary we filled
 std::atomic<int> s_DbHits { 0 };
+void* WorldGet(const char* name);           // 4.05.5 (below)
 void* HookDbGetTexture(const char* name)
 {
     if(s_LoadDict && name && *name && DictFindTex)
@@ -187,6 +190,7 @@ void* HookDbGetTexture(const char* name)
         if(void* t = DictFindTex(s_LoadDict, name)) { ++s_DbHits; return t; }
         for(void* d : s_AllDicts) if(d != s_LoadDict) if(void* t = DictFindTex(d, name)) { ++s_DbHits; return t; }
     }
+    if(name && *name) if(void* t = WorldGet(name)) return t;   // 4.05.5: GTA V world textures (Day Z)
     return DbGetTexture_orig(name);
 }
 struct LoadScope { void* prev; explicit LoadScope(void* d) : prev(s_LoadDict) { s_LoadDict = d; } ~LoadScope() { s_LoadDict = prev; } };
@@ -255,7 +259,9 @@ void Mark(int id)
     else unlink((s_Cache + "/inhook.txt").c_str());
 }
 
-void ParseManifest(const std::string& text, std::vector<Entry*>& out)
+// 4.05.5: "tex <file> <size> <crc>" = the world textures (world.idx + world_NNN.txd)
+struct WFile { std::string rel; uint32_t size = 0, crc = 0; };
+void ParseManifest(const std::string& text, std::vector<Entry*>& out, std::vector<WFile>* tex = nullptr)
 {
     size_t p = 0;
     while(p < text.size())
@@ -264,8 +270,13 @@ void ParseManifest(const std::string& text, std::vector<Entry*>& out)
         std::string l = text.substr(p, e - p); p = e + 1;
         if(l.empty() || l[0] == '#') continue;
         int id = 0; char kind = 0; char dff[160], txd[160]; unsigned ds = 0, ts = 0, dc = 0, tc = 0;
+        if(!strncmp(l.c_str(), "tex ", 4))
+        {
+            if(tex && sscanf(l.c_str() + 4, "%159s %u %x", dff, &ds, &dc) == 3 && !strstr(dff, "..")) { WFile w; w.rel = dff; w.size = ds; w.crc = dc; tex->push_back(w); }
+            continue;
+        }
         if(sscanf(l.c_str(), "%d %c %159s %159s %u %u %x %x", &id, &kind, dff, txd, &ds, &ts, &dc, &tc) != 8) continue;
-        if(id <= 0 || id >= kTxdBase || !strchr("pzwov", kind) || strstr(dff, "..") || strstr(txd, "..")) continue;
+        if(id <= 0 || id >= kTxdBase || !strchr("pzwovm", kind) || strstr(dff, "..") || strstr(txd, "..")) continue;
         Entry* x = new Entry; x->id = id; x->kind = kind; x->dff = dff; x->txd = txd;
         x->dffSize = ds; x->txdSize = ts; x->dffCrc = dc; x->txdCrc = tc; out.push_back(x);
     }
@@ -310,6 +321,64 @@ void FetchWanted(int total)
     DzLog(false, "DzModels: %d / %d models ready", s_Done.load(), total);
 }
 
+// ---------------- 4.05.5: world textures ----------------
+// The GTA V texture pack of release v4.02 (texdb gta3: .dat / .toc / .tmb, RLE packed) converted by
+// tools/texdb2txd.py + tools/make_dz_world.py into plain PC TXDs (Host/DayZ/models/world/tex) and an
+// index. On the Day Z server every texture-database lookup (TextureDatabaseRuntime::GetTexture) that
+// the index knows is answered from those files, one texture at a time (read + decode on first use).
+struct WEnt { uint8_t file = 0; uint32_t off = 0, size = 0; };
+std::vector<WFile> s_WFiles;                       // from the manifest
+std::atomic<bool> s_WWant { true }, s_WReady { false }, s_WOn { false };
+std::mutex s_WM;
+std::unordered_map<std::string, WEnt> s_WIdx;      // lower-case name -> where
+std::unordered_map<std::string, std::string> s_WAlias;
+std::vector<std::string> s_WPath;                  // index file column -> cache path
+std::vector<FILE*> s_WF;
+std::unordered_map<std::string, void*> s_WCache;   // lower-case name -> our RwTexture (nullptr = could not)
+void* s_WDict = nullptr; int s_WSlot = -1;
+std::atomic<int> s_WMade { 0 }, s_WHits { 0 }, s_WFail { 0 };
+const int kWorldCap = 128;                         // pixels: our textures are RGBA on the GPU
+const int kWorldMax = 3000;                        // textures at most (then GTA ones again)
+
+std::string Lower(const char* n) { std::string s(n); for(char& c : s) c = (char)tolower((unsigned char)c); return s; }
+bool LoadWorldIdx()
+{
+    std::vector<uint8_t> d; std::string idxRel;
+    for(auto& w : s_WFiles) if(w.rel.size() > 4 && w.rel.compare(w.rel.size() - 4, 4, ".idx") == 0) idxRel = w.rel;
+    if(idxRel.empty() || !ReadFile(CacheName(idxRel), d)) return false;
+    const std::string dir = idxRel.substr(0, idxRel.rfind('/') + 1);
+    std::lock_guard<std::mutex> lk(s_WM);
+    s_WIdx.clear(); s_WAlias.clear(); s_WPath.clear();
+    for(FILE* f : s_WF) if(f) fclose(f);
+    s_WF.clear();
+    std::map<std::string, int> fileNo;
+    std::string text(d.begin(), d.end()); size_t p = 0;
+    while(p < text.size())
+    {
+        size_t e = text.find('\n', p); if(e == std::string::npos) e = text.size();
+        std::string l = text.substr(p, e - p); p = e + 1;
+        if(l.empty() || l[0] == '#') continue;
+        std::vector<std::string> c; size_t q = 0;
+        for(;;) { size_t t = l.find('\t', q); c.push_back(l.substr(q, t == std::string::npos ? std::string::npos : t - q)); if(t == std::string::npos) break; q = t + 1; }
+        if(c.size() == 3 && c[0] == "alias") { s_WAlias[Lower(c[1].c_str())] = Lower(c[2].c_str()); continue; }
+        if(c.size() != 4 || c[0] == "file" || strstr(c[1].c_str(), "..")) continue;
+        auto it = fileNo.find(c[1]);
+        if(it == fileNo.end()) { it = fileNo.emplace(c[1], (int)s_WPath.size()).first; s_WPath.push_back(CacheName(dir + c[1])); s_WF.push_back(nullptr); }
+        WEnt w; w.file = (uint8_t)it->second; w.off = (uint32_t)strtoul(c[2].c_str(), nullptr, 10); w.size = (uint32_t)strtoul(c[3].c_str(), nullptr, 10);
+        s_WIdx[Lower(c[0].c_str())] = w;
+    }
+    DzLog(false, "DzModels: world textures: %d in the index (%d aliases, %d files)", (int)s_WIdx.size(), (int)s_WAlias.size(), (int)s_WPath.size());
+    return !s_WIdx.empty();
+}
+void FetchWorld()
+{
+    if(!s_WWant || s_WFiles.empty()) return;
+    int ok = 0;
+    for(auto& w : s_WFiles) if(Fetch(w.rel, w.size, w.crc, false)) ++ok;
+    if(ok == (int)s_WFiles.size() && LoadWorldIdx()) s_WReady = true;
+    else DzLog(true, "DzModels: world textures: %d of %d files downloaded - GTA textures stay", ok, (int)s_WFiles.size());
+}
+
 void DownloadThread(std::vector<int> objIds)
 {
     s_BDone = 0; s_FDone = 0; s_FFailed = 0; s_FDownloaded = 0;   // 4.02: the Cloud Storage page uses Fetch too
@@ -321,8 +390,10 @@ void DownloadThread(std::vector<int> objIds)
             ++total; kb += (int)((e->dffSize + e->txdSize) / 1024);
             if(e->file == 1) { ++done; kbDone += (int)((e->dffSize + e->txdSize) / 1024); } else { bt += e->dffSize + e->txdSize; ft += 2; }
         }
+        if(s_WWant && !s_WReady) for(auto& w : s_WFiles) { bt += w.size; ++ft; }
         s_Total = total; s_KbTotal = kb; s_Done = done; s_KbDone = kbDone; s_BTotal = bt; s_FTotal = ft;
         FetchWanted(total);
+        FetchWorld();
         s_Busy = false;
         return;
     }
@@ -335,22 +406,24 @@ void DownloadThread(std::vector<int> objIds)
         std::vector<uint8_t> d; if(ReadFile(mpath, d)) text.assign(d.begin(), d.end()); else text.clear();
         std::lock_guard<std::mutex> lk(s_M); s_Err = "model list: " + why;
     }
-    std::vector<Entry*> list; ParseManifest(text, list);
+    std::vector<Entry*> list; std::vector<WFile> wf; ParseManifest(text, list, &wf);
+    s_WFiles = wf;
     std::set<int> objs(objIds.begin(), objIds.end());
     for(Entry* e : list) e->wanted = e->kind != 'o' || objs.count(e->id);
     // zombies + survivors first (most visible), then loot, guns, the UAZ
-    auto prio = [](char k) { return k == 'z' ? 0 : k == 'p' ? 1 : k == 'o' ? 2 : k == 'w' ? 3 : 4; };
+    auto prio = [](char k) { return k == 'z' ? 0 : k == 'p' ? 1 : k == 'o' ? 2 : k == 'w' ? 3 : k == 'm' ? 4 : 5; };
     std::stable_sort(list.begin(), list.end(), [&](Entry* a, Entry* b) { return prio(a->kind) < prio(b->kind); });
     int total = 0, kb = 0;
     for(Entry* e : list) if(e->wanted) { ++total; kb += (int)((e->dffSize + e->txdSize) / 1024); }
     s_Total = total; s_KbTotal = kb;
-    { uint64_t bt = 0; int ft = 0; for(Entry* e : list) if(e->wanted) { bt += e->dffSize + e->txdSize; ft += 2; } s_BTotal = bt; s_FTotal = ft; }
+    { uint64_t bt = 0; int ft = 0; for(Entry* e : list) if(e->wanted) { bt += e->dffSize + e->txdSize; ft += 2; } if(s_WWant) for(auto& w : wf) { bt += w.size; ++ft; } s_BTotal = bt; s_FTotal = ft; }
     s_E = list;
     for(Entry* e : list) if(!s_ById[e->id]) s_ById[e->id] = e;
     s_ListReady = true;
     DzLog(false, "DzModels: %d models in the list, %d wanted (%d MB)", (int)list.size(), total, kb / 1024);
     // 2) the files
     FetchWanted(total);
+    FetchWorld();
     s_Busy = false;
 }
 
@@ -516,7 +589,7 @@ bool BuildTxd(Entry* e)
     TxdDef* def = s_PoolOk ? &(*s_TxdPool)->objs[e->slot] : nullptr;
     void* dict = def ? def->dict : nullptr;
     if(!dict) return false;
-    const int cap = e->kind == 'p' ? 1024 : (e->kind == 'o' ? 256 : 512);
+    const int cap = e->kind == 'p' ? 1024 : ((e->kind == 'o' || e->kind == 'm') ? 256 : 512);
     int count = U16(d.data() + 24), made = 0;
     size_t p = 28;
     for(int i = 0; i < count && p + 12 <= d.size(); ++i)
@@ -632,6 +705,60 @@ bool MakeSlot(Entry* e)
     return true;
 }
 
+// 4.05.5: one world texture (main thread, inside the game's texture lookup). nullptr = not ours / off
+bool WorldDict()
+{
+    if(s_WDict) return true;
+    if(s_WSlot == -2 || !s_PoolOk || !AddTxdSlot || !TxdCreate || !TxdAddRef) return false;
+    int slot = FindTxdSlot ? FindTxdSlot("dzm_world") : -1;
+    if(slot < 0) slot = AddTxdSlot("dzm_world", "", false);
+    if(slot < 0 || slot >= 5000 || slot >= (*s_TxdPool)->size) { s_WSlot = -2; return false; }
+    TxdDef& d = (*s_TxdPool)->objs[slot];
+    if(!d.dict) TxdCreate(slot);
+    if(!d.dict) { s_WSlot = -2; return false; }
+    TxdAddRef(slot);                        // ours forever, never freed (models may still use the textures)
+    s_SI[kTxdBase + slot].loadState = 1;
+    s_WSlot = slot; s_WDict = d.dict;
+    return true;
+}
+void* WorldGet(const char* name)
+{
+    if(!s_WOn || !s_WReady || !s_Ok) return nullptr;
+    std::string k = Lower(name);
+    std::lock_guard<std::mutex> lk(s_WM);
+    auto c = s_WCache.find(k);
+    if(c != s_WCache.end())
+    {
+        if(!c->second) return nullptr;
+        ++((RwTex*)c->second)->refCount; ++s_WHits;   // the game's GetTexture hands out a reference too
+        return c->second;
+    }
+    std::string n = k;
+    auto it = s_WIdx.find(n);
+    for(int i = 0; i < 4 && it == s_WIdx.end(); ++i) { auto a = s_WAlias.find(n); if(a == s_WAlias.end()) break; n = a->second; it = s_WIdx.find(n); }
+    if(it == s_WIdx.end()) return nullptr;                       // not in the pack: GTA's own
+    if(s_WMade >= kWorldMax || !WorldDict()) return nullptr;
+    void* tex = nullptr;
+    const WEnt& w = it->second;
+    if(w.file < s_WF.size() && w.size >= 88 && w.size < 8 * 1024 * 1024)
+    {
+        FILE*& f = s_WF[w.file];
+        if(!f) f = fopen(s_WPath[w.file].c_str(), "rb");
+        std::vector<uint8_t> d(w.size); Tex t;
+        if(f && fseek(f, (long)w.off, SEEK_SET) == 0 && fread(d.data(), 1, d.size(), f) == d.size() && DecodeNative(d.data(), d.size(), kWorldCap, t))
+        {
+            t.name = name;                                       // the name the game asked for (aliases)
+            tex = MakeTexture(t);
+            if(tex) { DictAddTex(s_WDict, tex); ++s_WMade; }
+        }
+    }
+    s_WCache[k] = tex;
+    if(!tex) { if(++s_WFail <= 5) DzLog(true, "DzModels: world texture %s could not be read", name); return nullptr; }
+    if(s_WMade == 1 || s_WMade % 500 == 0) DzLog(false, "DzModels: world textures in the game: %d", s_WMade.load());
+    ++((RwTex*)tex)->refCount; ++s_WHits;
+    return tex;
+}
+
 // switch one model (only while the game has it unloaded). true = done
 bool Switch(Entry* e, bool on)
 {
@@ -719,6 +846,7 @@ void DzModels::Tick(bool on, const int* objIds, int nObj)
         }
     }
     if(!s_Ok) return;
+    s_WOn = on && s_WWant && s_WReady;   // 4.05.5
     // ~110 entries, a switch is a few field checks (a model in use simply waits)
     for(Entry* e : s_E)
     {
@@ -778,6 +906,8 @@ void DzModels::ResetBad()
 }
 bool DzModels::IsReplaced(int model) { Entry* e = (model > 0 && model < kTxdBase) ? s_ById[model] : nullptr; return e && e->swapped && !e->bad; }
 bool DzModels::Available() { return s_Ok; }
+void DzModels::SetWorld(bool want) { if(!want) s_WOn = false; s_WWant = want; }
+void DzModels::World(int& made, int& hits, bool& ready) { made = s_WMade; hits = s_WHits; ready = s_WReady; }
 void DzModels::Progress(int& done, int& total, int& mbDone, int& mbTotal, bool& busy)
 {
     done = s_Done; total = s_Total; mbDone = s_KbDone / 1024; mbTotal = s_KbTotal / 1024; busy = s_Busy;
@@ -801,7 +931,7 @@ const char* DzModels::LastError() { static std::string c; std::lock_guard<std::m
 namespace
 {
 struct CItem { int id = 0; std::string dff, txd; uint32_t dffSize = 0, txdSize = 0, dffCrc = 0, txdCrc = 0; int group = 0; };
-const char* const kGroupDir[DzModels::kCloudGroups] = { "zombies", "players", "weapons", "items", "vehicles", "buildings", "animals" };
+const char* const kGroupDir[DzModels::kCloudGroups] = { "zombies", "players", "weapons", "items", "vehicles", "buildings", "animals", "world" };
 std::vector<CItem> s_Cl;                 // the manifest (cloud page copy)
 std::atomic<bool> s_ClReady { false }, s_ClListBusy { false };
 std::atomic<int> s_ClDone { 0 }, s_ClTotal { 0 }, s_ClFailed { 0 }, s_ClGroup { -2 };
@@ -826,14 +956,16 @@ bool ClLoadList()
     if(Online::HttpsFetch(std::string(kBaseUrls[0]) + "manifest.txt", text, 30000, why, 512 * 1024) && text.find("Project Day Z") != std::string::npos)
         WriteFile(mpath, text.data(), text.size());
     else { std::vector<uint8_t> d; if(ReadFile(mpath, d)) text.assign(d.begin(), d.end()); else { ClMsg("Could not get the file list: " + why); return false; } }
-    std::vector<Entry*> tmp; ParseManifest(text, tmp);
+    std::vector<Entry*> tmp; std::vector<WFile> wf; ParseManifest(text, tmp, &wf);
     std::vector<CItem> out;
+    for(auto& w : wf) { CItem c; c.dff = w.rel; c.dffSize = w.size; c.dffCrc = w.crc; c.group = GroupOf(w.rel); out.push_back(c); }   // 4.05.5: one file, no model
     for(Entry* e : tmp)
     {
         CItem c; c.id = e->id; c.dff = e->dff; c.txd = e->txd; c.dffSize = e->dffSize; c.txdSize = e->txdSize;
         c.dffCrc = e->dffCrc; c.txdCrc = e->txdCrc; c.group = GroupOf(e->dff); out.push_back(c); delete e;
     }
     { std::lock_guard<std::mutex> lk(s_M); s_Cl.swap(out); }
+    if(!s_Busy && !s_WReady) s_WFiles = wf;   // 4.05.5
     s_ClReady = true; s_ClScanAt = 0;
     return true;
 }
@@ -843,7 +975,7 @@ void ClDownloadThread(int group)
     if(!s_ClReady && !ClLoadList()) { s_CloudBusy = false; s_ClGroup = -2; return; }
     std::vector<CItem> list; { std::lock_guard<std::mutex> lk(s_M); list = s_Cl; }
     uint64_t bt = 0; int ft = 0;
-    for(auto& c : list) if(group < 0 || c.group == group) { bt += c.dffSize + c.txdSize; ft += 2; }
+    for(auto& c : list) if(group < 0 || c.group == group) { bt += c.dffSize + c.txdSize; ft += c.txd.empty() ? 1 : 2; }
     s_ClBTotal = bt; s_ClTotal = ft; s_ClBDone = 0; s_ClDone = 0; s_ClFailed = 0;
     for(auto& c : list)
     {
@@ -852,11 +984,17 @@ void ClDownloadThread(int group)
         bool okAll = true;
         for(int k = 0; k < 2; ++k)
         {
+            if(f[k]->empty()) continue;
             bool ok = Fetch(*f[k], sz[k], cr[k], false); okAll = okAll && ok;
             if(!ok) ++s_ClFailed;
             s_ClBDone += sz[k]; ++s_ClDone;
         }
         if(okAll) if(Entry* e = (c.id > 0 && c.id < kTxdBase) ? s_ById[c.id] : nullptr) if(e->dff == c.dff && e->file != 1) e->file = 1;   // the game can use it now
+    }
+    if(!s_WReady && !s_Busy && !s_WFiles.empty())   // 4.05.5: the world textures are complete now
+    {
+        bool all = true; for(auto& w : s_WFiles) all = all && FileSize(CacheName(w.rel)) == w.size;
+        if(all && LoadWorldIdx()) s_WReady = true;
     }
     char m[160]; snprintf(m, sizeof(m), s_ClFailed ? "Download finished: %d of %d files failed (%s)." : "Download finished: %d files on the phone.",
                           s_ClFailed ? s_ClFailed.load() : s_ClDone.load(), s_ClTotal.load(), s_Err.c_str());
@@ -887,8 +1025,10 @@ int DzModels::CloudDelete(int group)
         if(group >= 0 && c.group != group) continue;
         Entry* e = (c.id > 0 && c.id < kTxdBase) ? s_ById[c.id] : nullptr;
         if(e && e->dff == c.dff && e->swapped) { ++kept; continue; }   // the game is using this model right now
+        if(c.id == 0 && s_WOn) { ++kept; continue; }                 // 4.05.5: world textures in use
+        if(c.id == 0) s_WReady = false;
         if(unlink(CacheName(c.dff).c_str()) == 0) ++removed;
-        if(unlink(CacheName(c.txd).c_str()) == 0) ++removed;
+        if(!c.txd.empty() && unlink(CacheName(c.txd).c_str()) == 0) ++removed;
         if(e && e->dff == c.dff) e->file = 0;   // the next Day Z visit downloads it again
     }
     if(s_Started && !s_Busy) s_Started = false;   // DzModels::Tick starts the download again on the Day Z server
@@ -917,11 +1057,11 @@ void DzModels::GetCloud(Cloud& c)
         for(auto& h : s_ClHave) h = ClOnPhone();
         for(auto& it : s_Cl)
         {
-            uint64_t a = FileSize(CacheName(it.dff)), b = FileSize(CacheName(it.txd));
+            uint64_t a = FileSize(CacheName(it.dff)), b = it.txd.empty() ? 0 : FileSize(CacheName(it.txd));
             if(a == it.dffSize) { s_ClHave[it.group].bytes += a; ++s_ClHave[it.group].files; }
-            if(b == it.txdSize) { s_ClHave[it.group].bytes += b; ++s_ClHave[it.group].files; }
+            if(!it.txd.empty() && b == it.txdSize) { s_ClHave[it.group].bytes += b; ++s_ClHave[it.group].files; }
         }
     }
     for(int g = 0; g < kCloudGroups; ++g) { c.g[g].name = kGroupDir[g]; c.g[g].bytesOnPhone = s_ClHave[g].bytes; c.g[g].filesOnPhone = s_ClHave[g].files; }
-    for(auto& it : s_Cl) { CloudGroup& g = c.g[it.group]; ++g.models; g.filesTotal += 2; g.bytesTotal += it.dffSize + it.txdSize; }
+    for(auto& it : s_Cl) { CloudGroup& g = c.g[it.group]; if(it.id > 0) ++g.models; g.filesTotal += it.txd.empty() ? 1 : 2; g.bytesTotal += it.dffSize + it.txdSize; }
 }

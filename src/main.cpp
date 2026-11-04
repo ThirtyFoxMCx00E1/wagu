@@ -26,7 +26,7 @@
 #include "../imgui/rw_glue.h"
 #include "net/server.h"
 
-MYMODCFG(net.thirtyfox.mp, MP Multiplayer, 4.05.4, ThirtyFoxMCx00E1)   // 3.21: was stuck at 3.04.6 (crash logs showed the wrong version)
+MYMODCFG(net.thirtyfox.mp, MP Multiplayer, 4.05.5, ThirtyFoxMCx00E1)   // 3.21: was stuck at 3.04.6 (crash logs showed the wrong version)
 NEEDGAME(com.rockstargames.gtasa)
 
 // Globals used by the embedded RenderWare ImGui backend
@@ -698,7 +698,10 @@ extern "C" void OnModLoad()
     HOOKSYM(CGame_Process, pGameHandle, "_ZN5CGame7ProcessEv");
     HOOKSYM(Render2dStuff, pGameHandle, "_Z13Render2dStuffv");
     HookTouchInterface();   // 2.19.5
-    if(void* rle = (void*)aml->GetSym(pGameHandle, "_Z13RLEDecompressPhjPKhjj")) { HOOK(TexRLEDecompress, rle); logger->Info("Texture database RLE guard on"); }   // 4.04.2
+    // 4.05.5: off at the user's request - the Day Z world textures ship already unpacked (no RLE). The
+    // guard code stays above; put this line back if a broken texdb pack crashes the loading screen again.
+    // if(void* rle = (void*)aml->GetSym(pGameHandle, "_Z13RLEDecompressPhjPKhjj")) { HOOK(TexRLEDecompress, rle); logger->Info("Texture database RLE guard on"); }   // 4.04.2
+    logger->Info("Texture database RLE hook off (4.05.5)");
     { int hooked = 0; HOOK_IF(RwCamFarClip, "_Z23RwCameraSetFarClipPlaneP8RwCameraf"); HOOK_IF(RwCamFogDist, "_Z22RwCameraSetFogDistanceP8RwCameraf"); logger->Info("Fog: %d camera hooks", hooked); }   // 3.58
     HookGamepad();          // 3.39.2: controller
 

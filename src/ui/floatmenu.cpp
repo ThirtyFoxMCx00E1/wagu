@@ -5,6 +5,10 @@
 //  - Server = every MP section (connection, servers, display, player, add-on sections of other mods)
 //  - Player list / Help = one page each (set by MP with SetPage)
 #include "floatmenu.h"
+#include "imgui_internal.h"
+#include <mod/amlmod.h>
+#include <mod/logger.h>
+#include <string.h>
 #include "hud.h"
 #include "ui_common.h"
 #include "vkeyboard.h"
@@ -473,8 +477,35 @@ void FloatMenu::Render()
     if(modal) { s_bDropdown = false; s_nPendingTap.store(-1); }
     for(auto& w : s_Windows) if(w.fn) w.fn(w.data);
 
+    // 4.05.4: the floating windows above (Day Z / RP HUD buttons, radar chips, pair popups...) are
+    // begun before the launcher, but a window created while the launcher is open lands ON TOP of it
+    // in ImGui's z-order. Invisible ones sat over the launcher's toolbar (region / settings / refresh /
+    // + icons) and took the tap, so those buttons did nothing. While the launcher is open they are
+    // pushed behind it every frame (the keyboard, dropdowns and pages drawn after it stay on top).
+    ImGuiContext* gctx = ImGui::GetCurrentContext();
+    static std::vector<ImGuiWindow*> s_Under;
+    s_Under.clear();
+    if(modal && gctx)
+        for(ImGuiWindow* w : gctx->Windows)
+            if(w && w->LastFrameActive == gctx->FrameCount && !(w->Flags & (ImGuiWindowFlags_ChildWindow | ImGuiWindowFlags_Tooltip | ImGuiWindowFlags_Popup))
+               && strncmp(w->Name, "Debug##", 7) != 0)
+                s_Under.push_back(w);
+
     const ImVec2 ds = ImGui::GetIO().DisplaySize;
     if(s_Pages[PAGE_SERVER].open) RenderServerPage(ds);
+    if(modal && gctx)
+    {
+        static int s_nLogged = 0;
+        if(s_nLogged < 6)
+        {
+            ImGuiWindow* lw = ImGui::FindWindowByName("##MPLauncher");
+            const int li = lw ? ImGui::FindWindowDisplayIndex(lw) : -1;
+            for(ImGuiWindow* w : s_Under)
+                if(li >= 0 && ImGui::FindWindowDisplayIndex(w) > li && s_nLogged < 6)
+                { ++s_nLogged; logger->Info("4.05.4: window '%s' was above the launcher (took its taps) - moved behind", w->Name); }
+        }
+        for(int i = (int)s_Under.size() - 1; i >= 0; --i) ImGui::BringWindowToDisplayBack(s_Under[i]);   // keeps their own order
+    }
     if(modal && !s_Pages[PAGE_SERVER].open) s_bModal.store(false);   // closed with X this frame
     for(int k = PAGE_PLAYERS; k < PAGE_COUNT; ++k)
         if(s_Pages[k].open && s_Pages[k].fn) s_Pages[k].fn(&s_Pages[k].open);   // the page draws its own window
