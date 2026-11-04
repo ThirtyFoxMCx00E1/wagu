@@ -41,9 +41,16 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.handoff }}" = "true" ]; then
             echo "run=1" >> "$GITHUB_OUTPUT"; exit 0; fi
-          n=$(gh run list -R "$GITHUB_REPOSITORY" -w mp-247-servers.yml -s in_progress --json databaseId \
-               --jq "[.[] | select(.databaseId != ${{ github.run_id }})] | length" || echo 0)
-          if [ "${n:-0}" -gt 0 ]; then echo "A shift is already online - nothing to do."; echo "run=0" >> "$GITHUB_OUTPUT"
+          # 4.05.1: a failed lookup no longer counts as "nothing running" (that started a second chain of
+          # shifts that then ran beside the first one forever = every 24/7 server listed twice)
+          n=""
+          for i in 1 2 3; do
+            n=$(gh run list -R "$GITHUB_REPOSITORY" -w mp-247-servers.yml -s in_progress --json databaseId \
+                 --jq "[.[] | select(.databaseId != ${{ github.run_id }})] | length") && break
+            n=""; sleep 10
+          done
+          if [ -z "$n" ]; then echo "Could not read the running shifts - not starting (the hourly check tries again)."; echo "run=0" >> "$GITHUB_OUTPUT"
+          elif [ "$n" -gt 0 ]; then echo "A shift is already online - nothing to do."; echo "run=0" >> "$GITHUB_OUTPUT"
           else echo "run=1" >> "$GITHUB_OUTPUT"; fi
 
       - uses: actions/checkout@v4
@@ -87,9 +94,21 @@ jobs:
               && echo "server data saved" || echo "saving server data failed (will retry)"
             return 0
           }
+          # 4.05.1: another shift newer than this one (not our own successor - we haven't queued it yet) and
+          # older than 3 minutes (push / cron runs that only check and leave are gone by then) = a
+          # duplicate chain: the older shift hands over to it and stops, so each server is hosted once
+          newer() {
+            gh run list -R "$GITHUB_REPOSITORY" -w mp-247-servers.yml -s in_progress -L 20 --json databaseId,createdAt \
+              --jq "[.[] | select(.databaseId > ${{ github.run_id }}) | select((now - (.createdAt | fromdateiso8601)) > 180)] | length" 2>/dev/null || echo 0
+          }
+          handover() {
+            echo "A newer shift is already online (duplicate) - handing over and stopping this one"
+            save; ./run_24_7.sh stop; exit 0
+          }
           end=$(( $(date +%s) + SHIFT_MIN * 60 ))
           while [ "$(date +%s)" -lt "$end" ]; do
             sleep 600
+            [ "$(newer)" -gt 0 ] && handover
             save
             # 3.59: hot update - a push to main (new server code, a new featured server) is picked up by the
             # shift that is already online, instead of waiting up to 5 h 40 min for the next shift
@@ -109,6 +128,7 @@ jobs:
             ./run_24_7.sh "$REGION" > /dev/null   # restarts a server if its loop ever died
             for l in logs/*.log; do [ -f "$l" ] && { echo "== $l"; tail -n 2 "$l"; }; done
           done
+          [ "$(newer)" -gt 0 ] && handover   # 4.05.1: never start a second chain
           echo "Queueing the next shift"
           gh workflow run mp-247-servers.yml -R "$GITHUB_REPOSITORY" --ref "${GITHUB_REF_NAME}" -f handoff=true \
             || echo "queueing failed - the hourly safety net will start the next shift"
