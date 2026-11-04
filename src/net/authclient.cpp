@@ -264,7 +264,7 @@ void AuthClient::Tick(uint64_t now)
         case LINKING:
             if(Online::AuthLinkUp() && now - m_nLastHello > 2500) { m_nLastHello = now; Send({ { "op", "hello" }, { "rid", "h" }, { "dev", device } }); }
             // 3.21.7: the broker answers but the bot doesn't -> the bot is down, not the phone's internet
-            if(Online::AuthLinkUp() && now - stateAt > 12000) err = "The MP login bot is offline right now (not your internet). It comes back by itself - live status: thirtyfoxmcx00e1.github.io/wagu/railway.html";
+            if(Online::AuthLinkUp() && now - stateAt > 12000) err = "The MP login bot is offline right now (not your internet). It comes back by itself - live status: mpsamp-open.github.io/railway.html";
             else if(now - stateAt > 25000) err = "Can't reach the login server. Check your internet.";
             break;
         case CODE:

@@ -4,7 +4,7 @@
 #   MP LAN Server (1922)  Brief Case War (1930)  Call Of Duty: Modern Warfare 3 (1931)  Mega Vil Futuristic (1932)
 # A player who leaves never takes the server down: the bot host stays (3.38).
 #
-#   curl -fsSL https://thirtyfoxmcx00e1.github.io/wagu/install.sh | bash
+#   curl -fsSL https://mpsamp-open.github.io/install.sh | bash
 #
 # Builds mp_server from the Sa-mp source on the phone, then runs it in the background:
 #   - listed in the internet lobby through the free public MQTT brokers (no port forwarding needed)
@@ -13,7 +13,7 @@
 # Afterwards:  mp-server status | log | restart | stop | start | config | update
 set -e
 
-SITE="https://thirtyfoxmcx00e1.github.io/wagu"   # 3.35: the server source comes from the website (downloads/mp-server-src.tar.gz)
+SITE="https://mpsamp-open.github.io"   # 3.35: the server source comes from the website (downloads/mp-server-src.tar.gz)
 HOME_DIR="$HOME/mp-server"
 SRC="$HOME_DIR/src"
 CONF="$HOME_DIR/server.conf"
@@ -48,7 +48,7 @@ BASH_BIN="$(command -v bash)"
 
 mkdir -p "$HOME_DIR"
 say "downloading the server source ($SITE)"
-curl -fsSL "$SITE/downloads/mp-server-src.tar.gz" -o "$HOME_DIR/src.tar.gz" </dev/null || die "download failed (check the internet, then run again)"
+curl -fsSL "$SITE/downloads/mp-server-src.tar.gz" -o "$HOME_DIR/src.tar.gz" </dev/null || curl -fsSL "https://thirtyfoxmcx00e1.github.io/wagu/downloads/mp-server-src.tar.gz" -o "$HOME_DIR/src.tar.gz" </dev/null || die "download failed (check the internet, then run again)"
 rm -rf "$SRC.new"; mkdir -p "$SRC.new"
 tar --no-same-owner -xzf "$HOME_DIR/src.tar.gz" -C "$SRC.new" || die "the source download is broken - run again"
 rm -rf "$SRC"; mv "$SRC.new" "$SRC"; rm -f "$HOME_DIR/src.tar.gz"
@@ -150,7 +150,7 @@ case "$1" in
     restart) stop; sleep 1; start ;;
     log) case "$2" in bcw|mw3|rp) tail -n 40 -f "$D/server-$2.log" ;; *) tail -n 40 -f "$D/server.log" ;; esac ;;
     config) ${EDITOR:-nano} "$D/server.conf" 2>/dev/null || vi "$D/server.conf"; echo "mp-server restart to apply" ;;
-    update) curl -fsSL https://thirtyfoxmcx00e1.github.io/wagu/install.sh | bash ;;
+    update) curl -fsSL https://mpsamp-open.github.io/install.sh | bash ;;
     vps-update)
         # 3.23.5: update the 24/7 VPS (HiveMQ kit + mp_server + MW3/BCW) from the phone over SSH.
         # The VPS autopilot also does it by itself within 10 min of a new release.

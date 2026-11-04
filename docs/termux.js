@@ -7,7 +7,7 @@
   var REG = ['Asia', 'Europe', 'NA', 'Oceania'];
   var PUBLIC = ['wss://broker.hivemq.com:8884/mqtt', 'wss://broker.emqx.io:8084/mqtt', 'wss://test.mosquitto.org:8081/'];
   var ROOT = 'thirtyfox/mp5/', FRESH = 15000;
-  var RAW = 'https://thirtyfoxmcx00e1.github.io/wagu/';   // 3.35: openmpsa.com (no repo links)
+  var RAW = 'https://mpsamp-open.github.io/';   // 3.35: openmpsa.com (no repo links)
   var API = 'release.json';
   var $ = function (id) { return document.getElementById(id); };
   var out = $('out'), stick = window.MPAutoScroll(out);
@@ -175,14 +175,14 @@
       if (botsUp === BOTS.length) { p('g', 'all good: the 4 servers are on the 24/7 bot host - nothing to fix'); return; }
       p('y', botsUp + ' of ' + BOTS.length + ' servers on the 24/7 bot host. Without it a phone hosts them, and everybody is dropped when that phone leaves.');
       p('m', 'Start the bot host on any always-on device (Termux phone, Linux PC, Termius SSH box):');
-      print('  <span class="g">curl -fsSL https://thirtyfoxmcx00e1.github.io/wagu/install.sh | bash</span>');
+      print('  <span class="g">curl -fsSL https://mpsamp-open.github.io/install.sh | bash</span>');
       p('m', 'or deploy the wagu repo on Railway (Dockerfile + railway.json, variable REGION). Already installed? In Termux:');
       print('  1. <span class="g">mp-server status</span>   <span class="m">is it running?</span>');
       print('  2. <span class="g">mp-server restart</span>  <span class="m">start it again (run.sh restarts it after crashes)</span>');
       print('  3. <span class="g">termux-wake-lock</span>   <span class="m">and turn off battery optimisation for Termux</span>');
       print('  4. <span class="g">mp-server log</span>      <span class="m">look for "lobby" / "broker" errors</span>');
       print('  5. <span class="g">mp-server update</span>   <span class="m">newest source + rebuild</span>');
-      p('m', 'not installed yet? curl -fsSL https://thirtyfoxmcx00e1.github.io/wagu/install.sh | bash');
+      p('m', 'not installed yet? curl -fsSL https://mpsamp-open.github.io/install.sh | bash');
     },
     'vps-update': function () {
       var U = 'curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/update.sh | sudo bash';
@@ -201,7 +201,7 @@
       p('m', '  Debian 12 installer (677 MB): cdimage.debian.org/cdimage/archive/12.15.0/amd64/iso-cd/');
     },
     'git-helper': function () {   // 3.40.2: Git helper - removes only Claude from a repo's history
-      var G = 'curl -fsSL https://thirtyfoxmcx00e1.github.io/wagu/git-helper.sh | bash -s -- ';
+      var G = 'curl -fsSL https://mpsamp-open.github.io/git-helper.sh | bash -s -- ';
       p('m', 'Git helper: removes ONLY Claude (author + Co-authored-by lines) from a GitHub repo, everything else stays.');
       print('  1. <span class="g">' + esc(G + 'scan ThirtyFoxMCx00E1/REPO') + '</span>  <span class="m">which commits mention Claude</span>');
       print('  2. <span class="g">' + esc(G + 'clean ThirtyFoxMCx00E1/REPO') + '</span>  <span class="m">dry run + backup .bundle</span>');
@@ -249,7 +249,7 @@
 
   // ------------------------------------------------------------ start
   print('<span class="g">Welcome to Termux!</span>  <span class="m">(MP edition, runs in your browser)</span>');
-  print('<span class="m">Docs:       </span>https://thirtyfoxmcx00e1.github.io/wagu/#host');
+  print('<span class="m">Docs:       </span>https://mpsamp-open.github.io/#host');
   print('<span class="m">Bot:        </span>MP Bot types and presses Enter by itself - no chat, no typing');
   print('');
   live();

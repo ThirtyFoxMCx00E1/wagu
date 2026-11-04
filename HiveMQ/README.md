@@ -6,7 +6,7 @@ Self-hosted lobby servers for [MP Multiplayer](https://github.com/ThirtyFoxMCx00
 - the region's **24/7 default server** (`mp_server`, "MP LAN Server", UDP 1922)
 - optionally **MpBridge**, which joins the server lists of all regions (run it on one server only)
 
-The mod (2.20+) downloads [regions.txt](https://thirtyfoxmcx00e1.github.io/wagu/regions.txt) from the website, pings every region in the background and uses the fastest one. Players in Manila land on Asia, players in Berlin on Europe, and both still see every server in the list. Joining a server from another region moves that phone to that region's broker for the game, then back.
+The mod (2.20+) downloads [regions.txt](https://mpsamp-open.github.io/regions.txt) from the website, pings every region in the background and uses the fastest one. Players in Manila land on Asia, players in Berlin on Europe, and both still see every server in the list. Joining a server from another region moves that phone to that region's broker for the game, then back.
 
 ```
  phones (Asia)      phones (Europe)     phones (NA)       phones (Oceania)
@@ -51,7 +51,7 @@ always in the player list as id 99). 3.38 makes sure every phone finds them:
 | Part | What it does |
 |---|---|
 | Public mirror (`PUBLIC_MIRROR=1`, default) | `mp-bridge` now runs on **every** VPS. It lists the region's 4 24/7 servers in the free public lobby (`broker.hivemq.com`) and carries their game frames both ways. Only those servers' upload topics are read there; nothing from the public lobby is copied in. Phones already on a phone copy move to the 24/7 one by themselves within 10 s. |
-| Console one-liner `curl -fsSL https://thirtyfoxmcx00e1.github.io/wagu/install.sh \| bash` | The 4 bot servers 24/7 on a Termux phone or any Linux box (PC, Termius / SSH). `mp-server status` shows all 4; restart forever, start after reboot (Termux:Boot / cron). |
+| Console one-liner `curl -fsSL https://mpsamp-open.github.io/install.sh \| bash` | The 4 bot servers 24/7 on a Termux phone or any Linux box (PC, Termius / SSH). `mp-server status` shows all 4; restart forever, start after reboot (Termux:Boot / cron). |
 | Railway (or any Docker host) | Deploy the wagu repo: `Dockerfile` + `railway.json` build `mp_server` and run the 4 bot servers in one container (variable `REGION`, no ports needed, restart ALWAYS). |
 | `server/run_24_7.sh [region]` | The 4 bot servers on any always-on machine (home PC, old Android phone with Termux) without HiveMQ. Each restarts within 2 s. `./run_24_7.sh stop` stops them. |
 
@@ -67,7 +67,7 @@ Settings in `/etc/mp-hivemq/mp.env`: `PUBLIC_MIRROR=0` turns the mirror off, `PU
 ## 3.37 VPS update: fast, steady ping with 100+ players
 
 The kit now lives in the **wagu repo** (`HiveMQ/` folder) - wagu is the only repo for the mod, the servers and the
-website ([thirtyfoxmcx00e1.github.io/wagu](https://thirtyfoxmcx00e1.github.io/wagu/)). `vps-setup.sh` and `update.sh`
+website ([mpsamp-open.github.io](https://mpsamp-open.github.io/)). `vps-setup.sh` and `update.sh`
 download only this folder (sparse clone), so a new VPS is set up fast.
 
 | What | Where | Effect |
@@ -95,7 +95,7 @@ journalctl -t mp-keepalive -t mp-xdp -t mp-net-tune -t mp-trim
 Ping still depends on distance: a phone in Manila to a Frankfurt VPS is ~180 ms whatever the tuning. The tuning removes
 the spikes and the extra delay the server adds; for low ping everywhere, run one VPS per region (Asia, Europe, NA, Oceania).
 
-> **Easiest way (3.32):** open the [MP Oracle page](https://thirtyfoxmcx00e1.github.io/wagu/oracle.html), paste a GitHub token
+> **Easiest way (3.32):** open the [MP Oracle page](https://mpsamp-open.github.io/oracle.html), paste a GitHub token
 > (fine-grained, this repo only, Secrets + Variables + Actions = Read and write), the Oracle API key config text and the
 > private key file, pick the MP region and press **Save secrets + run claim**. The page encrypts everything in your browser
 > before it goes to GitHub and shows the server IP when the claim finishes.
@@ -201,7 +201,7 @@ What MP Railway does (like Railway, without the cloud):
 - clones the bot repo to `/opt/mp/railway/discordpy-bot`, builds it (Python venv + `requirements.txt`, or `npm` for Node apps), starts the `Procfile` command as the `mp-railway@discordpy-bot` systemd service (own user `mprail`, restart on crash, start on boot)
 - **auto deploy:** `mp-railway-watch.timer` checks GitHub every 2 minutes; a new commit on `main` is built and restarted by itself (`/opt/mp/railway/discordpy-bot/deploys.log`)
 - secrets in `/etc/mp-railway/discordpy-bot.env` (mode 600, never in git), accounts in `/var/lib/mp-railway/discordpy-bot/accounts.db`
-- the bot publishes a signed status every 30 s; the website's [Railway page](https://thirtyfoxmcx00e1.github.io/wagu/railway.html) shows it live (checked with the mod's public key, so it can't be faked)
+- the bot publishes a signed status every 30 s; the website's [Railway page](https://mpsamp-open.github.io/railway.html) shows it live (checked with the mod's public key, so it can't be faked)
 
 ```
 sudo mp-railway status            online / crashing / offline, commit, servers with the commands
@@ -304,7 +304,7 @@ Rebuild `mp_server` on every region (console menu **7) update**). New in 3.00:
 | NA | `nasamp.duckdns.org` | |
 | Oceania | `ocsamp.duckdns.org` | |
 
-All four use the same `mp.env` (same `mp` / `web` / bridge / admin passwords); only `REGION` and `DOMAIN` differ. The public part is in the website's [regions.txt](https://thirtyfoxmcx00e1.github.io/wagu/regions.txt). Keep `mp.env` private.
+All four use the same `mp.env` (same `mp` / `web` / bridge / admin passwords); only `REGION` and `DOMAIN` differ. The public part is in the website's [regions.txt](https://mpsamp-open.github.io/regions.txt). Keep `mp.env` private.
 
 ## Server requirements
 
@@ -391,7 +391,7 @@ Everything below works from a phone browser, no SSH app and no computer:
 1. Create a free domain at [duckdns.org](https://www.duckdns.org) (e.g. `asia-yourname`) and copy the token.
 2. Create an Ubuntu 22.04/24.04 VM (e.g. Oracle Cloud Always Free, Ampere A1). In "Advanced options -> cloud-init / user data", paste [`cloud-init/user-data.yaml`](cloud-init/user-data.yaml) with your region, DuckDNS name, token and email filled in. In the cloud firewall (Oracle: VCN security list) open TCP 80, 1883, 8000, 8883, 8884, 7681 and UDP 1922.
 3. Wait about 10 minutes. The VM installs Java 21, HiveMQ CE, the 24/7 server, the status beacon and the web console by itself.
-4. Open the website's [Termius page](https://thirtyfoxmcx00e1.github.io/wagu/termius.html): the region turns green ("online 24/7") as soon as the status beacon reports. Tap "console" (https://DOMAIN:7681) and log in as `admin`; the password is `CONSOLE_PASS` in `/etc/mp-hivemq/mp.env` (read it once through the cloud provider's serial console or `sudo cat` in the web shell of the provider).
+4. Open the website's [Termius page](https://mpsamp-open.github.io/termius.html): the region turns green ("online 24/7") as soon as the status beacon reports. Tap "console" (https://DOMAIN:7681) and log in as `admin`; the password is `CONSOLE_PASS` in `/etc/mp-hivemq/mp.env` (read it once through the cloud provider's serial console or `sudo cat` in the web shell of the provider).
 5. In the console menu choose 8 (regions.txt) and copy the block into `docs/regions.txt` of the wagu repo. Every copy of the mod then uses your broker automatically.
 
 The web console is [ttyd](https://github.com/tsl0922/ttyd) behind TLS and a password: live logs, restart, update, status and a bash shell. Without a domain it only listens on localhost (set `CONSOLE_INSECURE=1` in `mp.env` to allow plain http, not recommended).
@@ -409,7 +409,7 @@ HiveMQ retires the free HiveMQ Cloud Serverless plan on 2026-12-31 and no new Se
 Nobody has to type in a terminal any more.
 
 - **On every region server** `mp-status` (the status beacon) is also the autopilot. Every 5 s it checks `hivemq`, `mp-server`, `mp-bridge` and `mp-console`; an enabled service that stopped is restarted (max 3 times in 10 minutes, then it waits and reports). Disk above 90 % = journal vacuum + old HiveMQ logs removed. Every action is published on `thirtyfox/mp4/bot/<Region>`. Turn it off with `MP_AUTOPILOT=0` in `/etc/mp-hivemq/mp.env`.
-- **On the website** the MP Bot runs the [Termius](https://thirtyfoxmcx00e1.github.io/wagu/termius.html) and [Termux](https://thirtyfoxmcx00e1.github.io/wagu/termux.html) terminals by itself: it types each command, presses Enter, and reacts to what it sees (region down -> `diagnose`, autopilot report -> `autopilot`, new servers -> `servers`, ping every 90 s). There is no input box.
+- **On the website** the MP Bot runs the [Termius](https://mpsamp-open.github.io/termius.html) and [Termux](https://mpsamp-open.github.io/termux.html) terminals by itself: it types each command, presses Enter, and reacts to what it sees (region down -> `diagnose`, autopilot report -> `autopilot`, new servers -> `servers`, ping every 90 s). There is no input box.
 - Run `install.sh` again (or `mp-server update` style re-run of cloud-init) on existing regions to get the new topic rule for `bot/+`.
 
 ## Daily use

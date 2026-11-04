@@ -93,7 +93,8 @@ static std::atomic<int> s_nCongestMs{0};   // 2.15: extra batching while the upl
 static int  s_nBrokerOverride = -1;
 // 2.20 regional brokers (own HiveMQ per region, see the HiveMQ repo). Built from broker.txt
 // [Region] blocks or regions.txt downloaded from the website. Without them nothing changes.
-#define MP_REGIONS_URL "https://thirtyfoxmcx00e1.github.io/wagu/regions.txt"
+#define MP_REGIONS_URL "https://mpsamp-open.github.io/regions.txt"            // 4.05.4: new website (mpsamp-open org)
+#define MP_REGIONS_URL_OLD "https://thirtyfoxmcx00e1.github.io/wagu/regions.txt"  // 4.05.4: old address, used when the new one fails
 static bool             s_bRegional = false;          // at least one regional broker known
 static std::atomic<int> s_RegionPing[REGION_COUNT];   // TCP connect ms, -1 unknown, -2 unreachable
 // 2.23: regions measured at least once (before that "-1" means "not measured", after it "down")
@@ -1935,6 +1936,12 @@ static void FetchRegions(bool apply, int tries)
     std::string body, why;
     bool ok = false;
     for(int t = 0; t < tries && !ok; ++t) ok = HttpsGet(s_RegionsUrl, body, 5000, why);
+    if(!ok && s_RegionsUrl == MP_REGIONS_URL)   // 4.05.4: new website down / not reachable -> old wagu address
+    {
+        std::string why2;
+        ok = HttpsGet(MP_REGIONS_URL_OLD, body, 5000, why2);
+        if(ok) OLOG("regions list: new site failed (%s), got it from %s", why.c_str(), MP_REGIONS_URL_OLD);
+    }
     if(!ok)
     {
         OLOG("regions list: %s (%s)", why.c_str(), s_RegionsUrl.c_str());

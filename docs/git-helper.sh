@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # MP Git helper (3.40.2) - removes ONLY Claude from a GitHub repo's history. Run it in Termux
 # (or any Linux / Termius SSH box). The web Termux console's bot shows which repos need it:
-#   https://thirtyfoxmcx00e1.github.io/wagu/termux.html
+#   https://mpsamp-open.github.io/termux.html
 #
-#   curl -fsSL https://thirtyfoxmcx00e1.github.io/wagu/git-helper.sh | bash -s -- scan  OWNER/REPO
-#   curl -fsSL https://thirtyfoxmcx00e1.github.io/wagu/git-helper.sh | bash -s -- clean OWNER/REPO          # dry run
-#   curl -fsSL https://thirtyfoxmcx00e1.github.io/wagu/git-helper.sh | bash -s -- clean OWNER/REPO --push   # rewrite + force-push
+#   curl -fsSL https://mpsamp-open.github.io/git-helper.sh | bash -s -- scan  OWNER/REPO
+#   curl -fsSL https://mpsamp-open.github.io/git-helper.sh | bash -s -- clean OWNER/REPO          # dry run
+#   curl -fsSL https://mpsamp-open.github.io/git-helper.sh | bash -s -- clean OWNER/REPO --push   # rewrite + force-push
 #
 # What "remove Claude" means here (nothing else in the history is touched):
 #   - commits AUTHORED by Claude (claude / claude[bot] / Claude Code / @anthropic.com) get a human author:

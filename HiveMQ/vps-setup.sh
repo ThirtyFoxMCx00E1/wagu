@@ -42,7 +42,7 @@ bash ./install.sh "${ARGS[@]}" </dev/null
 
 # the phones already know the passwords in the website's regions.txt: use the same ones
 say "using the passwords from regions.txt"
-RT="$(curl -fsSL https://thirtyfoxmcx00e1.github.io/wagu/regions.txt || true)"
+RT="$(curl -fsSL https://mpsamp-open.github.io/regions.txt || curl -fsSL https://thirtyfoxmcx00e1.github.io/wagu/regions.txt || true)"   # 4.05.4: new site, old one as backup
 blk="$(printf '%s\n' "$RT" | awk -v r="[$REGION]" '$0==r{f=1;next} /^\[/{f=0} f')"
 MPP="$(printf '%s\n' "$blk" | sed -n 's/^pass=//p' | head -1)"
 WBP="$(printf '%s\n' "$blk" | sed -n 's/^web_pass=//p' | head -1)"

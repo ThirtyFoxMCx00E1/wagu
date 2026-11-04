@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# 3.37: builds the website (GitHub Pages of the wagu repo: thirtyfoxmcx00e1.github.io/wagu) into one folder:
+# 3.37: builds the website (GitHub Pages of the wagu repo: mpsamp-open.github.io) into one folder:
 # docs/ + downloads/ with the release files under stable names (always the latest release in docs/release.json).
 # The separate openmp.com repo is no longer used - wagu is the only repo (mod, servers, website).
 #   python3 tools/publish_site.py [version] [out-dir]     (defaults: tag in docs/release.json, _site)

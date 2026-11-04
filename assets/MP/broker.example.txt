@@ -28,7 +28,7 @@ public=0
 
 # ---- 2.20: regional brokers (optional) ----
 # Normally not needed: the mod downloads the official region list from
-#   https://thirtyfoxmcx00e1.github.io/wagu/regions.txt
+#   https://mpsamp-open.github.io/regions.txt
 # and picks the region with the lowest ping. Use your own list instead:
 #regions_url=https://example.com/my-regions.txt
 # or turn the download off:

@@ -6,7 +6,7 @@
 # icon in the MP launcher (Asia / Europe / NA / Oceania) moves the lobby to THAT region's broker, so
 # each region has its own server list (internet + custom servers); Auto = the lowest ping region.
 # With blocks here the mod doesn't download regions.txt - copy the new blocks in when it changes:
-#   https://thirtyfoxmcx00e1.github.io/wagu/regions.txt
+#   https://mpsamp-open.github.io/regions.txt
 #
 #   Asia     mpsamp.duckdns.org      Europe   eusamp.duckdns.org
 #   NA       nasamp.duckdns.org      Oceania  ocsamp.duckdns.org
