@@ -265,3 +265,14 @@
     var st = document.getElementById('cloud-status'); if(st) st.textContent = 'Project Day Z Legacy model pack: ' + mb(total) + ' in ' + order.length + ' groups. In the game: MP launcher > STORAGE > Cloud Storage to download or delete them.';
   }).catch(function(){ rows.innerHTML = '<tr><td colspan="4" class="muted">Could not load the list right now.</td></tr>'; });
 })();
+
+// 4.05.3: CLIENT / FULL pills pick what the big INSTALL button downloads
+(function () {
+  var pills = document.querySelectorAll('.pill'), b = document.getElementById('dl-btn');
+  Array.prototype.forEach.call(pills, function (p) {
+    p.addEventListener('click', function () {
+      Array.prototype.forEach.call(pills, function (q) { q.classList.toggle('on', q === p); });
+      if (b) b.href = p.getAttribute('data-dl');
+    });
+  });
+})();

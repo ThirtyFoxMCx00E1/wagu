@@ -14,6 +14,8 @@
 //     Asia    = mqtt://bridge:PASSWORD@127.0.0.1:1883
 //     Europe  = mqtts://bridge:PASSWORD@eu.example.com:8883
 //     topic   = thirtyfox/mp5/l/+,thirtyfox/mp4/l/+   (optional, default shown; comma = several)
+//     details = on                          (4.05.3, default on: also copy d/<token> = country, tags,
+//                                            description and WHO IS PLAYING, for every l/ filter above)
 //     expire  = 45                          (seconds without update -> listing removed everywhere)
 //     mirror  = mqtt://broker.hivemq.com:1883   (3.38, optional: the free public lobby, see below)
 //     mirror_region = 0                     (3.38: Asia 0, Europe 1, NA 2, Oceania 3 = this VPS's region)
@@ -45,6 +47,13 @@ import java.util.concurrent.*;
 public class MpBridge {
     static String topicFilter = "thirtyfox/mp5/l/+,thirtyfox/mp4/l/+";   // 3.04.6: mp5 = MP 3.04.6+, mp4 = the old lobby ("UPDATE MP" notice)
     static long expireMs = 45_000;
+    // 4.05.3: d/<token> (details + the player names) is copied between the regions too. Before, only
+    // l/<token> was, so a server hosted on another region's broker showed in the list but its player
+    // list (and country / tags / description) only appeared after joining it.
+    static boolean details = true;
+    static final Map<String, byte[]> lastDetails = new ConcurrentHashMap<>();   // d/ topic -> last payload
+    static boolean isDetails(String topic) { int i = topic.lastIndexOf('/'); return i >= 2 && topic.charAt(i - 1) == 'd' && topic.charAt(i - 2) == '/'; }
+    static String detailsOf(String listTopic) { int i = listTopic.lastIndexOf("/l/"); return i < 0 ? null : listTopic.substring(0, i) + "/d/" + listTopic.substring(i + 3); }
     // 3.34: game branch - "branch = on" in bridge.conf. Phones stay on their nearest region's broker
     // and this bridge carries the game frames to the region that hosts the server, VPS to VPS:
     //   s/<tok>/<cid>  phone -> host   : seen on a branch, copied to the host's home broker
@@ -79,12 +88,18 @@ public class MpBridge {
             if (l.isEmpty() || l.startsWith("#") || !l.contains("=")) continue;
             String k = l.substring(0, l.indexOf('=')).strip(), v = l.substring(l.indexOf('=') + 1).strip();
             if (k.equalsIgnoreCase("topic")) topicFilter = v;
+            else if (k.equalsIgnoreCase("details")) details = !(v.equalsIgnoreCase("off") || v.equals("0") || v.equalsIgnoreCase("false") || v.equalsIgnoreCase("no"));
             else if (k.equalsIgnoreCase("expire")) expireMs = Long.parseLong(v) * 1000L;
             else if (k.equalsIgnoreCase("branch")) branch = v.equalsIgnoreCase("on") || v.equals("1") || v.equalsIgnoreCase("true") || v.equalsIgnoreCase("yes");
             else if (k.equalsIgnoreCase("game_root")) gameRoot = v.endsWith("/") ? v : v + "/";
             else if (k.equalsIgnoreCase("mirror_region")) mirrorRegion = Integer.parseInt(v);
             else if (k.equalsIgnoreCase("mirror")) { if (!v.isEmpty() && !v.equalsIgnoreCase("off")) { URI u = URI.create(v); mirrors.add(new Link("Public-" + u.getHost(), u, true)); } }
             else links.add(new Link(k, URI.create(v)));
+        }
+        if (details) {   // 4.05.3: every ".../l/+" filter gets its ".../d/+" twin
+            StringBuilder tf = new StringBuilder(topicFilter);
+            for (String f : topicFilter.split(",")) { String t = f.trim(); if (t.endsWith("/l/+")) { String d = t.substring(0, t.length() - 4) + "/d/+"; if (!("," + topicFilter + ",").contains("," + d + ",")) tf.append(',').append(d); } }
+            topicFilter = tf.toString();
         }
         if (!mirrors.isEmpty()) { branch = true; links.addAll(mirrors); }   // 3.38: the mirror needs the game branch
         if (links.size() < 2) { log("bridge.conf needs at least 2 brokers (found " + links.size() + ")"); System.exit(2); }
@@ -102,6 +117,8 @@ public class MpBridge {
                     listings.remove(e.getKey());
                     log("expired " + e.getKey() + " (from " + li.origin + ")");
                     for (Link k : links) if (!k.mirror) k.forward(e.getKey(), new byte[0]);
+                    String dt = detailsOf(e.getKey());   // 4.05.3: its details / player list go too
+                    if (details && dt != null && lastDetails.remove(dt) != null) for (Link k : links) if (!k.mirror) k.forward(dt, new byte[0]);
                     unexport(e.getKey());
                 }
             }
@@ -153,6 +170,13 @@ public class MpBridge {
     // A message arrived from one broker: copy it to all the others.
     static void onMessage(Link from, String topic, byte[] payload, boolean retained) {
         long now = System.currentTimeMillis();
+        if (isDetails(topic)) {   // 4.05.3: details / player list - copied as is, no expiry of its own (it goes with its l/)
+            if (from.mirror) return;   // nothing from the public lobby comes in
+            if (payload.length == 0) lastDetails.remove(topic); else lastDetails.put(topic, payload);
+            for (Link k : links) if (k != from && !k.mirror) k.forward(topic, payload);
+            if (!mirrors.isEmpty() && exported.contains(tokOf(topic))) for (Link m : mirrors) m.forward(topic, payload);
+            return;
+        }
         if (payload.length == 0) listings.remove(topic);
         else {
             Listing old = listings.get(topic);
@@ -182,13 +206,16 @@ public class MpBridge {
     static String tokOf(String listTopic) { return listTopic.substring(listTopic.lastIndexOf('/') + 1); }
     static void export(String topic, byte[] payload) {
         String tok = tokOf(topic);
+        boolean fresh = exported.contains(tok) == false;
         if (exported.add(tok)) { log("public lobby: listing 24/7 server " + tok + " (" + new String(payload, StandardCharsets.UTF_8).replaceAll(".*\\|", "") + ")"); for (Link m : mirrors) m.subscribeGame(tok); }
         for (Link m : mirrors) m.forward(topic, payload);
+        String dt = detailsOf(topic); byte[] dp = fresh && dt != null ? lastDetails.get(dt) : null;   // 4.05.3: once, then live d/ updates follow
+        if (dp != null) for (Link m : mirrors) m.forward(dt, dp);
     }
     static void unexport(String topic) {
         if (mirrors.isEmpty() || !topic.contains("/l/")) return;
         String tok = tokOf(topic);
-        if (exported.remove(tok)) { log("public lobby: removed " + tok); for (Link m : mirrors) { m.forward(topic, new byte[0]); m.unsubscribeGame(tok); } }
+        if (exported.remove(tok)) { log("public lobby: removed " + tok); String dt = detailsOf(topic); for (Link m : mirrors) { m.forward(topic, new byte[0]); if (dt != null) m.forward(dt, new byte[0]); m.unsubscribeGame(tok); } }
     }
 
     static final class Link {

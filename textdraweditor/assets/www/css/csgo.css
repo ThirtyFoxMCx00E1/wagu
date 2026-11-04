@@ -40,3 +40,21 @@ html, body { background: var(--v-bg); color: var(--v-text); }
 #modal .box { background: var(--v-panel); border: 1px solid var(--v-line); }
 #modal .hd { background: var(--v-panel2); border-bottom: 2px solid var(--v-blue); text-transform: uppercase; letter-spacing: .06em; }
 .pal div, .sw { border-color: rgba(255,255,255,.2); }
+/* 4.05.3: the 4.05.x MP Launcher look (the in-game mod panel): blurred night city (ui_bg.jpg) behind
+   see-through slate glass, PLAY title bar, blue tab underline, green action button. */
+:root { --v-glass: linear-gradient(180deg, rgba(58,66,76,.37) 0%, rgba(18,21,26,.59) 100%); --v-bar: rgba(0,0,0,.24); }
+html, body, body.auth { background: #000 url(../img/ui_bg.jpg) center / cover no-repeat fixed !important; }
+body.auth::before { background: rgba(8,10,14,.45) !important; }
+.auth .card { background: var(--v-glass) !important; -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); border: 1px solid var(--v-line); box-shadow: 0 10px 40px rgba(0,0,0,.55); overflow: hidden; }
+.auth .card-footer { background: var(--v-bar) !important; }
+.auth .form-control, .auth .form-select { background: rgba(20,23,28,.75) !important; }
+.mp-bar { display: flex; align-items: center; gap: 12px; padding: 10px 16px; background: var(--v-bar); border-bottom: 1px solid var(--v-line); }
+.mp-bar b { font-size: 20px; font-weight: 800; color: #fff; letter-spacing: .04em; }
+.mp-bar span { color: var(--v-dim); font-size: 13px; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mp-bar i { font-style: normal; font-weight: 700; font-size: 10px; color: #6ec85a; white-space: nowrap; }
+#tools, #panel { background: var(--v-glass) !important; -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
+.tb { background-color: rgba(40,45,52,.75); }
+#panel .form-control, #panel .form-select, #mbody .form-control, #mbody .form-select { background: rgba(20,23,28,.75) !important; }
+#modal .box { background: var(--v-glass), rgba(26,29,34,.9) !important; }
+#modal .hd { background: var(--v-bar) !important; }
+.auth .card-footer a { color: var(--v-blue) !important; }

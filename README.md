@@ -125,6 +125,9 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
   - Launcher: the switch region icon (the map pin) did nothing - it is the only toolbar button that toggles, and one tap that arrived twice opened and closed the region list in the same moment. Now it toggles at most once per 400 ms and the opening tap can't close the list again.
   - Server list: Language has its own column. It used to show in the Tags column when a server had no tags; Tags now shows only tags.
   - New "Global" location with its own flag (a white globe on blue, drawn in the game so it works with any bg_server.jar). The default server, Brief Case War, MW3, Mega Vil Futuristic roleplay and Project Day Z Legacy show the Global flag. Hosts can pick Global first in + Add server > Server location.
+  - Server list: who is playing now shows WITHOUT joining for servers in every region. The region bridge (HiveMQ/bridge/MpBridge.java) only copied the l/ listing between the Asia / Europe / NA / Oceania brokers, not d/<token> (country, tags, description and the player names), so a server hosted on another region's broker had an empty player list until you joined it. It now copies d/ too (`details = on`, default). Run the HiveMQ update on the region VPS to get it.
+  - MP Voice app and MP Textdraw Editor app: same look as the in-game MP Launcher (blurred night city ui_bg.jpg behind see-through slate glass, PLAY title bar, blue tab underline, square boxes, green action button).
+  - Website: game-launcher look (dark launcher window with title bar and nav over the blurred art, big hero, CLIENT / FULL switch and a green INSTALL button). The Tools menu (Termius, MP Oracle, Termux, MP Railway) is hidden.
 
 - **4.05.2**: fixes.
   - Launcher: the ui_bg.jpg picture now only fills the launcher panel (almost full screen), like the server list; around it the game shows dimmed again instead of the picture covering the whole screen.
