@@ -34,7 +34,11 @@ namespace FloatMenu
     void Toggle();
     void SetGameRunning();   // 4.04.1: the player exists (before that the launcher can not open)
     bool IsOpen();
-    bool IsModal();   // 2.26: full-screen launcher open -> it gets every touch, floating buttons hidden
+    bool IsModal();
+    // 4.05.5: is the launcher the top window at this point (ignoring the windows pushed behind it)?
+    // The launcher toolbar uses it as a second hit test when ImGui gave the tap to another window.
+    bool LauncherOwnsPoint(float x, float y, const char** above = nullptr);
+    const char* HoverInfo();   // "window 'x' (hovered id .., active id ..)" for the log   // 2.26: full-screen launcher open -> it gets every touch, floating buttons hidden
     void Render();        // inside an ImGui frame
 
     // Helpers for section authors

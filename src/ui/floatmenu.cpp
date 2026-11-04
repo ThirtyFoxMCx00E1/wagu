@@ -13,6 +13,7 @@
 #include "ui_common.h"
 #include "vkeyboard.h"
 #include <vector>
+#include <algorithm>
 #include <string>
 #include <atomic>
 #include <math.h>
@@ -465,6 +466,33 @@ static void RenderServerPage(const ImVec2& ds)
     ImGui::End();
 }
 
+static std::vector<ImGuiWindow*> s_Under;   // 4.05.4: windows pushed behind the launcher this frame
+bool FloatMenu::LauncherOwnsPoint(float x, float y, const char** above)
+{
+    ImGuiContext* g = ImGui::GetCurrentContext();
+    if(above) *above = "";
+    if(!g || !s_bModal.load()) return false;
+    for(int i = g->Windows.Size - 1; i >= 0; --i)
+    {
+        ImGuiWindow* w = g->Windows[i];
+        if(!w || !(w->Active || w->WasActive) || w->Hidden || (w->Flags & (ImGuiWindowFlags_NoMouseInputs | ImGuiWindowFlags_ChildWindow))) continue;
+        if(!w->Rect().Contains(ImVec2(x, y))) continue;
+        if(std::find(s_Under.begin(), s_Under.end(), w) != s_Under.end()) continue;   // a floating HUD window: not a real cover
+        if(!strcmp(w->Name, "##MPLauncher")) return true;
+        if(above) *above = w->Name;
+        return false;                                   // the region list, keyboard, a page, a dialog... on top
+    }
+    return true;
+}
+
+const char* FloatMenu::HoverInfo()
+{
+    static char b[160]; ImGuiContext* g = ImGui::GetCurrentContext();
+    if(!g) return "-";
+    snprintf(b, sizeof(b), "window '%s' (hovered id %08x, active id %08x)", g->HoveredWindow ? g->HoveredWindow->Name : "-", (unsigned)g->HoveredId, (unsigned)g->ActiveId);
+    return b;
+}
+
 static std::atomic<bool> s_bGameRunning{false};   // 4.04.1: set once the player exists (MP game loop)
 void FloatMenu::SetGameRunning() { s_bGameRunning.store(true); }
 void FloatMenu::Render()
@@ -483,7 +511,6 @@ void FloatMenu::Render()
     // + icons) and took the tap, so those buttons did nothing. While the launcher is open they are
     // pushed behind it every frame (the keyboard, dropdowns and pages drawn after it stay on top).
     ImGuiContext* gctx = ImGui::GetCurrentContext();
-    static std::vector<ImGuiWindow*> s_Under;
     s_Under.clear();
     if(modal && gctx)
         for(ImGuiWindow* w : gctx->Windows)
@@ -502,7 +529,7 @@ void FloatMenu::Render()
             const int li = lw ? ImGui::FindWindowDisplayIndex(lw) : -1;
             for(ImGuiWindow* w : s_Under)
                 if(li >= 0 && ImGui::FindWindowDisplayIndex(w) > li && s_nLogged < 6)
-                { ++s_nLogged; logger->Info("4.05.4: window '%s' was above the launcher (took its taps) - moved behind", w->Name); }
+                { ++s_nLogged; logger->Info("4.05.6: window '%s' was above the launcher (took its taps) - moved behind", w->Name); }
         }
         for(int i = (int)s_Under.size() - 1; i >= 0; --i) ImGui::BringWindowToDisplayBack(s_Under[i]);   // keeps their own order
     }

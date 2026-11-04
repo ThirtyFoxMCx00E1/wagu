@@ -26,7 +26,7 @@
 #include "../imgui/rw_glue.h"
 #include "net/server.h"
 
-MYMODCFG(net.thirtyfox.mp, MP Multiplayer, 4.05.5, ThirtyFoxMCx00E1)   // 3.21: was stuck at 3.04.6 (crash logs showed the wrong version)
+MYMODCFG(net.thirtyfox.mp, MP Multiplayer, 4.05.6, ThirtyFoxMCx00E1)   // 3.21: was stuck at 3.04.6 (crash logs showed the wrong version)
 NEEDGAME(com.rockstargames.gtasa)
 
 // Globals used by the embedded RenderWare ImGui backend
@@ -144,9 +144,17 @@ static bool DispatchTouch(int type, int finger, int x, int y)
     const bool isRelease = (type == TOUCH_RELEASE || type == TOUCH_POINTER_UP);
     uint64_t now = MP_NowMs();
 
-    // a finger that "never lifted" (lost event) must not block ImGui forever
-    if(type == TOUCH_PUSH && s_nMouseFinger >= 0 && now - s_nLastAnyTouchMs > 1500)
+    // a finger that "never lifted" (lost event) must not block ImGui forever.
+    // 4.05.5: it blocked every tap that came less than 1.5 s after the last touch, so when a release got
+    // lost the player kept tapping the region icon (or any launcher button) and nothing ever happened.
+    // Now a new press also frees it when it is the same finger again (its release was lost for sure) or
+    // while the launcher / keyboard is open (one finger is all they need - the newest one wins).
+    if(type == TOUCH_PUSH && s_nMouseFinger >= 0 &&
+       (now - s_nLastAnyTouchMs > 1500 || finger == s_nMouseFinger || FloatMenu::IsModal() || VKeyboard::IsOpen()))
     {
+        static int s_nStuckLogs = 0;
+        if(s_nStuckLogs < 6) { ++s_nStuckLogs; logger->Info("4.05.6: finger %d never lifted - freed by the press of finger %d", s_nMouseFinger, finger); }
+        if(s_nMouseFinger != finger && s_nMouseFinger < 16) s_bIgnoredFinger[s_nMouseFinger] = false;   // else the game HUD stayed blocked
         QueueIO(TQ_UP);
         s_nMouseFinger = -1;
     }

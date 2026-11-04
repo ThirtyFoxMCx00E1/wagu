@@ -121,6 +121,10 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **4.05.6**: region icon fix, part 2.
+  - Lost "finger lifted" events: if the game never reported a release, the next taps were dropped for as long as you kept tapping (the 1.5 s timeout restarted with every tap). So the region icon, and sometimes other launcher buttons, looked dead. A new press now frees a stuck finger right away when it's the same finger again or the launcher / keyboard is open.
+  - Second hit test for the launcher toolbar and title icons (region, refresh, settings, +, help, friends, bell, close). A press inside the icon counts even when ImGui gave it to another window, as long as nothing of MP's is drawn over it. The log says which window took it ("4.05.6: toolbar ... tapped but ImGui gave it to ...").
+  - The region list no longer covers the region icon on short screens. It opens to the left of the icon instead.
 - **4.05.5**: Day Z world textures, launcher buttons fix.
   - Project Day Z Legacy: the GTA V texture pack from release v4.02 (texdb gta3 `.dat` / `.toc` / `.tmb`) is converted to normal TXDs (`Host/DayZ/models/world`, 6 files, 129 MB, plus `world.idx`). On the Day Z server the game downloads them, like the MTA models, and uses them for the map textures. They're read one texture at a time when the game asks for one. New setting: **Day Z: GTA V world textures**. They also show up on Cloud Storage as a new **World** folder.
   - The pack's road models (cuntwroad22 / 68 / 71) are swapped in on the Day Z server with TXDs made from their textures.

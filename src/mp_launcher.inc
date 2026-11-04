@@ -283,6 +283,25 @@ static bool LToolButton(const char* id, int icon, const char* label, float h, bo
     // release could get lost there, so refresh / region / settings / add server did nothing
     bool hit = ImGui::InvisibleButton("##tb", ImVec2(w, h), L_PRESS_ON_CLICK);
     if(!enabled) ImGui::EndDisabled();
+    // 4.05.5: second hit test. The region icon (and the other toolbar icons) still did nothing for some
+    // players: ImGui gave the press to some other window / item. A press inside this button where the
+    // launcher is the top window (nothing visible of ours over it) counts as a tap now, whatever ImGui
+    // thinks is hovered. ImGui's own hit (same frame) wins, so a tap never counts twice.
+    if(!hit && enabled && ImGui::IsMouseClicked(0) && !VKeyboard::IsOpen())
+    {
+        const ImVec2 m = ImGui::GetIO().MouseClickedPos[0];
+        const char* above = "";
+        if(m.x >= p.x && m.y >= p.y && m.x < p.x + w && m.y < p.y + h && FloatMenu::LauncherOwnsPoint(m.x, m.y, &above))
+        {
+            static int s_nRawLogs = 0;
+            if(s_nRawLogs < 8)
+            {
+                ++s_nRawLogs;
+                logger->Info("4.05.6: toolbar '%s' tapped but ImGui gave it to %s - used anyway", id, FloatMenu::HoverInfo());
+            }
+            hit = true;
+        }
+    }
     ImDrawList* dl = ImGui::GetWindowDrawList();
     // 3.63: Valorant look - a thin chamfered frame, teal while selected, light fill while pressed
     const ImVec2 q(p.x + w, p.y + h), a1(p.x + UI::S(3), p.y + UI::S(5)), b1(q.x - UI::S(3), q.y - UI::S(5));
@@ -692,6 +711,9 @@ static void LRegionPicker(const std::vector<LanServer>& nearby)
     float x = s_vRegionBtn.x, y = s_vRegionBtn.y + s_fRegionBtn + UI::S(8);
     if(x + w > ds.x - UI::S(10)) x = ds.x - UI::S(10) - w;
     if(y + h > ds.y - UI::S(10)) y = ds.y - UI::S(10) - h;
+    // 4.05.6: on a short screen the list was pushed up over the icon itself (the next tap on the icon
+    // landed on the list) - then it opens to the left of the icon
+    if(y < s_vRegionBtn.y + s_fRegionBtn && x < s_vRegionBtn.x + s_fRegionBtn) { x = ImMax(UI::S(10), s_vRegionBtn.x - w - UI::S(8)); if(y < UI::S(10)) y = UI::S(10); }
     int cnt[REGION_COUNT] = { 0 }, all = 0;
     for(auto& sv : nearby) if(sv.token != 0 && sv.region < REGION_COUNT) { ++cnt[sv.region]; ++all; }
     const int cur = Online::CurrentRegion();
