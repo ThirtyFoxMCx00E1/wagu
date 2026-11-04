@@ -100,7 +100,8 @@
       var f = p.split('|');
       if (f[0] !== 'v1' || f.length < 7) return;
       var name = f.slice(6).join('|').slice(0, 64);
-      servers.set(tok, { port: +f[1] || 0, players: +f[2] || 0, max: +f[3] || 0, region: +f[4], name: name, seen: Date.now() });
+      var m5 = /@(\d+)(!d)?/.exec(f[5] || '');   // 4.05.1: start time + 24/7 flag
+      servers.set(tok, { port: +f[1] || 0, players: +f[2] || 0, max: +f[3] || 0, region: +f[4], name: name, seen: Date.now(), start: m5 ? +m5[1] : 0, ded: !!(m5 && m5[2]) });
       render();
     });
     var fail = function () {
@@ -124,7 +125,13 @@
   function render() {
     var now = Date.now();
     servers.forEach(function (s, k) { if (now - s.seen > FRESH) servers.delete(k); });
-    var all = Array.from(servers.values());
+    var all = [], byKey = {};
+    servers.forEach(function (s) {   // 4.05.1: a 24/7 server listed by two hosts (shift hand-over) shows once - the newest copy
+      if (!s.ded) { all.push(s); return; }
+      var k = s.port + '|' + s.name.toLowerCase(), o = byKey[k];
+      if (!o) { byKey[k] = s; all.push(s); }
+      else if (s.start > o.start) { all[all.indexOf(o)] = s; byKey[k] = s; }
+    });
     var players = all.reduce(function (a, s) { return a + s.players; }, 0);
     $('st-servers').textContent = all.length;
     $('st-players').textContent = players;
