@@ -1,19 +1,75 @@
-# MP Multiplayer 2.22 - broker.txt
+# MP Multiplayer 4.05.1 - broker.txt
 # Put this file in:  Android/data/com.rockstargames.gtasa/files/MP/broker.txt
-# (same folder as servers.txt). Optional - without it the mod does the same by itself.
+# (same folder as servers.txt).
 #
-# Region list (Asia mpsamp / Europe eusamp / NA nasamp / Oceania ocsamp .duckdns.org),
-# downloaded at every start - the mod picks the lowest ping:
-regions_url=https://thirtyfoxmcx00e1.github.io/wagu/regions.txt
+# 4.05.1: the 4 region brokers are set here, one block per region. Picking a region with the region
+# icon in the MP launcher (Asia / Europe / NA / Oceania) moves the lobby to THAT region's broker, so
+# each region has its own server list (internet + custom servers); Auto = the lowest ping region.
+# With blocks here the mod doesn't download regions.txt - copy the new blocks in when it changes:
+#   https://thirtyfoxmcx00e1.github.io/wagu/regions.txt
+#
+#   Asia     mpsamp.duckdns.org      Europe   eusamp.duckdns.org
+#   NA       nasamp.duckdns.org      Oceania  ocsamp.duckdns.org
 
 # 1 = if every region broker is down, use the free public lobby (broker.hivemq.com, ...). Keep on.
 public=1
 
-# ---- Optional: force one region broker directly (no download). Lines before the first
-# [Region] = a private broker; copy a block from regions.txt below to pin a region:
-#[Asia]
-#host=mpsamp.duckdns.org
-#port=1883
-#tls=0
-#user=mp
-#pass=(see regions.txt)
+[Asia]
+host=mpsamp.duckdns.org
+port=1883
+tls=0
+user=mp
+pass=M6oehkIzqcJKSTalT8nL
+# fallback for networks that block 1883
+host=mqtts://mpsamp.duckdns.org:8883
+user=mp
+pass=M6oehkIzqcJKSTalT8nL
+web=wss://mpsamp.duckdns.org:8884/mqtt
+web_user=web
+web_pass=GtNTBqTW6sE3y0qacB18
+console=https://mpsamp.duckdns.org:7681/
+
+[Europe]
+host=eusamp.duckdns.org
+port=1883
+tls=0
+user=mp
+pass=M6oehkIzqcJKSTalT8nL
+# fallback for networks that block 1883
+host=mqtts://eusamp.duckdns.org:8883
+user=mp
+pass=M6oehkIzqcJKSTalT8nL
+web=wss://eusamp.duckdns.org:8884/mqtt
+web_user=web
+web_pass=GtNTBqTW6sE3y0qacB18
+console=https://eusamp.duckdns.org:7681/
+
+[NA]
+host=nasamp.duckdns.org
+port=1883
+tls=0
+user=mp
+pass=M6oehkIzqcJKSTalT8nL
+# fallback for networks that block 1883
+host=mqtts://nasamp.duckdns.org:8883
+user=mp
+pass=M6oehkIzqcJKSTalT8nL
+web=wss://nasamp.duckdns.org:8884/mqtt
+web_user=web
+web_pass=GtNTBqTW6sE3y0qacB18
+console=https://nasamp.duckdns.org:7681/
+
+[Oceania]
+host=ocsamp.duckdns.org
+port=1883
+tls=0
+user=mp
+pass=M6oehkIzqcJKSTalT8nL
+# fallback for networks that block 1883
+host=mqtts://ocsamp.duckdns.org:8883
+user=mp
+pass=M6oehkIzqcJKSTalT8nL
+web=wss://ocsamp.duckdns.org:8884/mqtt
+web_user=web
+web_pass=GtNTBqTW6sE3y0qacB18
+console=https://ocsamp.duckdns.org:7681/

@@ -149,6 +149,7 @@ struct Listing
     uint8_t  icon;           // 2.24: "proto:icon" in the listing (old phones read proto with atoi)
     char     lang[MP_LANG_LEN];   // 2.25: "proto:icon:language"
     uint32_t startUnix;           // 2.27: "proto:icon@start:language" (old phones: atoi stops at '@')
+    int      hostRtt;             // 4.05.1: "@start!d~45:" = the host's own broker round trip (ms), 0 = unknown
     bool     dedicated;           // 2.29: "proto:icon@start!d:language" (old phones: strtoul stops at '!')
     bool     confirmed;      // got a live update (a retained copy alone may be stale)
     uint64_t lastSeen;
@@ -795,6 +796,7 @@ static void HandleListing(uint32_t tok, const std::string& payload, bool retaine
       const char* at = ic ? strchr(ic + 1, '@') : nullptr; const char* c2 = ic ? strchr(ic + 1, ':') : nullptr;
       l.startUnix = (at && (!c2 || at < c2)) ? (uint32_t)strtoul(at + 1, nullptr, 10) : 0;   // 2.27
       { const char* bang = at ? strchr(at, '!') : nullptr; l.dedicated = bang && (!c2 || bang < c2) && bang[1] == 'd'; }   // 2.29
+      { const char* td = at ? strchr(at, '~') : nullptr; int hr = (td && (!c2 || td < c2)) ? atoi(td + 1) : 0; l.hostRtt = (hr > 0 && hr < 5000) ? hr : 0; }   // 4.05.1
       const char* lg = c2; MP_CopyStr(l.lang, lg ? lg + 1 : "", sizeof(l.lang)); MP_CleanLang(l.lang); }   // 2.25
     MP_CopyStr(l.name, f[6], sizeof(l.name));
     if(!retained) l.confirmed = true;
@@ -1354,7 +1356,10 @@ static void NetThread()
             int ic = s_nHostIcon.load();   // 2.24: icon rides behind the protocol number ("4:17"), invisible to old phones
             char lg[MP_LANG_LEN]; { std::lock_guard<std::mutex> lk2(s_LangMx); MP_CopyStr(lg, s_szHostLang, sizeof(lg)); }
             uint32_t st = s_nHostStart.load();
-            if(st)     snprintf(p, sizeof(p), "v1|%u|%d|%d|%d|%d:%d@%u%s:%s|%s", hostPort, hp, hm, hr, MP_PROTO_VERSION, ic, st, s_bHostDedicated ? "!d" : "", lg, hostName);   // 2.29: + !d = 24/7   // 2.27: + start time
+            // 4.05.1: + "~rtt" = this host's own broker round trip, so a player's list shows the real
+            // phone -> broker -> host -> back time (his ping + ours) instead of guessing ours = his
+            char rt[12] = ""; { int r = s_nRtt; if(r > 0 && r < 5000) snprintf(rt, sizeof(rt), "~%d", r); }
+            if(st)     snprintf(p, sizeof(p), "v1|%u|%d|%d|%d|%d:%d@%u%s%s:%s|%s", hostPort, hp, hm, hr, MP_PROTO_VERSION, ic, st, s_bHostDedicated ? "!d" : "", rt, lg, hostName);   // 2.29: + !d = 24/7   // 2.27: + start time
             else if(lg[0])  snprintf(p, sizeof(p), "v1|%u|%d|%d|%d|%d:%d:%s|%s", hostPort, hp, hm, hr, MP_PROTO_VERSION, ic, lg, hostName);   // 2.25: + language
             else if(ic > 0) snprintf(p, sizeof(p), "v1|%u|%d|%d|%d|%d:%d|%s", hostPort, hp, hm, hr, MP_PROTO_VERSION, ic, hostName);
             else       snprintf(p, sizeof(p), "v1|%u|%d|%d|%d|%d|%s", hostPort, hp, hm, hr, MP_PROTO_VERSION, hostName);
@@ -2037,7 +2042,8 @@ std::vector<LanServer> Online::Snapshot()
             RelayIp(s_RelayIdx[it->first], s.ip);
             s.port = l.port; MP_CopyStr(s.name, l.name, sizeof(s.name));
             s.players = l.players; s.maxPlayers = l.maxPlayers; s.region = l.region;
-            s.proto = l.proto; s.icon = l.icon; MP_CopyStr(s.lang, l.lang, sizeof(s.lang)); s.startUnix = l.startUnix; s.dedicated = l.dedicated ? 1 : 0; s.ping = rtt >= 0 ? rtt * 2 : 0;
+            s.proto = l.proto; s.icon = l.icon; MP_CopyStr(s.lang, l.lang, sizeof(s.lang)); s.startUnix = l.startUnix; s.dedicated = l.dedicated ? 1 : 0;
+            s.ping = rtt >= 0 ? (l.hostRtt > 0 ? rtt + l.hostRtt : rtt * 2) : 0;   // 4.05.1: measured on both ends when the host sends it
             s.token = it->first;
             {   // 3.11: a 24/7 server we can reach over direct UDP: show the real (measured) ping
                 auto d = s_Direct.find(it->first);
@@ -2046,6 +2052,21 @@ std::vector<LanServer> Online::Snapshot()
             out.push_back(s);
         }
         ++it;
+    }
+    // 4.05.1: a 24/7 server listed by two hosts (shift hand-over, or a second 24/7 runner) shows once:
+    // the newest start wins (that is the copy that stays)
+    for(size_t i = 0; i < out.size(); ++i)
+    {
+        if(!out[i].dedicated) continue;
+        for(size_t j = i + 1; j < out.size();)
+        {
+            if(out[j].dedicated && out[j].port == out[i].port && !strcasecmp(out[j].name, out[i].name))
+            {
+                if(out[j].startUnix > out[i].startUnix) out[i] = out[j];
+                out.erase(out.begin() + (long)j);
+            }
+            else ++j;
+        }
     }
     return out;
 }
