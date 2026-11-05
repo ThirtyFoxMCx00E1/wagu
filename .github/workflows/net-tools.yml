@@ -1,0 +1,79 @@
+name: MP NetTools package
+# 4.05.8: builds release/MP-NetTools-<v>.zip on GitHub (the files are too big for git) and attaches it to the
+# release: connection helpers for weak Wi-Fi / mobile data / Wi-Fi + data at once, and latency tests.
+#  - bin/      sockperf + netperf / netserver for Android (arm64-v8a, armeabi-v7a) built with the NDK
+#  - test/     mp-nettest.sh (UDP + TCP ping / jitter / loss to the 4 MP regions; sockperf server on every region VPS)
+#  - apps/     RIPDPI (BSD-3), net-merge for Android (MIT), Relay (GPL-3) - no root
+#  - pc/       net-merge for Linux (MIT) - Wi-Fi + Ethernet + phone tether at once on a PC / host box
+#  - vps/      NetworkOptimizer optimize.sh (MIT) - the MP VPS install already has these settings and more
+#  - magisk/   get-modules.sh: downloads NetworkEnhancer + wifi-bonding-nolog from their authors (root, Magisk / KernelSU)
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release to attach to (e.g. 4.05.8)"
+        required: true
+permissions:
+  contents: write
+jobs:
+  pack:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      V: ${{ inputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tools
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq autoconf automake libtool zip >/dev/null
+      - name: Build sockperf + netperf for Android
+        run: |
+          set -e
+          NDK=${ANDROID_NDK_LATEST_HOME:-$ANDROID_NDK_HOME}
+          TC=$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin
+          OUT=$PWD/pkg/bin; mkdir -p "$OUT"
+          git clone -q --depth 1 https://github.com/ThirtyFoxMCx00E1/sockperf /tmp/sockperf
+          git clone -q --depth 1 https://github.com/ThirtyFoxMCx00E1/netperf /tmp/netperf
+          for abi in aarch64:aarch64-linux-android24 armv7l:armv7a-linux-androideabi24; do
+            arch=${abi%%:*}; tri=${abi#*:}; host=${tri%24}
+            [ "$arch" = armv7l ] && host=arm-linux-androideabi
+            rm -rf /tmp/sp && cp -r /tmp/sockperf /tmp/sp && cd /tmp/sp
+            bash $GITHUB_WORKSPACE/tools/nettools/patch-sockperf-android.sh .
+            ./autogen.sh >/dev/null 2>&1
+            ./configure -q --host=$host CC=$TC/$tri-clang CXX=$TC/$tri-clang++ \
+              CXXFLAGS="-O2 -std=gnu++14 -D_LIBCPP_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION" LDFLAGS="-static-libstdc++"
+            make -s -j"$(nproc)" >/dev/null
+            $TC/llvm-strip sockperf; cp sockperf "$OUT/sockperf-$arch"
+            rm -rf /tmp/np && cp -r /tmp/netperf /tmp/np && cd /tmp/np
+            ./autogen.sh >/dev/null 2>&1 || true
+            cp /usr/share/misc/config.sub /usr/share/misc/config.guess . 2>/dev/null || true
+            ./configure -q --host=$host CC=$TC/$tri-clang \
+              CFLAGS="-O2 -fcommon -Wno-implicit-function-declaration -Wno-int-conversion -Wno-incompatible-pointer-types"
+            make -s -j"$(nproc)" >/dev/null 2>&1 || true; test -f src/netperf && test -f src/netserver
+            $TC/llvm-strip src/netperf src/netserver
+            cp src/netperf "$OUT/netperf-$arch"; cp src/netserver "$OUT/netserver-$arch"
+            cd "$GITHUB_WORKSPACE"
+          done
+          file "$OUT"/*
+      - name: Apps and scripts
+        run: |
+          set -e
+          mkdir -p pkg/apps pkg/pc pkg/vps pkg/magisk pkg/test
+          gh release download -R po4yka/RIPDPI -D pkg/apps -p 'app-github-release-arm64-v8a.apk' -p 'app-github-release-armeabi-v7a.apk'
+          mv pkg/apps/app-github-release-arm64-v8a.apk pkg/apps/RIPDPI-arm64-v8a.apk
+          mv pkg/apps/app-github-release-armeabi-v7a.apk pkg/apps/RIPDPI-armeabi-v7a.apk
+          gh release download -R net-merge/android -D pkg/apps -p 'net-merge-android.apk'
+          gh release download -R Mahdi-mortazavi/relay -D pkg/apps -p 'Relay-android-arm64-v8a.apk'
+          gh release download -R net-merge/net-merge -D pkg/pc -p 'net-merge-linux-aarch64.tar.gz' -p 'net-merge-linux-x86_64.tar.gz' || \
+            gh release download -R net-merge/net-merge -D pkg/pc -p '*linux-aarch64.tar.gz' -p '*linux-amd64.tar.gz'
+          curl -fsSL https://raw.githubusercontent.com/emadtoranji/NetworkOptimizer/main/optimize.sh -o pkg/vps/optimize.sh
+          curl -fsSL https://raw.githubusercontent.com/emadtoranji/NetworkOptimizer/main/LICENSE -o pkg/vps/LICENSE-NetworkOptimizer
+          cp tools/nettools/mp-nettest.sh pkg/test/; cp tools/nettools/get-magisk-modules.sh pkg/magisk/get-modules.sh
+          cp tools/nettools/README-NetTools.md pkg/README.md
+          chmod +x pkg/bin/* pkg/test/*.sh pkg/magisk/*.sh
+          ls -la pkg/*
+      - name: Zip and attach
+        run: |
+          set -e
+          mkdir -p release; (cd pkg && zip -q -r -9 "../release/MP-NetTools-$V.zip" .)
+          ls -la release/MP-NetTools-$V.zip
+          gh release upload "v$V" "release/MP-NetTools-$V.zip" --clobber

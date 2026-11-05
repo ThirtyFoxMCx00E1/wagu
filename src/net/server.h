@@ -147,6 +147,7 @@ private:
         float        pos[3];
         bool         hasPos;
         uint8_t      lastFlags;
+        uint32_t     lastSyncSeq; // 4.05.8 (memset on join): a weak-link phone sends each sync twice; relay it once
         uint64_t     spawnProtUntil;   // 3.21: 5 s spawn protection after every respawn (and the join)
         uint64_t     lastFwd[MP_MAX_PLAYERS];
         uint64_t     dlWinAt;     // 3.34: downlink budget - syncs relayed TO this player in the current 250 ms window

@@ -1382,7 +1382,7 @@ static void DzDrawStats(ImDrawList* dl, ImVec2 ds)
 static void DzDrawTopRight(ImDrawList* dl, ImVec2 ds, int ped)
 {
     char t[64];
-    if(s_Dz.opt.fps) { snprintf(t, sizeof(t), "FPS: %d | PING: %d", (int)ImGui::GetIO().Framerate, client.GetPing()); DzTextR(dl, UI::S(18), ds.x - UI::S(8), UI::S(4), IM_COL32(255, 255, 255, 220), t); }
+    if(s_Dz.opt.fps) { snprintf(t, sizeof(t), "FPS: %d | PING: %d | LOSS: %d%%", (int)ImGui::GetIO().Framerate, client.GetPing(), client.GetLossPct()); DzTextR(dl, UI::S(18), ds.x - UI::S(8), UI::S(4), IM_COL32(255, 255, 255, 220), t); }
     int w = Game::GetCharWeapon(ped);
     if(w > 0)
     {

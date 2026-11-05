@@ -554,6 +554,17 @@ ufw allow 1930/udp >/dev/null   # 3.04: Brief Case War
 ufw allow 1931/udp >/dev/null   # 3.23: Modern Warfare 3
 ufw allow 1932/udp >/dev/null   # 3.25: Mega Vil Futuristic
 ufw deny 9010/tcp >/dev/null 2>&1 || true    # JMX (also switched off in the service)
+# 4.05.8: latency test server (sockperf) - UDP + TCP 11111. NETTEST=0 in mp.env leaves it off.
+if [ "${NETTEST:-1}" = 1 ]; then
+    if apt-get install -y -qq sockperf >/dev/null 2>&1; then
+        cp "$SRC_DIR/systemd/mp-sockperf.service" /etc/systemd/system/mp-sockperf.service
+        systemctl daemon-reload; systemctl enable --now mp-sockperf.service >/dev/null 2>&1 || true
+        ufw allow 11111/udp >/dev/null; ufw allow 11111/tcp >/dev/null
+        say "latency test: sockperf ping-pong -i <this host> -p 11111 (UDP) / --tcp"
+    else
+        say "sockperf not in this distro's packages - latency test server skipped"
+    fi
+fi
 ufw --force enable >/dev/null
 
 # ---------------------------------------------------------------- done

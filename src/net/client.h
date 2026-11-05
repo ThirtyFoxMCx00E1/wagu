@@ -98,6 +98,13 @@ public:
     void Disconnect(bool sendLeave = true);
     void Poll(INetEvents* ev);           // call every frame from the game thread
     void Send(const void* data, int len);
+    // 4.05.8: player sync. On a weak link (lost pings on bad Wi-Fi / mobile data, measured like sockperf's
+    // ping-pong) every sync is sent a second time ~20 ms later; the receivers already drop a repeated
+    // sequence number, so a copy only helps when the first one was lost.
+    void SendSync(const void* data, int len);
+    int  GetLossPct() const { return m_nLossPct; }   // 4.05.8: lost pings, last 20 s
+    int  GetJitter() const  { return m_nJitter; }    // 4.05.8: ms, smoothed |rtt - last rtt|
+    bool IsWeakLink() const { return m_bWeakLink; }
 
     eNetState GetState() const { return m_eState.load(); }
     uint8_t   GetMyId() const  { return m_nMyId; }
@@ -120,6 +127,19 @@ private:
     uint64_t    m_nLastRebind = 0;    // 3.39
     uint32_t    m_nNetGenSeen = 0;    // 4.05.8: Online::NetGeneration() at the last check
     uint64_t    m_nNetChangedMs = 0;  // 4.05.8
+    // 4.05.8: link quality + redundancy
+    void        TrackPingSent(uint32_t t);
+    void        TrackPong(uint32_t sent, int rtt);
+    void        UpdateLinkQuality(uint64_t now);
+    struct PingRec { uint32_t t; bool got; };
+    PingRec     m_Pings[24] = {};
+    int         m_nPingRec = 0;
+    int         m_nLossPct = 0, m_nJitter = 0, m_nLastRtt = -1;
+    bool        m_bWeakLink = false;
+    uint64_t    m_nWeakChangeMs = 0;
+    uint8_t     m_Dup[400];
+    int         m_nDupLen = 0;
+    uint64_t    m_nDupAt = 0;
     int         m_nAltSeen = 0;       // 3.58: packets from the server's other hotspot address
     std::atomic<bool> m_bHbRun{false}, m_bGamePaused{false}, m_bSentPaused{false}, m_bAfk{false}, m_bSentAfk{false};
     std::atomic<uint64_t> m_nLastGamePoll{0};

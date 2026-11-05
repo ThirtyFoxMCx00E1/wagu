@@ -1305,7 +1305,7 @@ static void LPageServerMgmt()
     }
     else if(IsHosting()) ImGui::TextWrapped("Hosted by: you (this phone is the host owner)");
     else ImGui::TextWrapped("Hosted by: the host owner's phone / VPS");
-    ImGui::Text("Players: %d/%d     Ping: %d ms", MP::OnlineCount(), MP::OnlineMax(), MP::DisplayPing());
+    ImGui::Text("Players: %d/%d     Ping: %d ms     Loss: %d%%     Jitter: %d ms%s", MP::OnlineCount(), MP::OnlineMax(), MP::DisplayPing(), client.GetLossPct(), client.GetJitter(), client.IsWeakLink() ? "     (weak link: syncs sent twice)" : "");   // 4.05.8
     if(featured) ImGui::Text("Language: All  (fixed - nobody can change it on the featured servers)");
     else ImGui::Text("Language: %s", settings.serverLang[0] ? settings.serverLang : "All");
     if(canEdit) ImGui::TextColored(ImVec4(0.3f, 0.85f, 0.4f, 1), "You can change these settings (%s).", MP::IsLocalAdmin() ? "[ADMIN]" : MP::IsLocalMod() ? "[MOD]" : "host owner");

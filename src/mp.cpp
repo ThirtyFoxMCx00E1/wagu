@@ -2885,7 +2885,13 @@ static void SendLocalSync(int ped, uint64_t now)
     uint8_t out[sizeof(PktSync) + sizeof(SyncExt)];
     memcpy(out, &p, sizeof(p));
     int el = MP_EncodeSyncExt(e, out + sizeof(p));   // 2.15 compact v3: ~14 bytes + 9 per anim
-    client.Send(out, (int)sizeof(p) + el);
+    client.SendSync(out, (int)sizeof(p) + el);   // 4.05.8: + a copy on a weak link
+    static bool s_bWasWeak = false;
+    if(client.IsWeakLink() != s_bWasWeak)
+    {
+        s_bWasWeak = client.IsWeakLink();
+        logger->Info("4.05.8: %s (loss %d%%, jitter %d ms, ping %d ms)", s_bWasWeak ? "weak link - every sync sent twice" : "link good again - single syncs", client.GetLossPct(), client.GetJitter(), client.GetPing());
+    }
 }
 
 // 2.15: the avatar driving another player's car can't be dragged out (it's them), so pressing
@@ -5881,7 +5887,12 @@ static void DefaultServerCard(const std::vector<LanServer>& nearby)
     for(int i = 0; i < (int)nearby.size(); ++i)
         if(IsDefaultServer(nearby[i].name, nearby[i].port)) { found = i; break; }
     if(!s_bHasNetwork)                       { snprintf(info, sizeof(info), "Offline: turn on Wi-Fi or mobile data"); col = kRedTxt; }
-    else if(IsOnDefault() && IsConnected())  snprintf(info, sizeof(info), "Connected  |  %d/%d  |  %d ms", OnlineCount(), OnlineMax(), MP::DisplayPing());
+    else if(IsOnDefault() && IsConnected())
+    {
+        if(client.GetLossPct() > 0 || client.IsWeakLink())   // 4.05.8: link quality
+            snprintf(info, sizeof(info), "Connected  |  %d/%d  |  %d ms  |  loss %d%%  jitter %d ms%s", OnlineCount(), OnlineMax(), MP::DisplayPing(), client.GetLossPct(), client.GetJitter(), client.IsWeakLink() ? "  |  weak link: x2" : "");
+        else snprintf(info, sizeof(info), "Connected  |  %d/%d  |  %d ms", OnlineCount(), OnlineMax(), MP::DisplayPing());
+    }
     else if(IsHostingDefault())              snprintf(info, sizeof(info), "Online  |  host: " MP_BOT_NAME " (24/7)  |  %d/%d", s_Server.GetPlayerCount(), s_Server.GetMaxPlayers());
     else if(found >= 0)                      snprintf(info, sizeof(info), "Online at %s  |  %d/%d  |  %d ms", nearby[found].token ? "internet" : nearby[found].ip, nearby[found].players, nearby[found].maxPlayers, nearby[found].ping);
     else                                     snprintf(info, sizeof(info), "Always online  |  tap Connect");

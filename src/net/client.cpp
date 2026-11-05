@@ -65,6 +65,7 @@ bool MPClient::Connect(const char* host, uint16_t port, const char* name, uint16
     m_fPingAvg = -1.0f; m_nPing = 0;
     m_bDirect = false; m_bDirectFellBack = false; m_bGotReply = false; m_nFallbackVia = 0; m_nAltSeen = 0;
     m_nNetGenSeen = Online::NetGeneration(); m_nNetChangedMs = 0;   // 4.05.8
+    memset(m_Pings, 0, sizeof(m_Pings)); m_nPingRec = 0; m_nLossPct = 0; m_nJitter = 0; m_nLastRtt = -1; m_bWeakLink = false; m_nDupLen = 0;
 
     if(m_nDirectIp)   // 3.11: straight to the 24/7 server's public address (relay only as fallback)
     {
@@ -99,6 +100,11 @@ bool MPClient::Connect(const char* host, uint16_t port, const char* name, uint16
     if(m_Sock < 0) return false;
     fcntl(m_Sock, F_SETFL, fcntl(m_Sock, F_GETFL, 0) | O_NONBLOCK);
     { int sb = MP_SOCK_BUF; setsockopt(m_Sock, SOL_SOCKET, SO_RCVBUF, &sb, sizeof(sb)); }   // 99 others' syncs
+    // 4.05.8: voice-class priority (DSCP EF), same as the server's socket. Wi-Fi (WMM) puts these packets in
+    // the voice queue of the phone and the router, ahead of downloads / video on the same Wi-Fi; mobile
+    // networks and VPS providers that honour QoS do the same. No root needed.
+    { int tos = 0xB8; setsockopt(m_Sock, IPPROTO_IP, IP_TOS, &tos, sizeof(tos)); }
+    { int prio = 6;   setsockopt(m_Sock, SOL_SOCKET, SO_PRIORITY, &prio, sizeof(prio)); }
 
     MP_CopyStr(m_szHost, host, sizeof(m_szHost));
     MP_CopyStr(m_szName, name, sizeof(m_szName));
@@ -165,11 +171,54 @@ void MPClient::Send(const void* data, int len)
     sendto(m_Sock, data, len, 0, (sockaddr*)&m_Server, sizeof(m_Server));
 }
 
+// ---- 4.05.8: link quality (ping-pong loss / jitter) + sync redundancy on weak links ----
+void MPClient::TrackPingSent(uint32_t t)
+{
+    m_Pings[m_nPingRec % 24] = { t, false };
+    ++m_nPingRec;
+}
+void MPClient::TrackPong(uint32_t sent, int rtt)
+{
+    for(PingRec& p : m_Pings) if(p.t == sent && !p.got) { p.got = true; break; }
+    if(m_nLastRtt >= 0) { int d = rtt - m_nLastRtt; if(d < 0) d = -d; m_nJitter = (m_nJitter * 7 + d + 4) / 8; }
+    m_nLastRtt = rtt;
+}
+void MPClient::UpdateLinkQuality(uint64_t now)
+{
+    int n = 0, lost = 0;
+    for(const PingRec& p : m_Pings)
+    {
+        if(!p.t) continue;
+        uint32_t age = (uint32_t)now - p.t;
+        if(age < 2500 || age > 25000) continue;   // still on its way / too old
+        ++n; if(!p.got) ++lost;
+    }
+    m_nLossPct = n >= 5 ? lost * 100 / n : 0;
+    // on: >= 5 % lost (1 of 20) or the jitter of a bad radio link. Not when the uplink is simply full
+    // (Online congestion / ping > 600 ms): a copy would only add to the queue.
+    bool congested = Online::CongestionMs() > 0 || m_nPing > 600;
+    bool want = !congested && (m_nLossPct >= 5 || m_nJitter >= 45);
+    bool calm = m_nLossPct == 0 && m_nJitter < 25;
+    if(want && !m_bWeakLink && now - m_nWeakChangeMs > 3000) { m_bWeakLink = true; m_nWeakChangeMs = now; }
+    else if(m_bWeakLink && (congested || calm) && now - m_nWeakChangeMs > 15000) { m_bWeakLink = false; m_nWeakChangeMs = now; }
+}
+void MPClient::SendSync(const void* data, int len)
+{
+    Send(data, len);
+    // also right after a network switch (Wi-Fi <-> mobile data) the first packets on the new path get lost
+    bool netNew = m_nNetChangedMs && MP_NowMs() - m_nNetChangedMs < 10000;
+    if((m_bWeakLink || netNew) && len > 0 && len <= (int)sizeof(m_Dup))
+    {
+        memcpy(m_Dup, data, len); m_nDupLen = len; m_nDupAt = MP_NowMs() + 20;   // Wi-Fi loss comes in bursts: not back to back
+    }
+}
+
 void MPClient::Poll(INetEvents* ev)
 {
     if(m_Sock < 0) return;
     uint64_t now = MP_NowMs();
     m_nLastGamePoll = now;
+    if(m_nDupLen && now >= m_nDupAt) { Send(m_Dup, m_nDupLen); m_nDupLen = 0; }   // 4.05.8
 
     alignas(8) uint8_t buf[1024];
     for(int guard = 0; guard < 2048; ++guard)   // 2.11: a full server sends ~2000 packets/s
@@ -335,6 +384,7 @@ void MPClient::Poll(INetEvents* ev)
                         if(m_fPingAvg < 0 || rtt < m_fPingAvg) m_fPingAvg = m_fPingAvg < 0 ? (float)rtt : m_fPingAvg * 0.5f + rtt * 0.5f;
                         else m_fPingAvg = m_fPingAvg * 0.75f + rtt * 0.25f;
                         m_nPing = (int)(m_fPingAvg + 0.5f);
+                        TrackPong(sent, rtt);   // 4.05.8
                     }
                 }
                 break;
@@ -365,6 +415,8 @@ void MPClient::Poll(INetEvents* ev)
             PktPing p; p.type = PKT_PING; p.time = (uint32_t)now;
             Send(&p, sizeof(p));
             m_nLastPing = now;
+            TrackPingSent(p.time);   // 4.05.8
+            UpdateLinkQuality(now);
         }
         // 3.39: nothing from the server for 5 s (Wi-Fi <-> mobile data switch, NAT mapping gone, a stalled
         // relay): say "same session" again on the current path, and after 9 s move a direct link to the

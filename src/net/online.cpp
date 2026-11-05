@@ -346,6 +346,8 @@ static void TcpLiveness(int fd)
     setsockopt(fd, IPPROTO_TCP, TCP_KEEPCNT, &cnt, sizeof(cnt));
 #endif
     setsockopt(fd, IPPROTO_TCP, TCP_USER_TIMEOUT, &uto, sizeof(uto));
+    // the lobby link also carries the relayed game packets: voice-class priority on Wi-Fi (WMM), like the UDP game socket
+    int tos = 0xB8; setsockopt(fd, IPPROTO_IP, IP_TOS, &tos, sizeof(tos));
 }
 
 // ------------------------------------------------------------------------------------------

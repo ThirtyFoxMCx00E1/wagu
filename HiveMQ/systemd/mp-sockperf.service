@@ -1,0 +1,19 @@
+# 4.05.8: UDP + TCP latency test server (sockperf, BSD licence, Debian package). Phones / PCs measure the real
+# round trip, jitter and loss to this region with:  sockperf ping-pong -i <region host> -p 11111 [--tcp] -t 10
+# It only answers the packets it gets (same size, no amplification). Off: systemctl disable --now mp-sockperf
+[Unit]
+Description=MP Multiplayer latency test server (sockperf, UDP + TCP 11111)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=/bin/sh -c '/usr/bin/sockperf server -i 0.0.0.0 -p 11111 & exec /usr/bin/sockperf server --tcp -i 0.0.0.0 -p 11111'
+Restart=always
+RestartSec=5
+Nice=5
+DynamicUser=yes
+CPUQuota=20%
+MemoryMax=64M
+
+[Install]
+WantedBy=multi-user.target

@@ -1088,6 +1088,8 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             int rawLen = len <= (int)sizeof(raw) ? len : (int)sizeof(PktSync);
             memcpy(raw, data, rawLen);
             PktSync p; memcpy(&p, data, sizeof(p));   // packed + unaligned: never read it in place
+            if(p.seq && p.seq == m_Slots[slot].lastSyncSeq) return;   // 4.05.8: the weak-link copy of one already relayed
+            m_Slots[slot].lastSyncSeq = p.seq;
             p.id = (uint8_t)slot;
             raw[offsetof(PktSync, id)] = (uint8_t)slot;
             if(!AcSync(slot, p, raw, rawLen)) return;   // 3.50: anti-cheat (movement, health, weapons...)

@@ -121,6 +121,11 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **4.05.9**: better connection on weak Wi-Fi and mobile data, plus a network tools pack (MP-NetTools-4.05.9.zip).
+  - Weak link mode: MP now measures packet loss and jitter. When loss is 5% or more, or jitter is 45 ms or more (and it isn't just a slow or full link), every position sync is sent twice, 20 ms apart, so one lost packet no longer makes players jump. It also does this for 10 s after a Wi-Fi <-> mobile data switch. The server and other players drop the duplicate. Loss and jitter are shown in the launcher and the status line.
+  - The game UDP socket and the lobby TCP socket now ask for voice-class priority (DSCP EF / SO_PRIORITY 6), so Wi-Fi routers that support WMM send game packets first.
+  - VPS: extra TCP settings from NetworkOptimizer (buffers, SACK, fewer SYN retries). Every region gets a sockperf test server on UDP + TCP 11111 after the region install is run again.
+  - MP-NetTools zip: mp-nettest.sh (UDP/TCP latency, jitter and loss to all 4 regions), sockperf / netperf built for Android arm64 and armv7, net-merge (Wi-Fi + mobile data at once, no root), RIPDPI (operator blocking / DPI, no root), Relay (phone data to a PC), net-merge for Linux, NetworkOptimizer for other VPSes, and a script that downloads the NetworkEnhancer and wifi-bonding-nolog Magisk modules (root). See README-NetTools.md in the zip.
 - **4.05.8**: loading screen fix, Wi-Fi <-> mobile data fix, launcher touches no longer reach the game.
   - Stuck on the loading screen after updating: 4.05.5 switched off the texture database guard from 4.04.2. Phones that still had a texdb pack in the game folder (the v4.02 GTA V pack, another mod's textures, a half-copied update) got the old loading-screen crash / hang back. The guard is on again (same decoder, it only stops at the end of the buffer).
   - Day Z world textures: the texture destroy hook gives the game its real result back (4.05.7 returned nothing) and does no work at all while no world texture is swapped (the loading screen destroys thousands of textures).
