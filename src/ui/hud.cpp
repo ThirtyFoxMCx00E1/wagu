@@ -675,7 +675,8 @@ void* HUD::Texture(const char* file, ImVec2* uv)
         t.uv = s_LogoUV; s_LogoUV = keep;
     }
     else logger->Error("%s missing or bigger than 2048x2048", path);
-    if(t.r) { t.w = (int)(w * t.uv.x + 0.5f); t.h = (int)(h * t.uv.y + 0.5f); }   // w/h = the padded raster
+    if(t.r) { t.w = w; t.h = h; }   // 4.07.2: w/h are already the picture's own size (RasterFromPixels); scaling them by uv again
+                                    // squashed a 1024x256 title logo to 1024x64 (Add server preview + the logo on top of the screen)
     if(uv) *uv = t.uv;
     return (void*)t.r;
 }

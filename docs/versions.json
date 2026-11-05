@@ -1,6 +1,7 @@
 {
-"latest": "4.07.1",
+"latest": "4.07.2",
 "supported": [
+"4.07.2",
 "4.07.1",
 "4.07",
 "4.06",
@@ -100,6 +101,13 @@
 "3.04.6"
 ],
 "versions": [
+{
+"v": "4.07.2",
+"summary": "the server title logo and the Add server preview are no longer squashed.",
+"items": [
+"A 1024x256 logo was drawn as 1024x64 (the texture size was multiplied twice by the UV scale), so the title logo in game and its thumbnail in Add server looked flat. They now keep the real size of the PNG / JPG."
+]
+},
 {
 "v": "4.07.1",
 "summary": "every sound works without pasting mp3s, hosted servers no longer freeze.",

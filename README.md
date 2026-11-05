@@ -121,6 +121,8 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **4.07.2**: the server title logo and the Add server preview are no longer squashed.
+  - A 1024x256 logo was drawn as 1024x64 (the texture size was multiplied twice by the UV scale), so the title logo in game and its thumbnail in Add server looked flat. They now keep the real size of the PNG / JPG.
 - **4.07.1**: every sound works without pasting mp3s, hosted servers no longer freeze.
   - Only the music (dz_ambient / war_ambient) came from Host/Media; the button click (Global_click), hit (sound_010) and "connected" (sound_effect_connected) sounds stayed silent when they were not in files/MP. A missing one is now downloaded once from Host/Media into files/MP (Wi-Fi or mobile data) and used from there.
   - Fix: a server hosted on the phone (and the game of the host) froze the first time a server list asked it for its info (country / gamemode / tags / description, since 4.04). The dedicated server had the same freeze.
