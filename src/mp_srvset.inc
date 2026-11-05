@@ -6,6 +6,9 @@
 
 static struct { bool have = false; PktSrvSettings s = {}; uint64_t at = 0; } s_SrvSet;
 
+static bool s_bHudMenuPending = false;   // 4.07: /settings waits for the server's answer (mp_hudmenu.inc)
+static void HudMenuShow();
+static void HudMenuOpen();
 static void SrvSettingsReset() { s_SrvSet.have = false; s_SrvSet.at = 0; }
 static void SrvSettingsShow();
 static void SrvSettingsOnPacket(const PktSrvSettings& m)
@@ -13,6 +16,7 @@ static void SrvSettingsOnPacket(const PktSrvSettings& m)
     const bool reopen = SampDialogOpen() && s_Dlg.fn != nullptr && s_Dlg.user == 0x5353;
     s_SrvSet.have = true; s_SrvSet.s = m; s_SrvSet.at = MP_NowMs();
     if(reopen) SrvSettingsShow();
+    if(s_bHudMenuPending) { s_bHudMenuPending = false; HudMenuShow(); }   // 4.07
 }
 static void SrvSettingsSend()
 {
@@ -130,7 +134,8 @@ static bool SrvSettingsCommand(const char* cmd, const char* arg)
         return true;
     }
     if(!strcmp(cmd, "modcheck") || !strcmp(cmd, "whyamimod")) { ModCheckReport(); return true; }
-    if(strcmp(cmd, "settings") && strcmp(cmd, "srvsettings") && strcmp(cmd, "ss") && strcmp(cmd, "serversettings")) return false;
+    if(!strcmp(cmd, "settings") || !strcmp(cmd, "hud") || !strcmp(cmd, "textdraw")) { HudMenuOpen(); return true; }   // 4.07: Settings Menu (host owner)
+    if(strcmp(cmd, "srvsettings") && strcmp(cmd, "ss") && strcmp(cmd, "serversettings")) return false;
     SrvSettingsShow();
     return true;
 }

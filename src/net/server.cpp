@@ -1419,7 +1419,10 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
         {
             if(slot < 0 || len < (int)sizeof(PktSrvSettings)) return;
             PktSrvSettings p; memcpy(&p, data, sizeof(p));
-            if(p.op == 1) OnSrvSettings(slot, p); else SendSrvSettings(slot);
+            PktSrvSettings2 h; memset(&h, 0, sizeof(h));   // 4.07: + HUD block
+            memcpy(&h, data, len < (int)sizeof(h) ? (size_t)len : sizeof(h));
+            const bool hasHud = len >= (int)sizeof(PktSrvSettings2) && h.hudMagic == HUD_MAGIC;
+            if(p.op == 1) OnSrvSettings(slot, p, hasHud ? &h : nullptr); else SendSrvSettings(slot);
             break;
         }
         case PKT_DZ_CMD:    // 3.58: Project Day Z

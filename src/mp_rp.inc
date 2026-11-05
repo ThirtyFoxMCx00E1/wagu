@@ -1355,8 +1355,10 @@ static void RpDrawHud(ImDrawList* dl, float now, uint64_t nowMs)
     const PktRpMe& m = s_Rp.me;
     int ped = Game::LocalPed();
     char t[160], mb[32];
-    RpDrawLogo(dl, ds.x * 0.5f, UI::S(10), 1.0f, now);
+    if(HudFlag(HUDF_LOGO)) RpDrawLogo(dl, ds.x * 0.5f, UI::S(10), 1.0f, now);   // 4.07: /settings > Textdraw > Logo Server
     // ---- right info panel (TIME / ID / NAME / JOB / CASH / BANK) ----
+    // 4.07: Mega Vil Futuristic blue (was violet) and bigger; the colour = /settings > Textdraw > HUD Mode
+    if(HudOn())
     {
         // 3.25: under the game's clock / money / weapon / health / wanted stars (it covered them before),
         // no background and no outline - only the text (it has its own black text outline)
@@ -1365,26 +1367,27 @@ static void RpDrawHud(ImDrawList* dl, float now, uint64_t nowMs)
         // see-through box each, right-aligned, kept above the game's interact buttons on the right
         (void)rh; (void)w; (void)x0;
         // 3.55: hexagon labels (the screenshot): the value right-aligned, then a purple hexagon with the icon
-        const int rows = 5; const float bh = UI::S(40), bg = UI::S(6), isz = UI::S(24), hr = UI::S(21);
+        const int rows = 5; const float bh = UI::S(50), bg = UI::S(7), isz = UI::S(30), hr = UI::S(26);
+        const HudPal& pal = HudPalette();
         y0 = UI::S(212);
         float y1 = y0 + rows * (bh + bg);
         int online = 1; for(int i = 0; i < MP_MAX_PLAYERS; ++i) if(i != myId && players[i].active) ++online;
         char vals[rows][64];
         snprintf(vals[0], 64, "%d/%d", online, client.GetMaxPlayers() > 0 ? client.GetMaxPlayers() : MP_MAX_PLAYERS);
-        snprintf(vals[1], 64, "ID : #%d  -  Lv %d", myId, m.level);
-        snprintf(vals[2], 64, "Cash $%d", m.cash);
-        snprintf(vals[3], 64, "Bank $%d", m.bank);
+        if(HudFlag(HUDF_PLAYER)) snprintf(vals[1], 64, "%s : #%d  -  Lv %d", settings.name, myId, m.level);
+        else snprintf(vals[1], 64, "ID : #%d  -  Lv %d", myId, m.level);
+        { char mo[40]; HudMoney(mo, sizeof(mo), m.cash); snprintf(vals[2], 64, "Cash %s", mo); HudMoney(mo, sizeof(mo), m.bank); snprintf(vals[3], 64, "Bank %s", mo); }
         snprintf(vals[4], 64, "%s%s", g_RpJobs[m.job < RPJ_COUNT ? m.job : 0].name, m.duty ? " - On duty" : "");
         static const int kIc[rows] = { RPH_ONLINE, RPH_ID, RPH_CASH, RPH_BANK, RPH_JOB };
         static const char* const kGl[rows] = { "P", "#", "$", "B", "J" };
         static const uint32_t kVc[rows] = { 0xA3E635FF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF };
-        float fs = UI::S(21);
+        float fs = UI::S(25);
         for(int i = 0; i < rows; ++i)
         {
             float tw = RpTextW(fs, vals[i]);
             float y = y0 + i * (bh + bg);
             ImVec2 hc(x1 - hr, y + bh * 0.5f);
-            HexLabel(dl, hc, hr, IM_COL32(110, 24, 150, 235), IM_COL32(200, 110, 210, 255), UI::S(3));
+            HexLabel(dl, hc, hr, pal.fill, pal.border, UI::S(3));
             if(!RpHudIcon(dl, kIc[i], hc, isz, IM_COL32_WHITE)) RpText(dl, fs, ImVec2(hc.x - RpTextW(fs, kGl[i]) * 0.5f, hc.y - fs * 0.5f), IM_COL32_WHITE, kGl[i]);
             RpText(dl, fs, ImVec2(hc.x - hr - UI::S(12) - tw, y + (bh - fs) * 0.5f), RpCol(kVc[i], 1), vals[i]);
         }

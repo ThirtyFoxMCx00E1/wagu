@@ -706,6 +706,12 @@ static void DzModelsTick();   // 3.61: mp_dayz.inc
 static void SocialFrame();    // 3.63: mp_social.inc (friends, chats, party, communities)
 static int DzAdjustDamage(int hp, int dmg, bool instant);   // 3.59: helmet vs headshot, DOWN at 5%
 static bool DzHidden();
+static void HudOnConfig(const PktSrvSettings2& h);   // 4.07 (mp_hudset.inc)
+static void HudReset();
+static void HudRenderExtras();
+static bool BcwOnServer();
+static bool HudDrawServerLogo(ImDrawList* dl);
+static bool HudFlag(uint8_t f);
 static bool DzConnScreen();   // 4.02: Project Day Z cabin connection screen (PLAY / RULES / CREDITS / SETTINGS)
 static void DzProcess(int ped, uint64_t now);
 static void DzOnPacket(const uint8_t* d, int len);
@@ -2358,7 +2364,7 @@ public:
     void OnConnected(const PktWelcome& w) override
     {
         SampReset();   // 3.01
-        HkReset(); RulesReset(); Modes2Reset(); SrvSettingsReset(); ProgReset();   // 3.39: a new join: houses / rules / modes come again
+        HkReset(); RulesReset(); Modes2Reset(); SrvSettingsReset(); HudReset(); ProgReset();   // 3.39: a new join: houses / rules / modes come again
         myId = w.yourId; myColor = w.color;
         MP_CopyStr(s_szCurServer, w.serverName, sizeof(s_szCurServer));
         s_bWorldSynced = false;
@@ -2629,6 +2635,7 @@ public:
     void OnHome(const uint8_t* d, int len) override { HkOnPacket(d, len); }
     void OnRules(const PktRules& m) override { RulesOnPacket(m); }
     void OnSrvSettings(const PktSrvSettings& m) override { SrvSettingsOnPacket(m); }
+    void OnHudConfig(const PktSrvSettings2& h) override { HudOnConfig(h); }   // 4.07
     void OnGmEvent(const uint8_t* d, int len) override { Modes2OnEvent(d, len); }
     void OnProgress(const PktProgress& m) override { ProgOnPacket(m); }   // 3.39.1
     void OnAdminAct(const PktAdminAct& m) override { AdmOnAct(m); }      // 3.54
@@ -4187,6 +4194,23 @@ void MP::Process()
         }
     }
     JoinFlowProcess(ped, now);   // 2.19: join screen, connection camera, spawn picker
+    // 4.07: the MP launcher (server UI) hides the game's HUD + touch widgets the same way the connection
+    // screen does (ShowGameHud(false) + no player control, again every second because scripts switch them
+    // back), so nothing of GTA's HUD shows through the panel or gets the taps under it
+    {
+        static bool s_bLaunchHudOff = false;
+        const bool open = FloatMenu::IsModal();
+        if(open)
+        {
+            if(!s_bLaunchHudOff) { Game::ShowGameHud(false); Game::SetPlayerControl(false); s_bLaunchHudOff = true; }
+            else if(now % 1000 < 40) { Game::ShowGameHud(false); Game::SetPlayerControl(false); }
+        }
+        else if(s_bLaunchHudOff)
+        {
+            s_bLaunchHudOff = false;
+            if(!JoinFlowActive() && !DzConnScreen()) { Game::ShowGameHud(true); Game::SetPlayerControl(true); }
+        }
+    }
     BcwProcess(ped, now);        // 3.04: Brief Case War
     Mw3Process(ped, now);        // 3.23: Modern Warfare 3
     RpProcess(ped, now);         // 3.25: Mega Vil Futuristic
@@ -4336,6 +4360,7 @@ static void PSettingsPopup();
 #include "mp_admincmds.inc"  // 3.54: admin / moderator commands
 #include "mp_cmds.inc"   // 2.19: chat commands, cheats, player list, chat box, spawn buttons
 #include "mp_samp.inc"   // 3.01: SA-MP dialogs, textdraws, race / derby state of the others
+#include "mp_hudset.inc"  // 4.07: server HUD (Textdraw): colour variant, cents, player, ammo, title logo
 #include "mp_games.inc"  // 2.21: /spawn, /w, races, deathmatch, jobs, teleport events, open world (3.01: derbies, live race positions)
 #include "mp_world.inc"  // 3.01: 3D labels, map icons, actors, gang zones + turf wars, class selection
 #include "mp_bcw.inc"    // 3.04: Brief Case War
@@ -4359,6 +4384,7 @@ static void PSettingsPopup();
 #include "mp_mv.inc"        // 3.39: /mv My Vehicles
 #include "mp_rules.inc"     // 3.39: the rules window after the login
 #include "mp_srvset.inc"    // 3.39: server settings / management page
+#include "mp_hudmenu.inc"   // 4.07: /settings (Settings Menu > Textdraw / Hud Mode / Entering Door)
 #include "mp_progress.inc"  // 3.39.1: saved progress (place, money, weapons, health, hunger)
 #include "mp_modes2.inc"    // 3.39: survival, CnR, A/D, stunt, drift
 #include "mp_timber.inc"    // 3.51: the Timber job + the Broker MQQ title
@@ -4617,6 +4643,7 @@ static bool StartLocalServer(const char* name, int port)
         s_Server.SetOwnerUid(settings.deviceId);
     }
     s_Server.SetAntiCheat(settings.hostAc, settings.hostAcMask);   // 3.50 (featured servers: always on, every check)
+    if(!MP::IsDefaultServer(name, port)) { s_Server.SetHudConfig((uint8_t)settings.hudMode, (uint8_t)settings.hudFlags, (uint8_t)settings.hudDoor); s_Server.SetLogoPos((uint8_t)settings.logoX, (uint8_t)settings.logoY, (uint8_t)settings.logoZ); }   // 4.07: /settings > Textdraw
     if(!s_Server.Start((uint16_t)port, name, ServerLog, maxp, settings.region))
     {
         SysMsg(COL_RED, "Could not start the server on port %d", port);
@@ -5186,6 +5213,17 @@ static void ProcessLan(uint64_t now)
                     if(FILE* f = fopen(pp, "rb")) { fseek(f, 0, SEEK_END); long n = ftell(f); fseek(f, 0, SEEK_SET); if(n > 0 && n <= 200 * 1024) { pvBytes.resize((size_t)n); if(fread(&pvBytes[0], 1, (size_t)n, f) != (size_t)n) pvBytes.clear(); } fclose(f); }
                 }
                 Online::SetHostPreview(own ? pvBytes : std::string());
+                // 4.07: Import title logo -> shown on top of the screen to everyone on this server
+                static char lgName[48] = ""; static std::string lgBytes;
+                bool ownLg = run && settings.serverLogo[0] && !IsHostingDefault() && !FeaturedName(s_Server.GetName(), s_Server.GetPort());
+                if(ownLg && strcmp(lgName, settings.serverLogo))
+                {
+                    MP_CopyStr(lgName, settings.serverLogo, sizeof(lgName)); lgBytes.clear();
+                    char pp[512]; snprintf(pp, sizeof(pp), "%s/%s", s_szDataDir, settings.serverLogo);
+                    if(FILE* f = fopen(pp, "rb")) { fseek(f, 0, SEEK_END); long n = ftell(f); fseek(f, 0, SEEK_SET); if(n > 0 && n <= 200 * 1024) { lgBytes.resize((size_t)n); if(fread(&lgBytes[0], 1, (size_t)n, f) != (size_t)n) lgBytes.clear(); } fclose(f); }
+                }
+                if(!settings.serverLogo[0]) lgName[0] = 0;
+                Online::SetHostLogo(ownLg ? lgBytes : std::string());
             }
         }
         // 2.20 regional brokers: until the player picks a region, use the lowest-ping one (once)
@@ -5325,7 +5363,7 @@ void MP::SaveConfig()
     I("ChatFade", settings.chatFade); B("ChatFadeOn", settings.chatFadeOn); B("ChatBackground", settings.chatBg);
     B("ChatBoxBackground", settings.chatBoxBg); B("ChatBoxLabel", settings.chatBoxLabel); B("ChatBoxTap", settings.chatBoxTap);   // 2.22
     F("ChatBoxX", settings.chatBoxX); F("ChatBoxY", settings.chatBoxY); B("RealSkin", settings.realSkin);
-    I("Region", settings.region); B("LobbyAuto", settings.lobbyAuto); B("RegionPicked", settings.regionPicked); I("NameColor", (int)settings.nameColor); I("ServerChatColor", (int)settings.serverChatColor); I("PlayerChatColor", (int)settings.playerChatColor); I("MaxPlayers", settings.maxPlayers); I("HostGamemodes", settings.hostModes); I("ServerIcon", settings.serverIcon); S("ServerLang", settings.serverLang); S("ServerCC", settings.serverCC); S("ServerMode", settings.serverMode); I("ServerModeCol", settings.serverModeCol); S("ServerTags", settings.serverTags); S("ServerDesc", settings.serverDesc); S("ServerPreview", settings.serverPreview); S("DeviceId", settings.deviceId); S("UiLanguage", settings.uiLanguage);   // 3.52
+    I("Region", settings.region); B("LobbyAuto", settings.lobbyAuto); B("RegionPicked", settings.regionPicked); I("NameColor", (int)settings.nameColor); I("ServerChatColor", (int)settings.serverChatColor); I("PlayerChatColor", (int)settings.playerChatColor); I("MaxPlayers", settings.maxPlayers); I("HostGamemodes", settings.hostModes); I("ServerIcon", settings.serverIcon); S("ServerLang", settings.serverLang); S("ServerCC", settings.serverCC); S("ServerMode", settings.serverMode); I("ServerModeCol", settings.serverModeCol); S("ServerTags", settings.serverTags); S("ServerDesc", settings.serverDesc); S("ServerPreview", settings.serverPreview); S("ServerLogo", settings.serverLogo); I("HudMode", settings.hudMode); I("HudFlags", settings.hudFlags); I("HudDoor", settings.hudDoor); I("LogoX", settings.logoX); I("LogoY", settings.logoY); I("LogoZ", settings.logoZ); S("DeviceId", settings.deviceId); S("UiLanguage", settings.uiLanguage);   // 3.52
     B("FullProgressDefault", settings.fullProgressDefault);
     B("UnlockWorld", settings.unlockWorld); B("Girlfriends", settings.girlfriends); B("EventTips", settings.eventTips);   // 2.21
     B("PermAfk", settings.permAfk); B("PermDmgInd", settings.permDmgInd); B("PermShowIds", settings.permShowIds); B("PermNeeds", settings.permNeeds); B("RulesOn", settings.rulesOn); S("RulesTitle", settings.rulesTitle);
@@ -5447,6 +5485,14 @@ static void LoadConfig()
     ::cfg->GetString(settings.serverTags, sizeof(settings.serverTags), "ServerTags", "", "MP");
     ::cfg->GetString(settings.serverDesc, sizeof(settings.serverDesc), "ServerDesc", "", "MP");
     ::cfg->GetString(settings.serverPreview, sizeof(settings.serverPreview), "ServerPreview", "", "MP");
+    ::cfg->GetString(settings.serverLogo, sizeof(settings.serverLogo), "ServerLogo", "", "MP");   // 4.07
+    settings.hudMode = ::cfg->GetInt("HudMode", 1, "MP"); settings.hudFlags = ::cfg->GetInt("HudFlags", HUD_DEFAULT_FLAGS, "MP"); settings.hudDoor = ::cfg->GetInt("HudDoor", 2, "MP");
+    if(settings.hudMode < 0 || settings.hudMode > 5) settings.hudMode = 1;
+    if(settings.hudDoor < 0 || settings.hudDoor > 10) settings.hudDoor = 2;
+    settings.logoX = ::cfg->GetInt("LogoX", 50, "MP"); settings.logoY = ::cfg->GetInt("LogoY", 2, "MP"); settings.logoZ = ::cfg->GetInt("LogoZ", 100, "MP");
+    if(settings.logoX < 0 || settings.logoX > 100) settings.logoX = 50;
+    if(settings.logoY < 0 || settings.logoY > 100) settings.logoY = 2;
+    if(settings.logoZ < 10 || settings.logoZ > 250) settings.logoZ = 100;
     MP_CleanField(settings.serverCC); MP_CleanField(settings.serverMode); MP_CleanField(settings.serverTags); MP_CleanField(settings.serverDesc);
     ::cfg->GetString(settings.deviceId, sizeof(settings.deviceId), "DeviceId", "", "MP");
     LoadAdminFile();   // 2.37: admin.txt = proof you are SENJI
@@ -6390,6 +6436,7 @@ static bool SquareChip(const char* id, const char* txt, bool on, ImU32 col)
     ImGui::SameLine(0, UI::S(6));
     return hit;
 }
+static int s_nPickFor = 0;   // 4.07: which "opens Files" button started the picker (0 preview, 1 title logo)
 static void ServerDetailsEditor()
 {
     ImGui::Separator();
@@ -6501,12 +6548,46 @@ static void ServerDetailsEditor()
         if(pv) ImGui::Image((ImTextureID)pv, ImVec2(UI::S(320), UI::S(160)), ImVec2(0, 0), uv);
         else ImGui::TextDisabled(settings.serverPreview[0] ? "Loading..." : "No preview image: the list shows your server background.");
         int ps = Voice::PickImageState();
-        { char f[48]; if(Voice::PickedFile(f, sizeof(f))) { MP_CopyStr(settings.serverPreview, f, sizeof(settings.serverPreview)); SaveConfig(); SysMsg(COL_GREEN, "Preview image saved."); } }
-        if(FloatMenu::BigButton(ps == 1 ? "Waiting for the Files app..." : "Upload preview image (opens Files)") && ps != 1) Voice::PickImage(s_szDataDir);
+        if(s_nPickFor == 0) { char f[48]; if(Voice::PickedFile(f, sizeof(f))) { MP_CopyStr(settings.serverPreview, f, sizeof(settings.serverPreview)); SaveConfig(); SysMsg(COL_GREEN, "Preview image saved."); } }
+        if(s_nPickFor != 0) ps = 0;
+        if(FloatMenu::BigButton(ps == 1 ? "Waiting for the Files app..." : "Upload preview image (opens Files)") && ps != 1 && Voice::PickImageState() != 1) { s_nPickFor = 0; Voice::PickImage(s_szDataDir, 0); }
         if(ps == 3) ImGui::TextColored(kYellowTxt, "Install MP Voice (MP-Voice.apk from the release): it opens the Files app for the game.");
         if(ps == 4) ImGui::TextColored(kYellowTxt, "No picture came back (cancelled, or not a JPG / PNG).");
         if(settings.serverPreview[0] && FloatMenu::BigButton("Remove preview image", kLeaveCol)) { settings.serverPreview[0] = 0; SaveConfig(); }
         ImGui::TextDisabled("Shown in the server details (internet lobby + this phone). It is resized to 512x256.");
+    }
+    // 4.07: Server title logo (like the Broker MQTT / Mega Vil Futuristic titles): a PNG (transparent) or JPG
+    // from the Files app, shown on top of the screen to everyone on this server (/settings > Textdraw > Logo Server)
+    ImGui::Separator();
+    {
+        ImGui::TextUnformatted("Server title logo (PNG / JPG)");
+        ImVec2 uv(1, 1);
+        void* lg = settings.serverLogo[0] ? HUD::Texture(settings.serverLogo, &uv) : nullptr;
+        if(lg)
+        {
+            int tw = 0, th = 0; if(!HUD::TextureSize(settings.serverLogo, &tw, &th) || tw <= 0 || th <= 0) { tw = 4; th = 1; }
+            float w = UI::S(360), h = w * th / tw; if(h > UI::S(140)) { h = UI::S(140); w = h * tw / th; }
+            ImVec2 p = ImGui::GetCursorScreenPos();
+            ImGui::GetWindowDrawList()->AddRectFilled(p, ImVec2(p.x + UI::S(360), p.y + h), IM_COL32(20, 24, 32, 255), UI::S(6));   // dark backdrop for transparent logos
+            ImGui::Image((ImTextureID)lg, ImVec2(w, h), ImVec2(0, 0), uv);
+        }
+        else ImGui::TextDisabled(settings.serverLogo[0] ? "Loading..." : "No title logo: the default Broker MQTT title is shown.");
+        int ps = Voice::PickImageState();
+        if(s_nPickFor == 1) { char f[48]; if(Voice::PickedFile(f, sizeof(f))) { MP_CopyStr(settings.serverLogo, f, sizeof(settings.serverLogo)); SaveConfig(); SysMsg(COL_GREEN, "Title logo saved - everyone on your server sees it on top of the screen."); } }
+        if(s_nPickFor != 1) ps = 0;
+        if(FloatMenu::BigButton(ps == 1 ? "Waiting for the Files app..." : "Import title logo (opens Files)") && ps != 1 && Voice::PickImageState() != 1) { s_nPickFor = 1; Voice::PickImage(s_szDataDir, 1); }
+        if(ps == 3) ImGui::TextColored(kYellowTxt, "Install MP Voice 4.07 (MP-Voice.apk from the release): it opens the Files app for the game.");
+        if(ps == 4) ImGui::TextColored(kYellowTxt, "No picture came back (cancelled, or not a PNG / JPG).");
+        if(settings.serverLogo[0] && FloatMenu::BigButton("Remove title logo", kLeaveCol)) { settings.serverLogo[0] = 0; SaveConfig(); }
+        // 4.07: where it shows: X (left 0 - right 100), Y (top 0 - bottom 100), Z = size (10 - 250 %)
+        ImGui::TextUnformatted("Title logo position (X, Y) and size (Z)");
+        bool done = false;
+        ImGui::SliderInt("X (%)##lgx", &settings.logoX, 0, 100); done |= ImGui::IsItemDeactivatedAfterEdit();
+        ImGui::SliderInt("Y (%)##lgy", &settings.logoY, 0, 100); done |= ImGui::IsItemDeactivatedAfterEdit();
+        ImGui::SliderInt("Z size (%)##lgz", &settings.logoZ, 10, 250); done |= ImGui::IsItemDeactivatedAfterEdit();
+        if(FloatMenu::BigButton("Reset logo position")) { settings.logoX = 50; settings.logoY = 2; settings.logoZ = 100; done = true; }
+        if(done) HudLogoPosChanged();
+        ImGui::TextDisabled("PNG keeps transparency. Max 1024x256, 200 KB. The host can hide it: /settings > Textdraw > Logo Server.");
     }
 }
 

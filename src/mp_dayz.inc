@@ -494,7 +494,13 @@ static bool DzAmbStart(uint64_t now)
     char path[512]; bool found = DzAmbFind(path, sizeof(path));
     s_DzAmb.retryAt = 0;
     if(!found)
-    {
+    {   // 4.07: not in files/MP -> the media player streams it from the repo (Host/Media) over Wi-Fi / mobile data
+        if(Sound::StreamPlayUrl(MP_MEDIA_URL DZ_AMB_FILE, 0.0f))
+        {
+            DzAmbLog("not in files/MP - streaming %s", MP_MEDIA_URL DZ_AMB_FILE);
+            s_DzAmb.phase = 1; s_DzAmb.phaseAt = now; s_DzAmb.cardAt = now; s_DzAmb.logged = false;
+            return true;
+        }
         s_DzAmb.phase = 0; s_DzAmb.retryAt = now + 20000;   // put the file in while playing: it starts by itself
         if(!s_DzAmb.missingSaid)
         {
@@ -1827,7 +1833,7 @@ static void DzDrawPanel(ImVec2 ds)
                 if(ImGui::Button("Retry skipped models")) DzModelsReport(true);
             }
             ImGui::TextWrapped("Project Day Z Legacy - gamemode Proper DAYZ. Based on Project DayZ SA-MP, made for MP by ThirtyFox.");
-            ImGui::TextWrapped("Ambient music: No Man's Land | Metro / S.T.A.L.K.E.R Atmospheric Playlist by Lemuria - youtu.be/aVTcVx1570w (put your copy at files/MP/dz_ambient.mp3).");
+            ImGui::TextWrapped("Ambient music: No Man's Land | Metro / S.T.A.L.K.E.R Atmospheric Playlist by Lemuria - youtu.be/aVTcVx1570w (streamed from the MP media host over Wi-Fi / mobile data; a copy at files/MP/dz_ambient.mp3 is used instead if you have one).");
             ImGui::TextWrapped("Global network (4.05): libks, signalwire-c, FreeSWITCH (SignalWire), Eclipse Mosquitto, EMQX, MQTTX, Mainflux, awesome-mqtt, vps-hosting-providers, Sidekick, Aeon-MLTB, whmcs-vps-reseller.");
             break;
     }

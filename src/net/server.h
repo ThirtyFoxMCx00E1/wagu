@@ -217,7 +217,13 @@ private:
     void SendRules(int slot);
     bool CanManage(int slot) const;
     void SendSrvSettings(int slot);
-    void OnSrvSettings(int slot, const PktSrvSettings& p);
+    void OnSrvSettings(int slot, const PktSrvSettings& p, const PktSrvSettings2* hud = nullptr);
+public:
+    void SetHudConfig(uint8_t mode, uint8_t flags, uint8_t doorSecs) { m_nHudMode = mode > 5 ? 1 : mode; m_nHudFlags = flags; m_nDoorSecs = doorSecs > 10 ? 2 : doorSecs; }   // 4.07: host's saved choice
+    void SetLogoPos(uint8_t x, uint8_t y, uint8_t z) { m_nLogoX = x > 100 ? 50 : x; m_nLogoY = y > 100 ? 2 : y; m_nLogoZ = (z < 10 || z > 250) ? 100 : z; }   // 4.07
+private:
+    std::atomic<uint8_t> m_nHudMode{1}, m_nHudFlags{HUD_DEFAULT_FLAGS}, m_nDoorSecs{2};
+    std::atomic<uint8_t> m_nLogoX{50}, m_nLogoY{2}, m_nLogoZ{100};   // 4.07: title logo position / size
     void AuthBegin(int slot);                    // 3.21.6, m_Mutex held
     void AuthHandle(int slot, const uint8_t* data, int len);
     void AnnounceJoin(int slot);                 // 3.21.6: PKT_PLAYER_JOIN to everybody else

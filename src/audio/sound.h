@@ -15,6 +15,7 @@ namespace Sound
     // 3.63: long tracks (1 h Day Z ambient): decoded on a thread a second at a time and streamed
     // into a buffer-queue voice (no full decode in RAM, no media framework / URI player)
     bool  StreamPlay(const char* absPath, float volume = 1.0f);   // false = file missing / not an mp3
+    bool  StreamPlayUrl(const char* url, float volume = 1.0f);    // 4.07: media player (http/https, Android decoder, async)
     void  StreamUpdate();                // call every game tick (starts the queue when data is ready)
     void  StreamSetVolume(float volume);
     void  StreamStop();

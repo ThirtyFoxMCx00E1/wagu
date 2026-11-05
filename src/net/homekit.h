@@ -87,6 +87,12 @@ struct PktProgress
     uint8_t  wep[13]; uint8_t pad2[3]; uint16_t ammo[13]; uint16_t pad3;
 };
 struct PktSrvSettings { uint8_t type, op, perms, can; uint16_t modes; uint8_t rulesOn, pad; };
+// 4.07: /settings > Textdraw (HUD) of the server, chosen by its host owner (featured servers: staff) and the same
+// for everyone on it. Sent behind PktSrvSettings (older phones / servers read only the first 8 bytes).
+enum eHudFlag : uint8_t { HUDF_CENTS = 1, HUDF_PLAYER = 2, HUDF_AMMO = 4, HUDF_LOGO = 8 };
+#define HUD_MAGIC 0x48
+#define HUD_DEFAULT_FLAGS (HUDF_PLAYER | HUDF_AMMO | HUDF_LOGO)
+struct PktSrvSettings2 { PktSrvSettings b; uint8_t hudMagic, hudMode, hudFlags, doorSecs; uint8_t logoX, logoY, logoZ, logoValid; };   // 4.07: title logo position: X / Y % of the screen, Z = size % (logoValid = 1)   // hudMode 0 = HUD off, 1..5 = HUD variant
 // 3.39: rules: idx 0 = title, 1..10 = the lines; on = 0 -> no rules window
 struct PktRules     { uint8_t type, idx, on, count; char text[100]; };
 // 3.39: the new gamemodes (CnR / A-D / survival / stunt / drift): one small relayed event.

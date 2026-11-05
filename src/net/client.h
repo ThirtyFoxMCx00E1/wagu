@@ -60,6 +60,7 @@ public:
     virtual void OnHome(const uint8_t* /*data*/, int /*len*/) {}  // 3.39: PKT_HOME_HEAD / OBJS / INDEX / DEL / MSG
     virtual void OnRules(const PktRules&) {}                      // 3.39
     virtual void OnSrvSettings(const PktSrvSettings&) {}          // 3.39
+    virtual void OnHudConfig(const PktSrvSettings2&) {}           // 4.07: /settings > Textdraw of this server
     virtual void OnGmEvent(const uint8_t* /*data*/, int /*len*/) {}   // 3.39
     virtual void OnKickWait(int /*seconds*/) {}                   // 3.39: kicked: wait before joining again
     virtual void OnProgress(const PktProgress&) {}                // 3.39.1: my saved progress

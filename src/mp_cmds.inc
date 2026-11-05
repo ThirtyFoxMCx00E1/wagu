@@ -1013,6 +1013,7 @@ static void Render219(void*)
     SocialFrame();             // 3.63: MP social (friends, chats, party, communities, inbox)
     RenderDz();                // 3.58: Project Day Z Legacy
     HkRender(); NeedsRender(); Modes2Render(); DealerRender();   // 3.39 / 3.55
+    HudRenderExtras();   // 4.07: HUD Player + Ammo Info
     RenderHotelPc();           // 3.36: hotel room computer (every server)
     RenderSafeZones();         // 3.21: hospital safe zones
     RenderMarkers();           // 3.21: red checkpoint beams

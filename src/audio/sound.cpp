@@ -398,6 +398,32 @@ namespace
         snprintf(s_StInfo, sizeof(s_StInfo), "playing with the Android decoder");
         return true;
     }
+    // 4.07: media player: music streamed from a URL (Host/Media in the repo) by the Android decoder, over
+    // Wi-Fi or mobile data, so the big mp3s don't have to be in files/MP. Prepare (Realize) blocks while it
+    // connects, so it runs on its own thread; the game thread takes the ready player in StreamUpdate.
+    std::mutex s_UrlMx; int s_UrlGen = 0; bool s_UrlPending = false; FdPlayer s_UrlReady; bool s_UrlHave = false; float s_UrlVol = 0.0f;
+    std::string s_UrlErr;
+    void UrlThread(std::string url, int gen)
+    {
+        SLDataLocator_URI loc = { SL_DATALOCATOR_URI, (SLchar*)url.c_str() };
+        SLDataFormat_MIME mime = { SL_DATAFORMAT_MIME, nullptr, SL_CONTAINERTYPE_UNSPECIFIED };
+        SLDataSource src = { &loc, &mime };
+        SLDataLocator_OutputMix outMix = { SL_DATALOCATOR_OUTPUTMIX, g_Mix };
+        SLDataSink sink = { &outMix, nullptr };
+        const SLInterfaceID ids[1] = { SL_IID_VOLUME };
+        const SLboolean req[1] = { SL_BOOLEAN_FALSE };
+        FdPlayer p; const char* err = nullptr;
+        if((*g_EngineItf)->CreateAudioPlayer(g_EngineItf, &p.obj, &src, &sink, 1, ids, req) != SL_RESULT_SUCCESS) { p.obj = nullptr; err = "media player: this phone can't play URLs"; }
+        else if((*p.obj)->Realize(p.obj, SL_BOOLEAN_FALSE) != SL_RESULT_SUCCESS || (*p.obj)->GetInterface(p.obj, SL_IID_PLAY, &p.play) != SL_RESULT_SUCCESS)
+        { (*p.obj)->Destroy(p.obj); p = FdPlayer(); err = "media player: no internet / the music URL did not answer"; }
+        else if((*p.obj)->GetInterface(p.obj, SL_IID_VOLUME, &p.vol) != SL_RESULT_SUCCESS) p.vol = nullptr;
+        std::lock_guard<std::mutex> lk(s_UrlMx);
+        if(gen != s_UrlGen) { if(p.obj) (*p.obj)->Destroy(p.obj); return; }   // stopped meanwhile
+        s_UrlPending = false;
+        if(err) { s_UrlErr = err; return; }
+        s_UrlReady = p; s_UrlHave = true;
+    }
+    void UrlCancel() { std::lock_guard<std::mutex> lk(s_UrlMx); ++s_UrlGen; s_UrlPending = false; if(s_UrlHave && s_UrlReady.obj) (*s_UrlReady.obj)->Destroy(s_UrlReady.obj); s_UrlHave = false; s_UrlReady = FdPlayer(); }
     // what is in the file? 1 = mp3, 2 = something else (m4a / ogg / webm / wav ...), 0 = unreadable / empty
     int Sniff(const char* path, char* what, size_t n)
     {
@@ -442,8 +468,40 @@ bool Sound::StreamPlay(const char* path, float volume)
     return true;
 }
 
+bool Sound::StreamPlayUrl(const char* url, float volume)
+{
+    s_StInfo[0] = 0;
+    if(!url || strncmp(url, "http", 4) || !EnsureEngine()) { snprintf(s_StInfo, sizeof(s_StInfo), "no audio engine / bad URL"); return false; }
+    StreamStop();
+    s_StPath.clear(); s_FdTried = true;
+    { std::lock_guard<std::mutex> ls(s_St.mx); s_St.eof = false; s_St.failed = false; s_St.active = false; }
+    {
+        std::lock_guard<std::mutex> lk(s_UrlMx);
+        int g = ++s_UrlGen; s_UrlPending = true; s_UrlVol = volume; s_UrlErr.clear();
+        std::thread(UrlThread, std::string(url), g).detach();
+    }
+    snprintf(s_StInfo, sizeof(s_StInfo), "media player: connecting");
+    return true;
+}
+
 void Sound::StreamUpdate()
 {
+    {   // 4.07: the URL player is ready (or failed)
+        std::unique_lock<std::mutex> lk(s_UrlMx);
+        if(s_UrlHave)
+        {
+            FdPlayer p = s_UrlReady; s_UrlHave = false; s_UrlReady = FdPlayer(); float vol = s_UrlVol; lk.unlock();
+            FdStop();
+            s_Fd = p; s_FdMode = true; s_FdEnd = false;
+            (*p.play)->RegisterCallback(p.play, FdCb, nullptr);
+            (*p.play)->SetCallbackEventsMask(p.play, SL_PLAYEVENT_HEADATEND);
+            FdVolume(vol);
+            if((*p.play)->SetPlayState(p.play, SL_PLAYSTATE_PLAYING) != SL_RESULT_SUCCESS) { FdStop(); snprintf(s_StInfo, sizeof(s_StInfo), "media player: could not start"); s_St.failed = true; }
+            else snprintf(s_StInfo, sizeof(s_StInfo), "media player: streaming");
+            return;
+        }
+        if(!s_UrlPending && !s_UrlErr.empty()) { snprintf(s_StInfo, sizeof(s_StInfo), "%s", s_UrlErr.c_str()); s_UrlErr.clear(); }
+    }
     if(s_FdMode) { if(s_FdEnd) { FdStop(); s_St.eof = true; s_St.failed = false; s_St.active = false; } return; }
     if(!s_St.active) return;
     std::unique_lock<std::mutex> lk(s_St.mx);
@@ -477,6 +535,7 @@ const char* Sound::StreamInfo() { return s_StInfo; }
 
 void Sound::StreamSetVolume(float volume)
 {
+    { std::lock_guard<std::mutex> lu(s_UrlMx); s_UrlVol = volume; }
     if(s_FdMode) { FdVolume(volume); return; }
     std::lock_guard<std::mutex> lk(s_St.mx);
     s_St.vol = volume;
@@ -485,6 +544,7 @@ void Sound::StreamSetVolume(float volume)
 
 void Sound::StreamStop()
 {
+    UrlCancel();   // 4.07
     FdStop();
     std::lock_guard<std::mutex> lk(s_St.mx);
     s_St.gen = s_St.gen + 1;   // the decoder thread ends itself
@@ -493,8 +553,8 @@ void Sound::StreamStop()
     s_St.head = 0; s_St.active = false;
 }
 
-bool  Sound::StreamActive() { return s_FdMode || s_St.active; }
-bool  Sound::StreamEnded() { return !s_FdMode && !s_St.active && s_St.eof && !s_St.failed; }
+bool  Sound::StreamActive() { { std::lock_guard<std::mutex> lk(s_UrlMx); if(s_UrlPending || s_UrlHave) return true; } return s_FdMode || s_St.active; }
+bool  Sound::StreamEnded() { { std::lock_guard<std::mutex> lk(s_UrlMx); if(s_UrlPending || s_UrlHave) return false; } return !s_FdMode && !s_St.active && s_St.eof && !s_St.failed; }
 float Sound::StreamPosition()
 {
     if(s_FdMode) { SLmillisecond ms = 0; if(s_Fd.play && (*s_Fd.play)->GetPosition(s_Fd.play, &ms) == SL_RESULT_SUCCESS) return ms / 1000.0f; return 0.0f; }

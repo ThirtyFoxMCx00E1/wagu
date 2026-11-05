@@ -781,7 +781,13 @@ void MP::DrawDefaultTitle(ImDrawList* dl)
 {
     // 3.53.1: from the moment you connect to the default server (connecting / black join screen, spawn
     // picker, under the RULES window and other dialogs), not only after every window was closed
-    if(!MP::IsOnDefault() || Game::IsPaused()) return;
+    if(Game::IsPaused()) return;
+    if(!MP::IsOnDefault())
+    {   // 4.07: a custom server's own title logo (+ Add server > Import title logo)
+        if(!BcwOnServer() && !Mw3OnServer() && !RpOnServer() && !DzOnServer()) HudDrawServerLogo(dl);
+        return;
+    }
+    if(!HudFlag(HUDF_LOGO)) return;   // 4.07: /settings > Textdraw > Logo Server
     // 3.55: bigger (x1.35) and a bit lower (4.5 % of the screen height, was 6 px), like the screenshot
     const ImVec2 ds = ImGui::GetIO().DisplaySize;
     DefaultDrawLogo(dl, ds.x * 0.5f, ds.y * 0.045f, 1.35f);

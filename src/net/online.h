@@ -53,6 +53,8 @@ namespace Online
     void SetHostDetails(const std::string& d);
     void SetHostPreview(const std::string& jpeg);          // 4.04: + Add server > Upload preview image (retained p/<token>)
     bool Preview(uint32_t token, std::string& jpeg);        // 4.04: that server's picture, false = none
+    void SetHostLogo(const std::string& img);               // 4.07: + Add server > Server title logo (retained g/<token>)
+    bool Logo(uint32_t token, std::string& img);            // 4.07: that server's title logo (PNG / JPG), false = none
     bool Details(uint32_t token, std::string& out);
     void SetHostStart(uint32_t unixStart);   // 2.27: listing "proto:icon@start:language"   // 2.25: language shown in everyone's server list        // 2.24: 0 = default icon, 1..250 = icon_N.png (sent with the listing)
 

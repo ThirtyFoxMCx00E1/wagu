@@ -642,6 +642,7 @@ namespace Voice
 static const int MP_PICK_PORT = 19231;
 static std::atomic<int> s_nPickState{0};
 static std::mutex s_PickMx; static char s_szPickDir[400] = "", s_szPicked[48] = "";
+static int s_nPickMode = 0;   // 4.07: 0 = preview picture (512x256 JPEG), 1 = title logo (PNG with transparency)
 static void PickOpenOnUi(void*)
 {
     JNIEnv* e = Env();
@@ -657,6 +658,7 @@ static void PickOpenOnUi(void*)
     if(ClearEx(e) || !in || !scn || !pex || !afl) { s_nPickState = 3; return; }
     e->CallObjectMethod(in, scn, e->NewStringUTF("com.thirtyfox.mpvoice"), e->NewStringUTF("com.thirtyfox.mpvoice.PickActivity"));
     e->CallObjectMethod(in, pex, e->NewStringUTF("port"), (jint)MP_PICK_PORT);
+    e->CallObjectMethod(in, pex, e->NewStringUTF("mode"), (jint)s_nPickMode);   // 4.07
     e->CallObjectMethod(in, afl, (jint)0x10000000);   // FLAG_ACTIVITY_NEW_TASK
     jclass cc = e->GetObjectClass(act);
     jmethodID sa = e->GetMethodID(cc, "startActivity", "(Landroid/content/Intent;)V");
@@ -695,9 +697,10 @@ static void PickThread()
     }
     close(ls);
     bool jpg = img.size() > 4 && (uint8_t)img[0] == 0xFF && (uint8_t)img[1] == 0xD8;
-    if(!jpg) { s_nPickState = 4; return; }
+    bool png = img.size() > 8 && (uint8_t)img[0] == 0x89 && img[1] == 'P' && img[2] == 'N' && img[3] == 'G';   // 4.07
+    if(!jpg && !png) { s_nPickState = 4; return; }
     uint32_t crc = 2166136261u; for(unsigned char ch : img) crc = (crc ^ ch) * 16777619u;
-    char name[48]; snprintf(name, sizeof(name), "pv_mine_%08x.jpg", crc);
+    char name[48]; snprintf(name, sizeof(name), "%s_mine_%08x.%s", s_nPickMode == 1 ? "lg" : "pv", crc, png ? "png" : "jpg");
     char path[512]; { std::lock_guard<std::mutex> lk(s_PickMx); snprintf(path, sizeof(path), "%s/%s", s_szPickDir, name); }
     FILE* f = fopen(path, "wb");
     if(!f) { s_nPickState = 4; return; }
@@ -705,9 +708,10 @@ static void PickThread()
     { std::lock_guard<std::mutex> lk(s_PickMx); snprintf(s_szPicked, sizeof(s_szPicked), "%s", name); }
     s_nPickState = 2;
 }
-void Voice::PickImage(const char* saveDir)
+void Voice::PickImage(const char* saveDir, int mode)
 {
     if(s_nPickState == 1) return;
+    s_nPickMode = mode;
     { std::lock_guard<std::mutex> lk(s_PickMx); snprintf(s_szPickDir, sizeof(s_szPickDir), "%s", saveDir ? saveDir : "."); s_szPicked[0] = 0; }
     s_nPickState = 1;
     std::thread(PickThread).detach();

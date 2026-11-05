@@ -418,8 +418,12 @@ static void HkProcess(int ped, uint64_t now)
             float dist = sqrtf((d.x - myDrawPos.x) * (d.x - myDrawPos.x) + (d.y - myDrawPos.y) * (d.y - myDrawPos.y));
             if(fabsf(d.z - myDrawPos.z) < 2.5f && dist < nd) { nd = dist; nearId = kv.first; }
         }
+        // 4.07: Entering Door (/settings): stand in the door for that many seconds before its menu opens
+        static int s_nDoorWaitId = -1; static uint64_t s_nDoorWaitAt = 0;
+        if(nearId != s_nDoorWaitId) { s_nDoorWaitId = nearId; s_nDoorWaitAt = now; }
+        const bool waited = now - s_nDoorWaitAt >= (uint64_t)HudDoorMs();
         if(nearId < 0) s_nHkDoorShown = 0;
-        else if(nearId != s_nHkDoorShown && !SampDialogOpen() && !Game::IsCharInAnyCar(ped) && !s_HkSet.open && !s_HkEd.open)
+        else if(nearId != s_nHkDoorShown && waited && !SampDialogOpen() && !Game::IsCharInAnyCar(ped) && !s_HkSet.open && !s_HkEd.open)
         {
             s_nHkDoorShown = (uint16_t)nearId;
             HkShowDoor(s_Hk[(uint16_t)nearId].h);

@@ -3,8 +3,8 @@
      RECORD_AUDIO permission. Records 48 kHz mono and passes it to the game over 127.0.0.1 only. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.thirtyfox.mpvoice"
-    android:versionCode="3"
-    android:versionName="4.05.3">
+    android:versionCode="4"
+    android:versionName="4.07">
     <uses-sdk android:minSdkVersion="21" android:targetSdkVersion="34" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.INTERNET" />

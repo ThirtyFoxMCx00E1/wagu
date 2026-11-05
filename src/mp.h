@@ -1,4 +1,7 @@
 #pragma once
+// 4.07: media player host: the big music files are streamed from here (Wi-Fi / mobile data) when they
+// are not in files/MP
+#define MP_MEDIA_URL "https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/Host/Media/"
 #include <stdint.h>
 #include <string>
 #include <deque>
@@ -82,6 +85,9 @@ struct MPSettings
     char  serverTags[MP_TAGS_LEN] = "";
     char  serverDesc[MP_DESC_LEN] = "";
     char  serverPreview[48] = "";                     // 4.03: pv_mine_<crc>.jpg in files/MP (Upload preview image)
+    char  serverLogo[48] = "";                        // 4.07: lg_mine_<crc>.png in files/MP (Import title logo)
+    int   hudMode = 1, hudFlags = 14, hudDoor = 2;  
+    int   logoX = 50, logoY = 2, logoZ = 100;           // 4.07: title logo X / Y (% of the screen) and Z (size %)  // 4.07: /settings > Textdraw of the server I host (HUD_DEFAULT_FLAGS)
     char  deviceId[MP_UID_LEN + 1] = "";            // 2.25: this phone's id (bans), made on first start
     char  adminKey[129] = "";                         // 2.37: read from files/MP/admin.txt (never saved in the config) - proof you are SENJI
     char  hostedPassword[MP_PASSWORD_LEN + 1] = "";   // 2.19: password of the server this phone hosted last

@@ -645,7 +645,7 @@ static void EnsureEmbeddedAsset(const char* file, const char* path)
     }
 }
 // 3.04: any other PNG in files/MP by file name (Brief Case War briefcase / lock / banner), max 512x512
-struct NamedTex { char file[48]; RwRaster* r; ImVec2 uv; };
+struct NamedTex { char file[48]; RwRaster* r; ImVec2 uv; int w, h; };
 static NamedTex s_NamedTex[192]; static int s_nNamedTex = 0;   // 3.60: 48 -> 96, 4.02: 192 (the featured icons kept failing once Day Z + RP filled it)
 void* HUD::Texture(const char* file, ImVec2* uv)
 {
@@ -657,7 +657,7 @@ void* HUD::Texture(const char* file, ImVec2* uv)
     if(s_nIconLoadFrame == fr) return nullptr;   // one file per frame
     s_nIconLoadFrame = fr;
     NamedTex& t = s_NamedTex[s_nNamedTex++];
-    snprintf(t.file, sizeof(t.file), "%s", file); t.r = nullptr; t.uv = ImVec2(1, 1);
+    snprintf(t.file, sizeof(t.file), "%s", file); t.r = nullptr; t.uv = ImVec2(1, 1); t.w = t.h = 0;
     char path[512]; snprintf(path, sizeof(path), "%s/%s", MP::DataDir(), file);
     EnsureEmbeddedAsset(file, path);   // 3.25
     int w = 0, h = 0, n = 0;
@@ -675,8 +675,15 @@ void* HUD::Texture(const char* file, ImVec2* uv)
         t.uv = s_LogoUV; s_LogoUV = keep;
     }
     else logger->Error("%s missing or bigger than 2048x2048", path);
+    if(t.r) { t.w = (int)(w * t.uv.x + 0.5f); t.h = (int)(h * t.uv.y + 0.5f); }   // w/h = the padded raster
     if(uv) *uv = t.uv;
     return (void*)t.r;
+}
+bool HUD::TextureSize(const char* file, int* w, int* h)   // 4.07: the picture's own size (after Texture() loaded it)
+{
+    for(int i = 0; i < s_nNamedTex; ++i)
+        if(!strcmp(s_NamedTex[i].file, file) && s_NamedTex[i].r) { *w = s_NamedTex[i].w; *h = s_NamedTex[i].h; return true; }
+    return false;
 }
 
 // 3.36: a vehicle picture (files/MP/Vehicles.jar: Vehicle_400.png .. Vehicle_611.png, 204x125), loaded on

@@ -20,10 +20,11 @@ import java.net.Socket;
 // 127.0.0.1:<port> as "MPIM" + uint32 length (little endian) + bytes, then back to the game.
 public class PickActivity extends Activity {
     private int port = 19231;
+    private int mode = 0;   // 4.07: 1 = server title logo (keeps the shape + transparency, PNG)
 
     @Override protected void onCreate(Bundle b) {
         super.onCreate(b);
-        if (getIntent() != null) port = getIntent().getIntExtra("port", 19231);
+        if (getIntent() != null) { port = getIntent().getIntExtra("port", 19231); mode = getIntent().getIntExtra("mode", 0); }
         Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT);
         i.addCategory(Intent.CATEGORY_OPENABLE);
         i.setType("image/*");
@@ -38,7 +39,7 @@ public class PickActivity extends Activity {
 
     @Override protected void onActivityResult(int req, int res, Intent data) {
         final Uri u = (res == RESULT_OK && data != null) ? data.getData() : null;
-        new Thread(() -> { send(u == null ? null : toJpeg(u)); runOnUiThread(this::finish); }).start();
+        new Thread(() -> { send(u == null ? null : (mode == 1 ? toLogo(u) : toJpeg(u))); runOnUiThread(this::finish); }).start();
     }
 
     private byte[] toJpeg(Uri u) {
@@ -58,6 +59,31 @@ public class PickActivity extends Activity {
             ByteArrayOutputStream bo = new ByteArrayOutputStream();
             out.compress(Bitmap.CompressFormat.JPEG, 82, bo);
             return bo.toByteArray();
+        } catch (Exception e) { return null; }
+    }
+
+    // 4.07: title logo: the whole picture (no crop), at most 1024x256, PNG with its transparency; still too big
+    // for the lobby (200 KB) -> smaller until it fits
+    private byte[] toLogo(Uri u) {
+        try {
+            BitmapFactory.Options o = new BitmapFactory.Options(); o.inJustDecodeBounds = true;
+            try (InputStream in = getContentResolver().openInputStream(u)) { BitmapFactory.decodeStream(in, null, o); }
+            int s = 1; while (o.outWidth / (s * 2) >= 1024 || o.outHeight / (s * 2) >= 256) s *= 2;
+            BitmapFactory.Options d = new BitmapFactory.Options(); d.inSampleSize = s; d.inPreferredConfig = Bitmap.Config.ARGB_8888;
+            Bitmap src;
+            try (InputStream in2 = getContentResolver().openInputStream(u)) { src = BitmapFactory.decodeStream(in2, null, d); }
+            if (src == null) return null;
+            float maxW = 1024, maxH = 256;
+            for (int tries = 0; tries < 5; ++tries) {
+                float k = Math.min(1f, Math.min(maxW / src.getWidth(), maxH / src.getHeight()));
+                int w = Math.max(1, Math.round(src.getWidth() * k)), h = Math.max(1, Math.round(src.getHeight() * k));
+                Bitmap out = Bitmap.createScaledBitmap(src, w, h, true);
+                ByteArrayOutputStream bo = new ByteArrayOutputStream();
+                out.compress(Bitmap.CompressFormat.PNG, 100, bo);
+                if (bo.size() <= 200 * 1024) return bo.toByteArray();
+                maxW *= 0.75f; maxH *= 0.75f;
+            }
+            return null;
         } catch (Exception e) { return null; }
     }
 

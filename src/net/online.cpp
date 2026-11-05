@@ -842,6 +842,11 @@ static std::map<uint32_t, std::pair<std::string, uint64_t>> s_Details;   // toke
 static std::string TopicPreview(uint32_t tok) { char h[9]; Hex8(h, tok); return (TOPIC_ROOT + "p/") + h; }   // 4.04
 static std::string       s_HostPreview;                    // 4.04: JPEG bytes we publish on p/<our token>
 static std::map<uint32_t, std::string> s_Previews;         // token -> JPEG (Upload preview image of that host)
+// 4.07: + Add server > Server title logo (PNG with transparency or JPG), retained g/<token>; shown on top of the
+// screen to everyone on that server (like the Broker MQTT / Mega Vil Futuristic titles)
+static std::string TopicLogo(uint32_t tok) { char h[9]; Hex8(h, tok); return (TOPIC_ROOT + "g/") + h; }
+static std::string       s_HostLogo;
+static std::map<uint32_t, std::string> s_Logos;
 static std::string TopicShared(uint32_t tok) { char h[9]; Hex8(h, tok); return (TOPIC_ROOT + "b/") + h; }   // 2.18.3
 
 static void AppendFrame(std::string& b, const uint8_t* d, int n)
@@ -986,6 +991,7 @@ static void NetThread()
     uint64_t lastList = 0, lastFlush = 0, lastPing = 0, pingSent = 0, lastRx = 0, nextTry = 0;
     std::string lastDet; uint64_t lastDetAt = 0;   // 4.03
     std::string lastPv; uint32_t lastPvTok = 0; uint64_t lastPvAt = 0;   // 4.04
+    std::string lastLg; uint32_t lastLgTok = 0; uint64_t lastLgAt = 0;   // 4.07: title logo
     int baseRtt = -1, lastQueueMs = 0;           // 2.15: fastest broker round trip seen / queueing on top of it
     uint64_t lastBaseDecay = 0;
     uint64_t upHeld = 0;                         // 2.18.3: client side positions held since
@@ -1050,7 +1056,7 @@ static void NetThread()
         if(mq.fd >= 0 && ((wantRegion >= 0 && wantRegion != s_nCurRegion) || (wantRegion == WANT_PUBLIC && s_nCurRegion >= 0)) && (wantRegion != lastWant || now - lastSwitch > 60000))
         {
             OLOG("switching lobby to %s (was %d)", wantRegion >= 0 ? g_MPRegionNames[wantRegion] : "the public broker", s_nCurRegion.load());
-            if(curHostToken) { mq.Publish(TopicList(curHostToken), "", 0, true); mq.Publish(TopicDetails(curHostToken), "", 0, true); mq.Publish(TopicPreview(curHostToken), "", 0, true); }
+            if(curHostToken) { mq.Publish(TopicList(curHostToken), "", 0, true); mq.Publish(TopicDetails(curHostToken), "", 0, true); mq.Publish(TopicPreview(curHostToken), "", 0, true); mq.Publish(TopicLogo(curHostToken), "", 0, true); }
             mq.Disconnect();
             s_bConnected = false;
             nextTry = 0;
@@ -1082,6 +1088,7 @@ static void NetThread()
                     mq.Publish(TopicList(curHostToken), "", 0, true);
                     mq.Publish(TopicDetails(curHostToken), "", 0, true);   // 4.03
                     mq.Publish(TopicPreview(curHostToken), "", 0, true);   // 4.04
+                    mq.Publish(TopicLogo(curHostToken), "", 0, true);      // 4.07
                 }
                 mq.Disconnect();
                 s_bConnected = false;
@@ -1167,7 +1174,8 @@ static void NetThread()
                     mq.Subscribe((TOPIC_ROOT + "l/+").c_str(), 1);
                     mq.Subscribe((TOPIC_ROOT + "d/+").c_str(), 1);   // 4.03
                     mq.Subscribe((TOPIC_ROOT + "p/+").c_str(), 1);   // 4.04: preview pictures
-                    lastDet.clear(); lastPv.clear(); lastPvTok = 0;
+                    mq.Subscribe((TOPIC_ROOT + "g/+").c_str(), 1);   // 4.07: title logos
+                    lastDet.clear(); lastPv.clear(); lastPvTok = 0; lastLg.clear(); lastLgTok = 0;
                     mq.Subscribe(down.c_str(), 2);
                     sharedSubTok = 0; lastCap = 0;   // 2.18.3: new session -> subscribe to b/<token> again
                     if(curHostToken)
@@ -1269,6 +1277,15 @@ static void NetThread()
                 if(!tok) {}
                 else if(pn < 4 || pl[0] != 0xFF || pl[1] != 0xD8) s_Previews.erase(tok);
                 else if(pn <= 200 * 1024 && (s_Previews.size() < 300 || s_Previews.count(tok))) s_Previews[tok] = std::string((const char*)pl, pn);
+            }
+            else if(!strncmp(t, "g/", 2) && strlen(t) == 10)   // 4.07: title logo of a server
+            {
+                uint32_t tok = ParseHex8(t + 2);
+                std::lock_guard<std::mutex> lk(s_DetMx);
+                bool png = pn >= 8 && pl[0] == 0x89 && pl[1] == 'P' && pl[2] == 'N' && pl[3] == 'G', jpg = pn >= 4 && pl[0] == 0xFF && pl[1] == 0xD8;
+                if(!tok) {}
+                else if(!png && !jpg) s_Logos.erase(tok);
+                else if(pn <= 200 * 1024 && (s_Logos.size() < 300 || s_Logos.count(tok))) s_Logos[tok] = std::string((const char*)pl, pn);
             }
             else if(!strncmp(t, "c/", 2) && pn >= 4)              // to us, from a host
             {
@@ -1572,6 +1589,12 @@ static void NetThread()
             {
                 lastPv = pv; lastPvTok = curHostToken; lastPvAt = now;
                 if(!mq.Publish(TopicPreview(curHostToken), pv.data(), pv.size(), true)) broken = true;
+            }
+            std::string lg; { std::lock_guard<std::mutex> lk(s_DetMx); lg = s_HostLogo; }
+            if((lg != lastLg || lastLgTok != curHostToken) && now - lastLgAt >= 5000)   // 4.07
+            {
+                lastLg = lg; lastLgTok = curHostToken; lastLgAt = now;
+                if(!mq.Publish(TopicLogo(curHostToken), lg.data(), lg.size(), true)) broken = true;
             }
         }
 
@@ -2415,6 +2438,14 @@ void Online::SetHostLang(const char* lang)   // 2.25
 }
 void Online::SetHostDetails(const std::string& d) { std::lock_guard<std::mutex> lk(s_DetMx); s_HostDetails = d.size() > 2000 ? d.substr(0, 2000) : d; }   // 4.03
 void Online::SetHostPreview(const std::string& jpeg) { std::lock_guard<std::mutex> lk(s_DetMx); s_HostPreview = jpeg.size() <= 200 * 1024 ? jpeg : std::string(); }   // 4.04
+void Online::SetHostLogo(const std::string& img) { std::lock_guard<std::mutex> lk(s_DetMx); s_HostLogo = img.size() <= 200 * 1024 ? img : std::string(); }   // 4.07
+bool Online::Logo(uint32_t tok, std::string& out)
+{
+    std::lock_guard<std::mutex> lk(s_DetMx);
+    auto it = s_Logos.find(tok);
+    if(it == s_Logos.end()) return false;
+    out = it->second; return true;
+}
 bool Online::Preview(uint32_t tok, std::string& out)
 {
     std::lock_guard<std::mutex> lk(s_DetMx);

@@ -286,7 +286,8 @@ void MPClient::Poll(INetEvents* ev)
                                        ev->OnKicked(k); } break;   // 2.25   // 3.39: + the wait
             case PKT_HOME_HEAD: case PKT_HOME_OBJS: case PKT_HOME_INDEX: case PKT_HOME_DEL: case PKT_HOME_MSG: ev->OnHome(buf, r); break;   // 3.39
             case PKT_RULES:        if(r >= (int)sizeof(PktRules)) { PktRules m; memcpy(&m, buf, sizeof(m)); m.text[sizeof(m.text) - 1] = 0; ev->OnRules(m); } break;
-            case PKT_SRV_SETTINGS: if(r >= (int)sizeof(PktSrvSettings)) { PktSrvSettings m; memcpy(&m, buf, sizeof(m)); ev->OnSrvSettings(m); } break;
+            case PKT_SRV_SETTINGS: if(r >= (int)sizeof(PktSrvSettings)) { PktSrvSettings m; memcpy(&m, buf, sizeof(m)); ev->OnSrvSettings(m);
+                if(r >= (int)sizeof(PktSrvSettings2)) { PktSrvSettings2 h; memcpy(&h, buf, sizeof(h)); if(h.hudMagic == HUD_MAGIC) ev->OnHudConfig(h); } } break;   // 4.07
             case PKT_GM_EVENT:     ev->OnGmEvent(buf, r); break;
             case PKT_PROGRESS:     if(r >= (int)sizeof(PktProgress)) { PktProgress m; memcpy(&m, buf, sizeof(m)); ev->OnProgress(m); } break;   // 3.39.1
             case PKT_ADMIN_ACT:    if(r >= (int)sizeof(PktAdminAct)) { PktAdminAct m; memcpy(&m, buf, sizeof(m)); ev->OnAdminAct(m); } break;   // 3.54

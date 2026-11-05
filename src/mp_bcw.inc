@@ -22,7 +22,7 @@ struct BcwClientState
     PktBcwState st{};  bool haveState = false;
     PktBcwRoll  roll{}; bool haveRoll = false; uint64_t rollAt = 0;
     PktBcwScore score[2]{}; bool haveScore[2] = { false, false }; bool scoreClosed = false; uint64_t scoreAt = 0;
-    uint64_t    connectedAt = 0; bool musicTried = false, musicMissingSaid = false;
+    uint64_t    connectedAt = 0; bool musicTried = false, musicMissingSaid = false, musicUrl = false;
     uint64_t    deathAt = 0, heldAt = 0; bool held = false;   // dead: game respawned us (hospital) and we're parked hidden
     uint64_t    protectUntil = 0, lastVeh = 0, lastHudOff = 0, lastWanted = 0, lastNoWanted = 0;   // 3.21: lastNoWanted
     int         lobbyMap = -1;
@@ -243,6 +243,7 @@ static void BcwShutdown()
 {
     if(!s_Bcw.engaged) return;
     Sound::StopMusic();
+    if(s_Bcw.musicUrl) { Sound::StreamStop(); s_Bcw.musicUrl = false; }
     BcwDeleteObjects();
     int ped = Game::LocalPed();
     if(ped > 0 && Game::IsReady())
@@ -363,11 +364,19 @@ static void BcwProcess(int ped, uint64_t now)
         if(!s_Bcw.musicTried)
         {
             s_Bcw.musicTried = true;
-            if(!Sound::PlayMusic(path, 0.0f, true) && !s_Bcw.musicMissingSaid)
-            { s_Bcw.musicMissingSaid = true; SysMsg(COL_SYSTEM, "Put war_ambient.mp3 in files/MP to hear the war music."); }
+            if(!Sound::PlayMusic(path, 0.0f, true))
+            {   // 4.07: not in files/MP -> streamed from the media host (Host/Media) over Wi-Fi / mobile data
+                s_Bcw.musicUrl = Sound::StreamPlayUrl(MP_MEDIA_URL "war_ambient.mp3", 0.0f);
+                if(!s_Bcw.musicUrl && !s_Bcw.musicMissingSaid) { s_Bcw.musicMissingSaid = true; SysMsg(COL_SYSTEM, "No internet for the war music (or put war_ambient.mp3 in files/MP)."); }
+            }
         }
         float k = (float)(now - s_Bcw.connectedAt - BCW_MUSIC_DELAY_MS) / 1000.0f; if(k > 1) k = 1;
-        Sound::SetMusicVolume(BCW_MUSIC_VOLUME * k);
+        if(s_Bcw.musicUrl)
+        {
+            Sound::StreamUpdate(); Sound::StreamSetVolume(BCW_MUSIC_VOLUME * k);
+            if(Sound::StreamEnded()) s_Bcw.musicUrl = Sound::StreamPlayUrl(MP_MEDIA_URL "war_ambient.mp3", BCW_MUSIC_VOLUME);   // endless
+        }
+        else Sound::SetMusicVolume(BCW_MUSIC_VOLUME * k);
     }
     if(ped <= 0 || !s_Bcw.haveState) return;
     const uint8_t team = BcwMyTeam();

@@ -31,7 +31,7 @@ namespace Voice
     void  OpenHelperApp();                  // opens MP Voice (it turns its mic on and comes back)
     // 4.03: + Add server > Upload preview image: MP Voice opens the Files app (JPG / PNG), makes it a
     // 512x256 JPEG and sends it back on 127.0.0.1:19231 (the game cannot get the Files app answer itself)
-    void  PickImage(const char* saveDir);   // the picture is saved as saveDir/pv_mine_<crc>.jpg
+    void  PickImage(const char* saveDir, int mode = 0);   // saved as saveDir/pv_mine_<crc>.jpg; 4.07: mode 1 = title logo lg_mine_<crc>.png
     int   PickImageState();                 // 0 idle, 1 waiting, 2 got it (PickedFile), 3 MP Voice missing, 4 nothing came back
     bool  PickedFile(char* out, size_t n);  // once after state 2: "pv_mine_<crc>.jpg"
     int   OpenHelperResult();               // 0 pending, 1 opened, 2 not installed

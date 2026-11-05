@@ -452,17 +452,23 @@ bool MPServer::CanManage(int slot) const
 void MPServer::SendSrvSettings(int slot)
 {
     if(m_Slots[slot].build < 33900) return;
-    PktSrvSettings p; memset(&p, 0, sizeof(p));
+    PktSrvSettings2 h; memset(&h, 0, sizeof(h));
+    PktSrvSettings& p = h.b;
     p.type = PKT_SRV_SETTINGS; p.op = 0; p.perms = m_nPerms.load(); p.modes = GetModes(); p.rulesOn = m_bRulesOn ? 1 : 0;
     p.can = CanManage(slot) ? 1 : 0;
     // 3.58: pad = anti-cheat: 0x80 valid | 1 on | 2 can be switched (custom servers; the featured ones always run it)
     p.pad = (uint8_t)(0x80 | (AcIsOn() ? 1 : 0) | ((IsDefaultServer() || IsBcwServer() || IsMw3Server() || IsRpServer() || IsDayzServer()) ? 0 : 2));
-    SendTo(slot, &p, sizeof(p));
+    // 4.07: the HUD block for 4.07+ phones (older ones copy only the first 8 bytes)
+    h.hudMagic = HUD_MAGIC; h.hudMode = m_nHudMode.load(); h.hudFlags = m_nHudFlags.load(); h.doorSecs = m_nDoorSecs.load();
+    h.logoX = m_nLogoX.load(); h.logoY = m_nLogoY.load(); h.logoZ = m_nLogoZ.load(); h.logoValid = 1;
+    SendTo(slot, &h, m_Slots[slot].build >= 40700 ? sizeof(h) : sizeof(p));
 }
 
-void MPServer::OnSrvSettings(int slot, const PktSrvSettings& p)
+void MPServer::OnSrvSettings(int slot, const PktSrvSettings& p, const PktSrvSettings2* hud)
 {
     if(!CanManage(slot)) return;
+    if(hud && hud->logoValid == 1) SetLogoPos(hud->logoX, hud->logoY, hud->logoZ);   // 4.07
+    if(hud) { SetHudConfig(hud->hudMode, hud->hudFlags, hud->doorSecs); Log("%s changed the HUD (variant %d, flags 0x%02X, door %d s)", m_Slots[slot].name, (int)m_nHudMode.load(), (unsigned)m_nHudFlags.load(), (int)m_nDoorSecs.load()); }
     // 3.53: on the 4 featured servers the admin + moderators really change the settings now (before, every
     // change was thrown away: "couldn't apply"). Permissions + rules on all 4; gamemodes on the default
     // server (Brief Case War / MW3 / Mega Vil run only their own gamemode).
