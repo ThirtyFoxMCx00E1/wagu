@@ -13,10 +13,10 @@
 // phones refuse servers older than that too (they would let old phones in).
 // 3.10: build 31000. MP_MIN_BUILD stays 30406 and the lobby stays thirtyfox/mp5/: 3.04.6 (no cheats)
 // and 3.10 phones play together on the same servers; only 3.04.5 and older (mp4) stay shut out.
-#define MP_BUILD 40702   // 4.07.2
+#define MP_BUILD 40800   // 4.08
 #define MP_MIN_BUILD       30406
 #define MP_AUTH_MIN_BUILD  32106   // 3.21.6: servers with the login system refuse older phones (they could not log in)
-#define MP_VERSION_STR     "4.07.2"
+#define MP_VERSION_STR     "4.08"
 #define MP_VOICE_BUILD     31100   // 3.11: phones from this build on get voice packets
 #define MP_DOWNLOAD_URL    "mpsamp-open.github.io"   // 4.05.4: new website (mpsamp-open org); thirtyfoxmcx00e1.github.io/wagu still works as a backup
 #define MP_DEFAULT_HOST    "127.0.0.1"
@@ -138,6 +138,7 @@ enum ePacket : uint8_t
     PKT_DZ_CMD,         // C->S          3.58: pick up / use / drop / equip / spawn / commands
     PKT_DZ_EVENT,       // S->C          3.58: spawn, fog, weapon, notice, anti-relog, party
     PKT_DZ_LIST,        // S->C          3.58b: Project Day Z player list (TAB): level, murders, zombies, alive time, fps
+    PKT_DZ_BASE,        // S->C          4.08: Project Day Z base building pieces (net/dz_build.h)
 };
 
 enum eRegion : uint8_t { REGION_ASIA = 0, REGION_EUROPE, REGION_NA, REGION_OCEANIA, REGION_COUNT };
@@ -883,7 +884,9 @@ struct PktDzLoot { uint8_t type, n; uint16_t total; DzLootRow r[DZ_LOOT_PAGE]; }
 enum eDzCmd : uint8_t { DZCMD_TEXT = 1, DZCMD_PICK, DZCMD_USE, DZCMD_DROP, DZCMD_EQUIP, DZCMD_PLAY, DZCMD_ZKILL, DZCMD_HIT,
                         DZCMD_FUEL, DZCMD_UNEQUIP,
                         DZCMD_COMBAT, DZCMD_DOWN, DZCMD_REVIVE, DZCMD_LIST,
-                        DZCMD_STATUS, DZCMD_SKILL, DZCMD_STATION, DZCMD_CHECKBODY, DZCMD_TREAT, DZCMD_ACH };   // 3.59: conditions + temperature, buy a skill rank, petrol station fuel, check body, treat a survivor, client achievement   // 3.58b: shooting = combat (anti-relog), downed (a = 1/0), revive (a = player id)
+                        DZCMD_STATUS, DZCMD_SKILL, DZCMD_STATION, DZCMD_CHECKBODY, DZCMD_TREAT, DZCMD_ACH,
+                        DZCMD_BASE_PLACE, DZCMD_BASE_DEL, DZCMD_BASE_DOOR };   // 4.08: base building (a = piece, b = tier, val = heading * 10, pos) / remove (val = id) / door (val = id)   // 3.59: conditions + temperature, buy a skill rank, petrol station fuel, check body, treat a survivor, client achievement   // 3.58b: shooting = combat (anti-relog), downed (a = 1/0), revive (a = player id)
+#include "dz_build.h"   // 4.08
 struct PktDzCmd  { uint8_t type, cmd, a, b; int32_t val; float pos[3]; char text[100]; };
 enum eDzEv : uint8_t { DZEV_SPAWN = 1, DZEV_FOG, DZEV_WEAPON, DZEV_HEAL, DZEV_NOTICE, DZEV_RELOG, DZEV_PICKED, DZEV_UI, DZEV_FUEL,
                        DZEV_TAKEWEAPON, DZEV_DIED,

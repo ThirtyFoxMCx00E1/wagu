@@ -324,6 +324,11 @@ private:
     void DzCheckAch(int slot); void DzUnlock(int slot, int ach); int DzSkillPts(int slot) const;
     void DzSendWeather(int slot); int DzNearStation(int slot, float maxDist) const; void DzRemove1(int slot, int i);
     bool DzUseExtra(int slot, int i, const PktDzCmd& c); void DzTreat(int slot, const PktDzCmd& c); void DzCheckBody(int slot, int id);
+    // 4.08: base building (net/server_dzbase.inc)
+    struct DzPiece { DzBaseRow r; std::string owner; };
+    std::vector<DzPiece> m_DzBase; uint32_t m_nDzBaseId = 1; bool m_bDzBaseDirty = false; uint64_t m_nDzBaseSaveAt = 0;
+    void DzBaseLoad(); void DzBaseSave(); void DzBaseSend(int slot); void DzBaseSendOne(const DzPiece& p, uint8_t op);
+    void DzBaseCmd(int slot, const PktDzCmd& c); bool DzBaseMayUse(int slot, const DzPiece& p);
     void InfoTick(uint64_t now);
 public:
     void     SetAdInterval(uint64_t ms) { m_nAdInterval = ms ? ms : MP_AD_INTERVAL_MS; }   // tests

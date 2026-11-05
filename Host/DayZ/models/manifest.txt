@@ -124,3 +124,11 @@ tex world/tex/world_002.txd 25151272 ed4d4ca3
 tex world/tex/world_003.txd 25149864 edc57f9c
 tex world/tex/world_004.txd 25142568 1ae23d57
 tex world/tex/world_005.txd 9476136 54272186
+# base building (4.08, tools/make_dz_build.py)
+1253 o buildings/samp/dff/wall004.dff buildings/samp/txd/wall004.txd 1555 8360 d4a73144 42a9368e
+1254 o buildings/samp/dff/wall034.dff buildings/samp/txd/wall034.txd 2643 8360 29a7307a 42a9368e
+1272 o buildings/samp/dff/wall050.dff buildings/samp/txd/wall050.txd 2723 8360 27f6a30b 42a9368e
+1273 o buildings/samp/dff/wall013.dff buildings/samp/txd/wall013.txd 1555 32936 d4390ca4 61c6871f
+1274 o buildings/samp/dff/wall042.dff buildings/samp/txd/wall042.txd 2643 32936 6c6f1474 61c6871f
+1275 o buildings/samp/dff/wall059.dff buildings/samp/txd/wall059.txd 2723 32936 45f79503 61c6871f
+1313 o buildings/samp/dff/mihouse1door1.dff buildings/samp/txd/mihouse1door1.txd 5161 32936 5c9a6c76 a055599a

@@ -103,6 +103,14 @@ static void DzXSpawned();
 static void DzRulesTick(uint64_t now);
 static void DzShowRules();   // 3.60: the 10 rules window after the spawn
 
+// 4.08: base building (mp_dzbase.inc)
+static void DzBaseOnPacket(const uint8_t* d, int len);
+static void DzBaseTick(const Vec3& me, uint64_t now);
+static void DzBaseClear();
+static void DzBaseToggle();
+static void DzBaseDraw(ImDrawList* bg, ImVec2 ds, int ped);
+static void DzBaseDoorButton(ImVec2 ds, int ped);
+static bool DzBaseOpen();
 static bool DzOnServer()
 {
     return client.GetState() == NET_CONNECTED && MP_IsDzServerName(client.GetServerName()[0] ? client.GetServerName() : s_szCurServer);
@@ -146,13 +154,13 @@ static int DzMtaModel(int item)
 }
 static void DzModelsTick()
 {
-    static int ids[sizeof(kDzMtaItem) / sizeof(kDzMtaItem[0])]; static int n = 0;
-    if(!n) for(const auto& m : kDzMtaItem) ids[n++] = m.mta;
+    static int all[sizeof(kDzMtaItem) / sizeof(kDzMtaItem[0]) + 8]; static int n = 0;
+    if(!n) { for(const auto& m : kDzMtaItem) all[n++] = m.mta; for(int b : { 1253, 1254, 1272, 1273, 1274, 1275, 1313 }) all[n++] = b; }   // 4.08: the base building pieces (samp.img)
     const bool on = settings.dzModels && DzOnServer();
     static bool logSet = false;
     if(!logSet) { logSet = true; char lp[512]; snprintf(lp, sizeof(lp), "%s/dzmodels_log.txt", MP::DataDir()); DzModels::SetLogPath(lp); }   // 4.00
     DzModels::SetWorld(settings.dzWorldTex);   // 4.05.5
-    DzModels::Tick(on, ids, n);
+    DzModels::Tick(on, all, n);
     // a line when the download starts / ends (the files stay cached, next time it is instant)
     static int shown = 0; int done, total, mbD, mbT; bool busy; DzModels::Progress(done, total, mbD, mbT, busy);
     if(on && busy && total > 0 && done < total && shown == 0) shown = 1;   // 3.62: the download window / bar shows it
@@ -669,6 +677,7 @@ static void DzShutdown()
     DzAmbStop();   // 3.63
     DzCabinClear();
     DzLootClear();
+    DzBaseClear();   // 4.08
     for(auto& z : s_Dz.zeds) if(z.ped > 0) Game::DeleteChar(z.ped);
     for(int o : s_Dz.ruinObjs) if(o > 0) Game::DeleteWorldObject(o);
     if(s_Dz.bagObj) { BoneAttach::Stop(s_Dz.bagObj); Game::DeleteWorldObject(s_Dz.bagObj); }
@@ -732,6 +741,7 @@ static void DzOnPacket(const uint8_t* d, int len)
             break;
         }
         case PKT_DZ_LIST: DzXList(d, len); break;
+        case PKT_DZ_BASE: DzBaseOnPacket(d, len); break;   // 4.08
         case PKT_DZ_EVENT:
         {
             if(len < (int)offsetof(PktDzEvent, text)) return;
@@ -1111,6 +1121,7 @@ static void DzProcess(int ped, uint64_t now)
     DzWeaponsTick();
     DzPickTick(ped, now);
     DzLootTick(me);
+    DzBaseTick(me, now);   // 4.08
     DzMakeBag(ped);
     DzZedTick(ped, me, now);
     DzRuinsTick(me);
@@ -1202,6 +1213,7 @@ static void DzLocalCmd(const char* cmd)
         return;
     }
     if(!strcmp(cmd, "dzmodels")) { DzModelsReport(false); return; }   // 4.00
+    if(!strcmp(cmd, "build") || !strcmp(cmd, "base")) { DzBaseToggle(); return; }   // 4.08
     if(!strcmp(cmd, "hud")) { s_Dz.opt.logo = !s_Dz.opt.logo; return; }
     if(!strcmp(cmd, "fps") || !strcmp(cmd, "ping")) { s_Dz.opt.fps = !s_Dz.opt.fps; return; }
     if(!strcmp(cmd, "armor") || !strcmp(cmd, "weapon")) { s_Dz.invOpen = true; return; }
@@ -1237,7 +1249,7 @@ static bool DzCommand(const char* cmd, const char* arg)
     if(DzPassCmd(c)) return false;
     static const char* const local[] = { "inv", "bag", "map", "gps", "compass", "hud", "armor", "weapon", "fps", "ping", "eat", "drink", "heal",
                                          "bandage", "cure", "painkillers", "drop", "pickup", "refuel", "fuel", "list", "tab", "online", "journal", "debug",
-                                         "achievements", "ach", "skills", "checkbody", "music", "ambient", "dzmodels", "stuck", "unstuck" };
+                                         "achievements", "ach", "skills", "checkbody", "music", "ambient", "dzmodels", "stuck", "unstuck", "build", "base" };
     if(!strcmp(c, "dzmodels")) { DzModelsReport(arg && strstr(arg, "reset")); return true; }   // 4.00: /dzmodels [reset]
     for(const char* l : local) if(!strcmp(c, l)) { DzLocalCmd(c); return true; }
     if(!strcmp(c, "panel") || !strcmp(c, "f2")) { s_Dz.panelOpen = !s_Dz.panelOpen; return true; }
@@ -2014,6 +2026,8 @@ static void DzDrawCabin(float t)
 }
 
 #include "mp_dayz_mta.inc"   // 3.59: the MTA DayZ systems + textures
+#include "mp_dzbase.inc"     // 4.08: base building
+static bool DzBaseOpen() { return s_DzB.open; }
 
 // ---- main render -------------------------------------------------------------------------------
 static void RenderDz()
@@ -2085,7 +2099,7 @@ static void RenderDz()
         if(FloatMenu::GetBarRect(&bx0, &by0, &bx1, &by1)) { h = by1 - by0; x = bx1 + UI::S(10); y = by0; }
         Vec3 p; Game::GetCharPos(ped, p);
         const bool fuel = Game::IsCharInAnyCar(ped) && DzAtGasStation(p);
-        const int n = fuel ? 4 : 3; const float gap = UI::S(10), w = h * 1.08f;
+        const int n = fuel ? 5 : 4; const float gap = UI::S(10), w = h * 1.08f;   // 4.08: + build (hammer)
         ImGui::SetNextWindowPos(ImVec2(x, y)); ImGui::SetNextWindowSize(ImVec2(n * w + (n - 1) * gap + 2, h + 2));
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
         ImGui::Begin("##DzBtns", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoFocusOnAppearing);
@@ -2095,7 +2109,7 @@ static void RenderDz()
             ImGui::SetCursorScreenPos(ImVec2(x + i * (w + gap), y));
             char id[16]; snprintf(id, sizeof(id), "##dzib%d", i);
             const bool hit = ImGui::InvisibleButton(id, ImVec2(w, h));
-            const bool on = i == 0 ? s_Dz.panelOpen : i == 1 ? s_Dz.invOpen : i == 2 ? s_DzX.journal : s_Dz.refueling;
+            const bool on = i == 0 ? s_Dz.panelOpen : i == 1 ? s_Dz.invOpen : i == 2 ? s_DzX.journal : i == 3 ? DzBaseOpen() : s_Dz.refueling;
             const ImVec2 a0 = ImGui::GetItemRectMin(), a1 = ImGui::GetItemRectMax();
             dl->AddRectFilled(a0, a1, ImGui::IsItemActive() ? IM_COL32(40, 40, 40, 170) : IM_COL32(0, 0, 0, 128), h * 0.26f);
             if(on) dl->AddRect(a0, a1, IM_COL32(255, 255, 255, 150), h * 0.26f, 0, UI::S(2));
@@ -2122,6 +2136,13 @@ static void RenderDz()
                 for(int k = 0; k < 3; ++k) { float ly = cy - r * 0.45f + k * r * 0.38f; dl->AddLine(ImVec2(cx - r * 0.30f, ly), ImVec2(cx + r * 0.52f, ly), IM_COL32(25, 25, 25, 255), lw * 0.8f); }
                 dl->AddTriangleFilled(ImVec2(cx + r * 0.25f, cy + r), ImVec2(cx + r * 0.50f, cy + r), ImVec2(cx + r * 0.375f, cy + r * 0.70f), IM_COL32(220, 38, 38, 255));
             }
+            else if(i == 3)
+            {   // 4.08: build - a hammer
+                dl->AddLine(ImVec2(cx - r * 0.55f, cy + r * 0.95f), ImVec2(cx + r * 0.25f, cy - r * 0.35f), c, lw * 1.6f);
+                ImVec2 hc(cx + r * 0.32f, cy - r * 0.48f); const float an = -0.785f + 1.5708f, ca = cosf(an), sa = sinf(an);
+                auto P = [&](float u, float v) { return ImVec2(hc.x + u * ca - v * sa, hc.y + u * sa + v * ca); };
+                dl->AddQuadFilled(P(-r * 0.75f, -r * 0.22f), P(r * 0.55f, -r * 0.22f), P(r * 0.55f, r * 0.22f), P(-r * 0.75f, r * 0.22f), c);
+            }
             else
             {   // fuel pump
                 dl->AddRectFilled(ImVec2(cx - r * 0.70f, cy - r), ImVec2(cx + r * 0.25f, cy + r), c, r * 0.14f);
@@ -2134,6 +2155,7 @@ static void RenderDz()
                 if(i == 0) s_Dz.panelOpen = !s_Dz.panelOpen;
                 else if(i == 1) { if(!s_DzX.downed) s_Dz.invOpen = !s_Dz.invOpen; }
                 else if(i == 2) s_DzX.journal = !s_DzX.journal;
+                else if(i == 3) DzBaseToggle();
                 else s_Dz.refueling = !s_Dz.refueling;
             }
         }
@@ -2174,6 +2196,8 @@ static void RenderDz()
         if(hit && nowMs > s_DzX.getupUntil) DzProneSet(ped, !s_DzX.prone, nowMs);
         ImGui::End(); ImGui::PopStyleVar();
     }
+    DzBaseDraw(bg, ds, ped);         // 4.08: base building
+    DzBaseDoorButton(ds, ped);
     DzDrawActions(ds, ped);
     DzDrawInventoryMta(ds, ped);
     DzDrawDowned(fg, bg, ds, t);

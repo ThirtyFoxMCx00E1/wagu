@@ -744,9 +744,10 @@ static void LRegionPicker(const std::vector<LanServer>& nearby)
     ImGui::SetNextWindowPos(ImVec2(x, y)); ImGui::SetNextWindowSize(ImVec2(w, h));
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(pw, pw));
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);   // 4.03: square
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, UI::S(2));
-    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.04f, 0.07f, 0.10f, 0.95f));   // 3.63: Valorant navy
-    ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.25f, 0.90f, 0.75f, 0.35f));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, UI::S(1));
+    // 4.08: same panel as the launcher / server list (slate, black edge) - was a Valorant navy + teal box
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(36 / 255.f, 40 / 255.f, 46 / 255.f, 250 / 255.f));
+    ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0, 0, 0, 200 / 255.f));
     ImGui::SetNextWindowFocus();
     if(ImGui::Begin("##MPRegionPick", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse))
     {
@@ -761,9 +762,12 @@ static void LRegionPicker(const std::vector<LanServer>& nearby)
             bool held = ImGui::IsItemActive();
             ImGui::PopID();
             const bool sel = i < 0 ? settings.lobbyAuto : (!settings.lobbyAuto && settings.region == i);
-            if(sel) VChamfer(dl, a, b, UI::S(10), held ? VAlpha(kVTeal, 0.8f) : kVTeal);   // 3.63
-            else VChamfer(dl, a, b, UI::S(10), IM_COL32(236, 232, 225, held ? 45 : 12), IM_COL32(236, 232, 225, 40));
-            const ImU32 tc = sel ? kVDark : kVText, sc = sel ? IM_COL32(20, 50, 50, 255) : kVDim;
+            // 4.08: rows like the server list (slate rows, white highlight, blue stripe on the picked one)
+            dl->AddRectFilled(a, b, ((i + 1) & 1) ? IM_COL32(30, 34, 40, 170) : IM_COL32(44, 49, 56, 170));
+            if(sel) { dl->AddRectFilled(a, b, IM_COL32(255, 255, 255, 26)); dl->AddRectFilled(a, ImVec2(a.x + UI::S(4), b.y), kVTeal); }
+            if(held) dl->AddRectFilled(a, b, IM_COL32(255, 255, 255, 14));
+            dl->AddLine(ImVec2(a.x, b.y + gap * 0.5f), ImVec2(b.x, b.y + gap * 0.5f), IM_COL32(0, 0, 0, 90));
+            const ImU32 tc = sel ? IM_COL32_WHITE : kVText, sc = kVDim;
             char l1[32], l2[48];
             if(i < 0)
             {
@@ -855,6 +859,39 @@ static void LImageCover(ImDrawList* dl, void* tex, ImVec2 uv, ImVec2 a, ImVec2 b
     if(box > img) { float k = img / box; u0.y = uv.y * (1 - k) * 0.5f; u1.y = uv.y - u0.y; }
     else          { float k = box / img; u0.x = uv.x * (1 - k) * 0.5f; u1.x = uv.x - u0.x; }
     dl->AddImage((ImTextureID)tex, a, b, u0, u1, tint);
+}
+// 4.08: the row background picture fades out to the right (alpha -> 0 over the last part) instead of
+// stopping with a hard cut at 46 % of the row
+static void LImageCoverFade(ImDrawList* dl, void* tex, ImVec2 uv, ImVec2 a, ImVec2 b, int alpha, float solid)
+{
+    float bw = b.x - a.x, bh = b.y - a.y; if(bw <= 0 || bh <= 0) return;
+    float img = 2.0f, box = bw / bh;
+    ImVec2 u0(0, 0), u1(uv.x, uv.y);
+    if(box > img) { float k = img / box; u0.y = uv.y * (1 - k) * 0.5f; u1.y = uv.y - u0.y; }
+    else          { float k = box / img; u0.x = uv.x * (1 - k) * 0.5f; u1.x = uv.x - u0.x; }
+    const int N = 8;   // the fade part in 8 steps (smooth alpha, easing out)
+    float xs = a.x + bw * solid, us = u0.x + (u1.x - u0.x) * solid;
+    dl->PushTextureID((ImTextureID)tex);
+    auto quad = [&](float x0, float x1, float ua, float ub, int al0, int al1)
+    {
+        ImU32 c0 = IM_COL32(255, 255, 255, al0), c1 = IM_COL32(255, 255, 255, al1);
+        dl->PrimReserve(6, 4);
+        ImDrawIdx i = (ImDrawIdx)dl->_VtxCurrentIdx;
+        dl->PrimWriteIdx(i); dl->PrimWriteIdx(i + 1); dl->PrimWriteIdx(i + 2);
+        dl->PrimWriteIdx(i); dl->PrimWriteIdx(i + 2); dl->PrimWriteIdx(i + 3);
+        dl->PrimWriteVtx(ImVec2(x0, a.y), ImVec2(ua, u0.y), c0);
+        dl->PrimWriteVtx(ImVec2(x1, a.y), ImVec2(ub, u0.y), c1);
+        dl->PrimWriteVtx(ImVec2(x1, b.y), ImVec2(ub, u1.y), c1);
+        dl->PrimWriteVtx(ImVec2(x0, b.y), ImVec2(ua, u1.y), c0);
+    };
+    if(solid > 0) quad(a.x, xs, u0.x, us, alpha, alpha);
+    for(int k = 0; k < N; ++k)
+    {
+        float f0 = (float)k / N, f1 = (float)(k + 1) / N;
+        float e0 = 1 - f0, e1 = 1 - f1; e0 *= e0; e1 *= e1;   // ease out
+        quad(xs + (b.x - xs) * f0, xs + (b.x - xs) * f1, us + (u1.x - us) * f0, us + (u1.x - us) * f1, (int)(alpha * e0), (int)(alpha * e1));
+    }
+    dl->PopTextureID();
 }
 static void LChip(ImDrawList* dl, ImVec2 p, float h, const char* txt, ImU32 col, float maxW)
 {
@@ -968,8 +1005,7 @@ static void LTable(std::vector<LRow>& rows, float w, float h)
             if(void* bt = LRowBg(r, &uv))
             {
                 float bw = W * 0.46f;
-                LImageCover(dl, bt, uv, a, ImVec2(a.x + bw, a.y + rowH), IM_COL32(255, 255, 255, 150));
-                dl->AddRectFilledMultiColor(a, ImVec2(a.x + bw, a.y + rowH), IM_COL32(30, 34, 40, 40), IM_COL32(30, 34, 40, 150), IM_COL32(30, 34, 40, 150), IM_COL32(30, 34, 40, 40));
+                LImageCoverFade(dl, bt, uv, a, ImVec2(a.x + bw, a.y + rowH), 150, 0.45f);   // 4.08: soft fade on the right edge, no cut
             }
             if(r.kind >= 3 && r.kind <= 6)   // featured: gamemode colour highlight
                 dl->AddRectFilledMultiColor(a, ImVec2(a.x + W, a.y + rowH), VAlpha(mc, 0.30f), VAlpha(mc, 0.04f), VAlpha(mc, 0.04f), VAlpha(mc, 0.30f));

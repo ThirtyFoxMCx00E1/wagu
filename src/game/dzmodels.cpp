@@ -22,6 +22,7 @@
 // entries at 20000+, the txd pool), else nothing is replaced. A marker file is written around the
 // risky part of a conversion: if the game dies there, that model is never replaced again.
 #include <stdarg.h>
+#include <math.h>
 #include <time.h>
 #include <mod/amlmod.h>
 #include <mod/logger.h>
@@ -826,8 +827,51 @@ bool Switch(Entry* e, bool on)
 }
 } // namespace
 
+// 4.08: base building collision (CColModel / CCollisionData as the game lays them out, see colguard_core.h)
+namespace {
+void (*SetColModelFn)(void*, void*, bool) = nullptr;
+struct BoxColModel { int model = 0; void* col = nullptr; };
+std::vector<BoxColModel> s_BoxCols;
+}
+bool DzModels::SetBoxCollision(int model, const float* boxes, int nBoxes, uint8_t material)
+{
+    if(!s_MI || !SetColModelFn || model <= 0 || model >= 20000 || !s_MI[model] || !boxes || nBoxes <= 0 || nBoxes > 16) return false;
+    for(auto& b : s_BoxCols) if(b.model == model) { SetColModelFn(s_MI[model], b.col, false); return true; }
+    const size_t P = sizeof(void*);
+    // CColModel: CBoundingBox (min, max) + CSphere (centre, radius) + u8 slot + u8 flags, CCollisionData* at 0x2C / 0x30
+    uint8_t* col = (uint8_t*)calloc(1, 0x40);
+    // CCollisionData: u16 spheres, u16 boxes, u16 triangles, u8 lines, u8 flags, then the pointers
+    // (spheres, boxes, lines, vertices, triangles, planes) + the shadow data - all zero but the boxes
+    uint8_t* cd = (uint8_t*)calloc(1, 0x100);
+    uint8_t* bx = (uint8_t*)calloc((size_t)nBoxes, 28);   // CColBox: CBox (min, max) + CColSurface (material, flags, lighting, light)
+    if(!col || !cd || !bx) { free(col); free(cd); free(bx); return false; }
+    float mn[3] = { 1e9f, 1e9f, 1e9f }, mx[3] = { -1e9f, -1e9f, -1e9f };
+    for(int i = 0; i < nBoxes; ++i)
+    {
+        const float* b = boxes + i * 6;
+        memcpy(bx + i * 28, b, 24);
+        bx[i * 28 + 24] = material; bx[i * 28 + 25] = 0; bx[i * 28 + 26] = 0x77; bx[i * 28 + 27] = 0;
+        for(int k = 0; k < 3; ++k) { if(b[k] < mn[k]) mn[k] = b[k]; if(b[k + 3] > mx[k]) mx[k] = b[k + 3]; }
+    }
+    float* f = (float*)col;
+    for(int k = 0; k < 3; ++k) { f[k] = mn[k]; f[3 + k] = mx[k]; f[6 + k] = (mn[k] + mx[k]) * 0.5f; }
+    float dx = mx[0] - mn[0], dy = mx[1] - mn[1], dz = mx[2] - mn[2];
+    f[9] = 0.5f * sqrtf(dx * dx + dy * dy + dz * dz);
+    col[40] = 0;          // col slot 0 (generic): the streamer never unloads it
+    col[41] = 0x05;       // has collision volumes + active
+    *(void**)(col + (P == 8 ? 0x30 : 0x2C)) = cd;
+    *(uint16_t*)(cd + 2) = (uint16_t)nBoxes;
+    cd[7] = 0x02;         // not empty
+    *(void**)(cd + 8 + P) = bx;
+    BoxColModel b; b.model = model; b.col = col; s_BoxCols.push_back(b);
+    SetColModelFn(s_MI[model], col, false);
+    DzLog(false, "DzModels: model %d gets the base building collision (%d boxes)", model, nBoxes);
+    return true;
+}
+
 void DzModels::Init(void* h)
 {
+    *(void**)&SetColModelFn = (void*)aml->GetSym(h, "_ZN14CBaseModelInfo11SetColModelEP9CColModelb");   // 4.08
     *(void**)&s_MI = (void*)aml->GetSym(h, "_ZN10CModelInfo16ms_modelInfoPtrsE");
     *(void**)&s_SI = (void*)aml->GetSym(h, "_ZN10CStreaming16ms_aInfoForModelE");
     *(void**)&s_MemUsed = (void*)aml->GetSym(h, "_ZN10CStreaming13ms_memoryUsedE");

@@ -227,6 +227,7 @@ void MPServer::DzLoad()
     }
     fclose(f);
     Log("DAYZ: %d survivors loaded from %s", n, s_szDzFile);
+    DzBaseLoad();   // 4.08
 }
 // 3.60: a position the survivor really stood on. While on the connection screen the ped is parked at
 // the cabin (x 2493 y -1700 = Grove Street, z -100 / interior z 1015) - that used to be saved as
@@ -260,6 +261,7 @@ void MPServer::DzSave()
     for(auto& kv : m_DzSaved) fprintf(f, "Z %s|%s\n", kv.first.c_str(), kv.second.c_str());
     fclose(f); rename(tmp.c_str(), s_szDzFile);
     m_bDzDirty = false;
+    if(m_bDzBaseDirty) DzBaseSave();   // 4.08
 }
 
 void MPServer::DzFresh(int slot)
@@ -321,6 +323,7 @@ void MPServer::DzOnJoin(int slot, bool fresh)
 {
     if(!IsDayzServer()) return;
     DzSendLoot(slot);
+    DzBaseSend(slot);   // 4.08
     DzSetColor(slot);
     DzSendWeather(slot);
     if(m_Dz[slot].skin) DzEvent(slot, DZEV_SKIN, 0, 0, m_Dz[slot].skin, nullptr, "");
@@ -534,6 +537,7 @@ bool MPServer::DzCommand(int slot, const char* cmd, const char* arg)
         DzMsg(slot, DZC_WHITE, "/party /pcreate /pinvite <id> /paccept /pdecline /pleave /pkick <id> /plist /p <text>");
         DzMsg(slot, DZC_WHITE, "/pm <id> <text> /me /do /shout /whisper /time /fog /spawns /kill /rules /credits /admins /report /music");
         DzMsg(slot, DZC_WHITE, "/skills /skill <n> /achievements /journal /undress /weather /station /checkbody /treat <id> /chat /vars");
+        DzMsg(slot, DZC_WHITE, "/build - base building (4.08): foundation, walls, doorway, window frame, ceiling, door (a Toolbox needed)");
         DzMsg(slot, DZC_GREY, "Keys: 6 / F1 journal (debug monitor), 7 GPS, 8 compass, TAB player list. Admin: /dzset /dzvars /respawnvehicles /dzweather");
         DzMsg(slot, DZC_GREY, "Tap the gear button or type /panel for the control panel. Most commands open their window too.");
         DzEvent(slot, DZEV_UI, 1, 0, 0, nullptr, "");
@@ -882,6 +886,7 @@ void MPServer::DzHandleCmd(int slot, const PktDzCmd& c)
         case DZCMD_CHECKBODY: DzCheckBody(slot, c.val); break;
         case DZCMD_TREAT: DzTreat(slot, c); break;
         case DZCMD_ACH: if(c.a == DZACH_HOUSE) DzUnlock(slot, DZACH_HOUSE); break;
+        case DZCMD_BASE_PLACE: case DZCMD_BASE_DEL: case DZCMD_BASE_DOOR: DzBaseCmd(slot, c); break;   // 4.08
         case DZCMD_LIST:
         {   // 3.58b: the TAB player list (pages of 60)
             if(now - z.lastList < 900) return;
@@ -1245,3 +1250,5 @@ void MPServer::DzCheckBody(int slot, int id)
         DzSendMe(slot); m_bDzDirty = true;
     }
 }
+
+#include "server_dzbase.inc"   // 4.08: base building

@@ -4938,6 +4938,7 @@ static void FinishJob(int job, std::vector<LanServer>& list)
                 const LanServer& sv = list[best];
                 settings.hostLan = false; SaveConfig();
                 SysMsg(COL_YELLOW, "\"%s\" is already online on another phone - joining it. Pick another name to host your own.", name);   // 2.19.6
+                if(connect) JoinOverlayStart();   // 4.08: the connection screen like any other join
                 JoinFound(sv, connect);
                 return;
             }
@@ -4948,6 +4949,7 @@ static void FinishJob(int job, std::vector<LanServer>& list)
                 if(connect && client.GetState() == NET_DISCONNECTED)
                 {
                     s_bConnectingDefault = IsDefaultServer(name, port);
+                    JoinOverlayStart();   // 4.08: a new custom server you host had no connection screen (black slide, camera, < Spawn >)
                     DoConnect("127.0.0.1", port);
                 }
             }

@@ -152,8 +152,7 @@ static void HudRenderExtras()
         snprintf(t, sizeof(t), "%s (%d)", settings.name, (int)myId);
         float fs = UI::S(22), tw = ImGui::GetFont()->CalcTextSizeA(fs, FLT_MAX, 0, t).x;
         float pad = UI::S(8);
-        dl->AddRectFilled(ImVec2(x1 - tw - pad * 2, y), ImVec2(x1, y + fs + pad), (pal.fill & 0x00FFFFFF) | 0xA0000000, UI::S(6));
-        dl->AddRect(ImVec2(x1 - tw - pad * 2, y), ImVec2(x1, y + fs + pad), pal.border, UI::S(6), 0, UI::S(2));
-        UI::OutlinedText(dl, fs, ImVec2(x1 - tw - pad, y + pad * 0.5f), IM_COL32_WHITE, t);
+        // 4.08: only the text (no coloured box / border behind the name), like the game's own HUD text
+        UI::OutlinedText(dl, fs, ImVec2(x1 - tw, y + pad * 0.5f), IM_COL32_WHITE, t);
     }
 }

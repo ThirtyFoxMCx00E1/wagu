@@ -121,6 +121,14 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **4.08**: Day Z base building, faded server rows, connection screen for new servers, text only player HUD, new region picker.
+  - Project Day Z Legacy: Rust style base building with SA-MP samp.img pieces (foundation, wall, doorway, window frame, ceiling, door) in wood or concrete. Open it with /build, /base or the new hammer button. You need a Toolbox in your inventory and the Day Z models setting on. Pieces snap to the foundation grid, have collision, are saved on the server (dayz_bases.txt), and only the owner can remove them. Doors open for the owner and party members.
+  - The game background on the right side of each server list row now fades out instead of ending in a hard cut.
+  - Creating a new custom server now shows the connection screen while it joins (also when hosting for another phone).
+  - The player name HUD on the right side (from /settings) is now only outlined text, with no blue box or background.
+  - The region picker (pin icon) uses the same panel style as the MP launcher server UI.
+  - New tool: tools/make_dz_build.py takes the pieces out of SA-MP samp.img / samp.txd.
+
 - **4.07.2**: the server title logo and the Add server preview are no longer squashed.
   - A 1024x256 logo was drawn as 1024x64 (the texture size was multiplied twice by the UV scale), so the title logo in game and its thumbnail in Add server looked flat. They now keep the real size of the PNG / JPG.
 - **4.07.1**: every sound works without pasting mp3s, hosted servers no longer freeze.
