@@ -239,6 +239,7 @@ void MPServer::FillWorld(PktWorld& w)
     w.weather = 1;            // SUNNY_LA, only used by 2.7 and older
     w.mode = WORLD_NATURAL;
     w.absMinute = abs;
+    CgFillWorld(w);   // 4.09: /weatherall, /tod
 }
 
 int MPServer::GetPlayerCount()
@@ -596,6 +597,7 @@ void MPServer::Drop(int slot, uint8_t reason)
     Mw3OnLeave(slot);   // 3.23
     RpOnLeave(slot);    // 3.25
     DzOnLeave(slot);    // 3.58 (anti-relog: leaving in combat = death)
+    CgOnLeave(slot);    // 4.09: CGRP systems
     PktPlayerLeave p; p.type = PKT_PLAYER_LEAVE; p.id = (uint8_t)slot; p.reason = reason;
     Broadcast(&p, sizeof(p));
 
@@ -672,6 +674,7 @@ void MPServer::Loop()
             RpTick(now);    // 3.25
             DzTick(now);    // 3.58
             HomeTick(now);  // 3.39
+            CgTick(now);    // 4.09: CGRP systems
             ProgTick(now);  // 3.39.1
         }   // 3.04: 10 Hz referee
         if(now - lastCheck > 1000)
@@ -1074,6 +1077,7 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             Mw3OnJoin(slot, fresh);        // 3.23: MW3 state
             RpOnJoin(slot, fresh);         // 3.25: Mega Vil Futuristic
             DzOnJoin(slot, fresh);         // 3.58: Project Day Z
+            CgOnJoin(slot);                // 4.09: CGRP systems
             if(!s.authed) AuthBegin(slot);              // 3.21.6: log in first (the others see you after that)
             else if(fresh || rankChanged) AnnounceJoin(slot);   // 3.40.1: everyone sees the new [MOD] tag
             break;
@@ -1098,6 +1102,7 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
                 memcpy(me.pos, (p.d.flags & SYNC_IN_CAR) ? (const void*)p.d.carPos : (const void*)p.d.pos, sizeof(me.pos));
                 me.hasPos = true;
             }
+            if(CgOn()) CgSync(slot, p.d);   // 4.09: speed cameras
             const uint8_t stateMask = SYNC_IN_CAR | SYNC_DEAD | SYNC_MISSION | SYNC_CUTSCENE | SYNC_DRIVER;
             bool important = ((p.d.flags ^ m_Slots[slot].lastFlags) & stateMask) != 0;
             if((m_Slots[slot].lastFlags & SYNC_DEAD) && !(p.d.flags & SYNC_DEAD))
@@ -1425,6 +1430,13 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             if(p.op == 1) OnSrvSettings(slot, p, hasHud ? &h : nullptr); else SendSrvSettings(slot);
             break;
         }
+        case PKT_CG_CMD:    // 4.09: CGRP systems (default server + Mega Vil Futuristic)
+        {
+            if(slot < 0 || len < (int)sizeof(PktCgCmd) || !CgOn()) return;
+            PktCgCmd c; memcpy(&c, data, sizeof(c));
+            CgHandle(slot, c);
+            break;
+        }
         case PKT_DZ_CMD:    // 3.58: Project Day Z
         {
             if(slot < 0 || len < (int)sizeof(PktDzCmd) || !IsDayzServer()) return;
@@ -1604,7 +1616,7 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
         {
             if(slot < 0 || len < (int)sizeof(PktDialogResp)) return;
             PktDialogResp r; memcpy(&r, data, sizeof(r));
-            AcDialog(slot, r);   // 3.50: dialog hack
+            if(AcDialog(slot, r) && CgOn()) CgDialog(slot, r);   // 3.50: dialog hack; 4.09: CGRP dialogs (ids 0x6000-0x60FF)
             break;
         }
         case PKT_JACK:   // 2.19: carjack another player
@@ -2058,6 +2070,7 @@ void MPServer::RaceQueueTick(uint64_t now, bool changed)
 #include "server_home.inc"  // 3.39: Home Kit, rules, live settings
 #include "server_ac.inc"    // 3.50: anti-cheat (Nex-AC)
 #include "server_admin.inc" // 3.54: admin / moderator commands
+#include "server_cgrp.inc"  // 4.09: CGRP systems
 
 // 3.04.6: an old MP version tried to join: log it once per phone every 10 minutes (console + the
 // --outdated-log file of the 24/7 server) and count it

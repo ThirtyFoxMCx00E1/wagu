@@ -150,7 +150,7 @@ static bool AdmCommand(const char* cmd, const char* arg)
     else if(IS("goto"))       SendAdminCmd2(ADMIN_GOTO, t, 0, 0, "");
     else if(IS("gethere"))    SendAdminCmd2(ADMIN_GETHERE, t, 0, 0, "");
     else if(IS("makevip"))    SendAdminCmd2(ADMIN_MAKEVIP, t, (uint8_t)(hasNum ? (num != 0) : 1), 0, "");
-    else if(IS("makeadmin") || IS("makemod")) SendAdminCmd2(ADMIN_MAKEADMIN, t, (uint8_t)(hasNum ? (num != 0) : 1), 0, "");
+    else if(IS("makeadmin") || IS("makemod")) SendAdminCmd2(ADMIN_MAKEADMIN, t, (uint8_t)(hasNum ? (num < 0 ? 0 : (num > 9 ? 9 : num)) : 1), 0, "");   // 4.09: 2-9 = CGRP admin level
     else if(IS("resetstats")) SendAdminCmd2(ADMIN_RESETSTATS, t, 0, 0, "");
     else if(IS("givecookie")) SendAdminCmd2(ADMIN_GIVECOOKIE, t, 0, hasNum ? num : 1, "");
     #undef IS

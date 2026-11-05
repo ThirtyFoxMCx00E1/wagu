@@ -328,6 +328,47 @@ private:
     struct DzPiece { DzBaseRow r; std::string owner; };
     std::vector<DzPiece> m_DzBase; uint32_t m_nDzBaseId = 1; bool m_bDzBaseDirty = false; uint64_t m_nDzBaseSaveAt = 0;
     void DzBaseLoad(); void DzBaseSave(); void DzBaseSend(int slot); void DzBaseSendOne(const DzPiece& p, uint8_t op);
+
+    // ---- 4.09: CGRP systems (server_cgrp.inc, net/cgrp.h) - the default server + Mega Vil Futuristic ----
+    struct CgEnt { CgRow r; std::string ownerKey; int32_t till = 0, fee = 0; int capSlot = -1; uint64_t capStart = 0, openUntil = 0; int usedBy = -1; std::map<std::string, uint64_t> took; };
+    struct CgPlayer { std::string name; int32_t gold = 0, bank = 0; uint16_t family = 0, faction = 0, motel = 0; uint8_t famRank = 0, facRank = 0, level = 0, helper = 0, irc = 0, hasMap = 0, paydays = 0;
+                      int32_t warns = 0, jailS = 0, minutes = 0; std::string accent; };
+    struct CgFamily { uint16_t id = 0; std::string name, leader; uint32_t color = 0xFFFFFFFF; int32_t safe = 0; };
+    struct CgFaction { uint16_t id = 0; std::string name, leader; uint8_t type = 0; int32_t pay[7] = { 0 }; };
+    struct CgSlot { bool beat = false; int32_t cash = 0; uint8_t area = 0, inCar = 0; uint16_t carModel = 0, speed = 0, inside = 0, vw = 0; float pos[3] = { 0, 0, 0 }, heading = 0;
+                    bool frozen = false, nmute = false, admute = false, duty = false, masked = false, bigears = false; uint32_t dutyColor = 0;
+                    uint16_t famInvite = 0, facInvite = 0; int saleTo = -1, saleFrom = -1, saleSlot = 0; int32_t salePrice = 0; uint16_t saleModel = 0; uint64_t saleAt = 0;
+                    uint16_t carSpot = 0; uint64_t camAt = 0, pickAt = 0, lastMin = 0; };
+    std::vector<CgEnt> m_Cg; std::map<std::string, CgPlayer> m_CgP; std::vector<CgFamily> m_CgFam; std::vector<CgFaction> m_CgFac; std::vector<std::string> m_CgIpBans;
+    CgSlot m_CgS[MP_MAX_PLAYERS];
+    uint16_t m_nCgNext = 1, m_nCgFamNext = 1, m_nCgFacNext = 1; bool m_bCgLoaded = false, m_bCgDirty = false; uint64_t m_nCgSaveAt = 0, m_nCgPaydayAt = 0;
+    int m_nCgWeather = -1, m_nCgHour = -1;
+    std::map<uint16_t, int> m_CgHouseLvl;   // Home Kit house id -> level needed to buy
+    struct CgSync2 { uint8_t hp = 100, ar = 0, weapon = 0; };
+    CgSync2 m_CgHp[MP_MAX_PLAYERS];
+    void CgPayKey(const std::string& key, int32_t amount);   // pay an owner (online now or later)
+    void CgWorldNow();
+    void CgJail(int t, int minutes, const char* who);
+public:
+    bool CgOn() const;
+    void CgFillWorld(PktWorld& w) const;
+private:
+    std::string CgFile() const; void CgLoad(); void CgSave();
+    void CgTick(uint64_t now); void CgOnJoin(int slot); void CgOnLeave(int slot);
+    void CgHandle(int slot, PktCgCmd& c); bool CgDialog(int slot, const PktDialogResp& r); void CgSync(int slot, const SyncData& d);
+    void CgCommand(int slot, const char* cmd, char* args, const PktCgCmd& c);
+    void CgSendAll(int slot); void CgSendOne(const CgEnt& e, uint8_t op); void CgSendMe(int slot); void CgRowFor(int slot, const CgEnt& e, CgRow& out);
+    void CgTell(int slot, uint32_t col, const char* fmt, ...); void CgAct(int slot, uint8_t act, int a = 0, int b = 0, int32_t val = 0, const float* pos = nullptr, float h = 0, const char* text = nullptr);
+    void CgDlg(int slot, uint16_t id, uint8_t style, const char* caption, const char* info, const char* b1, const char* b2);
+    CgPlayer& CgP(int slot); const char* CgKey(int slot, char* buf, size_t n) const; int CgLevel(int slot); int CgPlayLevel(int slot);
+    bool CgPay(int slot, int32_t amount, const char* why); void CgGive(int slot, int32_t amount, const char* why);
+    bool CgIsVip(int slot); bool CgMember(int slot, const CgEnt& e); bool CgMine(int slot, const CgEnt& e);
+    CgEnt* CgGet(int id, int kind = 0); int CgNear(int slot, int kind, float range, bool inside = false, int sub = -1); CgEnt& CgNew(int slot, int kind);
+    void CgDel(int id); void CgChanged(CgEnt& e); int CgFindPlayer(const char* arg) const; CgFamily* CgFam(int id); CgFaction* CgFac(int id);
+    void CgFamMsg(int fam, uint32_t col, const char* text); void CgFacMsg(int fac, uint32_t col, const char* text); void CgStaffMsg(uint32_t col, const char* text);
+    void CgEnter(int slot); void CgExit(int slot); void CgPayday(); void CgRecolor(int slot, uint32_t color); void CgGate(int slot, int group, bool admin);
+    void CgCarSale(int slot, char* args); void CgAcceptCar(int slot); void CgSaleClear(int slot);
+    void CgEditorObj(int slot, const PktCgCmd& c); void CgHomeCmd(int slot, const char* cmd, char* args);
     void DzBaseCmd(int slot, const PktDzCmd& c); bool DzBaseMayUse(int slot, const DzPiece& p);
     void InfoTick(uint64_t now);
 public:

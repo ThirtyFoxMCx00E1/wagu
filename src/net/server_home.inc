@@ -280,6 +280,7 @@ void MPServer::HomeHandleCmd(int slot, const PktHomeCmd& cin)
         if(!(h->h.flags & HKF_SALE)) { HomeMsg(slot, false, c.id, 0, "%s is not for sale.", h->h.name); return; }
         if(mine) { HomeMsg(slot, false, c.id, 0, "It is already your house."); return; }
         int owned = 0; for(auto& o : m_Homes) if(HomeOwns(slot, o.h.owner)) ++owned;
+        { auto lv = m_CgHouseLvl.find(h->h.id); if(CgOn() && lv != m_CgHouseLvl.end() && lv->second > CgPlayLevel(slot) && !staff) { HomeMsg(slot, false, c.id, 0, "%s needs level %d (you are level %d).", h->h.name, lv->second, CgPlayLevel(slot)); return; } }
         if(owned >= HK_PER_PLAYER && !staff) { HomeMsg(slot, false, c.id, 0, "You already have %d houses (the most).", HK_PER_PLAYER); return; }
         if(IsRpServer())
         {

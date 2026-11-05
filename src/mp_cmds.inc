@@ -248,6 +248,7 @@ static bool HandleCommand(const char* text)
     if(GatesCommand(cmd, arg)) return true;   // 3.04.2: /gatepos, /gates
     if(TdeCommand(cmd, arg)) return true;     // 3.50: /tde Textdraw Editor
     if(DzCommand(cmd, arg)) return true;      // 3.58: Project Day Z (44+ commands, every other one blocked)
+    if(CgCommand(cmd, arg)) return true;      // 4.09: CGRP systems (default server, Mega Vil)
     if(RulesCommand(cmd, arg) || SrvSettingsCommand(cmd, arg) || ProgCommand(cmd, arg) || MvCommand(cmd, arg) || DealerCommand(cmd, arg) || HkCommand(cmd, arg) || NeedsCommand(cmd, arg) || Modes2Command(cmd, arg)) return true;   // 3.39
     if(Mw3Command(cmd, arg)) return true;   // 3.23: MW3 commands (others blocked)
     if(RpCommand(cmd, arg)) return true;    // 3.25: Mega Vil Futuristic RP commands (others blocked)
@@ -416,7 +417,7 @@ static void UpdateTagOcclusion(int id, uint64_t now)
     p.losAt = now;
     Vec3 cp, cl;
     Vec3 from = Game::GetCameraPos(cp, cl) ? cp : myDrawPos;
-    p.tagBlocked = !Game::LineOfSightClear(from, p.drawPos);
+    p.tagBlocked = !Game::LineOfSightClear(from, p.drawPos) || CgMasked(id);   // 4.09: CGRP /amask
 }
 
 // ---- carjacking players ------------------------------------------------------------------
@@ -1012,6 +1013,7 @@ static void Render219(void*)
     DzModelsTick();            // 3.61: MTA DayZ models from GitHub
     SocialFrame();             // 3.63: MP social (friends, chats, party, communities, inbox)
     RenderDz();                // 3.58: Project Day Z Legacy
+    CgRender();                // 4.09: CGRP labels, ENTER / EXIT, /editor
     HkRender(); NeedsRender(); Modes2Render(); DealerRender();   // 3.39 / 3.55
     HudRenderExtras();   // 4.07: HUD Player + Ammo Info
     RenderHotelPc();           // 3.36: hotel room computer (every server)

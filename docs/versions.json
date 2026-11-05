@@ -1,6 +1,7 @@
 {
-"latest": "4.08",
+"latest": "4.09",
 "supported": [
+"4.09",
 "4.08",
 "4.07.2",
 "4.07.1",
@@ -102,6 +103,18 @@
 "3.04.6"
 ],
 "versions": [
+{
+"v": "4.09",
+"summary": "CGRP (UG-EDIT) systems on the default server and Mega Vil Futuristic, no green outline on the default server HUD.",
+"items": [
+"Dynamic businesses, houses (Home Kit level and admin commands), garages, families, factions, points, motels, ATMs, map boxes, map icons, family / faction HQs and gates, entrances, buildings, family vehicles, information boards, dealership, OOC shop with gold bars, gas stations, drive-thrus, VIP lounges, money bags and gift boxes. Mega Vil keeps its own houses, factions, ATM, bank, dealership and garage; only the missing parts were added there.",
+"/sellcar [id] [price] now has the missing /accept car (the car moves to the buyer: Mega Vil garage or My Vehicles on the default server).",
+"/editor maps objects in game: move, turn, tilt, SAVE and Delete from a bar; the objects stay on the server for everybody.",
+"The full CGRP admin list from Server Moderator up to Community Scripter. /makeadmin [id] [1-9] sets the level, /cgrp lists the commands.",
+"ENTER / EXIT button at doors, 3D labels, radar icons, money bags and pickups are taken by walking into them.",
+"Default server: the green outline around the energy, hunger, fuel and drive HUD is gone (only the outline)."
+]
+},
 {
 "v": "4.08",
 "summary": "Day Z base building, faded server rows, connection screen for new servers, text only player HUD, new region picker.",

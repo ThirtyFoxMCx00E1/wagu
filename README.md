@@ -121,6 +121,14 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **4.09**: CGRP (UG-EDIT) systems on the default server and Mega Vil Futuristic, no green outline on the default server HUD.
+  - Dynamic businesses, houses (Home Kit level and admin commands), garages, families, factions, points, motels, ATMs, map boxes, map icons, family / faction HQs and gates, entrances, buildings, family vehicles, information boards, dealership, OOC shop with gold bars, gas stations, drive-thrus, VIP lounges, money bags and gift boxes. Mega Vil keeps its own houses, factions, ATM, bank, dealership and garage; only the missing parts were added there.
+  - /sellcar [id] [price] now has the missing /accept car (the car moves to the buyer: Mega Vil garage or My Vehicles on the default server).
+  - /editor maps objects in game: move, turn, tilt, SAVE and Delete from a bar; the objects stay on the server for everybody.
+  - The full CGRP admin list from Server Moderator up to Community Scripter. /makeadmin [id] [1-9] sets the level, /cgrp lists the commands.
+  - ENTER / EXIT button at doors, 3D labels, radar icons, money bags and pickups are taken by walking into them.
+  - Default server: the green outline around the energy, hunger, fuel and drive HUD is gone (only the outline).
+
 - **4.08**: Day Z base building, faded server rows, connection screen for new servers, text only player HUD, new region picker.
   - Project Day Z Legacy: Rust style base building with SA-MP samp.img pieces (foundation, wall, doorway, window frame, ceiling, door) in wood or concrete. Open it with /build, /base or the new hammer button. You need a Toolbox in your inventory and the Day Z models setting on. Pieces snap to the foundation grid, have collision, are saved on the server (dayz_bases.txt), and only the owner can remove them. Doors open for the owner and party members.
   - The game background on the right side of each server list row now fades out instead of ending in a hard cut.

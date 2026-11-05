@@ -799,6 +799,7 @@ void MPServer::RpHandleCmd(int slot, const PktRpCmd& c)
                 if(now - m.lastSms < 8000) { RpMsg(slot, RP_RED, "Global OOC: wait a few seconds."); break; }
                 m.lastSms = now; RpAll(0xE2E8F0FF, "(( [OOC] %s [%d]: %s ))", nm, slot, c.text); break;
             case RPH_NEWBIE:
+                if(m_CgS[slot].nmute) { RpMsg(slot, RP_RED, "You are muted from the newbie chat."); break; }
                 if(now - m.lastSms < 8000) { RpMsg(slot, RP_RED, "Newbie chat: wait a few seconds."); break; }
                 m.lastSms = now; RpAll(0x86EFACFF, "[NEWBIE] %s%s [%d]: %s", m.playMin < RP_NEWBIE_MIN ? "(new) " : "", nm, slot, c.text); break;
             case RPH_WHISPER:
@@ -835,6 +836,7 @@ void MPServer::RpHandleCmd(int slot, const PktRpCmd& c)
         break;
     case RPC_AD:
         if(!c.text[0]) break;
+        if(m_CgS[slot].admute) { RpMsg(slot, RP_RED, "You are muted from adverts."); break; }
         if(now - m.lastSms < 30000) { RpMsg(slot, RP_RED, "Adverts: one every 30 s."); break; }
         if(!RpPay(slot, -100, "Advert")) { RpMsg(slot, RP_RED, "An advert costs $100."); break; }
         m.lastSms = now;

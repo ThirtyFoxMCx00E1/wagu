@@ -350,6 +350,7 @@ namespace Game
     void  AttachObjectToCar(int obj, int car, const Vec3& off, const Vec3& rot);   // 3.51 (opcode 0681)
     void  ClearWanted();
     void  SetMaxWanted(int stars);
+    void  SetWanted(int stars);               // 4.09: the stars now (0 = clear)
     void  ReleaseNpc(int handle, bool car);
     void  DamageNpc(int handle, bool car, int dmg);
     // 3.58 (game358.cpp): Timber log carry, Project DayZ loot / cabin scene, real fog

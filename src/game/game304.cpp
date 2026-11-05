@@ -21,6 +21,7 @@ DEFOPCODE(01BC, SET_OBJECT_COORDINATES_304, ifff);
 DEFOPCODE(0453, SET_OBJECT_ROTATION_304, ifff);
 DEFOPCODE(0110, CLEAR_WANTED_LEVEL_304, i);
 DEFOPCODE(01F0, SET_MAX_WANTED_LEVEL_304, i);
+DEFOPCODE(010D, ALTER_WANTED_LEVEL_409, ii);   // 4.09: CGRP /setplayerwanted, /wl
 DEFOPCODE(0249, MARK_MODEL_AS_NO_LONGER_NEEDED_304, i);
 DEFOPCODE(07E4, GET_MODEL_DIMENSIONS_304, ivvvvvv);   // 3.40.2
 #ifndef F2U
@@ -81,6 +82,14 @@ void Game::ClearWanted()
 {
     if(!IsReady()) return;
     CALLSCM(CLEAR_WANTED_LEVEL_304, 0);
+}
+void Game::SetWanted(int stars)
+{
+    if(!IsReady()) return;
+    if(stars < 0) stars = 0; if(stars > 6) stars = 6;
+    if(stars == 0) { CALLSCM(CLEAR_WANTED_LEVEL_304, 0); return; }
+    CALLSCM(SET_MAX_WANTED_LEVEL_304, 6);
+    CALLSCM(ALTER_WANTED_LEVEL_409, 0, stars);
 }
 void Game::SetMaxWanted(int stars)
 {

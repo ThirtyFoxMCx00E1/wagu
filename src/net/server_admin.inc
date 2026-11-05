@@ -283,11 +283,20 @@ void MPServer::AdminCmd(int slot, const uint8_t* data, int len)
         bool on = c.value != 0;
         if(ts.admin) { tell(kAdmRed, "%s is the administrator.", ts.name); return; }
         if(!on && ts.mod && !ts.granted) { tell(kAdmRed, "%s is a moderator from moderator.txt - only that file can take it away.", ts.name); return; }
-        if(on && ts.mod) { tell(kAdmRed, "%s is a moderator already.", ts.name); return; }
+        if(on && ts.mod && !(CgOn() && c.value > 1)) { tell(kAdmRed, "%s is a moderator already.", ts.name); return; }
+        if(on && CgOn())
+        {   // 4.09: /makeadmin [id] [1-9] = the CGRP admin level (1 Server Moderator .. 9 Community Scripter)
+            int lv = c.value < 1 ? 1 : (c.value > 9 ? 9 : c.value);
+            if(!me.admin && lv >= CgLevel(slot)) { tell(kAdmRed, "You can only give levels below yours."); return; }
+            CgP(t).level = (uint8_t)lv; m_bCgDirty = true;
+            if(ts.mod) { all("%s is now a %s (level %d, by %s).", ts.name, kCgLevelName[lv], lv, who); CgSendMe(t); return; }
+        }
+        if(!on && CgOn()) { CgP(t).level = 0; m_bCgDirty = true; }
         ts.mod = on; ts.granted = on;
         if(ts.uid[0]) { if(on) m_Ranks[ts.uid] = 'M'; else if(ts.vip) m_Ranks[ts.uid] = 'V'; else m_Ranks.erase(ts.uid); RanksSave(); }
         Retag(t);
         all(on ? "%s is now a moderator [MOD] (by %s)." : "%s is no longer a moderator (by %s).", ts.name, who);
+        if(CgOn()) CgSendMe(t);
         return;
     }
     case ADMIN_RESETSTATS:

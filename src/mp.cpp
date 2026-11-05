@@ -783,6 +783,15 @@ static void UpdatePassengerCandidate(int ped, uint64_t now);
 static void CnrOnDeath(const PktDeath& d);
 static void HkOnPacket(const uint8_t* d, int len);
 static void HkReset();
+// 4.09: CGRP systems (mp_cgrp.inc)
+static int  s_nCgWeather = -1;   // /weather [id] from a CGRP admin (-1 = the server's)
+static void CgOnPacket(const uint8_t* d, int len);
+static void CgReset();
+static void CgProcess(int ped, uint64_t now);
+static void CgRender();
+static bool CgCommand(const char* cmd, const char* arg);
+static bool CgGasNear(const Vec3& p);
+static bool CgMasked(int id);
 static void RulesOnPacket(const PktRules& m);
 static void RulesReset();
 static void SrvSettingsOnPacket(const PktSrvSettings& m);
@@ -1015,6 +1024,7 @@ static void ApplyWorld(uint64_t now)
     uint32_t absMin = s_World.absMinute + (uint32_t)(el / 1000);
     float frac = (float)(el % 1000) / 1000.0f;
     int forced = s_World.mode == WORLD_NATURAL ? -1 : (int)s_World.weather;
+    if(s_nCgWeather >= 0) forced = s_nCgWeather;   // 4.09: CGRP /weather [id]
     int fixed = Game::EnforceWorld(absMin, frac, forced);
     if(!s_nWorldSyncedAt) { s_nWorldSyncedAt = now; return; }     // first lock after joining: not a cheat
     if(fixed && now - s_nWorldSyncedAt > 3000)
@@ -2364,7 +2374,7 @@ public:
     void OnConnected(const PktWelcome& w) override
     {
         SampReset();   // 3.01
-        HkReset(); RulesReset(); Modes2Reset(); SrvSettingsReset(); HudReset(); ProgReset();   // 3.39: a new join: houses / rules / modes come again
+        HkReset(); CgReset(); RulesReset(); Modes2Reset(); SrvSettingsReset(); HudReset(); ProgReset();   // 3.39: a new join: houses / rules / modes come again
         myId = w.yourId; myColor = w.color;
         MP_CopyStr(s_szCurServer, w.serverName, sizeof(s_szCurServer));
         s_bWorldSynced = false;
@@ -2648,6 +2658,7 @@ public:
     void OnMw3(const uint8_t* d, int len) override { Mw3OnPacket(d, len); }   // 3.23
     void OnRp(const uint8_t* d, int len) override { RpOnPacket(d, len); }     // 3.25
     void OnDz(const uint8_t* d, int len) override { DzOnPacket(d, len); }     // 3.58
+    void OnCg(const uint8_t* d, int len) override { CgOnPacket(d, len); }     // 4.09
     void OnBcw(const uint8_t* d, int len) override { BcwOnPacket(d, len); }   // 3.04   // 2.25: the dialog opens; PKT_REJECT follows
     void OnJack(const PktJack& j) override   // 2.19: somebody pulls me out of my car
     {
@@ -4215,6 +4226,7 @@ void MP::Process()
     Mw3Process(ped, now);        // 3.23: Modern Warfare 3
     RpProcess(ped, now);         // 3.25: Mega Vil Futuristic
     DzProcess(ped, now);         // 3.58: Project Day Z
+    CgProcess(ped, now);         // 4.09: CGRP systems
     HkProcess(ped, now); NeedsProcess(ped, now); MvProcess(now); Modes2Process(ped, now); RulesProcess(now); ModCheckProcess(now); ProgProcess(ped, now); AdmProcess(ped); DealerProcess(ped, now);   // 3.39 / 3.54 staff commands
     ProcessGates(ped, now);      // 3.04.2: Area 69 gates
     ProcessHotelPc(ped, now);    // 3.36: hotel rooms with a computer (eyefind.info vehicle shops)
@@ -4389,6 +4401,7 @@ static void PSettingsPopup();
 #include "mp_modes2.inc"    // 3.39: survival, CnR, A/D, stunt, drift
 #include "mp_timber.inc"    // 3.51: the Timber job + the Broker MQQ title
 #include "mp_dealer.inc"    // 3.55: dealership receptionist + showroom (default server, Mega Vil)
+#include "mp_cgrp.inc"      // 4.09: CGRP systems (default server, Mega Vil)
 #include "mp_tdeplug.inc"   // 3.50: Add server > Plugins (Textdraw .mptd files)
 #include "mp_tde.inc"       // 3.50: in-game MP Textdraw Editor (/tde)
 #include "mp_dayz.inc"      // 3.58: Project Day Z Legacy (Proper DAYZ)
