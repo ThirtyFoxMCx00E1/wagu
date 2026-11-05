@@ -29,6 +29,7 @@ namespace Online
     void UseLegacyTopics();   // 3.04.6: the old thirtyfox/mp4/ lobby (mp_server --legacy-notice), call before Start
     void Start(const char* brokerFile = nullptr); // starts the background thread (safe to call twice); brokerFile = optional broker.txt (private broker, TLS + login)
     bool IsConnected();                // TCP + MQTT session to the broker is up
+    uint32_t NetGeneration();          // 4.05.8: +1 every time the phone's networks change (Wi-Fi <-> mobile data)
     void SetHostDedicated(bool on);    // 2.29: this host is a 24/7 machine (mp_server), announced as "@start!d"
     const char* BrokerName();          // the broker in use ("" while not connected)
     int  BrokerRttMs();                // last broker round trip (-1 = unknown)

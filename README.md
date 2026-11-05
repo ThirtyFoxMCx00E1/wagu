@@ -121,6 +121,16 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **4.05.8**: loading screen fix, Wi-Fi <-> mobile data fix, launcher touches no longer reach the game.
+  - Stuck on the loading screen after updating: 4.05.5 switched off the texture database guard from 4.04.2. Phones that still had a texdb pack in the game folder (the v4.02 GTA V pack, another mod's textures, a half-copied update) got the old loading-screen crash / hang back. The guard is on again (same decoder, it only stops at the end of the buffer).
+  - Day Z world textures: the texture destroy hook gives the game its real result back (4.05.7 returned nothing) and does no work at all while no world texture is swapped (the loading screen destroys thousands of textures).
+  - Switching Wi-Fi -> mobile data (or back) froze the game and left you on the public HiveMQ lobby. Now the phone's networks are watched every 0.5 s: the lobby connection of a network that is gone is dropped at once and reconnected on the new one, brokers that failed during the switch get no back-off, the 4 regions are measured again right away (a ping round across the switch is thrown away instead of marking every region "down" for 2 minutes), and you stay on your own region broker.
+  - DNS has a time limit now (2.5 s for a broker it knew, it then uses the last good address). Right after a switch Android's DNS can hang for 5-30 s.
+  - Lobby / login / friends links: TCP keepalive + 12 s user timeout, a dead path is noticed in seconds. With no network at all the phone waits for one instead of walking every broker into a timeout.
+  - In a game: the server is told "same session, new path" the moment the network changes (and every 1 s while it stays quiet), not after 5 s of freeze.
+  - Website: reconnects on network change / back online / tab back from the background, keepalive 15 s, a ping round measured while offline is thrown away, and it moves back to the best region when that answers again.
+  - Launcher / keyboard / login / dealer open: the game gets no new finger at all. Taps that MP's hit test missed went through to GTA, so the HUD behind the launcher (clock, money, weapon icon - hidden or not) and CLEO touch zones still reacted. A finger that was already down for the game (the joystick) still gets its release.
+  - Region icon: a third hit test straight from the touch event (before ImGui and the game), so the region list opens even when ImGui gives the tap to another window.
 - **4.05.7**: launcher clean-up, Day Z chat text.
   - Favorites and Lan are only the top tabs now. They were in the side bar too. The side bar's Internet item stays lit on all server list tabs.
   - The + (add server) icon is gone from the toolbar. Add server is in the side bar.

@@ -1,6 +1,7 @@
 #include "client.h"
 #include "server.h" // MP_NowMs
 #include "admin.h" // 3.35: MP_IsReservedName
+#include "online.h" // 4.05.8: network change
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netdb.h>
@@ -63,6 +64,7 @@ bool MPClient::Connect(const char* host, uint16_t port, const char* name, uint16
     Disconnect(false);
     m_fPingAvg = -1.0f; m_nPing = 0;
     m_bDirect = false; m_bDirectFellBack = false; m_bGotReply = false; m_nFallbackVia = 0; m_nAltSeen = 0;
+    m_nNetGenSeen = Online::NetGeneration(); m_nNetChangedMs = 0;   // 4.05.8
 
     if(m_nDirectIp)   // 3.11: straight to the 24/7 server's public address (relay only as fallback)
     {
@@ -368,6 +370,12 @@ void MPClient::Poll(INetEvents* ev)
         // relay): say "same session" again on the current path, and after 9 s move a direct link to the
         // relay. The server keeps the slot, the id and the login - no "(Timeout)" for a network hiccup.
         const uint64_t quiet = now - m_nLastRecv;
+        // 4.05.8: the phone changed networks (Wi-Fi <-> mobile data): say "same session" on the new path
+        // right away (and again every 1 s while the server is quiet) instead of freezing for 5 s first
+        const uint32_t ng = Online::NetGeneration();
+        if(ng != m_nNetGenSeen) { m_nNetGenSeen = ng; m_nNetChangedMs = now; if(m_nServerBuild >= 33900) { SendJoin(MP_JOIN_REBIND); m_nLastRebind = now; } }
+        const bool netNew = m_nNetChangedMs && now - m_nNetChangedMs < 15000;
+        if(netNew && quiet > 800 && m_nServerBuild >= 33900 && now - m_nLastRebind > 1000) { SendJoin(MP_JOIN_REBIND); m_nLastRebind = now; }
         if(quiet > 5000 && m_nServerBuild >= 33900 && now - m_nLastRebind > 2000)
         {
             const uint32_t sa = ntohl(m_Server.sin_addr.s_addr);

@@ -678,6 +678,29 @@ static bool   s_bRegionPick = false;            // the region list is open
 static uint64_t s_nRegionToggleMs = 0;          // 4.05.3: last open / close of the region list
 static ImVec2 s_vRegionBtn(0, 0);               // top-left of the toolbar icon (set every frame by the toolbar)
 static float  s_fRegionBtn = 0;                 // its size
+// 4.05.8: third way to hit the region icon. The press is also checked straight from the touch event
+// (before ImGui, before the game), so the list opens even when ImGui hands the tap to another window.
+static std::mutex s_RawTapMx;
+static bool  s_bRawTap = false; static float s_fRawTapX = 0, s_fRawTapY = 0; static uint64_t s_nRawTapMs = 0;
+void MP::LauncherTouchDown(float x, float y)
+{
+    std::lock_guard<std::mutex> lk(s_RawTapMx);
+    s_bRawTap = true; s_fRawTapX = x; s_fRawTapY = y; s_nRawTapMs = MP_NowMs();
+}
+// true once for a raw press inside the region icon (fresh, the launcher on top there)
+static bool LRegionRawTap(ImVec2 p, float sz)
+{
+    float x, y; uint64_t t;
+    { std::lock_guard<std::mutex> lk(s_RawTapMx); if(!s_bRawTap) return false; s_bRawTap = false; x = s_fRawTapX; y = s_fRawTapY; t = s_nRawTapMs; }
+    if(MP_NowMs() - t > 500 || VKeyboard::IsOpen()) return false;
+    const float m = UI::S(6);   // a few pixels of slack: the pin is small on phones
+    if(x < p.x - m || y < p.y - m || x > p.x + sz + m || y > p.y + sz + m) return false;
+    const char* above = "";
+    if(!FloatMenu::LauncherOwnsPoint(x, y, &above)) return false;
+    static int s_nLogs = 0;
+    if(s_nLogs < 6) { ++s_nLogs; logger->Info("4.05.8: region icon pressed (raw touch %.0f,%.0f)", x, y); }
+    return true;
+}
 
 static void LRegionChoose(int i)                // i < 0 = Auto
 {
@@ -1900,7 +1923,9 @@ static void RenderLauncher(void* openPtr)
         s_vRegionBtn = ImGui::GetCursorScreenPos(); s_fRegionBtn = btnH;   // 3.25.1: region switch
         // 4.05.3: the only toolbar button that TOGGLES - one tap that arrived twice (press seen twice) opened
         //         and closed the list in the same moment, so it looked dead. Now one toggle per 400 ms
-        if(LToolButton("region", IC_REGION, nullptr, btnH, true, s_bRegionPick) && MP_NowMs() - s_nRegionToggleMs > 400)
+        bool regionHit = LToolButton("region", IC_REGION, nullptr, btnH, true, s_bRegionPick);
+        if(LRegionRawTap(s_vRegionBtn, btnH)) regionHit = true;   // 4.05.8
+        if(regionHit && MP_NowMs() - s_nRegionToggleMs > 400)
         { s_bRegionPick = !s_bRegionPick; s_nRegionToggleMs = MP_NowMs(); s_bProfMenu = false; }
         ImGui::SameLine(0, UI::S(6));
         int connTab = -1;

@@ -118,6 +118,8 @@ private:
     std::thread m_Heartbeat;
     uint32_t    m_nServerBuild = 0;   // 3.39
     uint64_t    m_nLastRebind = 0;    // 3.39
+    uint32_t    m_nNetGenSeen = 0;    // 4.05.8: Online::NetGeneration() at the last check
+    uint64_t    m_nNetChangedMs = 0;  // 4.05.8
     int         m_nAltSeen = 0;       // 3.58: packets from the server's other hotspot address
     std::atomic<bool> m_bHbRun{false}, m_bGamePaused{false}, m_bSentPaused{false}, m_bAfk{false}, m_bSentAfk{false};
     std::atomic<uint64_t> m_nLastGamePoll{0};

@@ -304,7 +304,8 @@ namespace MP
     bool AuthScreenShown();    // 3.21.6: login screen on top
     bool DealerShown();   // 3.55: the dealership list / showroom is open (controller navigation)
     bool DealerBack();    // 3.55: controller B: back one step (false = not open)
-    bool LauncherPadPage(int dir);   // 3.53: controller LB / RB = previous / next launcher page (false = launcher not open)
+    bool LauncherPadPage(int dir);
+    void LauncherTouchDown(float x, float y);   // 4.05.8: raw finger press (touch thread) - region icon fallback   // 3.53: controller LB / RB = previous / next launcher page (false = launcher not open)
     bool JoinScreenActive();   // 2.19.1: join screen / connection view / spawn picker on screen
     // 3.04: Brief Case War (private 24/7 gamemode server, pinned in the Internet list)
     void JoinMw3();            // 3.23: Call Of Duty: Modern Warfare 3 24/7 (join it, or leave it when you are on it)

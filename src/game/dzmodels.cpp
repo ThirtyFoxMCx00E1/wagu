@@ -715,7 +715,8 @@ bool MakeSlot(Entry* e)
 struct WSwap { void* r0; void* r1; uint32_t fa; };
 std::unordered_map<void*, WSwap> s_Swap;          // GTA texture -> its rasters
 std::recursive_mutex s_SM;
-void (*TexDestroy_orig)(void*) = nullptr;
+int (*TexDestroy_orig)(void*) = nullptr;               // 4.05.8: RwBool, was declared void
+std::atomic<int> s_nSwapCount { 0 };                    // 4.05.8: s_Swap.size() without the lock (destroy hook fast path)
 void (*RasterDestroy)(void*) = nullptr;
 void* (*TexGtaRead_orig)(void*) = nullptr;
 void* (*TexRead_orig)(void*) = nullptr;
@@ -727,7 +728,7 @@ void WorldSwap(void* texp)
     if(!T->raster || !T->name[0]) return;
     std::lock_guard<std::recursive_mutex> lk(s_SM);
     auto it = s_Swap.find(T);
-    if(it != s_Swap.end()) { if(T->raster == it->second.r1) return; s_Swap.erase(it); }   // reused memory
+    if(it != s_Swap.end()) { if(T->raster == it->second.r1) return; s_Swap.erase(it); s_nSwapCount = (int)s_Swap.size(); }   // reused memory
     char nm[33]; memcpy(nm, T->name, 32); nm[32] = 0;
     WEnt w; std::string path;
     {
@@ -751,14 +752,17 @@ void WorldSwap(void* texp)
         tmp->raster = nullptr; TexDestroy_orig(tmp);      // only the raster is kept
         T->raster = s.r1;
         T->filterAddr = (s.fa & ~0xFFu) | 2u;             // linear: ours has no mip levels (mip filter = black)
-        s_Swap[T] = s;
+        s_Swap[T] = s; s_nSwapCount = (int)s_Swap.size();
     }
     ++s_WMade;
     if(s_WMade == 1 || s_WMade % 500 == 0) DzLog(false, "DzModels: world textures in the game: %d (last %s)", s_WMade.load(), nm);
 }
-void HookTexDestroy(void* texp)
+// 4.05.8: returns the game's RwBool (4.05.7 returned nothing, so callers that check it read garbage) and
+// does not touch the map at all while no world texture is swapped (= always, outside Day Z / on the loading
+// screen, where the game destroys thousands of textures)
+int HookTexDestroy(void* texp)
 {
-    if(texp && !s_Swap.empty())
+    if(texp && s_nSwapCount.load(std::memory_order_relaxed) > 0)
     {
         std::lock_guard<std::recursive_mutex> lk(s_SM);
         auto it = s_Swap.find(texp);
@@ -766,10 +770,10 @@ void HookTexDestroy(void* texp)
         if(it != s_Swap.end() && T->refCount <= 1)
         {
             if(T->raster == it->second.r1) { T->raster = it->second.r0; T->filterAddr = it->second.fa; RasterDestroy(it->second.r1); }
-            s_Swap.erase(it);
+            s_Swap.erase(it); s_nSwapCount = (int)s_Swap.size();
         }
     }
-    TexDestroy_orig(texp);
+    return TexDestroy_orig(texp);
 }
 void* HookTexGtaRead(void* stream) { void* t = TexGtaRead_orig(stream); WorldSwap(t); return t; }
 void* HookTexRead(void* stream) { void* t = TexRead_orig(stream); WorldSwap(t); return t; }
@@ -778,7 +782,7 @@ void WorldRestoreAll()
     std::lock_guard<std::recursive_mutex> lk(s_SM);
     for(auto& p : s_Swap) { RwTex* T = (RwTex*)p.first; if(T->raster == p.second.r1) { T->raster = p.second.r0; T->filterAddr = p.second.fa; RasterDestroy(p.second.r1); } }
     DzLog(false, "DzModels: world textures off - %d GTA textures put back", (int)s_Swap.size());
-    s_Swap.clear(); s_WMade = 0;
+    s_Swap.clear(); s_nSwapCount = 0; s_WMade = 0;
 }
 // every texture of every loaded txd slot (main thread)
 void WorldSwapLoaded()

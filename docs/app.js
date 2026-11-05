@@ -48,16 +48,28 @@
       setTimeout(function () { fin(-1); }, 6000);
     });
   }
+  // 4.05.8: a round measured while the phone switches Wi-Fi <-> mobile data (offline, or nothing answers)
+  // is thrown away and measured again 3 s later - it no longer marks every region "Not reachable"
+  var netGen = 0;
   function measure() {
+    var g = netGen, got = ping.slice();
     return Promise.all(regions.map(function (r, i) {
       if (!r || !okWss(r.web)) return Promise.resolve();
       return wsPing(r.web).then(function (a) {
         return wsPing(r.web).then(function (b) {
           var v = [a, b].filter(function (x) { return x >= 0; });
-          ping[i] = v.length ? Math.min.apply(null, v) : -1;
+          got[i] = v.length ? Math.min.apply(null, v) : -1;
         });
       });
-    })).then(renderRegions);
+    })).then(function () {
+      var any = got.some(function (p, i) { return regions[i] && okWss(regions[i].web) && p != null && p >= 0; });
+      if (g !== netGen || navigator.onLine === false || (!any && Date.now() - netChangedAt < 30000)) {
+        setTimeout(measure, 3000);
+        return;
+      }
+      ping = got;
+      renderRegions();
+    });
   }
   function bestRegion() {
     var b = -1;
@@ -80,15 +92,43 @@
     PUBLIC.forEach(function (u) { list.push({ url: u, label: 'public lobby (' + new URL(u).hostname + ')' }); });
     return list;
   }
-  var bi = 0, list = [];
+  var bi = 0, list = [], curUrl = '', netChangedAt = 0, netTimer = 0;
+  // 4.05.8: the network changed (Wi-Fi <-> mobile data, back online, tab back from the background):
+  // measure the regions again and reconnect to the best one right away
+  function netChanged(why) {
+    netGen++; netChangedAt = Date.now();
+    clearTimeout(netTimer);
+    netTimer = setTimeout(function () {
+      if (navigator.onLine === false) return;
+      measure().then(function () {
+        list = brokerList(); bi = 0;
+        var old = client; client = null;
+        try { if (old) old.end(true); } catch (e) {}
+        connect();
+      });
+    }, 1200);
+  }
+  window.addEventListener('online', function () { netChanged('online'); });
+  window.addEventListener('offline', function () { netGen++; netChangedAt = Date.now(); setStatus('bad', 'No network - reconnecting when it is back…'); });
+  if (navigator.connection && navigator.connection.addEventListener) navigator.connection.addEventListener('change', function () { netChanged('connection'); });
+  var hiddenAt = 0;
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden) { hiddenAt = Date.now(); return; }
+    if (hiddenAt && Date.now() - hiddenAt > 30000) netChanged('visible');   // phones drop sockets in the background
+  });
+  // 4.05.8: sitting on a fallback while the best region answers again: move back (checked after each ping)
+  setInterval(function () {
+    var b = bestRegion();
+    if (b >= 0 && client && client.connected && regions[b] && curUrl && curUrl !== regions[b].web) netChanged('better');
+  }, 65000);
   function connect() {
     if (typeof mqtt === 'undefined') { setStatus('bad', 'Live list could not load. Reload the page.'); return; }
     var br = list[bi % list.length];
     setStatus('', 'Connecting to the ' + esc(br.label) + '…');
-    var opts = { clientId: 'web' + Math.random().toString(16).slice(2, 12), clean: true, connectTimeout: 8000, reconnectPeriod: 0, protocolVersion: 4 };
+    var opts = { clientId: 'web' + Math.random().toString(16).slice(2, 12), clean: true, connectTimeout: 8000, reconnectPeriod: 0, protocolVersion: 4, keepalive: 15 };   // 4.05.8: keepalive 15 s (default 60: a dead link after a network switch was seen after 90 s)
     if (br.user) { opts.username = br.user; opts.password = br.pass || ''; }
     var c = mqtt.connect(br.url, opts), failed = false;
-    client = c;
+    client = c; curUrl = br.url;
     c.on('connect', function () {
       lobbyName = br.label;
       setStatus('ok', 'Live via the ' + esc(br.label));
@@ -108,9 +148,13 @@
       if (failed) return;
       failed = true;
       try { c.end(true); } catch (e) {}
-      bi++;
+      if (c !== client) return;   // 4.05.8: replaced by a fresh connect after a network switch
+      // 4.05.8: offline (between Wi-Fi and mobile data): wait for the network instead of walking the list
+      // down to the public lobby
+      if (navigator.onLine === false) { setStatus('bad', 'No network - reconnecting when it is back…'); return; }
+      if (Date.now() - netChangedAt > 20000) bi++;   // a failure right after a switch does not count
       setStatus('bad', 'Lobby unreachable, trying the next one…');
-      setTimeout(connect, 2000);
+      setTimeout(connect, Date.now() - netChangedAt < 20000 ? 1000 : 2000);
     };
     c.on('error', fail);
     c.on('close', function () { if (c === client) fail(); });

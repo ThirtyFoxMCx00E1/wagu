@@ -41,6 +41,8 @@
 #include <vector>
 #include <thread>
 #include <chrono>
+#include <condition_variable>   // 4.05.8
+#include <memory>
 
 #if defined(__ANDROID__) && !defined(MP_LOG_STDOUT)   // MP_LOG_STDOUT: mp_server in Termux
   #include <android/log.h>
@@ -219,6 +221,133 @@ static uint32_t Rand32()
 static void Hex8(char* out, uint32_t v) { snprintf(out, 9, "%08x", v); }
 static uint32_t ParseHex8(const char* s) { return (uint32_t)strtoul(s, nullptr, 16); }
 
+
+// ------------------------------------------------------------------------------------------
+// 4.05.8: network hand-over (Wi-Fi <-> mobile data)
+// Switching Wi-Fi off / on (or Wi-Fi -> mobile data) used to freeze the game and leave the lobby on the
+// public HiveMQ broker for minutes:
+//  - the broker socket of the old network was only noticed as dead after 7 s (in a game) / 20 s
+//  - getaddrinfo() right after the switch can hang for 5-30 s while the new network's DNS comes up,
+//    and every broker was tried one after another (4-8 s each)
+//  - every broker that failed during the switch got the 30 s ... 10 min back-off, and the region ping
+//    that ran in that second marked all 4 regions "down", so the phone sat on the public lobby
+//    (one far broker = the old 400+ ms) until the next ping round 2 minutes later
+// Now: the interfaces are watched (every 0.5 s). On a change the socket of a network that is gone is
+// dropped at once, back-offs are cleared, the regions are pinged again right away (results measured
+// across the switch are thrown away), DNS has a time limit and falls back to the last good address.
+static std::atomic<uint32_t> s_nNetGen{0};          // +1 on every interface change
+static std::atomic<uint64_t> s_nNetChangedAt{0};    // MP_NowMs() of the last change
+static std::atomic<bool>     s_bPingNow{false};     // ping thread: measure the regions now
+static std::mutex            s_NetSigMx;
+static std::string           s_NetSig;               // "wlan0=c0a80105,rmnet0=0a..." (guarded)
+
+static std::string NetSignature()
+{
+    std::vector<std::string> v;
+    for(const LanIface& i : LAN::Interfaces()) { char b[48]; snprintf(b, sizeof(b), "%s=%08x", i.name, i.ip); v.push_back(b); }
+    std::sort(v.begin(), v.end());
+    std::string s; for(auto& x : v) { if(!s.empty()) s += ','; s += x; }
+    return s;
+}
+// true when the network the socket was opened on (its local address) is still on this phone
+static bool SocketNetUp(int fd)
+{
+    if(fd < 0) return false;
+    sockaddr_in la; socklen_t ll = sizeof(la); memset(&la, 0, sizeof(la));
+    if(getsockname(fd, (sockaddr*)&la, &ll) != 0 || la.sin_family != AF_INET) return true;   // unknown: keep it
+    uint32_t ip = ntohl(la.sin_addr.s_addr);
+    if(!ip || (ip >> 24) == 127) return true;
+    std::vector<LanIface> ifs = LAN::Interfaces();
+    if(ifs.empty()) return false;                    // no network at all
+    for(const LanIface& i : ifs) if(i.ip == ip) return true;
+    return false;
+}
+// called often (net thread); true when the interfaces changed since the last call
+static bool NetWatchTick()
+{
+    static uint64_t last = 0; static bool first = true;
+    uint64_t now = MP_NowMs();
+    if(now - last < 500) return false;
+    last = now;
+    std::string sig = NetSignature();
+    std::lock_guard<std::mutex> lk(s_NetSigMx);
+    if(first) { first = false; s_NetSig = sig; return false; }
+    if(sig == s_NetSig) return false;
+    OLOG("4.05.8: network changed [%s] -> [%s]", s_NetSig.c_str(), sig.c_str());
+    s_NetSig = sig;
+    ++s_nNetGen; s_nNetChangedAt = now; s_bPingNow = true;
+    return true;
+}
+static bool NetChangedRecently(uint64_t now, uint64_t ms) { uint64_t t = s_nNetChangedAt; return t && now - t < ms; }
+// other links (auth, social): drop the socket when the network it was on is gone
+static bool NetMovedAway(int fd, uint32_t& seenGen)
+{
+    uint32_t g = s_nNetGen;
+    if(g == seenGen) return false;
+    seenGen = g;
+    return fd >= 0 && !SocketNetUp(fd);
+}
+
+// DNS with a time limit + the last good address per host. getaddrinfo cannot be cancelled, so it runs
+// on its own short thread; a late answer still fills the cache for the next try.
+static std::mutex s_DnsMx;
+static std::map<std::string, std::vector<uint32_t>> s_DnsCache;   // host -> IPv4 (network order)
+static int ResolveV4(const std::string& host, uint16_t port, std::vector<sockaddr_in>& out, char* err, size_t errLen)
+{
+    out.clear();
+    sockaddr_in sa; memset(&sa, 0, sizeof(sa)); sa.sin_family = AF_INET; sa.sin_port = htons(port);
+    if(inet_pton(AF_INET, host.c_str(), &sa.sin_addr) == 1) { out.push_back(sa); return 0; }
+    std::vector<uint32_t> cached;
+    { std::lock_guard<std::mutex> lk(s_DnsMx); auto it = s_DnsCache.find(host); if(it != s_DnsCache.end()) cached = it->second; }
+    struct Job { std::mutex m; std::condition_variable cv; bool done = false; int rc = EAI_AGAIN; std::vector<uint32_t> ips; };
+    auto job = std::make_shared<Job>();
+    std::string h = host;
+    std::thread([job, h]()
+    {
+        addrinfo hints, *res = nullptr; memset(&hints, 0, sizeof(hints));
+        hints.ai_family = AF_INET; hints.ai_socktype = SOCK_STREAM;
+        int rc = getaddrinfo(h.c_str(), nullptr, &hints, &res);
+        std::vector<uint32_t> ips;
+        if(rc == 0) for(addrinfo* a = res; a; a = a->ai_next)
+            if(a->ai_family == AF_INET && a->ai_addrlen >= (socklen_t)sizeof(sockaddr_in)) ips.push_back(((sockaddr_in*)a->ai_addr)->sin_addr.s_addr);
+        if(res) freeaddrinfo(res);
+        if(rc == 0 && ips.empty()) rc = EAI_NONAME;
+        if(rc == 0) { std::lock_guard<std::mutex> lk(s_DnsMx); s_DnsCache[h] = ips; }
+        std::lock_guard<std::mutex> lk(job->m); job->rc = rc; job->ips.swap(ips); job->done = true; job->cv.notify_all();
+    }).detach();
+    int waitMs = cached.empty() ? 10000 : 2500;      // known host: do not wait for a slow new network
+    std::vector<uint32_t> ips; int rc;
+    {
+        std::unique_lock<std::mutex> lk(job->m);
+        job->cv.wait_for(lk, std::chrono::milliseconds(waitMs), [&]{ return job->done; });
+        rc = job->done ? job->rc : EAI_AGAIN;
+        if(job->done && rc == 0) ips = job->ips;
+    }
+    if(ips.empty() && !cached.empty()) { ips = cached; OLOG("4.05.8: DNS %s %s, using the last address", host.c_str(), rc == EAI_AGAIN ? "slow" : "failed"); }
+    if(ips.empty()) { if(err) snprintf(err, errLen, "DNS lookup failed (%d)", rc); return rc ? rc : EAI_NONAME; }
+    for(uint32_t ip : ips) { sa.sin_addr.s_addr = ip; out.push_back(sa); }
+    return 0;
+}
+// 4.05.8: a path that died (old network, mobile NAT) errors out in ~10 s instead of minutes
+#ifndef TCP_USER_TIMEOUT
+#define TCP_USER_TIMEOUT 18
+#endif
+static void TcpLiveness(int fd)
+{
+    int one = 1, idle = 10, intvl = 3, cnt = 3, uto = 12000;
+    setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &one, sizeof(one));
+#ifdef TCP_KEEPIDLE
+    setsockopt(fd, IPPROTO_TCP, TCP_KEEPIDLE, &idle, sizeof(idle));
+#endif
+#ifdef TCP_KEEPINTVL
+    setsockopt(fd, IPPROTO_TCP, TCP_KEEPINTVL, &intvl, sizeof(intvl));
+#endif
+#ifdef TCP_KEEPCNT
+    setsockopt(fd, IPPROTO_TCP, TCP_KEEPCNT, &cnt, sizeof(cnt));
+#endif
+    setsockopt(fd, IPPROTO_TCP, TCP_USER_TIMEOUT, &uto, sizeof(uto));
+}
+
 // ------------------------------------------------------------------------------------------
 // minimal MQTT 3.1.1 client (QoS 0 only)
 class Mqtt
@@ -289,20 +418,16 @@ public:
     {
         Close();
         ws = b.ws; tls = b.tls;
-        addrinfo hints, *res = nullptr;
-        memset(&hints, 0, sizeof(hints));
-        hints.ai_family = AF_INET; hints.ai_socktype = SOCK_STREAM;
-        char port[8]; snprintf(port, sizeof(port), "%u", b.port);
-        int gai = getaddrinfo(b.host.c_str(), port, &hints, &res);
-        if(gai != 0 || !res) { snprintf(err, sizeof(err), "DNS lookup failed (%d)", gai); return false; }
+        std::vector<sockaddr_in> addrs;   // 4.05.8: DNS with a time limit + last good address
+        if(ResolveV4(b.host, b.port, addrs, err, sizeof(err)) != 0) return false;
         bool ok = false;
         int lastErr = 0;
-        for(addrinfo* a = res; a && !ok; a = a->ai_next)
+        for(size_t ai = 0; ai < addrs.size() && !ok; ++ai)
         {
             fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
             if(fd < 0) { lastErr = errno; continue; }
             fcntl(fd, F_SETFL, fcntl(fd, F_GETFL, 0) | O_NONBLOCK);
-            int r = connect(fd, a->ai_addr, a->ai_addrlen);
+            int r = connect(fd, (const sockaddr*)&addrs[ai], sizeof(sockaddr_in));
             if(r != 0 && errno == EINPROGRESS)
             {
                 pollfd p = { fd, POLLOUT, 0 };
@@ -318,10 +443,10 @@ public:
             if(r == 0) ok = true;
             else { close(fd); fd = -1; }
         }
-        freeaddrinfo(res);
         if(!ok) { snprintf(err, sizeof(err), "TCP connect failed (%s)", lastErr == ETIMEDOUT ? "timeout - port blocked?" : strerror(lastErr)); return false; }
         int one = 1;
         setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
+        TcpLiveness(fd);   // 4.05.8
         // 2.15: keep the kernel from hiding seconds of data. Phones auto-size the TCP send
         // buffer to megabytes; on a weak uplink that buffer filled over a few minutes and every
         // message (pings too) waited behind it. Now at most ~16 KB sit unsent in the kernel and
@@ -850,6 +975,22 @@ static void NetThread()
     {
         uint64_t now = MP_NowMs();
 
+        // ---- 4.05.8: Wi-Fi <-> mobile data ----
+        if(NetWatchTick())
+        {
+            s_BrokerBackoff.clear();          // what failed during the switch is not "down"
+            stickyFails = 0;
+            for(int r = 0; r < REGION_COUNT; ++r) s_RegionPing[r] = -1;
+            s_bPingedOnce = false;            // = keep aiming for the chosen region until it is measured again
+            if(mq.fd >= 0 && !SocketNetUp(mq.fd))
+            {
+                OLOG("4.05.8: the broker connection was on the network that is gone - reconnecting now");
+                mq.Close();
+                s_bConnected = false;
+            }
+            nextTry = 0;
+        }
+
         // ---- hosting state from the game ----
         bool hostOn; char hostName[32]; uint16_t hostPort; int hp, hm, hr;
         {
@@ -924,6 +1065,17 @@ static void NetThread()
         {
             s_bConnected = false;
             if(now < nextTry) { std::this_thread::sleep_for(std::chrono::milliseconds(100)); continue; }
+            // 4.05.8: no network at all (between Wi-Fi going and mobile data coming): wait for it instead of
+            // walking every broker into a timeout and a back-off
+            if(!LAN::HasNetwork())
+            {
+                { std::lock_guard<std::mutex> lk(s_M); s_szBroker[0] = 0; }
+                s_nCurRegion = -1;
+                nextTry = now + 300;
+                continue;
+            }
+            const bool netNew = NetChangedRecently(now, 30000);   // 4.05.8: just switched networks
+            const uint32_t gen0 = s_nNetGen;
             bool ok = false;
             std::string will = curHostToken ? TopicList(curHostToken) : std::string();
             ApplyPendingRegions();
@@ -944,7 +1096,7 @@ static void NetThread()
             // 2.21: a game is running (players on our server / we play on someone's server): the
             // others are still on the broker we just lost. Retry that one first a few times instead of
             // landing on another broker where nobody can hear us (= timeout for everyone)
-            if(inGame && lastGood >= 0 && lastGood < BROKER_COUNT && stickyFails < 4)
+            if(inGame && lastGood >= 0 && lastGood < BROKER_COUNT && (stickyFails < 4 || netNew))   // 4.05.8: + right after a network switch
             {
                 std::vector<int> o2; o2.push_back(lastGood);
                 for(int x : order) if(x != lastGood) o2.push_back(x);
@@ -964,7 +1116,12 @@ static void NetThread()
                     else       snprintf(d, sizeof(d), "%s:%u%s  %s", br.host.c_str(), br.port, br.tls ? " tls" : "", mq.err);
                     s_Diag[bi] = d;
                 }
-                if(!opened) { OLOG("%s:%u failed: %s", br.host.c_str(), br.port, mq.err); BrokerFailed(br, MP_NowMs()); }
+                if(!opened)
+                {
+                    OLOG("%s:%u failed: %s", br.host.c_str(), br.port, mq.err);
+                    if(!netNew) BrokerFailed(br, MP_NowMs());   // 4.05.8: no back-off for a failure during a network switch
+                    if(NetWatchTick() || s_nNetGen != gen0 || !LAN::HasNetwork()) { s_BrokerBackoff.clear(); stickyFails = 0; break; }   // network changed again: start over
+                }
                 if(opened)
                 {
                     ok = true;
@@ -1000,6 +1157,7 @@ static void NetThread()
                 { std::lock_guard<std::mutex> lk(s_M); s_szBroker[0] = 0; }
                 s_nCurRegion = -1; s_bOwnBroker = false;
                 nextTry = now + 5000;
+                if(s_nNetGen != gen0 || netNew) { nextTry = MP_NowMs() + 500; OLOG("4.05.8: network just changed, retrying in 0.5 s"); continue; }
                 if(inGame && lastGood >= 0 && stickyFails < 4) { ++stickyFails; nextTry = MP_NowMs() + 600; OLOG("game broker not back yet (%d), retrying", stickyFails); continue; }
                 OLOG("no broker reachable, retrying in 5 s");
                 continue;
@@ -1684,19 +1842,16 @@ static void LoadBrokerConfig(const char* path)
 // ---- 2.20: small HTTPS GET (regions.txt from the website) --------------------------------
 static int TcpConnectTimed(const std::string& host, uint16_t port, int timeoutMs, int* rttMs, char* err, size_t errLen)
 {
-    addrinfo hints, *res = nullptr;
-    memset(&hints, 0, sizeof(hints));
-    hints.ai_family = AF_INET; hints.ai_socktype = SOCK_STREAM;
-    char ps[8]; snprintf(ps, sizeof(ps), "%u", port);
-    if(getaddrinfo(host.c_str(), ps, &hints, &res) != 0 || !res) { if(err) snprintf(err, errLen, "DNS lookup failed"); return -1; }
+    std::vector<sockaddr_in> addrs;   // 4.05.8
+    if(ResolveV4(host, port, addrs, nullptr, 0) != 0) { if(err) snprintf(err, errLen, "DNS lookup failed"); return -1; }
     int fd = -1;
-    for(addrinfo* a = res; a && fd < 0; a = a->ai_next)
+    for(size_t ai = 0; ai < addrs.size() && fd < 0; ++ai)
     {
         int s = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
         if(s < 0) continue;
         fcntl(s, F_SETFL, fcntl(s, F_GETFL, 0) | O_NONBLOCK);
         uint64_t t0 = MP_NowMs();
-        int r = connect(s, a->ai_addr, a->ai_addrlen);
+        int r = connect(s, (const sockaddr*)&addrs[ai], sizeof(sockaddr_in));
         if(r != 0 && errno == EINPROGRESS)
         {
             pollfd p = { s, POLLOUT, 0 };
@@ -1706,7 +1861,6 @@ static int TcpConnectTimed(const std::string& host, uint16_t port, int timeoutMs
         if(r == 0) { fd = s; if(rttMs) *rttMs = (int)(MP_NowMs() - t0); }
         else close(s);
     }
-    freeaddrinfo(res);
     if(fd < 0 && err) snprintf(err, errLen, "unreachable");
     return fd;
 }
@@ -1817,8 +1971,9 @@ static bool                s_bPendingRegional = false;
 static std::string         s_LastRegionsBody;   // guarded
 
 // ---- 2.20: region pings + which broker to use -----------------------------------------------
-static void PingRegionsOnce()
+static bool PingRegionsOnce()
 {
+    const uint32_t gen0 = s_nNetGen;   // 4.05.8
     std::vector<Broker> list;
     {
         std::lock_guard<std::mutex> lk(s_M);
@@ -1858,8 +2013,17 @@ static void PingRegionsOnce()
         int r = list[i].region;
         if(res[i] >= 0 && (best[r] < 0 || res[i] < best[r])) best[r] = res[i];
     }
+    // 4.05.8: measured while the network changed (or nothing answered right after a switch): throw it
+    // away and measure again in a moment, never mark all regions "down" because Wi-Fi just went
+    bool any = false; for(int r = 0; r < REGION_COUNT; ++r) if(has[r] && best[r] >= 0) any = true;
+    if(s_nNetGen != gen0 || !LAN::HasNetwork() || (!any && NetChangedRecently(MP_NowMs(), 30000)))
+    {
+        OLOG("4.05.8: region ping across a network switch - measuring again");
+        return false;
+    }
     for(int r = 0; r < REGION_COUNT; ++r) s_RegionPing[r] = has[r] ? best[r] : -1;
     s_bPingedOnce = true;
+    return true;
 }
 
 static void PingThread()
@@ -1869,9 +2033,16 @@ static void PingThread()
     for(int round = 0; ; ++round)
     {
         if(!fetched || round % 15 == 14) { FetchRegions(false, 2); fetched = true; }   // refresh about every 30 min
-        if(s_bRegional || s_bPendingRegional) PingRegionsOnce();
+        bool done = true;
+        if(s_bRegional || s_bPendingRegional) done = PingRegionsOnce();
         s_bPinging = false;
-        std::this_thread::sleep_for(std::chrono::seconds(round < 3 ? 20 : 120));
+        // 4.05.8: wake up at once when the network changes (was a plain 20 s / 2 min sleep)
+        int waitMs = !done ? 2000 : (round < 3 ? 20000 : 120000);
+        for(int t = 0; t < waitMs; t += 250)
+        {
+            if(s_bPingNow.exchange(false)) { std::this_thread::sleep_for(std::chrono::milliseconds(1200)); break; }   // let the new network settle
+            std::this_thread::sleep_for(std::chrono::milliseconds(250));
+        }
     }
 }
 
@@ -2004,6 +2175,7 @@ void Online::Start(const char* brokerFile)
 }
 
 bool Online::IsConnected() { return s_bConnected; }
+uint32_t Online::NetGeneration() { return s_nNetGen; }   // 4.05.8
 int  Online::BrokerRttMs() { return s_nRtt; }
 int  Online::CongestionMs() { return s_nCongestMs.load(); }
 const char* Online::BrokerName()
@@ -2422,7 +2594,9 @@ static void AuthThread()
             }
         }
         static uint64_t lastPing = 0;
+        static uint32_t netSeen = 0;
         uint64_t now = MP_NowMs();
+        if(NetMovedAway(mq.fd, netSeen)) { OLOG("auth link: network changed - reconnecting"); mq.Close(); continue; }   // 4.05.8
         if(now - lastPing > 20000) { lastPing = now; if(!mq.Ping()) mq.Close(); }
     }
     if(mq.fd >= 0) mq.Disconnect();
@@ -2536,6 +2710,7 @@ static void SocThread()
         }
         if(mq.fd < 0) continue;
         uint64_t now = MP_NowMs();
+        { static uint32_t netSeen = 0; if(NetMovedAway(mq.fd, netSeen)) { OLOG("social link: network changed - reconnecting"); mq.Close(); continue; } }   // 4.05.8
         if(now - lastPing > 20000) { lastPing = now; if(!mq.Ping()) mq.Close(); }
     }
     if(mq.fd >= 0)

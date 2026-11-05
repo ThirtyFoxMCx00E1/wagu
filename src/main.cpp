@@ -26,7 +26,7 @@
 #include "../imgui/rw_glue.h"
 #include "net/server.h"
 
-MYMODCFG(net.thirtyfox.mp, MP Multiplayer, 4.05.7, ThirtyFoxMCx00E1)   // 3.21: was stuck at 3.04.6 (crash logs showed the wrong version)
+MYMODCFG(net.thirtyfox.mp, MP Multiplayer, 4.05.8, ThirtyFoxMCx00E1)   // 3.21: was stuck at 3.04.6 (crash logs showed the wrong version)
 NEEDGAME(com.rockstargames.gtasa)
 
 // Globals used by the embedded RenderWare ImGui backend
@@ -137,6 +137,12 @@ static void MapTouch(int& x, int& y)
     if(s_bScaleTouch) { x = (int)(x * s_fTouchSX); y = (int)(y * s_fTouchSY); }
 }
 
+// 4.05.8: MP screens that cover the game: every new finger is MP's while one is open
+static bool s_bGameFinger[16] = { false };   // the game saw this finger's press (it must get the release)
+static inline bool MPScreenOwnsTouches()
+{
+    return FloatMenu::IsModal() || VKeyboard::IsOpen() || MP::AuthScreenShown() || MP::DealerShown();
+}
 // Routes one touch to MP's UI. Returns true if MP used it (the game must not see it).
 static bool DispatchTouch(int type, int finger, int x, int y)
 {
@@ -169,6 +175,7 @@ static bool DispatchTouch(int type, int finger, int x, int y)
     }
 
     // 2) ImGui windows (menu, keyboard, chat box) - hit test on the last frame's snapshot
+    if(type == TOUCH_PUSH && FloatMenu::IsModal()) MP::LauncherTouchDown((float)x, (float)y);   // 4.05.8: region icon fallback
     if(type == TOUCH_PUSH)
     {
         bool want = HUD::WantsTouch((float)x, (float)y);
@@ -198,6 +205,20 @@ static bool DispatchTouch(int type, int finger, int x, int y)
         if(finger == s_nMouseFinger) QueueIO(TQ_POS, (float)x, (float)y);
         if(s_bIgnoredFinger[finger]) return true;
     }
+    // 4.05.8: while an MP full screen is open (launcher, keyboard, login, dealer) the game gets NO new
+    // finger at all. Before, a tap that MP's hit test missed (the launcher's toolbar sits right over GTA's
+    // clock / money / weapon icon) still went to the game: the HUD - hidden or not - and CLEO touch zones
+    // reacted behind the launcher, and the region icon looked dead. A finger that was already down for
+    // the game before the screen opened (the joystick) still gets its moves and release, so it never sticks.
+    if(MPScreenOwnsTouches())
+    {
+        if(type == TOUCH_PUSH) { s_bGameFinger[finger] = false; return true; }
+        if(!s_bGameFinger[finger]) return true;
+        if(isRelease) s_bGameFinger[finger] = false;
+        return false;
+    }
+    if(type == TOUCH_PUSH) s_bGameFinger[finger] = true;
+    else if(isRelease) s_bGameFinger[finger] = false;
     return false;
 }
 
@@ -706,10 +727,11 @@ extern "C" void OnModLoad()
     HOOKSYM(CGame_Process, pGameHandle, "_ZN5CGame7ProcessEv");
     HOOKSYM(Render2dStuff, pGameHandle, "_Z13Render2dStuffv");
     HookTouchInterface();   // 2.19.5
-    // 4.05.5: off at the user's request - the Day Z world textures ship already unpacked (no RLE). The
-    // guard code stays above; put this line back if a broken texdb pack crashes the loading screen again.
-    // if(void* rle = (void*)aml->GetSym(pGameHandle, "_Z13RLEDecompressPhjPKhjj")) { HOOK(TexRLEDecompress, rle); logger->Info("Texture database RLE guard on"); }   // 4.04.2
-    logger->Info("Texture database RLE hook off (4.05.5)");
+    // 4.05.8: back on. 4.05.5 switched it off, and phones that still have a texdb pack in the game
+    // folder (the v4.02 GTA V pack, another mod's textures, a half-copied update) got the 4.04.2
+    // loading-screen crash / hang back. The guard is the same decoder with an end-of-buffer check, so it
+    // costs nothing on good files.
+    if(void* rle = (void*)aml->GetSym(pGameHandle, "_Z13RLEDecompressPhjPKhjj")) { HOOK(TexRLEDecompress, rle); logger->Info("Texture database RLE guard on (4.05.8)"); }   // 4.04.2
     { int hooked = 0; HOOK_IF(RwCamFarClip, "_Z23RwCameraSetFarClipPlaneP8RwCameraf"); HOOK_IF(RwCamFogDist, "_Z22RwCameraSetFogDistanceP8RwCameraf"); logger->Info("Fog: %d camera hooks", hooked); }   // 3.58
     HookGamepad();          // 3.39.2: controller
 
