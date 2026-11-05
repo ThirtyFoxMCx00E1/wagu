@@ -121,6 +121,12 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **4.06**: ping back down, public lobby players visible on every region, real jitter, no server icon on + Add server.
+  - Higher ping / nobody in the list after 4.05.8: the network watcher counted any interface coming or going (VPN app, hotspot, Wi-Fi Direct, CLAT, second SIM) as a Wi-Fi <-> mobile data switch, wiped the region pings and moved the lobby off a working broker again and again. It now only looks at the network the internet traffic really uses, and a change has to last 1 s. Region pings are kept until the new measurement replaces them.
+  - 4.05.9 sent every sync twice through the lobby relay too. The relay is TCP (nothing gets lost there), so the copies only doubled the broker messages and raised the ping. Copies are now only sent on a direct UDP path with real loss. The voice-priority mark on the TCP lobby link is gone (it made bigger bursts slower on some Wi-Fi and mobile networks), and slow mobile uplinks get 25 s instead of 12 s before the link counts as dead.
+  - Public lobby on regions: players whose phones use the public lobby (region not reachable from their network) were invisible to everyone on Asia, EU, NA and Oceania. Their servers now show in the list while you are on a region; joining one moves your lobby link to the public broker and back to your region when you leave.
+  - Jitter: a host always showed 0 (its own server is on the same phone), now it shows the jitter of its lobby link. Small jitter is no longer rounded down to 0.
+  - + Add server: the server icon / background picker is removed.
 - **4.05.9**: better connection on weak Wi-Fi and mobile data, plus a network tools pack (MP-NetTools-4.05.9.zip).
   - Weak link mode: MP now measures packet loss and jitter. When loss is 5% or more, or jitter is 45 ms or more (and it isn't just a slow or full link), every position sync is sent twice, 20 ms apart, so one lost packet no longer makes players jump. It also does this for 10 s after a Wi-Fi <-> mobile data switch. The server and other players drop the duplicate. Loss and jitter are shown in the launcher and the status line.
   - The game UDP socket and the lobby TCP socket now ask for voice-class priority (DSCP EF / SO_PRIORITY 6), so Wi-Fi routers that support WMM send game packets first.

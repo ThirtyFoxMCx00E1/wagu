@@ -187,6 +187,17 @@ int MP::DisplayPing()
     if(n) return (sum + n / 2) / n;
     return measured;
 }
+// 4.06: jitter for the UI. A host's game talks to its own server on 127.0.0.1 (always 0 ms, so the jitter
+// showed 0): use the jitter of its lobby relay link instead, like DisplayPing() does for the ping.
+int MP::DisplayJitter()
+{
+    int measured = client.GetJitter();
+    if(!s_Server.IsRunning() || client.GetState() != NET_CONNECTED) return measured;
+    const char* h = client.GetHost();
+    bool loopback = h && (!strncmp(h, "127.0.0.", 8) || !strcmp(h, "localhost")) && !Online::IsRelayIp(h);
+    if(!loopback || client.GetPort() != s_Server.GetPort()) return measured;
+    return Online::IsConnected() ? Online::BrokerJitterMs() : measured;
+}
 int  MP::HostedPlayerCount() { return s_Server.GetPlayerCount(); }
 int  MP::OnlineCount()
 {
@@ -5802,7 +5813,7 @@ static void RegionPicker(const std::vector<LanServer>& nearby)
 // One list row: info on the left, an action button (Join / Connect / Leave) on the right.
 // Returns true when the action button was tapped.
 // 2.24: tap the icon = next icon (Default -> 1 -> 2 ... -> 250 -> Default). Long list, so also - / + buttons.
-static void ServerIconPicker()
+[[maybe_unused]] static void ServerIconPicker()
 {
     ImGui::TextUnformatted("Server background (tap it for the next one)");   // 4.03: icon_1..icon_250 = CS:GO style row backgrounds
     const float sz = UI::S(96);
@@ -5890,7 +5901,7 @@ static void DefaultServerCard(const std::vector<LanServer>& nearby)
     else if(IsOnDefault() && IsConnected())
     {
         if(client.GetLossPct() > 0 || client.IsWeakLink())   // 4.05.8: link quality
-            snprintf(info, sizeof(info), "Connected  |  %d/%d  |  %d ms  |  loss %d%%  jitter %d ms%s", OnlineCount(), OnlineMax(), MP::DisplayPing(), client.GetLossPct(), client.GetJitter(), client.IsWeakLink() ? "  |  weak link: x2" : "");
+            snprintf(info, sizeof(info), "Connected  |  %d/%d  |  %d ms  |  loss %d%%  jitter %d ms%s", OnlineCount(), OnlineMax(), MP::DisplayPing(), client.GetLossPct(), MP::DisplayJitter(), client.IsWeakLink() ? "  |  weak link: x2" : "");
         else snprintf(info, sizeof(info), "Connected  |  %d/%d  |  %d ms", OnlineCount(), OnlineMax(), MP::DisplayPing());
     }
     else if(IsHostingDefault())              snprintf(info, sizeof(info), "Online  |  host: " MP_BOT_NAME " (24/7)  |  %d/%d", s_Server.GetPlayerCount(), s_Server.GetMaxPlayers());
@@ -6512,7 +6523,7 @@ static void SectionAddServer(void*)
     FloatMenu::TextField("Password (optional, max 16)", s_szNewPw, "Password (max 16)", MP_PASSWORD_LEN, OnNewPw, nullptr, false, true);   // 2.19
     FloatMenu::TextField("Language", s_szNewLang, "Language (e.g. English)", MP_LANG_LEN - 1, OnNewLang);   // 2.25
     LanguageChips("newlang", s_szNewLang, sizeof(s_szNewLang), false);
-    ServerIconPicker();   // 2.24 (shown in the list when you host)
+    // 4.06: no server icon / background picker on + Add server any more (asked for); the saved one stays
     ServerDetailsEditor();   // 4.03: location, gamemode, tags, description, preview
     ImGui::TextUnformatted("Max players");
     ImGui::SetNextItemWidth(-FLT_MIN);

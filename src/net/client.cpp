@@ -65,7 +65,7 @@ bool MPClient::Connect(const char* host, uint16_t port, const char* name, uint16
     m_fPingAvg = -1.0f; m_nPing = 0;
     m_bDirect = false; m_bDirectFellBack = false; m_bGotReply = false; m_nFallbackVia = 0; m_nAltSeen = 0;
     m_nNetGenSeen = Online::NetGeneration(); m_nNetChangedMs = 0;   // 4.05.8
-    memset(m_Pings, 0, sizeof(m_Pings)); m_nPingRec = 0; m_nLossPct = 0; m_nJitter = 0; m_nLastRtt = -1; m_bWeakLink = false; m_nDupLen = 0;
+    memset(m_Pings, 0, sizeof(m_Pings)); m_nPingRec = 0; m_nLossPct = 0; m_nJitter = 0; m_fJitter = 0; m_nLastRtt = -1; m_bWeakLink = false; m_nDupLen = 0;
 
     if(m_nDirectIp)   // 3.11: straight to the 24/7 server's public address (relay only as fallback)
     {
@@ -104,7 +104,6 @@ bool MPClient::Connect(const char* host, uint16_t port, const char* name, uint16
     // the voice queue of the phone and the router, ahead of downloads / video on the same Wi-Fi; mobile
     // networks and VPS providers that honour QoS do the same. No root needed.
     { int tos = 0xB8; setsockopt(m_Sock, IPPROTO_IP, IP_TOS, &tos, sizeof(tos)); }
-    { int prio = 6;   setsockopt(m_Sock, SOL_SOCKET, SO_PRIORITY, &prio, sizeof(prio)); }
 
     MP_CopyStr(m_szHost, host, sizeof(m_szHost));
     MP_CopyStr(m_szName, name, sizeof(m_szName));
@@ -180,7 +179,8 @@ void MPClient::TrackPingSent(uint32_t t)
 void MPClient::TrackPong(uint32_t sent, int rtt)
 {
     for(PingRec& p : m_Pings) if(p.t == sent && !p.got) { p.got = true; break; }
-    if(m_nLastRtt >= 0) { int d = rtt - m_nLastRtt; if(d < 0) d = -d; m_nJitter = (m_nJitter * 7 + d + 4) / 8; }
+    // 4.06: float average (the integer one stayed at 0 for small changes: (0 * 7 + 3 + 4) / 8 = 0)
+    if(m_nLastRtt >= 0) { int d = rtt - m_nLastRtt; if(d < 0) d = -d; m_fJitter += ((float)d - m_fJitter) / 8.0f; m_nJitter = (int)(m_fJitter + 0.5f); }
     m_nLastRtt = rtt;
 }
 void MPClient::UpdateLinkQuality(uint64_t now)
@@ -197,6 +197,7 @@ void MPClient::UpdateLinkQuality(uint64_t now)
     // on: >= 5 % lost (1 of 20) or the jitter of a bad radio link. Not when the uplink is simply full
     // (Online congestion / ping > 600 ms): a copy would only add to the queue.
     bool congested = Online::CongestionMs() > 0 || m_nPing > 600;
+    if((ntohl(m_Server.sin_addr.s_addr) >> 24) == 127) congested = true;   // 4.06: relay (TCP) or own server: no copies
     bool want = !congested && (m_nLossPct >= 5 || m_nJitter >= 45);
     bool calm = m_nLossPct == 0 && m_nJitter < 25;
     if(want && !m_bWeakLink && now - m_nWeakChangeMs > 3000) { m_bWeakLink = true; m_nWeakChangeMs = now; }
@@ -207,6 +208,10 @@ void MPClient::SendSync(const void* data, int len)
     Send(data, len);
     // also right after a network switch (Wi-Fi <-> mobile data) the first packets on the new path get lost
     bool netNew = m_nNetChangedMs && MP_NowMs() - m_nNetChangedMs < 10000;
+    // 4.06: only on a direct UDP path. Through the lobby relay (127.0.0.1 -> TCP broker) nothing gets lost,
+    // a copy only doubled the broker messages (rate limits, queue = higher ping)
+    const uint32_t sa = ntohl(m_Server.sin_addr.s_addr);
+    if((sa >> 24) == 127) return;
     if((m_bWeakLink || netNew) && len > 0 && len <= (int)sizeof(m_Dup))
     {
         memcpy(m_Dup, data, len); m_nDupLen = len; m_nDupAt = MP_NowMs() + 20;   // Wi-Fi loss comes in bursts: not back to back

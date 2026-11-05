@@ -93,6 +93,7 @@ static int  s_nCurFlush = FLUSH_MS;
 static bool s_bOwnBroker = false;   // 3.33: connected to one of our regional HiveMQ brokers with no flush / rate set in broker.txt (no message-rate limit)
 static std::atomic<int> s_nCongestMs{0};   // 2.15: extra batching while the uplink is congested     // flush interval of the broker we are connected to
 static int  s_nBrokerOverride = -1;
+#define WANT_PUBLIC (-2)   // 4.06: DesiredRegion(): the public broker (joining a server listed only there)
 // 2.20 regional brokers (own HiveMQ per region, see the HiveMQ repo). Built from broker.txt
 // [Region] blocks or regions.txt downloaded from the website. Without them nothing changes.
 #define MP_REGIONS_URL "https://mpsamp-open.github.io/regions.txt"            // 4.05.4: new website (mpsamp-open org)
@@ -184,11 +185,20 @@ static std::atomic<bool>      s_bConnected{false};
 static std::atomic<int>       s_nAttemptFailed{0};    // full broker list failed this many times in a row
 static std::atomic<uint64_t>  s_nReadySince{0};       // first moment of the current online streak
 static std::atomic<int>       s_nRtt{-1};
+static std::atomic<int>       s_nRttJitter{0};   // 4.06: smoothed |rtt - last rtt| of the broker pings (host side jitter)
 static char                   s_szBroker[64] = "";
 static char                   s_szCid[24] = "";        // our MQTT client id = our relay address
 
 static std::map<uint32_t, Listing> s_List;            // token -> listing (guarded)
 static std::map<uint32_t, uint32_t> s_RelayIdx;       // token -> relay index (guarded)
+// 4.06: the public lobby, read while we sit on a regional broker. MpBridge copies nothing from the
+// public lobby into the regions, so players whose phones could not reach a region (blocked port, far away,
+// home broker not reachable from their network) were invisible to everyone on a region - and the other way
+// round. Their servers now show in the list; joining one moves the lobby link to the public broker.
+static std::map<uint32_t, Listing> s_PubList;          // token -> listing (guarded)
+static std::atomic<int>  s_nPubRtt{-1};
+static std::atomic<bool> s_bPubUp{false};
+static bool              s_bJoinPublic = false;        // guarded: the server we join is only in the public lobby
 static void DirectThread();   // 3.11
 struct DirectInfo { uint32_t ip = 0; int rtt = -1; uint64_t at = 0; bool ok = false; int fails = 0; uint64_t badUntil = 0; uint16_t port = 0; };
 static std::map<uint32_t, DirectInfo> s_Direct;   // 3.11: token -> direct UDP probe result (guarded by s_M)
@@ -241,13 +251,24 @@ static std::atomic<bool>     s_bPingNow{false};     // ping thread: measure the 
 static std::mutex            s_NetSigMx;
 static std::string           s_NetSig;               // "wlan0=c0a80105,rmnet0=0a..." (guarded)
 
+// 4.06: only the network the internet traffic actually uses (the source address of the default
+// route). 4.05.8 hashed every interface: a VPN app, hotspot, Wi-Fi Direct, CLAT or a second SIM coming and
+// going counted as "network changed" - region pings were wiped and the lobby left its broker again and
+// again (= nobody in the list, high ping). A UDP connect() sends nothing, it only asks the routing table.
 static std::string NetSignature()
 {
-    std::vector<std::string> v;
-    for(const LanIface& i : LAN::Interfaces()) { char b[48]; snprintf(b, sizeof(b), "%s=%08x", i.name, i.ip); v.push_back(b); }
-    std::sort(v.begin(), v.end());
-    std::string s; for(auto& x : v) { if(!s.empty()) s += ','; s += x; }
-    return s;
+    int fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    if(fd < 0) return std::string();
+    sockaddr_in d; memset(&d, 0, sizeof(d)); d.sin_family = AF_INET; d.sin_port = htons(53);
+    d.sin_addr.s_addr = htonl(0x01010101u);   // 1.1.1.1
+    std::string s;
+    if(connect(fd, (sockaddr*)&d, sizeof(d)) == 0)
+    {
+        sockaddr_in la; socklen_t ll = sizeof(la); memset(&la, 0, sizeof(la));
+        if(getsockname(fd, (sockaddr*)&la, &ll) == 0 && la.sin_addr.s_addr) { char b[16]; snprintf(b, sizeof(b), "%08x", ntohl(la.sin_addr.s_addr)); s = b; }
+    }
+    close(fd);
+    return s;   // "" = no route to the internet
 }
 // true when the network the socket was opened on (its local address) is still on this phone
 static bool SocketNetUp(int fd)
@@ -257,6 +278,7 @@ static bool SocketNetUp(int fd)
     if(getsockname(fd, (sockaddr*)&la, &ll) != 0 || la.sin_family != AF_INET) return true;   // unknown: keep it
     uint32_t ip = ntohl(la.sin_addr.s_addr);
     if(!ip || (ip >> 24) == 127) return true;
+    { char b[16]; snprintf(b, sizeof(b), "%08x", ip); if(NetSignature() == b) return true; }   // 4.06: still the internet route
     std::vector<LanIface> ifs = LAN::Interfaces();
     if(ifs.empty()) return false;                    // no network at all
     for(const LanIface& i : ifs) if(i.ip == ip) return true;
@@ -266,18 +288,25 @@ static bool SocketNetUp(int fd)
 static bool NetWatchTick()
 {
     static uint64_t last = 0; static bool first = true;
+    static std::string pend; static int pendN = 0;
     uint64_t now = MP_NowMs();
     if(now - last < 500) return false;
     last = now;
     std::string sig = NetSignature();
     std::lock_guard<std::mutex> lk(s_NetSigMx);
     if(first) { first = false; s_NetSig = sig; return false; }
-    if(sig == s_NetSig) return false;
+    if(sig == s_NetSig) { pendN = 0; return false; }
+    // 4.06: the new route has to stay for 1 s (3 reads): a blip while Android re-evaluates networks is not a switch
+    if(sig != pend) { pend = sig; pendN = 1; return false; }
+    if(++pendN < 3) return false;
+    pendN = 0;
     OLOG("4.05.8: network changed [%s] -> [%s]", s_NetSig.c_str(), sig.c_str());
     s_NetSig = sig;
     ++s_nNetGen; s_nNetChangedAt = now; s_bPingNow = true;
     return true;
 }
+// 4.06: "no network" only when there is neither a route to the internet nor any interface address
+static bool NoNetwork() { return NetSignature().empty() && !LAN::HasNetwork(); }
 static bool NetChangedRecently(uint64_t now, uint64_t ms) { uint64_t t = s_nNetChangedAt; return t && now - t < ms; }
 // other links (auth, social): drop the socket when the network it was on is gone
 static bool NetMovedAway(int fd, uint32_t& seenGen)
@@ -334,7 +363,7 @@ static int ResolveV4(const std::string& host, uint16_t port, std::vector<sockadd
 #endif
 static void TcpLiveness(int fd)
 {
-    int one = 1, idle = 10, intvl = 3, cnt = 3, uto = 12000;
+    int one = 1, idle = 10, intvl = 3, cnt = 3, uto = 25000;   // 4.06: 25 s (12 s dropped slow mobile uplinks)
     setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &one, sizeof(one));
 #ifdef TCP_KEEPIDLE
     setsockopt(fd, IPPROTO_TCP, TCP_KEEPIDLE, &idle, sizeof(idle));
@@ -346,8 +375,8 @@ static void TcpLiveness(int fd)
     setsockopt(fd, IPPROTO_TCP, TCP_KEEPCNT, &cnt, sizeof(cnt));
 #endif
     setsockopt(fd, IPPROTO_TCP, TCP_USER_TIMEOUT, &uto, sizeof(uto));
-    // the lobby link also carries the relayed game packets: voice-class priority on Wi-Fi (WMM), like the UDP game socket
-    int tos = 0xB8; setsockopt(fd, IPPROTO_IP, IP_TOS, &tos, sizeof(tos));
+    // 4.06: no DSCP EF on TCP any more (4.05.9 had it): the Wi-Fi voice queue sends without aggregation, the
+    // lobby link's bigger bursts (lists, previews, relayed game) waited longer, and some mobile networks slow EF down
 }
 
 // ------------------------------------------------------------------------------------------
@@ -907,16 +936,16 @@ static int NewUdp(uint32_t bindIpHost, uint16_t port)
 }
 
 // ------------------------------------------------------------------------------------------
-static void HandleListing(uint32_t tok, const std::string& payload, bool retained)
+static void HandleListingIn(std::map<uint32_t, Listing>& list, uint32_t tok, const std::string& payload, bool retained)
 {
     std::lock_guard<std::mutex> lk(s_M);
-    if(payload.empty()) { s_List.erase(tok); return; }            // host closed it
+    if(payload.empty()) { list.erase(tok); return; }            // host closed it
     // "v1|port|players|max|region|proto|name"
     char buf[160]; MP_CopyStr(buf, payload.c_str(), sizeof(buf));
     char* f[7] = { buf };
     for(int i = 1; i < 7; ++i) { f[i] = f[i - 1] ? strchr(f[i - 1], '|') : nullptr; if(f[i]) *f[i]++ = 0; }
     if(!f[6] || strcmp(f[0], "v1")) return;
-    Listing& l = s_List[tok];
+    Listing& l = list[tok];
     l.port = (uint16_t)atoi(f[1]);
     l.players = atoi(f[2]); l.maxPlayers = atoi(f[3]); l.region = atoi(f[4]);
     l.proto = (uint16_t)atoi(f[5]);
@@ -931,6 +960,7 @@ static void HandleListing(uint32_t tok, const std::string& payload, bool retaine
     l.lastSeen = MP_NowMs();
     if(!s_RelayIdx.count(tok)) s_RelayIdx[tok] = s_nNextIdx++;
 }
+static void HandleListing(uint32_t tok, const std::string& payload, bool retained) { HandleListingIn(s_List, tok, payload, retained); }
 
 // 2.20 (defined further down)
 static void FetchRegions(bool apply, int tries);
@@ -982,8 +1012,8 @@ static void NetThread()
         {
             s_BrokerBackoff.clear();          // what failed during the switch is not "down"
             stickyFails = 0;
-            for(int r = 0; r < REGION_COUNT; ++r) s_RegionPing[r] = -1;
-            s_bPingedOnce = false;            // = keep aiming for the chosen region until it is measured again
+            // 4.06: region pings stay as they are until the new round (2 s later) replaces them. 4.05.8 wiped
+            // them, which made the lobby leave a working broker for the menu region and try dead ones.
             if(mq.fd >= 0 && !SocketNetUp(mq.fd))
             {
                 OLOG("4.05.8: the broker connection was on the network that is gone - reconnecting now");
@@ -1012,14 +1042,14 @@ static void NetThread()
         bool inGame = !bridges.empty();
         { std::lock_guard<std::mutex> lk(s_M); if(s_ProxyToken && s_ProxyFd >= 0) inGame = true; }
         bool mustMove = (hostOn && HaveRegion(hr));
-        { std::lock_guard<std::mutex> lk(s_M); if(s_nJoinRegion >= 0 && HaveRegion(s_nJoinRegion)) mustMove = true; }
+        { std::lock_guard<std::mutex> lk(s_M); if((s_nJoinRegion >= 0 && HaveRegion(s_nJoinRegion)) || s_bJoinPublic) mustMove = true; }
         if(inGame && !mustMove) wantRegion = -1;
         // 2.23: only move to a region that answers right now (ping thread). A dead region used to
         // disconnect the working public lobby every 60 s, then time out on all region brokers.
         if(wantRegion >= 0 && s_bPingedOnce && !RegionUp(wantRegion)) wantRegion = -1;
-        if(mq.fd >= 0 && wantRegion >= 0 && wantRegion != s_nCurRegion && (wantRegion != lastWant || now - lastSwitch > 60000))
+        if(mq.fd >= 0 && ((wantRegion >= 0 && wantRegion != s_nCurRegion) || (wantRegion == WANT_PUBLIC && s_nCurRegion >= 0)) && (wantRegion != lastWant || now - lastSwitch > 60000))
         {
-            OLOG("switching lobby to %s (was %d)", g_MPRegionNames[wantRegion], s_nCurRegion.load());
+            OLOG("switching lobby to %s (was %d)", wantRegion >= 0 ? g_MPRegionNames[wantRegion] : "the public broker", s_nCurRegion.load());
             if(curHostToken) { mq.Publish(TopicList(curHostToken), "", 0, true); mq.Publish(TopicDetails(curHostToken), "", 0, true); mq.Publish(TopicPreview(curHostToken), "", 0, true); }
             mq.Disconnect();
             s_bConnected = false;
@@ -1069,7 +1099,7 @@ static void NetThread()
             if(now < nextTry) { std::this_thread::sleep_for(std::chrono::milliseconds(100)); continue; }
             // 4.05.8: no network at all (between Wi-Fi going and mobile data coming): wait for it instead of
             // walking every broker into a timeout and a back-off
-            if(!LAN::HasNetwork())
+            if(NoNetwork())
             {
                 { std::lock_guard<std::mutex> lk(s_M); s_szBroker[0] = 0; }
                 s_nCurRegion = -1;
@@ -1098,7 +1128,7 @@ static void NetThread()
             // 2.21: a game is running (players on our server / we play on someone's server): the
             // others are still on the broker we just lost. Retry that one first a few times instead of
             // landing on another broker where nobody can hear us (= timeout for everyone)
-            if(inGame && lastGood >= 0 && lastGood < BROKER_COUNT && (stickyFails < 4 || netNew))   // 4.05.8: + right after a network switch
+            if(inGame && lastGood >= 0 && lastGood < BROKER_COUNT && (stickyFails < 4 || netNew) && !(lastWant == WANT_PUBLIC && s_Brokers[lastGood].region >= 0))   // 4.05.8: + right after a network switch (4.06: not when moving to the public lobby)
             {
                 std::vector<int> o2; o2.push_back(lastGood);
                 for(int x : order) if(x != lastGood) o2.push_back(x);
@@ -1122,7 +1152,7 @@ static void NetThread()
                 {
                     OLOG("%s:%u failed: %s", br.host.c_str(), br.port, mq.err);
                     if(!netNew) BrokerFailed(br, MP_NowMs());   // 4.05.8: no back-off for a failure during a network switch
-                    if(NetWatchTick() || s_nNetGen != gen0 || !LAN::HasNetwork()) { s_BrokerBackoff.clear(); stickyFails = 0; break; }   // network changed again: start over
+                    if(NetWatchTick() || s_nNetGen != gen0 || NoNetwork()) { s_BrokerBackoff.clear(); stickyFails = 0; break; }   // network changed again: start over
                 }
                 if(opened)
                 {
@@ -1197,7 +1227,9 @@ static void NetThread()
             {
                 if(pingSent)
                 {
-                    int rtt = (int)(now - pingSent); s_nRtt = rtt; pingSent = 0;
+                    int rtt = (int)(now - pingSent);
+                    { static int lastR = -1; static float j = 0; if(lastR >= 0) { j += ((float)abs(rtt - lastR) - j) / 8.0f; s_nRttJitter = (int)(j + 0.5f); } lastR = rtt; }   // 4.06
+                    s_nRtt = rtt; pingSent = 0;
                     if(baseRtt < 0 || rtt < baseRtt) baseRtt = rtt;
                     lastQueueMs = rtt - baseRtt; if(lastQueueMs < 0) lastQueueMs = 0;
                 }
@@ -2018,7 +2050,7 @@ static bool PingRegionsOnce()
     // 4.05.8: measured while the network changed (or nothing answered right after a switch): throw it
     // away and measure again in a moment, never mark all regions "down" because Wi-Fi just went
     bool any = false; for(int r = 0; r < REGION_COUNT; ++r) if(has[r] && best[r] >= 0) any = true;
-    if(s_nNetGen != gen0 || !LAN::HasNetwork() || (!any && NetChangedRecently(MP_NowMs(), 30000)))
+    if(s_nNetGen != gen0 || NoNetwork() || (!any && NetChangedRecently(MP_NowMs(), 30000)))
     {
         OLOG("4.05.8: region ping across a network switch - measuring again");
         return false;
@@ -2075,7 +2107,8 @@ static int DesiredRegion(bool hostOn, int hostRegion)
 {
     if(!s_bRegional) return -1;
     if(hostOn && HaveRegion(hostRegion)) return hostRegion;
-    int jr; { std::lock_guard<std::mutex> lk(s_M); jr = s_nJoinRegion; }
+    int jr; bool jp; { std::lock_guard<std::mutex> lk(s_M); jr = s_nJoinRegion; jp = s_bJoinPublic; }
+    if(jp && !hostOn) return WANT_PUBLIC;   // 4.06
     if(jr >= 0 && HaveRegion(jr))
     {   // 3.34: both ends are branches -> stay on my nearest region, the bridge carries the game to jr
         int near = s_nPrefRegion >= 0 && HaveRegion(s_nPrefRegion) ? (int)s_nPrefRegion : AutoRegion();
@@ -2090,6 +2123,12 @@ static int DesiredRegion(bool hostOn, int hostRegion)
 static std::vector<int> ConnectOrder(int want)
 {
     std::vector<int> o;
+    if(want == WANT_PUBLIC)   // 4.06: public brokers first (where that host relays), then the rest
+    {
+        for(int i = 0; i < BROKER_COUNT; ++i) if(s_Brokers[i].region < 0 && s_Brokers[i].user.empty()) o.push_back(i);
+        for(int i = 0; i < BROKER_COUNT; ++i) if(std::find(o.begin(), o.end(), i) == o.end()) o.push_back(i);
+        return o;
+    }
     if(s_nBrokerOverride >= 0 && s_nBrokerOverride < BROKER_COUNT) o.push_back(s_nBrokerOverride);
     if(!s_bRegional) { for(int i = 0; i < BROKER_COUNT; ++i) if(i != s_nBrokerOverride) o.push_back(i); return o; }
     auto add = [&](int i) { for(int x : o) if(x == i) return; o.push_back(i); };
@@ -2153,6 +2192,80 @@ static void ApplyPendingRegions()   // net thread only
 
 // ------------------------------------------------------------------------------------------
 void Online::UseLegacyTopics() { s_TopicRoot = TOPIC_ROOT_OLD; }   // 3.04.6: mp_server --legacy-notice only
+// 4.06: public lobby watcher (read only: list + details, no listing of our own, no game traffic)
+static void PubWatchThread()
+{
+    Mqtt mq;
+    int bi = 0, fails = 0;
+    uint64_t lastPing = 0, pingSent = 0, idleSince = 0;
+    const int nPub = 3;   // hivemq tcp / ws / tls - the public lobby the mod falls back to
+    for(;;)
+    {
+        uint64_t now = MP_NowMs();
+        bool need = s_bRegional && s_bConnected && s_nCurRegion >= 0;
+        if(!need)
+        {
+            if(!idleSince) idleSince = now;
+            if(mq.fd >= 0 && now - idleSince > 3000) { mq.Disconnect(); s_bPubUp = false; }
+            if(now - idleSince > 3000) { std::lock_guard<std::mutex> lk(s_M); s_PubList.clear(); }
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            continue;
+        }
+        idleSince = 0;
+        if(mq.fd < 0)
+        {
+            s_bPubUp = false;
+            const Broker& b = kPublicBrokers[bi % nPub];
+            char cid[24]; snprintf(cid, sizeof(cid), "tfpw%08x%04x", Rand32(), Rand32() & 0xFFFF);
+            if(!mq.Open(b, cid, "", 6000))
+            {
+                OLOG("public lobby watch: %s failed (%s)", b.label.c_str(), mq.err);
+                ++bi; ++fails;
+                std::this_thread::sleep_for(std::chrono::milliseconds(fails < 3 ? 2000 : 15000));
+                continue;
+            }
+            fails = 0; mq.blockingSend = false;
+            if(!mq.Subscribe((TOPIC_ROOT + "l/+").c_str(), 1) || !mq.Subscribe((TOPIC_ROOT + "d/+").c_str(), 2)) { mq.Close(); continue; }
+            s_bPubUp = true; lastPing = now; pingSent = 0;
+            OLOG("public lobby watch: on %s", b.label.c_str());
+        }
+        for(int n = 0; n < 256; ++n)
+        {
+            uint8_t type; std::string body;
+            int r = mq.ReadPacket(type, body, n == 0 ? 100 : 0);
+            if(r < 0) { mq.Close(); break; }
+            if(r == 0) break;
+            uint8_t kind = type >> 4;
+            if(kind == 13 && pingSent) { s_nPubRtt = (int)(MP_NowMs() - pingSent); pingSent = 0; continue; }
+            if(kind != 3 || body.size() < 2) continue;
+            bool retained = type & 1; int qos = (type >> 1) & 3;
+            size_t tl = ((size_t)(uint8_t)body[0] << 8) | (uint8_t)body[1];
+            if(2 + tl > body.size()) continue;
+            std::string topic = body.substr(2, tl);
+            size_t off = 2 + tl + (qos ? 2 : 0);
+            if(off > body.size()) continue;
+            const size_t rootLen = TOPIC_ROOT.size();
+            if(topic.compare(0, rootLen, TOPIC_ROOT)) continue;
+            const char* t = topic.c_str() + rootLen;
+            if(strlen(t) != 10) continue;
+            uint32_t tok = ParseHex8(t + 2);
+            if(!tok) continue;
+            std::string pl = body.substr(off);
+            if(!strncmp(t, "l/", 2)) HandleListingIn(s_PubList, tok, pl, retained);
+            else if(!strncmp(t, "d/", 2))
+            {
+                std::lock_guard<std::mutex> lk(s_DetMx);
+                if(!pl.empty() && pl.size() < 4096) s_Details[tok] = { pl, MP_NowMs() };
+            }
+        }
+        if(mq.fd < 0) { s_bPubUp = false; continue; }
+        now = MP_NowMs();
+        { static uint32_t netSeen = 0; if(NetMovedAway(mq.fd, netSeen)) { mq.Close(); s_bPubUp = false; continue; } }
+        if(pingSent && now - pingSent > 15000) { mq.Close(); s_bPubUp = false; continue; }
+        if(now - lastPing > 10000) { lastPing = now; pingSent = now; if(!mq.Ping()) { mq.Close(); s_bPubUp = false; } }
+    }
+}
+
 void Online::Start(const char* brokerFile)
 {
     bool expected = false;
@@ -2174,11 +2287,13 @@ void Online::Start(const char* brokerFile)
     { std::lock_guard<std::mutex> lk(s_M); s_nNextIdx = 1 + Rand32() % 60000; }   // relay IPs differ per session
     std::thread(NetThread).detach();
     std::thread(DirectThread).detach();   // 3.11: direct UDP to 24/7 servers
+    std::thread(PubWatchThread).detach(); // 4.06: public lobby players visible on a region
 }
 
 bool Online::IsConnected() { return s_bConnected; }
 uint32_t Online::NetGeneration() { return s_nNetGen; }   // 4.05.8
 int  Online::BrokerRttMs() { return s_nRtt; }
+int  Online::BrokerJitterMs() { return s_nRttJitter; }   // 4.06
 int  Online::CongestionMs() { return s_nCongestMs.load(); }
 const char* Online::BrokerName()
 {
@@ -2233,6 +2348,32 @@ std::vector<LanServer> Online::Snapshot()
             out.push_back(s);
         }
         ++it;
+    }
+    // 4.06: + servers that are only in the public lobby (we are on a region broker)
+    if(s_bPubUp && s_nCurRegion >= 0)
+    {
+        int prtt = s_nPubRtt;
+        for(auto it = s_PubList.begin(); it != s_PubList.end();)
+        {
+            const Listing& l = it->second;
+            if(now - l.lastSeen > LIST_FRESH_MS * 6) { it = s_PubList.erase(it); continue; }
+            auto mine = s_List.find(it->first);
+            bool dup = mine != s_List.end() && mine->second.confirmed && now - mine->second.lastSeen <= LIST_FRESH_MS;
+            if(!dup && l.confirmed && now - l.lastSeen <= LIST_FRESH_MS && it->first != s_nHostToken)
+            {
+                LanServer s; memset(&s, 0, sizeof(s));
+                RelayIp(s_RelayIdx[it->first], s.ip);
+                s.port = l.port; MP_CopyStr(s.name, l.name, sizeof(s.name));
+                s.players = l.players; s.maxPlayers = l.maxPlayers; s.region = l.region;
+                s.proto = l.proto; s.icon = l.icon; MP_CopyStr(s.lang, l.lang, sizeof(s.lang)); s.startUnix = l.startUnix; s.dedicated = l.dedicated ? 1 : 0;
+                s.ping = prtt >= 0 ? (l.hostRtt > 0 ? prtt + l.hostRtt : prtt * 2) : 0;
+                s.token = it->first;
+                bool twin = false;   // the same 24/7 server also on our region: keep the region copy (no broker move)
+                if(s.dedicated) for(const LanServer& o : out) if(o.dedicated && o.port == s.port && !strcasecmp(o.name, s.name)) { twin = true; break; }
+                if(!twin) out.push_back(s);
+            }
+            ++it;
+        }
     }
     // 4.05.1: a 24/7 server listed by two hosts (shift hand-over, or a second 24/7 runner) shows once:
     // the newest start wins (that is the copy that stays)
@@ -2459,6 +2600,9 @@ bool Online::OpenProxy(const char* relayIp, uint16_t port, uint16_t* localPort)
     // 2.20: the host relays on its region's broker; go there (the net thread switches)
     auto li = s_List.find(tok);
     s_nJoinRegion = (li != s_List.end() && s_bRegional) ? li->second.region : -1;
+    // 4.06: listed only in the public lobby -> its host relays there: the lobby link moves to the public broker
+    s_bJoinPublic = s_bRegional && (li == s_List.end() || !li->second.confirmed || MP_NowMs() - li->second.lastSeen > LIST_FRESH_MS) && s_PubList.count(tok);
+    if(s_bJoinPublic) { s_nJoinRegion = -1; OLOG("4.06: joining a server of the public lobby - moving the lobby link there"); }
     return true;
 }
 
@@ -2467,7 +2611,7 @@ void Online::CloseProxy()
     std::lock_guard<std::mutex> lk(s_M);
     if(s_ProxyFd >= 0) s_CloseFds.push_back(s_ProxyFd);
     s_ProxyFd = -1; s_ProxyToken = 0; s_bProxyPeer = false;
-    s_nJoinRegion = -1;
+    s_nJoinRegion = -1; s_bJoinPublic = false;
 }
 
 void Online::SetRegionPrefs(int menuRegion, bool autoPick)

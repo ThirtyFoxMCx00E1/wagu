@@ -33,6 +33,7 @@ namespace Online
     void SetHostDedicated(bool on);    // 2.29: this host is a 24/7 machine (mp_server), announced as "@start!d"
     const char* BrokerName();          // the broker in use ("" while not connected)
     int  BrokerRttMs();                // last broker round trip (-1 = unknown)
+    int  BrokerJitterMs();             // 4.06: jitter of the broker round trip (ms)
     int  CongestionMs();               // 2.15: >0 while our uplink to the broker can't keep up
 
     // Blocks (call from a background thread only). Returns when the lobby is trustworthy:

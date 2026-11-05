@@ -135,6 +135,7 @@ private:
     PingRec     m_Pings[24] = {};
     int         m_nPingRec = 0;
     int         m_nLossPct = 0, m_nJitter = 0, m_nLastRtt = -1;
+    float       m_fJitter = 0;
     bool        m_bWeakLink = false;
     uint64_t    m_nWeakChangeMs = 0;
     uint8_t     m_Dup[400];

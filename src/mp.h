@@ -283,6 +283,7 @@ namespace MP
     bool IsHosting();
     bool IsBotHosted();   // 3.23.5: a featured server (host shown as the bot "Broker")
     bool CheatsBlocked();   // 2.35: the server's host disabled cheats
+    int  DisplayJitter();   // 4.06: host: jitter of the lobby relay link (its own server is always 0)
     int  DisplayPing();   // 2.28: my ping for the UI / scoreboard (host: real network leg, not loopback 0)
     void SetNameColor(uint32_t rgba);  // 0 = automatic
     void ClampChatSettings();          // 2.19.6
