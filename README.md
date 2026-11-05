@@ -121,6 +121,9 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **4.07.1**: every sound works without pasting mp3s, hosted servers no longer freeze.
+  - Only the music (dz_ambient / war_ambient) came from Host/Media; the button click (Global_click), hit (sound_010) and "connected" (sound_effect_connected) sounds stayed silent when they were not in files/MP. A missing one is now downloaded once from Host/Media into files/MP (Wi-Fi or mobile data) and used from there.
+  - Fix: a server hosted on the phone (and the game of the host) froze the first time a server list asked it for its info (country / gamemode / tags / description, since 4.04). The dedicated server had the same freeze.
 - **4.07**: Mega Vil blue HUD, /settings menu for host owners, server title logo upload with X / Y / Z, streamed music, launcher hides the GTA HUD.
   - The right side HUD panel (TIME / ID / CASH / BANK) was violet: now Mega Vil Futuristic blue and bigger (rows 50 px, text 25 px, icons 30 px). The needs hexagons are tinted the same.
   - New /settings (only the host owner of a custom server; [ADMIN] / [MOD] on the featured ones): Settings Menu > Account, Textdraw >>, Entering Door (0 - 5 seconds), Server Logo, Server settings >>, Server rules >>. Textdraw: HUD Mode (HUD Variant 1 blue, 2 violet, 3 emerald, 4 crimson, 5 gold, or Disable), Dollar Cent ($525,250.00), HUD Player (name + id), Ammo Info, Logo Server, Logo Position X / Y and Logo Size Z. The choice goes to everyone on the server and the host phone keeps it. /ss and /srvsettings still open the old server settings page.

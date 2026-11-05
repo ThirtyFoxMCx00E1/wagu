@@ -7371,6 +7371,49 @@ static void MpFreeAllObjects()
 #include "mp_launcher.inc"   // 2.25: full-screen server launcher, player management, kick / ban
 #include "mp_psettings.inc"  // 3.35: player list > Settings (SA-MP style dialog)
 
+// 4.07.1: the short sounds (button click, hit, "connected") come from the media host too, like the
+// music: a sound missing from files/MP is downloaded once from Host/Media into files/MP (cache), so
+// every sound works without pasting mp3s. Music (dz_ambient / war_ambient) is still streamed.
+static void MP_MediaFetchStart()
+{
+    static std::atomic<bool> s_bStarted{false};
+    if(s_bStarted.exchange(true)) return;
+    std::string dir = s_szDataDir;
+    std::thread([dir]() {
+        struct Item { const char* remote; const char* local; } const kItems[] = {
+            { "Global_click.mp3",           "global_click.mp3" },
+            { "sound_010.mp3",              "sound_010.mp3" },
+            { "sound_effect_connected.mp3", "sound_effect_connected.mp3" },
+        };
+        for(const Item& it : kItems)
+        {
+            std::string dst = dir + "/" + it.local;
+            if(access(dst.c_str(), R_OK) == 0) continue;
+            bool have = false;   // any case / extension already there ("Global_click.mp3", "GLOBAL_CLICK.MP3" ...)
+            if(DIR* d = opendir(dir.c_str()))
+            {
+                const size_t n = strlen(it.local) - 4;   // name without ".mp3"
+                while(struct dirent* e = readdir(d)) if(!strncasecmp(e->d_name, it.local, n)) { have = true; break; }
+                closedir(d);
+            }
+            if(have) continue;
+            for(int attempt = 0; attempt < 5; ++attempt)
+            {
+                std::string body, why;
+                if(Online::HttpsFetch(std::string(MP_MEDIA_URL) + it.remote, body, 20000, why, 4u << 20) && body.size() > 512)
+                {
+                    std::string tmp = dst + ".part";
+                    FILE* f = fopen(tmp.c_str(), "wb");
+                    if(f) { fwrite(body.data(), 1, body.size(), f); fclose(f); rename(tmp.c_str(), dst.c_str()); logger->Info("media: %s cached from the media host (%u bytes)", it.local, (unsigned)body.size()); }
+                    break;
+                }
+                logger->Info("media: %s download failed (%s), retry", it.remote, why.c_str());
+                std::this_thread::sleep_for(std::chrono::seconds(10 + attempt * 10));
+            }
+        }
+    }).detach();
+}
+
 void MP::Init(const char* dataDir)
 {
     MP_CopyStr(s_szDataDir, dataDir, sizeof(s_szDataDir));
@@ -7385,6 +7428,7 @@ void MP::Init(const char* dataDir)
     Progress::Init(s_szDataDir, OnBeforeSaveLoad, OnAfterSaveLoad);
     char bf[512]; snprintf(bf, sizeof(bf), "%s/broker.txt", s_szDataDir);
     Online::Start(bf);   // internet lobby + relay; broker.txt = optional private broker (e.g. HiveMQ Cloud)
+    MP_MediaFetchStart();   // 4.07.1: click / hit / connected sounds from Host/Media when missing
 
     char sl[512]; snprintf(sl, sizeof(sl), "%s/servers.txt", s_szDataDir);
     ServerList::Load(sl);

@@ -1,6 +1,7 @@
 {
-"latest": "4.07",
+"latest": "4.07.1",
 "supported": [
+"4.07.1",
 "4.07",
 "4.06",
 "4.05.9",
@@ -99,6 +100,14 @@
 "3.04.6"
 ],
 "versions": [
+{
+"v": "4.07.1",
+"summary": "every sound works without pasting mp3s, hosted servers no longer freeze.",
+"items": [
+"Only the music (dz_ambient / war_ambient) came from Host/Media; the button click (Global_click), hit (sound_010) and \"connected\" (sound_effect_connected) sounds stayed silent when they were not in files/MP. A missing one is now downloaded once from Host/Media into files/MP (Wi-Fi or mobile data) and used from there.",
+"Fix: a server hosted on the phone (and the game of the host) froze the first time a server list asked it for its info (country / gamemode / tags / description, since 4.04). The dedicated server had the same freeze."
+]
+},
 {
 "v": "4.07",
 "summary": "Mega Vil blue HUD, /settings menu for host owners, server title logo upload with X / Y / Z, streamed music, launcher hides the GTA HUD.",

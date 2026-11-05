@@ -798,8 +798,8 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             MP_CopyStr(in4.lang, m_szLang, sizeof(in4.lang));
             in5.startUnix = m_nStartUnix.load();
             PktInfo6 in6; memset(&in6, 0, sizeof(in6)); in6.i5 = in5;   // 4.03: + country, gamemode, tags, description
-            {
-                std::lock_guard<std::mutex> lk(m_Mutex);
+            {   // 4.07.1: Handle() already runs with m_Mutex held (Loop) - locking it again here froze the
+                // hosted server and the host's game the first time a server list asked for the info
                 MP_CopyStr(in6.cc, m_szCC, sizeof(in6.cc)); in6.modeCol = m_nModeCol; MP_CopyStr(in6.mode, m_szMode, sizeof(in6.mode));
                 MP_CopyStr(in6.tags, m_szTags, sizeof(in6.tags)); MP_CopyStr(in6.desc, m_szDesc, sizeof(in6.desc));
             }
