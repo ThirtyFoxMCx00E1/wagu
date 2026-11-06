@@ -28,3 +28,4 @@ moderators_server.txt
 _site/
 __pycache__/
 tools/bg_cache/
+/regions_cache.txt
