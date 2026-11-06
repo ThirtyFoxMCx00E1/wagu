@@ -41,6 +41,7 @@ bool Game::PlayAnimUpper(int ped, const char* anim, const char* file, bool loop)
 void Game::AttachObjectToCharRot(int obj, int ped, const Vec3& off, const Vec3& rot)
 {
     if(obj <= 0 || !CALLSCM(DOES_OBJECT_EXIST_358, obj) || ped <= 0 || !PedPtr(ped)) return;
+    SetObjectCollision(obj, false);   // 4.12: an attached object never blocks its own ped (Timber logs locked you in place)
     CALLSCM(ATTACH_OBJECT_TO_CHAR_358, obj, ped, off.x, off.y, off.z, rot.x, rot.y, rot.z);
 }
 void Game::DetachObject(int obj)

@@ -70,6 +70,7 @@ void Game::MoveWorldObject(int obj, const Vec3& p, float spinDeg)
 void Game::AttachObjectToChar(int obj, int ped, const Vec3& off)
 {
     if(!WorldObjectExists(obj) || ped <= 0 || !PedPtr(ped)) return;
+    SetObjectCollision(obj, false);   // 4.12: an attached object never blocks its own ped
     CALLSCM(ATTACH_OBJECT_TO_CHAR_304, obj, ped, off.x, off.y, off.z, 0.0f, 0.0f, 0.0f);
 }
 // 3.51: object glued to a vehicle (offset + rotation in the car's own space), e.g. the Timber logs

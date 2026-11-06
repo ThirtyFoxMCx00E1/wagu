@@ -129,6 +129,9 @@ static void BrokerOk(const Broker& b) { s_BrokerBackoff.erase(BrokerKey(b)); }
 // on its own (nearest) region when it joins a server hosted in another one: the slow, jittery part
 // (phone <-> broker over mobile data) stays short, the long hop runs VPS to VPS.
 static std::atomic<bool> s_RegionBranch[REGION_COUNT];
+// 4.12: regions.txt "label = Asia - Singapore" + which regions answer from the same machine
+static char s_RegionLabel[REGION_COUNT][48];
+static std::atomic<int> s_RegionSame[REGION_COUNT];
 static bool RegionUp(int r) { return r >= 0 && r < REGION_COUNT && s_RegionPing[r] >= 0; }
 static std::atomic<int> s_nPrefRegion{-1};            // -1 = auto (lowest ping), else REGION_*
 static std::atomic<int> s_nUiRegion{REGION_ASIA};     // region picked in the menu
@@ -1805,6 +1808,7 @@ static void ParseBrokerText(const std::string& text, BrokerCfg& pc)
         }
         else if(k == "port") { cur.port = (uint16_t)atoi(v.c_str()); portSet = true; }
         else if(k == "branch") { if(section >= 0 && section < REGION_COUNT) s_RegionBranch[section] = CfgBool(v); }   // 3.34
+        else if(k == "label" || k == "city") { if(section >= 0 && section < REGION_COUNT) snprintf(s_RegionLabel[section], sizeof(s_RegionLabel[section]), "%s", v.c_str()); }   // 4.12
         else if(k == "user" || k == "username") cur.user = v;
         else if(k == "pass" || k == "password") cur.pass = v;
         else if(k == "tls" || k == "ssl") cur.tls = CfgBool(v);
@@ -2078,6 +2082,24 @@ static bool PingRegionsOnce()
         OLOG("4.05.8: region ping across a network switch - measuring again");
         return false;
     }
+    // 4.12: two regions on ONE machine (every DuckDNS name pointing at the same home IP) are not
+    // two regions: the later one is shown as "same server as <region>" and never picked by Auto
+    {
+        uint32_t ip[REGION_COUNT] = {};
+        for(size_t i = 0; i < list.size(); ++i)
+        {
+            int r = list[i].region; if(ip[r]) continue;
+            std::vector<sockaddr_in> ad; char e[64] = {0};
+            if(ResolveV4(list[i].host, list[i].port, ad, e, sizeof(e)) == 0 && !ad.empty()) ip[r] = ad[0].sin_addr.s_addr;
+        }
+        for(int r = 0; r < REGION_COUNT; ++r)
+        {
+            int same = -1;
+            for(int q = 0; q < r && same < 0; ++q) if(ip[r] && ip[q] == ip[r]) same = q;
+            if(same >= 0 && s_RegionSame[r] != same) OLOG("4.12: region %s answers from the same address as %s (no VPS of its own yet)", g_MPRegionNames[r], g_MPRegionNames[same]);
+            s_RegionSame[r] = same;
+        }
+    }
     for(int r = 0; r < REGION_COUNT; ++r) s_RegionPing[r] = has[r] ? best[r] : -1;
     s_bPingedOnce = true;
     return true;
@@ -2299,6 +2321,7 @@ void Online::Start(const char* brokerFile)
     if(getenv("MP_BROKER_FILE")) brokerFile = getenv("MP_BROKER_FILE");
 #endif
     for(auto& p : s_RegionPing) p = -1;
+    for(auto& p : s_RegionSame) p = -1;   // 4.12
     {   // 2.20: the downloaded region list is saved next to broker.txt
         std::string dir = brokerFile && *brokerFile ? brokerFile : "";
         size_t sl = dir.rfind('/');
@@ -2652,12 +2675,14 @@ void Online::SetRegionPrefs(int menuRegion, bool autoPick)
 }
 bool Online::HasRegionalBrokers() { return s_bRegional; }
 int  Online::CurrentRegion() { return s_bConnected ? s_nCurRegion.load() : -1; }
+const char* Online::RegionLabel(int r) { if(r < 0 || r >= REGION_COUNT) return "Worldwide"; return s_RegionLabel[r][0] ? s_RegionLabel[r] : g_MPRegionLong[r]; }
+int  Online::RegionSameAs(int r) { return (r >= 0 && r < REGION_COUNT) ? s_RegionSame[r].load() : -1; }
 int  Online::RegionPingMs(int r) { return (r >= 0 && r < REGION_COUNT) ? s_RegionPing[r].load() : -1; }
 int  Online::BestRegion()
 {
     if(!s_bRegional) return -1;
     int best = -1, bestMs = 0;
-    for(int r = 0; r < REGION_COUNT; ++r) { int ms = s_RegionPing[r]; if(ms >= 0 && (best < 0 || ms < bestMs)) { best = r; bestMs = ms; } }
+    for(int r = 0; r < REGION_COUNT; ++r) { int ms = s_RegionPing[r]; if(s_RegionSame[r] >= 0) continue; /* 4.12: same machine as another region */ if(ms >= 0 && (best < 0 || ms < bestMs)) { best = r; bestMs = ms; } }
     return best;
 }
 
@@ -2682,7 +2707,8 @@ void Online::GetDiagnostics(std::vector<std::string>& out)
         {
             int ms = s_RegionPing[r];
             char b[48];
-            if(ms >= 0) snprintf(b, sizeof(b), "  %s %d ms", g_MPRegionNames[r], ms);
+            if(s_RegionSame[r] >= 0) snprintf(b, sizeof(b), "  %s = %s (same machine)", g_MPRegionNames[r], g_MPRegionNames[s_RegionSame[r].load()]);   // 4.12
+            else if(ms >= 0) snprintf(b, sizeof(b), "  %s %d ms", g_MPRegionNames[r], ms);
             else if(ms == -2) snprintf(b, sizeof(b), "  %s down", g_MPRegionNames[r]);
             else continue;
             pl += b;

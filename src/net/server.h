@@ -83,6 +83,19 @@ public:
     // 3.21.6: login system (Discord verification + account). Always on for the default server and
     // Brief Case War; custom servers: SetAuth(true) (Add server -> Authentication system, --auth)
     void SetAuth(bool on) { m_bAuthCustom = on; }
+    void SetCineCam(bool on) { m_bCineCam = on; }   // 4.12: cinematic connection camera (custom servers)
+    bool CineCamOn() const { return m_bCineCam; }
+    // 4.12: open.mp cross-play bridge (crossplay/mp_crossplay.cpp, an open.mp server component).
+    // Each PC player on the open.mp server is a "ghost" slot here (no address: nothing is sent to it),
+    // each phone player here becomes an open.mp NPC there. All calls lock m_Mutex (any thread).
+    struct BridgePeer { int slot; char name[MP_NAME_LEN]; uint16_t skin; bool hasSync; SyncData d; };
+    void BridgeEnable(bool on) { m_bBridge = on; }
+    int  BridgeAdd(const char* name, uint32_t color, uint16_t skin);   // -1 = full
+    void BridgeSync(int slot, const SyncData& d);
+    void BridgeChat(int slot, const char* text);
+    void BridgeRemove(int slot);
+    void BridgePeers(std::vector<BridgePeer>& out);                   // the real (phone) players
+    void BridgeTakeChat(std::vector<std::pair<int, std::string>>& out);   // their chat since last call
     // 3.23.5: the 3 featured servers (default 100, Brief Case War 20, MW3 64) always have the bot
     // "Broker" in them (id MP_BOT_ID): 1/100, 1/20, 1/64 with nobody else, on the VPS or a phone copy
     bool HasBot() const { return IsDefaultServer() || IsBcwServer() || IsMw3Server() || IsRpServer() || IsDayzServer(); }
@@ -194,6 +207,9 @@ private:
         uint32_t     build;          // 3.11: the phone's MP build (0 = older than 3.04.6)
         uint64_t     voiceWin;       // 3.11: voice rate limit
         int          voiceCount;
+        bool         ghost;          // 4.12: open.mp PC player (cross-play bridge), no address
+        bool         hasSync;        // 4.12: lastSync is valid
+        SyncData     lastSync;       // 4.12: for the bridge
         bool         authed;         // 3.21.6: login done (always true on servers without the login system)
         char         account[24];    // 3.21.6: the account (only the server knows it, never sent to others)
         char         chal[33];       // 3.21.6: this connection's random challenge (hex)
@@ -252,6 +268,10 @@ private:
     void AuthHandle(int slot, const uint8_t* data, int len);
     void AnnounceJoin(int slot);                 // 3.21.6: PKT_PLAYER_JOIN to everybody else
     std::atomic<bool> m_bAuthCustom{false};
+    std::atomic<bool> m_bCineCam{false};
+    std::atomic<bool> m_bBridge{false};                       // 4.12
+    std::vector<std::pair<int, std::string>> m_BridgeChatOut;   // 4.12 (under m_Mutex)
+    uint32_t m_nBridgeSeq = 1;
     void SetPermsLocked(uint8_t perms);                                         // 2.37, m_Mutex held
     bool KickLocked(int id, const char* admin, const char* reason, bool ban);   // 2.37, m_Mutex held
     char               m_szAdminHash[65] = {0};

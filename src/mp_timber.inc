@@ -603,7 +603,7 @@ static void TimberProcess(int ped, uint64_t now, float dt)
                 Game::ClearTasksNow(ped); Game::FreezeChar(ped, false);   // 4.11: end the lift task - you can walk with the logs right away
                 Vec3 at = me; at.z += 1.0f;
                 int o = Game::CreateWorldObject(TB_LOG_MODEL, at);
-                if(o > 0) { Game::AttachObjectToCharRot(o, ped, { 0.0f, 0.42f, 0.10f + s_Tb.nCarry * 0.20f }, { 0.0f, 0.0f, 90.0f }); s_Tb.carry[s_Tb.nCarry] = o; }
+                if(o > 0) { Game::SetObjectCollision(o, false); Game::AttachObjectToCharRot(o, ped, { 0.0f, 0.42f, 0.10f + s_Tb.nCarry * 0.20f }, { 0.0f, 0.0f, 90.0f }); s_Tb.carry[s_Tb.nCarry] = o; }   // 4.12: no collision - the log in your arms pinned you in place
                 ++s_Tb.nCarry; Game::FreezeChar(ped, false);
                 SysMsg(COL_SYSTEM, "{C2A2DA}* %s lifts a log with both hands (%d/%d in the arms).", settings.name, s_Tb.nCarry, TB_CARRY_MAX);
                 s_Tb.upperAt = 0;

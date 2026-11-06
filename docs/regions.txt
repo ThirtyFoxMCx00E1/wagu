@@ -11,8 +11,17 @@
 # The "mp" and "web" logins are public on purpose: the broker's topic rules limit what they can do.
 # The bridge / admin / console passwords are NOT here (they stay in mp.env on the servers).
 # A region that is down is skipped; if all are down the mod uses the free public lobby.
+#
+# 4.12: one VPS per region, each in its own city (fast UDP 1922 game servers + MQTT 1883):
+#   Asia     Singapore     Vultr sgp  | Hetzner sin  | Misaka SIN03 | OVHcloud SGP1
+#   Europe   Frankfurt     Vultr fra  | Misaka FRA13 | OVHcloud DE1 | Hetzner nbg1 / fsn1 (closest)
+#   NA       Los Angeles   Vultr lax  | Misaka LAX02 (OVHcloud / Hetzner: Hillsboro, Oregon)
+#   Oceania  Sydney        Vultr syd  | OVHcloud SYD1
+# Deploy all 4 with one command: HiveMQ/providers/deploy-vultr.sh (docs/REGIONS_VPS.md).
+# "label" = the name the mod shows. Two regions on the same IP are shown as "same server as ...".
 
 [Asia]
+label=Asia - Singapore
 host=mpsamp.duckdns.org
 port=1883
 tls=0
@@ -28,6 +37,7 @@ web_pass=GtNTBqTW6sE3y0qacB18
 console=https://mpsamp.duckdns.org:7681/
 
 [Europe]
+label=Europe - Frankfurt
 host=eusamp.duckdns.org
 port=1883
 tls=0
@@ -43,6 +53,7 @@ web_pass=GtNTBqTW6sE3y0qacB18
 console=https://eusamp.duckdns.org:7681/
 
 [NA]
+label=North America - Los Angeles
 host=nasamp.duckdns.org
 port=1883
 tls=0
@@ -58,6 +69,7 @@ web_pass=GtNTBqTW6sE3y0qacB18
 console=https://nasamp.duckdns.org:7681/
 
 [Oceania]
+label=Oceania - Sydney
 host=ocsamp.duckdns.org
 port=1883
 tls=0

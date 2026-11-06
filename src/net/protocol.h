@@ -13,10 +13,10 @@
 // phones refuse servers older than that too (they would let old phones in).
 // 3.10: build 31000. MP_MIN_BUILD stays 30406 and the lobby stays thirtyfox/mp5/: 3.04.6 (no cheats)
 // and 3.10 phones play together on the same servers; only 3.04.5 and older (mp4) stay shut out.
-#define MP_BUILD 41101   // 4.11.1
+#define MP_BUILD 41200   // 4.12
 #define MP_MIN_BUILD       30406
 #define MP_AUTH_MIN_BUILD  32106   // 3.21.6: servers with the login system refuse older phones (they could not log in)
-#define MP_VERSION_STR     "4.11.1"
+#define MP_VERSION_STR     "4.12"
 #define MP_VOICE_BUILD     31100   // 3.11: phones from this build on get voice packets
 #define MP_DOWNLOAD_URL    "mpsamp-open.github.io"   // 4.05.4: new website (mpsamp-open org); thirtyfoxmcx00e1.github.io/wagu still works as a backup
 #define MP_DEFAULT_HOST    "127.0.0.1"
@@ -149,6 +149,8 @@ enum ePacket : uint8_t
 
 enum eRegion : uint8_t { REGION_ASIA = 0, REGION_EUROPE, REGION_NA, REGION_OCEANIA, REGION_COUNT };
 static const char* const g_MPRegionNames[REGION_COUNT] = { "Asia", "Europe", "NA", "Oceania" };
+// 4.12: where each region's 24/7 VPS stands (regions.txt "label =" can change it)
+static const char* const g_MPRegionLong[REGION_COUNT] = { "Asia - Singapore", "Europe - Frankfurt", "North America - Los Angeles", "Oceania - Sydney" };
 
 enum eRejectReason : uint8_t { REJECT_FULL = 1, REJECT_VERSION = 2, REJECT_SHUTDOWN = 3, REJECT_PASSWORD = 4, REJECT_BANNED = 5, REJECT_KICKED = 6, REJECT_NAME_RESERVED = 7, REJECT_OUTDATED = 8, REJECT_OLD_SERVER = 9 };   // 8/9: 3.04.6 your MP is too old / the server is too old   // 7: 2.37 the name SENJI is reserved   // 5/6: 2.25 // 3: host closed the server, players take over
 enum eLeaveReason  : uint8_t { LEAVE_TIMEOUT = 0, LEAVE_QUIT = 1, LEAVE_KICK = 2 };
@@ -455,6 +457,8 @@ struct PktKicked2     { PktKicked k; uint16_t waitSec; };   // 3.39: a kick (not
 #define MP_KICK_WAIT_SEC 269
 struct PktWelcome     { uint8_t type; uint8_t yourId; uint8_t maxPlayers; uint32_t color; char serverName[32]; };
 struct PktWelcome2    { PktWelcome w; uint32_t build; };   // 3.04.6: + server build (older servers: no tail -> refused)
+struct PktWelcome3    { PktWelcome2 w2; uint32_t flags; };   // 4.12: + server flags (MP_SRVF_*); older clients read only PktWelcome2
+#define MP_SRVF_CINECAM 0x01   // 4.12: cinematic connection camera on this custom server
 struct PktReject      { uint8_t type; uint8_t reason; };
 struct PktPlayerJoin  { uint8_t type; uint8_t id; char name[MP_NAME_LEN]; uint32_t color; uint16_t skin; };
 struct PktPlayerLeave { uint8_t type; uint8_t id; uint8_t reason; };

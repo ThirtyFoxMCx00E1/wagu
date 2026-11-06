@@ -85,6 +85,7 @@ public:
     void SetJoinPassword(const char* pw) { MP_CopyStr(m_szPassword, pw ? pw : "", sizeof(m_szPassword)); }   // 2.19: before Connect
     void SetUid(const char* uid) { MP_CopyStr(m_szUid, uid ? uid : "", sizeof(m_szUid)); }   // 2.25: this phone's id
     uint32_t GetServerBuild() const { return m_nServerBuild; }   // 3.39.1
+    uint32_t GetServerFlags() const { return m_nServerFlags; }   // 4.12: MP_SRVF_*
     bool HasModKey() const { return m_szModKey[0] != 0; }        // 3.39.1
     void SetModKey(const char* k) { MP_CopyStr(m_szModKey, k ? k : "", sizeof(m_szModKey)); }   // 3.35: moderator.txt
     void SetAdminKey(const char* k) { MP_CopyStr(m_szAdminKey, k ? k : "", sizeof(m_szAdminKey)); }   // 2.37: only for the reserved name SENJI
@@ -127,6 +128,7 @@ private:
     std::mutex  m_SockMutex;
     std::thread m_Heartbeat;
     uint32_t    m_nServerBuild = 0;   // 3.39
+    uint32_t    m_nServerFlags = 0;   // 4.12
     uint64_t    m_nLastRebind = 0;    // 3.39
     uint32_t    m_nNetGenSeen = 0;    // 4.05.8: Online::NetGeneration() at the last check
     uint64_t    m_nNetChangedMs = 0;  // 4.05.8

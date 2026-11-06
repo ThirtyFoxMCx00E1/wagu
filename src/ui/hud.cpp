@@ -1342,6 +1342,16 @@ void HUD::Render()
     {
         // 2.19 join screen: full black slide overlay (under the chat + title logo)
         float ox0, ox1; bool overlay = MP::JoinOverlay(ox0, ox1);
+        {   // 4.12: cinematic connection camera - cinema bars + a soft dip to black between shots
+            float bars = 0, fade = 0;
+            if(MP::JoinCinema(bars, fade))
+            {
+                const float bh = io.DisplaySize.y * 0.11f * bars;
+                if(fade > 0.0f) dl->AddRectFilled(ImVec2(0, 0), io.DisplaySize, IM_COL32(0, 0, 0, (int)(255 * std::min(1.0f, fade))));
+                dl->AddRectFilled(ImVec2(0, 0), ImVec2(io.DisplaySize.x, bh), IM_COL32(0, 0, 0, 255));
+                dl->AddRectFilled(ImVec2(0, io.DisplaySize.y - bh), io.DisplaySize, IM_COL32(0, 0, 0, 255));
+            }
+        }
         if(overlay) dl->AddRectFilled(ImVec2(ox0 * io.DisplaySize.x, 0), ImVec2(ox1 * io.DisplaySize.x, io.DisplaySize.y), IM_COL32(0, 0, 0, 255));
         // 4.05: the 4.04 "CONNECTING TO SERVER" box is gone - the main "Please Wait, Loading Server Data" window shows it
         MP::DrawDefaultTitle(dl);   // 3.53.1: the Broker MQQ title, also over the black join screen

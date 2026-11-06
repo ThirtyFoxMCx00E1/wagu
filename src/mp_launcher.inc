@@ -711,15 +711,15 @@ static void LRegionChoose(int i)                // i < 0 = Auto
         settings.lobbyAuto = true;
         int best = Online::BestRegion();
         if(best >= 0) { settings.region = best; s_Server.SetRegion(best); }
-        SysMsg(COL_SYSTEM, "Region: Auto (lowest ping)%s%s. All regions are listed.", best >= 0 ? " - " : "", best >= 0 ? g_MPRegionNames[best] : "");
+        SysMsg(COL_SYSTEM, "Region: Auto (lowest ping)%s%s. All regions are listed.", best >= 0 ? " - " : "", best >= 0 ? Online::RegionLabel(best) : "");
     }
     else
     {
         settings.lobbyAuto = false; settings.region = i; settings.regionPicked = true;
         s_Server.SetRegion(i);
         int ms = Online::RegionPingMs(i);
-        if(ms >= 0) SysMsg(COL_SYSTEM, "Region: %s (%d ms). The lobby moves to the %s broker; only %s servers are listed.", g_MPRegionNames[i], ms, g_MPRegionNames[i], g_MPRegionNames[i]);
-        else SysMsg(COL_SYSTEM, "Region: %s. Only %s servers are listed.", g_MPRegionNames[i], g_MPRegionNames[i]);
+        if(ms >= 0) SysMsg(COL_SYSTEM, "Region: %s (%d ms). The lobby moves to the %s broker; only %s servers are listed.", Online::RegionLabel(i), ms, g_MPRegionNames[i], g_MPRegionNames[i]);
+        else SysMsg(COL_SYSTEM, "Region: %s. Only %s servers are listed.", Online::RegionLabel(i), g_MPRegionNames[i]);
     }
     Online::SetRegionPrefs(settings.region, settings.lobbyAuto);
     s_nLSel = -1; s_szLSelKey[0] = 0;
@@ -779,18 +779,19 @@ static void LRegionPicker(const std::vector<LanServer>& nearby)
             if(held) dl->AddRectFilled(a, b, IM_COL32(255, 255, 255, 14));
             dl->AddLine(ImVec2(a.x, b.y + gap * 0.5f), ImVec2(b.x, b.y + gap * 0.5f), IM_COL32(0, 0, 0, 90));
             const ImU32 tc = sel ? IM_COL32_WHITE : kVText, sc = kVDim;
-            char l1[32], l2[48];
+            char l1[48], l2[64];
             if(i < 0)
             {
                 int best = Online::BestRegion();
                 snprintf(l1, sizeof(l1), "Auto");
-                if(best >= 0) snprintf(l2, sizeof(l2), "%s  |  %d servers", g_MPRegionNames[best], all); else snprintf(l2, sizeof(l2), "lowest ping  |  %d", all);
+                if(best >= 0) snprintf(l2, sizeof(l2), "%s  |  %d servers", Online::RegionLabel(best), all); else snprintf(l2, sizeof(l2), "lowest ping  |  %d", all);
             }
             else
             {
-                snprintf(l1, sizeof(l1), "%s", g_MPRegionNames[i]);
-                int ms = Online::RegionPingMs(i);
-                if(ms >= 0) snprintf(l2, sizeof(l2), "%d ms  |  %d servers", ms, cnt[i]);
+                snprintf(l1, sizeof(l1), "%s", Online::RegionLabel(i));   // 4.12: "Asia - Singapore"
+                int ms = Online::RegionPingMs(i), same = Online::RegionSameAs(i);
+                if(same >= 0) snprintf(l2, sizeof(l2), "same server as %s  |  %d", g_MPRegionNames[same], cnt[i]);   // 4.12: no VPS of its own yet
+                else if(ms >= 0) snprintf(l2, sizeof(l2), "%d ms  |  %d servers", ms, cnt[i]);
                 else snprintf(l2, sizeof(l2), "%s  |  %d servers", ms == -2 ? "offline" : "-- ms", cnt[i]);
             }
             ImFont* rf = ImGui::GetFont();   // 4.10: the panel's font (was the fixed UI::Font())
@@ -1151,7 +1152,7 @@ static void LTable(std::vector<LRow>& rows, float w, float h)
             // 5: Server location + ping stability graph
             {
                 const char* cn = LCountryName(r.cc);
-                char loc[96]; snprintf(loc, sizeof(loc), "Server location: %s", cn ? cn : (r.region >= 0 && r.region < REGION_COUNT ? g_MPRegionNames[r.region] : "Worldwide"));
+                char loc[96]; snprintf(loc, sizeof(loc), "Server location: %s", cn ? cn : Online::RegionLabel(r.region));
                 float fh = lh, fw = fh * 4.0f / 3.0f;
                 LDrawFlag(dl, LCountryIndex(r.cc), ImVec2(c5, y0), ImVec2(c5 + fw, y0 + fh));
                 dl->PushClipRect(ImVec2(c5, d.y), ImVec2(e.x - UI::S(6), e.y), true);

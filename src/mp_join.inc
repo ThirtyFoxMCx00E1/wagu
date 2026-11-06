@@ -69,8 +69,86 @@ static int      s_nSpawnStep = 0;            // -1 / +1 pressed (done on the gam
 // camera flight
 static Vec3     s_CamFromP, s_CamFromL, s_CamToP, s_CamToL, s_CamNowP, s_CamNowL;
 static uint64_t s_nCamT0 = 0; static int s_nCamMs = 0; static float s_fCamArc = 0;
+static Vec3     s_JoinFinalP, s_JoinFinalL;   // 4.12: the server's own connection view (the cinematic ends there)
 
 static float EaseInOut(float t) { if(t <= 0) return 0; if(t >= 1) return 1; return t < 0.5f ? 4 * t * t * t : 1 - powf(-2 * t + 2, 3) / 2; }
+
+static void StartCamFlight(const Vec3& toP, const Vec3& toL);
+// 4.12: cinematic connection camera - slow eased dolly shots with cinema bars while you connect / load.
+// Always on the default server and Mega Vil; a custom server turns it on in + Add server (PktWelcome3 flag).
+struct CineShot { Vec3 p0, l0, p1, l1; };
+static const CineShot kCineLS[] =
+{
+    { { 1290.0f, -1060.0f, 120.0f }, { 1415.0f, -805.0f, 85.0f }, { 1520.0f, -1030.0f, 110.0f }, { 1415.0f, -805.0f, 85.0f } },     // the Vinewood sign
+    { { 1330.0f, -1420.0f, 170.0f }, { 1560.0f, -1250.0f, 70.0f }, { 1420.0f, -1520.0f, 150.0f }, { 1560.0f, -1260.0f, 60.0f } },    // downtown skyline
+    { { 2420.0f, -1720.0f, 45.0f },  { 2495.0f, -1668.0f, 14.0f }, { 2520.0f, -1735.0f, 32.0f },  { 2490.0f, -1665.0f, 14.0f } },     // Grove Street
+    { { 260.0f, -1880.0f, 40.0f },   { 380.0f, -2045.0f, 12.0f },  { 470.0f, -1880.0f, 30.0f },   { 380.0f, -2045.0f, 12.0f } },      // Santa Maria pier
+    { { 1850.0f, -2540.0f, 70.0f },  { 1640.0f, -2450.0f, 14.0f }, { 1700.0f, -2650.0f, 45.0f },  { 1560.0f, -2440.0f, 14.0f } },     // LS airport
+};
+static const CineShot kCineRp[] =
+{
+    { { 1380.0f, -1780.0f, 95.0f },  { 1481.0f, -1692.0f, 15.0f }, { 1580.0f, -1780.0f, 80.0f },  { 1481.0f, -1692.0f, 15.0f } },     // over Mega Vil Plaza
+    { { 1440.0f, -1590.0f, 40.0f },  { 1481.0f, -1772.0f, 18.0f }, { 1520.0f, -1600.0f, 34.0f },  { 1481.0f, -1772.0f, 18.0f } },     // City Hall
+    { { 1250.0f, -1500.0f, 130.0f }, { 1480.0f, -1690.0f, 30.0f }, { 1300.0f, -1700.0f, 110.0f }, { 1480.0f, -1690.0f, 25.0f } },    // the city around it
+};
+#define CINE_SHOT_MS 6500
+#define CINE_FADE_MS 450
+static bool     s_bCine = false;          // this join uses the cinematic camera
+static int      s_nCineShot = 0, s_nCineShots = 0; static const CineShot* s_pCine = nullptr;
+static uint64_t s_nCineT0 = 0;
+static bool     s_bCineFinal = false;     // connected: the last flight to the server's own view
+static int      s_nCinePlayed = 0;
+static float    s_fCineBars = 0.0f;
+static bool CineWanted()
+{
+    if(s_bRpJoin || MP_IsRpServerName(client.GetServerName())) return true;
+    if(s_bBcwJoin || s_bDzJoin || s_bMw3Join) return false;
+    if(s_bConnectingDefault || (client.GetState() == NET_CONNECTED && MP::IsOnDefault())) return true;
+    return client.GetState() == NET_CONNECTED && (client.GetServerFlags() & MP_SRVF_CINECAM);
+}
+static float SmoothStep(float t) { t = t < 0 ? 0 : (t > 1 ? 1 : t); return t * t * (3 - 2 * t); }
+static void CineStart(uint64_t now)
+{
+    const bool rp = s_bRpJoin || MP_IsRpServerName(client.GetServerName());
+    s_pCine = rp ? kCineRp : kCineLS; s_nCineShots = rp ? (int)(sizeof(kCineRp) / sizeof(kCineRp[0])) : (int)(sizeof(kCineLS) / sizeof(kCineLS[0]));
+    s_nCineShot = (int)(now / 1000 % (uint64_t)s_nCineShots); s_nCineT0 = now; s_bCine = true; s_bCineFinal = false; s_nCinePlayed = 0;
+    Game::PreloadArea(s_pCine[s_nCineShot].l0, false);
+    Game::PreloadArea(s_pCine[(s_nCineShot + 1) % s_nCineShots].l0, false);
+}
+// every tick while s_bCine: move the camera on the current shot
+static void CineTick(uint64_t now)
+{
+    if(!s_bCine || !s_pCine || s_bCineFinal) return;
+    float k = (float)(now - s_nCineT0) / CINE_SHOT_MS;
+    if(k >= 1.0f)
+    {
+        s_nCineShot = (s_nCineShot + 1) % s_nCineShots; s_nCineT0 = now; k = 0; ++s_nCinePlayed;
+        Game::PreloadArea(s_pCine[(s_nCineShot + 1) % s_nCineShots].l0, false);   // stream the next one in early
+    }
+    const CineShot& c = s_pCine[s_nCineShot];
+    const float e = SmoothStep(k);
+    s_CamNowP = { c.p0.x + (c.p1.x - c.p0.x) * e, c.p0.y + (c.p1.y - c.p0.y) * e, c.p0.z + (c.p1.z - c.p0.z) * e };
+    s_CamNowL = { c.l0.x + (c.l1.x - c.l0.x) * e, c.l0.y + (c.l1.y - c.l0.y) * e, c.l0.z + (c.l1.z - c.l0.z) * e };
+    Game::SetFixedCamera(s_CamNowP, s_CamNowL);
+}
+// HUD: cinema bars (0..1) and the dip to black between shots (0..1)
+bool MP::JoinCinema(float& bars, float& fade)
+{
+    const bool on = s_bCine && s_nJoinPhase != JP_NONE && s_nJoinPhase != JP_PICK;
+    static uint64_t last = 0; const uint64_t now = MP_NowMs();
+    const float dt = last ? std::min(0.1f, (now - last) / 1000.0f) : 0.016f; last = now;
+    s_fCineBars += (on ? 1.0f : -1.0f) * dt * 1.6f; s_fCineBars = std::max(0.0f, std::min(1.0f, s_fCineBars));
+    bars = SmoothStep(s_fCineBars); fade = 0.0f;
+    if(on && !s_bCineFinal && s_pCine)
+    {
+        const uint64_t t = now - s_nCineT0;
+        if(t < CINE_FADE_MS) fade = 1.0f - (float)t / CINE_FADE_MS;                                       // fade in
+        else if(t > CINE_SHOT_MS - CINE_FADE_MS) fade = (float)(t - (CINE_SHOT_MS - CINE_FADE_MS)) / CINE_FADE_MS;   // fade out
+        if(s_nCinePlayed == 0 && t < CINE_FADE_MS && s_nJoinPhase == JP_COVER) fade = 0.0f;
+    }
+    return bars > 0.0f;
+}
+
 
 static void SpotCamera(int i, Vec3& cam, Vec3& look)
 {
@@ -89,7 +167,7 @@ static void JoinOverlayStart()
     if(!Game::IsReady()) return;               // still on the loading screen: plain join
     s_nJoinPhase = JP_COVER; s_nJoinT0 = MP_NowMs(); s_nJoinStartMs = s_nJoinT0;
     s_bJoinConnected = false; s_bJoinCamSet = false; s_bSpawnNow = false; s_nSpawnStep = 0;
-    s_nSpawnSel = 0;
+    s_nSpawnSel = 0; s_bCine = false; s_bCineFinal = false;
     FloatMenu::CloseAll();
 }
 
@@ -110,6 +188,7 @@ static void JoinRestoreGame(bool teleportGrove)
 static void JoinOverlayCancel()
 {
     if(s_nJoinPhase == JP_NONE) return;
+    s_bCine = false;
     JoinRestoreGame(false);
     s_nJoinPhase = JP_NONE;
 }
@@ -142,7 +221,7 @@ static void JoinFlowProcess(int ped, uint64_t now)
     // 24/7 server") skips the loading feed, so FinishJoin() never ran and nothing lifted the black panel - and
     // the 25 s watchdog below was off once the client said CONNECTED. Connected + welcomed + no feed running =
     // the join is done: reveal the camera now.
-    if((s_nJoinPhase == JP_COVER || s_nJoinPhase == JP_BLACK) && !s_bJoinConnected && client.GetState() == NET_CONNECTED
+    if((s_nJoinPhase == JP_COVER || s_nJoinPhase == JP_BLACK || (s_bCine && s_nJoinPhase <= JP_WAIT)) && !s_bJoinConnected && client.GetState() == NET_CONNECTED
        && s_nFeedStep < 0 && s_nFeedRes < 0 && now - s_nJoinStartMs > 1500)
     {
         static int s_nQuietLogs = 0;
@@ -150,9 +229,9 @@ static void JoinFlowProcess(int ped, uint64_t now)
         s_bJoinConnected = true;
     }
     // 4.10: the hard cap: connected or not, the black panel never stays more than 25 s
-    if((s_nJoinPhase == JP_COVER || s_nJoinPhase == JP_BLACK) && !s_bJoinConnected && client.GetState() == NET_CONNECTED && now - s_nJoinStartMs > 25000)
+    if((s_nJoinPhase == JP_COVER || s_nJoinPhase == JP_BLACK || (s_bCine && s_nJoinPhase <= JP_WAIT)) && !s_bJoinConnected && client.GetState() == NET_CONNECTED && now - s_nJoinStartMs > 25000)
         s_bJoinConnected = true;
-    if((s_nJoinPhase == JP_COVER || s_nJoinPhase == JP_BLACK) && !s_bJoinConnected && client.GetState() != NET_CONNECTED && now - s_nJoinStartMs > 25000)
+    if((s_nJoinPhase == JP_COVER || s_nJoinPhase == JP_BLACK || (s_bCine && s_nJoinPhase <= JP_WAIT)) && !s_bJoinConnected && client.GetState() != NET_CONNECTED && now - s_nJoinStartMs > 25000)
     {
         JoinOverlayCancel();
         SysMsg(COL_YELLOW, "Still connecting - you can move meanwhile. On a hotspot: the host should keep the game open and the screen on.");
@@ -180,13 +259,34 @@ static void JoinFlowProcess(int ped, uint64_t now)
                 s_CamNowP = jcP; s_CamNowL = jcL; s_nCamMs = 0;
                 Game::SetFixedCamera(jcP, jcL);
                 s_bJoinCamSet = true;
+                s_JoinFinalP = jcP; s_JoinFinalL = jcL;
+                if(CineWanted()) CineStart(now);   // 4.12: the cinematic camera while connecting (no waiting on black)
             }
-            if(s_bJoinConnected && t >= 200) { s_nJoinPhase = JP_REVEAL; s_nJoinT0 = now; }
+            if(!s_bCine && s_bJoinConnected && CineWanted()) CineStart(now);   // a custom server says so in its welcome
+            if((s_bJoinConnected || s_bCine) && t >= 200) { s_nJoinPhase = JP_REVEAL; s_nJoinT0 = now; }
             break;
         case JP_REVEAL:
             if(t >= JOIN_SLIDE_MS) { s_nJoinPhase = JP_WAIT; s_nJoinT0 = now; }
             break;
         case JP_WAIT:
+            if(s_bCine)
+            {   // 4.12: shots run until connected + loaded (and 2 shots seen on a custom server), then one eased flight to the server's view
+                if(!s_bCine && s_bJoinConnected && CineWanted()) CineStart(now);
+                const bool enough = s_bConnectingDefault || s_bRpJoin || MP_IsRpServerName(client.GetServerName()) || s_nCinePlayed >= 1;
+                if(!s_bCineFinal && s_bJoinConnected && s_nFeedRes < 0 && s_nFeedStep < 0 && enough)
+                {
+                    s_bCineFinal = true;
+                    Vec3 fp = s_JoinFinalP, fl = s_JoinFinalL;
+                    if(s_bRpJoin || MP_IsRpServerName(client.GetServerName())) RpJoinCam(fp, fl);
+                    Game::PreloadArea(fl, false);
+                    StartCamFlight(fp, fl); s_nCamMs = 2800;
+                    s_nJoinT0 = now; t = 0;
+                }
+                if(!s_bCineFinal || s_nCamMs > 0 || t < 600) break;
+                s_bCine = false;
+                if(t < JOIN_BUTTONS_MS) s_nJoinT0 = now - JOIN_BUTTONS_MS;
+                t = JOIN_BUTTONS_MS;
+            }
             if(t >= JOIN_BUTTONS_MS && !AuthHoldsJoin(now))   // 3.21.6: login first
             {
                 if(s_bDzJoin || MP_IsDzServerName(client.GetServerName()))
@@ -249,6 +349,7 @@ static void JoinFlowProcess(int ped, uint64_t now)
             }
             break;
     }
+    if(s_bJoinCamSet && s_bCine && !s_bCineFinal) CineTick(now);   // 4.12
     // eased camera flight between spots
     if(s_bJoinCamSet && s_nCamMs > 0)
     {
@@ -274,7 +375,7 @@ bool MP::JoinOverlay(float& x0, float& x1)
     {
         case JP_COVER:  x0 = 0; x1 = e; return true;
         case JP_BLACK:  x0 = 0; x1 = 1; return true;
-        case JP_REVEAL: x0 = e; x1 = 1; return k < 1.0f;
+        case JP_REVEAL: x0 = e; x1 = 1; return k < 1.0f;   // 4.12: with the cinematic camera this opens on the first shot
         default: return false;
     }
 }

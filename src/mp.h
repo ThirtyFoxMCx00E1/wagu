@@ -95,6 +95,7 @@ struct MPSettings
     int   hostModes         = 0;       // 3.02: gamemodes (GM_*) of the custom server I host; new custom servers: none
     bool  hostAc            = false;   // 3.50: Add server > Gamemodes > Anti-cheat (custom servers; featured servers: always on)
     unsigned long long hostAcMask = 0xFFFFFFFFFFull;   // 3.50: which anti-cheat checks (eAcCheck bits)
+    bool  hostCineCam       = true;    // 4.12: + Add server > Cinematic Join Camera (custom servers you host)
     bool  hostAuth          = false;   // 3.21.6: Add server > Authentication system (login with Discord) for a NEW server you host
     bool  allowCheatMenu    = false;   // 3.00: host permission (custom servers): players may use CheatMenu (libCheatMenu.so / libCheatMenu64.so)
     bool  hitSound          = true;    // 3.00: play sound_010.mp3 when your shot hits a player
@@ -299,6 +300,7 @@ namespace MP
     int  OnlineMax();               // that server's limit (or your hosting limit when offline)
     // 2.19 join screen: black slide overlay (x0..x1 = covered part, 0..1 of the width) + spawn picker
     bool JoinOverlay(float& x0, float& x1);
+    bool JoinCinema(float& bars, float& fade);   // 4.12: cinema bars + dip to black of the cinematic connection camera
     const char* SpawnSpotName(int i);
     int  SpawnSpotCount();
     bool SpawnPickerShown();

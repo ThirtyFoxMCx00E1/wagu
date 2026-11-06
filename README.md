@@ -117,10 +117,15 @@ The [HiveMQ kit](HiveMQ/README.md#debian-12-own-pc-or-vps) runs on Ubuntu 22.04 
 wget -qO- https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/vps-setup.sh | bash -s europe
 ```
 
-Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in the provider's image list instead of the ISO. Ping depends on where the machine is, so Europe, NA and Oceania need a VPS in or near those regions (Frankfurt, Virginia / Ohio, Sydney).
+Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in the provider's image list instead of the ISO. Ping depends on where the machine is: each region needs its own VPS in its city - Asia = Singapore, Europe = Frankfurt, North America = Los Angeles, Oceania = Sydney. All 4 on Vultr in one command, or Misaka / OVHcloud / Hetzner by hand: [docs/REGIONS_VPS.md](docs/REGIONS_VPS.md).
 
 ## Changelog
 
+- **4.12**: Timber fix, cinematic join camera, 4 real regions, PC + Mobile cross-play.
+  - Timber (Mega Vil job): picking up a log no longer locks the character. The carried log (and every object attached to a player) has no collision any more; its collision pinned the player in place.
+  - Cinematic Join Camera: joining the default server or Mega Vil Futuristic plays slow, eased camera shots over Los Santos (Vinewood, downtown, Grove Street, Santa Maria pier, the airport; Mega Vil: around the Plaza) with cinema bars and a dip to black, while the connection is made, then flies to your spawn. Custom servers: MP Launcher > + Add server > scroll down > Connection screen > "Cinematic Join Camera" (on by default).
+  - Regions: mpsamp / eusamp / nasamp / ocsamp.duckdns.org all pointed at one home connection (Cagayan de Oro, PH), so the 3 other regions were not real. Each region now gets its own VPS in its city: Asia - Singapore, Europe - Frankfurt, North America - Los Angeles, Oceania - Sydney (HiveMQ/providers/deploy-vultr.sh for all 4 on Vultr, user-data.sh for Misaka / OVHcloud / Hetzner, docs/REGIONS_VPS.md). The region pin shows the city, and a region that still answers from the same machine as another one is shown as "same server as Asia" and Auto never picks it.
+  - PC + Mobile cross-play (open.mp): crossplay/mp-crossplay.so, an open.mp 1.6.7 server component. PC players (open.mp launcher) and Android players (MP) play in one world: phone players are NPCs on PC, PC players are "Name (PC)" on the phones, chat both ways. Linux open.mp servers; see crossplay/README.md for the limits.
 - **4.11.1**: Import gamemode with the Files app.
   - MP Launcher > + Add server > scroll to Plugins > Gamemode (zip, rar) > "Import (zip, rar) - opens Files": the Android Files app (file manager) opens, you pick the .zip / .rar / .amx, it is copied to files/MP/import/ and unpacked for your server. No MP Voice needed (the picker runs inside the game: tools/filepick).
   - The gamemode import is always shown at the top of Plugins (no Type to choose). "Or pick from Download / files/MP/import" still lists the files found there.

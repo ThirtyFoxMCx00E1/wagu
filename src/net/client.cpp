@@ -269,6 +269,7 @@ void MPClient::Poll(INetEvents* ev)
                     if(r >= (int)sizeof(PktWelcome2)) memcpy(&sb, buf + offsetof(PktWelcome2, build), sizeof(sb));
                     if(sb < MP_MIN_BUILD) { Disconnect(true); ev->OnRejected(REJECT_OLD_SERVER); return; }
                     m_nServerBuild = sb;   // 3.39
+                    m_nServerFlags = 0; if(r >= (int)sizeof(PktWelcome3)) memcpy(&m_nServerFlags, buf + offsetof(PktWelcome3, flags), 4);   // 4.12
                     const PktWelcome* w = (const PktWelcome*)buf;
                     m_nMyId = w->yourId;
                     MP_CopyStr(m_szServerName, w->serverName, sizeof(m_szServerName));

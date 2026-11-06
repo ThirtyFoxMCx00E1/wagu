@@ -149,7 +149,7 @@
 #include <locale.h>
 
 #ifdef __GNUC__
-  #if defined(__i386__) || defined(__x86_64__)
+  #if (defined(__i386__) || defined(__x86_64__)) && !defined(MP_NO_UNRAR_SSE)   // MP 4.12: off in the open.mp component (no __cpu_model in a -fPIC i386 .so)
     #include <x86intrin.h>
     
     #define USE_SSE

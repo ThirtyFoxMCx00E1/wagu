@@ -4708,6 +4708,7 @@ static bool StartLocalServer(const char* name, int port)
         else auth = au > 0;
         s_Server.SetAuth(auth);
     }
+    s_Server.SetCineCam(settings.hostCineCam && !bcw && !MP::IsDefaultServer(name, port));   // 4.12
     MP_CopyStr(settings.hostedPassword, MP::IsDefaultServer(name, port) || bcw ? "" : s_szJoinPw, sizeof(settings.hostedPassword));
     ApplyServerPerms();   // 2.16
     ApplyServerRules();   // 3.39
@@ -5271,7 +5272,7 @@ static void ProcessLan(uint64_t now)
                 if(best != settings.region)
                 {
                     settings.region = best; s_Server.SetRegion(best); SaveConfig();
-                    SysMsg(COL_SYSTEM, "Region set to %s (lowest ping, %d ms). Change it in the Server menu.", g_MPRegionNames[best], Online::RegionPingMs(best));
+                    SysMsg(COL_SYSTEM, "Region set to %s (lowest ping, %d ms). Change it in the Server menu.", Online::RegionLabel(best), Online::RegionPingMs(best));
                 }
             }
         }
@@ -5391,7 +5392,7 @@ void MP::SaveConfig()
     F("NametagSize", settings.nametagSize); F("NametagDistance", settings.nametagDistance);
     B("ShowOwnNametag", settings.showOwnTag); B("ShowHealthBars", settings.showHealthBars); B("ShowRadarIcons", settings.showRadarIcons);
     B("ShowChat", settings.showChat); B("ShowKillFeed", settings.showKillFeed); B("ShowStatus", settings.showStatus);
-    B("SyncAnims", settings.syncAnims); B("BrokerStandby", settings.brokerStandby); B("SyncEnv", settings.syncEnv); B("SyncNPCs", settings.syncNpcs); B("AllowMissionPair", settings.allowMissionPair); B("AllowCheatMenu", settings.allowCheatMenu); B("HostAuth", settings.hostAuth); B("HostAntiCheat", settings.hostAc); { char m[24]; snprintf(m, sizeof(m), "%llX", settings.hostAcMask); S("HostAntiCheatMask", m); } B("HitSound", settings.hitSound); B("DisableCheats", settings.disableCheats);
+    B("SyncAnims", settings.syncAnims); B("BrokerStandby", settings.brokerStandby); B("SyncEnv", settings.syncEnv); B("SyncNPCs", settings.syncNpcs); B("AllowMissionPair", settings.allowMissionPair); B("AllowCheatMenu", settings.allowCheatMenu); B("HostAuth", settings.hostAuth); B("HostCineCam", settings.hostCineCam); B("HostAntiCheat", settings.hostAc); { char m[24]; snprintf(m, sizeof(m), "%llX", settings.hostAcMask); S("HostAntiCheatMask", m); } B("HitSound", settings.hitSound); B("DisableCheats", settings.disableCheats);
     F("ChatX", settings.chatX); F("ChatY", settings.chatY); I("Skin", settings.skin);
     I("ChatLines", settings.chatLines); F("ChatSize", settings.chatSize); F("ChatScale", settings.chatScale); F("ChatWidth", settings.chatWidth);   // 2.19.6
     I("ChatFade", settings.chatFade); B("ChatFadeOn", settings.chatFadeOn); B("ChatBackground", settings.chatBg);
@@ -5441,6 +5442,7 @@ static void LoadConfig()
     settings.allowMissionPair = ::cfg->GetBool("AllowMissionPair", true, "MP");
     settings.allowCheatMenu = ::cfg->GetBool("AllowCheatMenu", false, "MP");   // 3.00
     settings.hostAuth        = ::cfg->GetBool("HostAuth", false, "MP");   // 3.21.6
+    settings.hostCineCam     = ::cfg->GetBool("HostCineCam", true, "MP");   // 4.12
     settings.hostAc          = ::cfg->GetBool("HostAntiCheat", false, "MP");   // 3.50
     { char m[24] = ""; ::cfg->GetString(m, sizeof(m), "HostAntiCheatMask", "FFFFFFFFFF", "MP"); settings.hostAcMask = strtoull(m, nullptr, 16) & AC_ALL_MASK; }
     settings.hitSound = ::cfg->GetBool("HitSound", true, "MP");               // 3.00
@@ -5870,9 +5872,11 @@ static void RegionPicker(const std::vector<LanServer>& nearby)
         ImGui::PushStyleColor(ImGuiCol_Button, sel ? ImGui::ColorConvertU32ToFloat4(UI::kAccentDark) : ImVec4(0.16f, 0.16f, 0.16f, 1));
         char lbl[80];
         int ms = Online::RegionPingMs(r);   // 2.20: regional broker ping
-        if(ms >= 0) snprintf(lbl, sizeof(lbl), "%s  %d ms\n%d online##rg%d", g_MPRegionNames[r], ms, players[r], r);
-        else snprintf(lbl, sizeof(lbl), "%s\n%d online##rg%d", g_MPRegionNames[r], players[r], r);   // players
-        if(ImGui::Button(lbl, ImVec2(w, UI::S(76))) && !sel)
+        const char* city = strstr(Online::RegionLabel(r), " - "); city = city ? city + 3 : "";   // 4.12: + the VPS city
+        if(Online::RegionSameAs(r) >= 0) snprintf(lbl, sizeof(lbl), "%s\n%s\nsame as %s##rg%d", g_MPRegionNames[r], city, g_MPRegionNames[Online::RegionSameAs(r)], r);
+        else if(ms >= 0) snprintf(lbl, sizeof(lbl), "%s  %d ms\n%s\n%d online##rg%d", g_MPRegionNames[r], ms, city, players[r], r);
+        else snprintf(lbl, sizeof(lbl), "%s\n%s\n%d online##rg%d", g_MPRegionNames[r], city, players[r], r);   // players
+        if(ImGui::Button(lbl, ImVec2(w, UI::S(100))) && !sel)   // 4.12: 3 lines (+ city)
         {
             settings.region = r; s_nSelServer = -1;
             settings.regionPicked = true;   // 2.20
@@ -6776,6 +6780,21 @@ static void SectionAddServer(void*)
         }
         if(s_IfTxt[0]) ImGui::TextColored(ImVec4(0.22f, 0.74f, 0.97f, 1), "This phone: %s - port %d", s_IfTxt, s_Server.IsRunning() ? (int)s_Server.GetPort() : atoi(s_szLocalPort));
         else ImGui::TextDisabled("Hotspot: turn on your phone hotspot, host a server, friends join 192.168.43.1.");
+    }
+
+    // 4.12: Cinematic Join Camera - slow eased camera shots + cinema bars while players connect (custom servers)
+    ImGui::Separator();
+    ImGui::TextUnformatted("Connection screen");
+    {
+        const bool own = s_Server.IsRunning() && !IsHostingDefault() && !s_Server.IsBcwServer();
+        if(FloatMenu::ToggleSwitch("Cinematic Join Camera", &settings.hostCineCam))
+        {
+            SaveConfig();
+            if(own) { s_Server.SetCineCam(settings.hostCineCam); SysMsg(COL_GREEN, "Cinematic Join Camera %s on \"%s\" (players who join from now on).", settings.hostCineCam ? "on" : "off", s_Server.GetName()); }
+        }
+        ImGui::TextDisabled(settings.hostCineCam ? "On: while players connect, the camera glides over Los Santos (Vinewood, downtown, Grove Street, the beach) with cinema bars, then eases to the spawn picker."
+                                                 : "Off: the classic black connection screen.");
+        ImGui::TextDisabled("The default server and Mega Vil Futuristic Roleplay always have it.");
     }
 
     // 3.21.6: Authentication system - players verify with Discord (/gen code), then sign up / log in

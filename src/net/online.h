@@ -75,6 +75,8 @@ namespace Online
     bool HasRegionalBrokers();
     int  CurrentRegion();              // region of the broker in use (-1 = public / offline)
     int  RegionPingMs(int region);     // -1 unknown / no broker, -2 unreachable
+    const char* RegionLabel(int region);   // 4.12: "Asia - Singapore" (regions.txt label = ...)
+    int  RegionSameAs(int region);     // 4.12: >= 0 = this region's broker is the SAME machine as that region's (no real VPS there)
     int  BestRegion();                 // lowest ping region (-1 = none)
 
     // 3.21.6: login system link to the MP Discord bot (own connection, end-to-end encrypted frames)

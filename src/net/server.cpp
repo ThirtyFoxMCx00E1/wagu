@@ -260,6 +260,7 @@ int MPServer::FindSlot(const sockaddr_in& a)
 
 void MPServer::SendRaw(const sockaddr_in& a, const void* data, int len)
 {
+    if(!a.sin_port) return;   // 4.12: cross-play ghost slot (open.mp PC player) - nothing to send to
 #ifdef MP_MMSG
     if(t_Out.on && t_Out.sock == (int)m_Sock && len > 0) { t_Out.Put(a, data, len); return; }
 #endif
@@ -690,7 +691,7 @@ void MPServer::Loop()
             OutBatch ob((int)m_Sock);
 #endif
             for(int i = 0; i < MP_MAX_PLAYERS; ++i)
-                if(m_Slots[i].used && now - m_Slots[i].lastSeen > MP_TIMEOUT_MS) Drop(i, LEAVE_TIMEOUT);
+                if(m_Slots[i].used && !m_Slots[i].ghost && now - m_Slots[i].lastSeen > MP_TIMEOUT_MS) Drop(i, LEAVE_TIMEOUT);
             static thread_local uint32_t chalTick = 0;
             if(++chalTick % 3 == 0)   // 3.21.6: the login challenge again (UDP may lose it)
                 for(int i = 0; i < MP_MAX_PLAYERS; ++i)
@@ -1035,12 +1036,14 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
                 s.joinedMs = MP_NowMs();
                 Log("%s (id %d) joined again: login required", s.name, slot);
             }
-            PktWelcome2 w2; memset(&w2, 0, sizeof(w2));   // 3.04.6: + build
+            PktWelcome3 w3; memset(&w3, 0, sizeof(w3));   // 4.12: + flags
+            PktWelcome2& w2 = w3.w2;   // 3.04.6: + build
             PktWelcome& w = w2.w;
             w.type = PKT_WELCOME; w.yourId = (uint8_t)slot; w.maxPlayers = (uint8_t)m_nMaxPlayers.load(); w.color = s.color;
             MP_CopyStr(w.serverName, m_szName, sizeof(w.serverName));
             w2.build = MP_BUILD;
-            SendTo(slot, &w2, sizeof(w2));
+            w3.flags = m_bCineCam ? MP_SRVF_CINECAM : 0;
+            SendTo(slot, &w3, sizeof(w3));
 
             // tell the newcomer about everyone (including itself, so it knows its final name/colour)
             for(int i = 0; i < MP_MAX_PLAYERS; ++i)
@@ -1115,6 +1118,7 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
                 m_Slots[slot].spawnProtUntil = MP_NowMs() + MP_SPAWN_PROTECT_MS;   // 3.21: respawned -> 5 s spawn protection
             m_Slots[slot].lastFlags = p.d.flags;
             m_Slots[slot].skin = p.d.skin;
+            m_Slots[slot].lastSync = p.d; m_Slots[slot].hasSync = true;   // 4.12: cross-play bridge
             m_Slots[slot].paused = false;
             {   // 2.9 sync flags also carry mission / cutscene (works without PKT_STATUS)
                 uint8_t st = ((p.d.flags & SYNC_MISSION) ? STATUS_MISSION : 0) | ((p.d.flags & SYNC_CUTSCENE) ? STATUS_CUTSCENE : 0);
@@ -1322,6 +1326,7 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             p.id = (uint8_t)slot;
             p.text[MP_CHAT_LEN - 1] = 0;
             Log("[chat] %s: %s", m_Slots[slot].name, p.text);
+            if(m_bBridge && !m_Slots[slot].ghost && p.text[0] != '/') m_BridgeChatOut.emplace_back(slot, std::string(p.text));   // 4.12
             if(IsDayzServer() && DzChat(slot, p.text)) break;   // 3.58: party chat colours / commands
             if(m_bSampLoaded && !SampOnChat(slot, p.text)) break;   // 4.11: OnPlayerText (0 = not shown) / a /command
             if(IsRpServer())
@@ -2083,6 +2088,7 @@ void MPServer::RaceQueueTick(uint64_t now, bool changed)
 #include "server_admin.inc" // 3.54: admin / moderator commands
 #include "server_cgrp.inc"  // 4.09: CGRP systems
 #include "server_samp.inc"  // 4.11: SA-MP gamemodes (Pawn AMX + SA-MP natives)
+#include "server_bridge.inc" // 4.12: open.mp cross-play bridge
 
 // 3.04.6: an old MP version tried to join: log it once per phone every 10 minutes (console + the
 // --outdated-log file of the 24/7 server) and count it

@@ -26,7 +26,7 @@ obj/libsamp.a: $(AMX_SRC) ../third_party/sqlite/sqlite3.c ../third_party/puff/pu
 	$(AR) rcs $@ obj/samp/*.o
 SRC = mp_server.cpp ../src/net/server.cpp ../src/net/lan.cpp ../src/net/online.cpp ../src/net/authcrypto.cpp ../src/net/samp_import.cpp
 
-mp_server: $(SRC) ../src/net/server.h ../src/net/protocol.h ../src/net/lan.h ../src/net/online.h ../src/net/authcrypto.h obj/libmbedtls.a obj/libsamp.a obj/libunrar.a ../src/net/server_samp.inc ../src/net/server_samp_sql.inc ../src/net/server_samp_sscanf.inc ../src/net/samp.h
+mp_server: $(SRC) ../src/net/server.h ../src/net/protocol.h ../src/net/lan.h ../src/net/online.h ../src/net/authcrypto.h obj/libmbedtls.a obj/libsamp.a obj/libunrar.a ../src/net/server_samp.inc ../src/net/server_bridge.inc ../src/net/server_samp_sql.inc ../src/net/server_samp_sscanf.inc ../src/net/samp.h
 	$(CXX) -O2 -std=c++17 -pthread -I../src -I$(MBED)/include $(AMX_FLAGS) $(SRC) obj/libmbedtls.a obj/libsamp.a obj/libunrar.a $(EXTRA) -ldl -lm -o mp_server
 
 obj/mbedtls/%.o: $(MBED)/library/%.c
