@@ -17,6 +17,7 @@
 #include <atomic>
 #include <mutex>
 #include <thread>
+#include <unordered_map>
 #include <vector>
 #include "mp.h"
 #include "progress/progress.h"
@@ -707,6 +708,7 @@ static void SocialFrame();    // 3.63: mp_social.inc (friends, chats, party, com
 static int DzAdjustDamage(int hp, int dmg, bool instant);   // 3.59: helmet vs headshot, DOWN at 5%
 static bool DzHidden();
 static void HudOnConfig(const PktSrvSettings2& h);   // 4.07 (mp_hudset.inc)
+static void AdvTick();   // 4.10 (mp_advhud.inc)
 static void HudReset();
 static void HudRenderExtras();
 static bool BcwOnServer();
@@ -2380,7 +2382,7 @@ public:
         s_bWorldSynced = false;
         s_nWorldNoticed = 0;   // 2.18.2: new connection -> each notice may show once again
         // teleport + logo + sound wait for the Connecting feed and all resources (FinishJoin)
-        if(s_bQuietRejoin) { s_bQuietRejoin = false; StopFeed(); }   // 2.27: same server, another phone: stay where you are
+        if(s_bQuietRejoin) { s_bQuietRejoin = false; StopFeed(); if(JoinFlowActive()) JoinMarkConnected(); }   // 2.27: same server, another phone: stay where you are (4.10: and lift a join screen)
         else if(s_nFeedStep < 0 && s_nFeedRes < 0) { s_nFeedRes = 0; s_nFeedNext = MP_NowMs(); }
         s_nPrevLocalHealth = -1; s_bLocalDead = false; s_fPendingDamage = 0;
     }
@@ -4122,6 +4124,7 @@ void MP::Process()
     if(client.GetState() == NET_DISCONNECTED && !kills.empty()) kills.clear();
     ProcessLan(now);
     ProcessFeed(now);
+    AdvTick();   // 4.10: Advanced Settings ini, saved 0.4 s after the last change
     UpdateLocalStory(now);
     Progress::SetHold(MP::IsOnRp());   // 3.29: no save loads / swaps on Mega Vil (day + weather are the server's)
     Progress::Process(now, settings.fullProgressDefault, client.GetState() == NET_CONNECTED && MP::IsOnDefault(),
@@ -4373,6 +4376,8 @@ static void PSettingsPopup();
 #include "mp_cmds.inc"   // 2.19: chat commands, cheats, player list, chat box, spawn buttons
 #include "mp_samp.inc"   // 3.01: SA-MP dialogs, textdraws, race / derby state of the others
 #include "mp_hudset.inc"  // 4.07: server HUD (Textdraw): colour variant, cents, player, ammo, title logo
+#include <strings.h>
+#include "mp_advhud.inc"  // 4.10: ARM Advanced Settings HUD bridge (Settings > GTA HUD)
 #include "mp_games.inc"  // 2.21: /spawn, /w, races, deathmatch, jobs, teleport events, open world (3.01: derbies, live race positions)
 #include "mp_world.inc"  // 3.01: 3D labels, map icons, actors, gang zones + turf wars, class selection
 #include "mp_bcw.inc"    // 3.04: Brief Case War
@@ -7451,6 +7456,7 @@ void MP::Init(const char* dataDir)
     FloatMenu::AddSection("Connection", SectionConnection);
     FloatMenu::AddSection("Servers", SectionServers);
     FloatMenu::AddSection("Display", SectionDisplay);
+    FloatMenu::AddSection("GTA HUD", SectionGtaHud);   // 4.10: ARM Advanced Settings bridge
     FloatMenu::AddSection("Chat", SectionChat);   // 2.19.6
     FloatMenu::AddSection("Sound", SectionSound);  // 3.00
     FloatMenu::AddSection("Voice", SectionVoice);  // 3.11

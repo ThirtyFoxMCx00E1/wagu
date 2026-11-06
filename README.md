@@ -121,6 +121,14 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **4.10**: black screen fixes, Day Z dynamic mapping, GTA HUD page for ARM Advanced Settings, bigger region picker, LAN Wi-Fi tutorial.
+  - Black screen on join fixed: a quiet rejoin (24/7 shift change, host hand-off, duplicate server merge, "moving to the 24/7 server") never lifted the connection screen. The join screen now also lifts by itself once you are connected (1.5 s after the world is loaded, at most 25 s).
+  - Project Day Z: the cabin interior check ran in a 0.1 s window only, so a slow phone could skip it and spawn in an empty black interior. It now checks every 0.5 s from 2.5 s to 9 s.
+  - Project Day Z dynamic mapping: any GTA SA object model (and SA-MP objects with the pack) as solid map objects for everybody, streamed in within 260 m (max 300 at once). /mapping find <name> searches all 15,694 models (dff, txd, tags) from Host/DayZ/mapping/catalog.txt, /mapping add <id or dff> [distance] puts one in front of you, del / undo / move / rot / near / count. Admins and moderators edit; SA-MP CreateObject / CreateDynamicObject maps and MTA .map files in dayz_maps/ are loaded on start, edits are saved in dayz_mapping.txt.
+  - New MP menu page "GTA HUD": controls the ARM Advanced Settings (libAdvancedSettings.SA.so) HUD ini from the game - position, size and the on / off and number settings of each HUD_* item, "Move the top-right HUD under MP's buttons" (the clock / money / weapon icon no longer cover the region pin, search and gear), and "Restore the original preset". Backup in <ini>.mp_backup.
+  - Region picker: the pin icon has a bigger tap area, and the region dropdown text follows the game's font size (it was small).
+  - LAN: phones that give the hotspot a 10.x.x.x network are treated as Wi-Fi (the server list sweep). New tutorial: docs/LAN_WIFI_TUTORIAL.md.
+
 - **4.09**: CGRP (UG-EDIT) systems on the default server and Mega Vil Futuristic, no green outline on the default server HUD.
   - Dynamic businesses, houses (Home Kit level and admin commands), garages, families, factions, points, motels, ATMs, map boxes, map icons, family / faction HQs and gates, entrances, buildings, family vehicles, information boards, dealership, OOC shop with gold bars, gas stations, drive-thrus, VIP lounges, money bags and gift boxes. Mega Vil keeps its own houses, factions, ATM, bank, dealership and garage; only the missing parts were added there.
   - /sellcar [id] [price] now has the missing /accept car (the car moves to the buyer: Mega Vil garage or My Vehicles on the default server).
@@ -1060,6 +1068,7 @@ Settings are saved in AML's config folder (`net.thirtyfox.mp.ini`, section `[MP]
 - **Custom servers**: a player sets a name and port (1923 or higher) under *Host your own server* and turns on *Host server*. Others tap **Join** next to it in the Servers tab. If it's offline, choose the default server.
 - **Host leaves**: the server isn't lost. Another player takes over as host, and everyone reconnects automatically.
 - **Wi-Fi/data required**: with Wi-Fi, mobile data and hotspot all off, you can't connect.
+- **Local Wi-Fi / hotspot (LAN) tutorial**: step by step, host IP, and every common error with its fix: [docs/LAN_WIFI_TUTORIAL.md](docs/LAN_WIFI_TUTORIAL.md). The default and featured servers need the Discord login (internet); for LAN without internet, host your own custom server (no login).
 - **Different networks (mobile data)**: works automatically since 2.5 through the internet lobby. A dedicated server (below) only gives lower ping.
 - **Dedicated server (PC/VPS/Termux)**:
   ```bash

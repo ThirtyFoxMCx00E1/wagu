@@ -138,6 +138,20 @@ static void JoinFlowProcess(int ped, uint64_t now)
     { JoinOverlayCancel(); return; }   // join failed / left: give the game back
     // 3.53: never hang on the black "Connecting..." screen (a friend on a hotspot looked frozen): no answer
     // within 25 s = give the game back; the join keeps trying in the background and finishes without it
+    // 4.10: black screen fix. A quiet rejoin (24/7 shift change, host hand-off, duplicate merge, "moving to the
+    // 24/7 server") skips the loading feed, so FinishJoin() never ran and nothing lifted the black panel - and
+    // the 25 s watchdog below was off once the client said CONNECTED. Connected + welcomed + no feed running =
+    // the join is done: reveal the camera now.
+    if((s_nJoinPhase == JP_COVER || s_nJoinPhase == JP_BLACK) && !s_bJoinConnected && client.GetState() == NET_CONNECTED
+       && s_nFeedStep < 0 && s_nFeedRes < 0 && now - s_nJoinStartMs > 1500)
+    {
+        static int s_nQuietLogs = 0;
+        if(s_nQuietLogs < 4) { ++s_nQuietLogs; logger->Info("4.10: join screen lifted (connected, no loading feed)"); }
+        s_bJoinConnected = true;
+    }
+    // 4.10: the hard cap: connected or not, the black panel never stays more than 25 s
+    if((s_nJoinPhase == JP_COVER || s_nJoinPhase == JP_BLACK) && !s_bJoinConnected && client.GetState() == NET_CONNECTED && now - s_nJoinStartMs > 25000)
+        s_bJoinConnected = true;
     if((s_nJoinPhase == JP_COVER || s_nJoinPhase == JP_BLACK) && !s_bJoinConnected && client.GetState() != NET_CONNECTED && now - s_nJoinStartMs > 25000)
     {
         JoinOverlayCancel();

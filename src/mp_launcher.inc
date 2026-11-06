@@ -693,7 +693,9 @@ static bool LRegionRawTap(ImVec2 p, float sz)
     float x, y; uint64_t t;
     { std::lock_guard<std::mutex> lk(s_RawTapMx); if(!s_bRawTap) return false; s_bRawTap = false; x = s_fRawTapX; y = s_fRawTapY; t = s_nRawTapMs; }
     if(MP_NowMs() - t > 500 || VKeyboard::IsOpen()) return false;
-    const float m = UI::S(6);   // a few pixels of slack: the pin is small on phones
+    // 4.10: much more slack (was 6 px). With ARM's AdvancedSettings HUD the pin sits right on the moved
+    // clock / money / weapon icon and fingers land a bit off it - a third of the icon around it counts.
+    const float m = ImMax(UI::S(14), sz * 0.35f);
     if(x < p.x - m || y < p.y - m || x > p.x + sz + m || y > p.y + sz + m) return false;
     const char* above = "";
     if(!FloatMenu::LauncherOwnsPoint(x, y, &above)) return false;
@@ -728,8 +730,17 @@ static void LRegionPicker(const std::vector<LanServer>& nearby)
 {
     if(!s_bRegionPick) return;
     const ImVec2 ds = ImGui::GetIO().DisplaySize;
-    const float rowH = UI::S(62), gap = UI::S(6), pw = UI::S(12);
-    const float w = ImMin(ImMax(UI::S(470), ds.x * 0.26f), ds.x - UI::S(20));
+    // 4.10: the text follows the launcher panel's own font size (Settings > Display > Font scale) - it was
+    // a fixed 26 / 19 px, smaller than the server list next to it. The rows and the width grow with it.
+    const float fs1 = ImMax(UI::S(26), ImGui::GetFontSize() * 1.08f), fs2 = ImMax(UI::S(19), ImGui::GetFontSize() * 0.86f);
+    const float rowH = ImMax(UI::S(62), fs1 * 2.0f), gap = UI::S(6), pw = UI::S(12);
+    float wantW = 0;
+    {
+        ImFont* f = ImGui::GetFont();
+        float l1w = f->CalcTextSizeA(fs1, FLT_MAX, 0, "Oceania").x, l2w = f->CalcTextSizeA(fs2, FLT_MAX, 0, "offline  |  888 servers").x;
+        wantW = pw * 2 + UI::S(34) + l1w + UI::S(28) + l2w + UI::S(16);
+    }
+    const float w = ImMin(ImMax(ImMax(UI::S(470), ds.x * 0.26f), wantW), ds.x - UI::S(20));
     const float h = pw * 2 + (REGION_COUNT + 1) * rowH + REGION_COUNT * gap;
     float x = s_vRegionBtn.x, y = s_vRegionBtn.y + s_fRegionBtn + UI::S(8);
     if(x + w > ds.x - UI::S(10)) x = ds.x - UI::S(10) - w;
@@ -782,10 +793,10 @@ static void LRegionPicker(const std::vector<LanServer>& nearby)
                 if(ms >= 0) snprintf(l2, sizeof(l2), "%d ms  |  %d servers", ms, cnt[i]);
                 else snprintf(l2, sizeof(l2), "%s  |  %d servers", ms == -2 ? "offline" : "-- ms", cnt[i]);
             }
-            const float fs1 = UI::S(26), fs2 = UI::S(19);
-            const ImVec2 s2 = UI::Font()->CalcTextSizeA(fs2, FLT_MAX, 0, l2);
-            dl->AddText(UI::Font(), fs1, ImVec2(a.x + UI::S(34), a.y + (rowH - fs1) * 0.5f), tc, l1);
-            dl->AddText(UI::Font(), fs2, ImVec2(b.x - UI::S(16) - s2.x, a.y + (rowH - fs2) * 0.5f), sc, l2);
+            ImFont* rf = ImGui::GetFont();   // 4.10: the panel's font (was the fixed UI::Font())
+            const ImVec2 s2 = rf->CalcTextSizeA(fs2, FLT_MAX, 0, l2);
+            dl->AddText(rf, fs1, ImVec2(a.x + UI::S(34), a.y + (rowH - fs1) * 0.5f), tc, l1);
+            dl->AddText(rf, fs2, ImVec2(b.x - UI::S(16) - s2.x, a.y + (rowH - fs2) * 0.5f), sc, l2);
             if(i >= 0 && cur == i) dl->AddCircleFilled(ImVec2(a.x + UI::S(18), a.y + rowH * 0.5f), UI::S(6), IM_COL32(34, 197, 94, 255));   // lobby broker in use
             if(tap)
             {

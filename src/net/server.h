@@ -12,6 +12,7 @@
 #include "mw3.h"   // 3.23
 #include "rp.h"
 #include "dayz.h"    // 3.25: Mega Vil Futuristic
+#include "dz_map.h"  // 4.10: Project Day Z dynamic mapping
 #include "anticheat.h"   // 3.50
 #include <string>
 #include <map>
@@ -328,6 +329,12 @@ private:
     struct DzPiece { DzBaseRow r; std::string owner; };
     std::vector<DzPiece> m_DzBase; uint32_t m_nDzBaseId = 1; bool m_bDzBaseDirty = false; uint64_t m_nDzBaseSaveAt = 0;
     void DzBaseLoad(); void DzBaseSave(); void DzBaseSend(int slot); void DzBaseSendOne(const DzPiece& p, uint8_t op);
+    // 4.10: dynamic mapping (net/server_dzmap.inc)
+    struct DzMapObj { DzMapRow r; std::string owner; };
+    std::vector<DzMapObj> m_DzMap; uint32_t m_nDzMapId = 1; bool m_bDzMapDirty = false; uint32_t m_DzMapLast[MP_MAX_PLAYERS] = {};
+    void DzMapLoad(); void DzMapSave(); void DzMapSend(int slot); void DzMapSendOne(const DzMapRow& r, uint8_t op);
+    void DzMapAddRow(uint16_t model, float x, float y, float z, float rx, float ry, float rz, int interior, uint8_t flags, const char* owner);
+    int  DzMapImportText(const char* text, uint8_t flags); bool DzMapCmd(int slot, const char* arg);
 
     // ---- 4.09: CGRP systems (server_cgrp.inc, net/cgrp.h) - the default server + Mega Vil Futuristic ----
     struct CgEnt { CgRow r; std::string ownerKey; int32_t till = 0, fee = 0; int capSlot = -1; uint64_t capStart = 0, openUntil = 0; int usedBy = -1; std::map<std::string, uint64_t> took; };

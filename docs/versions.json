@@ -1,6 +1,7 @@
 {
-"latest": "4.09",
+"latest": "4.10",
 "supported": [
+"4.10",
 "4.09",
 "4.08",
 "4.07.2",
@@ -103,6 +104,18 @@
 "3.04.6"
 ],
 "versions": [
+{
+"v": "4.10",
+"summary": "black screen fixes, Day Z dynamic mapping, GTA HUD page for ARM Advanced Settings, bigger region picker, LAN Wi-Fi tutorial.",
+"items": [
+"Black screen on join fixed: a quiet rejoin (24/7 shift change, host hand-off, duplicate server merge, \"moving to the 24/7 server\") never lifted the connection screen. The join screen now also lifts by itself once you are connected (1.5 s after the world is loaded, at most 25 s).",
+"Project Day Z: the cabin interior check ran in a 0.1 s window only, so a slow phone could skip it and spawn in an empty black interior. It now checks every 0.5 s from 2.5 s to 9 s.",
+"Project Day Z dynamic mapping: any GTA SA object model (and SA-MP objects with the pack) as solid map objects for everybody, streamed in within 260 m (max 300 at once). /mapping find <name> searches all 15,694 models (dff, txd, tags) from Host/DayZ/mapping/catalog.txt, /mapping add <id or dff> [distance] puts one in front of you, del / undo / move / rot / near / count. Admins and moderators edit; SA-MP CreateObject / CreateDynamicObject maps and MTA .map files in dayz_maps/ are loaded on start, edits are saved in dayz_mapping.txt.",
+"New MP menu page \"GTA HUD\": controls the ARM Advanced Settings (libAdvancedSettings.SA.so) HUD ini from the game - position, size and the on / off and number settings of each HUD_* item, \"Move the top-right HUD under MP's buttons\" (the clock / money / weapon icon no longer cover the region pin, search and gear), and \"Restore the original preset\". Backup in <ini>.mp_backup.",
+"Region picker: the pin icon has a bigger tap area, and the region dropdown text follows the game's font size (it was small).",
+"LAN: phones that give the hotspot a 10.x.x.x network are treated as Wi-Fi (the server list sweep). New tutorial: docs/LAN_WIFI_TUTORIAL.md."
+]
+},
 {
 "v": "4.09",
 "summary": "CGRP (UG-EDIT) systems on the default server and Mega Vil Futuristic, no green outline on the default server HUD.",

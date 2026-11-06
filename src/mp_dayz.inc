@@ -110,6 +110,11 @@ static void DzBaseClear();
 static void DzBaseToggle();
 static void DzBaseDraw(ImDrawList* bg, ImVec2 ds, int ped);
 static void DzBaseDoorButton(ImVec2 ds, int ped);
+// 4.10: dynamic mapping (mp_dzmap.inc)
+static void DzMapOnPacket(const uint8_t* d, int len);
+static void DzMapTick(const Vec3& me, uint64_t now);
+static void DzMapClear();
+static bool DzMapLocalCmd(const char* arg);
 static bool DzBaseOpen();
 static bool DzOnServer()
 {
@@ -678,6 +683,7 @@ static void DzShutdown()
     DzCabinClear();
     DzLootClear();
     DzBaseClear();   // 4.08
+    DzMapClear();    // 4.10
     for(auto& z : s_Dz.zeds) if(z.ped > 0) Game::DeleteChar(z.ped);
     for(int o : s_Dz.ruinObjs) if(o > 0) Game::DeleteWorldObject(o);
     if(s_Dz.bagObj) { BoneAttach::Stop(s_Dz.bagObj); Game::DeleteWorldObject(s_Dz.bagObj); }
@@ -742,6 +748,7 @@ static void DzOnPacket(const uint8_t* d, int len)
         }
         case PKT_DZ_LIST: DzXList(d, len); break;
         case PKT_DZ_BASE: DzBaseOnPacket(d, len); break;   // 4.08
+        case PKT_DZ_MAP:  DzMapOnPacket(d, len); break;    // 4.10
         case PKT_DZ_EVENT:
         {
             if(len < (int)offsetof(PktDzEvent, text)) return;
@@ -1070,10 +1077,21 @@ static void DzProcess(int ped, uint64_t now)
         DzCabinTick();
         if(now % 2000 < 40) { Game::FreezeChar(ped, true); Game::SetCharVisible(ped, false); }
         // the interior did not load (other game version / mod) -> the outdoor cabin
-        if(!s_Dz.cabinOutdoor && now - s_Dz.cabinAt > 2500 && now - s_Dz.cabinAt < 2600)
+        // 4.10: black screen fix. This check only ran in a 100 ms window (2.5 - 2.6 s): one slow frame while a
+        // 250 player server streams in and it never ran, leaving the camera in an empty (black) interior.
+        // Now it runs every 0.5 s from 2.5 s to 9 s; the interior has to be missing on 2 checks in a row.
+        static uint64_t s_nCabinChkAt = 0; static int s_nCabinMiss = 0;
+        if(now - s_Dz.cabinAt < 2500) { s_nCabinChkAt = 0; s_nCabinMiss = 0; }
+        if(!s_Dz.cabinOutdoor && now - s_Dz.cabinAt >= 2500 && now - s_Dz.cabinAt < 9000 && now - s_nCabinChkAt >= 500)
         {
+            s_nCabinChkAt = now;
             float g = Game::GroundZBelow(kDzCabinLook.x, kDzCabinLook.y, kDzCabinLook.z + 2.0f);
-            if(g < kDzCabinLook.z - 3.0f || g > kDzCabinLook.z + 1.0f) { DzCabinClear(); s_Dz.cabinOutdoor = true; DzEnterCabin(ped); }
+            if(g < kDzCabinLook.z - 3.0f || g > kDzCabinLook.z + 1.0f) ++s_nCabinMiss; else s_nCabinMiss = 0;
+            if(s_nCabinMiss >= 2)
+            {
+                logger->Info("4.10: DZ cabin interior missing (ground %.1f) - outdoor cabin", g);
+                s_nCabinMiss = 0; DzCabinClear(); s_Dz.cabinOutdoor = true; DzEnterCabin(ped);
+            }
         }
         if(s_Dz.playAsked && now - s_Dz.playAsked > 6000) s_Dz.playAsked = 0;
         return;
@@ -1122,6 +1140,7 @@ static void DzProcess(int ped, uint64_t now)
     DzPickTick(ped, now);
     DzLootTick(me);
     DzBaseTick(me, now);   // 4.08
+    DzMapTick(me, now);    // 4.10: dynamic mapping
     DzMakeBag(ped);
     DzZedTick(ped, me, now);
     DzRuinsTick(me);
@@ -1250,6 +1269,7 @@ static bool DzCommand(const char* cmd, const char* arg)
     static const char* const local[] = { "inv", "bag", "map", "gps", "compass", "hud", "armor", "weapon", "fps", "ping", "eat", "drink", "heal",
                                          "bandage", "cure", "painkillers", "drop", "pickup", "refuel", "fuel", "list", "tab", "online", "journal", "debug",
                                          "achievements", "ach", "skills", "checkbody", "music", "ambient", "dzmodels", "stuck", "unstuck", "build", "base" };
+    if((!strcmp(c, "mapping") || !strcmp(c, "mo")) && DzMapLocalCmd(arg)) return true;   // 4.10: find / add on the phone
     if(!strcmp(c, "dzmodels")) { DzModelsReport(arg && strstr(arg, "reset")); return true; }   // 4.00: /dzmodels [reset]
     for(const char* l : local) if(!strcmp(c, l)) { DzLocalCmd(c); return true; }
     if(!strcmp(c, "panel") || !strcmp(c, "f2")) { s_Dz.panelOpen = !s_Dz.panelOpen; return true; }
@@ -2027,6 +2047,7 @@ static void DzDrawCabin(float t)
 
 #include "mp_dayz_mta.inc"   // 3.59: the MTA DayZ systems + textures
 #include "mp_dzbase.inc"     // 4.08: base building
+#include "mp_dzmap.inc"      // 4.10: dynamic mapping
 static bool DzBaseOpen() { return s_DzB.open; }
 
 // ---- main render -------------------------------------------------------------------------------

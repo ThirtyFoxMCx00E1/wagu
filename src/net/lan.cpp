@@ -65,6 +65,8 @@ std::vector<LanIface> LAN::Interfaces()
             f.cellular = !IsLanName(f.name);
             // 3.34: hotspot / tethering interfaces with odd names still use a private /24 - treat them as LAN
             if(f.cellular && ((ip >> 16) == 0xC0A8 || (ip >> 20) == 0xAC1) && f.mask >= 0xFFFFFF00u) f.cellular = false;
+            // 4.10: some phones give the hotspot a 10.x.x.x/24 (Android 11+ random subnets) - LAN too, unless it is the mobile data link
+            if(f.cellular && (ip >> 24) == 10 && f.mask >= 0xFFFFFF00u && strncmp(f.name, "rmnet", 5) && strncmp(f.name, "ccmni", 5) && strncmp(f.name, "seth", 4) && strncmp(f.name, "v4-", 3) && strncmp(f.name, "clat", 4)) f.cellular = false;
             out.push_back(f);
         }
     }

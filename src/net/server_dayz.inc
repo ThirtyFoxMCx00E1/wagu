@@ -228,6 +228,7 @@ void MPServer::DzLoad()
     fclose(f);
     Log("DAYZ: %d survivors loaded from %s", n, s_szDzFile);
     DzBaseLoad();   // 4.08
+    DzMapLoad();    // 4.10
 }
 // 3.60: a position the survivor really stood on. While on the connection screen the ped is parked at
 // the cabin (x 2493 y -1700 = Grove Street, z -100 / interior z 1015) - that used to be saved as
@@ -262,6 +263,7 @@ void MPServer::DzSave()
     fclose(f); rename(tmp.c_str(), s_szDzFile);
     m_bDzDirty = false;
     if(m_bDzBaseDirty) DzBaseSave();   // 4.08
+    if(m_bDzMapDirty) DzMapSave();     // 4.10
 }
 
 void MPServer::DzFresh(int slot)
@@ -324,6 +326,7 @@ void MPServer::DzOnJoin(int slot, bool fresh)
     if(!IsDayzServer()) return;
     DzSendLoot(slot);
     DzBaseSend(slot);   // 4.08
+    DzMapSend(slot);    // 4.10: dynamic mapping
     DzSetColor(slot);
     DzSendWeather(slot);
     if(m_Dz[slot].skin) DzEvent(slot, DZEV_SKIN, 0, 0, m_Dz[slot].skin, nullptr, "");
@@ -529,6 +532,7 @@ bool MPServer::DzCommand(int slot, const char* cmd, const char* arg)
     if(!IsDayzServer()) return false;
     DzSurvivor& z = m_Dz[slot]; Slot& s = m_Slots[slot];
     auto IS = [&](const char* c) { return !strcmp(cmd, c); };
+    if(IS("mapping") || IS("mo")) return DzMapCmd(slot, arg);   // 4.10: dynamic mapping
     if(IS("help") || IS("cmds") || IS("commands"))
     {
         DzMsg(slot, DZC_YELLOW, "--- Project Day Z commands (44+) ---");
@@ -538,6 +542,7 @@ bool MPServer::DzCommand(int slot, const char* cmd, const char* arg)
         DzMsg(slot, DZC_WHITE, "/pm <id> <text> /me /do /shout /whisper /time /fog /spawns /kill /rules /credits /admins /report /music");
         DzMsg(slot, DZC_WHITE, "/skills /skill <n> /achievements /journal /undress /weather /station /checkbody /treat <id> /chat /vars");
         DzMsg(slot, DZC_WHITE, "/build - base building (4.08): foundation, walls, doorway, window frame, ceiling, door (a Toolbox needed)");
+        DzMsg(slot, DZC_WHITE, "/mapping - dynamic mapping (4.10): any GTA SA object model, map files (SA-MP / MTA) - /mapping help");
         DzMsg(slot, DZC_GREY, "Keys: 6 / F1 journal (debug monitor), 7 GPS, 8 compass, TAB player list. Admin: /dzset /dzvars /respawnvehicles /dzweather");
         DzMsg(slot, DZC_GREY, "Tap the gear button or type /panel for the control panel. Most commands open their window too.");
         DzEvent(slot, DZEV_UI, 1, 0, 0, nullptr, "");
@@ -1252,3 +1257,4 @@ void MPServer::DzCheckBody(int slot, int id)
 }
 
 #include "server_dzbase.inc"   // 4.08: base building
+#include "server_dzmap.inc"    // 4.10: dynamic mapping
