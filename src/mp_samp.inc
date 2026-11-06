@@ -306,7 +306,7 @@ static void RenderDialog()
 #define SAMP_TD_MAX   288
 #define SAMP_TD_LOCAL 256
 enum { TD_GAMETEXT_1 = SAMP_TD_LOCAL, TD_GAMETEXT_3, TD_GAMETEXT_4, TD_GAMETEXT_6, TD_EVENT_BOX, TD_EVENT_TOP, TD_TURF, TD_CLASS };
-struct SampTd { bool used = false; PktTextDraw d; uint64_t until = 0; };
+struct SampTd { bool used = false; PktTextDraw d; uint64_t until = 0; ImVec4 rect{ 0, 0, 0, 0 }; };   // 4.11: rect = drawn box (SelectTextDraw taps)
 static SampTd s_Td[SAMP_TD_MAX];
 
 static void TdSet(int id, const PktTextDraw& d, int ms = 0)
@@ -467,7 +467,7 @@ static void RenderTextDraws(ImDrawList* dl)
         SampTd& t = s_Td[i];
         if(!t.used) continue;
         if(t.until && now >= t.until) { t.used = false; continue; }
-        TdDrawOne(dl, t.d, 0, 0, kx, ky);
+        t.rect = TdDrawOne(dl, t.d, 0, 0, kx, ky);
     }
 }
 

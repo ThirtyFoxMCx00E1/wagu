@@ -375,7 +375,13 @@ static void RpDrawRulesUi()
     ImVec2 ds = ImGui::GetIO().DisplaySize;
     const float w = std::min(ds.x * 0.62f, UI::S(1100)), h = std::min(ds.y * 0.86f, UI::S(860));
     const ImVec2 p0(ds.x * 0.5f - w * 0.5f, ds.y * 0.5f - h * 0.5f), p1(p0.x + w, p0.y + h);
-    ImDrawList* dl = ImGui::GetForegroundDrawList();
+    // 4.11: one full-screen window holds the dimmer, the panel AND the button. The panel used to be on the
+    // foreground draw list, which ImGui draws over every window - it covered its own I AGREE button.
+    ImGui::SetNextWindowPos(ImVec2(0, 0)); ImGui::SetNextWindowSize(ds); ImGui::SetNextWindowFocus();
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 0));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0)); ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+    ImGui::Begin("##RpRulesUi", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+    ImDrawList* dl = ImGui::GetWindowDrawList();
     dl->AddRectFilled(ImVec2(0, 0), ds, IM_COL32(0, 0, 0, 110));
     dl->AddRectFilled(p0, p1, IM_COL32(8, 14, 24, 238), UI::S(14));
     dl->AddRect(p0, p1, RpCol(RP_SKY, 1), UI::S(14), 0, UI::S(2.5f));
@@ -392,9 +398,9 @@ static void RpDrawRulesUi()
         y += lh;
     }
     const float bw = UI::S(300), bh = UI::S(70);
-    BcwBeginOverlay("##RpRulesUi", ImVec2(ds.x * 0.5f - bw * 0.5f - UI::S(14), p1.y - bh - UI::S(36)), ImVec2(bw + UI::S(28), bh + UI::S(28)), 0.0f);
+    ImGui::SetCursorScreenPos(ImVec2(ds.x * 0.5f - bw * 0.5f, p1.y - bh - UI::S(22)));
     if(BcwTeamButton("I AGREE - CLOSE##rru", RP_SKY, ImVec2(bw, bh), true, false)) s_RpRulesUi.open = false;
-    BcwEndOverlay();
+    ImGui::End(); ImGui::PopStyleVar(2); ImGui::PopStyleColor();
 }
 
 // ---- welcome in the chat -----------------------------------------------------------------------

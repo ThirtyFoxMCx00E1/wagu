@@ -13,10 +13,10 @@
 // phones refuse servers older than that too (they would let old phones in).
 // 3.10: build 31000. MP_MIN_BUILD stays 30406 and the lobby stays thirtyfox/mp5/: 3.04.6 (no cheats)
 // and 3.10 phones play together on the same servers; only 3.04.5 and older (mp4) stay shut out.
-#define MP_BUILD 41000   // 4.10
+#define MP_BUILD 41100   // 4.11
 #define MP_MIN_BUILD       30406
 #define MP_AUTH_MIN_BUILD  32106   // 3.21.6: servers with the login system refuse older phones (they could not log in)
-#define MP_VERSION_STR     "4.10"
+#define MP_VERSION_STR     "4.11"
 #define MP_VOICE_BUILD     31100   // 3.11: phones from this build on get voice packets
 #define MP_DOWNLOAD_URL    "mpsamp-open.github.io"   // 4.05.4: new website (mpsamp-open org); thirtyfoxmcx00e1.github.io/wagu still works as a backup
 #define MP_DEFAULT_HOST    "127.0.0.1"
@@ -144,6 +144,7 @@ enum ePacket : uint8_t
     PKT_CG_ME,          // S->C          4.09: your CGRP state (family, faction, gold bars, admin level ...)
     PKT_CG_ACT,         // S->C          4.09: do something on the phone (teleport, weapon, skin, freeze ...)
     PKT_DZ_MAP,         // S->C          4.10: Project Day Z dynamic mapping objects (net/dz_map.h)
+    PKT_SAMP,           // S<->C         4.11: a SA-MP gamemode runs on this server (net/samp.h)
 };
 
 enum eRegion : uint8_t { REGION_ASIA = 0, REGION_EUROPE, REGION_NA, REGION_OCEANIA, REGION_COUNT };

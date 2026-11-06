@@ -164,6 +164,28 @@ static int AdvClearTopRight()
     return moved;
 }
 
+// 4.11: while the MP launcher is open, the Advanced Settings items in the top right (clock, money,
+// weapon icon ... under the search / refresh / region pin / gear buttons) move down by themselves and
+// go back when it closes - the pin can always be tapped, the preset stays as it was.
+static std::vector<std::pair<std::string, std::string>> s_AdvLaunchSaved;
+static void AdvLauncher(bool open)
+{
+    if(open)
+    {
+        AdvFind(false);
+        if(!s_Adv.found || !s_AdvLaunchSaved.empty()) return;
+        for(auto& sct : s_Adv.sects) if(AdvKey* k = AdvGet(sct.name.c_str(), "PosY")) s_AdvLaunchSaved.push_back({ sct.name, k->val });
+        if(AdvClearTopRight() == 0) { s_AdvLaunchSaved.clear(); return; }
+        s_Adv.saveAt = MP_NowMs();   // at once
+        logger->Info("4.11: launcher open - Advanced Settings top-right HUD moved down");
+    }
+    else if(!s_AdvLaunchSaved.empty())
+    {
+        for(auto& kv : s_AdvLaunchSaved) if(AdvKey* k = AdvGet(kv.first.c_str(), "PosY")) AdvSet(*k, kv.second);
+        s_AdvLaunchSaved.clear(); s_Adv.saveAt = MP_NowMs();
+    }
+}
+
 static void SectionGtaHud(void*)
 {
     AdvFind(false);

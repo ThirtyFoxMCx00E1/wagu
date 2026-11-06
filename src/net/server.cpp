@@ -197,6 +197,7 @@ bool MPServer::Start(uint16_t port, const char* serverName, MPServerLogFn log, i
         m_bTurfWars = false;
         m_nBasePerms = PERM_NO_CHEATS; m_nPerms = PERM_NO_CHEATS;
     }
+    if(m_szSampDir[0]) SampLoad(m_szSampDir);   // 4.11: a SA-MP gamemode folder
     m_bRunning = true;
     m_Thread = std::thread(&MPServer::Loop, this);
     Log("Server \"%s\" listening on UDP port %u%s", m_szName, port, m_bPersistent ? " (persistent)" : "");
@@ -213,6 +214,7 @@ void MPServer::Stop()
         if(IsRpServer()) RpSave();     // 3.25
         if(IsDayzServer()) DzSave();   // 3.58
         if(m_bHomeDirty) HomeSave();   // 3.39.1: never lose a house that was just built
+        SampUnload();                   // 4.11: OnGameModeExit (the gamemode saves its players)
         if(m_bProgDirty) ProgSave();   // 3.39.1
         PktReject rj; rj.type = PKT_REJECT; rj.reason = REJECT_SHUTDOWN;
         for(int k = 0; k < 2; ++k) Broadcast(&rj, sizeof(rj));
@@ -592,6 +594,7 @@ void MPServer::Drop(int slot, uint8_t reason)
     EndPair(slot);
     for(int i = 0; i < MP_MAX_PLAYERS; ++i) if(m_Slots[i].used && m_Slots[i].pairReq == slot) m_Slots[i].pairReq = MP_INVALID_ID;
     Log("%s (id %d) left (%s)", m_Slots[slot].name, slot, reason == LEAVE_TIMEOUT ? "Timeout" : (reason == LEAVE_KICK ? "Kicked" : "Quit"));
+    SampOnLeave(slot, reason);   // 4.11: OnPlayerDisconnect (0 timeout, 1 quit, 2 kick = SA-MP's)
     m_Slots[slot].used = false;
     BcwOnLeave(slot);   // 3.04
     Mw3OnLeave(slot);   // 3.23
@@ -675,6 +678,7 @@ void MPServer::Loop()
             DzTick(now);    // 3.58
             HomeTick(now);  // 3.39
             CgTick(now);    // 4.09: CGRP systems
+            SampTick(now);  // 4.11: SA-MP gamemode timers
             ProgTick(now);  // 3.39.1
         }   // 3.04: 10 Hz referee
         if(now - lastCheck > 1000)
@@ -1073,6 +1077,7 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             if(s.pair != MP_INVALID_ID) SendGroupLinks(slot);   // 2.31: whole mission group
             SendPickups(slot);   // 2.13: weapons lying around
             SendJoinExtras(slot, fresh);   // 3.01: turf, teams, welcome dialog, banner textdraw
+            if(fresh && m_bSampLoaded) SampOnJoin(slot);   // 4.11: OnPlayerConnect
             BcwOnJoin(slot, fresh);        // 3.04: Brief Case War state
             Mw3OnJoin(slot, fresh);        // 3.23: MW3 state
             RpOnJoin(slot, fresh);         // 3.25: Mega Vil Futuristic
@@ -1103,6 +1108,7 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
                 me.hasPos = true;
             }
             if(CgOn()) CgSync(slot, p.d);   // 4.09: speed cameras
+            if(m_bSampLoaded) SampOnSync(slot, p.d);   // 4.11
             const uint8_t stateMask = SYNC_IN_CAR | SYNC_DEAD | SYNC_MISSION | SYNC_CUTSCENE | SYNC_DRIVER;
             bool important = ((p.d.flags ^ m_Slots[slot].lastFlags) & stateMask) != 0;
             if((m_Slots[slot].lastFlags & SYNC_DEAD) && !(p.d.flags & SYNC_DEAD))
@@ -1317,6 +1323,7 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             p.text[MP_CHAT_LEN - 1] = 0;
             Log("[chat] %s: %s", m_Slots[slot].name, p.text);
             if(IsDayzServer() && DzChat(slot, p.text)) break;   // 3.58: party chat colours / commands
+            if(m_bSampLoaded && !SampOnChat(slot, p.text)) break;   // 4.11: OnPlayerText (0 = not shown) / a /command
             if(IsRpServer())
             {   // 3.25: roleplay: people hear you only when they are close ("Name says: ...")
                 PktRpCmd rc; memset(&rc, 0, sizeof(rc)); rc.type = PKT_RP_CMD; rc.cmd = RPC_CHAT; rc.a = RPH_SAY;
@@ -1359,6 +1366,7 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             RpOnDeath(slot, p.killer == MP_INVALID_ID ? -1 : p.killer);    // 3.25
             DzOnDeath(slot, p.killer == MP_INVALID_ID ? -1 : p.killer, p.weapon);   // 3.58
             Mw3OnDeath(slot, p.killer == MP_INVALID_ID ? -1 : p.killer, p.weapon);   // 3.23
+            if(m_bSampLoaded) SampOnDeath(slot, p.killer == MP_INVALID_ID ? -1 : p.killer, p.weapon);   // 4.11
             Broadcast(&p, sizeof(p));
             break;
         }
@@ -1616,9 +1624,12 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
         {
             if(slot < 0 || len < (int)sizeof(PktDialogResp)) return;
             PktDialogResp r; memcpy(&r, data, sizeof(r));
-            if(AcDialog(slot, r) && CgOn()) CgDialog(slot, r);   // 3.50: dialog hack; 4.09: CGRP dialogs (ids 0x6000-0x60FF)
+            if(AcDialog(slot, r)) { if(CgOn()) CgDialog(slot, r); if(m_bSampLoaded) SampOnDialog(slot, r); }   // 3.50: dialog hack; 4.09: CGRP dialogs (ids 0x6000-0x60FF); 4.11: SA-MP
             break;
         }
+        case PKT_SAMP:   // 4.11: SA-MP gamemode (commands, textdraw clicks, checkpoints)
+            SampHandle(slot, (const uint8_t*)data, len);
+            break;
         case PKT_JACK:   // 2.19: carjack another player
         {
             if(slot < 0 || len < (int)sizeof(PktJack)) return;
@@ -2071,6 +2082,7 @@ void MPServer::RaceQueueTick(uint64_t now, bool changed)
 #include "server_ac.inc"    // 3.50: anti-cheat (Nex-AC)
 #include "server_admin.inc" // 3.54: admin / moderator commands
 #include "server_cgrp.inc"  // 4.09: CGRP systems
+#include "server_samp.inc"  // 4.11: SA-MP gamemodes (Pawn AMX + SA-MP natives)
 
 // 3.04.6: an old MP version tried to join: log it once per phone every 10 minutes (console + the
 // --outdated-log file of the 24/7 server) and count it

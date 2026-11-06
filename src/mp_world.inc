@@ -424,6 +424,7 @@ static void SampOnTeam(const PktTeam& t) { if(t.id < MP_MAX_PLAYERS) s_Team[t.id
 static void SampOnDialog(const PktDialog& d)
 {
     s_bServer301 = true;
+    if(d.dialogId == 0xFFFF) { if(s_Dlg.open && s_Dlg.fromServer) s_Dlg.open = false; return; }   // 4.11: ShowPlayerDialog(-1) hides it
     // 3.53.1: the small "Welcome to MP LAN Server" box of older servers came before the real RULES window
     if(d.dialogId == 1 && MP::IsOnDefault() && !strncmp(d.info, "{FFFFFF}Welcome to ", 19)) return;
     ShowDialog(d.dialogId, d.style <= DIALOG_STYLE_TABLIST_HEADERS ? d.style : DIALOG_STYLE_MSGBOX, d.caption, d.info, d.button1, d.button2, nullptr, 0, true);
@@ -444,6 +445,7 @@ static void SampReset()
     for(int i = 0; i < SAMP_TD_LOCAL; ++i) TdHide(i);
     if(s_Dlg.open && s_Dlg.fromServer) s_Dlg.open = false;
     s_bServer301 = false; s_nNextTeamSend = 0;
+    SampSrvReset();   // 4.11
     s_RQ = RaceQueue();   // the new server has its own queue
     TurfInit();
 }
@@ -487,6 +489,7 @@ static void RenderSamp()
         if(!s_Class.active) { RenderLabels(dl); RenderBubbles(dl); }   // class selection: only the skin
     }
     RenderTextDraws(dl);
+    if(client.GetState() == NET_CONNECTED) SampSrvRender(dl);   // 4.11: SA-MP gamemode labels, checkpoints, clickable textdraws, keys
     RenderClassSelect();
     RenderDialog();
 }

@@ -1,3 +1,5 @@
+#include <sys/stat.h>
+#include <string>
 #include <ctype.h>
 #include <vector>
 #include <string>
@@ -36,8 +38,21 @@ static std::atomic<bool> g_bQuit(false);
 static void OnSignal(int) { g_bQuit = true; }
 
 static char dCC[MP_CC_LEN] = "", dMode[MP_MODE_LEN] = "", dTags[MP_TAGS_LEN] = "", dDesc[MP_DESC_LEN] = ""; static int dModeCol = 0;   // 4.03
+// 4.11: --samp / --samp-test take a folder, or a .rar / .zip / .amx (unpacked next to it, <file>_samp/)
+#include "net/samp_import.h"
+static std::string SampResolve(const char* path)
+{
+    struct stat st; if(stat(path, &st) == 0 && S_ISDIR(st.st_mode)) { std::string r = SampFindRoot(path); return r.empty() ? path : r; }
+    std::string dest = std::string(path) + "_samp", root, msg;
+    { std::string r = SampFindRoot(dest); if(!r.empty()) { printf("[samp] using %s (already unpacked)\n", r.c_str()); return r; } }
+    if(!SampImport(path, dest, root, msg)) { printf("[samp] %s: %s\n", path, msg.c_str()); return path; }
+    printf("[samp] %s: %s -> %s\n", path, msg.c_str(), root.c_str());
+    return root;
+}
 int main(int argc, char** argv)
 {
+    // 4.11: --samp-test <folder> ["cmd;cmd;dlg:1:0:text"] = run a SA-MP gamemode with one pretend player
+    for(int i = 1; i + 1 < argc; ++i) if(!strcasecmp(argv[i], "--samp-test")) { MPServer t; return t.SampTestRun(SampResolve(argv[i + 1]).c_str(), i + 2 < argc ? argv[i + 2] : ""); }
     int port = argc > 1 ? atoi(argv[1]) : MP_DEFAULT_PORT;
     const char* name = argc > 2 ? argv[2] : (port == MP_DEFAULT_PORT ? MP_DEFAULT_SERVER_NAME : (port == MP_BCW_PORT ? MP_BCW_SERVER_NAME : (port == MP_MW3_PORT ? MP_MW3_SERVER_NAME : (port == MP_RP_PORT ? MP_RP_SERVER_NAME : "MP Server"))));   // 2.29: port 1922 = the default server, 3.04: 1930 = Brief Case War
     int maxPlayers = argc > 3 ? atoi(argv[3]) : MP_STD_MAX_PLAYERS;
@@ -102,6 +117,8 @@ int main(int argc, char** argv)
 
     MPServer server;
     server.SetPersistent(persistent);
+    // 4.11: --samp <folder> = run a SA-MP server folder (server.cfg, gamemodes/, filterscripts/, scriptfiles/)
+    for(int i = 1; i + 1 < argc; ++i) if(!strcasecmp(argv[i], "--samp")) server.SetSampDir(SampResolve(argv[i + 1]).c_str());
     // 3.21.6: --auth = login system (Discord verification + account) on a custom server too.
     // The default server and Brief Case War always have it.
     for(int i = 1; i < argc; ++i) if(!strcasecmp(argv[i], "--auth")) server.SetAuth(true);

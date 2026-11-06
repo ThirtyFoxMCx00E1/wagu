@@ -6,7 +6,7 @@
 #include "ui/tde_data.h"   // 3.50: sprite browser list + palette (samp-textdraw-editor)
 #include <sys/stat.h>
 
-static const char* const k_PluginTypes[] = { "Textdraw", "Unknown", "Unknown" };
+static const char* const k_PluginTypes[] = { "Textdraw", "SA-MP gamemode", "Unknown" };   // 4.11: SA-MP gamemode
 
 static std::string TdeReadFile(const std::string& p)
 {
@@ -152,6 +152,87 @@ static const char* PluginServerName(const char* typed)
     if(s_Server.IsRunning() && !MP::IsHostingDefault()) return s_Server.GetName();
     return typed && typed[0] ? typed : settings.serverName;
 }
+
+// ---- 4.11: SA-MP gamemode (a PC server .rar / .zip / folder / .amx) for your custom server -----------
+// unpacked to files/MP/<server>/samp/, the server runs it when it starts (net/server_samp.inc)
+#include <thread>
+#include <atomic>
+#include <mutex>
+#include <ftw.h>
+static std::string SampGameDir(const char* serverName) { return PluginDir(serverName) + "/samp"; }
+static std::string SampGamemodeRoot(const char* serverName) { return SampFindRoot(SampGameDir(serverName)); }
+static std::atomic<int> s_SampImp{ 0 };   // 0 idle, 1 working, 2 done
+static std::mutex s_SampImpMx; static std::string s_SampImpMsg; static bool s_SampImpOk = false;
+static int SampRmCb(const char* p, const struct stat*, int, struct FTW*) { return remove(p); }
+static void SampRemoveDir(const std::string& d) { nftw(d.c_str(), SampRmCb, 32, FTW_DEPTH | FTW_PHYS); }
+static void SampCandidates(std::vector<std::string>& paths)
+{
+    paths.clear();
+    const std::string dd = s_szDataDir;
+    const std::string dirs[] = { dd + "/import", "/sdcard/Download", "/storage/emulated/0/Download", "/sdcard/Download/MP Gamemodes", dd };
+    std::vector<std::string> seen;
+    for(auto& d : dirs)
+    {
+        DIR* dir = opendir(d.c_str()); if(!dir) continue;
+        while(dirent* e = readdir(dir))
+        {
+            std::string n = e->d_name; if(n[0] == '.') continue;
+            const std::string full = d + "/" + n;
+            bool ok = TdeEndsWith(n, ".rar") || TdeEndsWith(n, ".zip") || TdeEndsWith(n, ".amx") || TdeEndsWith(n, ".7z") || TdeEndsWith(n, ".pwn");
+            ok = ok || (d.find("/import") != std::string::npos && !SampFindRoot(full).empty() && full != dd);
+            if(!ok || std::find(seen.begin(), seen.end(), n) != seen.end()) continue;
+            seen.push_back(n); paths.push_back(full);
+        }
+        closedir(dir);
+    }
+}
+static void SampImportDlg(int resp, int item, const char*, int)
+{
+    if(!resp || item < 0 || item >= (int)s_PluginPick.size() || s_SampImp == 1) return;
+    const std::string src = s_PluginPick[item], dest = SampGameDir(s_PluginServer.c_str());
+    s_SampImp = 1;
+    SysMsg(COL_SYSTEM, "Importing %s ... (big servers take a minute)", src.substr(src.find_last_of('/') + 1).c_str());
+    std::thread([src, dest]() {
+        SampRemoveDir(dest);
+        std::string root, msg; bool ok = SampImport(src, dest, root, msg);
+        std::lock_guard<std::mutex> l(s_SampImpMx); s_SampImpOk = ok; s_SampImpMsg = msg + (ok ? "" : "");
+        s_SampImp = 2;
+    }).detach();
+}
+static void SampSection(const char* srv)
+{
+    if(s_SampImp == 2)
+    {
+        std::lock_guard<std::mutex> l(s_SampImpMx); s_SampImp = 0;
+        if(s_SampImpOk) SysMsg(COL_GREEN, "Gamemode imported: %s. Start (or restart) your server to run it.", s_SampImpMsg.c_str());
+        else SysMsg(COL_RED, "Import failed: %s", s_SampImpMsg.c_str());
+    }
+    ImGui::TextDisabled("SA-MP gamemode: the PC server in one .rar / .zip (server.cfg, gamemodes/*.amx, filterscripts/, scriptfiles/), or one compiled .amx. "
+                        "Your server runs it: commands, dialogs, textdraws, objects / mapping, timers, sscanf, Pawn.CMD, YSI, MySQL (kept in SQLite on the phone).");
+    if(s_SampImp == 1) ImGui::TextUnformatted("Importing...");
+    else if(FloatMenu::BigButton("Import gamemode"))
+    {
+        SampCandidates(s_PluginPick); s_PluginServer = srv;
+        if(s_PluginPick.empty()) SysMsg(COL_YELLOW, "No .rar / .zip / .amx found. Put it in Download or files/MP/import/.");
+        else
+        {
+            std::string b; for(auto& f : s_PluginPick) { std::string d = f.substr(0, f.find_last_of('/')); b += f.substr(f.find_last_of('/') + 1) + "\t" + d.substr(d.find_last_of('/') + 1) + "\n"; }
+            b.pop_back();
+            ShowDialog(0, DIALOG_STYLE_TABLIST, "Import a SA-MP gamemode", b.c_str(), "Import", "Cancel", SampImportDlg);
+        }
+    }
+    const std::string root = SampGamemodeRoot(srv);
+    if(root.empty()) ImGui::TextDisabled("No gamemode on this server yet (a normal MP server).");
+    else
+    {
+        std::string gm = "?";
+        { FILE* f = fopen((root + "/server.cfg").c_str(), "rb"); char line[256]; while(f && fgets(line, sizeof(line), f)) if(!strncasecmp(line, "gamemode0", 9)) { char n[128] = ""; sscanf(line + 9, "%127s", n); gm = n; break; } if(f) fclose(f); }
+        ImGui::Text("Gamemode: %s", gm.c_str()); ImGui::SameLine(ImGui::GetContentRegionAvail().x - UI::S(150));
+        if(ImGui::Button("Remove", ImVec2(UI::S(150), UI::S(56)))) { SampRemoveDir(SampGameDir(srv)); SysMsg(COL_YELLOW, "Gamemode removed - restart your server."); }
+        ImGui::TextDisabled("Host tools in game: /mpsamp sql <query> | report | info. Missing natives: mp_samp_report.txt in the gamemode folder.");
+    }
+    ImGui::TextDisabled(".pwn files are source code: compile them with pawncc on a PC first.");
+}
 static void PluginsSection(const char* typedName)
 {
     ImGui::PushID("plugins");
@@ -167,6 +248,7 @@ static void PluginsSection(const char* typedName)
         for(int i = 0; i < 3; ++i) if(ImGui::Selectable(k_PluginTypes[i], s_nPluginType == i)) s_nPluginType = i;
         ImGui::EndCombo();
     }
+    if(s_nPluginType == 1) { SampSection(srv); ImGui::PopID(); return; }   // 4.11
     if(s_nPluginType != 0) { ImGui::TextDisabled("This plugin type is not available yet."); ImGui::PopID(); return; }
     ImGui::TextDisabled("Textdraw: a .mptd saved by /tde (in game) or the MP Textdraw Editor app. Every player on your server sees them.");
     if(FloatMenu::BigButton("Import file"))

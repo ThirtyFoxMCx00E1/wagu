@@ -127,6 +127,29 @@ public:
     std::map<std::string, int> m_AcRepeat;   // 3.58: fly / teleport kicks per phone id (3 = ban)
     bool BanNameLocked(const char* name, const char* uid, const char* admin, const char* reason);   // 3.58: + kicks online
 
+    // ---- 4.11: SA-MP gamemodes (server_samp.inc): a PC SA-MP server folder runs on this server ----
+    bool SampLoad(const char* dir, bool test = false); void SampUnload(); int SampSelfTest(const char* dir, const char* cmds); int SampTestRun(const char* dir, const char* cmds) { return SampSelfTest(dir, cmds); }
+    bool SampOn() const { return m_bSampLoaded; } std::string SampModeName() const;
+    void SetSampDir(const char* dir) { snprintf(m_szSampDir, sizeof(m_szSampDir), "%s", dir ? dir : ""); }
+    // used by the natives
+    void SampLog(const char* fmt, ...); std::string SampUid(int slot); std::string SampIp(int slot); bool SampIsAdmin(int slot); uint64_t SampOnlineMs(int slot);
+    void SampGetPos(int slot, float* p); void SampTele(int slot, const float* p, float h);
+    void SampAct(int slot, uint8_t act, int a = 0, int b = 0, int32_t val = 0, const float* pos = nullptr, float h = 0, const char* text = nullptr);
+    void SampOp(int slot, uint8_t op, uint8_t a, uint8_t b, int32_t val, const float* f = nullptr, const char* text = nullptr);
+    void SampMsg(int slot, uint32_t color, const std::string& s); void SampGameText(int slot, const std::string& s, int ms, int style);
+    void SampDialog(int slot, int id, int style, const std::string& cap, const std::string& info, const std::string& b1, const std::string& b2);
+    void SampKick(int slot, bool ban); void SampWorld(int slot); void SampSpawn(int slot);
+    int  SampTdSlot(int slot, int key, bool alloc); void SampTdShow(int slot, int key, bool show); void SampTdChanged(int pl, int id, bool player);
+    int  SampObjNew(int model, float x, float y, float z, float rx, float ry, float rz, int world, int interior); int SampObjDel(int id);
+    void SampObjMove(int id, const float* p, const float* r); void SampLabelSend(int slot, int id);
+    void SampCommand(int slot, const char* text);
+private:
+    bool SampLoadScript(const std::string& path, const std::string& name, bool gm); void SampReport();
+    void SampOnJoin(int slot); void SampOnLeave(int slot, int reason); bool SampOnChat(int slot, const char* text);
+    void SampOnDialog(int slot, const PktDialogResp& r); void SampOnSync(int slot, const SyncData& d); void SampOnDeath(int victim, int killer, int weapon);
+    void SampHandle(int slot, const uint8_t* data, int len); void SampTick(uint64_t now);
+    bool m_bSampLoaded = false; char m_szSampDir[512] = "";
+public:
     // Server world: the server owns the time + weather. 1 game minute = 1 real second, like GTA SA,
     // from the real clock, so every server shows the same normal day. Sent on join and every 3 s.
     static uint32_t WorldMinute();     // server day clock (game minutes since epoch)

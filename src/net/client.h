@@ -53,6 +53,7 @@ public:
     virtual void OnMw3(const uint8_t* /*data*/, int /*len*/) {}   // 3.23: PKT_MW3_STATE / PLAYERS / ME / EVENT
     virtual void OnRp(const uint8_t* /*data*/, int /*len*/) {}    // 3.25: PKT_RP_ME / PLAYERS / STATE / EVENT / CARD
     virtual void OnDz(const uint8_t* /*data*/, int /*len*/) {}
+    virtual void OnSamp(const uint8_t* /*data*/, int /*len*/) {}   // 4.11: PKT_SAMP (net/samp.h)
     virtual void OnCg(const uint8_t* /*data*/, int /*len*/) {}    // 4.09: PKT_CG_ENT / ME / ACT (CGRP systems)    // 3.58: PKT_DZ_ME / INV / LOOT / EVENT
     virtual void OnBcw(const uint8_t* /*data*/, int /*len*/) {}   // 3.04: PKT_BCW_STATE / ROLL / SCORE / EVENT
     virtual void OnClothes(const PktClothes&) {}                  // 3.10: CJ clothing sync

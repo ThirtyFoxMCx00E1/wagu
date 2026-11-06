@@ -121,6 +121,14 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **4.11**: SA-MP gamemodes on MP servers (import a PC server .rar / .zip / .amx), timber pick-up fix, Mega Vil rules button fix, HUD launcher overlap fix.
+  - SA-MP gamemode import: MP Launcher > Add server > Plugins > Type "SA-MP gamemode" > Import gamemode. Pick a .rar (UnRAR), .zip or compiled .amx from Download or files/MP/import/. It is unpacked to files/MP/<server>/samp/ and your server runs it when it starts: server.cfg (gamemode0, filterscripts), gamemodes/*.amx, filterscripts/*.amx, scriptfiles/.
+  - The .amx scripts run in the Pawn abstract machine ([pawn-lang/compiler](https://github.com/pawn-lang/compiler)). About 500 SA-MP / open.mp natives: players, messages, dialogs, textdraws (and textdraw-streamer), 3D labels, checkpoints, map icons, camera, objects / streamer objects (sent as the server map), vehicles (server side), timers, PVars / SVars, files, [sscanf](https://github.com/pawn-lang/sscanf), [Pawn.CMD](https://github.com/katursis/Pawn.CMD), zcmd / OnPlayerCommandText, YSI ([YSI](https://github.com/pawn-lang/YSI-Kit)), and [MySQL](https://github.com/pawn-lang/pawn-mysql) R39 / R41 + SA-MP SQLite (db_*) - MySQL is kept in SQLite on the phone (mp_mysql_<db>.db, tables / columns are made automatically).
+  - Every /command goes to the gamemode; Y / N / H buttons send SA-MP keys; clickable textdraws (SelectTextDraw) work by tapping. Natives MP doesn't have yet return 0 and are listed in mp_samp_report.txt. Host tools: /mpsamp sql <query> | report | info.
+  - Not yet: plugins that need a PC (.so / .dll: FCNPC, ColAndreas, Discord connector...), SA-MP-only object models (0.3.7 / 0.3DL ids 11682-19999 need the SA-MP model pack), .pwn source (compile it with pawncc on a PC). PC/Termux server: ./mp_server --samp <folder|file.rar|file.zip>.
+  - Timber job (default server): after you pick up the logs you can move again.
+  - Mega Vil rules: the I AGREE / close button is drawn on the rules panel again (it was under the dark overlay).
+  - HUD: the top-right sections hide while the MP launcher is open (no more overlap with the region pin when ARM Advanced Settings is installed).
 - **4.10**: black screen fixes, Day Z dynamic mapping, GTA HUD page for ARM Advanced Settings, bigger region picker, LAN Wi-Fi tutorial.
   - Black screen on join fixed: a quiet rejoin (24/7 shift change, host hand-off, duplicate server merge, "moving to the 24/7 server") never lifted the connection screen. The join screen now also lifts by itself once you are connected (1.5 s after the world is loaded, at most 25 s).
   - Project Day Z: the cabin interior check ran in a 0.1 s window only, so a slow phone could skip it and spawn in an empty black interior. It now checks every 0.5 s from 2.5 s to 9 s.

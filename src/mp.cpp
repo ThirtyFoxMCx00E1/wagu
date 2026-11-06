@@ -46,6 +46,8 @@
 #include "game/dzmodels.h"   // 3.61: Day Z model pack
 #include "game/boneattach.h"  // 4.00: bag on the spine bone
 #include "net/admin.h"
+#include "net/samp.h"    // 4.11: SA-MP gamemodes on MP servers
+#include "net/samp_import.h"
 #include "net/safezone.h"   // 3.21: hospital safe zones
 #include "ui/emoji.h"
 #include <ctype.h>
@@ -708,7 +710,8 @@ static void SocialFrame();    // 3.63: mp_social.inc (friends, chats, party, com
 static int DzAdjustDamage(int hp, int dmg, bool instant);   // 3.59: helmet vs headshot, DOWN at 5%
 static bool DzHidden();
 static void HudOnConfig(const PktSrvSettings2& h);   // 4.07 (mp_hudset.inc)
-static void AdvTick();   // 4.10 (mp_advhud.inc)
+static void AdvTick();
+static void AdvLauncher(bool open);   // 4.11   // 4.10 (mp_advhud.inc)
 static void HudReset();
 static void HudRenderExtras();
 static bool BcwOnServer();
@@ -2370,6 +2373,8 @@ static void SampOnChat(int id, const char* text);
 static bool IsSampActor(int h);
 static bool RpIsInfoPed(int h);   // mp_rp_life.inc
 static void ProcessSamp(int ped, uint64_t now);
+static void SampSrvReset(); static void SampSrvRender(ImDrawList* dl); static bool SampSrvCommand(const char* text);   // 4.11: mp_sampsrv.inc
+static void SampSrvOnPacket(const uint8_t* d, int len); static void DzMapTick(const Vec3& me, uint64_t now); static void SampSrvProcess(int ped, uint64_t now);
 class Events : public INetEvents
 {
 public:
@@ -2660,7 +2665,8 @@ public:
     void OnMw3(const uint8_t* d, int len) override { Mw3OnPacket(d, len); }   // 3.23
     void OnRp(const uint8_t* d, int len) override { RpOnPacket(d, len); }     // 3.25
     void OnDz(const uint8_t* d, int len) override { DzOnPacket(d, len); }     // 3.58
-    void OnCg(const uint8_t* d, int len) override { CgOnPacket(d, len); }     // 4.09
+    void OnCg(const uint8_t* d, int len) override { CgOnPacket(d, len); }
+    void OnSamp(const uint8_t* d, int len) override { SampSrvOnPacket(d, len); }   // 4.11     // 4.09
     void OnBcw(const uint8_t* d, int len) override { BcwOnPacket(d, len); }   // 3.04   // 2.25: the dialog opens; PKT_REJECT follows
     void OnJack(const PktJack& j) override   // 2.19: somebody pulls me out of my car
     {
@@ -4182,8 +4188,9 @@ void MP::Process()
         // gets no touches; it comes back when the launcher closes
         static bool s_bLaunchHud = false; static uint64_t s_nLaunchHudT = 0;
         bool modal = (FloatMenu::IsModal() || TdeIsOpen()) && !paused;   // 4.00: + /tde (Textdraw Editor): all GTA HUDs hidden
+        if(modal && !s_bLaunchHud) AdvLauncher(true);    // 4.11: Advanced Settings HUD off the toolbar
         if(modal && (!s_bLaunchHud || now - s_nLaunchHudT > 500)) { Game::ShowGameHud(false); s_bLaunchHud = true; s_nLaunchHudT = now; }
-        else if(!modal && s_bLaunchHud) { s_bLaunchHud = false; if(!JoinHudOff()) Game::ShowGameHud(true); }
+        else if(!modal && s_bLaunchHud) { s_bLaunchHud = false; AdvLauncher(false); if(!JoinHudOff()) Game::ShowGameHud(true); }
     }
     int ped = Game::LocalPed();
     if(ped > 0) FloatMenu::SetGameRunning();   // 4.04.1: from now on ⋮ -> Server can open the launcher
@@ -4230,6 +4237,7 @@ void MP::Process()
     RpProcess(ped, now);         // 3.25: Mega Vil Futuristic
     DzProcess(ped, now);         // 3.58: Project Day Z
     CgProcess(ped, now);         // 4.09: CGRP systems
+    SampSrvProcess(ped, now);    // 4.11: SA-MP gamemode servers
     HkProcess(ped, now); NeedsProcess(ped, now); MvProcess(now); Modes2Process(ped, now); RulesProcess(now); ModCheckProcess(now); ProgProcess(ped, now); AdmProcess(ped); DealerProcess(ped, now);   // 3.39 / 3.54 staff commands
     ProcessGates(ped, now);      // 3.04.2: Area 69 gates
     ProcessHotelPc(ped, now);    // 3.36: hotel rooms with a computer (eyefind.info vehicle shops)
@@ -4406,6 +4414,7 @@ static void PSettingsPopup();
 #include "mp_modes2.inc"    // 3.39: survival, CnR, A/D, stunt, drift
 #include "mp_timber.inc"    // 3.51: the Timber job + the Broker MQQ title
 #include "mp_dealer.inc"    // 3.55: dealership receptionist + showroom (default server, Mega Vil)
+#include "mp_sampsrv.inc"   // 4.11: SA-MP gamemodes on MP servers (phone side)
 #include "mp_cgrp.inc"      // 4.09: CGRP systems (default server, Mega Vil)
 #include "mp_tdeplug.inc"   // 3.50: Add server > Plugins (Textdraw .mptd files)
 #include "mp_tde.inc"       // 3.50: in-game MP Textdraw Editor (/tde)
@@ -4662,6 +4671,11 @@ static bool StartLocalServer(const char* name, int port)
     }
     s_Server.SetAntiCheat(settings.hostAc, settings.hostAcMask);   // 3.50 (featured servers: always on, every check)
     if(!MP::IsDefaultServer(name, port)) { s_Server.SetHudConfig((uint8_t)settings.hudMode, (uint8_t)settings.hudFlags, (uint8_t)settings.hudDoor); s_Server.SetLogoPos((uint8_t)settings.logoX, (uint8_t)settings.logoY, (uint8_t)settings.logoZ); }   // 4.07: /settings > Textdraw
+    {   // 4.11: a SA-MP gamemode imported on Add server > Plugins (files/MP/<server>/samp/)
+        const std::string sr = (bcw || MP::IsDefaultServer(name, port)) ? std::string() : SampGamemodeRoot(name);
+        s_Server.SetSampDir(sr.c_str());
+        if(!sr.empty()) SysMsg(COL_SYSTEM, "Loading the SA-MP gamemode of %s ...", name);
+    }
     if(!s_Server.Start((uint16_t)port, name, ServerLog, maxp, settings.region))
     {
         SysMsg(COL_RED, "Could not start the server on port %d", port);

@@ -240,6 +240,7 @@ static void GamesHelp();
 static bool HandleCommand(const char* text)
 {
     if(!text || text[0] != '/') return false;
+    if(SampSrvCommand(text)) return true;   // 4.11: a SA-MP gamemode server has its own commands
     char cmd[32] = ""; const char* arg = text + 1;
     int n = 0; while(*arg && *arg != ' ' && n < 30) cmd[n++] = (char)tolower((unsigned char)*arg++);
     cmd[n] = 0;

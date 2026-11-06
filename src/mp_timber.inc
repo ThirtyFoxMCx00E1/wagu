@@ -600,6 +600,7 @@ static void TimberProcess(int ped, uint64_t now, float dt)
             if(s_Tb.act == 1 && s_Tb.actLog >= 0)
             {   // lifted: the ground log is gone, one more in the arms (stacked on the forearms)
                 const int i = s_Tb.actLog; s_Tb.gAlive[i] = false; TbDelObj(s_Tb.gLog[i]);
+                Game::ClearTasksNow(ped); Game::FreezeChar(ped, false);   // 4.11: end the lift task - you can walk with the logs right away
                 Vec3 at = me; at.z += 1.0f;
                 int o = Game::CreateWorldObject(TB_LOG_MODEL, at);
                 if(o > 0) { Game::AttachObjectToCharRot(o, ped, { 0.0f, 0.42f, 0.10f + s_Tb.nCarry * 0.20f }, { 0.0f, 0.0f, 90.0f }); s_Tb.carry[s_Tb.nCarry] = o; }
@@ -636,7 +637,7 @@ static void TimberProcess(int ped, uint64_t now, float dt)
             const int li = TbNearestLog(me, 2.4f);
             if(li < 0) SysMsg(COL_RED, "Stand next to a log to pick it up.");
             else if(s_Tb.nCarry >= TB_CARRY_MAX) SysMsg(COL_RED, "Your arms are full (%d logs). Bring them to the back of the pickup and crouch.", TB_CARRY_MAX);
-            else if(Game::PlayAnimOnce(ped, "liftup", "CARRY", 4.0f, true, -1))
+            else if(Game::PlayAnimOnce(ped, "liftup", "CARRY", 4.0f, false, -1))   // 4.11: no "hold the last frame" (it locked you in place after PICK UP)
             {
                 const float h = atan2f(-(s_Tb.gPos[li].x - me.x), s_Tb.gPos[li].y - me.y) * 57.29578f;
                 Game::SetCharHeading(ped, h);
