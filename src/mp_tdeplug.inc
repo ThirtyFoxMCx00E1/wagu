@@ -6,7 +6,7 @@
 #include "ui/tde_data.h"   // 3.50: sprite browser list + palette (samp-textdraw-editor)
 #include <sys/stat.h>
 
-static const char* const k_PluginTypes[] = { "Textdraw", "SA-MP gamemode", "Unknown" };   // 4.11: SA-MP gamemode
+static const char* const k_PluginTypes[] = { "Textdraw", "Unknown", "Unknown" };   // 4.11: the SA-MP gamemode import is always shown above
 
 static std::string TdeReadFile(const std::string& p)
 {
@@ -159,6 +159,7 @@ static const char* PluginServerName(const char* typed)
 #include <atomic>
 #include <mutex>
 #include <ftw.h>
+#include "ui/filepick.h"
 static std::string SampGameDir(const char* serverName) { return PluginDir(serverName) + "/samp"; }
 static std::string SampGamemodeRoot(const char* serverName) { return SampFindRoot(SampGameDir(serverName)); }
 static std::atomic<int> s_SampImp{ 0 };   // 0 idle, 1 working, 2 done
@@ -186,19 +187,25 @@ static void SampCandidates(std::vector<std::string>& paths)
         closedir(dir);
     }
 }
-static void SampImportDlg(int resp, int item, const char*, int)
+static void SampStartImport(const std::string& src, const std::string& serverName)
 {
-    if(!resp || item < 0 || item >= (int)s_PluginPick.size() || s_SampImp == 1) return;
-    const std::string src = s_PluginPick[item], dest = SampGameDir(s_PluginServer.c_str());
+    if(s_SampImp == 1) return;
+    const std::string dest = SampGameDir(serverName.c_str());
     s_SampImp = 1;
     SysMsg(COL_SYSTEM, "Importing %s ... (big servers take a minute)", src.substr(src.find_last_of('/') + 1).c_str());
     std::thread([src, dest]() {
         SampRemoveDir(dest);
         std::string root, msg; bool ok = SampImport(src, dest, root, msg);
-        std::lock_guard<std::mutex> l(s_SampImpMx); s_SampImpOk = ok; s_SampImpMsg = msg + (ok ? "" : "");
+        std::lock_guard<std::mutex> l(s_SampImpMx); s_SampImpOk = ok; s_SampImpMsg = msg;
         s_SampImp = 2;
     }).detach();
 }
+static void SampImportDlg(int resp, int item, const char*, int)
+{
+    if(!resp || item < 0 || item >= (int)s_PluginPick.size()) return;
+    SampStartImport(s_PluginPick[item], s_PluginServer);
+}
+static const char* const k_SampMimes = "application/zip,application/x-zip-compressed,application/x-zip,application/x-rar-compressed,application/vnd.rar,application/x-rar,application/rar,application/x-7z-compressed,application/octet-stream";
 static void SampSection(const char* srv)
 {
     if(s_SampImp == 2)
@@ -209,8 +216,24 @@ static void SampSection(const char* srv)
     }
     ImGui::TextDisabled("SA-MP gamemode: the PC server in one .rar / .zip (server.cfg, gamemodes/*.amx, filterscripts/, scriptfiles/), or one compiled .amx. "
                         "Your server runs it: commands, dialogs, textdraws, objects / mapping, timers, sscanf, Pawn.CMD, YSI, MySQL (kept in SQLite on the phone).");
+    // 4.11: Import = the Files app (system file manager): pick the .zip / .rar, it is copied to files/MP/import/ and unpacked
+    const int fp = FilePick::State();
+    if(fp == 3)
+    {
+        const std::string n = FilePick::Name(); FilePick::Reset();
+        if(!n.empty()) SampStartImport(std::string(s_szDataDir) + "/import/" + n, s_PluginServer.empty() ? std::string(srv) : s_PluginServer);
+    }
+    else if(fp == 4 || fp == 6) { SysMsg(COL_RED, "Files app: %s", FilePick::Error().empty() ? "could not open the file" : FilePick::Error().c_str()); FilePick::Reset(); }
+    else if(fp == 5) FilePick::Reset();   // cancelled
     if(s_SampImp == 1) ImGui::TextUnformatted("Importing...");
-    else if(FloatMenu::BigButton("Import gamemode"))
+    else if(fp == 1) ImGui::TextUnformatted("Waiting for the Files app...");
+    else if(fp == 2) ImGui::Text("Copying... %.1f MB", FilePick::Copied() / 1048576.0);
+    else if(FloatMenu::BigButton("Import (zip, rar) - opens Files"))
+    {
+        s_PluginServer = srv;
+        if(!FilePick::Open((std::string(s_szDataDir) + "/import").c_str(), k_SampMimes)) SysMsg(COL_YELLOW, "The Files app is already open.");
+    }
+    if(s_SampImp != 1 && fp != 1 && fp != 2 && ImGui::Button("Or pick from Download / files/MP/import", ImVec2(-FLT_MIN, UI::S(56))))
     {
         SampCandidates(s_PluginPick); s_PluginServer = srv;
         if(s_PluginPick.empty()) SysMsg(COL_YELLOW, "No .rar / .zip / .amx found. Put it in Download or files/MP/import/.");
@@ -241,6 +264,9 @@ static void PluginsSection(const char* typedName)
     const char* srv = PluginServerName(typedName);
     const std::string folder = PluginFolderName(srv);
     ImGui::TextDisabled("Files for your custom server go to files/MP/%s/.", folder.c_str());
+    ImGui::TextUnformatted("Gamemode (zip, rar)");   // 4.11: import a PC SA-MP server with the Files app
+    SampSection(srv);
+    ImGui::Spacing(); ImGui::Separator(); ImGui::Spacing();
     ImGui::TextUnformatted("Type");
     ImGui::SetNextItemWidth(-FLT_MIN);
     if(ImGui::BeginCombo("##ptype", k_PluginTypes[s_nPluginType]))
@@ -248,7 +274,6 @@ static void PluginsSection(const char* typedName)
         for(int i = 0; i < 3; ++i) if(ImGui::Selectable(k_PluginTypes[i], s_nPluginType == i)) s_nPluginType = i;
         ImGui::EndCombo();
     }
-    if(s_nPluginType == 1) { SampSection(srv); ImGui::PopID(); return; }   // 4.11
     if(s_nPluginType != 0) { ImGui::TextDisabled("This plugin type is not available yet."); ImGui::PopID(); return; }
     ImGui::TextDisabled("Textdraw: a .mptd saved by /tde (in game) or the MP Textdraw Editor app. Every player on your server sees them.");
     if(FloatMenu::BigButton("Import file"))

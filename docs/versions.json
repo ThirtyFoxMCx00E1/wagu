@@ -1,6 +1,7 @@
 {
-"latest": "4.11",
+"latest": "4.11.1",
 "supported": [
+"4.11.1",
 "4.11",
 "4.10",
 "4.09",
@@ -105,6 +106,14 @@
 "3.04.6"
 ],
 "versions": [
+{
+"v": "4.11.1",
+"summary": "Import gamemode with the Files app.",
+"items": [
+"MP Launcher > + Add server > scroll to Plugins > Gamemode (zip, rar) > \"Import (zip, rar) - opens Files\": the Android Files app (file manager) opens, you pick the .zip / .rar / .amx, it is copied to files/MP/import/ and unpacked for your server. No MP Voice needed (the picker runs inside the game: tools/filepick).",
+"The gamemode import is always shown at the top of Plugins (no Type to choose). \"Or pick from Download / files/MP/import\" still lists the files found there."
+]
+},
 {
 "v": "4.11",
 "summary": "SA-MP gamemodes on MP servers (import a PC server .rar / .zip / .amx), timber pick-up fix, Mega Vil rules button fix, HUD launcher overlap fix.",

@@ -121,6 +121,9 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **4.11.1**: Import gamemode with the Files app.
+  - MP Launcher > + Add server > scroll to Plugins > Gamemode (zip, rar) > "Import (zip, rar) - opens Files": the Android Files app (file manager) opens, you pick the .zip / .rar / .amx, it is copied to files/MP/import/ and unpacked for your server. No MP Voice needed (the picker runs inside the game: tools/filepick).
+  - The gamemode import is always shown at the top of Plugins (no Type to choose). "Or pick from Download / files/MP/import" still lists the files found there.
 - **4.11**: SA-MP gamemodes on MP servers (import a PC server .rar / .zip / .amx), timber pick-up fix, Mega Vil rules button fix, HUD launcher overlap fix.
   - SA-MP gamemode import: MP Launcher > Add server > Plugins > Type "SA-MP gamemode" > Import gamemode. Pick a .rar (UnRAR), .zip or compiled .amx from Download or files/MP/import/. It is unpacked to files/MP/<server>/samp/ and your server runs it when it starts: server.cfg (gamemode0, filterscripts), gamemodes/*.amx, filterscripts/*.amx, scriptfiles/.
   - The .amx scripts run in the Pawn abstract machine ([pawn-lang/compiler](https://github.com/pawn-lang/compiler)). About 500 SA-MP / open.mp natives: players, messages, dialogs, textdraws (and textdraw-streamer), 3D labels, checkpoints, map icons, camera, objects / streamer objects (sent as the server map), vehicles (server side), timers, PVars / SVars, files, [sscanf](https://github.com/pawn-lang/sscanf), [Pawn.CMD](https://github.com/katursis/Pawn.CMD), zcmd / OnPlayerCommandText, YSI ([YSI](https://github.com/pawn-lang/YSI-Kit)), and [MySQL](https://github.com/pawn-lang/pawn-mysql) R39 / R41 + SA-MP SQLite (db_*) - MySQL is kept in SQLite on the phone (mp_mysql_<db>.db, tables / columns are made automatically).
