@@ -1,0 +1,134 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="800" viewBox="0 0 760 800" role="img" aria-label="MP Multiplayer: 6 players online on 6 servers">
+<title>MP Multiplayer: 6 players online on 6 servers</title>
+<rect width="760" height="800" fill="#ffffff"/>
+<text x="12" y="28" font-family="Arial,Helvetica,DejaVu Sans,sans-serif" font-size="19" font-weight="700" fill="#000000">Principal MP servers by players, last 24 hours and now</text>
+<text x="12" y="50" font-family="Arial,Helvetica,DejaVu Sans,sans-serif" font-size="15" fill="#000000">(number of players and % of player slots; updated 19:13 UTC, 07 November 2026)</text>
+<circle cx="740" cy="22" r="6" fill="#2e9d43"><animate attributeName="opacity" values="1;.35;1" dur="1.6s" repeatCount="indefinite"/></circle>
+<text x="396" y="78" font-family="Arial,Helvetica,DejaVu Sans,sans-serif" font-size="14" font-weight="700" fill="#000000" text-anchor="middle">Players</text>
+<line x1="46" y1="286.0" x2="746" y2="286.0" stroke="#7f7f7f" stroke-width="1"/>
+<text x="40" y="290.0" font-family="Arial,Helvetica,DejaVu Sans,sans-serif" font-size="12" fill="#000000" text-anchor="end">0</text>
+<line x1="46" y1="248.0" x2="746" y2="248.0" stroke="#d9d9d9" stroke-width="1"/>
+<text x="40" y="252.0" font-family="Arial,Helvetica,DejaVu Sans,sans-serif" font-size="12" fill="#000000" text-anchor="end">1</text>
+<line x1="46" y1="210.0" x2="746" y2="210.0" stroke="#d9d9d9" stroke-width="1"/>
+<text x="40" y="214.0" font-family="Arial,Helvetica,DejaVu Sans,sans-serif" font-size="12" fill="#000000" text-anchor="end">2</text>
+<line x1="46" y1="172.0" x2="746" y2="172.0" stroke="#d9d9d9" stroke-width="1"/>
+<text x="40" y="176.0" font-family="Arial,Helvetica,DejaVu Sans,sans-serif" font-size="12" fill="#000000" text-anchor="end">3</text>
+<line x1="46" y1="134.0" x2="746" y2="134.0" stroke="#d9d9d9" stroke-width="1"/>
+<text x="40" y="138.0" font-family="Arial,Helvetica,DejaVu Sans,sans-serif" font-size="12" fill="#000000" text-anchor="end">4</text>
+<line x1="46" y1="96.0" x2="746" y2="96.0" stroke="#d9d9d9" stroke-width="1"/>
+<text x="40" y="100.0" font-family="Arial,Helvetica,DejaVu Sans,sans-serif" font-size="12" fill="#000000" text-anchor="end">5</text>
+<rect x="61.2" y="172.0" width="16.8" height="114.0" fill="#ecdc9c"><title>6767: 3 players</title></rect>
+<rect x="84.0" y="248.0" width="16.8" height="38.0" fill="#b0901e"><title>6767: 1 players</title></rect>
+<line x1="46.0" y1="286" x2="46.0" y2="291" stroke="#7f7f7f"/>
+<text x="81.0" y="304" font-family="Arial,Helvetica,DejaVu Sans,sans-serif" font-size="12" fill="#000000" text-anchor="middle">6767</text>
+<rect x="131.2" y="210.0" width="16.8" height="76.0" fill="#ecdc9c"><title>jembuddd: 2 players</title></rect>
+<line x1="116.0" y1="286" x2="116.0" y2="291" stroke="#7f7f7f"/>
+<text x="151.0" y="304" font-family="Arial,Helvetica,DejaVu Sans,sans-serif" font-size="12" fill="#000000" text-anchor="middle">jembuddd</text>
+<rect x="201.2" y="210.0" width="16.8" height="76.0" fill="#ecdc9c"><title>laso: 2 players</title></rect>
+<line x1="186.0" y1="286" x2="186.0" y2="291" stroke="#7f7f7f"/>
+<text x="221.0" y="304" font-family="Arial,Helvetica,DejaVu Sans,sans-serif" font-size="12" fill="#000000" text-anchor="middle">laso</text>
+<rect x="271.2" y="210.0" width="16.8" height="76.0" fill="#ecdc9c"><title>rezi: 2 players</title></rect>
+<line x1="256.0" y1="286" x2="256.0" y2="291" stroke="#7f7f7f"/>
+<text x="291.0" y="304" font-family="Arial,Helvetica,DejaVu Sans,sans-serif" font-size="12" fill="#000000" text-anchor="middle">rezi</text>
+<rect x="341.2" y="210.0" width="16.8" height="76.0" fill="#ecdc9c"><title>testing: 2 players</title></rect>
+<line x1="326.0" y1="286" x2="326.0" y2="291" stroke="#7f7f7f"/>
+<text x="361.0" y="304" font-family="Arial,Helvetica,DejaVu Sans,sans-serif" font-size="12" fill="#000000" text-anchor="middle">testing</text>
+<rect x="411.2" y="248.0" width="16.8" height="38.0" fill="#ecdc9c"><title>Brief Case War: 1 players</title></rect>
+<rect x="434.0" y="248.0" width="16.8" height="38.0" fill="#b0901e"><title>Brief Case War: 1 players</title></rect>
+<line x1="396.0" y1="286" x2="396.0" y2="291" stroke="#7f7f7f"/>
+<text x="431.0" y="304" font-family="Arial,Helvetica,DejaVu Sans,sans-serif" font-size="12" fill="#000000" text-anchor="middle">Brief Case</text>
+<text x="431.0" y="318" font-family="Arial,Helvetica,DejaVu Sans,sans-serif" font-size="12" fill="#000000" text-anchor="middle">War</text>
+<rect x="481.2" y="248.0" width="16.8" height="38.0" fill="#ecdc9c"><title>Call Of Duty: Modern Warfare 3: 1 players</title></rect>
+<rect x="504.0" y="248.0" width="16.8" height="38.0" fill="#b0901e"><title>Call Of Duty: Modern Warfare 3: 1 players</title></rect>
+<line x1="466.0" y1="286" x2="466.0" y2="291" stroke="#7f7f7f"/>
+<text x="501.0" y="304" font-family="Arial,Helvetica,DejaVu Sans,sans-serif" font-size="12" fill="#000000" text-anchor="middle">Call Of</text>
+<text x="501.0" y="318" font-family="Arial,Helvetica,DejaVu Sans,sans-serif" font-size="12" fill="#000000" text-anchor="middle">Duty: Modern…</text>
+<rect x="551.2" y="248.0" width="16.8" height="38.0" fill="#ecdc9c"><title>Mega Vil Futuristic: 1 players</title></rect>
+<rect x="574.0" y="248.0" width="16.8" height="38.0" fill="#b0901e"><title>Mega Vil Futuristic: 1 players</title></rect>
+<line x1="536.0" y1="286" x2="536.0" y2="291" stroke="#7f7f7f"/>
+<text x="571.0" y="304" font-family="Arial,Helvetica,DejaVu Sans,sans-serif" font-size="12" fill="#000000" text-anchor="middle">Mega Vil</text>
+<text x="571.0" y="318" font-family="Arial,Helvetica,DejaVu Sans,sans-serif" font-size="12" fill="#000000" text-anchor="middle">Futuristic</text>
+<rect x="621.2" y="248.0" width="16.8" height="38.0" fill="#ecdc9c"><title>MP LAN Server: 1 players</title></rect>
+<rect x="644.0" y="248.0" width="16.8" height="38.0" fill="#b0901e"><title>MP LAN Server: 1 players</title></rect>
+<line x1="606.0" y1="286" x2="606.0" y2="291" stroke="#7f7f7f"/>
+<text x="641.0" y="304" font-family="Arial,Helvetica,DejaVu Sans,sans-serif" font-size="12" fill="#000000" text-anchor="middle">MP LAN</text>
+<text x="641.0" y="318" font-family="Arial,Helvetica,DejaVu Sans,sans-serif" font-size="12" fill="#000000" text-anchor="middle">Server</text>
+<rect x="691.2" y="134.0" width="16.8" height="152.0" fill="#ecdc9c"><title>Other servers: 4 players</title></rect>
+<rect x="714.0" y="248.0" width="16.8" height="38.0" fill="#b0901e"><title>Other servers: 1 players</title></rect>
+<line x1="676.0" y1="286" x2="676.0" y2="291" stroke="#7f7f7f"/>
+<text x="711.0" y="304" font-family="Arial,Helvetica,DejaVu Sans,sans-serif" font-size="12" fill="#000000" text-anchor="middle">Other</text>
+<text x="711.0" y="318" font-family="Arial,Helvetica,DejaVu Sans,sans-serif" font-size="12" fill="#000000" text-anchor="middle">servers</text>
+<line x1="746" y1="286" x2="746" y2="291" stroke="#7f7f7f"/>
+<rect x="304" y="335" width="9" height="9" fill="#ecdc9c"/>
+<text x="318" y="344" font-family="Arial,Helvetica,DejaVu Sans,sans-serif" font-size="12" font-weight="700" fill="#000000">Peak, last 24 h</text>
+<rect x="422" y="335" width="9" height="9" fill="#b0901e"/>
+<text x="436" y="344" font-family="Arial,Helvetica,DejaVu Sans,sans-serif" font-size="12" font-weight="700" fill="#000000">Now</text>
+<text x="396" y="374" font-family="Arial,Helvetica,DejaVu Sans,sans-serif" font-size="14" font-weight="700" fill="#000000" text-anchor="middle">Player slots in use (%)</text>
+<line x1="46" y1="582.0" x2="746" y2="582.0" stroke="#7f7f7f" stroke-width="1"/>
+<text x="40" y="586.0" font-family="Arial,Helvetica,DejaVu Sans,sans-serif" font-size="12" fill="#000000" text-anchor="end">0</text>
+<line x1="46" y1="550.3" x2="746" y2="550.3" stroke="#d9d9d9" stroke-width="1"/>
+<text x="40" y="554.3" font-family="Arial,Helvetica,DejaVu Sans,sans-serif" font-size="12" fill="#000000" text-anchor="end">20</text>
+<line x1="46" y1="518.7" x2="746" y2="518.7" stroke="#d9d9d9" stroke-width="1"/>
+<text x="40" y="522.7" font-family="Arial,Helvetica,DejaVu Sans,sans-serif" font-size="12" fill="#000000" text-anchor="end">40</text>
+<line x1="46" y1="487.0" x2="746" y2="487.0" stroke="#d9d9d9" stroke-width="1"/>
+<text x="40" y="491.0" font-family="Arial,Helvetica,DejaVu Sans,sans-serif" font-size="12" fill="#000000" text-anchor="end">60</text>
+<line x1="46" y1="455.3" x2="746" y2="455.3" stroke="#d9d9d9" stroke-width="1"/>
+<text x="40" y="459.3" font-family="Arial,Helvetica,DejaVu Sans,sans-serif" font-size="12" fill="#000000" text-anchor="end">80</text>
+<line x1="46" y1="423.7" x2="746" y2="423.7" stroke="#d9d9d9" stroke-width="1"/>
+<text x="40" y="427.7" font-family="Arial,Helvetica,DejaVu Sans,sans-serif" font-size="12" fill="#000000" text-anchor="end">100</text>
+<line x1="46" y1="392.0" x2="746" y2="392.0" stroke="#d9d9d9" stroke-width="1"/>
+<text x="40" y="396.0" font-family="Arial,Helvetica,DejaVu Sans,sans-serif" font-size="12" fill="#000000" text-anchor="end">120</text>
+<rect x="61.2" y="562.2" width="16.8" height="19.8" fill="#6f8be0"><title>6767: 12.5%</title></rect>
+<rect x="84.0" y="580.4" width="16.8" height="1.6" fill="#2a3fa8"><title>6767: 1.0%</title></rect>
+<line x1="46.0" y1="582" x2="46.0" y2="587" stroke="#7f7f7f"/>
+<text x="81.0" y="600" font-family="Arial,Helvetica,DejaVu Sans,sans-serif" font-size="12" fill="#000000" text-anchor="middle">6767</text>
+<rect x="131.2" y="423.7" width="16.8" height="158.3" fill="#6f8be0"><title>jembuddd: 100.0%</title></rect>
+<line x1="116.0" y1="582" x2="116.0" y2="587" stroke="#7f7f7f"/>
+<text x="151.0" y="600" font-family="Arial,Helvetica,DejaVu Sans,sans-serif" font-size="12" fill="#000000" text-anchor="middle">jembuddd</text>
+<rect x="201.2" y="536.8" width="16.8" height="45.2" fill="#6f8be0"><title>laso: 28.6%</title></rect>
+<line x1="186.0" y1="582" x2="186.0" y2="587" stroke="#7f7f7f"/>
+<text x="221.0" y="600" font-family="Arial,Helvetica,DejaVu Sans,sans-serif" font-size="12" fill="#000000" text-anchor="middle">laso</text>
+<rect x="271.2" y="574.5" width="16.8" height="7.5" fill="#6f8be0"><title>rezi: 4.8%</title></rect>
+<line x1="256.0" y1="582" x2="256.0" y2="587" stroke="#7f7f7f"/>
+<text x="291.0" y="600" font-family="Arial,Helvetica,DejaVu Sans,sans-serif" font-size="12" fill="#000000" text-anchor="middle">rezi</text>
+<rect x="341.2" y="423.7" width="16.8" height="158.3" fill="#6f8be0"><title>testing: 100.0%</title></rect>
+<line x1="326.0" y1="582" x2="326.0" y2="587" stroke="#7f7f7f"/>
+<text x="361.0" y="600" font-family="Arial,Helvetica,DejaVu Sans,sans-serif" font-size="12" fill="#000000" text-anchor="middle">testing</text>
+<rect x="411.2" y="574.1" width="16.8" height="7.9" fill="#6f8be0"><title>Brief Case War: 5.0%</title></rect>
+<rect x="434.0" y="574.1" width="16.8" height="7.9" fill="#2a3fa8"><title>Brief Case War: 5.0%</title></rect>
+<line x1="396.0" y1="582" x2="396.0" y2="587" stroke="#7f7f7f"/>
+<text x="431.0" y="600" font-family="Arial,Helvetica,DejaVu Sans,sans-serif" font-size="12" fill="#000000" text-anchor="middle">Brief Case</text>
+<text x="431.0" y="614" font-family="Arial,Helvetica,DejaVu Sans,sans-serif" font-size="12" fill="#000000" text-anchor="middle">War</text>
+<rect x="481.2" y="579.5" width="16.8" height="2.5" fill="#6f8be0"><title>Call Of Duty: Modern Warfare 3: 1.6%</title></rect>
+<rect x="504.0" y="579.5" width="16.8" height="2.5" fill="#2a3fa8"><title>Call Of Duty: Modern Warfare 3: 1.6%</title></rect>
+<line x1="466.0" y1="582" x2="466.0" y2="587" stroke="#7f7f7f"/>
+<text x="501.0" y="600" font-family="Arial,Helvetica,DejaVu Sans,sans-serif" font-size="12" fill="#000000" text-anchor="middle">Call Of</text>
+<text x="501.0" y="614" font-family="Arial,Helvetica,DejaVu Sans,sans-serif" font-size="12" fill="#000000" text-anchor="middle">Duty: Modern…</text>
+<rect x="551.2" y="581.4" width="16.8" height="0.6" fill="#6f8be0"><title>Mega Vil Futuristic: 0.4%</title></rect>
+<rect x="574.0" y="581.4" width="16.8" height="0.6" fill="#2a3fa8"><title>Mega Vil Futuristic: 0.4%</title></rect>
+<line x1="536.0" y1="582" x2="536.0" y2="587" stroke="#7f7f7f"/>
+<text x="571.0" y="600" font-family="Arial,Helvetica,DejaVu Sans,sans-serif" font-size="12" fill="#000000" text-anchor="middle">Mega Vil</text>
+<text x="571.0" y="614" font-family="Arial,Helvetica,DejaVu Sans,sans-serif" font-size="12" fill="#000000" text-anchor="middle">Futuristic</text>
+<rect x="621.2" y="580.4" width="16.8" height="1.6" fill="#6f8be0"><title>MP LAN Server: 1.0%</title></rect>
+<rect x="644.0" y="580.4" width="16.8" height="1.6" fill="#2a3fa8"><title>MP LAN Server: 1.0%</title></rect>
+<line x1="606.0" y1="582" x2="606.0" y2="587" stroke="#7f7f7f"/>
+<text x="641.0" y="600" font-family="Arial,Helvetica,DejaVu Sans,sans-serif" font-size="12" fill="#000000" text-anchor="middle">MP LAN</text>
+<text x="641.0" y="614" font-family="Arial,Helvetica,DejaVu Sans,sans-serif" font-size="12" fill="#000000" text-anchor="middle">Server</text>
+<rect x="691.2" y="581.2" width="16.8" height="0.8" fill="#6f8be0"><title>Other servers: 0.5%</title></rect>
+<rect x="714.0" y="581.8" width="16.8" height="0.2" fill="#2a3fa8"><title>Other servers: 0.1%</title></rect>
+<line x1="676.0" y1="582" x2="676.0" y2="587" stroke="#7f7f7f"/>
+<text x="711.0" y="600" font-family="Arial,Helvetica,DejaVu Sans,sans-serif" font-size="12" fill="#000000" text-anchor="middle">Other</text>
+<text x="711.0" y="614" font-family="Arial,Helvetica,DejaVu Sans,sans-serif" font-size="12" fill="#000000" text-anchor="middle">servers</text>
+<line x1="746" y1="582" x2="746" y2="587" stroke="#7f7f7f"/>
+<rect x="304" y="631" width="9" height="9" fill="#6f8be0"/>
+<text x="318" y="640" font-family="Arial,Helvetica,DejaVu Sans,sans-serif" font-size="12" font-weight="700" fill="#000000">Peak, last 24 h</text>
+<rect x="422" y="631" width="9" height="9" fill="#2a3fa8"/>
+<text x="436" y="640" font-family="Arial,Helvetica,DejaVu Sans,sans-serif" font-size="12" font-weight="700" fill="#000000">Now</text>
+<text x="12" y="692" font-family="Arial,Helvetica,DejaVu Sans,sans-serif" font-size="12" fill="#000000">Note: right now 6 players (-2 in the last 262 minutes) on 6 servers with 784 player slots; 6 servers have players.</text>
+<text x="12" y="709" font-family="Arial,Helvetica,DejaVu Sans,sans-serif" font-size="12" fill="#000000">Servers are sorted by their peak in the last 24 hours (5 readings, one every 10 minutes); the rest are added up in &quot;Other servers&quot;.</text>
+<text x="12" y="726" font-family="Arial,Helvetica,DejaVu Sans,sans-serif" font-size="12" fill="#000000">Player slots in use = players / the server&#x27;s maximum players.</text>
+<text x="12" y="745" font-family="Arial,Helvetica,DejaVu Sans,sans-serif" font-size="12" fill="#000000"><tspan font-style="italic">Source:</tspan> MP lobby (online data code: live-status, github.com/ThirtyFoxMCx00E1/wagu)</text>
+<text x="716" y="786" font-family="Arial,Helvetica,DejaVu Sans,sans-serif" font-size="22" font-weight="700" fill="#7a7a7a" text-anchor="end">mplobby</text>
+<rect x="722" y="769" width="28" height="19" fill="#2a3fa8"/>
+<text x="736" y="783" font-family="Arial,Helvetica,DejaVu Sans,sans-serif" font-size="11" font-weight="700" fill="#ffd617" text-anchor="middle">MP</text>
+</svg>
