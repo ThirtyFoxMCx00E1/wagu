@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # MP 4.12: the 4 region VPSes on Vultr in one command - each in its own city:
 #   Asia = Singapore (sgp)   Europe = Frankfurt (fra)   NA = Los Angeles (lax)   Oceania = Sydney (syd)
-# Vultr is the one provider of the four with all 4 cities (Hetzner / OVHcloud / Misaka: see
-# docs/REGIONS_VPS.md and use user-data.sh there by hand).
+# Vultr is the one provider of the four with all 4 cities (also: deploy-hetzner.sh, deploy-ovh.sh;
+# Misaka: user-data.sh by hand, see docs/REGIONS_VPS.md).
 #
 #   export VULTR_API_KEY=...        # my.vultr.com > Account > API (allow your IP)
 #   export DUCKDNS_TOKEN=...        # optional, duckdns.org: the 4 names follow the new VPSes

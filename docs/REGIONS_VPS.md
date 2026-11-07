@@ -38,6 +38,33 @@ It makes one firewall group (`mp-regions`, the ports above + UDP 7777 / 7780 for
 4 servers (`PLAN=vc2-1c-2gb` by default, Ubuntu 24.04) and points each DuckDNS name at its server.
 Setup runs by itself on first boot (about 5 minutes): `ssh root@IP tail -f /var/log/mp-firstboot.log`.
 
+## Option A2: Hetzner (3 regions) or OVHcloud (3 regions)
+
+Mix providers if you like: each script only creates the regions you name, with the same firewall
+ports, `user-data.sh` and DuckDNS step as the Vultr one.
+
+```bash
+# Hetzner Cloud (API token: Console > project > Security > API tokens, Read & Write)
+export HCLOUD_TOKEN=...
+bash HiveMQ/providers/deploy-hetzner.sh asia europe na   # sin cpx12, fsn1 cpx12, hil cpx11 (Hillsboro)
+bash HiveMQ/providers/deploy-hetzner.sh --list
+
+# OVHcloud Public Cloud (OpenStack, Anti-DDoS included): download the OpenStack RC file of a
+# Public Cloud user first (Control Panel > Public Cloud > Users & Roles)
+pip install python-openstackclient && source openrc.sh
+bash HiveMQ/providers/deploy-ovh.sh asia europe oceania  # SGP1, DE1 Frankfurt, SYD1 Sydney
+```
+
+Hetzner has no Australia location and OVHcloud's North America regions are on the separate US
+account (`NA_REGION=US-WEST-OR-1` with that account's RC file). A full set from two providers, for
+example: OVHcloud for Asia / Europe / Oceania plus Hetzner `hil` or Vultr `lax` for North America
+(`bash HiveMQ/providers/deploy-vultr.sh na`). API references:
+[Hetzner Cloud API](https://docs.hetzner.cloud/) (same API as `hcloud-go` / `hcloud-python`),
+[OVHcloud Public Cloud with OpenStack](https://help.ovhcloud.com/csm/en-public-cloud-compute-prepare-openstack-api-environment?id=kb_article_view&sysparm_article=KB0050995).
+
+Misaka Network (LAX02, SIN03, FRA13) has no script: order the KVM VPS in the portal and use Option B
+(paste `user-data.sh` as cloud-init, or run it as root over SSH: `REGION` and `DUCKDNS_TOKEN` filled in).
+
 ## Option B: any provider, by hand
 
 1. Create an Ubuntu 24.04 / Debian 12 server in the city (table above), 2 GB RAM or more.
