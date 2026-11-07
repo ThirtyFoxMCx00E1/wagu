@@ -38,6 +38,15 @@ It makes one firewall group (`mp-regions`, the ports above + UDP 7777 / 7780 for
 4 servers (`PLAN=vc2-1c-2gb` by default, Ubuntu 24.04) and points each DuckDNS name at its server.
 Setup runs by itself on first boot (about 5 minutes): `ssh root@IP tail -f /var/log/mp-firstboot.log`.
 
+### Option A on Windows / phone-free PC: one program, no bash
+
+`mp-deploy-vultr` does the same as `deploy-vultr.sh`, built on Vultr's official Go library
+[govultr](https://github.com/vultr/govultr) (v3.34.0). Download it from the
+[v4.12 release](https://github.com/ThirtyFoxMCx00E1/wagu/releases/tag/v4.12)
+(`mp-deploy-vultr-windows-amd64.exe`, `-linux-amd64`, `-darwin-arm64`), double-click it, paste the
+Vultr API key and the DuckDNS token when asked. `mp-deploy-vultr --list` shows the IPs; `asia oceania`
+creates only those. Source: `HiveMQ/providers/vultr-go/` (`bash build.sh`, Go 1.23+).
+
 ## Option A2: Hetzner (3 regions) or OVHcloud (3 regions)
 
 Mix providers if you like: each script only creates the regions you name, with the same firewall

@@ -1,0 +1,11 @@
+module github.com/ThirtyFoxMCx00E1/wagu/HiveMQ/providers/vultr-go
+
+go 1.23
+
+require github.com/vultr/govultr/v3 v3.34.0
+
+require (
+	github.com/google/go-querystring v1.2.0 // indirect
+	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
+	github.com/hashicorp/go-retryablehttp v0.7.8 // indirect
+)
