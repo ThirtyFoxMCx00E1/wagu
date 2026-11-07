@@ -11,11 +11,16 @@
 #   bash deploy-vultr.sh --list     # your MP VPSes + IPs
 set -euo pipefail
 API=https://api.vultr.com/v2
-: "${VULTR_API_KEY:?set VULTR_API_KEY (my.vultr.com > Account > API)}"
+# MP_CRED_PROXY=1: an HTTPS proxy adds the API key / DuckDNS token (nothing secret in this script)
+if [ "${MP_CRED_PROXY:-0}" != 1 ]; then : "${VULTR_API_KEY:?set VULTR_API_KEY (my.vultr.com > Account > API)}"; fi
 PLAN="${PLAN:-vc2-1c-2gb}"
 OS_ID="${OS_ID:-2284}"          # Ubuntu 24.04 LTS x64
 DIR="$(cd "$(dirname "$0")" && pwd)"
-v() { local m=$1 p=$2; shift 2; curl -fsS -X "$m" -H "Authorization: Bearer $VULTR_API_KEY" -H "Content-Type: application/json" "$API$p" "$@"; }
+v() {
+    local m=$1 p=$2; shift 2
+    if [ "${MP_CRED_PROXY:-0}" = 1 ]; then curl -fsS -X "$m" -H "Content-Type: application/json" "$API$p" "$@"
+    else curl -fsS -X "$m" -H "Authorization: Bearer $VULTR_API_KEY" -H "Content-Type: application/json" "$API$p" "$@"; fi
+}
 need() { command -v "$1" >/dev/null || { echo "install $1 first"; exit 1; }; }
 need curl; need jq; need base64
 
@@ -47,9 +52,10 @@ for R in "${REGIONS[@]}"; do
         IP=$(v GET "/instances/$ID" | jq -r '.instance.main_ip')
         [ -n "$IP" ] && [ "$IP" != "0.0.0.0" ] && break; sleep 5
     done
-    if [ -n "${DUCKDNS_TOKEN:-}" ] && [ -n "$IP" ]; then   # at once with the exact IPv4 (the VPS repeats it every 5 min)
+    if { [ -n "${DUCKDNS_TOKEN:-}" ] || [ "${MP_CRED_PROXY:-0}" = 1 ]; } && [ -n "$IP" ]; then   # at once with the exact IPv4 (the VPS repeats it every 5 min)
         D=$(case $R in asia) echo mpsamp;; europe) echo eusamp;; na) echo nasamp;; oceania) echo ocsamp;; esac)
-        echo "duckdns $D.duckdns.org -> $IP: $(curl -fsS "https://www.duckdns.org/update?domains=$D&token=$DUCKDNS_TOKEN&ip=$IP" || echo failed)"
+        if [ "${MP_CRED_PROXY:-0}" = 1 ]; then U="https://www.duckdns.org/update?domains=$D&ip=$IP"; else U="https://www.duckdns.org/update?domains=$D&token=$DUCKDNS_TOKEN&ip=$IP"; fi
+        echo "duckdns $D.duckdns.org -> $IP: $(curl -fsS "$U" || echo failed)"
     fi
     echo "mp-$R: $IP  (setup runs by itself, about 5 min: ssh root@$IP tail -f /var/log/mp-firstboot.log)"
 done

@@ -26,6 +26,7 @@ if [ -n "$DUCKDNS_TOKEN" ] && [ "$DUCKDNS_TOKEN" != "__DUCKDNS__" ]; then
     fi
     sleep 75   # the old address expires (TTL 60 s) before the TLS certificate is requested
 fi
+[ -z "$DUCKDNS_TOKEN" ] || [ "$DUCKDNS_TOKEN" = "__DUCKDNS__" ] && sleep 90   # deploy-vultr.sh sets the DuckDNS name: let it reach the DNS first
 # open the ports on the VPS itself too (some images ship with ufw / iptables on)
 if command -v ufw >/dev/null && ufw status | grep -q active; then
     for p in 22/tcp 1883/tcp 8883/tcp 8884/tcp 7681/tcp 80/tcp 1922/udp 1930/udp 1931/udp 1932/udp 7777/udp 7780/udp; do ufw allow $p; done
