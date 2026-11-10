@@ -45,6 +45,7 @@ jobs:
         continue-on-error: true
         with:
           artifact_name: github-pages
+          timeout: 2400000
       - name: Retry deploy (artifact list can lag a few seconds)
         if: steps.deployment.outcome == 'failure'
         run: sleep 20
@@ -53,3 +54,4 @@ jobs:
         uses: actions/deploy-pages@v4
         with:
           artifact_name: github-pages
+          timeout: 2400000
