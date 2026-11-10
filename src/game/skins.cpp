@@ -384,7 +384,10 @@ int Game::ModelForClothes(const PktClothes& c0, int& slotOut)
         if(nowMs - s_SlotLoadAt[best] > 20000)
         {   // 20 s and still not in: give up on clothes for now (avatar skin)
             s_SlotLoadAt[best] = 0; s_SlotName[best][0] = 0; s_SlotOurs[best] = false;
-            logger->Info("Skins: couldn't load the cutscene CJ model (csplay)"); ++s_nClothesFaults;
+            // 4.12.4: if csplay is not in this game's files (custom modpacks often drop the cutscene
+            // archive) it never will be: turn clothing sync off for this session at once instead of
+            // asking the streamer for it again (it was 3 tries of 20 s each)
+            logger->Info("Skins: couldn't load the cutscene CJ model (csplay) - clothing sync off, avatar skins are used"); s_nClothesFaults = 3;
         }
         return 0;
     }
