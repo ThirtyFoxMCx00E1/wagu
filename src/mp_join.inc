@@ -1,7 +1,7 @@
 // 2.19: joining a server (included by mp.cpp)
 //  Connect / Join  -> a full-screen black panel slides in from the left (1.0 s = 20 ticks of 50 ms),
 //                     the game HUD, radar and touch controls go away (chat + title logo stay on top)
-//  behind the black -> camera at the SA-MP connection view (Santa Maria Beach)
+//  behind the black -> camera at the connection view (4.12.1: default / Mega Vil: a moving camera tour after connected)
 //  "Connected successfully!" -> the black slides out again, starting at the left
 //  3 s later        -> ( <  Spawn  > ): 34 spawn spots, the camera eases from one to the next
 //  Spawn            -> you are put there, camera / HUD / controls come back
@@ -69,13 +69,14 @@ static int      s_nSpawnStep = 0;            // -1 / +1 pressed (done on the gam
 // camera flight
 static Vec3     s_CamFromP, s_CamFromL, s_CamToP, s_CamToL, s_CamNowP, s_CamNowL;
 static uint64_t s_nCamT0 = 0; static int s_nCamMs = 0; static float s_fCamArc = 0;
-static Vec3     s_JoinFinalP, s_JoinFinalL;   // 4.12: the server's own connection view (the cinematic ends there)
+static Vec3     s_JoinFinalP, s_JoinFinalL;   // 4.12: the server's own connection view
 
 static float EaseInOut(float t) { if(t <= 0) return 0; if(t >= 1) return 1; return t < 0.5f ? 4 * t * t * t : 1 - powf(-2 * t + 2, 3) / 2; }
 
 static void StartCamFlight(const Vec3& toP, const Vec3& toL);
-// 4.12: cinematic connection camera - slow eased dolly shots with cinema bars while you connect / load.
-// Always on the default server and Mega Vil; a custom server turns it on in + Add server (PktWelcome3 flag).
+// 4.12: cinematic connection camera. 4.12.1: starts once you are connected (the black stays until then),
+// no cinema bars, no fades: one continuous camera move. Always on the default server and Mega Vil; a custom
+// server turns it on in + Add server (PktWelcome3 flag).
 struct CineShot { Vec3 p0, l0, p1, l1; };
 static const CineShot kCineLS[] =
 {
@@ -92,13 +93,19 @@ static const CineShot kCineRp[] =
     { { 1250.0f, -1500.0f, 130.0f }, { 1480.0f, -1690.0f, 30.0f }, { 1300.0f, -1700.0f, 110.0f }, { 1480.0f, -1690.0f, 25.0f } },    // the city around it
 };
 #define CINE_SHOT_MS 6500
-#define CINE_FADE_MS 450
+#define CINE_RP_MIN_MS 9000   // 4.12.1: Mega Vil: how long the tour runs before it eases down to the Lobby Hub
+// 4.12.1: one continuous camera path (no cinema bars, no dip to black, no jump cuts between shots).
+// The shots become waypoints of a closed loop: p0 -> p1 of each shot (the slow dolly), then a high
+// transit point over the city to the next shot. A non-uniform Catmull-Rom (Barry-Goldman) curve with
+// knot times = segment durations keeps position AND speed smooth through every waypoint.
+#define CINE_MAX_PTS 32
 static bool     s_bCine = false;          // this join uses the cinematic camera
-static int      s_nCineShot = 0, s_nCineShots = 0; static const CineShot* s_pCine = nullptr;
-static uint64_t s_nCineT0 = 0;
-static bool     s_bCineFinal = false;     // connected: the last flight to the server's own view
-static int      s_nCinePlayed = 0;
-static float    s_fCineBars = 0.0f;
+static bool     s_bCineFinal = false;     // the tour has ended (final flight / spawn picker flight)
+static uint64_t s_nCineT0 = 0, s_nCineStartMs = 0;
+static int      s_nCinePts = 0, s_nCineSeg = -1, s_nCinePlayed = 0;
+static Vec3     s_CineP[CINE_MAX_PTS], s_CineL[CINE_MAX_PTS];
+static float    s_CineT[CINE_MAX_PTS + 1];   // knot times (ms), s_CineT[n] = loop length
+static bool     s_bCamEaseOut = false;    // 4.12.1: a flight that leaves the moving tour starts at speed (no stop)
 static bool CineWanted()
 {
     if(s_bRpJoin || MP_IsRpServerName(client.GetServerName())) return true;
@@ -107,46 +114,93 @@ static bool CineWanted()
     return client.GetState() == NET_CONNECTED && (client.GetServerFlags() & MP_SRVF_CINECAM);
 }
 static float SmoothStep(float t) { t = t < 0 ? 0 : (t > 1 ? 1 : t); return t * t * (3 - 2 * t); }
-static void CineStart(uint64_t now)
+static float CineDist(const Vec3& a, const Vec3& b) { float dx = b.x - a.x, dy = b.y - a.y, dz = b.z - a.z; return sqrtf(dx * dx + dy * dy + dz * dz); }
+static void CineAddPt(const Vec3& p, const Vec3& l, float ms)
+{
+    if(s_nCinePts >= CINE_MAX_PTS) return;
+    s_CineP[s_nCinePts] = p; s_CineL[s_nCinePts] = l; s_CineT[s_nCinePts + 1] = s_CineT[s_nCinePts] + ms; ++s_nCinePts;
+}
+static Vec3 CineLerp(const Vec3& a, const Vec3& b, float ta, float tb, float t)
+{
+    const float d = tb - ta; if(d <= 0.001f) return b;
+    const float u = (t - ta) / d;
+    return { a.x + (b.x - a.x) * u, a.y + (b.y - a.y) * u, a.z + (b.z - a.z) * u };
+}
+// Barry-Goldman pyramid: point on segment i (P[i] -> P[i+1]) at loop time t
+static Vec3 CineCurve(const Vec3* P, int i, float t)
+{
+    const int n = s_nCinePts;
+    const int i0 = (i - 1 + n) % n, i1 = i, i2 = (i + 1) % n, i3 = (i + 2) % n;
+    const float t1 = s_CineT[i], t2 = s_CineT[i + 1];
+    const float t0 = t1 - (s_CineT[i0 + 1] - s_CineT[i0]);
+    const float t3 = t2 + (s_CineT[i2 + 1] - s_CineT[i2]);
+    const Vec3 a1 = CineLerp(P[i0], P[i1], t0, t1, t), a2 = CineLerp(P[i1], P[i2], t1, t2, t), a3 = CineLerp(P[i2], P[i3], t2, t3, t);
+    const Vec3 b1 = CineLerp(a1, a2, t0, t2, t), b2 = CineLerp(a2, a3, t1, t3, t);
+    return CineLerp(b1, b2, t1, t2, t);
+}
+static void CineBuild(const CineShot* shots, int count, int first)
+{
+    s_nCinePts = 0; s_CineT[0] = 0;
+    for(int k = 0; k < count; ++k)
+    {
+        const CineShot& c = shots[(first + k) % count];
+        const CineShot& nx = shots[(first + k + 1) % count];
+        CineAddPt(c.p0, c.l0, CINE_SHOT_MS);                    // the slow dolly of this shot
+        const float d = CineDist(c.p1, nx.p0);
+        const float ms = std::max(4500.0f, std::min(11000.0f, d / 0.11f));   // ~110 m/s over the city
+        if(d > 400.0f)
+        {   // a long hop: go through a point high over the city between the two shots
+            const Vec3 mp = { (c.p1.x + nx.p0.x) * 0.5f, (c.p1.y + nx.p0.y) * 0.5f, std::max(c.p1.z, nx.p0.z) + std::min(140.0f, d * 0.08f) };
+            const Vec3 ml = { (c.l1.x + nx.l0.x) * 0.5f, (c.l1.y + nx.l0.y) * 0.5f, (c.l1.z + nx.l0.z) * 0.5f };
+            CineAddPt(c.p1, c.l1, ms * 0.5f);
+            CineAddPt(mp, ml, ms * 0.5f);
+        }
+        else CineAddPt(c.p1, c.l1, ms);
+    }
+}
+static void CineStreamAhead(int ped, int seg)
+{   // stream the next waypoints in before the camera gets there (the hidden player waits above them)
+    const int n = s_nCinePts; if(n <= 0) return;
+    const int a = (seg + 1) % n, b = (seg + 2) % n;
+    Game::PreloadArea(s_CineL[a], false);
+    Game::PreloadArea(s_CineL[b], false);
+    if(ped > 0)
+    {
+        Game::FreezeChar(ped, false);
+        Game::PlaceChar(ped, { s_CineL[a].x, s_CineL[a].y, s_CineL[a].z + 40.0f });
+        Game::FreezeChar(ped, true);
+    }
+}
+static void CineStart(int ped, uint64_t now)
 {
     const bool rp = s_bRpJoin || MP_IsRpServerName(client.GetServerName());
-    s_pCine = rp ? kCineRp : kCineLS; s_nCineShots = rp ? (int)(sizeof(kCineRp) / sizeof(kCineRp[0])) : (int)(sizeof(kCineLS) / sizeof(kCineLS[0]));
-    s_nCineShot = (int)(now / 1000 % (uint64_t)s_nCineShots); s_nCineT0 = now; s_bCine = true; s_bCineFinal = false; s_nCinePlayed = 0;
-    Game::PreloadArea(s_pCine[s_nCineShot].l0, false);
-    Game::PreloadArea(s_pCine[(s_nCineShot + 1) % s_nCineShots].l0, false);
+    if(rp) CineBuild(kCineRp, (int)(sizeof(kCineRp) / sizeof(kCineRp[0])), 0);
+    else   CineBuild(kCineLS, (int)(sizeof(kCineLS) / sizeof(kCineLS[0])), 3);   // starts at the Santa Maria pier, then flies on
+    s_nCineT0 = now; s_nCineStartMs = now; s_nCineSeg = -1; s_nCinePlayed = 0;
+    s_bCine = s_nCinePts >= 4; s_bCineFinal = false; s_bCamEaseOut = false; s_nCamMs = 0;
+    if(!s_bCine) return;
+    Game::PreloadArea(s_CineL[0], true);   // still under the black: the first view is streamed in
+    CineStreamAhead(ped, 0);
 }
-// every tick while s_bCine: move the camera on the current shot
-static void CineTick(uint64_t now)
+// every tick while the tour runs: move the camera along the loop
+static void CineTick(int ped, uint64_t now)
 {
-    if(!s_bCine || !s_pCine || s_bCineFinal) return;
-    float k = (float)(now - s_nCineT0) / CINE_SHOT_MS;
-    if(k >= 1.0f)
-    {
-        s_nCineShot = (s_nCineShot + 1) % s_nCineShots; s_nCineT0 = now; k = 0; ++s_nCinePlayed;
-        Game::PreloadArea(s_pCine[(s_nCineShot + 1) % s_nCineShots].l0, false);   // stream the next one in early
-    }
-    const CineShot& c = s_pCine[s_nCineShot];
-    const float e = SmoothStep(k);
-    s_CamNowP = { c.p0.x + (c.p1.x - c.p0.x) * e, c.p0.y + (c.p1.y - c.p0.y) * e, c.p0.z + (c.p1.z - c.p0.z) * e };
-    s_CamNowL = { c.l0.x + (c.l1.x - c.l0.x) * e, c.l0.y + (c.l1.y - c.l0.y) * e, c.l0.z + (c.l1.z - c.l0.z) * e };
+    if(!s_bCine || s_bCineFinal || s_nCinePts < 4) return;
+    const float L = s_CineT[s_nCinePts];
+    float t = fmodf((float)(now - s_nCineT0), L);
+    int seg = 0; while(seg < s_nCinePts - 1 && t >= s_CineT[seg + 1]) ++seg;
+    if(seg != s_nCineSeg) { if(s_nCineSeg >= 0) ++s_nCinePlayed; s_nCineSeg = seg; CineStreamAhead(ped, seg); }
+    s_CamNowP = CineCurve(s_CineP, seg, t);
+    s_CamNowL = CineCurve(s_CineL, seg, t);
     Game::SetFixedCamera(s_CamNowP, s_CamNowL);
 }
-// HUD: cinema bars (0..1) and the dip to black between shots (0..1)
-bool MP::JoinCinema(float& bars, float& fade)
+// leave the tour: one flight from where the camera is now (it keeps its speed at the start)
+static void CineLeave(const Vec3& toP, const Vec3& toL, int ms)
 {
-    const bool on = s_bCine && s_nJoinPhase != JP_NONE && s_nJoinPhase != JP_PICK;
-    static uint64_t last = 0; const uint64_t now = MP_NowMs();
-    const float dt = last ? std::min(0.1f, (now - last) / 1000.0f) : 0.016f; last = now;
-    s_fCineBars += (on ? 1.0f : -1.0f) * dt * 1.6f; s_fCineBars = std::max(0.0f, std::min(1.0f, s_fCineBars));
-    bars = SmoothStep(s_fCineBars); fade = 0.0f;
-    if(on && !s_bCineFinal && s_pCine)
-    {
-        const uint64_t t = now - s_nCineT0;
-        if(t < CINE_FADE_MS) fade = 1.0f - (float)t / CINE_FADE_MS;                                       // fade in
-        else if(t > CINE_SHOT_MS - CINE_FADE_MS) fade = (float)(t - (CINE_SHOT_MS - CINE_FADE_MS)) / CINE_FADE_MS;   // fade out
-        if(s_nCinePlayed == 0 && t < CINE_FADE_MS && s_nJoinPhase == JP_COVER) fade = 0.0f;
-    }
-    return bars > 0.0f;
+    s_bCineFinal = true;
+    StartCamFlight(toP, toL);
+    s_bCamEaseOut = true; s_fCamArc = 0.0f;
+    if(ms > 0) s_nCamMs = ms;
 }
 
 
@@ -203,7 +257,7 @@ static void StartCamFlight(const Vec3& toP, const Vec3& toL)
     float dx = toP.x - s_CamFromP.x, dy = toP.y - s_CamFromP.y, d = sqrtf(dx * dx + dy * dy);
     s_nCamMs = d < 400 ? 1600 : (d < 1500 ? 2200 : 3000);
     s_fCamArc = d < 150 ? 4.0f : (d * 0.12f > 260.0f ? 260.0f : d * 0.12f);   // fly up a little over long hops
-    s_nCamT0 = MP_NowMs();
+    s_nCamT0 = MP_NowMs(); s_bCamEaseOut = false;
 }
 
 // game tick
@@ -260,33 +314,35 @@ static void JoinFlowProcess(int ped, uint64_t now)
                 Game::SetFixedCamera(jcP, jcL);
                 s_bJoinCamSet = true;
                 s_JoinFinalP = jcP; s_JoinFinalL = jcL;
-                if(CineWanted()) CineStart(now);   // 4.12: the cinematic camera while connecting (no waiting on black)
             }
-            if(!s_bCine && s_bJoinConnected && CineWanted()) CineStart(now);   // a custom server says so in its welcome
-            if((s_bJoinConnected || s_bCine) && t >= 200) { s_nJoinPhase = JP_REVEAL; s_nJoinT0 = now; }
+            // 4.12.1: the black stays until "Connected successfully!" - only then the camera tour starts (under the
+            // black, so the first frame you see is already moving), and the black slides away from it
+            if(s_bJoinConnected && t >= 200)
+            {
+                if(!s_bCine && CineWanted()) CineStart(ped, now);
+                s_nJoinPhase = JP_REVEAL; s_nJoinT0 = now;
+            }
             break;
         case JP_REVEAL:
             if(t >= JOIN_SLIDE_MS) { s_nJoinPhase = JP_WAIT; s_nJoinT0 = now; }
             break;
         case JP_WAIT:
-            if(s_bCine)
-            {   // 4.12: shots run until connected + loaded (and 2 shots seen on a custom server), then one eased flight to the server's view
-                if(!s_bCine && s_bJoinConnected && CineWanted()) CineStart(now);
-                const bool enough = s_bConnectingDefault || s_bRpJoin || MP_IsRpServerName(client.GetServerName()) || s_nCinePlayed >= 1;
-                if(!s_bCineFinal && s_bJoinConnected && s_nFeedRes < 0 && s_nFeedStep < 0 && enough)
+            if(s_bCine && (s_bRpJoin || MP_IsRpServerName(client.GetServerName())))
+            {   // 4.12.1: Mega Vil: the tour glides over the plaza, then eases (without stopping) down to the Lobby Hub
+                if(!s_bCineFinal && s_nFeedRes < 0 && s_nFeedStep < 0 && now - s_nCineStartMs >= CINE_RP_MIN_MS)
                 {
-                    s_bCineFinal = true;
-                    Vec3 fp = s_JoinFinalP, fl = s_JoinFinalL;
-                    if(s_bRpJoin || MP_IsRpServerName(client.GetServerName())) RpJoinCam(fp, fl);
+                    Vec3 fp, fl; RpJoinCam(fp, fl);
                     Game::PreloadArea(fl, false);
-                    StartCamFlight(fp, fl); s_nCamMs = 2800;
+                    CineLeave(fp, fl, 3200);
                     s_nJoinT0 = now; t = 0;
                 }
-                if(!s_bCineFinal || s_nCamMs > 0 || t < 600) break;
+                if(!s_bCineFinal || s_nCamMs > 0 || t < 400) break;
                 s_bCine = false;
                 if(t < JOIN_BUTTONS_MS) s_nJoinT0 = now - JOIN_BUTTONS_MS;
                 t = JOIN_BUTTONS_MS;
             }
+            // 4.12.1: default server / custom servers with the cinematic camera: the tour keeps moving behind
+            // the < Spawn > picker (it opens after JOIN_BUTTONS_MS as before) until you pick a place
             if(t >= JOIN_BUTTONS_MS && !AuthHoldsJoin(now))   // 3.21.6: login first
             {
                 if(s_bDzJoin || MP_IsDzServerName(client.GetServerName()))
@@ -323,7 +379,8 @@ static void JoinFlowProcess(int ped, uint64_t now)
                 s_nSpawnStep = 0;
                 const SpawnSpot& sp = kSpawns[s_nSpawnSel];
                 Vec3 cp, cl; SpotCamera(s_nSpawnSel, cp, cl);
-                StartCamFlight(cp, cl);
+                if(s_bCine && !s_bCineFinal) { CineLeave(cp, cl, 0); s_bCine = false; }   // 4.12.1: off the moving tour, no stop
+                else StartCamFlight(cp, cl);
                 // stream the new place in while the camera travels (the hidden player waits there)
                 Game::PreloadArea({ sp.x, sp.y, sp.z }, false);
                 Game::FreezeChar(ped, false);
@@ -340,7 +397,7 @@ static void JoinFlowProcess(int ped, uint64_t now)
                 Game::PreloadArea({ sp.x, sp.y, sp.z }, true);
                 Game::Teleport(ped, sp.findGround ? Vec3{ sp.x, sp.y, sp.z } : at, sp.heading);
                 if(sp.findGround) Game::PlaceChar(ped, at);
-                s_bJoinCamSet = false;
+                s_bJoinCamSet = false; s_bCine = false;
                 Game::RestoreCamera();
                 JoinRestoreGame(false);
                 s_nJoinPhase = JP_NONE;
@@ -349,13 +406,14 @@ static void JoinFlowProcess(int ped, uint64_t now)
             }
             break;
     }
-    if(s_bJoinCamSet && s_bCine && !s_bCineFinal) CineTick(now);   // 4.12
+    if(s_bJoinCamSet && s_bCine && !s_bCineFinal && s_nJoinPhase >= JP_REVEAL) CineTick(ped, now);   // 4.12.1: only after connected
     // eased camera flight between spots
     if(s_bJoinCamSet && s_nCamMs > 0)
     {
         float k = (float)(now - s_nCamT0) / (float)s_nCamMs;
         if(k >= 1.0f) { k = 1.0f; s_nCamMs = 0; }
-        float e = EaseInOut(k), arc = sinf(k * 3.14159f) * s_fCamArc;
+        float e = s_bCamEaseOut ? 1.0f - (1.0f - k) * (1.0f - k) * (1.0f - k) : EaseInOut(k), arc = sinf(k * 3.14159f) * s_fCamArc;
+        if(k >= 1.0f) s_bCamEaseOut = false;
         s_CamNowP = { s_CamFromP.x + (s_CamToP.x - s_CamFromP.x) * e, s_CamFromP.y + (s_CamToP.y - s_CamFromP.y) * e,
                       s_CamFromP.z + (s_CamToP.z - s_CamFromP.z) * e + arc };
         s_CamNowL = { s_CamFromL.x + (s_CamToL.x - s_CamFromL.x) * e, s_CamFromL.y + (s_CamToL.y - s_CamFromL.y) * e,
@@ -375,7 +433,7 @@ bool MP::JoinOverlay(float& x0, float& x1)
     {
         case JP_COVER:  x0 = 0; x1 = e; return true;
         case JP_BLACK:  x0 = 0; x1 = 1; return true;
-        case JP_REVEAL: x0 = e; x1 = 1; return k < 1.0f;   // 4.12: with the cinematic camera this opens on the first shot
+        case JP_REVEAL: x0 = e; x1 = 1; return k < 1.0f;   // 4.12.1: opens (after connected) on the moving camera
         default: return false;
     }
 }

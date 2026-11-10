@@ -121,6 +121,9 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **4.12.2**: Join camera after connected (no bars, no fades), ScreenGuard.
+  - Join camera: the black connection screen now stays until "Connected successfully!", then the camera tour starts. No cinema bars at the top and bottom and no dip to black / jump between shots any more: one continuous camera move (a smooth curve through the shots, high over the city between them). Default server: starts at Santa Maria pier and keeps flying behind the < Spawn > picker until you pick a place. Mega Vil Futuristic: glides over the Plaza, then eases down to the Lobby Hub without stopping.
+  - ScreenGuard (from research/ScreenGuard_source): screen recording, screenshots and casting of the game are black unless the phone has a valid `src_Access.txt` in the MP folder (`Android/data/com.rockstargames.gtasa/files/MP/`). 1000 keys exist; DM ThirtyFox on Discord to get one. Only SHA-256 hashes of the keys are in the source.
 - **4.12**: Timber fix, cinematic join camera, 4 real regions, PC + Mobile cross-play.
   - Timber (Mega Vil job): picking up a log no longer locks the character. The carried log (and every object attached to a player) has no collision any more; its collision pinned the player in place.
   - Cinematic Join Camera: joining the default server or Mega Vil Futuristic plays slow, eased camera shots over Los Santos (Vinewood, downtown, Grove Street, Santa Maria pier, the airport; Mega Vil: around the Plaza) with cinema bars and a dip to black, while the connection is made, then flies to your spawn. Custom servers: MP Launcher > + Add server > scroll down > Connection screen > "Cinematic Join Camera" (on by default).

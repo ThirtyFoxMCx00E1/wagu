@@ -1,0 +1,9 @@
+// 4.12.2: ScreenGuard - no screen recording / screenshots of MP (Android FLAG_SECURE) unless the phone
+// has a valid src_Access.txt in the MP folder (1000 keys, given out by the owner on Discord).
+#pragma once
+namespace ScreenGuard
+{
+    void Init(const char* mpDir);   // checks src_Access.txt, starts the guard thread when there is no valid key
+    bool Locked();                  // true = recording is blocked on this phone
+    int  KeyNumber();               // 1..1000 of the valid key, 0 = none
+}

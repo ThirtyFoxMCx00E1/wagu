@@ -20,6 +20,7 @@
 #include "game/game.h"
 #include "game/scriptguard.h"
 #include "game/modscan.h"
+#include "game/screenguard.h"   // 4.12.2
 #include "ui/hud.h"
 #include "ui/floatmenu.h"
 #include "ui/vkeyboard.h"
@@ -719,6 +720,7 @@ extern "C" void OnModLoad()
     char dir[400];
     snprintf(dir, sizeof(dir), "%s/MP", aml->GetAndroidDataPath());
     mkdir(dir, 0777);
+    ScreenGuard::Init(dir);   // 4.12.2: no screen recording without a valid MP/src_Access.txt
     MP::Init(dir);
 
     ScriptGuard::Init(pGameHandle);   // 2.16.2: a script using a dead car / object handle no longer crashes the game

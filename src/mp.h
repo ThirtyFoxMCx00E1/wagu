@@ -300,7 +300,6 @@ namespace MP
     int  OnlineMax();               // that server's limit (or your hosting limit when offline)
     // 2.19 join screen: black slide overlay (x0..x1 = covered part, 0..1 of the width) + spawn picker
     bool JoinOverlay(float& x0, float& x1);
-    bool JoinCinema(float& bars, float& fade);   // 4.12: cinema bars + dip to black of the cinematic connection camera
     const char* SpawnSpotName(int i);
     int  SpawnSpotCount();
     bool SpawnPickerShown();

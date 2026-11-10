@@ -43,6 +43,7 @@
 #include "ui/hexlabel.h"   // 3.55
 #include "game/cleoblock.h"
 #include "game/modscan.h"
+#include "game/screenguard.h"   // 4.12.2
 #include "game/dzmodels.h"   // 3.61: Day Z model pack
 #include "game/boneattach.h"  // 4.00: bag on the spine bone
 #include "net/admin.h"
@@ -6782,7 +6783,7 @@ static void SectionAddServer(void*)
         else ImGui::TextDisabled("Hotspot: turn on your phone hotspot, host a server, friends join 192.168.43.1.");
     }
 
-    // 4.12: Cinematic Join Camera - slow eased camera shots + cinema bars while players connect (custom servers)
+    // 4.12: Cinematic Join Camera - after players connect, one continuous camera move (4.12.1: no bars, no fades) (custom servers)
     ImGui::Separator();
     ImGui::TextUnformatted("Connection screen");
     {
@@ -6792,7 +6793,7 @@ static void SectionAddServer(void*)
             SaveConfig();
             if(own) { s_Server.SetCineCam(settings.hostCineCam); SysMsg(COL_GREEN, "Cinematic Join Camera %s on \"%s\" (players who join from now on).", settings.hostCineCam ? "on" : "off", s_Server.GetName()); }
         }
-        ImGui::TextDisabled(settings.hostCineCam ? "On: while players connect, the camera glides over Los Santos (Vinewood, downtown, Grove Street, the beach) with cinema bars, then eases to the spawn picker."
+        ImGui::TextDisabled(settings.hostCineCam ? "On: once a player is connected, the camera glides over Los Santos (the beach, the airport, Vinewood, downtown, Grove Street) in one continuous move, behind the spawn picker."
                                                  : "Off: the classic black connection screen.");
         ImGui::TextDisabled("The default server and Mega Vil Futuristic Roleplay always have it.");
     }
@@ -7522,4 +7523,7 @@ void MP::Init(const char* dataDir)
         s_bHostJobCreate = false;   // 3.03: it exists already: it keeps its gamemodes
         StartJob(JOB_HOST, false, settings.hostedName, settings.hostedPort);
     }
+    // 4.12.2: ScreenGuard - recording / screenshots are black without a valid MP/src_Access.txt
+    if(ScreenGuard::Locked())
+        SysMsg(COL_YELLOW, "Screen recording is locked on MP. To record, DM ThirtyFox on Discord (discord.gg/tbsDknk34y) for your src_Access.txt, put it in the MP folder and restart the game.");
 }
