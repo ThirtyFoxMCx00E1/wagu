@@ -29,7 +29,7 @@ static void HudMenuSend()
     PktSrvSettings2 p; memset(&p, 0, sizeof(p));
     p.b = s_SrvSet.s; p.b.type = PKT_SRV_SETTINGS; p.b.op = 1;
     if(!s_SrvSet.have) { p.b.modes = s_nServerModes; p.b.perms = s_nServerPerms; p.b.rulesOn = MP::IsOnDefault() ? 1 : 0; }
-    p.hudMagic = HUD_MAGIC; p.hudMode = s_Hud.mode; p.hudFlags = s_Hud.flags; p.doorSecs = s_Hud.door;
+    p.hudMagic = HUD_MAGIC; p.hudMode = s_Hud.mode; p.hudFlags = (uint8_t)(s_Hud.flags & ~HUDF_PLAYER); p.doorSecs = s_Hud.door;
     p.logoX = s_Hud.lx; p.logoY = s_Hud.ly; p.logoZ = s_Hud.lz; p.logoValid = 1;
     client.Send(&p, sizeof(p));
 }
@@ -95,7 +95,8 @@ static void HudTdDlg(int resp, int item, const char*, int)
     if(item < 0) return;
     if(item == 0) { HudModeShow(); return; }
     static const uint8_t bits[] = { HUDF_CENTS, HUDF_PLAYER, HUDF_AMMO, HUDF_LOGO };
-    if(item >= 1 && item <= 4) { s_Hud.flags ^= bits[item - 1]; HudMenuSend(); }
+    if(item == 2) { s_Hud.flags &= ~HUDF_PLAYER; SysMsg(COL_SYSTEM, "HUD Player was removed in 4.12.5 - your name and id are no longer drawn on the HUD."); HudTdShow(); return; }
+    if(item >= 1 && item <= 4) { s_Hud.flags ^= bits[item - 1]; s_Hud.flags &= ~HUDF_PLAYER; HudMenuSend(); }
     if(item >= 5 && item <= 7) { HudLogoPosAsk(item - 5); return; }
     HudTdShow();
 }
@@ -115,7 +116,7 @@ void HudTdShow()
         "{FFFFFF}Logo Position X\t{FFFFFF}%d%%\n"
         "{FFFFFF}Logo Position Y\t{FFFFFF}%d%%\n"
         "{FFFFFF}Logo Size Z\t{FFFFFF}%d%%\n",
-        mode, HudOnOff(HudFlag(HUDF_CENTS)), HudOnOff(HudFlag(HUDF_PLAYER)), HudOnOff(HudFlag(HUDF_AMMO)), HudOnOff(HudFlag(HUDF_LOGO)), (int)s_Hud.lx, (int)s_Hud.ly, (int)s_Hud.lz);
+        mode, HudOnOff(HudFlag(HUDF_CENTS)), "{AAAAAA}Removed", HudOnOff(HudFlag(HUDF_AMMO)), HudOnOff(HudFlag(HUDF_LOGO)), (int)s_Hud.lx, (int)s_Hud.ly, (int)s_Hud.lz);
     ShowDialog(0, DIALOG_STYLE_TABLIST_HEADERS, "{FFFFFF}Settings Menu >> Textdraw", b, "Select", "Back", HudTdDlg, HUDM_TD);
 }
 

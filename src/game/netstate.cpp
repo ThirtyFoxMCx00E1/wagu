@@ -1011,6 +1011,40 @@ static bool GuardedUpgrade(void* v, int part, bool add)
     sigaction(SIGSEGV, &s_OldSegv, nullptr); sigaction(SIGBUS, &s_OldBus, nullptr);
     return ok;
 }
+// 4.12.5: the same guard for EVERY caller of CVehicle::AddVehicleUpgrade, not only MP's tuning sync.
+// Crash log (Infinix X6873, Android 16): ARM Cheat Menu's tuning page called AddVehicleUpgrade(1019) on
+// a modded zr350 -> RwFrameForAllObjects(NULL) -> SIGSEGV (fault address 0xA0). The hook runs the game's
+// function inside the fault guard; a part that faults on a car is skipped (and never tried again on it).
+static int (*VehAddUpgrade_orig)(void*, int) = nullptr;
+struct BadFit { void* v; int part; };
+static BadFit s_BadFit[64]; static int s_nBadFit = 0;
+static int HookAddVehicleUpgrade(void* v, int part)
+{
+    if(!v) return 0;
+    if(s_bInUpgrade) return VehAddUpgrade_orig(v, part);   // already inside MP's own guarded call
+    for(int i = 0; i < s_nBadFit && i < 64; ++i) if(s_BadFit[i].v == v && s_BadFit[i].part == part) return 0;
+    struct sigaction sa; memset(&sa, 0, sizeof(sa));
+    sa.sa_sigaction = UpgradeFault; sa.sa_flags = SA_SIGINFO | SA_ONSTACK; sigemptyset(&sa.sa_mask);
+    sigaction(SIGSEGV, &sa, &s_OldSegv); sigaction(SIGBUS, &sa, &s_OldBus);
+    int r = 0; bool ok = true;
+    s_UpThread = pthread_self();
+    if(sigsetjmp(s_UpJmp, 1) == 0)
+    {
+        s_bInUpgrade = 1;
+        r = VehAddUpgrade_orig(v, part);
+        s_bInUpgrade = 0;
+    }
+    else ok = false;
+    sigaction(SIGSEGV, &s_OldSegv, nullptr); sigaction(SIGBUS, &s_OldBus, nullptr);
+    if(!ok)
+    {
+        s_BadFit[s_nBadFit % 64] = BadFit{ v, part }; ++s_nBadFit;
+        if(++s_nUpgradeFaults <= 20) logger->Info("MP: tuning part %d doesn't fit this car (its 3D model has no place for it, e.g. Cheat Menu tuning on a modded car) - skipped, no crash", part);
+        return 0;
+    }
+    return r;
+}
+
 static void FitUpgrade(void* v, int carModel, int part, bool add)
 {
     if(IsBadUpgrade(carModel, part)) return;
@@ -1624,6 +1658,12 @@ void Game::InitNetState217(void* h)
     void* f;
     VehAddUpgrade_fn    = (int (*)(void*, int))aml->GetSym(h, "_ZN8CVehicle17AddVehicleUpgradeEi");      // 2.18.1
     VehRemoveUpgrade_fn = (void (*)(void*, int))aml->GetSym(h, "_ZN8CVehicle20RemoveVehicleUpgradeEi");
+    if(VehAddUpgrade_fn)
+    {   // 4.12.5: every caller (Cheat Menu, CLEO, the game) goes through the fault guard
+        aml->Hook((void*)VehAddUpgrade_fn, (void*)&HookAddVehicleUpgrade, (void**)&VehAddUpgrade_orig);
+        if(VehAddUpgrade_orig) VehAddUpgrade_fn = VehAddUpgrade_orig;   // MP's own guarded calls use the original
+        else VehAddUpgrade_orig = VehAddUpgrade_fn;
+    }
     logger->Info("Tuning sync: %s", (VehAddUpgrade_fn && VehRemoveUpgrade_fn) ? "on (guarded)" : "off (game functions not found)");
     if((f = (void*)aml->GetSym(h, "_ZN7CWeapon14DoBulletImpactEP7CEntityS1_P7CVectorS3_P9CColPointi")))
         aml->Hook(f, (void*)&HookDoBulletImpact, (void**)&DoBulletImpact_orig);

@@ -13,7 +13,7 @@ static HudCfg s_Hud;
 
 static void HudReset() { s_Hud = HudCfg(); }
 static bool HudOn() { return s_Hud.mode != 0; }
-static bool HudFlag(uint8_t f) { return (s_Hud.flags & f) != 0; }
+static bool HudFlag(uint8_t f) { if(f & HUDF_PLAYER) return false; return (s_Hud.flags & f) != 0; }   // 4.12.5: HUD Player ("Name (id)") removed on every server
 static int  HudDoorMs() { return s_Hud.door * 1000; }
 
 struct HudPal { ImU32 fill, border, accent; const char* name; };

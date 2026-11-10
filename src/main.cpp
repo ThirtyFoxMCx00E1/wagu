@@ -225,6 +225,7 @@ static bool DispatchTouch(int type, int finger, int x, int y)
 
 DECL_HOOKv(AND_TouchEvent, int type, int finger, int x, int y)
 {
+    ScreenGuard::OnUiThread();   // 4.12.5: FLAG_SECURE the normal way when this is Android's main thread
     if(!HUD::IsInitialised() || finger < 0 || finger >= 16) { AND_TouchEvent(type, finger, x, y); return; }
     s_nLastHookTouchMs = MP_NowMs();
     int ox = x, oy = y;

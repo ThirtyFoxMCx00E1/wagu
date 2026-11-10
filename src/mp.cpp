@@ -5540,7 +5540,8 @@ static void LoadConfig()
     ::cfg->GetString(settings.serverDesc, sizeof(settings.serverDesc), "ServerDesc", "", "MP");
     ::cfg->GetString(settings.serverPreview, sizeof(settings.serverPreview), "ServerPreview", "", "MP");
     ::cfg->GetString(settings.serverLogo, sizeof(settings.serverLogo), "ServerLogo", "", "MP");   // 4.07
-    settings.hudMode = ::cfg->GetInt("HudMode", 1, "MP"); settings.hudFlags = ::cfg->GetInt("HudFlags", HUD_DEFAULT_FLAGS, "MP"); if(!::cfg->GetBool("HudPlayerOff4124", false, "MP")) { settings.hudFlags &= ~HUDF_PLAYER; ConfigEntry* e = ::cfg->Bind("HudPlayerOff4124", true, "MP"); e->SetBool(true); delete e; ::cfg->Save(); }   // 4.12.4: once - HUD Player off (turn it back on in /settings > Textdraw) settings.hudDoor = ::cfg->GetInt("HudDoor", 2, "MP");
+    settings.hudMode = ::cfg->GetInt("HudMode", 1, "MP"); settings.hudFlags = ::cfg->GetInt("HudFlags", HUD_DEFAULT_FLAGS, "MP"); settings.hudFlags &= ~HUDF_PLAYER;   // 4.12.5: HUD Player ("Name (id)") removed on every server
+    settings.hudDoor = ::cfg->GetInt("HudDoor", 2, "MP");
     if(settings.hudMode < 0 || settings.hudMode > 5) settings.hudMode = 1;
     if(settings.hudDoor < 0 || settings.hudDoor > 10) settings.hudDoor = 2;
     settings.logoX = ::cfg->GetInt("LogoX", 50, "MP"); settings.logoY = ::cfg->GetInt("LogoY", 2, "MP"); settings.logoZ = ::cfg->GetInt("LogoZ", 100, "MP");
@@ -7158,6 +7159,11 @@ static void SectionDisplay(void*)
         changed |= FloatMenu::ToggleSwitch("MW3: PUBG compass on top", &settings.pubgCompass);
         changed |= FloatMenu::ToggleSwitch("Day Z: MTA DayZ models (download)", &settings.dzModels);   // 3.61
         changed |= FloatMenu::ToggleSwitch("Day Z: GTA V world textures (129 MB download)", &settings.dzWorldTex);   // 4.05.5
+    }
+    {   // 4.12.5: HUD position - X / Y / size of the radar, weapon switch, bars ... (ARM Advanced Settings)
+        ImGui::Separator();
+        if(ImGui::CollapsingHeader("HUD position (radar, weapon switch, bars)")) AdvHudPositionUI();
+        ImGui::Separator();
     }
     NpcStatusLine();
     SyncStatusLines();   // 2.19.6
