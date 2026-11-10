@@ -121,6 +121,12 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **4.12.3**: Phone keyboard switch, /pay, Day Z XkiLoader pack, GTA HUD page removed.
+  - Settings > Display > Keyboard: "MP keyboard" (default, emojis / GIFs / paste) or "Phone keyboard" - chat and every text box open a small box with your phone's own keyboard (Gboard, SwiftKey ...); OK / Enter sends.
+  - /pay [id] [amount] (also /sendmoney, /givemoney for players who aren't staff): give your own money to another player ($1 - $1,000,000, the server checks it). Mega Vil keeps its RP /pay (cash, 5 m).
+  - Project Day Z XkiLoader pack: MP Launcher > Cloud Storage > "Download pack" saves MP_ProjectDayZ_XkiLoader.zip into files/MP/dayz/ (a real file) and unpacks it to xkiloader/ProjectDayZ; "Import pack (zip)" does the same from the Files app. 123 MTA DayZ models named like the GTA models, textures as PNG with unique names (no GTA texture is overwritten). Needs XkiLoader (release/libXkiLoader.so / libXkiLoader64.so) as an AML mod; restart the game after. Built with tools/make_dz_xkiloader.py, hosted in Host/DayZ/xkiloader/.
+  - The "GTA HUD" page (ARM Advanced Settings) is gone and the launcher no longer moves that HUD. If MP changed its ini before, the original preset is put back once at start - your own HUD returns.
+  - MP Discord bot (discordpy-bot 4.12.2): the 24/7 Streaming status (YouTube) is inside the bot itself (STREAM_URL, STATUS_TEXTS). MP Railway console: `sudo mp-railway deploy` + `sudo mp-railway env set STREAM_URL ...`.
 - **4.12.2**: Join camera after connected (no bars, no fades), ScreenGuard.
   - Join camera: the black connection screen now stays until "Connected successfully!", then the camera tour starts. No cinema bars at the top and bottom and no dip to black / jump between shots any more: one continuous camera move (a smooth curve through the shots, high over the city between them). Default server: starts at Santa Maria pier and keeps flying behind the < Spawn > picker until you pick a place. Mega Vil Futuristic: glides over the Plaza, then eases down to the Lobby Hub without stopping.
   - ScreenGuard (from research/ScreenGuard_source): screen recording, screenshots and casting of the game are black unless the phone has a valid `src_Access.txt` in the MP folder (`Android/data/com.rockstargames.gtasa/files/MP/`). 1000 keys exist; DM ThirtyFox on Discord to get one. Only SHA-256 hashes of the keys are in the source.

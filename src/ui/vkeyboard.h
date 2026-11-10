@@ -18,4 +18,7 @@ namespace VKeyboard
     // a message the text turns red, the message shows and Enter does nothing (reserved names)
     typedef const char* (*CheckFn)(const char* text);
     void SetValidator(SubmitFn forSubmit, CheckFn check);
+    // 4.12.3: Settings > Keyboard: false = MP keyboard (default), true = the phone's own keyboard
+    void SetPhoneKeyboard(bool phone);
+    bool PhoneKeyboard();
 }

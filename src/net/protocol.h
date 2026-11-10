@@ -13,10 +13,10 @@
 // phones refuse servers older than that too (they would let old phones in).
 // 3.10: build 31000. MP_MIN_BUILD stays 30406 and the lobby stays thirtyfox/mp5/: 3.04.6 (no cheats)
 // and 3.10 phones play together on the same servers; only 3.04.5 and older (mp4) stay shut out.
-#define MP_BUILD 41202   // 4.12.2
+#define MP_BUILD 41203   // 4.12.3
 #define MP_MIN_BUILD       30406
 #define MP_AUTH_MIN_BUILD  32106   // 3.21.6: servers with the login system refuse older phones (they could not log in)
-#define MP_VERSION_STR     "4.12.2"
+#define MP_VERSION_STR     "4.12.3"
 #define MP_VOICE_BUILD     31100   // 3.11: phones from this build on get voice packets
 #define MP_DOWNLOAD_URL    "mpsamp-open.github.io"   // 4.05.4: new website (mpsamp-open org); thirtyfoxmcx00e1.github.io/wagu still works as a backup
 #define MP_DEFAULT_HOST    "127.0.0.1"
@@ -447,10 +447,12 @@ enum eAdminCmd : uint8_t { ADMIN_KICK = 1, ADMIN_BAN = 2, ADMIN_MUTE = 3, ADMIN_
     ADMIN_WARN = 6, ADMIN_SETHEALTH = 7, ADMIN_SETARMOUR = 8, ADMIN_FINE = 9, ADMIN_REPORTMUTE = 10, ADMIN_GOTO = 11,
     ADMIN_GETHERE = 12, ADMIN_UNBAN = 13, ADMIN_GIVECASH = 14, ADMIN_MAKEVIP = 15, ADMIN_MAKEADMIN = 16, ADMIN_RESETSTATS = 17,
     ADMIN_GIVECOOKIE = 18, ADMIN_REPORT = 19, ADMIN_BANS = 20,
-    ADMIN_BANNAME = 21 };   // 3.58: ban a name (online or offline), reason = "name\treason"
+    ADMIN_BANNAME = 21,     // 3.58: ban a name (online or offline), reason = "name\treason"
+    ADMIN_PAY = 22 };       // 4.12.3: /pay [id] [amount] - any player gives money to another (amount = $)
 struct PktAdminCmd    { uint8_t type; uint8_t cmd; uint8_t target; uint8_t value; char reason[MP_REASON_LEN]; };   // 2.37, value: ADMIN_CHEATS 1 = cheats off
 struct PktAdminCmd2   { uint8_t type; uint8_t cmd; uint8_t target; uint8_t value; char reason[MP_REASON_LEN]; int32_t amount; };   // 3.54 (older servers read the first part)
-enum eAdminAct : uint8_t { AACT_HEALTH = 1, AACT_ARMOUR = 2, AACT_MONEY = 3, AACT_TELEPORT = 4, AACT_RESET = 5, AACT_WARN = 6, AACT_COOKIE = 7 };
+enum eAdminAct : uint8_t { AACT_HEALTH = 1, AACT_ARMOUR = 2, AACT_MONEY = 3, AACT_TELEPORT = 4, AACT_RESET = 5, AACT_WARN = 6, AACT_COOKIE = 7,
+    AACT_PAY = 8 };   // 4.12.3: /pay - amount > 0 = got it from text (name), < 0 = sent to text (name)
 struct PktAdminAct    { uint8_t type; uint8_t act; uint8_t from; uint8_t pad; int32_t amount; float pos[3]; float heading; char text[MP_CHAT_LEN]; };   // 3.54 S->C
 struct PktKicked      { uint8_t type; uint8_t banned; uint32_t when; char admin[MP_NAME_LEN]; char reason[MP_REASON_LEN]; };   // 2.25, when = unix time
 struct PktKicked2     { PktKicked k; uint16_t waitSec; };   // 3.39: a kick (not a ban) = wait waitSec (4 min 29 s) before joining again

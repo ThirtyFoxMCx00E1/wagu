@@ -193,3 +193,10 @@ bool SampImport(const std::string& src, const std::string& destDir, std::string&
     if(root.empty()) { msg += " - but no gamemodes/ folder in it"; return false; }
     return true;
 }
+
+// 4.12.3: plain unzip (the Project Day Z XkiLoader pack)
+bool MP_UnZip(const std::string& zip, const std::string& destDir, std::string& msg)
+{
+    MkDirs(destDir);
+    return UnZip(zip, destDir, msg);
+}

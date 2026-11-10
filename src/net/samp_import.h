@@ -8,3 +8,5 @@
 bool SampImport(const std::string& src, const std::string& destDir, std::string& root, std::string& msg);
 // the server folder under dir (dir itself, or the first sub folder with gamemodes/ / server.cfg), "" = none
 std::string SampFindRoot(const std::string& dir);
+// 4.12.3: unzip an archive into destDir (made if missing)
+bool MP_UnZip(const std::string& zip, const std::string& destDir, std::string& msg);

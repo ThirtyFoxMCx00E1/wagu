@@ -121,6 +121,41 @@ void MPServer::AdminCmd(int slot, const uint8_t* data, int len)
         return;
     }
 
+    // ---- 4.12.3: /pay [id] [amount]: every player can give money to another ----
+    if(c.cmd == ADMIN_PAY)
+    {
+        const uint64_t now = MP_NowMs();
+        const int t = c.target; const int32_t v = c.amount;
+        if(t >= MP_MAX_PLAYERS || !m_Slots[t].used) { tell(kAdmRed, "No player with that id."); return; }
+        if(t == slot) { tell(kAdmRed, "You can't pay yourself."); return; }
+        if(v <= 0 || v > 1000000) { tell(kAdmRed, "/pay [id] [amount]  -  $1 - $1,000,000."); return; }
+        if(me.lastPay && now - me.lastPay < 3000) { tell(kAdmRed, "Wait a moment before the next /pay."); return; }
+        me.lastPay = now;
+        Slot& ts = m_Slots[t];
+        if(IsRpServer() && m_Rp[slot].loaded && m_Rp[t].loaded)
+        {   // Mega Vil: server money
+            if(m_Rp[slot].cash < v) { tell(kAdmRed, "You only have $%d cash.", m_Rp[slot].cash); return; }
+            RpPay(slot, -v, "/pay"); RpPay(t, v, "/pay"); RpSendMe(slot); RpSendMe(t);
+            tell(kAdmGreen, "You gave $%d to %s.", v, ts.name);
+        }
+        else if(IsMw3Server())
+        {
+            if(m_Mw3[slot].cash < v) { tell(kAdmRed, "You only have $%d.", m_Mw3[slot].cash); return; }
+            m_Mw3[slot].cash -= v; m_Mw3[t].cash += v;
+            Mw3Store(slot); Mw3Store(t); Mw3SendMe(slot); Mw3SendMe(t);
+            tell(kAdmGreen, "You gave $%d to %s.", v, ts.name);
+        }
+        else
+        {   // the game's own money (default / custom / BCW / Day Z): the sender's phone checked its money
+            // (c.value = 1); it takes it off when the server says so, the other phone adds it
+            if(m_CgS[slot].beat && m_CgS[slot].cash < v) { tell(kAdmRed, "You don't have $%d.", v); return; }
+            AdminAct(slot, AACT_PAY, -v, nullptr, 0, ts.name);
+            AdminAct(t, AACT_PAY, v, nullptr, 0, me.name);
+        }
+        Log("/pay: %s -> %s $%d", me.name, ts.name, v);
+        return;
+    }
+
     const bool featured = IsDefaultServer() || IsBcwServer() || IsMw3Server() || IsRpServer();
     const bool staff = featured ? (me.admin || me.mod) : (me.owner || me.admin || (me.mod && me.granted));   // custom: the owner + who he made [MOD]
     if(!staff)

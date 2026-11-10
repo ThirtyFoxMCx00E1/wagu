@@ -8,6 +8,7 @@
 #include "gifs.h"
 #include "clipboard.h"
 #include "hud.h"
+#include "filepick.h"
 #include <vector>
 #include <math.h>
 
@@ -31,6 +32,9 @@ namespace
     void*       s_pData = nullptr;
     VKeyboard::SubmitFn s_fnValFor = nullptr;   // 2.37
     VKeyboard::CheckFn  s_fnCheck = nullptr;
+    bool        s_bUsePhone = false;   // 4.12.3: Settings > Keyboard
+    bool        s_bPhone = false;      // this keyboard is the phone's own (dialog open)
+    std::string s_PhoneMsg;            // validator message shown in the dialog title
 
     const char* kRowsLower[] = { "1234567890", "qwertyuiop", "asdfghjkl", "zxcvbnm" };
     const char* kRowsUpper[] = { "1234567890", "QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM" };
@@ -46,15 +50,45 @@ void VKeyboard::Open(const char* title, const char* initial, int maxLen, SubmitF
     s_nMaxLen = maxLen > 0 ? maxLen : 128;
     s_fnSubmit = fn; s_pData = data;
     s_bNumeric = numeric; s_bShift = false; s_bSymbols = false; s_bEmoji = false; s_bChat = false; s_bGif = false; s_bPasteWait = false;
+    s_bPhone = false; s_PhoneMsg.clear();
+    if(s_bUsePhone && FilePick::AskText(s_Title.c_str(), s_Text.c_str(), s_nMaxLen - 1, numeric)) s_bPhone = true;   // 4.12.3
+}
+void VKeyboard::SetPhoneKeyboard(bool phone) { s_bUsePhone = phone; }
+bool VKeyboard::PhoneKeyboard() { return s_bUsePhone; }
+
+// 4.12.3: the phone keyboard's dialog: OK / Enter = submit (the same checks as MP's Enter), Cancel = close,
+// could not open = MP's own keyboard after all
+static bool PhoneTick()
+{
+    if(!s_bPhone) return false;
+    int st = FilePick::TextState();
+    if(st == 1) return true;
+    if(st == 3)
+    {
+        std::string t = FilePick::Text(); FilePick::TextReset();
+        if((int)t.size() > s_nMaxLen - 1) t.resize(s_nMaxLen - 1);
+        s_Text = t;
+        const char* bad = (s_fnCheck && s_fnSubmit == s_fnValFor) ? s_fnCheck(s_Text.c_str()) : nullptr;
+        if(bad) { s_PhoneMsg = bad; FilePick::AskText(bad, s_Text.c_str(), s_nMaxLen - 1, s_bNumeric); return true; }   // ask again
+        s_bPhone = false; s_bOpen = false;
+        VKeyboard::SubmitFn fn = s_fnSubmit; void* d = s_pData;
+        if(fn) fn(t.c_str(), d);
+        return true;
+    }
+    FilePick::TextReset();
+    s_bPhone = false;
+    if(st == 4 || st == 6) return false;   // the MP keyboard instead
+    s_bOpen = false;                        // cancelled / closed
+    return true;
 }
 
 void VKeyboard::SetValidator(SubmitFn forSubmit, CheckFn check) { s_fnValFor = forSubmit; s_fnCheck = check; }
-void VKeyboard::Close() { s_bOpen = false; }
+void VKeyboard::Close() { s_bOpen = false; if(s_bPhone) { s_bPhone = false; FilePick::TextReset(); } }
 const char* VKeyboard::GetText() { return s_Text.c_str(); }
 void VKeyboard::SetText(const char* t) { s_Text = t ? t : ""; if((int)s_Text.size() > s_nMaxLen - 1) s_Text.resize(s_nMaxLen - 1); }
 bool VKeyboard::IsChat() { return s_bOpen && s_bChat; }
 void VKeyboard::SetChat(bool c) { s_bChat = c; }
-float VKeyboard::Height() { return s_bOpen ? ImGui::GetIO().DisplaySize.y * 0.50f : 0.0f; }
+float VKeyboard::Height() { return s_bOpen && !s_bPhone ? ImGui::GetIO().DisplaySize.y * 0.50f : 0.0f; }
 
 // 2.19: whole UTF-8 characters (emojis are 3-4 bytes)
 static void DeleteLastChar()
@@ -111,6 +145,8 @@ static void Append(char c)
 
 void VKeyboard::Render()
 {
+    if(!s_bOpen) return;
+    if(PhoneTick()) return;   // 4.12.3: the phone's keyboard is typing
     if(!s_bOpen) return;
 
     const ImVec2 ds = ImGui::GetIO().DisplaySize;

@@ -1684,6 +1684,95 @@ static void LFmtBytes(char* o, size_t n, unsigned long long b)
     else if(b >= 1024ull * 1024) snprintf(o, n, "%.1f MB", b / (1024.0 * 1024));
     else snprintf(o, n, "%llu KB", (b + 1023) / 1024);
 }
+// ---- 4.12.3: Project Day Z model pack for XkiLoader -------------------------------------------------
+// XkiLoader (release/libXkiLoader.so / libXkiLoader64.so, an AML mod) swaps models by file name from
+// <game storage>/xkiloader/<folder>/. The pack (tools/make_dz_xkiloader.py) = the MTA DayZ models with
+// their textures as PNG. Download it into files/MP/dayz/ (a real file), or import a zip from the Files app;
+// both unpack to xkiloader/ProjectDayZ. Restart the game after.
+static const char* const kDzXkiUrls[] = {
+    "https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/Host/DayZ/xkiloader/MP_ProjectDayZ_XkiLoader.zip",
+    "https://github.com/ThirtyFoxMCx00E1/wagu/releases/download/DayZ-XkiLoader/MP_ProjectDayZ_XkiLoader.zip" };
+static std::atomic<int> s_nXki{ 0 };            // 0 idle, 1 downloading, 2 unpacking, 3 done, 4 failed
+static std::atomic<size_t> s_nXkiGot{ 0 };
+static std::mutex s_XkiMx; static std::string s_XkiMsg;
+static bool s_bXkiPick = false;                  // the Files app was opened by this page
+static std::string DzXkiRoot()
+{
+    const char* ad = aml->GetAndroidDataPath();
+    std::string own = std::string(ad && *ad ? ad : "/sdcard/Android/data/com.rockstargames.gtasa/files") + "/xkiloader";
+    struct stat st;
+    if(stat(own.c_str(), &st) == 0 && S_ISDIR(st.st_mode)) return own;
+    if(stat("/sdcard/xkiloader", &st) == 0 && S_ISDIR(st.st_mode) && access("/sdcard/xkiloader", W_OK) == 0) return "/sdcard/xkiloader";
+    return own;
+}
+static bool DzXkiInstalled()
+{
+    struct stat st; return stat((DzXkiRoot() + "/ProjectDayZ/README_MP.txt").c_str(), &st) == 0;
+}
+static void DzXkiUnpack(const std::string& zip)
+{
+    s_nXki = 2;
+    std::string msg; const std::string dst = DzXkiRoot();
+    bool ok = MP_UnZip(zip, dst, msg);
+    struct stat st; if(ok && stat((dst + "/ProjectDayZ").c_str(), &st) != 0) { ok = false; msg = "no ProjectDayZ folder in that zip"; }
+    { std::lock_guard<std::mutex> l(s_XkiMx); s_XkiMsg = ok ? (msg + " -> " + dst + "/ProjectDayZ. Restart the game (XkiLoader loads at start).") : msg; }
+    logger->Info("4.12.3: XkiLoader pack %s: %s (%s)", ok ? "installed" : "failed", msg.c_str(), zip.c_str());
+    s_nXki = ok ? 3 : 4;
+}
+static void DzXkiDownload()
+{
+    if(s_nXki == 1 || s_nXki == 2) return;
+    s_nXki = 1; s_nXkiGot = 0;
+    std::thread([]{
+        const std::string dir = std::string(s_szDataDir) + "/dayz"; mkdir(dir.c_str(), 0775);
+        const std::string zip = dir + "/MP_ProjectDayZ_XkiLoader.zip";
+        std::string body, why;
+        for(const char* u : kDzXkiUrls)
+        {
+            body.clear(); s_nXkiGot = 0;
+            if(Online::HttpsFetch(u, body, 600000, why, 200u * 1024 * 1024, &s_nXkiGot) && body.size() > 1024 && body[0] == 'P' && body[1] == 'K') break;
+            logger->Error("4.12.3: XkiLoader pack %s: %s", u, why.c_str()); body.clear();
+        }
+        if(body.empty()) { std::lock_guard<std::mutex> l(s_XkiMx); s_XkiMsg = "Download failed: " + (why.empty() ? std::string("no answer") : why); s_nXki = 4; return; }
+        FILE* f = fopen(zip.c_str(), "wb");
+        if(!f || fwrite(body.data(), 1, body.size(), f) != body.size()) { if(f) fclose(f); std::lock_guard<std::mutex> l(s_XkiMx); s_XkiMsg = "Can't write " + zip; s_nXki = 4; return; }
+        fclose(f); body.clear(); body.shrink_to_fit();
+        DzXkiUnpack(zip);
+    }).detach();
+}
+static void DzXkiSection(float w)
+{
+    ImGui::TextColored(ImVec4(0.25f, 0.9f, 0.75f, 1), "XKILOADER MODEL PACK");
+    ImGui::TextWrapped("The Project Day Z models as an XkiLoader pack (123 models, textures as PNG, about 50 MB). Needs XkiLoader "
+                       "(libXkiLoader.so / libXkiLoader64.so) in your AML mods. Unpacks to %s/ProjectDayZ.", DzXkiRoot().c_str());
+    if(DzXkiInstalled()) ImGui::TextColored(ImVec4(0.4f, 0.95f, 0.6f, 1), "Installed. Restart the game after a new install.");
+    // the Files app (only the zip this page asked for)
+    if(s_bXkiPick)
+    {
+        const int fp = FilePick::State();
+        if(fp == 3) { s_bXkiPick = false; std::string n = FilePick::Name(); FilePick::Reset();
+                      std::string zip = std::string(s_szDataDir) + "/dayz/" + n; std::thread([zip]{ DzXkiUnpack(zip); }).detach(); }
+        else if(fp == 4 || fp == 6) { s_bXkiPick = false; SysMsg(COL_RED, "Files app: %s", FilePick::Error().empty() ? "could not open the file" : FilePick::Error().c_str()); FilePick::Reset(); }
+        else if(fp == 5 || fp == 0) { s_bXkiPick = false; FilePick::Reset(); }
+        else if(fp == 1) ImGui::TextUnformatted("Waiting for the Files app...");
+        else if(fp == 2) ImGui::Text("Copying... %.1f MB", FilePick::Copied() / 1048576.0);
+    }
+    const int st = s_nXki;
+    if(st == 1) ImGui::ProgressBar(fminf(1.0f, (float)(s_nXkiGot / 1048576.0) / 50.0f), ImVec2(ImMax(UI::S(200), w - UI::S(20)), UI::S(22)), (std::to_string((int)(s_nXkiGot / 1048576)) + " MB").c_str());
+    else if(st == 2) ImGui::TextUnformatted("Unpacking...");
+    else if(st == 3 || st == 4) { std::lock_guard<std::mutex> l(s_XkiMx); ImGui::TextColored(st == 3 ? ImVec4(0.6f, 0.95f, 0.7f, 1) : ImVec4(1, 0.45f, 0.4f, 1), "%s", s_XkiMsg.c_str()); }
+    const bool busy = st == 1 || st == 2 || s_bXkiPick;
+    if(busy) ImGui::BeginDisabled();
+    if(FloatMenu::BigButton(DzXkiInstalled() ? "Download the pack again" : "Download pack (into files/MP/dayz)")) DzXkiDownload();
+    if(FloatMenu::BigButton("Import pack (zip) - opens Files"))
+    {
+        if(FilePick::Open((std::string(s_szDataDir) + "/dayz").c_str(), "application/zip,application/x-zip-compressed,application/x-zip,application/octet-stream")) s_bXkiPick = true;
+        else SysMsg(COL_YELLOW, "The Files app is already open.");
+    }
+    if(busy) ImGui::EndDisabled();
+    ImGui::TextDisabled("XkiLoader swaps these models everywhere (also outside Day Z). Turn the folder off in XkiLoader's menu or delete it for the normal models.");
+}
+
 static int s_nCloudAsk = -3;   // a delete waiting for "tap again" (group, -1 = all, -3 = none)
 static uint64_t s_nCloudAskAt = 0;
 static void LPageCloud(float w)
@@ -1694,6 +1783,8 @@ static void LPageCloud(float w)
     ImDrawList* dl = ImGui::GetWindowDrawList();
     ImGui::TextColored(ImVec4(0.25f, 0.9f, 0.75f, 1), "CLOUD STORAGE");
     ImGui::TextDisabled("Server resources hosted on GitHub (wagu repo + website downloads). They are kept in the game cache.");
+    ImGui::Separator();
+    DzXkiSection(w);   // 4.12.3: the XkiLoader pack first (works without the file list)
     ImGui::Separator();
     if(!c.cache) { ImGui::TextWrapped("No writable cache folder on this phone - nothing can be downloaded."); return; }
 

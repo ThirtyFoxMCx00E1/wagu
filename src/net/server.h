@@ -225,6 +225,7 @@ private:
         uint16_t     cookies;        // 3.54: /givecookie
         uint64_t     reportMuteUntil;// 3.54: /reportmute
         uint64_t     lastReport;     // 3.54: /report flood guard
+        uint64_t     lastPay;        // 4.12.3: /pay flood guard
     };
     // ---- 3.39: Home Kit (server_home.inc) ----
     struct HkHome { PktHomeHead h; std::vector<HkObj> obj; };

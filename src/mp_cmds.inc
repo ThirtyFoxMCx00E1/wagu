@@ -298,6 +298,7 @@ static bool HandleCommand(const char* text)
         GamesHelp();
         if(AdmLocalStaff()) SysMsg(0xC080FFFF, "Staff: /acmds lists the admin / moderator commands.");
         else SysMsg(COL_SYSTEM, "/report [id] [what happened]  -  tell the staff");
+        SysMsg(COL_SYSTEM, "/pay [id] [amount]  -  give your money to a player");   // 4.12.3
     }
     else SysMsg(COL_RED, "Unknown command /%s. Type /help.", cmd);
     return true;

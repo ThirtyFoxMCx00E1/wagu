@@ -107,6 +107,21 @@ namespace
         if(ClearEx(e)) s_nLocal = 6;
     }
 
+    // 4.12.3: phone keyboard dialog
+    std::string s_TTitle, s_TInit; int s_nTMax = 0; bool s_bTNum = false;
+    std::atomic<int> s_nTLocal{ 0 };   // 1 = asked, waiting for the UI thread; 6 = could not load
+    void AskOnUi(void*)
+    {
+        JNIEnv* e = Env();
+        jobject act = aml->GetCurrentActivity();
+        if(!e || !act || !LoadClass(e, act)) { s_nTLocal = 6; return; }
+        std::string t, i; int mx; bool num; { std::lock_guard<std::mutex> l(s_Mx); t = s_TTitle; i = s_TInit; mx = s_nTMax; num = s_bTNum; }
+        jmethodID m = e->GetStaticMethodID(s_Cls, "askText", "(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;IZ)V");
+        if(ClearEx(e) || !m) { s_nTLocal = 6; return; }
+        e->CallStaticVoidMethod(s_Cls, m, act, e->NewStringUTF(t.c_str()), e->NewStringUTF(i.c_str()), (jint)mx, (jboolean)num);
+        if(ClearEx(e)) { s_nTLocal = 6; return; }
+        s_nTLocal = 0;
+    }
     jfieldID Field(JNIEnv* e, const char* n, const char* sig) { jfieldID f = e->GetStaticFieldID(s_Cls, n, sig); if(ClearEx(e)) return nullptr; return f; }
     std::string StrField(const char* n)
     {
@@ -149,4 +164,30 @@ void FilePick::Reset()
     s_nLocal = 0;
     JNIEnv* e = Env(); if(!e || !s_Cls) return;
     jfieldID f = Field(e, "state", "I"); if(f) e->SetStaticIntField(s_Cls, f, 0);
+}
+
+// 4.12.3: the phone's own keyboard (Settings > Keyboard)
+bool FilePick::AskText(const char* title, const char* init, int maxLen, bool numeric)
+{
+    if(!aml->GetCurrentActivity()) return false;
+    { std::lock_guard<std::mutex> l(s_Mx); s_TTitle = title ? title : ""; s_TInit = init ? init : ""; s_nTMax = maxLen; s_bTNum = numeric; }
+    if(s_Cls) { JNIEnv* e = Env(); if(e) { jfieldID f = Field(e, "tstate", "I"); if(f) e->SetStaticIntField(s_Cls, f, 1); } }
+    s_nTLocal = 1;
+    if(!aml->PushToJavaUIThread(AskOnUi, nullptr)) AskOnUi(nullptr);
+    return true;
+}
+int FilePick::TextState()
+{
+    if(s_nTLocal == 6) return 6;
+    if(s_nTLocal == 1 || !s_Cls) return s_nTLocal == 1 ? 1 : 0;
+    JNIEnv* e = Env(); if(!e) return 1;
+    jfieldID f = Field(e, "tstate", "I"); if(!f) return 6;
+    return e->GetStaticIntField(s_Cls, f);
+}
+std::string FilePick::Text() { return StrField("text"); }
+void FilePick::TextReset()
+{
+    s_nTLocal = 0;
+    JNIEnv* e = Env(); if(!e || !s_Cls) return;
+    jfieldID f = Field(e, "tstate", "I"); if(f) e->SetStaticIntField(s_Cls, f, 0);
 }

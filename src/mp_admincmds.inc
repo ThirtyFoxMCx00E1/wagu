@@ -23,6 +23,7 @@ static const AdmCmdHelp kAdmCmds[] =
     { "/makeadmin",  "[id] [1|0]",             "give / take moderator rights [MOD]" },
     { "/resetstats", "[id]",                   "reset money, weapons and server stats of a player" },
     { "/givecookie", "[id] [amount]",          "give a player a cookie" },
+    { "/pay",        "[id] [amount]",          "everyone: give your own money to a player" },
 };
 
 static bool AdmLocalStaff()
@@ -96,6 +97,22 @@ static bool AdmCommand(const char* cmd, const char* arg)
         int t = AdmFindPlayer(tok, false);
         if(t < 0 || !*rest) { SysMsg(COL_YELLOW, "/report [id] [what happened]  -  sends it to the [ADMIN] / [MOD] online."); return true; }
         SendAdminCmd2(ADMIN_REPORT, t, 0, 0, rest);
+        return true;
+    }
+    // 4.12.3: /pay [id] [amount] (also /givemoney for players who aren't staff): give your money to a player.
+    // Mega Vil keeps its own /pay (server money, 5 m) in mp_rp.inc.
+    if((IS("pay") || IS("sendmoney") || IS("transfer") || (IS("givemoney") && !AdmLocalStaff())) && !RpOnServer())
+    {
+        if(client.GetState() != NET_CONNECTED) { SysMsg(COL_RED, "You are not on a server."); return true; }
+        char tk[32]; const char* r2 = AdmNextTok(arg, tk, sizeof(tk));
+        char tn[24]; AdmNextTok(r2, tn, sizeof(tn));
+        int t = AdmFindPlayer(tk, false);
+        long long v = tn[0] ? atoll(tn[0] == '$' ? tn + 1 : tn) : 0;
+        if(t == -2) { SysMsg(COL_RED, "More than one player matches \"%s\" - use the id.", tk); return true; }
+        if(t < 0 || v <= 0) { if(*tk && t < 0) SysMsg(COL_RED, "No player \"%s\".", tk); SysMsg(COL_YELLOW, "/pay [id] [amount]  -  gives your money to a player ($1 - $1,000,000)."); return true; }
+        if(v > 1000000) { SysMsg(COL_RED, "/pay: at most $1,000,000 at a time."); return true; }
+        if(!Mw3OnServer() && Game::GetMoney() < v) { SysMsg(COL_RED, "You don't have $%lld (you have $%d).", v, Game::GetMoney()); return true; }
+        SendAdminCmd2(ADMIN_PAY, t, 1, (int)v, "");
         return true;
     }
     const bool staffCmd = IS("kick") || IS("ban") || IS("unban") || IS("bans") || IS("warn") || IS("mute") || IS("unmute") ||
@@ -193,6 +210,15 @@ static void AdmProcess(int ped)
             Game::AddMoney(a.amount);
             if(a.amount >= 0) SysMsg(COL_GREEN, "%s gave you $%d.", a.text, a.amount);
             else SysMsg(COL_RED, "%s fined you $%d.", a.text, -a.amount);
+            break;
+        case AACT_PAY:   // 4.12.3: /pay
+            if(a.amount < 0)
+            {
+                int v = -a.amount, have = Game::GetMoney();
+                Game::AddMoney(-(v < have ? v : have));
+                SysMsg(COL_GREEN, "You gave $%d to %s.", v, a.text);
+            }
+            else if(a.amount > 0) { Game::AddMoney(a.amount); SysMsg(COL_GREEN, "%s gave you $%d.", a.text, a.amount); }
             break;
         case AACT_TELEPORT:
         {

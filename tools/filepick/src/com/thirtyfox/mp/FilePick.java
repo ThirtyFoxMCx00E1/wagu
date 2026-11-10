@@ -1,6 +1,13 @@
 package com.thirtyfox.mp;
 
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.text.InputFilter;
+import android.text.InputType;
+import android.view.KeyEvent;
+import android.view.WindowManager;
+import android.view.inputmethod.EditorInfo;
+import android.widget.EditText;
 import android.app.Fragment;
 import android.content.Intent;
 import android.database.Cursor;
@@ -78,4 +85,43 @@ public class FilePick extends Fragment {
             name = n; state = 3;
         } catch (Throwable t) { error = String.valueOf(t.getMessage()); state = 4; }
     }
+
+    // MP 4.12.3: Settings > Keyboard > "Phone keyboard": a small dialog with an EditText, so the phone's own
+    // keyboard (Gboard, SwiftKey ...) types the text. The mod polls tstate / text.
+    public static volatile int tstate = 0;       // 0 idle, 1 open, 3 done (text), 4 failed, 5 cancelled
+    public static volatile String text = "";
+
+    public static void askText(final Activity a, String title, String init, int max, boolean numeric) {
+        tstate = 1; text = ""; error = "";
+        try {
+            final EditText et = new EditText(a);
+            et.setSingleLine(true);
+            if (max > 0) et.setFilters(new InputFilter[]{ new InputFilter.LengthFilter(max) });
+            et.setInputType(numeric ? (InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL)
+                                    : (InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS));
+            et.setImeOptions(EditorInfo.IME_ACTION_DONE | EditorInfo.IME_FLAG_NO_EXTRACT_UI | EditorInfo.IME_FLAG_NO_FULLSCREEN);
+            et.setText(init == null ? "" : init);
+            et.setSelection(et.getText().length());
+            final AlertDialog d = new AlertDialog.Builder(a)
+                .setTitle(title == null || title.isEmpty() ? "MP" : title)
+                .setView(et)
+                .setPositiveButton("OK", (x, w) -> { text = et.getText().toString(); tstate = 3; })
+                .setNegativeButton("Cancel", (x, w) -> { tstate = 5; })
+                .create();
+            d.setOnCancelListener(x -> { if (tstate == 1) tstate = 5; });
+            d.setOnDismissListener(x -> { if (tstate == 1) tstate = 5; });
+            et.setOnEditorActionListener((v, id, ev) -> {
+                boolean enter = ev != null && ev.getKeyCode() == KeyEvent.KEYCODE_ENTER && ev.getAction() == KeyEvent.ACTION_DOWN;
+                if (id == EditorInfo.IME_ACTION_DONE || id == EditorInfo.IME_ACTION_SEND || id == EditorInfo.IME_ACTION_GO || enter) {
+                    text = et.getText().toString(); tstate = 3; d.dismiss(); return true;
+                }
+                return false;
+            });
+            if (d.getWindow() != null) d.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
+            d.show();
+            et.requestFocus();
+        } catch (Throwable t) { error = String.valueOf(t); tstate = 4; }
+    }
+
+    public static void closeText() { tstate = 0; }
 }

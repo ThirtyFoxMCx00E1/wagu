@@ -128,8 +128,6 @@ static void AdvSave()
     s_Adv.dirty = false;
 }
 
-static void AdvTick() { if(s_Adv.dirty && MP_NowMs() >= s_Adv.saveAt) AdvSave(); }
-
 static bool AdvRestore()
 {
     char bak[540]; snprintf(bak, sizeof(bak), "%s.mp_backup", s_Adv.path);
@@ -142,118 +140,20 @@ static bool AdvRestore()
     return AdvLoad(s_Adv.path);
 }
 
-static float AdvF(const AdvKey& k) { return (float)atof(k.val.c_str()); }
-static std::string AdvFmt(float v) { char b[32]; snprintf(b, sizeof(b), "%.6f", v); return b; }
-
-// the clock / money / weapon / ammo / bars / stars in the top right (PosX >= 70, PosY < 30): moved down by
-// the height of MP's launcher toolbar + a gap, so the search / refresh / pin / gear buttons are free
-static int AdvClearTopRight()
+// 4.12.3: the "GTA HUD" page and the launcher move are gone (the HUD looked weird). Once per game start,
+// if MP ever changed the Advanced Settings ini (<ini>.mp_backup exists) the original preset goes back and the
+// backup is deleted - the player's own HUD returns. MP never writes that ini again.
+static void AdvTick()
 {
-    const ImVec2 ds = ImGui::GetIO().DisplaySize;
-    float drop = ds.y > 1 ? (UI::S(84) / ds.y) * 100.0f : 8.0f;   // ~ toolbar height in % of the screen
-    int moved = 0;
-    for(auto& s : s_Adv.sects)
-    {
-        AdvKey *px = nullptr, *py = nullptr;
-        for(auto& k : s.keys) { if(k.key == "PosX") px = &k; else if(k.key == "PosY") py = &k; }
-        if(!px || !py) continue;
-        if(s.name == "HUD_Radar" || s.name == "HUD_Subtitles" || s.name == "HUD_AreaName" || s.name == "HUD_VehName" || s.name == "HUD_MoneyChange" || s.name == "HUD_Radio") continue;
-        float x = AdvF(*px), y = AdvF(*py);
-        if(x >= 70.0f && y < 30.0f) { AdvSet(*py, AdvFmt(ImMin(y + drop, 95.0f))); ++moved; }
-    }
-    return moved;
-}
-
-// 4.11: while the MP launcher is open, the Advanced Settings items in the top right (clock, money,
-// weapon icon ... under the search / refresh / region pin / gear buttons) move down by themselves and
-// go back when it closes - the pin can always be tapped, the preset stays as it was.
-static std::vector<std::pair<std::string, std::string>> s_AdvLaunchSaved;
-static void AdvLauncher(bool open)
-{
-    if(open)
-    {
-        AdvFind(false);
-        if(!s_Adv.found || !s_AdvLaunchSaved.empty()) return;
-        for(auto& sct : s_Adv.sects) if(AdvKey* k = AdvGet(sct.name.c_str(), "PosY")) s_AdvLaunchSaved.push_back({ sct.name, k->val });
-        if(AdvClearTopRight() == 0) { s_AdvLaunchSaved.clear(); return; }
-        s_Adv.saveAt = MP_NowMs();   // at once
-        logger->Info("4.11: launcher open - Advanced Settings top-right HUD moved down");
-    }
-    else if(!s_AdvLaunchSaved.empty())
-    {
-        for(auto& kv : s_AdvLaunchSaved) if(AdvKey* k = AdvGet(kv.first.c_str(), "PosY")) AdvSet(*k, kv.second);
-        s_AdvLaunchSaved.clear(); s_Adv.saveAt = MP_NowMs();
-    }
-}
-
-static void SectionGtaHud(void*)
-{
-    AdvFind(false);
-    if(!s_Adv.found)
-    {
-        ImGui::TextWrapped("ARM's Advanced Settings (libAdvancedSettings.SA.so) is not installed - the normal GTA HUD is used.");
-        ImGui::TextDisabled("With it installed, its HUD (clock, money, bars, weapon icon, radar...) can be moved here.");
-        if(FloatMenu::BigButton("Look again")) AdvFind(true);
-        return;
-    }
-    ImGui::TextWrapped("Advanced Settings %s%s%s - changes apply at once (the mod reloads its ini).", s_Adv.version, s_Adv.preset[0] ? ", preset by " : "", s_Adv.preset);
-    ImGui::TextDisabled("%s", s_Adv.path);
-    if(FloatMenu::BigButton("Move the top-right HUD under MP's buttons"))
-    {
-        int n = AdvClearTopRight();
-        SysMsg(COL_SYSTEM, n ? "GTA HUD: %d top-right items moved down (Restore puts them back)." : "GTA HUD: nothing in the top right to move.", n);
-    }
-    {
-        char bak[540]; snprintf(bak, sizeof(bak), "%s.mp_backup", s_Adv.path);
-        bool has = access(bak, F_OK) == 0;
-        if(!has) ImGui::BeginDisabled();
-        if(FloatMenu::BigButton("Restore the original preset")) SysMsg(COL_SYSTEM, AdvRestore() ? "GTA HUD: original preset restored." : "GTA HUD: no backup to restore.");
-        if(!has) ImGui::EndDisabled();
-    }
-    for(auto& s : s_Adv.sects)
-    {
-        ImGui::PushID(s.name.c_str());
-        if(ImGui::CollapsingHeader(s.name.c_str() + 4))   // "BarHealth", "Clock", ...
-        {
-            for(auto& k : s.keys)
-            {
-                ImGui::PushID(k.key.c_str());
-                const std::string& v = k.val;
-                bool isInt = !v.empty() && v.find_first_not_of("-0123456789") == std::string::npos;
-                bool isNum = !v.empty() && v.find_first_not_of("-0123456789.") == std::string::npos;
-                if(k.key == "PosX" || k.key == "PosY")
-                {
-                    float f = AdvF(k); ImGui::TextUnformatted(k.key == "PosX" ? "Left - right (%)" : "Top - bottom (%)");
-                    ImGui::SetNextItemWidth(-FLT_MIN);
-                    if(ImGui::SliderFloat("##v", &f, 0.0f, 100.0f, "%.1f")) AdvSet(k, AdvFmt(f));
-                }
-                else if(k.key == "SizeX" || k.key == "SizeY" || k.key == "Padding" || k.key == "BorderMult" || k.key == "AnimatedMult")
-                {
-                    float f = AdvF(k), mx = ImMax(f * 3.0f, k.key == "BorderMult" || k.key == "AnimatedMult" || k.key == "Padding" ? 2.0f : 30.0f);
-                    ImGui::TextUnformatted(k.key.c_str()); ImGui::SetNextItemWidth(-FLT_MIN);
-                    if(ImGui::SliderFloat("##v", &f, 0.0f, mx, "%.3f")) AdvSet(k, AdvFmt(f));
-                }
-                else if(isInt && (v == "0" || v == "1") && k.key != "Orientation" && k.key != "FontStyle" && k.key != "FontEdge" && k.key != "DropShadow" && k.key != "DrawMode")
-                {
-                    bool b = v == "1";
-                    if(FloatMenu::ToggleSwitch(k.key.c_str(), &b)) AdvSet(k, b ? "1" : "0");
-                }
-                else if(isInt)
-                {
-                    int iv = atoi(v.c_str()); int mx = k.key == "FontStyle" ? 3 : k.key == "Orientation" ? 2 : k.key == "BorderSide" ? 30 : k.key == "DisplayTime" ? 10000 : 4;
-                    if(iv > mx) mx = iv;
-                    ImGui::TextUnformatted(k.key.c_str()); ImGui::SetNextItemWidth(-FLT_MIN);
-                    if(ImGui::SliderInt("##v", &iv, 0, mx)) { char b[16]; snprintf(b, sizeof(b), "%d", iv); AdvSet(k, b); }
-                }
-                else if(isNum)
-                {
-                    float f = AdvF(k); ImGui::TextUnformatted(k.key.c_str()); ImGui::SetNextItemWidth(-FLT_MIN);
-                    if(ImGui::DragFloat("##v", &f, 0.01f)) AdvSet(k, AdvFmt(f));
-                }
-                else ImGui::TextDisabled("%s = %s", k.key.c_str(), v.c_str());   // colours, formats, icons
-                ImGui::PopID();
-            }
-        }
-        ImGui::PopID();
-    }
+    static int s_nState = 0; static uint64_t s_nAt = 0;
+    if(s_nState == 2) return;
+    uint64_t now = MP_NowMs();
+    if(s_nState == 0) { s_nState = 1; s_nAt = now + 3000; return; }
+    if(now < s_nAt) return;
+    s_nState = 2;
+    AdvFind(true);
+    if(!s_Adv.found) return;
+    char bak[540]; snprintf(bak, sizeof(bak), "%s.mp_backup", s_Adv.path);
+    if(access(bak, F_OK) != 0) return;
+    if(AdvRestore()) { unlink(bak); logger->Info("4.12.3: Advanced Settings HUD: original preset restored (%s)", s_Adv.path); }
 }

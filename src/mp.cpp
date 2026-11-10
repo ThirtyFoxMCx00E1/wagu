@@ -16,6 +16,8 @@
 #include <net/if.h>
 #include <atomic>
 #include <mutex>
+#include <sys/stat.h>
+#include <unistd.h>
 #include <thread>
 #include <unordered_map>
 #include <vector>
@@ -712,7 +714,6 @@ static int DzAdjustDamage(int hp, int dmg, bool instant);   // 3.59: helmet vs h
 static bool DzHidden();
 static void HudOnConfig(const PktSrvSettings2& h);   // 4.07 (mp_hudset.inc)
 static void AdvTick();
-static void AdvLauncher(bool open);   // 4.11   // 4.10 (mp_advhud.inc)
 static void HudReset();
 static void HudRenderExtras();
 static bool BcwOnServer();
@@ -4131,7 +4132,7 @@ void MP::Process()
     if(client.GetState() == NET_DISCONNECTED && !kills.empty()) kills.clear();
     ProcessLan(now);
     ProcessFeed(now);
-    AdvTick();   // 4.10: Advanced Settings ini, saved 0.4 s after the last change
+    AdvTick();   // 4.12.3: only puts the player's original Advanced Settings HUD back (page removed)
     UpdateLocalStory(now);
     Progress::SetHold(MP::IsOnRp());   // 3.29: no save loads / swaps on Mega Vil (day + weather are the server's)
     Progress::Process(now, settings.fullProgressDefault, client.GetState() == NET_CONNECTED && MP::IsOnDefault(),
@@ -4189,9 +4190,8 @@ void MP::Process()
         // gets no touches; it comes back when the launcher closes
         static bool s_bLaunchHud = false; static uint64_t s_nLaunchHudT = 0;
         bool modal = (FloatMenu::IsModal() || TdeIsOpen()) && !paused;   // 4.00: + /tde (Textdraw Editor): all GTA HUDs hidden
-        if(modal && !s_bLaunchHud) AdvLauncher(true);    // 4.11: Advanced Settings HUD off the toolbar
         if(modal && (!s_bLaunchHud || now - s_nLaunchHudT > 500)) { Game::ShowGameHud(false); s_bLaunchHud = true; s_nLaunchHudT = now; }
-        else if(!modal && s_bLaunchHud) { s_bLaunchHud = false; AdvLauncher(false); if(!JoinHudOff()) Game::ShowGameHud(true); }
+        else if(!modal && s_bLaunchHud) { s_bLaunchHud = false; if(!JoinHudOff()) Game::ShowGameHud(true); }
     }
     int ped = Game::LocalPed();
     if(ped > 0) FloatMenu::SetGameRunning();   // 4.04.1: from now on ⋮ -> Server can open the launcher
@@ -5393,7 +5393,7 @@ void MP::SaveConfig()
     F("NametagSize", settings.nametagSize); F("NametagDistance", settings.nametagDistance);
     B("ShowOwnNametag", settings.showOwnTag); B("ShowHealthBars", settings.showHealthBars); B("ShowRadarIcons", settings.showRadarIcons);
     B("ShowChat", settings.showChat); B("ShowKillFeed", settings.showKillFeed); B("ShowStatus", settings.showStatus);
-    B("SyncAnims", settings.syncAnims); B("BrokerStandby", settings.brokerStandby); B("SyncEnv", settings.syncEnv); B("SyncNPCs", settings.syncNpcs); B("AllowMissionPair", settings.allowMissionPair); B("AllowCheatMenu", settings.allowCheatMenu); B("HostAuth", settings.hostAuth); B("HostCineCam", settings.hostCineCam); B("HostAntiCheat", settings.hostAc); { char m[24]; snprintf(m, sizeof(m), "%llX", settings.hostAcMask); S("HostAntiCheatMask", m); } B("HitSound", settings.hitSound); B("DisableCheats", settings.disableCheats);
+    B("SyncAnims", settings.syncAnims); B("BrokerStandby", settings.brokerStandby); B("SyncEnv", settings.syncEnv); B("SyncNPCs", settings.syncNpcs); B("AllowMissionPair", settings.allowMissionPair); B("AllowCheatMenu", settings.allowCheatMenu); B("HostAuth", settings.hostAuth); B("HostCineCam", settings.hostCineCam); B("PhoneKeyboard", settings.phoneKeyboard); B("HostAntiCheat", settings.hostAc); { char m[24]; snprintf(m, sizeof(m), "%llX", settings.hostAcMask); S("HostAntiCheatMask", m); } B("HitSound", settings.hitSound); B("DisableCheats", settings.disableCheats);
     F("ChatX", settings.chatX); F("ChatY", settings.chatY); I("Skin", settings.skin);
     I("ChatLines", settings.chatLines); F("ChatSize", settings.chatSize); F("ChatScale", settings.chatScale); F("ChatWidth", settings.chatWidth);   // 2.19.6
     I("ChatFade", settings.chatFade); B("ChatFadeOn", settings.chatFadeOn); B("ChatBackground", settings.chatBg);
@@ -5444,6 +5444,8 @@ static void LoadConfig()
     settings.allowCheatMenu = ::cfg->GetBool("AllowCheatMenu", false, "MP");   // 3.00
     settings.hostAuth        = ::cfg->GetBool("HostAuth", false, "MP");   // 3.21.6
     settings.hostCineCam     = ::cfg->GetBool("HostCineCam", true, "MP");   // 4.12
+    settings.phoneKeyboard   = ::cfg->GetBool("PhoneKeyboard", false, "MP");   // 4.12.3
+    VKeyboard::SetPhoneKeyboard(settings.phoneKeyboard);
     settings.hostAc          = ::cfg->GetBool("HostAntiCheat", false, "MP");   // 3.50
     { char m[24] = ""; ::cfg->GetString(m, sizeof(m), "HostAntiCheatMask", "FFFFFFFFFF", "MP"); settings.hostAcMask = strtoull(m, nullptr, 16) & AC_ALL_MASK; }
     settings.hitSound = ::cfg->GetBool("HitSound", true, "MP");               // 3.00
@@ -7081,6 +7083,17 @@ static void SectionDisplay(void*)
         if(changed) UI::SetLook(settings.uiFont, settings.uiFontFx, settings.uiFontScale, settings.uiScale);
         if(FloatMenu::ToggleSwitch("No camera shake", &settings.noCamShake)) { Game::SetNoCamShake(settings.noCamShake); changed = true; }
     }
+    {   // 4.12.3: MP keyboard or the phone's own keyboard
+        ImGui::TextUnformatted("Keyboard");
+        int kb = settings.phoneKeyboard ? 1 : 0;
+        if(ImGui::RadioButton("MP keyboard##kbmp", kb == 0)) kb = 0;
+        ImGui::SameLine();
+        if(ImGui::RadioButton("Phone keyboard##kbph", kb == 1)) kb = 1;
+        if((kb == 1) != settings.phoneKeyboard) { settings.phoneKeyboard = kb == 1; VKeyboard::SetPhoneKeyboard(settings.phoneKeyboard); changed = true; }
+        ImGui::TextDisabled(settings.phoneKeyboard ? "Phone keyboard: chat and text boxes open your phone's own keyboard (Gboard, SwiftKey...) in a small box - OK sends."
+                                                   : "MP keyboard: MP's own on-screen keyboard with emojis, GIFs and paste (default).");
+        ImGui::Separator();
+    }
     changed |= FloatMenu::ToggleSwitch("Health bars", &settings.showHealthBars);
     changed |= FloatMenu::ToggleSwitch("Player radar icons", &settings.showRadarIcons);
     changed |= FloatMenu::ToggleSwitch("Chat", &settings.showChat);
@@ -7490,7 +7503,6 @@ void MP::Init(const char* dataDir)
     FloatMenu::AddSection("Connection", SectionConnection);
     FloatMenu::AddSection("Servers", SectionServers);
     FloatMenu::AddSection("Display", SectionDisplay);
-    FloatMenu::AddSection("GTA HUD", SectionGtaHud);   // 4.10: ARM Advanced Settings bridge
     FloatMenu::AddSection("Chat", SectionChat);   // 2.19.6
     FloatMenu::AddSection("Sound", SectionSound);  // 3.00
     FloatMenu::AddSection("Voice", SectionVoice);  // 3.11
