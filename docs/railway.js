@@ -179,26 +179,22 @@
       p('y', 'the bot is not online. On the HiveMQ server (Termius console r) MP Railway, or SSH):');
       print('  1. <span class="g">sudo mp-railway status</span>     <span class="m">online / crashing / offline?</span>');
       print('  2. <span class="g">sudo mp-railway logs</span>       <span class="m">"Improper token" = new token: sudo mp-railway env set DISCORD_TOKEN</span>');
-      print('  3. <span class="g">sudo mp-railway restart</span>');
+      print('  3. <span class="g">sudo mp-railway restart</span>    <span class="m">or sudo mp-railway deploy (newest code + Streaming status)</span>');
+      print('     <span class="m">"command not found" / server rebooted? start the server (HiveMQ panel) then: sudo mp-railway start-all</span>');
       print('  4. <span class="g">sudo mp-railway setup</span>      <span class="m">first time on this server (ONE server only)</span>');
       p('m', 'not installed yet? curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/railway/install.sh | sudo bash');
     },
-    // 4.12.2: the 24/7 Streaming status bot (CustomRPC, branch railway-bot) - the token never shows here
-    'ss-add': function () {
-      rw('streamstatus: cloning ThirtyFoxMCx00E1/CustomRPC (branch railway-bot)');
-      rw('streamstatus: Python app - installing requirements (discord.py)');
-      rw('streamstatus: start command: python bot.py · restarts on crash and on boot (24/7)');
-      p('g', '  streamstatus added - variables: mp-railway env set KEY VALUE streamstatus');
-    },
-    'ss-token': function () {
-      print('DISCORD_TOKEN: <span class="m">(hidden - typed on the server only, never on this page)</span>');
-      rw('streamstatus: DISCORD_TOKEN set (********) - restarting');
-      p('m', '  saved in /etc/mp-railway/streamstatus.env (mode 600, root only)');
+    // 4.12.3: the 24/7 Streaming status is now inside the MP bot itself (discordpy-bot) - one process, one token
+    'ss-deploy': function () {
+      rw('discordpy-bot: git pull - newest commit (Streaming status 24/7)');
+      rw('discordpy-bot: installing requirements · restarting');
+      if (online()) p('g', '  online - Streaming: Watch on YouTube · Subscribe on YouTube · Join discord.gg/tbsDknk34y · Playing MP - GTA SA Multiplayer');
+      else p('y', '  the website only sees the bot after it is started on YOUR server (Termius): run this there, then sudo mp-railway status');
     },
     'ss-url': function () {
-      rw('streamstatus: STREAM_URL set (https://www.youtube.com/watch?v=YOUR_VIDEO) - restarting');
-      p('g', '  Streaming 24/7: Watch on YouTube · Subscribe on YouTube · Join discord.gg/tbsDknk34y · Playing MP - GTA SA Multiplayer');
-      p('m', '  put your own video in place of YOUR_VIDEO · check: sudo mp-railway logs streamstatus ("Logged in as ...")');
+      rw('discordpy-bot: STREAM_URL set (https://www.youtube.com/watch?v=YOUR_VIDEO) - restarting');
+      p('m', '  put your own video in place of YOUR_VIDEO · titles: STATUS_TEXTS="a|b|c" · off: STREAM_URL off');
+      p('m', '  made the old separate "streamstatus" app? remove it (same token twice fights): sudo mp-railway remove streamstatus');
     },
     'clear': function () { out.innerHTML = ''; }
   };
@@ -206,14 +202,12 @@
     'mp-railway --version': 'version', 'mp-railway status': 'status', 'mp-railway logs --tail 20': 'logs',
     'mp-railway deployments': 'deployments', 'mp-railway env': 'variables', 'mp-railway commands': 'commands',
     'ping -c 1 $BROKERS': 'ping', 'mp-railway doctor': 'doctor', 'clear': 'clear',
-    'sudo mp-railway add streamstatus https://github.com/ThirtyFoxMCx00E1/CustomRPC.git railway-bot': 'ss-add',
-    'sudo mp-railway env set DISCORD_TOKEN "" streamstatus': 'ss-token',
-    'sudo mp-railway env set STREAM_URL https://www.youtube.com/watch?v=YOUR_VIDEO streamstatus': 'ss-url'
+    'sudo mp-railway deploy': 'ss-deploy',
+    'sudo mp-railway env set STREAM_URL https://www.youtube.com/watch?v=YOUR_VIDEO': 'ss-url'
   };
   // 4.12.2: the 3 Streaming status commands, typed by MP Bot after start-up and again every 10 checks
-  var SS = ['sudo mp-railway add streamstatus https://github.com/ThirtyFoxMCx00E1/CustomRPC.git railway-bot',
-            'sudo mp-railway env set DISCORD_TOKEN "" streamstatus',
-            'sudo mp-railway env set STREAM_URL https://www.youtube.com/watch?v=YOUR_VIDEO streamstatus'];
+  var SS = ['sudo mp-railway deploy',
+            'sudo mp-railway env set STREAM_URL https://www.youtube.com/watch?v=YOUR_VIDEO'];
   var ssQ = SS.slice(), ssN = 0;
   function run(line) {
     print('<span class="b">mp@railway:~$</span> ' + esc(line));
@@ -229,7 +223,7 @@
   var rot = ['mp-railway status', 'mp-railway logs --tail 20', 'mp-railway status', 'mp-railway commands'], ri = 0, cycles = 0;
   function next() {
     if (boot.length) return { cmd: boot.shift(), why: 'start-up check' };
-    if (ssQ.length) return { cmd: ssQ.shift(), why: '24/7 Streaming status bot (streamstatus)', wait: 6500 };   // 4.12.2
+    if (ssQ.length) return { cmd: ssQ.shift(), why: '24/7 Streaming status (inside the MP bot)', wait: 6500 };   // 4.12.2
     if (++ssN % 10 === 0) ssQ = SS.slice();
     var dj = window.MPDebian && MPDebian.tick(); if (dj) return dj;   // 3.31: the Debian one-line setup
     if (changed) { changed = false; return online() ? { cmd: 'mp-railway status', why: 'the bot came online' } : { cmd: 'mp-railway doctor', why: 'the bot went offline' }; }
