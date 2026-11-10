@@ -83,7 +83,7 @@
     set('svc-badge', !st ? (brk ? 'no status yet' : 'connecting') : on ? 'Online' : st.online ? 'No heartbeat' : 'Offline');
     set('svc-sub', !st ? 'MP login bot · waiting for the first status… (none = the bot never ran on MP Railway yet)'
       : on ? 'Active · ' + (st.host || 'MP Railway') + ' · last heartbeat ' + ago(st.ts)
-      : 'Last seen ' + (st.ts ? ago(st.ts) : 'unknown') + ' · ' + (st.host || 'MP Railway'));
+      : 'Last seen ' + (st.ts ? ago(st.ts) : 'unknown') + ' · ' + (st.host || 'MP Railway') + (st.why ? ' · ' + st.why : ''));
     if (st) {
       set('k-bot', st.bot || '-'); set('k-ver', st.ver ? 'bot ' + st.ver : '-'); set('k-commit', st.commit || '-');
       set('k-up', on && st.started ? dur(st.ts - st.started) : '-'); set('k-guilds', st.guilds != null ? st.guilds : '-');
@@ -135,7 +135,11 @@
         print('  Logged in as ' + esc(st.bot) + ', in ' + st.guilds + ' server(s) · uptime ' + dur(st.ts - st.started) + ' · gateway ' + st.ping + ' ms');
         print('  Slash commands: <span class="c">' + esc((st.cmds || []).join(', ')) + '</span>' + (st.login ? '' : '  <span class="r">(AUTH_PRIVATE_KEY missing: /gen is off)</span>'));
         print('  ' + st.accounts + ' account(s) · ' + st.brokers + '/3 MQTT brokers · Python ' + esc(st.py || '?'));
-      } else p('m', '  last heartbeat ' + (st.ts ? ago(st.ts) : 'unknown') + ' - run "mp-railway doctor"');
+      } else {
+        p('m', '  last heartbeat ' + (st.ts ? ago(st.ts) : 'unknown') + ' - run "mp-railway doctor"');
+        if (st.why) p('r', '  why: ' + esc(st.why));   // 4.12.3: e.g. the token was reset
+        else if (st.ts && Date.now() / 1000 - st.ts < 120) p('y', '  the bot restarts again and again on the server = most likely the token was reset: sudo mp-railway env set DISCORD_TOKEN');
+      }
       p(stVerified ? 'g' : 'm', '  ' + $('k-sig').textContent);
     },
     'logs': function () {
@@ -176,6 +180,7 @@
     },
     'doctor': function () {
       if (online()) { p('g', 'all good: the bot is online and the commands are synced - nothing to fix'); return; }
+      if (st && st.why) p('r', 'why: ' + esc(st.why));
       p('y', 'the bot is not online. On the HiveMQ server (Termius console r) MP Railway, or SSH):');
       print('  1. <span class="g">sudo mp-railway status</span>     <span class="m">online / crashing / offline?</span>');
       print('  2. <span class="g">sudo mp-railway logs</span>       <span class="m">"Improper token" = new token: sudo mp-railway env set DISCORD_TOKEN</span>');
