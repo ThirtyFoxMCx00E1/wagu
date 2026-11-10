@@ -51,6 +51,7 @@ struct MPSettings
     float chatBoxX          = -1.0f;   // relative position of the box; -1 = under the chat lines
     float chatBoxY          = -1.0f;
     bool  realSkin          = true;    // 2.19.6: others see your real ped model (skin mods / story characters)
+    bool  syncClothes       = false;   // 4.12.4: CJ clothing sync (3.10). OFF = 3.04.6 behaviour: cross-modpack safe (issue #9)
     int   skin              = 106;     // GSF member used for your remote avatar
     int   region            = 0;       // eRegion: 0 Asia, 1 Europe, 2 NA, 3 Oceania
     bool  lobbyAuto         = true;    // 2.20: regional brokers: lobby on the lowest-ping region
@@ -86,7 +87,7 @@ struct MPSettings
     char  serverDesc[MP_DESC_LEN] = "";
     char  serverPreview[48] = "";                     // 4.03: pv_mine_<crc>.jpg in files/MP (Upload preview image)
     char  serverLogo[48] = "";                        // 4.07: lg_mine_<crc>.png in files/MP (Import title logo)
-    int   hudMode = 1, hudFlags = 14, hudDoor = 2;  
+    int   hudMode = 1, hudFlags = 12, hudDoor = 2;   // 4.12.4: 12 = Ammo + Logo (HUD Player off)  
     int   logoX = 50, logoY = 2, logoZ = 100;           // 4.07: title logo X / Y (% of the screen) and Z (size %)  // 4.07: /settings > Textdraw of the server I host (HUD_DEFAULT_FLAGS)
     char  deviceId[MP_UID_LEN + 1] = "";            // 2.25: this phone's id (bans), made on first start
     char  adminKey[129] = "";                         // 2.37: read from files/MP/admin.txt (never saved in the config) - proof you are SENJI

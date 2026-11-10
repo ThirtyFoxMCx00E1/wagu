@@ -4,7 +4,7 @@
 // server only sees what the phones send (sync, shots, damage, deaths, pickups, car state...), so
 // every check works on those packets. Every function runs with m_Mutex held (Handle / Loop).
 //
-// Always on (all checks) on the default server, Mega Vil Futuristic, Brief Case War and MW3.
+// Always on (all checks) on Mega Vil Futuristic, Brief Case War and MW3. 4.12.4: always OFF on the default server.
 // Custom servers: SetAntiCheat(on, mask) from the Add server page (Gamemode -> Anti-cheat).
 // Checks marked "cheat" in g_AcInfo only run while the MP / CLEO menu cheats are off on this
 // server (PERM_NO_CHEATS and no CheatMenu), so the default server's own menu cheats keep working.
@@ -62,12 +62,16 @@ static const float k_AcModShops[][3] = { { 1041.4f, -1023.0f, 32.1f }, { -1935.9
 
 bool MPServer::AcIsOn() const
 {
-    if(IsDefaultServer() || IsBcwServer() || IsMw3Server() || IsRpServer()) return true;
+    // 4.12.4: the default server never runs the anti-cheat (players with different modpacks / CLEO
+    // mods were warned, frozen and kicked there). Brief Case War, MW3 and Mega Vil keep it.
+    if(IsDefaultServer()) return false;
+    if(IsBcwServer() || IsMw3Server() || IsRpServer()) return true;
     return m_bAcCustom.load();
 }
 uint64_t MPServer::AcMask() const
 {
-    if(IsDefaultServer() || IsBcwServer() || IsMw3Server() || IsRpServer()) return AC_ALL_MASK;
+    if(IsDefaultServer()) return 0;   // 4.12.4: off on the default server
+    if(IsBcwServer() || IsMw3Server() || IsRpServer()) return AC_ALL_MASK;
     return m_nAcMask.load();
 }
 bool MPServer::AcCheck(int c) const

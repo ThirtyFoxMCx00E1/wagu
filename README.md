@@ -121,6 +121,13 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **4.12.4**: Cross-modpack join fixed (issue #9), anti-cheat off on the default server, CLEO no longer blocked, HUD Player off, GTA HUD preset restore.
+  - Cross-modpack stuck at spawn selection / host lag (since 3.10): the cause was CJ clothing sync - every phone rebuilt the other CJ from clothes in its own player.img, and with different modpacks the game's clothes builder blocked or faulted. New Settings toggle "Sync CJ's clothes (same game files only)", OFF by default; when off, clothes are neither sent nor built. 3.04.6 had no clothing sync, which is why it was stable.
+  - Guests without an MP account no longer wait forever: the client used to remember "login on" for a server name after any challenge and re-used it when you hosted your own server. Your own server now always uses your "Login" setting in Add Server, and a stale "login on" memory is cleared after 8 s with no challenge.
+  - CLEO menu scripts are only blocked when the host turns cheats off (not when "Allow CheatMenu" is off).
+  - Anti-cheat: always OFF on the default 24/7 server (server side too). On your own hosted server the switch now always works and applies live. Brief Case War / MW3 / Mega Vil keep it on.
+  - HUD "Player" text draw (name + id) is off by default and turned off once for existing configs (Settings > HUD to turn it back on).
+  - Advanced Settings: every *.mp_backup in the AML config folder is restored (not only the first ini), so radar, weapon icon and bars return to your own preset.
 - **4.12.3**: Phone keyboard switch, /pay, Day Z XkiLoader pack, GTA HUD page removed.
   - Settings > Display > Keyboard: "MP keyboard" (default, emojis / GIFs / paste) or "Phone keyboard" - chat and every text box open a small box with your phone's own keyboard (Gboard, SwiftKey ...); OK / Enter sends.
   - /pay [id] [amount] (also /sendmoney, /givemoney for players who aren't staff): give your own money to another player ($1 - $1,000,000, the server checks it). Mega Vil keeps its RP /pay (cash, 5 m).

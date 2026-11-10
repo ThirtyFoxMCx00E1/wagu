@@ -309,6 +309,19 @@ static void AuthFrame(uint64_t now)
         const std::string last = AuthLastUser();
         if(!last.empty()) AuthSaveUser(last);
     }
+    {   // 4.12.4: a server remembered as "login on" that never asked for a login (8 s connected, no challenge)
+        // has it off now: forget it, so this phone doesn't wait for a login there / turn it on when it hosts it
+        static uint64_t s_nConnAt = 0; static bool s_bChecked = false;
+        if(client.GetState() != NET_CONNECTED) { s_nConnAt = 0; s_bChecked = false; }
+        else if(!s_nConnAt) s_nConnAt = now;
+        else if(!s_bChecked && !s_bAuthReq && now - s_nConnAt > 8000)
+        {
+            s_bChecked = true;
+            const char* sn = client.GetServerName();
+            if(sn[0] && !MP::IsDefaultServer(sn, client.GetPort()) && !MP_IsBcwServerName(sn) && !MP_IsMw3ServerName(sn) && !MP_IsRpServerName(sn) && !MP_IsDzServerName(sn) && SrvAuthGet(sn, client.GetPort()) > 0)
+            { SrvAuthPut(sn, client.GetPort(), false); logger->Info("4.12.4: %s has no login system any more - forgotten", sn); }
+        }
+    }
     if(!s_bAuthReq) return;
     std::string p; uint8_t sig[64];
     if(s_Auth.TakeTicket(p, sig)) { s_AuthTicket = p; memcpy(s_AuthSig, sig, 64); s_bAuthTicket = true; s_nAuthTicketAt = 0; }

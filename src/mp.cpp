@@ -1453,7 +1453,10 @@ static void ProcessClothes(uint64_t now)
     if(now - s_nCheck < 1000) return;
     s_nCheck = now;
     PktClothes c;
-    bool on = settings.realSkin && Game::GetLocalClothes(c);
+    // 4.12.4 (issue #9): clothing sync is opt-in. Rebuilding another player's CJ needs the SAME clothes in
+    // player.img on both phones; with different custom modpacks the game's clothes builder blocks / faults
+    // on hashes it doesn't have -> the guest hangs on the spawn screen and the host lags. Off = 3.04.6.
+    bool on = settings.realSkin && settings.syncClothes && Game::GetLocalClothes(c);
     if(!on) { memset(&c, 0, sizeof(c)); c.type = PKT_CLOTHES; }
     c.id = myId;
     uint32_t h = MP_ClothesHash(c);
@@ -1472,6 +1475,7 @@ static void SpawnAvatar(RemotePlayer& p, const Vec3& at)
     uint64_t nowSp = MP_NowMs();
     if(nowSp - s_nLastSpawn < 60) return;
     p.pedClothes = p.clothesHash;
+    if(!settings.syncClothes) p.clothesHash = p.pedClothes = 0;   // 4.12.4: avatar skin only (3.04.6)
     if(p.clothesHash)   // 3.10: their CJ with their clothes (0 = no free slot right now -> avatar skin, retried)
     {
         p.ped = Game::CreateRemoteClothedCJ(p.clothes, at);
@@ -2738,6 +2742,9 @@ public:
         if(c0.id >= MP_MAX_PLAYERS || c0.id == myId) return;
         RemotePlayer& p = players[c0.id];
         if(!p.active) return;
+        // 4.12.4 (issue #9): this phone never rebuilds someone else's clothes unless ITS OWN switch is on
+        // (before, turning everything off on your phone didn't help: the other phone's outfit was still built)
+        if(!settings.syncClothes) { if(p.clothesHash) { p.clothesHash = 0; p.clothesRetryAt = 0; } return; }
         PktClothes c = c0;
         if(!MP_ClothesSane(c)) return;
         uint32_t h = MP_ClothesHash(c);
@@ -4145,7 +4152,11 @@ void MP::Process()
     // [MOD] switches "Disable cheats" on.
     // 4.02: off a server (single player, not hosting) the CLEO menu / CLEO touch scripts are never blocked
     const bool offline = client.GetState() == NET_DISCONNECTED && !s_Server.IsRunning();
-    CleoBlock::Process(!offline && (MP::CheatsBlocked() || (client.GetState() == NET_CONNECTED && !MP::CheatMenuAllowed())));
+    // 4.12.4: the CLEO menu / CLEO touch scripts are blocked ONLY when the host (or [ADMIN] / [MOD]) switched
+    // "Block menu cheats" on. 3.51.1 also blocked them on every server whose separate "Allow CheatMenu"
+    // switch (libCheatMenu.so) was off - i.e. on every custom server by default, even with cheats left on -
+    // and modpack CLEO scripts that use touch zones stopped working there too.
+    CleoBlock::Process(!offline && MP::CheatsBlocked());
     ExpireKillPredictions(now);                // 2.37
     {   // 2.37 / 3.00: CheatMenu installed -> allowed only where the server says so (PERM_CHEAT_MENU)
         static uint64_t s_nCmT = 0, s_nConnT = 0;
@@ -4705,7 +4716,10 @@ static bool StartLocalServer(const char* name, int port)
         // 3.21.6: login system (default + Brief Case War: always, in MPServer itself)
         int au = SrvAuthGet(name, port);
         bool auth = false;
-        if(creating || (au < 0 && own)) { auth = settings.hostAuth; SrvAuthPut(name, port, auth); }
+        // 4.12.4: your OWN server follows your own "Login with Discord" switch (Add server). Before, a phone that
+        // had once joined another server with the same name + port where login was on remembered "on" and then
+        // turned login on for its own server by itself: guests without a Discord account waited forever at Spawn.
+        if(creating || own) { auth = settings.hostAuth; SrvAuthPut(name, port, auth); }
         else auth = au > 0;
         s_Server.SetAuth(auth);
     }
@@ -5398,7 +5412,7 @@ void MP::SaveConfig()
     I("ChatLines", settings.chatLines); F("ChatSize", settings.chatSize); F("ChatScale", settings.chatScale); F("ChatWidth", settings.chatWidth);   // 2.19.6
     I("ChatFade", settings.chatFade); B("ChatFadeOn", settings.chatFadeOn); B("ChatBackground", settings.chatBg);
     B("ChatBoxBackground", settings.chatBoxBg); B("ChatBoxLabel", settings.chatBoxLabel); B("ChatBoxTap", settings.chatBoxTap);   // 2.22
-    F("ChatBoxX", settings.chatBoxX); F("ChatBoxY", settings.chatBoxY); B("RealSkin", settings.realSkin);
+    F("ChatBoxX", settings.chatBoxX); F("ChatBoxY", settings.chatBoxY); B("RealSkin", settings.realSkin); B("SyncClothes", settings.syncClothes);
     I("Region", settings.region); B("LobbyAuto", settings.lobbyAuto); B("RegionPicked", settings.regionPicked); I("NameColor", (int)settings.nameColor); I("ServerChatColor", (int)settings.serverChatColor); I("PlayerChatColor", (int)settings.playerChatColor); I("MaxPlayers", settings.maxPlayers); I("HostGamemodes", settings.hostModes); I("ServerIcon", settings.serverIcon); S("ServerLang", settings.serverLang); S("ServerCC", settings.serverCC); S("ServerMode", settings.serverMode); I("ServerModeCol", settings.serverModeCol); S("ServerTags", settings.serverTags); S("ServerDesc", settings.serverDesc); S("ServerPreview", settings.serverPreview); S("ServerLogo", settings.serverLogo); I("HudMode", settings.hudMode); I("HudFlags", settings.hudFlags); I("HudDoor", settings.hudDoor); I("LogoX", settings.logoX); I("LogoY", settings.logoY); I("LogoZ", settings.logoZ); S("DeviceId", settings.deviceId); S("UiLanguage", settings.uiLanguage);   // 3.52
     B("FullProgressDefault", settings.fullProgressDefault);
     B("UnlockWorld", settings.unlockWorld); B("Girlfriends", settings.girlfriends); B("EventTips", settings.eventTips);   // 2.21
@@ -5487,6 +5501,7 @@ static void LoadConfig()
     settings.chatBoxX        = ::cfg->GetFloat("ChatBoxX", -1.0f, "MP");
     settings.chatBoxY        = ::cfg->GetFloat("ChatBoxY", -1.0f, "MP");
     settings.realSkin        = ::cfg->GetBool("RealSkin", true, "MP");
+    settings.syncClothes     = ::cfg->GetBool("SyncClothes", false, "MP");   // 4.12.4: off by default (issue #9)
     MP::ClampChatSettings();
     settings.region          = ::cfg->GetInt("Region", REGION_ASIA, "MP");
     settings.lobbyAuto       = ::cfg->GetBool("LobbyAuto", true, "MP");
@@ -5525,7 +5540,7 @@ static void LoadConfig()
     ::cfg->GetString(settings.serverDesc, sizeof(settings.serverDesc), "ServerDesc", "", "MP");
     ::cfg->GetString(settings.serverPreview, sizeof(settings.serverPreview), "ServerPreview", "", "MP");
     ::cfg->GetString(settings.serverLogo, sizeof(settings.serverLogo), "ServerLogo", "", "MP");   // 4.07
-    settings.hudMode = ::cfg->GetInt("HudMode", 1, "MP"); settings.hudFlags = ::cfg->GetInt("HudFlags", HUD_DEFAULT_FLAGS, "MP"); settings.hudDoor = ::cfg->GetInt("HudDoor", 2, "MP");
+    settings.hudMode = ::cfg->GetInt("HudMode", 1, "MP"); settings.hudFlags = ::cfg->GetInt("HudFlags", HUD_DEFAULT_FLAGS, "MP"); if(!::cfg->GetBool("HudPlayerOff4124", false, "MP")) { settings.hudFlags &= ~HUDF_PLAYER; ConfigEntry* e = ::cfg->Bind("HudPlayerOff4124", true, "MP"); e->SetBool(true); delete e; ::cfg->Save(); }   // 4.12.4: once - HUD Player off (turn it back on in /settings > Textdraw) settings.hudDoor = ::cfg->GetInt("HudDoor", 2, "MP");
     if(settings.hudMode < 0 || settings.hudMode > 5) settings.hudMode = 1;
     if(settings.hudDoor < 0 || settings.hudDoor > 10) settings.hudDoor = 2;
     settings.logoX = ::cfg->GetInt("LogoX", 50, "MP"); settings.logoY = ::cfg->GetInt("LogoY", 2, "MP"); settings.logoZ = ::cfg->GetInt("LogoZ", 100, "MP");
@@ -6297,14 +6312,14 @@ static void GamemodeSwitches(const char* typedName)
     ImGui::PopID();
     AntiCheatSection();   // 3.50: scroll down in Gamemodes
 }
-// 3.50: Anti-cheat (Nex-AC checks, server side). Always on with every check on the default server,
-// Mega Vil Futuristic, Brief Case War and MW3. A custom server: the master switch + each check.
+// 3.50: Anti-cheat (Nex-AC checks, server side). Always on with every check on Mega Vil Futuristic,
+// Brief Case War and MW3 (4.12.4: always OFF on the default server). A custom server: the master switch + each check.
 static void AntiCheatSection()
 {
     ImGui::PushID("anticheat");
     ImGui::Spacing(); ImGui::Separator(); ImGui::Spacing();
     ImGui::TextUnformatted("Anti-cheat");
-    ImGui::TextDisabled("Nex-AC checks on the server. Always on (every check) on the default server, Mega Vil Futuristic, Brief Case War and MW3.");
+    ImGui::TextDisabled("Nex-AC checks on the server. Always OFF on the default server; always on (every check) on Mega Vil Futuristic, Brief Case War and MW3.");
     ImGui::TextDisabled("Staff (you, admins, moderators) only get the warning. Checks marked (cheat) are skipped while menu cheats are allowed.");
     bool changed = FloatMenu::ToggleSwitch("Anti-cheat on my custom server", &settings.hostAc);
     if(settings.hostAc)
@@ -7392,7 +7407,13 @@ static void SectionPlayer(void*)
     if(cur < 0) cur = 1;
     ImGui::SetNextItemWidth(-FLT_MIN);
     if(ImGui::Combo("##skin", &cur, labels.data(), (int)labels.size(), 10)) { settings.skin = ids[cur]; SaveConfig(); }
-    if(FloatMenu::ToggleSwitch("Show my real model (skin mods, story characters, CJ's clothes)", &settings.realSkin)) SaveConfig();
+    if(FloatMenu::ToggleSwitch("Show my real model (skin mods, story characters)", &settings.realSkin)) SaveConfig();
+    if(FloatMenu::ToggleSwitch("Sync CJ's clothes (same game files only)", &settings.syncClothes))
+    {   // 4.12.4: off = everyone is shown with their skin, like 3.04.6 (works across different modpacks)
+        SaveConfig();
+        if(!settings.syncClothes) for(int i = 0; i < MP_MAX_PLAYERS; ++i) if(players[i].active && players[i].clothesHash) { players[i].clothesHash = 0; players[i].clothesRetryAt = 0; }
+    }
+    ImGui::TextDisabled("Leave it off when you and your friends use different modpacks (custom skins / cars / clothes).");
     {
         int net = settings.realSkin ? Game::LocalSkinForNet(settings.skin) : settings.skin;
         const char* sl = Game::SkinLabel(net);

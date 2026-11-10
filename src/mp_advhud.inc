@@ -137,7 +137,8 @@ static bool AdvRestore()
     char b[4096]; size_t r; while((r = fread(b, 1, sizeof(b), in)) > 0) fwrite(b, 1, r, out);
     fclose(in); fclose(out); rename(tmp, s_Adv.path);
     s_Adv.dirty = false;
-    return AdvLoad(s_Adv.path);
+    AdvLoad(s_Adv.path);
+    return true;   // 4.12.4: the file is back even if it has no HUD_* sections
 }
 
 // 4.12.3: the "GTA HUD" page and the launcher move are gone (the HUD looked weird). Once per game start,
@@ -151,9 +152,29 @@ static void AdvTick()
     if(s_nState == 0) { s_nState = 1; s_nAt = now + 3000; return; }
     if(now < s_nAt) return;
     s_nState = 2;
-    AdvFind(true);
-    if(!s_Adv.found) return;
-    char bak[540]; snprintf(bak, sizeof(bak), "%s.mp_backup", s_Adv.path);
-    if(access(bak, F_OK) != 0) return;
-    if(AdvRestore()) { unlink(bak); logger->Info("4.12.3: Advanced Settings HUD: original preset restored (%s)", s_Adv.path); }
+    // 4.12.4: every ini MP ever changed in the configs folder goes back (4.12.3 only looked at the first ini
+    // with HUD_* sections, so a preset kept in another ini - weapon icon / bars / radar - stayed moved).
+    // A left-over <ini>.mp_tmp (game closed while saving) is deleted too.
+    const char* dir = aml->GetConfigPath();
+    if(!dir || !*dir) return;
+    const char* sep = dir[strlen(dir) - 1] == '/' ? "" : "/";
+    std::vector<std::string> baks, tmps;
+    if(DIR* d = opendir(dir))
+    {
+        while(dirent* e = readdir(d))
+        {
+            const size_t n = strlen(e->d_name);
+            if(n > 14 && !strcmp(e->d_name + n - 10, ".mp_backup")) baks.push_back(std::string(e->d_name, n - 10));
+            else if(n > 11 && !strcmp(e->d_name + n - 7, ".mp_tmp")) tmps.push_back(e->d_name);
+        }
+        closedir(d);
+    }
+    for(auto& t : tmps) { char p[600]; snprintf(p, sizeof(p), "%s%s%s", dir, sep, t.c_str()); unlink(p); }
+    for(auto& ini : baks)
+    {
+        snprintf(s_Adv.path, sizeof(s_Adv.path), "%s%s%s", dir, sep, ini.c_str());
+        char bak[600]; snprintf(bak, sizeof(bak), "%s.mp_backup", s_Adv.path);
+        if(AdvRestore()) { unlink(bak); logger->Info("4.12.4: Advanced Settings HUD: original preset restored (%s)", s_Adv.path); }
+    }
+    s_Adv.found = false; s_Adv.path[0] = 0;   // MP never writes that ini again
 }

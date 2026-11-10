@@ -49,7 +49,7 @@ static void SrvSettingsDlg(int resp, int item, const char*, int)
     else if(item == MP_GAMEMODE_COUNT + SRV_PERM_ROWS + 1)
     {   // 3.58: anti-cheat gamemode
         if(!(s_SrvSet.s.pad & 0x80)) { SysMsg(COL_YELLOW, "This server is older than MP 3.58 (anti-cheat state unknown)."); SrvSettingsShow(); return; }
-        if(!(s_SrvSet.s.pad & 2)) { SysMsg(COL_YELLOW, "The anti-cheat always runs on the featured servers."); SrvSettingsShow(); return; }
+        if(!(s_SrvSet.s.pad & 2)) { SysMsg(COL_YELLOW, MP::IsOnDefault() ? "The anti-cheat is always off on the default server." : "The anti-cheat always runs on Brief Case War, MW3 and Mega Vil."); SrvSettingsShow(); return; }
         s_SrvSet.s.pad ^= 1;
     }
     else return;
@@ -96,7 +96,7 @@ static void SrvSettingsShow()
     {   // 3.58: the anti-cheat as its own gamemode row
         char l[160];
         if(!(s.pad & 0x80)) snprintf(l, sizeof(l), "{FFFFFF}Gamemode: Anti-cheat\t{AAAAAA}?\n");
-        else snprintf(l, sizeof(l), "{FFFFFF}Gamemode: Anti-cheat%s\t%s\n", (s.pad & 2) ? "" : " {AAAAAA}(always on)", (s.pad & 1) ? "{33CC55}ON" : "{FF4444}OFF");
+        else snprintf(l, sizeof(l), "{FFFFFF}Gamemode: Anti-cheat%s\t%s\n", (s.pad & 2) ? "" : ((s.pad & 1) ? " {AAAAAA}(always on)" : " {AAAAAA}(always off)"), (s.pad & 1) ? "{33CC55}ON" : "{FF4444}OFF");
         body += l;
     }
     char cap[96]; snprintf(cap, sizeof(cap), "{FFFFFF}Server settings %s", s.can ? "{33CC55}(you can change them)" : "{AAAAAA}(view only)");

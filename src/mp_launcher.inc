@@ -1385,12 +1385,23 @@ static void LPageServerMgmt()
     // 3.58: the anti-cheat gamemode (fly / teleport / airbreak / speed / rapid fire / CLEO + CheatMenu block)
     LSrvHeader("ANTI-CHEAT");
     {
-        const bool known = (st.pad & 0x80) != 0, fixedOn = known && !(st.pad & 2);
-        bool on = known ? (st.pad & 1) != 0 : featured;
-        if(!canEdit || fixedOn || !known) ImGui::BeginDisabled();
-        if(FloatMenu::ToggleSwitch("Anti-cheat gamemode", &on)) { st.pad = (uint8_t)((st.pad & ~1) | (on ? 1 : 0) | 0x80); send = true; }
-        if(!canEdit || fixedOn || !known) ImGui::EndDisabled();
-        if(fixedOn) ImGui::TextDisabled("Always ON on the featured servers.");
+        // 4.12.4: the default server: always OFF. The host owner of a custom server can ALWAYS switch it: the
+        // switch used to stay grey until the server's settings answer arrived (pad unknown), and on the phone
+        // that hosts it the answer sometimes never came - so it could be neither turned on nor off.
+        const bool onDefault = MP::IsOnDefault();
+        const bool ownHost = !featured && IsHosting() && s_Server.IsRunning() && !MP::IsHostingDefault();
+        const bool known = (st.pad & 0x80) != 0, fixedOn = !onDefault && known && !(st.pad & 2) && featured;
+        bool on = onDefault ? false : ownHost ? s_Server.AntiCheatOn() : known ? (st.pad & 1) != 0 : featured;
+        const bool locked = onDefault || fixedOn || !(canEdit || ownHost) || (!known && !ownHost);
+        if(locked) ImGui::BeginDisabled();
+        if(FloatMenu::ToggleSwitch("Anti-cheat gamemode", &on))
+        {
+            st.pad = (uint8_t)((st.pad & ~1) | (on ? 1 : 0) | 0x80); send = true;
+            if(ownHost) { settings.hostAc = on; SaveConfig(); s_Server.SetAntiCheat(on, settings.hostAcMask); SysMsg(on ? COL_GREEN : COL_YELLOW, "Anti-cheat %s on \"%s\".", on ? "on" : "off", s_Server.GetName()); }
+        }
+        if(locked) ImGui::EndDisabled();
+        if(onDefault) ImGui::TextDisabled("Always OFF on the default server.");
+        else if(fixedOn) ImGui::TextDisabled("Always ON on Brief Case War, MW3 and Mega Vil.");
         ImGui::TextDisabled("Checks: teleport, airbreak, fly (on foot only - helicopters, jets and cars in the air are fine),");
         ImGui::TextDisabled("speed, rapid fire, infinite ammo, packet flood. Floating / teleporting: kick, 3 kicks = permanent ban");
         ImGui::TextDisabled("(only [ADMIN] / [MOD] can unban). CLEO menus and libCheatMenu.so / libCheatMenu64.so are blocked.");
