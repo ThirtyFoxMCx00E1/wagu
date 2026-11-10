@@ -191,6 +191,11 @@
       if (online()) p('g', '  online - Streaming: Watch on YouTube · Subscribe on YouTube · Join discord.gg/tbsDknk34y · Playing MP - GTA SA Multiplayer');
       else p('y', '  the website only sees the bot after it is started on YOUR server (Termius): run this there, then sudo mp-railway status');
     },
+    'ss-token': function () {   // 4.12.3: the new token - typed on the server only, never on this page
+      print('DISCORD_TOKEN: <span class="m">(hidden - paste the new token on YOUR server in Termius, never on this page)</span>');
+      rw('discordpy-bot: DISCORD_TOKEN set (********) - restarting');
+      p('m', '  saved in /etc/mp-railway/discordpy-bot.env (mode 600, root only)');
+    },
     'ss-url': function () {
       rw('discordpy-bot: STREAM_URL set (https://www.youtube.com/watch?v=YOUR_VIDEO) - restarting');
       p('m', '  put your own video in place of YOUR_VIDEO · titles: STATUS_TEXTS="a|b|c" · off: STREAM_URL off');
@@ -202,12 +207,16 @@
     'mp-railway --version': 'version', 'mp-railway status': 'status', 'mp-railway logs --tail 20': 'logs',
     'mp-railway deployments': 'deployments', 'mp-railway env': 'variables', 'mp-railway commands': 'commands',
     'ping -c 1 $BROKERS': 'ping', 'mp-railway doctor': 'doctor', 'clear': 'clear',
+    'sudo mp-railway env set DISCORD_TOKEN': 'ss-token',
     'sudo mp-railway deploy': 'ss-deploy',
+    'sudo mp-railway status': 'status',
     'sudo mp-railway env set STREAM_URL https://www.youtube.com/watch?v=YOUR_VIDEO': 'ss-url'
   };
   // 4.12.2: the 3 Streaming status commands, typed by MP Bot after start-up and again every 10 checks
-  var SS = ['sudo mp-railway deploy',
-            'sudo mp-railway env set STREAM_URL https://www.youtube.com/watch?v=YOUR_VIDEO'];
+  // 4.12.3: bring the bot back online (new token -> deploy -> status), typed by MP Bot at start-up and every 10 checks
+  var SS = ['sudo mp-railway env set DISCORD_TOKEN',
+            'sudo mp-railway deploy',
+            'sudo mp-railway status'];
   var ssQ = SS.slice(), ssN = 0;
   function run(line) {
     print('<span class="b">mp@railway:~$</span> ' + esc(line));
@@ -223,7 +232,7 @@
   var rot = ['mp-railway status', 'mp-railway logs --tail 20', 'mp-railway status', 'mp-railway commands'], ri = 0, cycles = 0;
   function next() {
     if (boot.length) return { cmd: boot.shift(), why: 'start-up check' };
-    if (ssQ.length) return { cmd: ssQ.shift(), why: '24/7 Streaming status (inside the MP bot)', wait: 6500 };   // 4.12.2
+    if (ssQ.length) return { cmd: ssQ.shift(), why: 'bring the bot online: new token, deploy, status', wait: 6500 };   // 4.12.2
     if (++ssN % 10 === 0) ssQ = SS.slice();
     var dj = window.MPDebian && MPDebian.tick(); if (dj) return dj;   // 3.31: the Debian one-line setup
     if (changed) { changed = false; return online() ? { cmd: 'mp-railway status', why: 'the bot came online' } : { cmd: 'mp-railway doctor', why: 'the bot went offline' }; }
