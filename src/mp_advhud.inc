@@ -83,7 +83,7 @@ static void AdvFind(bool force)
     if(!dir || !*dir) return;
     char p[512];
     snprintf(p, sizeof(p), "%s%sAdvancedSettings.SA.ini", dir, dir[strlen(dir) - 1] == '/' ? "" : "/");
-    if(AdvLoad(p)) { snprintf(s_Adv.path, sizeof(s_Adv.path), "%s", p); s_Adv.found = true; logger->Info("4.10: AdvancedSettings ini: %s", p); return; }
+    if(AdvLoad(p)) { snprintf(s_Adv.path, sizeof(s_Adv.path), "%s", p); s_Adv.found = true; logger->Info("4.10: HUD preset: %s", p); return; }
     if(DIR* d = opendir(dir))
     {
         while(dirent* e = readdir(d))
@@ -94,7 +94,7 @@ static void AdvFind(bool force)
             FILE* f = fopen(p, "rb"); if(!f) continue;
             char buf[4096]; size_t r = fread(buf, 1, sizeof(buf) - 1, f); buf[r] = 0; fclose(f);
             if(!strstr(buf, "[HUD_WeaponIcon]") && !strstr(buf, "[HUD_BarHealth]")) continue;
-            if(AdvLoad(p)) { snprintf(s_Adv.path, sizeof(s_Adv.path), "%s", p); s_Adv.found = true; logger->Info("4.10: AdvancedSettings ini: %s", p); break; }
+            if(AdvLoad(p)) { snprintf(s_Adv.path, sizeof(s_Adv.path), "%s", p); s_Adv.found = true; logger->Info("4.10: HUD preset: %s", p); break; }
         }
         closedir(d);
     }
@@ -133,7 +133,7 @@ static void AdvSave()
         if(in) fclose(in); if(out) fclose(out);
     }
     char tmp[540]; snprintf(tmp, sizeof(tmp), "%s.mp_tmp", s_Adv.path);
-    FILE* f = fopen(tmp, "wb"); if(!f) { logger->Error("4.10: AdvancedSettings ini not writable: %s", s_Adv.path); s_Adv.dirty = false; return; }
+    FILE* f = fopen(tmp, "wb"); if(!f) { logger->Error("4.10: HUD preset not writable: %s", s_Adv.path); s_Adv.dirty = false; return; }
     for(auto& l : s_Adv.lines) { fputs(l.c_str(), f); fputc('\n', f); }
     fclose(f);
     rename(tmp, s_Adv.path);   // whole file at once: the mod never reads half a file
@@ -178,11 +178,27 @@ static void AdvRestoreOld()
     {
         snprintf(s_Adv.path, sizeof(s_Adv.path), "%s%s%s", dir, sep, ini.c_str());
         char bak[600]; snprintf(bak, sizeof(bak), "%s.mp_backup", s_Adv.path);
-        if(AdvRestore()) { unlink(bak); logger->Info("4.12.5: Advanced Settings HUD: original preset restored (%s)", s_Adv.path); }
+        if(AdvRestore()) { unlink(bak); logger->Info("4.12.5: HUD preset: original restored (%s)", s_Adv.path); }
     }
     s_Adv.found = false; s_Adv.path[0] = 0;
 }
 
+// 4.12.6: the old MP HUD (the day screenshot): radar bottom-left, centre 7 %% across / 86.5 %% down.
+// onlyIfTop: the automatic one-time fix leaves a radar the player already moved down alone.
+static int s_nDzPackMoved = 0;
+static AdvKey* AdvEnsure(const char* sect, const char* key, const char* def);
+static bool AdvClassicLayout(bool onlyIfTop)
+{
+    bool has = false;
+    for(auto& sc : s_Adv.sects) if(sc.name == "HUD_Radar") { has = true; break; }
+    if(!has) return false;
+    AdvEnsure("HUD_Radar", "PosX", "7"); AdvEnsure("HUD_Radar", "PosY", "14");
+    AdvKey* x = AdvGet("HUD_Radar", "PosX"); AdvKey* y = AdvGet("HUD_Radar", "PosY");
+    if(!x || !y) return false;
+    if(onlyIfTop && atof(y->val.c_str()) >= 50.0) return false;
+    AdvSet(*x, "7"); AdvSet(*y, "86.5");
+    return true;
+}
 static uint64_t s_nAdvLastSave = 0;
 static void AdvTick()
 {
@@ -198,6 +214,13 @@ static void AdvTick()
             AdvRestoreOld();
             ConfigEntry* e = ::cfg->Bind("AdvRestoreOnce4125", true, "MP"); e->SetBool(true); delete e; ::cfg->Save();
         }
+        if(!::cfg->GetBool("HudClassic4126", false, "MP"))
+        {   // 4.12.6: the radar back to the old MP layout (bottom-left) once, when it sits at the top
+            AdvFind(true);
+            if(s_Adv.found && AdvClassicLayout(true)) logger->Info("4.12.6: HUD: radar moved to the classic bottom-left place");
+            ConfigEntry* e = ::cfg->Bind("HudClassic4126", true, "MP"); e->SetBool(true); delete e; ::cfg->Save();
+        }
+        if(s_nDzPackMoved > 0) SysMsg(COL_YELLOW, "Day Z model pack moved into the MP folder. Restart the game once so the normal models come back.");
         return;
     }
     // HUD position page: write the ini a moment after the last slider move. Advanced Settings reloads it
@@ -293,7 +316,7 @@ static void AdvHudPositionUI()
     AdvFind(false);
     if(!s_Adv.found)
     {
-        ImGui::TextWrapped("ARM's Advanced Settings (libAdvancedSettings.SA.so) is not installed or has no HUD_* preset - the normal GTA HUD is used.");
+        ImGui::TextWrapped("No HUD preset found (no configs/*.ini with HUD_* sections) - the normal GTA HUD is used.");
         if(FloatMenu::BigButton("Look again##advfind")) AdvFind(true);
         return;
     }
@@ -311,7 +334,7 @@ static void AdvHudPositionUI()
         }
     }
     AdvLoadBase();
-    ImGui::TextWrapped("Advanced Settings %s%s%s. X = left - right, Y = top - bottom (%% of the screen), Size = %% of the preset. Changes show at once.",
+    ImGui::TextWrapped("HUD preset %s%s%s. X = left - right, Y = top - bottom (%% of the screen), Size = %% of the preset. Changes show at once.",
                        s_Adv.version, s_Adv.preset[0] ? ", preset by " : "", s_Adv.preset);
     ImGui::TextDisabled("%s", s_Adv.path);
     {
@@ -328,6 +351,8 @@ static void AdvHudPositionUI()
         if(!has) ImGui::EndDisabled();
         ImGui::TextDisabled(has ? "MP kept a copy of your original preset (the first change made it)." : "Nothing changed yet - the first change keeps a copy of your preset.");
     }
+    if(FloatMenu::BigButton("Classic layout (radar bottom-left)##advclassic"))
+        SysMsg(COL_SYSTEM, AdvClassicLayout(false) ? "HUD position: radar moved bottom-left (classic layout)." : "HUD position: this preset has no radar section.");
     for(const AdvItem& it : kAdvItems)
     {
         bool present = false;

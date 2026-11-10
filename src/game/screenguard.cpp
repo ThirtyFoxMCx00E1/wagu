@@ -26,7 +26,7 @@ namespace
     int  s_nKey = 0;
 
     int CheckKeyText(const char* txt)
-    {   // any token in the file that matches one of the 1000 hashes
+    {   // any token in the file that matches one of the key hashes
         char tok[96]; int n = 0;
         for(const char* p = txt; ; ++p)
         {
@@ -38,7 +38,7 @@ namespace
                 unsigned char buf[128]; const char* salt = "MP-ScreenGuard-1|";
                 const size_t sl = strlen(salt); memcpy(buf, salt, sl); memcpy(buf + sl, tok, n);
                 uint8_t h[32]; mbedtls_sha256(buf, sl + n, h, 0);
-                for(int i = 0; i < 1000; ++i) if(!memcmp(h, kSgKeyHash[i], 32)) return i + 1;
+                for(int i = 0; i < (int)(sizeof(kSgKeyHash) / 32); ++i) if(!memcmp(h, kSgKeyHash[i], 32)) return i + 1;
             }
             n = 0;
             if(!*p) break;

@@ -121,6 +121,7 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **4.12.6**: Grove Street / spawn freeze fixed (the Day Z model pack now stays in the MP folder and no longer replaces normal models), radar back to the classic bottom-left place, new "Classic layout" button in Settings > Display > HUD position.
 - **4.12.5**: HUD position page, screen recording guard fixed, HUD Player removed, Cheat Menu tuning crash fixed.
   - Settings > Display > "HUD position (radar, weapon switch, bars)": X / Y (% of the screen) and Size (% of the preset) of every ARM Advanced Settings HUD item - radar (plus zoom), weapon switch icon, ammo, health / armor / breath bars, clock, money, wanted stars, area / vehicle name, radio, subtitles. Slider plus -/+ buttons, changes show at once, "Reset this item" and "Restore the original preset". The old one-time restore of MP's backups no longer runs on every start, so your own changes stay.
   - ScreenGuard: recording / screenshots really turn black now without a valid src_Access.txt. 4.12.2 - 4.12.4 set FLAG_SECURE from a background thread; Android threw "only the original thread can touch its views", the error was hidden and the window manager never got the flag. Now the flag is pushed through the window's ViewRootImpl (thread-safe) and again from the game's touch hook on the main thread, SurfaceViews are marked secure too.

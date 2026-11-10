@@ -4397,6 +4397,7 @@ static void PSettingsPopup();
 #include "mp_samp.inc"   // 3.01: SA-MP dialogs, textdraws, race / derby state of the others
 #include "mp_hudset.inc"  // 4.07: server HUD (Textdraw): colour variant, cents, player, ammo, title logo
 #include <strings.h>
+int MP_DzPackMigrate();   // mp_launcher.inc
 #include "mp_advhud.inc"  // 4.10: ARM Advanced Settings HUD bridge (Settings > GTA HUD)
 #include "mp_games.inc"  // 2.21: /spawn, /w, races, deathmatch, jobs, teleport events, open world (3.01: derbies, live race positions)
 #include "mp_world.inc"  // 3.01: 3D labels, map icons, actors, gang zones + turf wars, class selection
@@ -7511,6 +7512,7 @@ static void MP_MediaFetchStart()
 void MP::Init(const char* dataDir)
 {
     MP_CopyStr(s_szDataDir, dataDir, sizeof(s_szDataDir));
+    s_nDzPackMoved = MP_DzPackMigrate();   // 4.12.6: Day Z pack out of the model loader folder (Grove Street freeze)
     LoadConfig();
     I18n::SetDataDir(s_szDataDir);   // 3.52: languages
     GImTrText = I18n::Text; GImTrFmt = I18n::Fmt;
