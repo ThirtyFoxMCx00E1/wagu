@@ -353,7 +353,11 @@ void Progress::Process(uint64_t now, bool enabled, bool onDefault, bool connecte
             int r = LoadDone(now, canLoad);
             if(r != 0) MarkLoadEnd();   // 3.33
             if(r < 0) { Msg(COL_WARN, "Load your save (slot %d) from the menu to continue your own story.", s_nOrig + 1); s_Phase = PH_IDLE; }
-            else if(r > 0) { Msg(COL_OK, "Your own progress is back (slot %d).", s_nOrig + 1); s_Phase = PH_IDLE; }   // stay at your save point
+            else if(r > 0)
+            {   // 4.12.8: on another server now: back to where you spawned there (not left at the save point)
+                Msg(COL_OK, "Your own progress is back (slot %d).", s_nOrig + 1); s_Phase = PH_IDLE;
+                if(s_After) s_After();
+            }
             break;
         }
     }

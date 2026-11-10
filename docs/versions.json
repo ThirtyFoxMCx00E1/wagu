@@ -1,6 +1,11 @@
 {
-"latest": "4.12",
+"latest": "4.12.8",
 "supported": [
+"4.12.7",
+"4.12.6",
+"4.12.5",
+"4.12.4",
+"4.12.3",
 "4.12",
 "4.11.1",
 "4.11",
@@ -107,6 +112,69 @@
 "3.04.6"
 ],
 "versions": [
+{
+"v": "4.12.8",
+"summary": "spawn fix (no more jump to Grove Street) and the Grove Street freeze.",
+"items": [
+"Default, featured and custom servers: after you spawn (Ganton or any spot), a save load no longer throws you to Grove Street. On the default server the 100% progress save loads about 4 s after the join; guests (no login to wait for) got the spawn picker first, and the load then moved them to Grove Street, with the rules window on top. On another server right after the default one, putting your own save back did the same.",
+"The spawn picker now waits for that save load (up to 30 s), and after any save load you are put back where you were.",
+"Grove Street freeze: the old teleport after the load made the game load the whole Grove Street area at once (the busiest place, heavier still with custom model packs). That teleport is gone."
+]
+},
+{
+"v": "4.12.7",
+"summary": "one TYFMC folder for the TYFMC mods, website back to full service.",
+"items": [
+"The MP folder is now `Android/data/com.rockstargames.gtasa/files/TYFMC/MP` and the settings are `files/TYFMC/TYFMC.MP.ini`. MLG Production uses `files/TYFMC/MLG` + `TYFMC.MLG.ini`, CamFX `files/TYFMC/CamFX` + `TYFMC.CAMFX.ini`. The old `files/MP` folder and `configs/net.thirtyfox.mp.ini` are moved there on the first start, nothing is lost.",
+"The repo is private now: the website (mpsamp-open.github.io) serves the files the game and the servers download - Day Z models and mapping, media, GIFs, the HiveMQ kit (`downloads/HiveMQ-kit.tar.gz`) and the server source for VPS / Termux installs."
+]
+},
+{
+"v": "4.12.6",
+"summary": "Grove Street / spawn freeze fixed (the Day Z model pack now stays in the MP folder and no longer replaces normal models), radar back to the classic bottom-left place, new \"Classic layout\" button in Settings > Display > HUD position.",
+"items": []
+},
+{
+"v": "4.12.5",
+"summary": "HUD position page, screen recording guard fixed, HUD Player removed, Cheat Menu tuning crash fixed.",
+"items": [
+"Settings > Display > \"HUD position (radar, weapon switch, bars)\": X / Y (% of the screen) and Size (% of the preset) of every ARM Advanced Settings HUD item - radar (plus zoom), weapon switch icon, ammo, health / armor / breath bars, clock, money, wanted stars, area / vehicle name, radio, subtitles. Slider plus -/+ buttons, changes show at once, \"Reset this item\" and \"Restore the original preset\". The old one-time restore of MP's backups no longer runs on every start, so your own changes stay.",
+"ScreenGuard: recording / screenshots really turn black now without a valid src_Access.txt. 4.12.2 - 4.12.4 set FLAG_SECURE from a background thread; Android threw \"only the original thread can touch its views\", the error was hidden and the window manager never got the flag. Now the flag is pushed through the window's ViewRootImpl (thread-safe) and again from the game's touch hook on the main thread, SurfaceViews are marked secure too.",
+"HUD Player (\"Name (id)\" - the \"(0)\" is your player id, the host is 0) is removed on every server, the default server included; the server strips it too, and /settings > Textdraw shows it as Removed. Also fixed: 4.12.4 skipped loading the \"door\" HUD setting.",
+"Crash fix: ARM Cheat Menu tuning (AddVehicleUpgrade, e.g. part 1019 on a modded zr350) crashed in RwFrameForAllObjects when the car's 3D model has no place for the part. Every call now goes through MP's fault guard: the part is skipped, the game keeps running."
+]
+},
+{
+"v": "4.12.4",
+"summary": "Cross-modpack join fixed (issue #9), anti-cheat off on the default server, CLEO no longer blocked, HUD Player off, GTA HUD preset restore.",
+"items": [
+"Cross-modpack stuck at spawn selection / host lag (since 3.10): the cause was CJ clothing sync - every phone rebuilt the other CJ from clothes in its own player.img, and with different modpacks the game's clothes builder blocked or faulted. New Settings toggle \"Sync CJ's clothes (same game files only)\", OFF by default; when off, clothes are neither sent nor built. 3.04.6 had no clothing sync, which is why it was stable.",
+"Guests without an MP account no longer wait forever: the client used to remember \"login on\" for a server name after any challenge and re-used it when you hosted your own server. Your own server now always uses your \"Login\" setting in Add Server, and a stale \"login on\" memory is cleared after 8 s with no challenge.",
+"CLEO menu scripts are only blocked when the host turns cheats off (not when \"Allow CheatMenu\" is off).",
+"Anti-cheat: always OFF on the default 24/7 server (server side too). On your own hosted server the switch now always works and applies live. Brief Case War / MW3 / Mega Vil keep it on.",
+"HUD \"Player\" text draw (name + id) is off by default and turned off once for existing configs (Settings > HUD to turn it back on).",
+"Advanced Settings: every *.mp_backup in the AML config folder is restored (not only the first ini), so radar, weapon icon and bars return to your own preset."
+]
+},
+{
+"v": "4.12.3",
+"summary": "Phone keyboard switch, /pay, Day Z XkiLoader pack, GTA HUD page removed.",
+"items": [
+"Settings > Display > Keyboard: \"MP keyboard\" (default, emojis / GIFs / paste) or \"Phone keyboard\" - chat and every text box open a small box with your phone's own keyboard (Gboard, SwiftKey ...); OK / Enter sends.",
+"/pay [id] [amount] (also /sendmoney, /givemoney for players who aren't staff): give your own money to another player ($1 - $1,000,000, the server checks it). Mega Vil keeps its RP /pay (cash, 5 m).",
+"Project Day Z XkiLoader pack: MP Launcher > Cloud Storage > \"Download pack\" saves MP_ProjectDayZ_XkiLoader.zip into files/MP/dayz/ (a real file) and unpacks it to xkiloader/ProjectDayZ; \"Import pack (zip)\" does the same from the Files app. 123 MTA DayZ models named like the GTA models, textures as PNG with unique names (no GTA texture is overwritten). Needs XkiLoader (release/libXkiLoader.so / libXkiLoader64.so) as an AML mod; restart the game after. Built with tools/make_dz_xkiloader.py, hosted in Host/DayZ/xkiloader/.",
+"The \"GTA HUD\" page (ARM Advanced Settings) is gone and the launcher no longer moves that HUD. If MP changed its ini before, the original preset is put back once at start - your own HUD returns.",
+"MP Discord bot (discordpy-bot 4.12.2): the 24/7 Streaming status (YouTube) is inside the bot itself (STREAM_URL, STATUS_TEXTS). MP Railway console: `sudo mp-railway deploy` + `sudo mp-railway env set STREAM_URL ...`."
+]
+},
+{
+"v": "4.12.2",
+"summary": "Join camera after connected (no bars, no fades), ScreenGuard.",
+"items": [
+"Join camera: the black connection screen now stays until \"Connected successfully!\", then the camera tour starts. No cinema bars at the top and bottom and no dip to black / jump between shots any more: one continuous camera move (a smooth curve through the shots, high over the city between them). Default server: starts at Santa Maria pier and keeps flying behind the < Spawn > picker until you pick a place. Mega Vil Futuristic: glides over the Plaza, then eases down to the Lobby Hub without stopping.",
+"ScreenGuard (from research/ScreenGuard_source): screen recording, screenshots and casting of the game are black unless the phone has a valid `src_Access.txt` in the MP folder (`Android/data/com.rockstargames.gtasa/files/MP/`). 1000 keys exist; DM ThirtyFox on Discord to get one. Only SHA-256 hashes of the keys are in the source."
+]
+},
 {
 "v": "4.12",
 "summary": "Timber fix, cinematic join camera, 4 real regions, PC + Mobile cross-play.",

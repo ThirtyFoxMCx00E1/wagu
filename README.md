@@ -121,6 +121,10 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **4.12.8**: spawn fix (no more jump to Grove Street) and the Grove Street freeze.
+  - Default, featured and custom servers: after you spawn (Ganton or any spot), a save load no longer throws you to Grove Street. On the default server the 100% progress save loads about 4 s after the join; guests (no login to wait for) got the spawn picker first, and the load then moved them to Grove Street, with the rules window on top. On another server right after the default one, putting your own save back did the same.
+  - The spawn picker now waits for that save load (up to 30 s), and after any save load you are put back where you were.
+  - Grove Street freeze: the old teleport after the load made the game load the whole Grove Street area at once (the busiest place, heavier still with custom model packs). That teleport is gone.
 - **4.12.7**: one TYFMC folder for the TYFMC mods, website back to full service.
   - The MP folder is now `Android/data/com.rockstargames.gtasa/files/TYFMC/MP` and the settings are `files/TYFMC/TYFMC.MP.ini`. MLG Production uses `files/TYFMC/MLG` + `TYFMC.MLG.ini`, CamFX `files/TYFMC/CamFX` + `TYFMC.CAMFX.ini`. The old `files/MP` folder and `configs/net.thirtyfox.mp.ini` are moved there on the first start, nothing is lost.
   - The repo is private now: the website (mpsamp-open.github.io) serves the files the game and the servers download - Day Z models and mapping, media, GIFs, the HiveMQ kit (`downloads/HiveMQ-kit.tar.gz`) and the server source for VPS / Termux installs.

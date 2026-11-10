@@ -339,6 +339,10 @@ static void AuthFrame(uint64_t now)
 // the < Spawn > buttons (and the Brief Case War teams) wait for the login
 static bool AuthHoldsJoin(uint64_t now)
 {
+    // 4.12.8: the spawn picker waits for a save load (default server: the 100% save; another server right
+    // after the default one: your own save back). Guests have no login to wait for, so their picker used to
+    // open first and the load then moved them away from the spot they picked. Capped at 30 s.
+    if((Progress::Pending() || (Progress::IsActive() && !MP::IsOnDefault())) && now - s_nAuthJoinAt < 30000) return true;
     if(!s_bAuthReq)
     {   // the challenge comes right after the welcome: a short wait on servers known to use it
         const char* sn = client.GetServerName();

@@ -1326,8 +1326,20 @@ static void ClearAllPlayers()
 // the game is about to load a save (100% progress on / off): it rebuilds the world, so drop
 // the network avatars first; they come back by themselves once the save is running
 static void MpFreeAllObjects();   // 3.34 (after the server .inc files)
+// 4.12.8: where you were when a save load started (put back after it, instead of Grove Street)
+static bool  s_bPreLoadPos = false, s_bWantRestorePos = false;
+static Vec3  s_PreLoadPos = { 0, 0, 0 };
+static float s_fPreLoadHead = 0;
+static void JoinAfterSaveLoad(int ped);   // mp_join.inc
 static void OnBeforeSaveLoad()
 {
+    {   // 4.12.8: remember the spot you spawned at / walked to (not while the join screen still has you)
+        s_bPreLoadPos = false;
+        const int ped = Game::LocalPed();
+        if(client.GetState() == NET_CONNECTED && !JoinFlowActive() && ped > 0 && Game::GetAreaVisible() == 0 &&
+           Game::GetCharPos(ped, s_PreLoadPos) && MP_Finite(s_PreLoadPos.x) && MP_Finite(s_PreLoadPos.y) && MP_Finite(s_PreLoadPos.z))
+        { s_fPreLoadHead = Game::GetCharHeading(ped); s_bPreLoadPos = true; }
+    }
     MpFreeAllObjects();   // 3.34: the save load needs the object + dummy pools (BugReports/ crash logs)
     NpcStop();   // 2.18
     for(int i = 0; i < MP_MAX_PLAYERS; ++i) { ClearMissionMarkers(players[i]); DestroyAvatar(players[i]); }
@@ -1337,7 +1349,16 @@ static void OnBeforeSaveLoad()
 }
 static void OnAfterSaveLoad()
 {
-    s_bWantTeleport = true;          // the server's spawn (Grove Street)
+    // 4.12.8: no more teleport to Grove Street after the save load. It threw players who had just spawned
+    // (Ganton etc., guests most of all: their spawn picker opens before the load) to Grove Street, and its
+    // LOAD_SCENE of the busiest area right after a load was the Grove Street freeze. Now: back to where you
+    // were; still on the join screen = it keeps you; not connected any more = you stay at your save point.
+    if(client.GetState() == NET_CONNECTED)
+    {
+        if(JoinFlowActive()) JoinAfterSaveLoad(Game::LocalPed());
+        else if(s_bPreLoadPos) s_bWantRestorePos = true;
+    }
+    s_bPreLoadPos = false;
     s_nWorldSyncedAt = 0;            // re-lock the server's time + weather without a "blocked" notice
     s_nPrevLocalHealth = -1;
 }
@@ -4209,8 +4230,13 @@ void MP::Process()
 
     if(s_bWantTeleport)
     {
-        s_bWantTeleport = false;
+        s_bWantTeleport = false; s_bWantRestorePos = false;
         Game::Teleport(ped, kGroveStreet, kGroveHeading);
+    }
+    if(s_bWantRestorePos && ped > 0)
+    {   // 4.12.8: after a save load: back to the spot you were at (the load put you at the save point)
+        s_bWantRestorePos = false;
+        Game::Teleport(ped, s_PreLoadPos, s_fPreLoadHead);
     }
     {   // 3.23.2: a signal stack for the game thread. Without one a crash from a too deep / too big
         // stack has nowhere to run the crash handlers and the game just closes with no crash log.

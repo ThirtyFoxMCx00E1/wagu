@@ -239,6 +239,22 @@ static void JoinRestoreGame(bool teleportGrove)
     s_bJoinCamSet = false; s_bJoinHudOff = false;
 }
 
+// 4.12.8: a save load ran while the join screen / spawn picker was up: the game put the player back at the
+// save point, visible and free. Hide and hold them again at the spot the picker shows; Spawn places them.
+static void JoinAfterSaveLoad(int ped)
+{
+    if(s_nJoinPhase == JP_NONE || ped <= 0) return;
+    if(s_bJoinCamSet)
+    {
+        const SpawnSpot& sp = kSpawns[s_nSpawnSel];
+        Game::FreezeChar(ped, false);
+        Game::PlaceChar(ped, { sp.x, sp.y, sp.z + 40.0f });
+        Game::FreezeChar(ped, true);
+        Game::SetCharVisible(ped, false);
+    }
+    if(s_bJoinHudOff) { Game::ShowGameHud(false); Game::SetPlayerControl(false); }
+}
+
 static void JoinOverlayCancel()
 {
     if(s_nJoinPhase == JP_NONE) return;
