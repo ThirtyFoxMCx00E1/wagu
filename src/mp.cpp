@@ -4670,7 +4670,10 @@ static bool StartLocalServer(const char* name, int port)
         snprintf(hf, sizeof(hf), "%s/progress_%d.txt", s_szDataDir, port); s_Server.SetProgressFile(hf);   // 3.39.1
         s_Server.SetOwnerUid(settings.deviceId);
     }
-    s_Server.SetAntiCheat(settings.hostAc, settings.hostAcMask);   // 3.50 (featured servers: always on, every check)
+    // 3.50 (Mega Vil / Brief Case War / MW3: always on, every check). 4.12.4: the default server starts OFF
+    // (every check ready) and its staff switch it from Settings > Anti-cheat gamemode.
+    if(MP::IsDefaultServer(name, port)) s_Server.SetAntiCheat(false, AC_ALL_MASK);
+    else s_Server.SetAntiCheat(settings.hostAc, settings.hostAcMask);
     if(!MP::IsDefaultServer(name, port)) { s_Server.SetHudConfig((uint8_t)settings.hudMode, (uint8_t)settings.hudFlags, (uint8_t)settings.hudDoor); s_Server.SetLogoPos((uint8_t)settings.logoX, (uint8_t)settings.logoY, (uint8_t)settings.logoZ); }   // 4.07: /settings > Textdraw
     {   // 4.11: a SA-MP gamemode imported on Add server > Plugins (files/MP/<server>/samp/)
         const std::string sr = (bcw || MP::IsDefaultServer(name, port)) ? std::string() : SampGamemodeRoot(name);
@@ -6304,7 +6307,7 @@ static void AntiCheatSection()
     ImGui::PushID("anticheat");
     ImGui::Spacing(); ImGui::Separator(); ImGui::Spacing();
     ImGui::TextUnformatted("Anti-cheat");
-    ImGui::TextDisabled("Nex-AC checks on the server. Always on (every check) on the default server, Mega Vil Futuristic, Brief Case War and MW3.");
+    ImGui::TextDisabled("Nex-AC checks on the server. Always on (every check) on Mega Vil Futuristic, Brief Case War and MW3. The default server starts with it OFF; its staff switch it in Settings.");
     ImGui::TextDisabled("Staff (you, admins, moderators) only get the warning. Checks marked (cheat) are skipped while menu cheats are allowed.");
     bool changed = FloatMenu::ToggleSwitch("Anti-cheat on my custom server", &settings.hostAc);
     if(settings.hostAc)

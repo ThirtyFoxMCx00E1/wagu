@@ -62,12 +62,14 @@ static const float k_AcModShops[][3] = { { 1041.4f, -1023.0f, 32.1f }, { -1935.9
 
 bool MPServer::AcIsOn() const
 {
-    if(IsDefaultServer() || IsBcwServer() || IsMw3Server() || IsRpServer()) return true;
+    // 4.12.4: the default server is no longer forced on: it starts with the anti-cheat OFF and its
+    // staff switch it (Settings > Anti-cheat gamemode). Mega Vil, Brief Case War and MW3 stay always on.
+    if(IsBcwServer() || IsMw3Server() || IsRpServer()) return true;
     return m_bAcCustom.load();
 }
 uint64_t MPServer::AcMask() const
 {
-    if(IsDefaultServer() || IsBcwServer() || IsMw3Server() || IsRpServer()) return AC_ALL_MASK;
+    if(IsBcwServer() || IsMw3Server() || IsRpServer()) return AC_ALL_MASK;
     return m_nAcMask.load();
 }
 bool MPServer::AcCheck(int c) const

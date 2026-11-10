@@ -458,7 +458,7 @@ void MPServer::SendSrvSettings(int slot)
     p.type = PKT_SRV_SETTINGS; p.op = 0; p.perms = m_nPerms.load(); p.modes = GetModes(); p.rulesOn = m_bRulesOn ? 1 : 0;
     p.can = CanManage(slot) ? 1 : 0;
     // 3.58: pad = anti-cheat: 0x80 valid | 1 on | 2 can be switched (custom servers; the featured ones always run it)
-    p.pad = (uint8_t)(0x80 | (AcIsOn() ? 1 : 0) | ((IsDefaultServer() || IsBcwServer() || IsMw3Server() || IsRpServer() || IsDayzServer()) ? 0 : 2));
+    p.pad = (uint8_t)(0x80 | (AcIsOn() ? 1 : 0) | ((IsBcwServer() || IsMw3Server() || IsRpServer() || IsDayzServer()) ? 0 : 2));   // 4.12.4: the default server can be switched too
     // 4.07: the HUD block for 4.07+ phones (older ones copy only the first 8 bytes)
     h.hudMagic = HUD_MAGIC; h.hudMode = m_nHudMode.load(); h.hudFlags = m_nHudFlags.load(); h.doorSecs = m_nDoorSecs.load();
     h.logoX = m_nLogoX.load(); h.logoY = m_nLogoY.load(); h.logoZ = m_nLogoZ.load(); h.logoValid = 1;
@@ -477,7 +477,7 @@ void MPServer::OnSrvSettings(int slot, const PktSrvSettings& p, const PktSrvSett
     else if(!(IsBcwServer() || IsMw3Server() || IsRpServer())) m_nModes = p.modes & GM_ALL;
     m_nPerms = p.perms; m_nBasePerms = p.perms;
     m_bRulesOn = p.rulesOn != 0;
-    if((p.pad & 0x80) && !(IsDefaultServer() || IsBcwServer() || IsMw3Server() || IsRpServer() || IsDayzServer())) m_bAcCustom = (p.pad & 1) != 0;   // 3.58
+    if((p.pad & 0x80) && !(IsBcwServer() || IsMw3Server() || IsRpServer() || IsDayzServer())) m_bAcCustom = (p.pad & 1) != 0;   // 3.58 (4.12.4: also on the default server)
     Log("%s changed the server settings (gamemodes 0x%04X, permissions 0x%02X)", m_Slots[slot].name, (unsigned)m_nModes.load(), (unsigned)m_nPerms.load());
     PktPerms pm; memset(&pm, 0, sizeof(pm));
     pm.type = PKT_PERMS; pm.perms = m_nPerms.load(); pm.modesMagic = 0x47; pm.modes = GetModes();
