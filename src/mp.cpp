@@ -1474,8 +1474,15 @@ static void SpawnAvatar(RemotePlayer& p, const Vec3& at)
     p.pedClothes = p.clothesHash;
     if(p.clothesHash)   // 3.10: their CJ with their clothes (0 = no free slot right now -> avatar skin, retried)
     {
-        p.ped = Game::CreateRemoteClothedCJ(p.clothes, at);
-        if(!p.ped) p.clothesRetryAt = MP_NowMs() + (Game::ClothesLoadPending() ? 1500 : 5000);   // pedClothes stays = the outfit we tried (3.21: 1.5 s while csplay streams in)
+        // 4.12.4: not while the join screens (connection camera / spawn picker) are up. A custom modpack
+        // can lack the cutscene CJ ("csplay"); asking the streamer for a model that never arrives held
+        // the guest on the loading screen. The avatar skin is shown first, the outfit follows afterwards.
+        if(JoinFlowActive()) p.clothesRetryAt = MP_NowMs() + 1500;
+        else
+        {
+            p.ped = Game::CreateRemoteClothedCJ(p.clothes, at);
+            if(!p.ped) p.clothesRetryAt = MP_NowMs() + (Game::ClothesLoadPending() ? 1500 : 5000);   // pedClothes stays = the outfit we tried (3.21: 1.5 s while csplay streams in)
+        }
     }
     if(!p.ped) p.ped = Game::CreateRemotePed(p.skin, at);
     if(!p.ped) return;   // 3.32: model still streaming in -> tried again next frame
