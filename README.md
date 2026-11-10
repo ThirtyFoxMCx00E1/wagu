@@ -5,20 +5,20 @@
 # MP – Multiplayer for GTA San Andreas Mobile
 
 <p align="center">
-  <a href="https://github.com/ThirtyFoxMCx00E1/wagu/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/ThirtyFoxMCx00E1/wagu?style=for-the-badge&labelColor=3a3a3a&label=release&color=f0a830&display_name=tag"></a>
-  <a href="https://mpsamp-open.github.io/"><img alt="Players online" src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/live-status/players.json&style=for-the-badge&labelColor=3a3a3a"></a>
-  <a href="https://mpsamp-open.github.io/"><img alt="Servers online" src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/live-status/servers.json&style=for-the-badge&labelColor=3a3a3a"></a>
-  <a href="https://github.com/ThirtyFoxMCx00E1/wagu/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/ThirtyFoxMCx00E1/wagu/total?style=for-the-badge&labelColor=3a3a3a&label=downloads&color=2ea043"></a>
+  <a href="https://github.com/ThirtyFoxMCx00E1/wagu/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/ThirtyFoxMCx00E1/wagu?style=for-the-badge&labelColor=3a3a3a&label=release&color=f0a830&display_name=tag&cacheSeconds=600"></a>
+  <a href="https://mpsamp-open.github.io/"><img alt="Players online" src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/live-status/players.json&style=for-the-badge&labelColor=3a3a3a&cacheSeconds=600"></a>
+  <a href="https://mpsamp-open.github.io/"><img alt="Servers online" src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/live-status/servers.json&style=for-the-badge&labelColor=3a3a3a&cacheSeconds=600"></a>
+  <a href="https://github.com/ThirtyFoxMCx00E1/wagu/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/ThirtyFoxMCx00E1/wagu/total?style=for-the-badge&labelColor=3a3a3a&label=downloads&color=2ea043&cacheSeconds=600"></a>
   <br>
-  <a href="https://github.com/ThirtyFoxMCx00E1?tab=followers"><img alt="Followers" src="https://img.shields.io/github/followers/ThirtyFoxMCx00E1?style=for-the-badge&labelColor=3a3a3a&label=followers&color=0b7dbe"></a>
-  <a href="https://github.com/ThirtyFoxMCx00E1/wagu/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/ThirtyFoxMCx00E1/wagu?style=for-the-badge&labelColor=3a3a3a&label=stars&color=0b7dbe"></a>
-  <a href="https://github.com/ThirtyFoxMCx00E1/wagu/forks"><img alt="Forks" src="https://img.shields.io/github/forks/ThirtyFoxMCx00E1/wagu?style=for-the-badge&labelColor=3a3a3a&label=forks&color=0b7dbe"></a>
-  <a href="https://github.com/ThirtyFoxMCx00E1/wagu/commits"><img alt="Last commit" src="https://img.shields.io/github/last-commit/ThirtyFoxMCx00E1/wagu?style=for-the-badge&labelColor=3a3a3a&label=last%20commit&color=0b7dbe"></a>
-  <a href="https://github.com/ThirtyFoxMCx00E1/wagu"><img alt="Repo size" src="https://img.shields.io/github/repo-size/ThirtyFoxMCx00E1/wagu?style=for-the-badge&labelColor=3a3a3a&label=repo%20size&color=0b7dbe"></a>
+  <a href="https://github.com/ThirtyFoxMCx00E1?tab=followers"><img alt="Followers" src="https://img.shields.io/github/followers/ThirtyFoxMCx00E1?style=for-the-badge&labelColor=3a3a3a&label=followers&color=0b7dbe&cacheSeconds=600"></a>
+  <a href="https://github.com/ThirtyFoxMCx00E1/wagu/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/ThirtyFoxMCx00E1/wagu?style=for-the-badge&labelColor=3a3a3a&label=stars&color=0b7dbe&cacheSeconds=600"></a>
+  <a href="https://github.com/ThirtyFoxMCx00E1/wagu/forks"><img alt="Forks" src="https://img.shields.io/github/forks/ThirtyFoxMCx00E1/wagu?style=for-the-badge&labelColor=3a3a3a&label=forks&color=0b7dbe&cacheSeconds=600"></a>
+  <a href="https://github.com/ThirtyFoxMCx00E1/wagu/commits"><img alt="Last commit" src="https://img.shields.io/github/last-commit/ThirtyFoxMCx00E1/wagu?style=for-the-badge&labelColor=3a3a3a&label=last%20commit&color=0b7dbe&cacheSeconds=600"></a>
+  <a href="https://github.com/ThirtyFoxMCx00E1/wagu"><img alt="Repo size" src="https://img.shields.io/github/repo-size/ThirtyFoxMCx00E1/wagu?style=for-the-badge&labelColor=3a3a3a&label=repo%20size&color=0b7dbe&cacheSeconds=600"></a>
   <br>
   <a href="https://mpsamp-open.github.io/"><img alt="GTA SA Android" src="https://img.shields.io/badge/GTA%20SA-Android-e2554b?style=for-the-badge&labelColor=3a3a3a"></a>
   <a href="https://github.com/ThirtyFoxMCx00E1/AndroidModLoader"><img alt="AML" src="https://img.shields.io/badge/AML-AndroidModLoader-8a5cf6?style=for-the-badge&labelColor=3a3a3a"></a>
-  <a href="https://discord.gg/tbsDknk34y"><img alt="Discord" src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/live-status/discord.json&style=for-the-badge&labelColor=3a3a3a"></a>
+  <a href="https://discord.gg/tbsDknk34y"><img alt="Discord" src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/live-status/discord.json&style=for-the-badge&labelColor=3a3a3a&cacheSeconds=600"></a>
 </p>
 
 <p align="center">

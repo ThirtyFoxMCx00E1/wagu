@@ -1,7 +1,10 @@
 name: Website (GitHub Pages)
-# 4.12.7: wagu is private now, so it has no Pages site of its own. The website is published by
-# mpsamp-open/mpsamp-open.github.io (it reads wagu with a read-only deploy key). Kept for a manual run only.
+# 4.12.7: wagu is public again, so it has its own Pages site (thirtyfoxmcx00e1.github.io/wagu) next to
+# mpsamp-open.github.io
 on:
+  push:
+    branches: [main]
+    paths: ['docs/**', '.github/workflows/pages.yml']
   workflow_dispatch:
 permissions:
   contents: read

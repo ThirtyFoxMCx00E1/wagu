@@ -71,7 +71,7 @@ LOCAL_SRC_FILES := \
 LOCAL_STATIC_LIBRARIES := mp_mbedtls mp_opus mp_samp mp_unrar
 
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/include $(LOCAL_PATH)/imgui $(LOCAL_PATH)/src $(LOCAL_PATH)/third_party/mbedtls/include $(LOCAL_PATH)/third_party/opus/include
-LOCAL_CFLAGS   += -O2 -DNDEBUG -DIMGUI_DISABLE_OBSOLETE_FUNCTIONS -DHAVE_STDINT_H -DAMX_ANSIONLY -DAMX_NODYNALOAD -DAMX_DONT_RELOCATE -DFLOATPOINT -Wno-everything -ffunction-sections -fdata-sections
+LOCAL_CFLAGS   += -O2 -DNDEBUG -DIMGUI_DISABLE_OBSOLETE_FUNCTIONS -DHAVE_STDINT_H -DAMX_ANSIONLY -DAMX_NODYNALOAD -DAMX_DONT_RELOCATE -DFLOATPOINT -Wno-everything -Werror=non-pod-varargs -ffunction-sections -fdata-sections
 LOCAL_CPPFLAGS += -std=c++17 -fexceptions -frtti
 LOCAL_LDLIBS   += -llog -lOpenSLES -landroid -lz
 LOCAL_LDFLAGS  += -Wl,--gc-sections -s
