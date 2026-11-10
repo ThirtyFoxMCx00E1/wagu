@@ -74,7 +74,7 @@
   // 3.31: the Debian 12 one-line 24/7 VPS setup. Every console bot (Termius, Termux, Railway) types it
   // at start-up and again every few checks, going round the regions: asia, europe, na, oceania.
   window.MPDebian = (function () {
-    var URL = 'https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/vps-setup.sh';
+    var URL = 'https://mpsamp-open.github.io/HiveMQ/vps-setup.sh';
     var REG = ['asia', 'europe', 'na', 'oceania'];
     var INFO = { europe: ['Europe', 'eusamp', 'Frankfurt'], na: ['NA', 'nasamp', 'Virginia / Ohio'], oceania: ['Oceania', 'ocsamp', 'Sydney'], asia: ['Asia', 'mpsamp', 'Singapore / Manila'] };
     var n = 0, ri = 0;

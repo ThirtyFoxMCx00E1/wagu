@@ -1,7 +1,7 @@
 // 3.50: MP Textdraw Editor file (.mptd) - ONE file per textdraw project.
 //
 // Made by the in-game editor (/tde) or the MP Textdraw Editor app, imported in MP Launcher >
-// Add server > Plugins (type Textdraw): the file is copied into files/MP/<server name>/ and every
+// Add server > Plugins (type Textdraw): the file is copied into files/TYFMC/MP/<server name>/ and every
 // player that joins the server you host sees the textdraws.
 //
 // The file is plain JSON (UTF-8), so it can be read and written by anything:

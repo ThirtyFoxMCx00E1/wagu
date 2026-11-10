@@ -154,7 +154,7 @@ case "$1" in
     vps-update)
         # 3.23.5: update the 24/7 VPS (HiveMQ kit + mp_server + MW3/BCW) from the phone over SSH.
         # The VPS autopilot also does it by itself within 10 min of a new release.
-        UPD='curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/update.sh | sudo bash'
+        UPD='curl -fsSL https://mpsamp-open.github.io/HiveMQ/update.sh | sudo bash'
         H="$2"; [ -z "$H" ] && [ -f "$D/vps.txt" ] && H="$(cat "$D/vps.txt")"
         if [ -z "$H" ]; then echo "mp-server vps-update user@host   (for example ubuntu@mpsamp.duckdns.org; saved for next time)"; echo "or on the VPS: $UPD"; exit 1; fi
         echo "$H" > "$D/vps.txt"

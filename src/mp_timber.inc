@@ -8,7 +8,7 @@
 // hands working on the log (BOMBER BOM_Plant_Loop), the log goes into the pickup's bed as real log
 // objects (7 a load), the Timber Storage with the yellow "i" and its floating text, /unloadtimber, the
 // paycheck and /mysalary.
-// Spots: built-in (the Flint County Timber Storage barn + the pine forest around it, 3.51.1), or files/MP/timber.txt
+// Spots: built-in (the Flint County Timber Storage barn + the pine forest around it, 3.51.1), or files/TYFMC/MP/timber.txt
 // ("storage x y z", "start x y z h", "tree x y z" lines; /timberpos adds your position, staff only).
 // 3.58: the Bobcat (422) is a job pickup too (/timbercar bobcat | sadler, or just drive your own pickup);
 // the pickup spawns 0.12 m over the ground (no drop: wheel-detach mods broke it at +1 m); a cut tree

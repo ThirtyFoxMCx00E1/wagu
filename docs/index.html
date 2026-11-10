@@ -154,15 +154,15 @@
         <p>Ping depends on where the machine is: for Europe, NA and Oceania use a VPS in Frankfurt, Virginia / Ohio or Sydney.</p>
       </div>
       <pre class="code" aria-label="Install commands"><code># new VPS (Ubuntu 22.04 / 24.04, Debian 12), as root - one line per region:
-curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/vps-setup.sh \
+curl -fsSL https://mpsamp-open.github.io/HiveMQ/vps-setup.sh \
   | sudo bash -s asia      # or europe / na / oceania
 
 # Debian 12 (no sudo / curl), as root:
-wget -qO- https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/vps-setup.sh \
+wget -qO- https://mpsamp-open.github.io/HiveMQ/vps-setup.sh \
   | bash -s europe
 
 # update later (players stay connected unless a part changed):
-curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/update.sh | sudo bash
+curl -fsSL https://mpsamp-open.github.io/HiveMQ/update.sh | sudo bash
 
 # speed check: XDP flood filter counters
 sudo /opt/mp/console/mp-xdp.sh status</code></pre>
@@ -229,7 +229,7 @@ sudo /opt/mp/console/mp-xdp.sh status</code></pre>
         <thead><tr><th>Group</th><th>Models</th><th>Size</th><th>Files</th></tr></thead>
         <tbody id="cloud-rows"><tr><td colspan="4" class="muted">Loading the file list...</td></tr></tbody>
       </table></div>
-      <p class="note">Files: <a class="link" href="https://github.com/ThirtyFoxMCx00E1/wagu/tree/main/Host/DayZ/models">wagu / Host/DayZ/models</a> (list: <a class="link" href="https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/Host/DayZ/models/manifest.txt">manifest.txt</a>), second host: <a class="link" href="https://github.com/ThirtyFoxMCx00E1/mtadayz">mtadayz</a>.</p>
+      <p class="note">Files: <a class="link" href="https://github.com/ThirtyFoxMCx00E1/wagu/tree/main/Host/DayZ/models">wagu / Host/DayZ/models</a> (list: <a class="link" href="https://mpsamp-open.github.io/Host/DayZ/models/manifest.txt">manifest.txt</a>), second host: <a class="link" href="https://github.com/ThirtyFoxMCx00E1/mtadayz">mtadayz</a>.</p>
     </div>
   </section>
 </main>

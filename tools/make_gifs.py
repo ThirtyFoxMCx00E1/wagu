@@ -3,7 +3,7 @@
 sprite sheet the game can show in the chat (JPEG, up to 12 frames of max 120x90 in 4 columns = one 512x512 texture) plus
 index.txt:  id|category|name|frames|cols|frameW|frameH|delayMs
 Output: <out>/g/<id>.jpg + <out>/index.txt (pushed to the wagu "gifs" branch; the game downloads one
-sheet when it is shown, from raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/gifs/...).
+sheet when it is shown, from mpsamp-open.github.io/gifs/... (the website publishes the gifs branch)).
 One GIF at a time is downloaded, converted and dropped (the repo is ~5.8 GB).
   python3 tools/make_gifs.py /tmp/gif_tree.tsv <out>     (tree: "size<TAB>path" from the GitHub tree API)"""
 import io, os, sys, urllib.parse, urllib.request, concurrent.futures as cf

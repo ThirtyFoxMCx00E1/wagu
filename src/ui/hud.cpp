@@ -503,7 +503,7 @@ static RwRaster* RasterFromPixels(unsigned char* px, int w, int h, int* outW, in
     return r;
 }
 
-// ---- 3.36: .jar (= zip) packs in files/MP: Icons.jar (icon_1.png .. icon_250.png), Vehicles.jar ----
+// ---- 3.36: .jar (= zip) packs in files/TYFMC/MP: Icons.jar (icon_1.png .. icon_250.png), Vehicles.jar ----
 // Only the central directory is read once (names + offsets); an entry is read on demand.
 // Entries may be stored or deflated (zlib raw inflate, -lz).
 #include <zlib.h>
@@ -579,9 +579,9 @@ static bool JarRead(Jar& j, const char* name, std::vector<unsigned char>& out)
     int r = inflate(&zs, Z_FINISH); inflateEnd(&zs);
     return r == Z_STREAM_END;
 }
-static Jar s_IconsJar, s_VehJar, s_BgJar;   // 4.04: s_BgJar = files/MP/bg_server.jar (bg_1.jpg .. bg_250.jpg)
+static Jar s_IconsJar, s_VehJar, s_BgJar;   // 4.04: s_BgJar = files/TYFMC/MP/bg_server.jar (bg_1.jpg .. bg_250.jpg)
 
-// 2.24: server icons. files/MP/main_df_icon.png = default icon, files/MP/icon_1.png .. icon_250.png =
+// 2.24: server icons. files/TYFMC/MP/main_df_icon.png = default icon, files/TYFMC/MP/icon_1.png .. icon_250.png =
 // the icon a host picks in Server > Host. Loaded on first use (one new file per frame, max 256x256).
 struct IconSlot { RwRaster* r = nullptr; ImVec2 uv{1, 1}; bool tried = false; };
 static IconSlot s_Icons[MP_ICON_MAX + 1];
@@ -600,11 +600,11 @@ void* HUD::ServerIcon(int id, ImVec2* uv)
         if(id == 0) snprintf(path, sizeof(path), "%s/main_df_icon.png", MP::DataDir());
         else        snprintf(path, sizeof(path), "%s/icon_%d.png", MP::DataDir(), id);
         int w = 0, h = 0, n = 0;
-        // 3.36: icon_N.png comes from files/MP/Icons.jar first, a loose files/MP/icon_N.png still works
+        // 3.36: icon_N.png comes from files/TYFMC/MP/Icons.jar first, a loose files/TYFMC/MP/icon_N.png still works
         JarOpen(s_IconsJar, "Icons.jar"); JarOpen(s_BgJar, "bg_server.jar");
         std::vector<unsigned char> mem;
         // 4.04: bg_N.jpg (512x256 CS:GO style row background) from bg_server.jar first, then Icons.jar
-        // (icon_N.jpg of 4.03, the old icon_N.png), then a loose files/MP/icon_N.png
+        // (icon_N.jpg of 4.03, the old icon_N.png), then a loose files/TYFMC/MP/icon_N.png
         char ent[32]; bool got = false;
         if(id) { snprintf(ent, sizeof(ent), "bg_%d.jpg", id); got = JarRead(s_BgJar, ent, mem); }
         if(!got) { if(id == 0) snprintf(ent, sizeof(ent), "main_df_icon.png"); else snprintf(ent, sizeof(ent), "icon_%d.jpg", id); got = JarRead(s_IconsJar, ent, mem); }
@@ -628,7 +628,7 @@ void* HUD::ServerIcon(int id, ImVec2* uv)
     if(uv) *uv = s.uv;
     return (void*)s.r;
 }
-// 3.25: a missing built-in texture (Mega Vil badge / phone) is written into files/MP from the copy inside the .so
+// 3.25: a missing built-in texture (Mega Vil badge / phone) is written into files/TYFMC/MP from the copy inside the .so
 #include "embedded_assets.h"
 static void EnsureEmbeddedAsset(const char* file, const char* path)
 {
@@ -644,7 +644,7 @@ static void EnsureEmbeddedAsset(const char* file, const char* path)
         return;
     }
 }
-// 3.04: any other PNG in files/MP by file name (Brief Case War briefcase / lock / banner), max 512x512
+// 3.04: any other PNG in files/TYFMC/MP by file name (Brief Case War briefcase / lock / banner), max 512x512
 struct NamedTex { char file[48]; RwRaster* r; ImVec2 uv; int w, h; };
 static NamedTex s_NamedTex[192]; static int s_nNamedTex = 0;   // 3.60: 48 -> 96, 4.02: 192 (the featured icons kept failing once Day Z + RP filled it)
 void* HUD::Texture(const char* file, ImVec2* uv)
@@ -687,7 +687,7 @@ bool HUD::TextureSize(const char* file, int* w, int* h)   // 4.07: the picture's
     return false;
 }
 
-// 3.36: a vehicle picture (files/MP/Vehicles.jar: Vehicle_400.png .. Vehicle_611.png, 204x125), loaded on
+// 3.36: a vehicle picture (files/TYFMC/MP/Vehicles.jar: Vehicle_400.png .. Vehicle_611.png, 204x125), loaded on
 // first use (one per frame), kept while the hotel computer is open (FreeVehiclePics on close)
 struct VehPic { RwRaster* r = nullptr; ImVec2 uv{1, 1}; bool tried = false; };
 static VehPic s_VehPic[212];

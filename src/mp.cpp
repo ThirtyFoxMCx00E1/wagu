@@ -2430,7 +2430,7 @@ public:
                 // (it only knows the first admin key). Not this phone - updating the mod doesn't help.
                 SysMsg(COL_RED, "This server refused your admin key. Your MP %s and administrator.txt are fine: the SERVER runs MP older than 3.23.6 and only knows the old key.", MP_VERSION_STR);
                 SysMsg(COL_YELLOW, "Quick fix: keep your old key as admin.txt next to administrator.txt (MP folder) - MP %s tries the old key on old servers by itself.", MP_VERSION_STR);
-                SysMsg(COL_YELLOW, "Real fix: update the server. 24/7 VPS: sudo bash /opt/mp/kit/update.sh (or: curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/update.sh | sudo bash). Termux: mp-server update.");
+                SysMsg(COL_YELLOW, "Real fix: update the server. 24/7 VPS: sudo bash /opt/mp/kit/update.sh (or: curl -fsSL https://mpsamp-open.github.io/HiveMQ/update.sh | sudo bash). Termux: mp-server update.");
             }
             else if(MP_IsModReservedName(settings.name))   // 3.40.1
             {
@@ -4684,7 +4684,7 @@ static bool StartLocalServer(const char* name, int port)
     }
     s_Server.SetAntiCheat(settings.hostAc, settings.hostAcMask);   // 3.50 (featured servers: always on, every check)
     if(!MP::IsDefaultServer(name, port)) { s_Server.SetHudConfig((uint8_t)settings.hudMode, (uint8_t)settings.hudFlags, (uint8_t)settings.hudDoor); s_Server.SetLogoPos((uint8_t)settings.logoX, (uint8_t)settings.logoY, (uint8_t)settings.logoZ); }   // 4.07: /settings > Textdraw
-    {   // 4.11: a SA-MP gamemode imported on Add server > Plugins (files/MP/<server>/samp/)
+    {   // 4.11: a SA-MP gamemode imported on Add server > Plugins (files/TYFMC/MP/<server>/samp/)
         const std::string sr = (bcw || MP::IsDefaultServer(name, port)) ? std::string() : SampGamemodeRoot(name);
         s_Server.SetSampDir(sr.c_str());
         if(!sr.empty()) SysMsg(COL_SYSTEM, "Loading the SA-MP gamemode of %s ...", name);
@@ -4697,7 +4697,7 @@ static bool StartLocalServer(const char* name, int port)
     }
     MP_CopyStr(settings.hostedName, name, sizeof(settings.hostedName));
     settings.hostedPort = port;
-    { const int ntd = PluginApply(name); if(ntd > 0) SysMsg(COL_SYSTEM, "Plugins: %d textdraws from files/MP/%s/", ntd, PluginFolderName(name).c_str()); }   // 3.50
+    { const int ntd = PluginApply(name); if(ntd > 0) SysMsg(COL_SYSTEM, "Plugins: %d textdraws from files/TYFMC/MP/%s/", ntd, PluginFolderName(name).c_str()); }   // 3.50
     if(s_Server.IsMw3Server()) { char mp_[512]; snprintf(mp_, sizeof(mp_), "%s/mw3_stats.txt", s_szDataDir); s_Server.SetMw3File(mp_); }   // 3.23.1
     if(s_Server.IsRpServer()) { char rp_[512]; snprintf(rp_, sizeof(rp_), "%s/rp_citizens.txt", s_szDataDir); s_Server.SetRpFile(rp_); }   // 3.25
     {   // 3.03: the gamemodes of this server
@@ -5576,7 +5576,7 @@ static void LoadConfig()
 // ------------------------------------------------------------------------------------------
 // Floating menu sections
 // 2.37: the name SENJI is reserved for the default server's administrator. The proof is the file
-//   /sdcard/Android/data/com.rockstargames.gtasa/files/MP/admin.txt   (one line: the admin key)
+//   /sdcard/Android/data/com.rockstargames.gtasa/files/TYFMC/MP/admin.txt   (one line: the admin key)
 // No admin.txt (or a wrong key in it) = SENJI turns red in the keyboard, can't be entered, and the
 // server refuses the join. The server checks the key too, so editing the config doesn't help.
 // 3.11.2: admin.txt is looked for in every usual place, not only the MP folder AML gives us
@@ -5598,7 +5598,8 @@ static void AdminCandidates(std::vector<std::string>& v)
     for(const char* k : pk)
     {
         char b[256];
-        const char* fmt[] = { "/storage/emulated/0/Android/data/%s/files/MP/admin.txt", "/storage/emulated/0/Android_unprotected/data/%s/files/MP/admin.txt",
+        const char* fmt[] = { "/storage/emulated/0/Android/data/%s/files/TYFMC/MP/admin.txt", "/storage/emulated/0/Android_unprotected/data/%s/files/TYFMC/MP/admin.txt",
+                              "/storage/emulated/0/Android/data/%s/files/MP/admin.txt", "/storage/emulated/0/Android_unprotected/data/%s/files/MP/admin.txt",
                               "/storage/emulated/0/Android/media/%s/MP/admin.txt", "/storage/emulated/0/Android_unprotected/data/%s/mods/admin.txt",
                               "/storage/emulated/0/Android/data/%s/mods/admin.txt", "/storage/emulated/0/Android_unprotected/data/%s/files/admin.txt",
                               "/storage/emulated/0/Android/data/%s/files/admin.txt" };
@@ -5619,7 +5620,7 @@ static void AdminCandidates(std::vector<std::string>& v)
     v.swap(both);
 }
 static void LoadModFile()
-{   // 3.35: files/MP/moderator.txt = my moderator key. 3.35.2: the MP moderator key (MP_MOD_KEY_HASH) gives "[MOD] name" on every server by itself
+{   // 3.35: files/TYFMC/MP/moderator.txt = my moderator key. 3.35.2: the MP moderator key (MP_MOD_KEY_HASH) gives "[MOD] name" on every server by itself
         // 3.39: any layout works now - "key", "name key", "MOD:key", a BOM, Windows line ends, quotes -
         // and the same folders as administrator.txt are searched (the MP folder first)
         char mk[120] = {0}, best[120] = {0};
@@ -5944,7 +5945,7 @@ static void RegionPicker(const std::vector<LanServer>& nearby)
     if(def) v = 0;
     if(v != settings.serverIcon) { settings.serverIcon = v; SaveConfig(); }
     if(IsHostingDefault()) ImGui::TextDisabled("The default MP LAN Server always shows the default icon.");
-    ImGui::TextDisabled("Backgrounds: bg_1.jpg ... bg_250.jpg inside files/MP/bg_server.jar (or a loose icon_N.png in files/MP, max 512x512).");
+    ImGui::TextDisabled("Backgrounds: bg_1.jpg ... bg_250.jpg inside files/TYFMC/MP/bg_server.jar (or a loose icon_N.png in files/TYFMC/MP, max 512x512).");
 }
 
 static bool ServerRow(const char* id, const char* title, const char* info, ImVec4 infoCol,
@@ -7327,7 +7328,7 @@ static void SectionLanguage(void*)
     {
         const I18n::LangInfo& L = I18n::Info(pick);
         if(I18n::Set(L.code)) { MP_CopyStr(settings.uiLanguage, L.code, sizeof(settings.uiLanguage)); SaveConfig(); s_szMsg[0] = 0; }
-        else snprintf(s_szMsg, sizeof(s_szMsg), "%s is not installed: files/MP/lang/%s.lng is missing (it comes with the MP full / client zip).", L.english, L.code);
+        else snprintf(s_szMsg, sizeof(s_szMsg), "%s is not installed: files/TYFMC/MP/lang/%s.lng is missing (it comes with the MP full / client zip).", L.english, L.code);
     }
     if(UI::FontsLoading()) ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.3f, 1.0f), "Loading the font for %s... (the game keeps running)", I18n::Info(I18n::Current()).english);
     if(cur && !UI::FontsLoading()) { std::string fs = UI::LangFontStatus(); if(!fs.empty()) ImGui::TextColored(ImVec4(1.0f, 0.55f, 0.45f, 1.0f), "%s", fs.c_str()); }   // 3.53.1
@@ -7467,7 +7468,7 @@ static void MpFreeAllObjects()
 #include "mp_psettings.inc"  // 3.35: player list > Settings (SA-MP style dialog)
 
 // 4.07.1: the short sounds (button click, hit, "connected") come from the media host too, like the
-// music: a sound missing from files/MP is downloaded once from Host/Media into files/MP (cache), so
+// music: a sound missing from files/TYFMC/MP is downloaded once from Host/Media into files/TYFMC/MP (cache), so
 // every sound works without pasting mp3s. Music (dz_ambient / war_ambient) is still streamed.
 static void MP_MediaFetchStart()
 {

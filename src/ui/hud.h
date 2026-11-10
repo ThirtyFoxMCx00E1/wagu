@@ -13,7 +13,7 @@ namespace HUD
     void* Texture(const char* fileInDataDir, ImVec2* uv);   // 3.04: e.g. "bcw_briefcase.png" (nullptr if missing)
     void  ReloadTexture(const char* fileInDataDir);          // 3.24: the file changed (Discord avatar): load it again
     bool  TextureSize(const char* fileInDataDir, int* w, int* h);   // 4.07: size of a loaded Texture()
-    void* VehiclePic(int model, ImVec2* uv);   // 3.36: files/MP/Vehicles.jar (hotel computer), nullptr while loading / missing
+    void* VehiclePic(int model, ImVec2* uv);   // 3.36: files/TYFMC/MP/Vehicles.jar (hotel computer), nullptr while loading / missing
     void  FreeVehiclePics();
     // 4.04: the current animation frame of a chat GIF (Gifs:: sprite sheet, downloaded on demand); nullptr while
     // loading. aspect = frame width / height.

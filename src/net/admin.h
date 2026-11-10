@@ -6,7 +6,7 @@
 //  - On the default server the real SENJI shows as "[ADMIN] SENJI": RGB rank (red, blue, violet, yellow, green) + white/black flowing name
 //    and can kick / ban / mute and switch cheats off for everyone.
 //  - Joining first no longer makes you the host (administrator) of the default server.
-//  - Proof = the file  /sdcard/Android/data/com.rockstargames.gtasa/files/MP/admin.txt  on your
+//  - Proof = the file  /sdcard/Android/data/com.rockstargames.gtasa/files/TYFMC/MP/admin.txt  on your
 //    phone, with the admin key in it (one line). Players without that file who use SENJI are
 //    blocked. The key itself is never in the source - only its SHA-256 below. The 24/7 server
 //    can use another hash: mp_server --admin-hash <sha256 hex of "wagu-admin-v1:" + key>.
@@ -102,7 +102,7 @@ inline bool MP_IsModReservedName(const char* name)
 
 // 3.35: moderators. The server owner lists them in moderator.txt (next to mp_server, NOT admin.txt):
 //   <name> <key>        one per line, # = comment, the key at least 8 characters
-// The player puts the same key in files/MP/moderator.txt on the phone and joins with that name ->
+// The player puts the same key in files/TYFMC/MP/moderator.txt on the phone and joins with that name ->
 // "[MOD] name" + kick / mute / cheats switch on that server. The phone sends "MOD:<key>" in the
 // join packet's admin key field (only when the name is not the reserved admin name).
 #define MP_MOD_TAG    "[MOD] "
@@ -126,7 +126,7 @@ inline bool MP_ModKeyOk(const char* file, const char* name, const char* key)
     return ok;
 }
 
-// 3.35.2: the MP moderator key. A phone with files/MP/moderator.txt holding THIS key is "[MOD] name" on
+// 3.35.2: the MP moderator key. A phone with files/TYFMC/MP/moderator.txt holding THIS key is "[MOD] name" on
 // every MP server (any name, no per-server list needed). Only the SHA-256 of "wagu-mod-v1:" + key is here.
 #define MP_MOD_KEY_HASH  "2acf313da4bdca869ada4694bb940ad8ad5d746bbda9205f2db75c8cab76fc6c"
 // 3.40.1: a second MP moderator key (the "Trunk" moderator.txt). Both keys are accepted.

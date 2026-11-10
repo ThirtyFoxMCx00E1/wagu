@@ -508,7 +508,7 @@ static const char* const g_RpEventNames[RPEV_COUNT] = { "-", "Double Pay Hour", 
 // ---- 3.26: the bag (inventory) -----------------------------------------------------------------
 // Server authoritative like the money: the phone only asks (RPC_INV_*), the host answers with
 // PKT_RP_INV (the whole bag) and RPV_GOT ("Received 10x" cards). 5 x 3 slots, 50.0 kg.
-// Icons: rp_items.png (4 x 4 cells of 128 px, built into the .so, written into files/MP when missing).
+// Icons: rp_items.png (4 x 4 cells of 128 px, built into the .so, written into files/TYFMC/MP when missing).
 #define RP_INV_MAX_W   500          // 0.1 kg units: 50.0 kg
 #define RP_INV_STACK   99
 enum eRpInvId : uint8_t

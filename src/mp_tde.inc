@@ -3,9 +3,9 @@
 // https://github.com/ThirtyFoxMCx00E1/samp-textdraw-editor): a toolbar with the same 35 tools
 // (assets/MP/tde_icons.png, 7 x 5 cells of 64 px), tap a textdraw to select it, drag to move /
 // resize, palettes, the sprite browser, the deleted textdraws depot, undo / redo, global or player
-// textdraws, preview models. Projects are one file each: files/MP/tde/projects/<name>.mptd (JSON,
+// textdraws, preview models. Projects are one file each: files/TYFMC/MP/tde/projects/<name>.mptd (JSON,
 // net/mptd.h), the same file the MP Textdraw Editor app saves. Export = Pawn (SA-MP / open.mp,
-// files/MP/tde/export/<name>.pwn); Import = .mptd or a Pawn / SA-MP editor export (sscanf-style
+// files/TYFMC/MP/tde/export/<name>.pwn); Import = .mptd or a Pawn / SA-MP editor export (sscanf-style
 // argument parsing in MptdImportPawn).
 // Use it on your custom server: Add server > Plugins > Textdraw > Import file.
 // ================================================================================================
@@ -69,9 +69,9 @@ static bool TdeSave(bool quiet = false)
     if(s_Tde.pr.author.empty()) s_Tde.pr.author = settings.name;
     if(s_Tde.pr.created.empty()) s_Tde.pr.created = MptdNow();
     s_Tde.pr.updated = MptdNow();
-    if(!TdeWriteFile(TdeProjectPath(s_Tde.file), MptdWrite(s_Tde.pr))) { TdeMsg(COL_RED, "Could not save files/MP/tde/projects/%s.mptd", s_Tde.file.c_str()); return false; }
+    if(!TdeWriteFile(TdeProjectPath(s_Tde.file), MptdWrite(s_Tde.pr))) { TdeMsg(COL_RED, "Could not save files/TYFMC/MP/tde/projects/%s.mptd", s_Tde.file.c_str()); return false; }
     s_Tde.dirty = false; s_Tde.savedAt = MP_NowMs();
-    if(!quiet) TdeMsg(COL_GREEN, "Saved files/MP/tde/projects/%s.mptd (%d textdraws). Add it to your server: Add server > Plugins > Textdraw.", s_Tde.file.c_str(), (int)s_Tde.pr.items.size());
+    if(!quiet) TdeMsg(COL_GREEN, "Saved files/TYFMC/MP/tde/projects/%s.mptd (%d textdraws). Add it to your server: Add server > Plugins > Textdraw.", s_Tde.file.c_str(), (int)s_Tde.pr.items.size());
     return true;
 }
 static bool TdeLoad(const std::string& name)
@@ -311,7 +311,7 @@ static void TdeProjectsDlg(int resp, int item, const char*, int)
         {
             TdeMkDirs(TdeDir("export"));
             const std::string p = TdeDir("export") + "/" + s_Tde.file + (item == 5 ? "_openmp" : "") + ".pwn";
-            if(TdeWriteFile(p, MptdExportPawn(s_Tde.pr, item == 5))) TdeMsg(COL_GREEN, "Exported files/MP/tde/export/%s%s.pwn", s_Tde.file.c_str(), item == 5 ? "_openmp" : "");
+            if(TdeWriteFile(p, MptdExportPawn(s_Tde.pr, item == 5))) TdeMsg(COL_GREEN, "Exported files/TYFMC/MP/tde/export/%s%s.pwn", s_Tde.file.c_str(), item == 5 ? "_openmp" : "");
             else TdeMsg(COL_RED, "Could not write %s", p.c_str());
             break;
         }
@@ -320,7 +320,7 @@ static void TdeProjectsDlg(int resp, int item, const char*, int)
             PluginCandidates(s_TdeFiles);
             std::vector<std::string> pw; TdeListDir(TdeDir("import"), ".pwn", pw);
             for(auto& f : pw) s_TdeFiles.push_back(TdeDir("import") + "/" + f);
-            if(s_TdeFiles.empty()) { TdeMsg(COL_YELLOW, "Put a .mptd, .pwn or .txt export in files/MP/tde/import/ first."); return; }
+            if(s_TdeFiles.empty()) { TdeMsg(COL_YELLOW, "Put a .mptd, .pwn or .txt export in files/TYFMC/MP/tde/import/ first."); return; }
             std::string b; for(auto& f : s_TdeFiles) b += f.substr(f.find_last_of('/') + 1) + "\n"; b.pop_back();
             ShowDialog(0, DIALOG_STYLE_LIST, "Import textdraws", b.c_str(), "Import", "Back", TdeImportDlg);
             break;
@@ -662,7 +662,7 @@ static bool TdeCommand(const char* cmd, const char* arg)
     if(!strcmp(sub, "help"))
     {
         TdeMsg(COL_SYSTEM, "/tde [project] opens the editor, /tde close, /tde save, /tde new <name>, /tde open <name>, /tde export [openmp].");
-        TdeMsg(COL_SYSTEM, "Files: files/MP/tde/projects/*.mptd - put it on your server with Add server > Plugins > Textdraw > Import file.");
+        TdeMsg(COL_SYSTEM, "Files: files/TYFMC/MP/tde/projects/*.mptd - put it on your server with Add server > Plugins > Textdraw > Import file.");
         return true;
     }
     if(!strcmp(sub, "close") || !strcmp(sub, "exit")) { if(s_Tde.open) TdeClose(); return true; }

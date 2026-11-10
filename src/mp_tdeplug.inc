@@ -1,6 +1,6 @@
 // 3.50: MP Launcher > Add server > Plugins. Type "Textdraw" (the two others are not used yet):
 // "Import file" takes a .mptd made by the in-game editor (/tde) or the MP Textdraw Editor app and
-// copies it into files/MP/<your server name>/. When this phone hosts that server, every .mptd in
+// copies it into files/TYFMC/MP/<your server name>/. When this phone hosts that server, every .mptd in
 // the folder is shown to all players (MPServer::SetPluginTextdraws, ids 64..255).
 #include "net/mptd.h"
 #include "ui/tde_data.h"   // 3.50: sprite browser list + palette (samp-textdraw-editor)
@@ -109,7 +109,7 @@ static bool PluginImport(const char* serverName, const std::string& src, std::st
     const std::string dir = PluginDir(serverName); TdeMkDirs(dir);
     if(!TdeWriteFile(dir + "/" + base + ".mptd", txt)) { if(msg) *msg = "Could not write to " + dir + "."; return false; }
     int n = PluginApply(serverName);
-    if(msg) { char b[300]; snprintf(b, sizeof(b), "%s.mptd added to files/MP/%s/ (%d textdraws)%s", base.c_str(), PluginFolderName(serverName).c_str(), (int)pr.items.size(), n ? " - live on your server now" : ""); *msg = b; }
+    if(msg) { char b[300]; snprintf(b, sizeof(b), "%s.mptd added to files/TYFMC/MP/%s/ (%d textdraws)%s", base.c_str(), PluginFolderName(serverName).c_str(), (int)pr.items.size(), n ? " - live on your server now" : ""); *msg = b; }
     return true;
 }
 static void PluginRemove(const char* serverName, const std::string& file)
@@ -117,7 +117,7 @@ static void PluginRemove(const char* serverName, const std::string& file)
     remove((PluginDir(serverName) + "/" + file).c_str());
     PluginApply(serverName);
 }
-// where a .mptd can come from: the in-game editor, the app (Downloads/MP Textdraws), Downloads, files/MP/import
+// where a .mptd can come from: the in-game editor, the app (Downloads/MP Textdraws), Downloads, files/TYFMC/MP/import
 static void PluginCandidates(std::vector<std::string>& paths)
 {
     paths.clear();
@@ -154,7 +154,7 @@ static const char* PluginServerName(const char* typed)
 }
 
 // ---- 4.11: SA-MP gamemode (a PC server .rar / .zip / folder / .amx) for your custom server -----------
-// unpacked to files/MP/<server>/samp/, the server runs it when it starts (net/server_samp.inc)
+// unpacked to files/TYFMC/MP/<server>/samp/, the server runs it when it starts (net/server_samp.inc)
 #include <thread>
 #include <atomic>
 #include <mutex>
@@ -216,7 +216,7 @@ static void SampSection(const char* srv)
     }
     ImGui::TextDisabled("SA-MP gamemode: the PC server in one .rar / .zip (server.cfg, gamemodes/*.amx, filterscripts/, scriptfiles/), or one compiled .amx. "
                         "Your server runs it: commands, dialogs, textdraws, objects / mapping, timers, sscanf, Pawn.CMD, YSI, MySQL (kept in SQLite on the phone).");
-    // 4.11: Import = the Files app (system file manager): pick the .zip / .rar, it is copied to files/MP/import/ and unpacked
+    // 4.11: Import = the Files app (system file manager): pick the .zip / .rar, it is copied to files/TYFMC/MP/import/ and unpacked
     const int fp = FilePick::State();
     if(fp == 3)
     {
@@ -233,10 +233,10 @@ static void SampSection(const char* srv)
         s_PluginServer = srv;
         if(!FilePick::Open((std::string(s_szDataDir) + "/import").c_str(), k_SampMimes)) SysMsg(COL_YELLOW, "The Files app is already open.");
     }
-    if(s_SampImp != 1 && fp != 1 && fp != 2 && ImGui::Button("Or pick from Download / files/MP/import", ImVec2(-FLT_MIN, UI::S(56))))
+    if(s_SampImp != 1 && fp != 1 && fp != 2 && ImGui::Button("Or pick from Download / files/TYFMC/MP/import", ImVec2(-FLT_MIN, UI::S(56))))
     {
         SampCandidates(s_PluginPick); s_PluginServer = srv;
-        if(s_PluginPick.empty()) SysMsg(COL_YELLOW, "No .rar / .zip / .amx found. Put it in Download or files/MP/import/.");
+        if(s_PluginPick.empty()) SysMsg(COL_YELLOW, "No .rar / .zip / .amx found. Put it in Download or files/TYFMC/MP/import/.");
         else
         {
             std::string b; for(auto& f : s_PluginPick) { std::string d = f.substr(0, f.find_last_of('/')); b += f.substr(f.find_last_of('/') + 1) + "\t" + d.substr(d.find_last_of('/') + 1) + "\n"; }
@@ -263,7 +263,7 @@ static void PluginsSection(const char* typedName)
     ImGui::TextUnformatted("Plugins");
     const char* srv = PluginServerName(typedName);
     const std::string folder = PluginFolderName(srv);
-    ImGui::TextDisabled("Files for your custom server go to files/MP/%s/.", folder.c_str());
+    ImGui::TextDisabled("Files for your custom server go to files/TYFMC/MP/%s/.", folder.c_str());
     ImGui::TextUnformatted("Gamemode (zip, rar)");   // 4.11: import a PC SA-MP server with the Files app
     SampSection(srv);
     ImGui::Spacing(); ImGui::Separator(); ImGui::Spacing();
@@ -279,7 +279,7 @@ static void PluginsSection(const char* typedName)
     if(FloatMenu::BigButton("Import file"))
     {
         PluginCandidates(s_PluginPick); s_PluginServer = srv;
-        if(s_PluginPick.empty()) SysMsg(COL_YELLOW, "No .mptd files found. Save one with /tde, or put it in Download/MP Textdraws or files/MP/import/.");
+        if(s_PluginPick.empty()) SysMsg(COL_YELLOW, "No .mptd files found. Save one with /tde, or put it in Download/MP Textdraws or files/TYFMC/MP/import/.");
         else
         {
             std::string b; for(auto& f : s_PluginPick) { std::string d = f.substr(0, f.find_last_of('/')); b += f.substr(f.find_last_of('/') + 1) + "\t" + d.substr(d.find_last_of('/') + 1) + "\n"; }
@@ -296,6 +296,6 @@ static void PluginsSection(const char* typedName)
         if(ImGui::Button("Remove", ImVec2(UI::S(150), UI::S(56)))) { PluginRemove(srv, f); ImGui::PopID(); break; }
         ImGui::PopID();
     }
-    ImGui::TextDisabled("Make one: /tde in game (files/MP/tde/projects/), or the MP Textdraw Editor app.");
+    ImGui::TextDisabled("Make one: /tde in game (files/TYFMC/MP/tde/projects/), or the MP Textdraw Editor app.");
     ImGui::PopID();
 }

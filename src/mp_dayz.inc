@@ -171,12 +171,12 @@ static void DzModelsTick()
     if(on && busy && total > 0 && done < total && shown == 0) shown = 1;   // 3.62: the download window / bar shows it
     if(on && !busy && total > 0 && shown == 1) { shown = 2; if(done == total) DzNotice(DZ_YEL, "MTA DayZ models ready (%d).", done); else DzNotice(DZ_RED, "MTA DayZ models: %d of %d downloaded.", done, total); }
 }
-// 4.00: /dzmodels - what the MTA model loader did (also in files/MP/dzmodels_log.txt)
+// 4.00: /dzmodels - what the MTA model loader did (also in files/TYFMC/MP/dzmodels_log.txt)
 static void DzModelsStatusLine(char* o, size_t n)
 {
     DzModels::Status st; DzModels::GetStatus(st);
     const char* eng = !st.hooked ? "streamer hook missing" : !st.cache ? "no cache folder" : st.engine > 0 ? "engine ok" : st.engine == 0 ? "engine check waiting" : "engine check FAILED";
-    if(st.engine < 0) snprintf(o, n, "MTA models: %s (%d) - models stay GTA. See files/MP/dzmodels_log.txt", eng, st.engine);
+    if(st.engine < 0) snprintf(o, n, "MTA models: %s (%d) - models stay GTA. See files/TYFMC/MP/dzmodels_log.txt", eng, st.engine);
     else snprintf(o, n, "MTA models: %s | %d/%d downloaded | %d in game (%d loaded) | %d waiting (in use) | %d failed%s",
                   eng, st.files, st.wanted, st.swapped, st.loaded, st.waiting, st.failed, st.noTex ? " | some without textures" : "");
     int wm = 0, wh = 0; bool wr = false; DzModels::World(wm, wh, wr);   // 4.05.5
@@ -442,7 +442,7 @@ static int DzMagSize(int w)
 // (https://www.youtube.com/@lemurian.archives - https://youtu.be/aVTcVx1570w). Starts after you press
 // Play and tap a location on the map, fades in, plays to 1:00:02, fades out, waits 17 s + 20 ticks,
 // then starts again (endless). The track is not shipped with MP (it is Lemuria's): put your own copy
-// at files/MP/dz_ambient.mp3. /music turns it on / off.
+// at files/TYFMC/MP/dz_ambient.mp3. /music turns it on / off.
 #define DZ_AMB_FILE      "dz_ambient.mp3"
 #define DZ_AMB_LEN_S     3602.0f              // 1:00:02
 #define DZ_AMB_FADEIN_S  4.0f
@@ -461,8 +461,8 @@ struct DzAmbient
 };
 static DzAmbient s_DzAmb;
 // 4.00.1: find the music file even with another name ("dz_ambient.mp3.mp3", "DZ_Ambient.MP3",
-// "dz_ambient (1).mp3", ".m4a" ...), in files/MP, files/MP/music or files/. Everything goes to
-// files/MP/dz_music_log.txt so you can see why it does not play.
+// "dz_ambient (1).mp3", ".m4a" ...), in files/TYFMC/MP, files/TYFMC/MP/music or files/. Everything goes to
+// files/TYFMC/MP/dz_music_log.txt so you can see why it does not play.
 static void DzAmbLog(const char* fmt, ...)
 {
     char path[512]; snprintf(path, sizeof(path), "%s/dz_music_log.txt", MP::DataDir());
@@ -507,10 +507,10 @@ static bool DzAmbStart(uint64_t now)
     char path[512]; bool found = DzAmbFind(path, sizeof(path));
     s_DzAmb.retryAt = 0;
     if(!found)
-    {   // 4.07: not in files/MP -> the media player streams it from the repo (Host/Media) over Wi-Fi / mobile data
+    {   // 4.07: not in files/TYFMC/MP -> the media player streams it from the repo (Host/Media) over Wi-Fi / mobile data
         if(Sound::StreamPlayUrl(MP_MEDIA_URL DZ_AMB_FILE, 0.0f))
         {
-            DzAmbLog("not in files/MP - streaming %s", MP_MEDIA_URL DZ_AMB_FILE);
+            DzAmbLog("not in files/TYFMC/MP - streaming %s", MP_MEDIA_URL DZ_AMB_FILE);
             s_DzAmb.phase = 1; s_DzAmb.phaseAt = now; s_DzAmb.cardAt = now; s_DzAmb.logged = false;
             return true;
         }
@@ -518,7 +518,7 @@ static bool DzAmbStart(uint64_t now)
         if(!s_DzAmb.missingSaid)
         {
             s_DzAmb.missingSaid = true;
-            DzAmbLog("not found: %s (also looked in files/MP/music and files/)", path);
+            DzAmbLog("not found: %s (also looked in files/TYFMC/MP/music and files/)", path);
             SysMsg(COL_SYSTEM, "[Day Z] Ambient music: no " DZ_AMB_FILE " in %s", MP::DataDir());
         }
         return false;
@@ -530,7 +530,7 @@ static bool DzAmbStart(uint64_t now)
         {
             s_DzAmb.missingSaid = true;
             DzAmbLog("can't play %s: %s", path, Sound::StreamInfo());
-            SysMsg(COL_SYSTEM, "[Day Z] Ambient music can't play: %s (see files/MP/dz_music_log.txt)", Sound::StreamInfo());
+            SysMsg(COL_SYSTEM, "[Day Z] Ambient music can't play: %s (see files/TYFMC/MP/dz_music_log.txt)", Sound::StreamInfo());
         }
         return false;
     }
@@ -569,7 +569,7 @@ static void DzAmbTick(uint64_t now)
             s_DzAmb.logged = true;
             DzAmbLog("after 3 s: %s, active %d, at %.1f s of %.0f s", Sound::StreamInfo(), Sound::StreamActive() ? 1 : 0, Sound::StreamPosition(), Sound::StreamDuration());
             if(!Sound::StreamActive() && !Sound::StreamEnded())
-                SysMsg(COL_SYSTEM, "[Day Z] Ambient music stopped: %s (see files/MP/dz_music_log.txt)", Sound::StreamInfo());
+                SysMsg(COL_SYSTEM, "[Day Z] Ambient music stopped: %s (see files/TYFMC/MP/dz_music_log.txt)", Sound::StreamInfo());
         }
         float pos = Sound::StreamPosition(), dur = Sound::StreamDuration();
         float end = DZ_AMB_LEN_S; if(dur > 60.0f && dur < end) end = dur;
@@ -1865,7 +1865,7 @@ static void DzDrawPanel(ImVec2 ds)
                 if(ImGui::Button("Retry skipped models")) DzModelsReport(true);
             }
             ImGui::TextWrapped("Project Day Z Legacy - gamemode Proper DAYZ. Based on Project DayZ SA-MP, made for MP by ThirtyFox.");
-            ImGui::TextWrapped("Ambient music: No Man's Land | Metro / S.T.A.L.K.E.R Atmospheric Playlist by Lemuria - youtu.be/aVTcVx1570w (streamed from the MP media host over Wi-Fi / mobile data; a copy at files/MP/dz_ambient.mp3 is used instead if you have one).");
+            ImGui::TextWrapped("Ambient music: No Man's Land | Metro / S.T.A.L.K.E.R Atmospheric Playlist by Lemuria - youtu.be/aVTcVx1570w (streamed from the MP media host over Wi-Fi / mobile data; a copy at files/TYFMC/MP/dz_ambient.mp3 is used instead if you have one).");
             ImGui::TextWrapped("Global network (4.05): libks, signalwire-c, FreeSWITCH (SignalWire), Eclipse Mosquitto, EMQX, MQTTX, Mainflux, awesome-mqtt, vps-hosting-providers, Sidekick, Aeon-MLTB, whmcs-vps-reseller.");
             break;
     }

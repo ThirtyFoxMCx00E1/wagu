@@ -188,7 +188,7 @@ bool Sound::PlayMusic(const char* path, float volume, bool loop)
     if(s_Music.v.obj) { (*s_Music.v.bq)->Clear(s_Music.v.bq); }
     s_Music.path = path;
     FILE* f = fopen(path, "rb");
-    if(!f) { s_Music.state = -1; logger->Error("Music: %s not found (put war_ambient.mp3 in files/MP)", path); return false; }
+    if(!f) { s_Music.state = -1; logger->Error("Music: %s not found (put war_ambient.mp3 in files/TYFMC/MP)", path); return false; }
     fclose(f);
     s_Music.state = 1;
     Pcm* old = s_Music.pcm; s_Music.pcm = nullptr;
@@ -399,7 +399,7 @@ namespace
         return true;
     }
     // 4.07: media player: music streamed from a URL (Host/Media in the repo) by the Android decoder, over
-    // Wi-Fi or mobile data, so the big mp3s don't have to be in files/MP. Prepare (Realize) blocks while it
+    // Wi-Fi or mobile data, so the big mp3s don't have to be in files/TYFMC/MP. Prepare (Realize) blocks while it
     // connects, so it runs on its own thread; the game thread takes the ready player in StreamUpdate.
     std::mutex s_UrlMx; int s_UrlGen = 0; bool s_UrlPending = false; FdPlayer s_UrlReady; bool s_UrlHave = false; float s_UrlVol = 0.0f;
     std::string s_UrlErr;

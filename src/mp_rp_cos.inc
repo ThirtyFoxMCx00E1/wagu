@@ -30,7 +30,7 @@ struct RpCosState
 static RpCosState s_Cos;
 static bool RpCosActive() { return s_Cos.on; }
 
-// ---- 3.37: the CJ outfit (kept on this phone in files/MP/outfit.txt, "part texture" per line) ----
+// ---- 3.37: the CJ outfit (kept on this phone in files/TYFMC/MP/outfit.txt, "part texture" per line) ----
 #include "net/cjclothes.h"
 struct CjOutfit { bool loaded = false, saved = false; int idx[18]; CjOutfit() { for(int i = 0; i < 18; ++i) idx[i] = -1; } };
 static CjOutfit s_CjOut;

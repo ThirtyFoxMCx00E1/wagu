@@ -187,7 +187,7 @@
       print('  3. <span class="g">sudo mp-railway restart</span>    <span class="m">or sudo mp-railway deploy (newest code + Streaming status)</span>');
       print('     <span class="m">"command not found" / server rebooted? start the server (HiveMQ panel) then: sudo mp-railway start-all</span>');
       print('  4. <span class="g">sudo mp-railway setup</span>      <span class="m">first time on this server (ONE server only)</span>');
-      p('m', 'not installed yet? curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/railway/install.sh | sudo bash');
+      p('m', 'not installed yet? curl -fsSL https://mpsamp-open.github.io/HiveMQ/railway/install.sh | sudo bash');
     },
     // 4.12.3: the 24/7 Streaming status is now inside the MP bot itself (discordpy-bot) - one process, one token
     'ss-deploy': function () {

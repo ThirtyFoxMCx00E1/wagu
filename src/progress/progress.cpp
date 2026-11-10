@@ -261,7 +261,7 @@ static void Enter(uint64_t now)
 static void Leave(uint64_t now)
 {
     bool ok = RestoreAll();
-    if(!ok) { Msg(COL_WARN, "Couldn't put all your saves back - they're kept in files/MP/progress/backup."); s_Phase = PH_IDLE; return; }
+    if(!ok) { Msg(COL_WARN, "Couldn't put all your saves back - they're kept in files/TYFMC/MP/progress/backup."); s_Phase = PH_IDLE; return; }
     ClearState(); DeleteBackups();
     if(s_nOrig < 0) { Msg(COL_WARN, "Left the default server. You had no save of your own - start a New Game from the menu."); s_Phase = PH_IDLE; return; }
     if(!StartLoad(s_nOrig)) { Msg(COL_WARN, "Left the default server. Load your save (slot %d) from the menu to continue your own story.", s_nOrig + 1); s_Phase = PH_IDLE; return; }

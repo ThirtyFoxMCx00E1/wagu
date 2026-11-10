@@ -51,7 +51,7 @@
 namespace
 {
 const char* kBaseUrls[] = {
-    "https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/Host/DayZ/models/",
+    "https://mpsamp-open.github.io/Host/DayZ/models/",
     "https://raw.githubusercontent.com/ThirtyFoxMCx00E1/mtadayz/master/DayZ/models/",   // files only
 };
 const int kTxdBase = 20000;
@@ -88,7 +88,7 @@ std::string s_CurFile, s_CurHost;
 std::atomic<bool> s_CloudBusy { false };   // 4.02: the launcher Cloud Storage page is downloading
 bool s_Started = false, s_Checked = false, s_Ok = false, s_PoolOk = false, s_Disabled = false;
 int s_Engine = 0;                 // 4.00: the engine check result (1 ok, 0 not yet, < 0 failed)
-std::string s_LogPath;            // 4.00: files/MP/dzmodels_log.txt (readable on the phone)
+std::string s_LogPath;            // 4.00: files/TYFMC/MP/dzmodels_log.txt (readable on the phone)
 std::mutex s_LogM;
 void DzLog(bool err, const char* fmt, ...) __attribute__((format(printf, 2, 3)));
 void DzLog(bool err, const char* fmt, ...)

@@ -8,7 +8,7 @@ Host/DayZ/models of this repo and writes Host/DayZ/models/manifest.txt, the list
 
 kind: p = player skin, z = zombie, w = weapon, o = object / item, v = vehicle (texture size cap).
 Paths are relative to the manifest. The game downloads the files it needs from
-https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/Host/DayZ/models/ (fallback: the
+https://mpsamp-open.github.io/Host/DayZ/models/ (fallback: the
 mtadayz fork) into its own cache - nothing goes into the MP folder.
 
 The id mapping is read from MTA DayZ's DayZ/models/loadskins.lua (engineImportTXD /

@@ -832,7 +832,7 @@ static void* LRowBg(const LRow& r, ImVec2* uv)
     if(r.icon > 0) return HUD::ServerIcon(r.icon, uv);
     return nullptr;
 }
-// 4.04: the host's own Upload preview image (p/<token> in the lobby), written once to files/MP/pv_<tok>_<crc>.jpg
+// 4.04: the host's own Upload preview image (p/<token> in the lobby), written once to files/TYFMC/MP/pv_<tok>_<crc>.jpg
 static void* LRowPreview(const LRow& r, ImVec2* uv)
 {
     if(r.mine && r.kind <= 2 && settings.serverPreview[0]) if(void* t = HUD::Texture(settings.serverPreview, uv)) return t;
@@ -1634,7 +1634,7 @@ static void LPageBans()
     }
     std::vector<MPServer::BanEntry> bans; s_Server.GetBans(bans);
     ImGui::Text("Ban list  (%d)   |   Administrator: %s", (int)bans.size(), settings.name);
-    ImGui::TextDisabled("Saved in files/MP/bans.txt, used by every server this phone hosts.");
+    ImGui::TextDisabled("Saved in files/TYFMC/MP/bans.txt, used by every server this phone hosts.");
     ImGui::Separator();
     float listH = ImGui::GetContentRegionAvail().y * 0.55f;
     ImGui::BeginChild("##bl", ImVec2(0, listH), false);
@@ -1696,19 +1696,19 @@ static void LFmtBytes(char* o, size_t n, unsigned long long b)
     else snprintf(o, n, "%llu KB", (b + 1023) / 1024);
 }
 // ---- 4.12.3 / 4.12.6: Project Day Z model pack ---------------------------------------------------------
-// 4.12.6: the pack lives in the MP folder only: files/MP/dayz/ProjectDayZ. Up to 4.12.5 it was unpacked into
+// 4.12.6: the pack lives in the MP folder only: files/TYFMC/MP/dayz/ProjectDayZ. Up to 4.12.5 it was unpacked into
 // a model loader folder in the game storage, and that loader swaps models by file name EVERYWHERE - 123 GTA
 // models (people, cars, objects around Grove Street) became the MTA Day Z ones on every server, so the
 // default server froze at the spawn and again in Grove Street. MP loads the Day Z models itself, only on
 // Project Day Z servers (the cloud list below), so nothing outside the MP folder is needed.
 static const char* const kDzXkiUrls[] = {
-    "https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/Host/DayZ/xkiloader/MP_ProjectDayZ_XkiLoader.zip",
+    "https://mpsamp-open.github.io/Host/DayZ/xkiloader/MP_ProjectDayZ_XkiLoader.zip",
     "https://github.com/ThirtyFoxMCx00E1/wagu/releases/download/DayZ-XkiLoader/MP_ProjectDayZ_XkiLoader.zip" };
 static std::atomic<int> s_nXki{ 0 };            // 0 idle, 1 downloading, 2 unpacking, 3 done, 4 failed
 static std::atomic<size_t> s_nXkiGot{ 0 };
 static std::mutex s_XkiMx; static std::string s_XkiMsg;
 static bool s_bXkiPick = false;                  // the Files app was opened by this page
-static std::string DzPackRoot() { return std::string(s_szDataDir) + "/dayz"; }   // -> files/MP/dayz/ProjectDayZ
+static std::string DzPackRoot() { return std::string(s_szDataDir) + "/dayz"; }   // -> files/TYFMC/MP/dayz/ProjectDayZ
 static bool DzXkiInstalled()
 {
     struct stat st; return stat((DzPackRoot() + "/ProjectDayZ/README_MP.txt").c_str(), &st) == 0;
@@ -1742,7 +1742,7 @@ static void DzXkiUnpack(const std::string& zip)
     mkdir(dst.c_str(), 0775);
     bool ok = MP_UnZip(zip, dst, msg);
     struct stat st; if(ok && stat((dst + "/ProjectDayZ").c_str(), &st) != 0) { ok = false; msg = "no ProjectDayZ folder in that zip"; }
-    { std::lock_guard<std::mutex> l(s_XkiMx); s_XkiMsg = ok ? (msg + " -> files/MP/dayz/ProjectDayZ") : msg; }
+    { std::lock_guard<std::mutex> l(s_XkiMx); s_XkiMsg = ok ? (msg + " -> files/TYFMC/MP/dayz/ProjectDayZ") : msg; }
     logger->Info("4.12.6: Day Z model pack %s: %s (%s)", ok ? "saved" : "failed", msg.c_str(), zip.c_str());
     s_nXki = ok ? 3 : 4;
 }
@@ -1770,7 +1770,7 @@ static void DzXkiDownload()
 static void DzXkiSection(float w)
 {
     ImGui::TextColored(ImVec4(0.25f, 0.9f, 0.75f, 1), "DAY Z MODEL PACK");
-    ImGui::TextWrapped("The Project Day Z models (123 models, textures as PNG, about 50 MB), kept in your MP folder: files/MP/dayz/ProjectDayZ. "
+    ImGui::TextWrapped("The Project Day Z models (123 models, textures as PNG, about 50 MB), kept in your MP folder: files/TYFMC/MP/dayz/ProjectDayZ. "
                        "It never changes the game's models on other servers.");
     if(DzXkiInstalled()) ImGui::TextColored(ImVec4(0.4f, 0.95f, 0.6f, 1), "Saved in the MP folder.");
     // the Files app (only the zip this page asked for)
@@ -1790,7 +1790,7 @@ static void DzXkiSection(float w)
     else if(st == 3 || st == 4) { std::lock_guard<std::mutex> l(s_XkiMx); ImGui::TextColored(st == 3 ? ImVec4(0.6f, 0.95f, 0.7f, 1) : ImVec4(1, 0.45f, 0.4f, 1), "%s", s_XkiMsg.c_str()); }
     const bool busy = st == 1 || st == 2 || s_bXkiPick;
     if(busy) ImGui::BeginDisabled();
-    if(FloatMenu::BigButton(DzXkiInstalled() ? "Download the pack again" : "Download pack (into files/MP/dayz)")) DzXkiDownload();
+    if(FloatMenu::BigButton(DzXkiInstalled() ? "Download the pack again" : "Download pack (into files/TYFMC/MP/dayz)")) DzXkiDownload();
     if(FloatMenu::BigButton("Import pack (zip) - opens Files"))
     {
         mkdir(DzPackRoot().c_str(), 0775);

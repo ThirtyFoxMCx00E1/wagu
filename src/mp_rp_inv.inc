@@ -361,7 +361,7 @@ static void RpInvFigure(ImDrawList* dl, float cx, float top, float s)
     dl->AddCircleFilled(P(0, 20), UI::S(22) * s, edge, 28);
     dl->AddCircleFilled(P(0, 20), UI::S(19) * s, RpInvPartCol(p[0] / 100.0f), 28);
 }
-// 3.36.1: the player info figure is a texture of a man (files/MP/rp_figure.png, built into the .so):
+// 3.36.1: the player info figure is a texture of a man (files/TYFMC/MP/rp_figure.png, built into the .so):
 // 6 layers (head, torso, left arm, right arm, left leg, right leg) of 128x256 in a 512x512 atlas, each
 // drawn over the same rect and tinted by the condition of that part. false = not loaded (yet).
 static bool RpInvFigureTex(ImDrawList* dl, float cx, float top, float s)

@@ -104,7 +104,7 @@ Prebuilt binaries:
 On a spare Android phone, install [Termux](https://f-droid.org/packages/com.termux/) and run:
 
 ```
-curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/termux/install.sh | bash
+curl -fsSL https://mpsamp-open.github.io/install.sh | bash
 ```
 
 It builds `mp_server` on the phone and runs it 24/7 in the internet lobby (free public brokers, no port forwarding), restarts it after a crash and, with the Termux:Boot app, after a reboot. Commands: `mp-server status | log | config | restart | stop | update`. Keep the phone charging, on Wi-Fi, and set Termux's battery use to Unrestricted.
@@ -114,13 +114,16 @@ It builds `mp_server` on the phone and runs it 24/7 in the internet lobby (free 
 The [HiveMQ kit](HiveMQ/README.md#debian-12-own-pc-or-vps) runs on Ubuntu 22.04 / 24.04 or Debian 12. The small Debian 12 installer (677 MB, sha256 `cd4462c06aa8892e692c0c4b9c17802f38c8ab8690e85cbfb5ccaa5956e9af17`, same as Debian's) is in the HiveMQ [Derbian release](https://cdimage.debian.org/cdimage/archive/12.15.0/amd64/iso-cd/): [debian-12.15.0-amd64-netinst.iso](https://cdimage.debian.org/cdimage/archive/12.15.0/amd64/iso-cd/debian-12.15.0-amd64-netinst.iso). Install it with only "SSH server" and "standard system utilities", then as root:
 
 ```
-wget -qO- https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/vps-setup.sh | bash -s europe
+wget -qO- https://mpsamp-open.github.io/HiveMQ/vps-setup.sh | bash -s europe
 ```
 
 Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in the provider's image list instead of the ISO. Ping depends on where the machine is: each region needs its own VPS in its city - Asia = Singapore, Europe = Frankfurt, North America = Los Angeles, Oceania = Sydney. All 4 on Vultr in one command, or Misaka / OVHcloud / Hetzner by hand: [docs/REGIONS_VPS.md](docs/REGIONS_VPS.md).
 
 ## Changelog
 
+- **4.12.7**: one TYFMC folder for the TYFMC mods, website back to full service.
+  - The MP folder is now `Android/data/com.rockstargames.gtasa/files/TYFMC/MP` and the settings are `files/TYFMC/TYFMC.MP.ini`. MLG Production uses `files/TYFMC/MLG` + `TYFMC.MLG.ini`, CamFX `files/TYFMC/CamFX` + `TYFMC.CAMFX.ini`. The old `files/MP` folder and `configs/net.thirtyfox.mp.ini` are moved there on the first start, nothing is lost.
+  - The repo is private now: the website (mpsamp-open.github.io) serves the files the game and the servers download - Day Z models and mapping, media, GIFs, the HiveMQ kit (`downloads/HiveMQ-kit.tar.gz`) and the server source for VPS / Termux installs.
 - **4.12.6**: Grove Street / spawn freeze fixed (the Day Z model pack now stays in the MP folder and no longer replaces normal models), radar back to the classic bottom-left place, new "Classic layout" button in Settings > Display > HUD position.
 - **4.12.5**: HUD position page, screen recording guard fixed, HUD Player removed, Cheat Menu tuning crash fixed.
   - Settings > Display > "HUD position (radar, weapon switch, bars)": X / Y (% of the screen) and Size (% of the preset) of every ARM Advanced Settings HUD item - radar (plus zoom), weapon switch icon, ammo, health / armor / breath bars, clock, money, wanted stars, area / vehicle name, radio, subtitles. Slider plus -/+ buttons, changes show at once, "Reset this item" and "Restore the original preset". The old one-time restore of MP's backups no longer runs on every start, so your own changes stay.
@@ -335,7 +338,7 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
   - MTA backpacks (Patrol, Assault, ALICE) sit on the back like on MTA DayZ: turned +90 around X (the models lie on their back) at 0.225 behind / 0.22 up, the same spot for every pack.
 - **3.61**: **Project Day Z Legacy** uses the real MTA DayZ models, loaded from GitHub - nothing to copy into the MP folder.
   - All dff / txd / col files of MTA DayZ ([NullSystemWorks/mtadayz](https://github.com/NullSystemWorks/mtadayz/tree/master/DayZ/models), DayZ/models) are hosted in this repo under `Host/DayZ/models`, with `manifest.txt` (model id, files, sizes, CRC). `tools/make_dz_models.py` refreshes them.
-  - On the Day Z server the game downloads the models it needs (about 62 MB the first time, then from its own cache) from `raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/Host/DayZ/models/` (fallback: the mtadayz fork) and swaps them in while you play: 27 zombies, 11 survivor / bandit / hero / army / ghillie skins, 13 guns (M1911, Revolver, Winchester, Remington, PDW, MP5A5, AK-74, M4A1, Lee Enfield, M24, knife, hatchet, binoculars), the UAZ (Patriot) and the loot (cans, water, medkit, bandage, morphine, epipen, blood bag, painkillers, antibiotics, map, GPS, watch, compass, toolbox, jerry can, clothes, ammo boxes, Patrol / Assault / ALICE backpacks). When you leave Day Z the GTA models come back.
+  - On the Day Z server the game downloads the models it needs (about 62 MB the first time, then from its own cache) from `mpsamp-open.github.io/Host/DayZ/models/` (fallback: the mtadayz fork) and swaps them in while you play: 27 zombies, 11 survivor / bandit / hero / army / ghillie skins, 13 guns (M1911, Revolver, Winchester, Remington, PDW, MP5A5, AK-74, M4A1, Lee Enfield, M24, knife, hatchet, binoculars), the UAZ (Patriot) and the loot (cans, water, medkit, bandage, morphine, epipen, blood bag, painkillers, antibiotics, map, GPS, watch, compass, toolbox, jerry can, clothes, ammo boxes, Patrol / Assault / ALICE backpacks). When you leave Day Z the GTA models come back.
   - The PC TXDs are decoded on the phone (DXT1 / DXT3 / DXT5, 8888, 888, 565, 1555, 4444, palettes), max 1024 px for skins, 512 for guns / zombies / the car, 256 for loot.
   - Setting: Settings > "Day Z Models (GitHub)" (on Day Z) and the menu toggle "Day Z: MTA DayZ models (download)". If the game ever closes while a model loads, that model stays GTA from then on; if the engine checks fail (for example a limit adjuster moved the streaming tables) nothing is replaced.
 - **3.60.1**: **Project Day Z Legacy**: the bottom-left "SUMMER / Los Santos / 24 C / Extra Sunny / New session in ..." text is gone while you play on Day Z.
@@ -596,7 +599,7 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
   - Timeout raised from 20 s to 30 s, so a short lag spike on mobile data no longer kicks you.
   - New 24/7 bot **Broker** that always stays in Default Server (1/100), Brief Case War (1/20) and Call Of Duty: Modern Warfare 3 (1/64). It counts in the server list, shows in the Player list as `Broker (host, 24/7 bot)`, and is shown as the host of those 3 servers (`Host: Broker` on the HUD, `host: Broker (24/7)` on the server card). Nobody else becomes host there.
   - Discord bot: `/stats` and `/char` cards no longer have a website link, only Refresh and Switch view.
-  - The VPS updates by itself: every 10 minutes its autopilot checks GitHub and, when there is a new mod version or HiveMQ kit, runs `curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/update.sh | sudo bash` on its own (`MP_AUTOUPDATE=0` in `/etc/mp-hivemq/mp.env` turns it off). It also restarts a stopped Brief Case War or MW3 server. Run that command once by hand to get this autopilot.
+  - The VPS updates by itself: every 10 minutes its autopilot checks GitHub and, when there is a new mod version or HiveMQ kit, runs `curl -fsSL https://mpsamp-open.github.io/HiveMQ/update.sh | sudo bash` on its own (`MP_AUTOUPDATE=0` in `/etc/mp-hivemq/mp.env` turns it off). It also restarts a stopped Brief Case War or MW3 server. Run that command once by hand to get this autopilot.
   - From Termux: `mp-server vps-update ubuntu@your-vps` runs the update on the VPS over SSH. The website's Termius page shows it with a Copy button, and its bot runs `update` by itself when a region is behind.
 - **3.23.4**: new MW3 stats display.
   - The stats box in the bottom right is gone: no background, no green outline, and it no longer covers the sprint button.
@@ -674,7 +677,7 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
   - **More time.** Race queue: starts when 14 players are in, or after 45 s with 2 or more, or alone after 60 s; then a 20 s GO countdown (was 12 s) so everybody reaches the grid. Derby: 30 s lobby (8 s when alone), and 15 s (was 5 s) to get back into your car / the arena before you are out. Jobs: 5 s countdown.
   - **Brief Case War: no wanted level.** Being sent to Bone County (or anywhere) no longer gives you 4 stars: while you are in BCW your wanted level is held at 0.
   - **The host leaves -> the game no longer "restarts".** When a phone hosts a server and the 24/7 copy of the same server (HiveMQ / Termux machine) is online, MP 3.21 moves you to the 24/7 copy quietly (you keep playing where you are). When a phone host leaves, MP looks for the 24/7 copy first and waits for it (2 tries) instead of making another phone the host. The 24/7 copy always wins over phone copies.
-  - **Servers really update now.** The HiveMQ kit's `install.sh` copied the new `mp_server` over the running one: that fails ("Text file busy") and stopped the update, so the 24/7 servers kept running an old `mp_server` - the reason the new admin key was refused, and why phones still became hosts. Fixed (copy + rename), plus a one-line update: `curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/update.sh | sudo bash` (Termius console `7) update` uses it). Termux: `mp-server update` now also restarts the running server.
+  - **Servers really update now.** The HiveMQ kit's `install.sh` copied the new `mp_server` over the running one: that fails ("Text file busy") and stopped the update, so the 24/7 servers kept running an old `mp_server` - the reason the new admin key was refused, and why phones still became hosts. Fixed (copy + rename), plus a one-line update: `curl -fsSL https://mpsamp-open.github.io/HiveMQ/update.sh | sudo bash` (Termius console `7) update` uses it). Termux: `mp-server update` now also restarts the running server.
   - **Admin key.** Keep `administrator.txt` (new key) in `files/MP/`; you can also keep the old `admin.txt` next to it: MP 3.21 sends the new key first and the old one only to a server that is still old, and tells you which server needs the update.
   - **Crash guards (from the crash logs).** `LOCATE_CHAR_*_OBJECT_2D/3D` (0471-0476) with a dead char or object (CLEO script crash in `LocateCharObjectCommand`) is skipped; `CBaseModelInfo::SetColModel` with no model info (streaming crash) is skipped; the game's `fseek / ftell / fread / fwrite / fclose / fgets / feof` refuse a broken `FILE*` (Samsung A02 crash in `fseeko` with `FILE* = 1`). The AML log says what was blocked. Two other logs are not MP: a crash inside `libFHSpeedometer.so` (that mod jumps into the middle of the game's `CPed::GiveWeapon` - update or remove FHSpeedometer) and one in Android's own `libgui` binder thread (realme, Android 15).
   - Clothes / CJ outfit: loaded in the background (no freeze), and the mod version in the AML log now says 3.21.
@@ -1091,14 +1094,14 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 2. Copy `libMP32.so` (32-bit game) or `libMP64.so` (64-bit game) to the AML mods folder:
    `/sdcard/Android/data/com.rockstargames.gtasa/mods/`
 3. Copy the assets folder `assets/MP/` to
-   `/sdcard/Android/data/com.rockstargames.gtasa/files/MP/`
+   `/sdcard/Android/data/com.rockstargames.gtasa/files/TYFMC/MP/`
    - `title_logo_connected.png`
    - `sound_effect_connected.mp3`
 
    You can replace both files with your own as long as the file names stay the same.
 4. Start the game and tap the **MP** bubble on the right edge of the screen.
 
-Settings are saved in AML's config folder (`net.thirtyfox.mp.ini`, section `[MP]`).
+Settings are saved in `files/TYFMC/TYFMC.MP.ini` (section `[MP]`), next to the MP folder `files/TYFMC/MP`.
 
 ## Playing
 
@@ -1124,7 +1127,7 @@ By default the lobby runs on free public MQTT brokers (anyone can read the topic
    - **HiveMQ Cloud**: the free *Serverless* plan can no longer be created and stops on 2026-12-31; use a *Starter* cluster instead (`xxxxxxxx.s1.eu.hivemq.cloud`, port `8883`).
    - **Your own Mosquitto** on a VPS with a TLS certificate (for a self-signed certificate add `ca=/path/to/ca.pem`).
 2. Copy `assets/MP/broker.example.txt` to `broker.txt`, fill in `host`, `user`, `pass` (and `rate` if needed).
-3. Put the **same** `broker.txt` on every phone in `/sdcard/Android/data/com.rockstargames.gtasa/files/MP/` and restart the game. Phones without it stay on the public lobby and won't see your servers.
+3. Put the **same** `broker.txt` on every phone in `/sdcard/Android/data/com.rockstargames.gtasa/files/TYFMC/MP/` and restart the game. Phones without it stay on the public lobby and won't see your servers.
 4. Check **MP → Connection → Lobby details**: the first line should say `Private broker from broker.txt` and `private <your host>`.
 
 For the dedicated server: `./mp_server 1922 "My Server" 100 Asia --broker-file /path/broker.txt` (default: `broker.txt` in the current folder).
@@ -1218,19 +1221,19 @@ Game traffic stays inside one region (no bridging), so ping is only phone -> nea
 On a new VPS (Ubuntu 22.04 / 24.04 or Debian 12), as root - installs everything for a region (Asia on `mpsamp.duckdns.org` by default) with the bridge, uses the passwords from the public regions.txt (phones connect with no change) and starts the 24/7 servers, Mega Vil Futuristic included:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/vps-setup.sh | sudo bash
+curl -fsSL https://mpsamp-open.github.io/HiveMQ/vps-setup.sh | sudo bash
 ```
 
 All four regions (one VPS each):
 
 | Region | DuckDNS | On the VPS |
 |---|---|---|
-| Asia | mpsamp.duckdns.org | `curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/vps-setup.sh \| sudo bash -s asia` |
-| Europe | eusamp.duckdns.org | `curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/vps-setup.sh \| sudo bash -s europe` |
-| NA | nasamp.duckdns.org | `curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/vps-setup.sh \| sudo bash -s na` |
-| Oceania | ocsamp.duckdns.org | `curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/vps-setup.sh \| sudo bash -s oceania` |
+| Asia | mpsamp.duckdns.org | `curl -fsSL https://mpsamp-open.github.io/HiveMQ/vps-setup.sh \| sudo bash -s asia` |
+| Europe | eusamp.duckdns.org | `curl -fsSL https://mpsamp-open.github.io/HiveMQ/vps-setup.sh \| sudo bash -s europe` |
+| NA | nasamp.duckdns.org | `curl -fsSL https://mpsamp-open.github.io/HiveMQ/vps-setup.sh \| sudo bash -s na` |
+| Oceania | ocsamp.duckdns.org | `curl -fsSL https://mpsamp-open.github.io/HiveMQ/vps-setup.sh \| sudo bash -s oceania` |
 
-From Termux on a phone: `pkg install -y openssh && ssh root@YOUR_VPS_IP "curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/vps-setup.sh | bash -s europe"`. Point the DuckDNS name at the VPS first and open the ports (see Cloud firewall).
+From Termux on a phone: `pkg install -y openssh && ssh root@YOUR_VPS_IP "curl -fsSL https://mpsamp-open.github.io/HiveMQ/vps-setup.sh | bash -s europe"`. Point the DuckDNS name at the VPS first and open the ports (see Cloud firewall).
 
 #### MP Oracle: free Oracle server by itself
 
@@ -1283,12 +1286,12 @@ On a VPS you don't need the ISO: pick "Debian 12" in the provider's image list. 
 
 | Region | DuckDNS | On the Debian machine, as root |
 |---|---|---|
-| Asia | mpsamp.duckdns.org | `wget -qO- https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/vps-setup.sh \| bash -s asia` |
-| Europe | eusamp.duckdns.org | `wget -qO- https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/vps-setup.sh \| bash -s europe` |
-| NA | nasamp.duckdns.org | `wget -qO- https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/vps-setup.sh \| bash -s na` |
-| Oceania | ocsamp.duckdns.org | `wget -qO- https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/vps-setup.sh \| bash -s oceania` |
+| Asia | mpsamp.duckdns.org | `wget -qO- https://mpsamp-open.github.io/HiveMQ/vps-setup.sh \| bash -s asia` |
+| Europe | eusamp.duckdns.org | `wget -qO- https://mpsamp-open.github.io/HiveMQ/vps-setup.sh \| bash -s europe` |
+| NA | nasamp.duckdns.org | `wget -qO- https://mpsamp-open.github.io/HiveMQ/vps-setup.sh \| bash -s na` |
+| Oceania | ocsamp.duckdns.org | `wget -qO- https://mpsamp-open.github.io/HiveMQ/vps-setup.sh \| bash -s oceania` |
 
-The script installs curl, git, Java 21 and HiveMQ by itself. Updates later: `wget -qO- https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/update.sh | bash` (as root).
+The script installs curl, git, Java 21 and HiveMQ by itself. Updates later: `wget -qO- https://mpsamp-open.github.io/HiveMQ/update.sh | bash` (as root).
 
 Ping depends on where the machine is, not on the system: a Debian PC in the Philippines is still far from Europe, NA and Oceania. For those regions use a VPS in Frankfurt, Virginia / Ohio or Sydney.
 
@@ -1299,7 +1302,7 @@ Railway.app stopped taking new accounts, so the MP login bot ([discordpy-bot](ht
 On **one** server (the Asia / bridge server), once:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/update.sh | sudo bash   # new kit + mp-railway tool
+curl -fsSL https://mpsamp-open.github.io/HiveMQ/update.sh | sudo bash   # new kit + mp-railway tool
 sudo mp-railway setup                                                                            # asks DISCORD_TOKEN + AUTH_PRIVATE_KEY (hidden)
 ```
 
@@ -1321,7 +1324,7 @@ sudo mp-railway env               variables (masked)     sudo mp-railway env set
 sudo mp-railway add NAME REPO     host another Python / Node app the same way
 ```
 
-Without a VPS it also runs on an Android phone in Termux: `curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/railway/install.sh | bash` (Termux:Boot starts it after a reboot). Run the bot in **one** place only.
+Without a VPS it also runs on an Android phone in Termux: `curl -fsSL https://mpsamp-open.github.io/HiveMQ/railway/install.sh | bash` (Termux:Boot starts it after a reboot). Run the bot in **one** place only.
 
 
 #### MP 3.34: region branches, 24/7 bot host, lower ping with many players
@@ -1336,7 +1339,7 @@ This kit now also lives inside the main repo: [wagu/HiveMQ](https://github.com/T
 
 #### MP 3.33: the 4 servers run only here, 24/7 - no Broker bot, lower ping
 
-Run the update on every region (Termius console **7) update**, or `curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/update.sh | sudo bash`). New in 3.33:
+Run the update on every region (Termius console **7) update**, or `curl -fsSL https://mpsamp-open.github.io/HiveMQ/update.sh | sudo bash`). New in 3.33:
 
 - **The 4 featured servers are hosted by this machine only:** MP LAN Server (UDP 1922), Brief Case War (1930), Modern Warfare 3 (1931), Mega Vil Futuristic (1932). The **Broker bot is gone** (the server shows 0 players when empty) and no phone hosts them any more (the 100-rank Broker standby is off). A player who joins first is just a player, never the host. While a server restarts, 3.33 phones wait and reconnect by themselves.
 - **Always online:** the four units restart 2 s after a crash (`RestartSec=2`, no start limit) and the new **`mp-keepalive.timer`** checks every minute that the broker and the four servers are running and that their port is open, and starts / restarts them when not. Log: `journalctl -t mp-keepalive`.
@@ -1347,7 +1350,7 @@ Run the update on every region (Termius console **7) update**, or `curl -fsSL ht
 #### Auto update (3.23.5)
 
 The autopilot (mp-status) checks GitHub every 10 minutes. When the mod or this kit has a new version it runs
-`curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/update.sh | sudo bash` by itself
+`curl -fsSL https://mpsamp-open.github.io/HiveMQ/update.sh | sudo bash` by itself
 (unit `mp-autoupdate`, log: `journalctl -u mp-autoupdate`). `MP_AUTOUPDATE=0` in `/etc/mp-hivemq/mp.env` turns it off.
 It also restarts mp-bcw, mp-mw3, mp-rp and mp-legacy when they stop. Servers older than this need the command run once by hand.
 
@@ -1356,7 +1359,7 @@ It also restarts mp-bcw, mp-mw3, mp-rp and mp-legacy when they stop. Servers old
 Run this on every region (or Termius console **7) update**, which now runs the same script):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/update.sh | sudo bash
+curl -fsSL https://mpsamp-open.github.io/HiveMQ/update.sh | sudo bash
 ```
 
 - **Why the old servers never updated:** `install.sh` copied the new `mp_server` over the running one. Linux refuses that ("Text file busy"), and `set -e` stopped the whole update, so the regions kept an old `mp_server`. That old server refuses SENJI's new admin key (`administrator.txt`), and phones kept becoming the host of the default server. Fixed: the binary is now copied to `mp_server.new` and renamed, and the kit in `/opt/mp/kit` is a real git clone (the old copy had no `.git`, so `git pull` in menu 7 failed too).
@@ -1573,7 +1576,7 @@ Why Community Edition: the HiveMQ Enterprise download without a license is an ev
 
 #### Tagalog
 
-Walang Ubuntu? Puwede ang Debian 12 (677 MB lang): i-download ang ISO sa [Debian archive](https://cdimage.debian.org/cdimage/archive/12.15.0/amd64/iso-cd/), i-install (SSH server + standard system utilities lang), tapos bilang root: `wget -qO- https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/vps-setup.sh | bash -s europe` (o `asia` / `na` / `oceania`).
+Walang Ubuntu? Puwede ang Debian 12 (677 MB lang): i-download ang ISO sa [Debian archive](https://cdimage.debian.org/cdimage/archive/12.15.0/amd64/iso-cd/), i-install (SSH server + standard system utilities lang), tapos bilang root: `wget -qO- https://mpsamp-open.github.io/HiveMQ/vps-setup.sh | bash -s europe` (o `asia` / `na` / `oceania`).
 
 MP Oracle: ilagay ang Oracle API key sa repo Secrets (OCI_USER, OCI_TENANCY, OCI_FINGERPRINT, OCI_REGION, OCI_KEY), tapos Actions -> MP Oracle claim -> Run. Paulit-ulit itong susubok hanggang may libreng server, tapos kusa nang mag-iinstall.
 

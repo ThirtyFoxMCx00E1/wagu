@@ -1,8 +1,7 @@
 name: Website (GitHub Pages)
+# 4.12.7: wagu is private now, so it has no Pages site of its own. The website is published by
+# mpsamp-open/mpsamp-open.github.io (it reads wagu with a read-only deploy key). Kept for a manual run only.
 on:
-  push:
-    branches: [main]
-    paths: ['docs/**', 'release/**', 'bin/**', 'HiveMQ/**', 'server/**', 'src/net/**', 'tools/publish_site.py', '.github/workflows/pages.yml']
   workflow_dispatch:
 permissions:
   contents: read

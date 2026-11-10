@@ -21,13 +21,15 @@
 #include "game/scriptguard.h"
 #include "game/modscan.h"
 #include "game/screenguard.h"   // 4.12.2
+#include "tyfmc.h"               // 4.12.7: files/TYFMC/MP + files/TYFMC/TYFMC.MP.ini
 #include "ui/hud.h"
 #include "ui/floatmenu.h"
 #include "ui/vkeyboard.h"
 #include "../imgui/rw_glue.h"
 #include "net/server.h"
 
-MYMODCFG(net.thirtyfox.mp, MP Multiplayer, 4.12, ThirtyFoxMCx00E1)   // 3.21: was stuck at 3.04.6 (crash logs showed the wrong version)
+// 4.12.7: the config is files/TYFMC/TYFMC.MP.ini (the old configs/net.thirtyfox.mp.ini is moved there)
+TYFMC_MODCFG(net.thirtyfox.mp, MP Multiplayer, 4.12.7, ThirtyFoxMCx00E1, MP, net.thirtyfox.mp)
 NEEDGAME(com.rockstargames.gtasa)
 
 // Globals used by the embedded RenderWare ImGui backend
@@ -717,10 +719,10 @@ extern "C" void OnModLoad()
 
     if(!Game::Init(pGameHandle)) { logger->Error("Script engine not found - MP disabled"); return; }
 
-    // data folder: /sdcard/Android/data/com.rockstargames.gtasa/files/MP
+    // 4.12.7: data folder /sdcard/Android/data/com.rockstargames.gtasa/files/TYFMC/MP (the old files/MP
+    // is moved in, and a zip unpacked into files/TYFMC/MP later is merged in on the next start)
     char dir[400];
-    snprintf(dir, sizeof(dir), "%s/MP", aml->GetAndroidDataPath());
-    mkdir(dir, 0777);
+    { static const char* olds[] = { "MP" }; snprintf(dir, sizeof(dir), "%s", TYFMC::DataDir("MP", olds, 1).c_str()); }
     ScreenGuard::Init(dir);   // 4.12.2: no screen recording without a valid MP/src_Access.txt
     MP::Init(dir);
 

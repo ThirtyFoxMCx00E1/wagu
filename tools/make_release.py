@@ -19,7 +19,7 @@ MOD = """MP moderators (3.35.2)
 ======================
 Moderators are NOT the admin key (admin.txt).
 
-3.35.2: the MP moderator key. Put Android/data/com.rockstargames.gtasa/files/MP/moderator.txt
+3.35.2: the MP moderator key. Put Android/data/com.rockstargames.gtasa/files/TYFMC/MP/moderator.txt
 (the MP moderator key on one line, get it from the MP owner) on your phone and you are "[MOD] your name"
 on every updated MP server, with any name - no server list needed.
 
@@ -29,9 +29,9 @@ Server owner (VPS / Termux / Oracle): make moderator.txt next to mp_server, one 
     # name  key (8+ characters, no spaces)
     Juan   juan-secret-key-123
   (or mp_server ... --mods /path/to/moderator.txt; a server hosted in the game reads
-   Android/data/com.rockstargames.gtasa/files/MP/moderators_server.txt)
+   Android/data/com.rockstargames.gtasa/files/TYFMC/MP/moderators_server.txt)
 
-Moderator (phone): put the same key in Android/data/com.rockstargames.gtasa/files/MP/moderator.txt
+Moderator (phone): put the same key in Android/data/com.rockstargames.gtasa/files/TYFMC/MP/moderator.txt
 (just the key on one line) and join with that player name. You get "[MOD] name" in the name tag,
 chat and kill feed, and can kick / mute players and switch cheats on that server (ban = admin only).
 
@@ -48,7 +48,7 @@ with zf("release/MP-%s-client.zip" % V) as z:
     z.write("release/MP-Voice.apk", c + "/MP-Voice.apk"); z.write("release/MP-Textdraw-Editor.apk", c + "/MP-Textdraw-Editor.apk")   # 3.59: both APKs
     z.writestr(c + "/INSTALL.txt", inst); z.writestr(c + "/MODERATOR_README.txt", MOD)
     z.write("bin/libMP64.so", c + "/lib/arm64-v8a/libMP64.so"); z.write("bin/libMP32.so", c + "/lib/armeabi-v7a/libMP32.so")
-    tree(z, "assets/MP", c + "/files/MP")
+    tree(z, "assets/MP", c + "/files/TYFMC/MP")   # 4.12.7: files/TYFMC/MP
 with zf("release/HiveMQ-kit-%s.zip" % V) as z: tree(z, "HiveMQ", "HiveMQ-kit", kit_skip)
 with zf("release/MP-%s-full.zip" % V) as z:
     f = "MP-%s" % V

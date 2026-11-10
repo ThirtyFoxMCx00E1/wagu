@@ -25,7 +25,7 @@ namespace DzModels
     };
     void GetDownload(Download& d);
     const char* LastError();
-    // 4.00: status + a log file the player can read (files/MP/dzmodels_log.txt)
+    // 4.00: status + a log file the player can read (files/TYFMC/MP/dzmodels_log.txt)
     bool Pending(int model);               // ready to switch, but the game still uses the GTA model
     int  SwapCount();
     struct Status { int engine = 0; bool disabled = false, hooked = false, cache = false; int wanted = 0, files = 0, swapped = 0, loaded = 0, waiting = 0, failed = 0, noTex = 0; };

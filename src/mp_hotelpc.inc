@@ -1,14 +1,14 @@
 // MP 3.36 - hotel rooms with a computer (included by mp.cpp after mp_rp_life.inc). On EVERY server
 // (free roam, races, Mega Vil...):
-//   - at a hotel door (Jefferson Motel, Four Dragons, Caligula's + files/MP/hotels.txt) "Hotel room"
+//   - at a hotel door (Jefferson Motel, Four Dragons, Caligula's + files/TYFMC/MP/hotels.txt) "Hotel room"
 //     takes you into a motel room (interior 10) with a desk + computer in it
 //   - walk up to the computer: a round computer button shows; tap it = the eyefind.info browser
 //     (like the GTA one): Southern San Andreas Super Autos, Legendary Motorsport, Pedal and Metal,
 //     Elitas Travel, Docktease, and a search box over all of them
-//   - a site = a grid of white cards (picture from files/MP/Vehicles.jar, name, red price box), scroll
+//   - a site = a grid of white cards (picture from files/TYFMC/MP/Vehicles.jar, name, red price box), scroll
 //     with a drag; tap a card = BUY. You walk out of the hotel and the vehicle is waiting for you.
 //     Mega Vil: paid from cash + bank, kept in your garage (RPC_BUY a = 2). Other servers: your $.
-// files/MP/hotels.txt (optional, one per line): name x y z   (the door outside, more hotels)
+// files/TYFMC/MP/hotels.txt (optional, one per line): name x y z   (the door outside, more hotels)
 
 #define HPC_AREA 10
 static const Vec3 kHpcRoom = { 2262.83f, -1137.71f, 1050.63f };   // Red Bed Motel room (interior 10), ped centre
@@ -64,7 +64,7 @@ static void HpcLoadHotels()
         s_HpcHotels.push_back(h);
     }
     fclose(f);
-    logger->Info("3.36: %d hotels (files/MP/hotels.txt)", (int)s_HpcHotels.size());
+    logger->Info("3.36: %d hotels (files/TYFMC/MP/hotels.txt)", (int)s_HpcHotels.size());
 }
 static void HpcSay(const char* fmt, ...)
 {

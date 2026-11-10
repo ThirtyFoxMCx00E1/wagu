@@ -289,7 +289,7 @@
 // 4.02: Cloud Storage - the Day Z model pack, grouped by folder (same list the game reads)
 (function cloudStorage(){
   var rows = document.getElementById('cloud-rows'); if(!rows) return;
-  var base = 'https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/Host/DayZ/models/';
+  var base = 'Host/DayZ/models/';
   function mb(b){ return b >= 1048576 ? (b / 1048576).toFixed(1) + ' MB' : Math.ceil(b / 1024) + ' KB'; }
   fetch(base + 'manifest.txt', { cache: 'no-store' }).then(function(r){ if(!r.ok) throw new Error(r.status); return r.text(); }).then(function(t){
     var g = {}, order = [], total = 0;

@@ -70,7 +70,7 @@ static uint32_t HudServerToken()
     }
     return tok;
 }
-static const char* HudLogoFile()   // file in files/MP, "" = none
+static const char* HudLogoFile()   // file in files/TYFMC/MP, "" = none
 {
     // the host's own server: the picked file straight away
     if(s_Server.IsRunning() && client.GetPort() == s_Server.GetPort() && settings.serverLogo[0]) return settings.serverLogo;

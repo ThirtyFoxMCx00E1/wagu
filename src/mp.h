@@ -1,7 +1,7 @@
 #pragma once
 // 4.07: media player host: the big music files are streamed from here (Wi-Fi / mobile data) when they
-// are not in files/MP
-#define MP_MEDIA_URL "https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/Host/Media/"
+// are not in files/TYFMC/MP
+#define MP_MEDIA_URL "https://mpsamp-open.github.io/Host/Media/"
 #include <stdint.h>
 #include <string>
 #include <deque>
@@ -77,7 +77,7 @@ struct MPSettings
     int   team              = 0;       // class selection team (TEAM_*, 0 = civilian)
     int   classSkin         = -1;      // class selection skin (-1 = keep my own skin)
     char  serverPassword[MP_PASSWORD_LEN + 1] = "";   // 2.19: password of the server you host (empty = open)
-    char  uiLanguage[12] = "en";                     // 3.52: Settings > Language (files/MP/lang/<code>.lng)
+    char  uiLanguage[12] = "en";                     // 3.52: Settings > Language (files/TYFMC/MP/lang/<code>.lng)
     char  serverLang[MP_LANG_LEN] = "English";      // 2.25: language of the server you host (server list "Language")
     // 4.03: CS:GO style list (+ Add server): Server location, gamemode chip, tags, description
     char  serverCC[MP_CC_LEN] = "";
@@ -85,12 +85,12 @@ struct MPSettings
     int   serverModeCol = 0;
     char  serverTags[MP_TAGS_LEN] = "";
     char  serverDesc[MP_DESC_LEN] = "";
-    char  serverPreview[48] = "";                     // 4.03: pv_mine_<crc>.jpg in files/MP (Upload preview image)
-    char  serverLogo[48] = "";                        // 4.07: lg_mine_<crc>.png in files/MP (Import title logo)
+    char  serverPreview[48] = "";                     // 4.03: pv_mine_<crc>.jpg in files/TYFMC/MP (Upload preview image)
+    char  serverLogo[48] = "";                        // 4.07: lg_mine_<crc>.png in files/TYFMC/MP (Import title logo)
     int   hudMode = 1, hudFlags = 12, hudDoor = 2;   // 4.12.4: 12 = Ammo + Logo (HUD Player off)  
     int   logoX = 50, logoY = 2, logoZ = 100;           // 4.07: title logo X / Y (% of the screen) and Z (size %)  // 4.07: /settings > Textdraw of the server I host (HUD_DEFAULT_FLAGS)
     char  deviceId[MP_UID_LEN + 1] = "";            // 2.25: this phone's id (bans), made on first start
-    char  adminKey[129] = "";                         // 2.37: read from files/MP/admin.txt (never saved in the config) - proof you are SENJI
+    char  adminKey[129] = "";                         // 2.37: read from files/TYFMC/MP/admin.txt (never saved in the config) - proof you are SENJI
     char  hostedPassword[MP_PASSWORD_LEN + 1] = "";   // 2.19: password of the server this phone hosted last
     bool  disableCheats     = false;   // 2.35: host setting: no MP chat cheats + no CLEO menu for everyone
     int   hostModes         = 0;       // 3.02: gamemodes (GM_*) of the custom server I host; new custom servers: none

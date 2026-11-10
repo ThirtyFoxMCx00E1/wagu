@@ -54,8 +54,13 @@ die()  { printf '\033[1;31m[mp]\033[0m %s\n' "$*" >&2; exit 1; }
 rand() { tr -dc 'A-Za-z0-9' </dev/urandom | head -c "${1:-24}" || true; }
 # 3.37 VPS: fast clone of only the folders we need from wagu (the repo has big release zips)
 #   wagu_clone DEST folder...   (falls back to a normal shallow clone on old git)
+SITE_URL="${MP_SITE_URL:-https://mpsamp-open.github.io}"   # 4.12.7: wagu is private, the website serves the public files
 wagu_clone() {
     local d=$1; shift; rm -rf "$d"
+    # server/ + src/net + third_party/mbedtls = downloads/mp-server-src.tar.gz on the website
+    if [ "$*" = "server src/net third_party/mbedtls" ] && mkdir -p "$d" \
+       && curl -fsSL --retry 3 "$SITE_URL/downloads/mp-server-src.tar.gz" | tar -xz -C "$d"; then return 0; fi
+    rm -rf "$d"
     if git clone -q --depth 1 --filter=blob:none --sparse "$MOD_REPO" "$d" </dev/null 2>/dev/null \
        && git -C "$d" sparse-checkout set "$@" </dev/null 2>/dev/null; then return 0; fi
     rm -rf "$d"; git clone -q --depth 1 "$MOD_REPO" "$d" </dev/null

@@ -18,7 +18,7 @@
 
 namespace
 {
-    const char* kBase = "https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/gifs/";
+    const char* kBase = "https://mpsamp-open.github.io/gifs/";   // 4.12.7: the gifs branch is published on the website
     std::mutex s_Mx;
     std::map<int, Gifs::Info> s_Info;
     std::vector<int> s_Order;

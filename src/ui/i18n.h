@@ -1,5 +1,5 @@
 // MP 3.52: languages. Every text MP draws (launcher, menus, HUD, chat / server messages) is looked up in
-// the chosen language's table (files/MP/lang/<code>.lng (DataDir()/lang), made by tools/i18n/translate.py) as it is drawn,
+// the chosen language's table (files/TYFMC/MP/lang/<code>.lng (DataDir()/lang), made by tools/i18n/translate.py) as it is drawn,
 // so no screen needs its own translation code. English = the texts as they are in the source.
 #pragma once
 #include <string>
@@ -13,7 +13,7 @@ namespace I18n
     const LangInfo& Info(int i);
     int  Current();                        // index into Info()
     const char* CurrentCode();
-    bool Set(const char* code);            // loads files/MP/lang/<code>.lng (DataDir()/lang) ("en" = no table). false: file missing
+    bool Set(const char* code);            // loads files/TYFMC/MP/lang/<code>.lng (DataDir()/lang) ("en" = no table). false: file missing
     bool FileExists(const char* code);
     int  Entries();                        // strings in the loaded table
     const char* LastError();

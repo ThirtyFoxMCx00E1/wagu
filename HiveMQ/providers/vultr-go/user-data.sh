@@ -31,5 +31,5 @@ fi
 if command -v ufw >/dev/null && ufw status | grep -q active; then
     for p in 22/tcp 1883/tcp 8883/tcp 8884/tcp 7681/tcp 80/tcp 1922/udp 1930/udp 1931/udp 1932/udp 7777/udp 7780/udp; do ufw allow $p; done
 fi
-curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/vps-setup.sh | bash -s "$REGION"
+curl -fsSL https://mpsamp-open.github.io/HiveMQ/vps-setup.sh | bash -s "$REGION"
 echo "MP first boot done ($REGION)"

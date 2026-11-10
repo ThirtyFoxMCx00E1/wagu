@@ -386,7 +386,7 @@ This server runs an old MP (before 3.23.6) - trying your old admin key on it...	
 This server didn't take your first admin key - trying your other key from administrator.txt...	이 서버는 첫 번째 관리 키를 가져오지 않았습니다. administrator.txt의 다른 키를 사용해 보세요...
 This server refused your admin key. Your MP %s and administrator.txt are fine: the SERVER runs MP older than 3.23.6 and only knows the old key.	이 서버가 관리자 키를 거부했습니다. MP %s 및 administrator.txt은(는) 괜찮습니다. SERVER는 3.23.6보다 오래된 MP를 실행하고 이전 키만 알고 있습니다.
 Quick fix: keep your old key as admin.txt next to administrator.txt (MP folder) - MP %s tries the old key on old servers by itself.	빠른 수정: 이전 키를 administrator.txt(MP 폴더) 옆에 있는 admin.txt로 유지하세요. MP %s는 이전 서버에서 이전 키를 자체적으로 시도합니다.
-Real fix: update the server. 24/7 VPS: sudo bash /opt/mp/kit/update.sh (or: curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/update.sh | sudo bash). Termux: mp-server update.	실제 수정: 서버를 업데이트하세요. 연중무휴 VPS: sudo bash /opt/mp/kit/update.sh(또는: 컬 -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/update.sh | sudo bash). Termux: mp-서버 업데이트.
+Real fix: update the server. 24/7 VPS: sudo bash /opt/mp/kit/update.sh (or: curl -fsSL https://mpsamp-open.github.io/HiveMQ/update.sh | sudo bash). Termux: mp-server update.	실제 수정: 서버를 업데이트하세요. 연중무휴 VPS: sudo bash /opt/mp/kit/update.sh(또는: 컬 -fsSL https://mpsamp-open.github.io/HiveMQ/update.sh | sudo bash). Termux: mp-서버 업데이트.
 This server refused your moderator key for %s: it runs MP older than 3.40.1 (it updates by itself) or the key in moderator.txt is wrong.	이 서버는 %s에 대한 중재자 키를 거부했습니다. 3.40.1보다 오래된 MP를 실행하거나(자체 업데이트) moderator.txt의 키가 잘못되었습니다.
 You are banned from the server!	당신은 서버에서 금지됩니다!
 You were kicked from the server!	당신은 서버에서 쫓겨났습니다!

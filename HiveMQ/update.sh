@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # MP 24/7 server update (3.22). Gets the newest kit + mp_server and reinstalls with your saved
 # settings (/etc/mp-hivemq/mp.env stays as it is). Safe to run while the servers are running.
-#   curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/update.sh | sudo bash
+#   curl -fsSL https://mpsamp-open.github.io/HiveMQ/update.sh | sudo bash
 #   or on the server:  sudo bash /opt/mp/kit/update.sh      (Termius console: 7) update)
 set -euo pipefail
 # 3.37 VPS: the kit is the HiveMQ/ folder of the wagu repo (one repo for the mod, the servers and the website)
@@ -10,12 +10,14 @@ BASE=/opt/mp
 export MP_FORCE_RESTART="${MP_FORCE_RESTART:-0}"
 say() { printf '\033[1;32m[mp-update]\033[0m %s\n' "$*"; }
 die() { printf '\033[1;31m[mp-update]\033[0m %s\n' "$*" >&2; exit 1; }
-[ "$(id -u)" = 0 ] || die "run as root: curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/update.sh | sudo bash   (Debian without sudo: su - , then wget -qO- https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/update.sh | bash)"
+[ "$(id -u)" = 0 ] || die "run as root: curl -fsSL https://mpsamp-open.github.io/HiveMQ/update.sh | sudo bash   (Debian without sudo: su - , then wget -qO- https://mpsamp-open.github.io/HiveMQ/update.sh | bash)"
 command -v git >/dev/null || { apt-get update -qq && apt-get install -y -qq git; }
 
 say "getting the newest kit"
 TMP="$(mktemp -d)"; trap 'rm -rf "$TMP"' EXIT
-if git clone -q --depth 1 --filter=blob:none --sparse "$KIT_REPO" "$TMP/w" </dev/null 2>/dev/null && git -C "$TMP/w" sparse-checkout set HiveMQ </dev/null 2>/dev/null; then :
+# 4.12.7: wagu is private - the kit comes from the website first (downloads/HiveMQ-kit.tar.gz)
+if mkdir -p "$TMP/w" && curl -fsSL --retry 3 https://mpsamp-open.github.io/downloads/HiveMQ-kit.tar.gz | tar -xz -C "$TMP/w" && [ -f "$TMP/w/HiveMQ/install.sh" ]; then :
+elif rm -rf "$TMP/w"; git clone -q --depth 1 --filter=blob:none --sparse "$KIT_REPO" "$TMP/w" </dev/null 2>/dev/null && git -C "$TMP/w" sparse-checkout set HiveMQ </dev/null 2>/dev/null; then :
 else rm -rf "$TMP/w"; git clone -q --depth 1 "$KIT_REPO" "$TMP/w" </dev/null || die "could not download $KIT_REPO"; fi
 [ -f "$TMP/w/HiveMQ/install.sh" ] || die "no HiveMQ/ kit in $KIT_REPO"
 rm -rf "$BASE/kit.new"; cp -a "$TMP/w/HiveMQ" "$BASE/kit.new"

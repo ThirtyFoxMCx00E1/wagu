@@ -385,7 +385,7 @@ This server runs an old MP (before 3.23.6) - trying your old admin key on it...	
 This server didn't take your first admin key - trying your other key from administrator.txt...	此伺服器未獲取您的第一個管理金鑰 - 正在嘗試來自 administrator.txt 的其他金鑰...
 This server refused your admin key. Your MP %s and administrator.txt are fine: the SERVER runs MP older than 3.23.6 and only knows the old key.	該伺服器拒絕您的管理金鑰。您的 MP %s 和 administrator.txt 正常：伺服器執行 3.23.6 之前的 MP 並且只知道舊金鑰。
 Quick fix: keep your old key as admin.txt next to administrator.txt (MP folder) - MP %s tries the old key on old servers by itself.	快速修復：將舊金鑰保留為 administrator.txt（MP 資料夾）旁邊的 admin.txt - MP %s 自行在舊伺服器上嘗試舊金鑰。
-Real fix: update the server. 24/7 VPS: sudo bash /opt/mp/kit/update.sh (or: curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/update.sh | sudo bash). Termux: mp-server update.	真正的修復：更新伺服器。 24/7 VPS：sudo bash /opt/mp/kit/update.sh（或：curl -fsSL https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/HiveMQ/update.sh | sudo bash）。 Termux：mp 伺服器更新。
+Real fix: update the server. 24/7 VPS: sudo bash /opt/mp/kit/update.sh (or: curl -fsSL https://mpsamp-open.github.io/HiveMQ/update.sh | sudo bash). Termux: mp-server update.	真正的修復：更新伺服器。 24/7 VPS：sudo bash /opt/mp/kit/update.sh（或：curl -fsSL https://mpsamp-open.github.io/HiveMQ/update.sh | sudo bash）。 Termux：mp 伺服器更新。
 This server refused your moderator key for %s: it runs MP older than 3.40.1 (it updates by itself) or the key in moderator.txt is wrong.	此伺服器拒絕了您的 %s 的主持人金鑰：它執行的 MP 版本早於 3.40.1（它會自行更新）或 moderator.txt 中的金鑰錯誤。
 You are banned from the server!	您已被禁止進入伺服器！
 You were kicked from the server!	你被踢出伺服器了！

@@ -16,8 +16,7 @@ static struct DzMapClient
 } s_DzM;
 
 static const char* kDzCatUrls[] = {
-    "https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/main/Host/DayZ/mapping/catalog.txt",
-    "https://mpsamp-open.github.io/Host/DayZ/mapping/catalog.txt",
+    "https://mpsamp-open.github.io/Host/DayZ/mapping/catalog.txt",   // 4.12.7: served by the website
 };
 
 static void DzMapDelObj(DzMapC& c) { if(c.obj > 0) { Game::DeleteWorldObject(c.obj); --s_DzM.nShown; } c.obj = 0; }

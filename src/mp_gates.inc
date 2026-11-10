@@ -4,7 +4,7 @@
 // other side, the screen fades back in. Works on every server (and on Brief Case War, where the
 // Schelapz base sits inside the Area 69 fence).
 //
-// Extra / corrected gates: files/MP/gates.txt, one gate per line:
+// Extra / corrected gates: files/TYFMC/MP/gates.txt, one gate per line:
 //     x y z heading width name...
 //   heading = the direction you walk THROUGH the gate (the game's heading, like /gatepos prints)
 //   width   = how wide the gate opening is in metres
@@ -157,7 +157,7 @@ static void CmdGatePos()
     if(ped <= 0 || !Game::GetCharPos(ped, p)) return;
     float h = Game::GetCharHeading(ped);
     SysMsg(COL_EVT, "gates.txt line:  %.2f %.2f %.2f %.0f 11 My Gate", p.x, p.y, p.z - 1.0f, h);
-    SysMsg(COL_SYSTEM, "Stand in the middle of the gate, facing through it. Put the line in files/MP/gates.txt, then /gates reload.");
+    SysMsg(COL_SYSTEM, "Stand in the middle of the gate, facing through it. Put the line in files/TYFMC/MP/gates.txt, then /gates reload.");
 }
 static bool GatesCommand(const char* cmd, const char* arg)
 {

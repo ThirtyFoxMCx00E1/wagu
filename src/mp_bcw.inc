@@ -365,9 +365,9 @@ static void BcwProcess(int ped, uint64_t now)
         {
             s_Bcw.musicTried = true;
             if(!Sound::PlayMusic(path, 0.0f, true))
-            {   // 4.07: not in files/MP -> streamed from the media host (Host/Media) over Wi-Fi / mobile data
+            {   // 4.07: not in files/TYFMC/MP -> streamed from the media host (Host/Media) over Wi-Fi / mobile data
                 s_Bcw.musicUrl = Sound::StreamPlayUrl(MP_MEDIA_URL "war_ambient.mp3", 0.0f);
-                if(!s_Bcw.musicUrl && !s_Bcw.musicMissingSaid) { s_Bcw.musicMissingSaid = true; SysMsg(COL_SYSTEM, "No internet for the war music (or put war_ambient.mp3 in files/MP)."); }
+                if(!s_Bcw.musicUrl && !s_Bcw.musicMissingSaid) { s_Bcw.musicMissingSaid = true; SysMsg(COL_SYSTEM, "No internet for the war music (or put war_ambient.mp3 in files/TYFMC/MP)."); }
             }
         }
         float k = (float)(now - s_Bcw.connectedAt - BCW_MUSIC_DELAY_MS) / 1000.0f; if(k > 1) k = 1;
