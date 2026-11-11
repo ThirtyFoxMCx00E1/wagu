@@ -75,8 +75,8 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 .av.xl .dot { border-width: 5px; }
 
 /* ===== auth (Ankama "Welcome back" card + art) ===== */
-#auth { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: 16px; }
-.auth-win { width: min(980px, 100%); height: min(620px, 100%); display: flex; overflow: hidden; }
+#auth { position: fixed; inset: 0; display: flex; align-items: stretch; justify-content: stretch; padding: 0; }
+.auth-win { width: 100%; height: 100%; display: flex; overflow: hidden; }   /* 4.13.1: full screen (was a 980x620 card) */
 .auth-form { width: 400px; max-width: 100%; display: flex; flex-direction: column; }
 .auth-form .body { flex: 1; padding: 26px 30px; display: flex; flex-direction: column; justify-content: center; }
 .auth-art { flex: 1; background: url(../img/login.jpg) center / cover; position: relative; border-left: 1px solid var(--line); }
@@ -89,7 +89,14 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 .code { font: 700 26px/1.2 ui-monospace, Menlo, Consolas, monospace; letter-spacing: 3px; text-align: center; border: 2px solid var(--blue); padding: 8px; background: var(--input); user-select: all; border-radius: var(--radius); }
 .alt-row { display: flex; justify-content: center; gap: 12px; margin-top: 14px; }
 .alt-row .ibtn { border: 1px solid var(--line); }
-@media (max-width: 760px) { .auth-art { display: none; } .auth-form { width: 100%; } .auth-win { height: auto; max-height: 100%; } }
+.auth-form .body > *:not(.auth-logo) { width: 100%; max-width: 460px; margin-left: auto; margin-right: auto; }
+.auth-form .body { align-items: stretch; }
+html:not(.portrait) .auth-form { width: 440px; flex: none; }
+/* tall screens (phone, desktop site mode on a phone, a tall browser window): the picture on top, the form under it */
+html.portrait .auth-win { flex-direction: column-reverse; }
+html.portrait .auth-form { width: 100%; flex: 1; min-height: 0; }
+html.portrait .auth-art { flex: none; height: 34%; min-height: 180px; border-left: 0; border-bottom: 1px solid var(--line); }
+@media (max-width: 520px), (max-height: 560px) { .auth-art { display: none; } }
 
 /* ===== app shell ===== */
 #app { position: fixed; inset: 0; display: flex; flex-direction: column; }
@@ -120,9 +127,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 .footer-link { padding: 10px 14px; border-top: 1px solid var(--line); font-size: 11px; color: var(--dim); display: flex; gap: 6px; align-items: center; }
 
 /* web: a window (Ankama look) */
-html.web.wide #app { padding: 22px; }
-html.web.wide .win { border: 1px solid var(--line); box-shadow: 0 20px 60px rgba(0,0,0,.6); }
-html.web.wide .titlebar { display: flex; }
+html.web.wide:not(.portrait) .titlebar { display: flex; }   /* 4.13.1: full screen, no margin around the window */
 
 /* portrait (Discord mobile): no sidebars, bottom bar */
 html.portrait .side, html.portrait .right { display: none; }
