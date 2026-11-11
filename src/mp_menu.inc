@@ -23,6 +23,14 @@ static bool     s_bMenuMpLaunched = false;       // the launcher was opened for 
 static std::atomic<bool> s_bMenuMpExit{false};
 static std::atomic<bool> s_bMenuMpLoaded{false};  // the Multiplayer load is done (no more MP loading screen)   // [Single player] tapped (HUD -> game thread)
 static const uint64_t kMenuMpDelayMs = 5000 + 20 * 50;   // 5 s + 20 game ticks (50 ms) = 6 s
+// 4.13.9: one percent for the whole Multiplayer load (it went 0..99 for the game's load, then 0..100 again
+// for the black-screen countdown): game load = 0..90, countdown = 90..100, never goes back, 100 is held
+// 0.5 s before the server select opens. After the load the game's menu (pause menu) is closed for you.
+static const uint64_t kMenuMpHold100Ms = 500;
+static std::atomic<float>    s_fMenuMpShown{0.0f};    // the percent on screen (only goes up)
+static std::atomic<bool>     s_bMenuMpViaLoad{false}; // this countdown follows a save load (90..100)
+static std::atomic<uint64_t> s_nMenuMpSplashMs{0};    // last frame of the game's loading screen
+static std::atomic<bool>     s_bMenuMpCloseMenu{false};   // close the game's menu once the load is done
 
 static void MenuMpTap(void*)
 {
@@ -32,6 +40,7 @@ static void MenuMpTap(void*)
     s_nMenuMpTapAt = MP_NowMs();
     if(again && Game::LocalPed() > 0) { logger->Info("Main menu: Multiplayer (already on)"); return; }
     s_bMenuMpLoaded = false;
+    s_fMenuMpShown = 0.0f; s_bMenuMpViaLoad = true; s_nMenuMpSplashMs = 0; s_bMenuMpCloseMenu = true;
     int slot = Game::NewestSaveSlot();
     bool ok = slot >= 0 ? Game::RequestLoadSlot(slot) : Game::RequestNewGame();
     logger->Info("Main menu: Multiplayer -> %s %d (%s)", slot >= 0 ? "load slot" : "new game", slot + 1, ok ? "ok" : "failed");
@@ -85,6 +94,7 @@ static void MenuMpProcess(int ped, uint64_t now)
     {   // the black hologram: Grove Street, invisible, frozen, no HUD, no sound
         s_bMenuMpBlack = true; s_bMenuMpLoaded = true;
         s_nMenuMpBlackAt = now;
+        if(!s_bMenuMpViaLoad.load()) s_fMenuMpShown = 0.0f;   // back from a server: the countdown alone, 0..100
         s_bMenuMpLaunched = false; s_bMenuMpCard = false;
         if(st == NET_DISCONNECTED) SpawnLight(ped, kGroveStreet, kGroveHeading, false);
         Game::FreezeChar(ped, true); Game::SetCharVisible(ped, false);
@@ -101,8 +111,13 @@ static void MenuMpProcess(int ped, uint64_t now)
     const uint64_t t = now - s_nMenuMpBlackAt;
     if(!s_bMenuMpLaunched)
     {
-        if(st == NET_DISCONNECTED && t < kMenuMpDelayMs) { s_nMenuMpPct = (int)(t * 100 / kMenuMpDelayMs); s_bMenuMpCard = false; return; }
+        if(st == NET_DISCONNECTED && t < kMenuMpDelayMs + kMenuMpHold100Ms)
+        {
+            s_nMenuMpPct = t < kMenuMpDelayMs ? (int)(t * 100 / kMenuMpDelayMs) : 100;
+            s_bMenuMpCard = false; return;
+        }
         s_nMenuMpPct = -1;
+        s_bMenuMpViaLoad = false;
         s_bMenuMpLaunched = true;
         if(st == NET_DISCONNECTED) FloatMenu::OpenPage(FloatMenu::PAGE_SERVER);
     }
@@ -110,6 +125,19 @@ static void MenuMpProcess(int ped, uint64_t now)
 }
 
 static bool MenuMpActive() { return s_bMenuMp.load(); }
+
+// 4.13.9: the game's menu, every frame it is up (MobileMenu::Update, after the game's own update): a
+// Multiplayer load puts you back into the pause menu when it is done - it is closed like [Resume]
+void MP::MenuMpMenuTick()
+{
+    if(!s_bMenuMp.load() || !s_bMenuMpCloseMenu.load()) return;
+    const uint64_t sp = s_nMenuMpSplashMs.load();
+    if(!sp || Game::IsLoadPending() || !Game::IsFrontendMenu()) return;   // the load has not run yet
+    if(MP_NowMs() - sp < 400) return;                                      // still on the loading screen
+    s_bMenuMpCloseMenu = false;
+    const bool ok = Game::ExitFrontendMenu();
+    logger->Info("Main menu: Multiplayer load done -> game menu closed (%s)", ok ? "ok" : "no MobileMenu::Exit");
+}
 bool MP::MenuMpBlack() { return s_bMenuMp.load() && s_bMenuMpBlack.load(); }
 bool MP::MenuMpLoading() { return s_bMenuMpOn && s_bMenuMp.load() && !s_bMenuMpLoaded.load(); }
 
@@ -137,6 +165,13 @@ void MP::DrawMenuLoading(ImDrawList* dl, float pct, bool loadingScreen)
     const ImVec2 ds = ImGui::GetIO().DisplaySize;
     if(pct < 0) pct = 0; else if(pct > 100) pct = 100;
     const uint64_t nowMs = MP_NowMs();
+    {   // 4.13.9: one percent for the whole load, only going up
+        float v = loadingScreen ? pct * 0.9f : (s_bMenuMpViaLoad.load() ? 90.0f + pct * 0.1f : pct);
+        if(loadingScreen) s_nMenuMpSplashMs = nowMs;
+        if(v < s_fMenuMpShown.load()) v = s_fMenuMpShown.load();
+        s_fMenuMpShown = v;
+        pct = v;
+    }
     ImFont* f = UI::Font(); const float fs = ImGui::GetFontSize();
     const ImU32 kBlue = IM_COL32(72, 160, 255, 255);
 
@@ -144,11 +179,29 @@ void MP::DrawMenuLoading(ImDrawList* dl, float pct, bool loadingScreen)
     dl->AddRectFilled(ImVec2(0, 0), ds, IM_COL32(8, 11, 20, 255));
     ImVec2 uv(1, 1);
     if(void* t = HUD::Texture("ui_bg.jpg", &uv)) LImageCover(dl, t, uv, ImVec2(0, 0), ds, IM_COL32(255, 255, 255, 255));
-    dl->AddRectFilled(ImVec2(0, 0), ds, IM_COL32(6, 8, 16, 120));
-    const ImU32 c0 = IM_COL32(0, 0, 0, 0), c1 = IM_COL32(0, 0, 0, 170);
-    dl->AddRectFilledMultiColor(ImVec2(0, 0), ImVec2(ds.x * 0.18f, ds.y), c1, c0, c0, c1);
-    dl->AddRectFilledMultiColor(ImVec2(ds.x * 0.82f, 0), ds, c0, c1, c1, c0);
-    dl->AddRectFilledMultiColor(ImVec2(0, ds.y * 0.62f), ds, c0, c0, IM_COL32(0, 0, 0, 200), IM_COL32(0, 0, 0, 200));
+    dl->AddRectFilled(ImVec2(0, 0), ds, IM_COL32(6, 8, 16, 100));
+    {   // 4.13.9: a soft round vignette all around (clear in the middle, a see-through dark at the edges)
+        const ImVec2 c(ds.x * 0.5f, ds.y * 0.5f), uvw = dl->_Data->TexUvWhitePixel;
+        const int seg = 48;
+        const float r0 = 0.30f, r1 = 0.72f;   // inner (clear) / outer (dark) ellipse, x half-size relative
+        const ImU32 in = IM_COL32(0, 0, 0, 0), out = IM_COL32(0, 0, 0, 165);
+        dl->PrimReserve(seg * 6, seg * 2);
+        const ImDrawIdx base = (ImDrawIdx)dl->_VtxCurrentIdx;
+        for(int i = 0; i < seg; ++i)
+        {
+            const float a = 6.2831853f * i / seg, cx = cosf(a), sy = sinf(a);
+            dl->PrimWriteVtx(ImVec2(c.x + cx * ds.x * r0, c.y + sy * ds.y * r0), uvw, in);
+            dl->PrimWriteVtx(ImVec2(c.x + cx * ds.x * r1, c.y + sy * ds.y * r1), uvw, out);
+        }
+        for(int i = 0; i < seg; ++i)
+        {
+            const ImDrawIdx a0 = base + i * 2, a1 = a0 + 1, b0 = base + ((i + 1) % seg) * 2, b1 = b0 + 1;
+            dl->PrimWriteIdx(a0); dl->PrimWriteIdx(a1); dl->PrimWriteIdx(b1);
+            dl->PrimWriteIdx(a0); dl->PrimWriteIdx(b1); dl->PrimWriteIdx(b0);
+        }
+    }
+    // a little darker at the bottom for the tip / percent
+    dl->AddRectFilledMultiColor(ImVec2(0, ds.y * 0.70f), ds, IM_COL32(0, 0, 0, 0), IM_COL32(0, 0, 0, 0), IM_COL32(0, 0, 0, 120), IM_COL32(0, 0, 0, 120));
 
     // ---- centre: the title
     ImVec2 tuv(1, 1);

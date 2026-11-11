@@ -121,6 +121,10 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **4.13.9**: one loading percent from 0% to 100%, no pause menu after a Multiplayer load, soft vignette.
+  - The Multiplayer loading screen showed the game's load (0..99%) and then MP's own countdown started again at 0%. Now it is one number: the game load counts to 90%, the last part to 100%, it never goes back, and 100% stays up for half a second before the server list opens.
+  - After loading from the Multiplayer button the game's pause menu stayed open behind it. MP now closes the game menu the same way Resume does (MobileMenu::Exit) once the load is done. The log says "Main menu: Multiplayer load done -> game menu closed".
+  - A light, see-through round vignette darkens the edges of the loading background.
 - **4.13.8**: the JPatch crash (libJPatch.so + 0x1A5A4) is guarded inside JPatch's own data now.
   - 4.13.7 filled the game's touch widget #175 during CCamera::Process, but the crash went on. MP now reads JPatch 1.10.2.1's own widget list pointer (+0x5EAA8) and its saved original CCam::Process (+0xFB330), hooks CCam::Process on top of JPatch after all mods loaded, and when JPatch's widget #175 is empty (right after Resume / Start / Load game, behind the Multiplayer screens) runs the game's camera code directly for that frame, skipping only JPatch's idle camera. Only used when JPatch's code matches 1.10.2.1 byte for byte; JPatch itself is not changed. The log says "JPatch guard: ...".
 

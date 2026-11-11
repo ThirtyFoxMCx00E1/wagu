@@ -1,6 +1,7 @@
 {
-"latest": "4.13.8",
+"latest": "4.13.9",
 "supported": [
+"4.13.8",
 "4.13.7",
 "4.13.6",
 "4.13.5",
@@ -123,6 +124,15 @@
 "3.04.6"
 ],
 "versions": [
+{
+"v": "4.13.9",
+"summary": "one loading percent from 0% to 100%, no pause menu after a Multiplayer load, soft vignette.",
+"items": [
+"The Multiplayer loading screen showed the game's load (0..99%) and then MP's own countdown started again at 0%. Now it is one number: the game load counts to 90%, the last part to 100%, it never goes back, and 100% stays up for half a second before the server list opens.",
+"After loading from the Multiplayer button the game's pause menu stayed open behind it. MP now closes the game menu the same way Resume does (MobileMenu::Exit) once the load is done. The log says \"Main menu: Multiplayer load done -> game menu closed\".",
+"A light, see-through round vignette darkens the edges of the loading background."
+]
+},
 {
 "v": "4.13.8",
 "summary": "the JPatch crash (libJPatch.so + 0x1A5A4) is guarded inside JPatch's own data now.",

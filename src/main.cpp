@@ -29,7 +29,7 @@
 #include "net/server.h"
 
 // 4.12.7: the config is files/TYFMC/TYFMC.MP.ini (the old configs/net.thirtyfox.mp.ini is moved there)
-TYFMC_MODCFG(net.thirtyfox.mp, MP Multiplayer, 4.13.8, ThirtyFoxMCx00E1, MP, net.thirtyfox.mp)
+TYFMC_MODCFG(net.thirtyfox.mp, MP Multiplayer, 4.13.9, ThirtyFoxMCx00E1, MP, net.thirtyfox.mp)
 NEEDGAME(com.rockstargames.gtasa)
 
 // Globals used by the embedded RenderWare ImGui backend
@@ -179,6 +179,12 @@ DECL_HOOKv(LS_RenderSplash)
         if(HUD::RenderLoading(pct)) { s_bMpSplashDrawn = true; return; }
     }
     LS_RenderSplash();
+}
+// 4.13.9: the game's menu update (runs while the menu is up, CGame::Process does not)
+DECL_HOOKv(MobileMenu_Update, void* self)
+{
+    MobileMenu_Update(self);
+    MP::MenuMpMenuTick();
 }
 DECL_HOOKv(LS_RenderLoadingBar)
 {
@@ -841,6 +847,7 @@ extern "C" void OnModLoad()
         int hooked = 0;
         HOOK_IF(LS_RenderSplash, "_ZN14CLoadingScreen12RenderSplashEv");
         HOOK_IF(LS_RenderLoadingBar, "_ZN14CLoadingScreen16RenderLoadingBarEv");
+        HOOK_IF(MobileMenu_Update, "_ZN10MobileMenu6UpdateEv");   // 4.13.9: menu closed after a Multiplayer load
         logger->Info("Loading screen: %d hooks, percent %s", hooked, s_pPercentLoaded ? "yes" : "no");
     }
 

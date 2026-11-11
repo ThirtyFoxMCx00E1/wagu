@@ -322,6 +322,7 @@ namespace MP
     bool MenuMpBlack();           // the black server-select screen is up
     bool MenuMpLoading();         // a Multiplayer load is running: MP draws the loading screen
     void DrawMenuLoading(ImDrawList* dl, float pct, bool loadingScreen);
+    void MenuMpMenuTick();         // 4.13.9: MobileMenu::Update -> closes the menu after a Multiplayer load
     void DrawMenuMpBack(ImDrawList* bg);
     void DrawMenuMpFront();
     bool JoinScreenActive();   // 2.19.1: join screen / connection view / spawn picker on screen

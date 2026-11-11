@@ -15,6 +15,7 @@
 
 static uint8_t* s_pMobileMenu = nullptr;
 static bool (*MobileMenu_IsMainMenuScreen)(void*) = nullptr;
+static void (*MobileMenu_Exit)(void*) = nullptr;
 static void* s_pAudioEngine = nullptr;
 static void (*AE_SetEffectsFader)(void*, float) = nullptr;
 static void (*AE_SetMusicFader)(void*, float) = nullptr;
@@ -30,6 +31,7 @@ void Game::InitMenu(void* h)
     if(!h) return;
     SET_TO(s_pMobileMenu, aml->GetSym(h, "gMobileMenu"));
     SET_TO(MobileMenu_IsMainMenuScreen, aml->GetSym(h, "_ZN10MobileMenu16IsMainMenuScreenEv"));
+    SET_TO(MobileMenu_Exit, aml->GetSym(h, "_ZN10MobileMenu4ExitEv"));
     SET_TO(s_pAudioEngine, aml->GetSym(h, "AudioEngine"));
     SET_TO(AE_SetEffectsFader, aml->GetSym(h, "_ZN12CAudioEngine28SetEffectsFaderScalingFactorEf"));
     SET_TO(AE_SetMusicFader, aml->GetSym(h, "_ZN12CAudioEngine26SetMusicFaderScalingFactorEf"));
@@ -49,6 +51,12 @@ static uint32_t MenuScreens()
     return n > 64 ? 0 : n;
 }
 bool Game::IsFrontendMenu() { return MenuScreens() > 0; }
+bool Game::ExitFrontendMenu()
+{
+    if(!s_pMobileMenu || !MobileMenu_Exit || MenuScreens() == 0) return false;
+    MobileMenu_Exit(s_pMobileMenu);
+    return true;
+}
 bool Game::IsMainMenuShown()
 {
     if(!s_pMobileMenu || !MobileMenu_IsMainMenuScreen || MenuScreens() == 0) return false;
