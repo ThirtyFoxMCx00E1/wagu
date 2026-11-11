@@ -10,7 +10,6 @@ import android.content.pm.ServiceInfo;
 import android.media.AudioFormat;
 import android.media.AudioRecord;
 import android.media.MediaRecorder;
-import android.media.audiofx.AcousticEchoCanceler;
 import android.media.audiofx.AutomaticGainControl;
 import android.media.audiofx.NoiseSuppressor;
 import android.os.Build;
@@ -99,10 +98,15 @@ public class MicService extends Service {
         int min = AudioRecord.getMinBufferSize(RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT);
         AudioRecord r;
         try {
-            r = new AudioRecord(MediaRecorder.AudioSource.VOICE_COMMUNICATION, RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, Math.max(min, FRAME * 2 * 4));
-            if (r.getState() != AudioRecord.STATE_INITIALIZED) { r.release(); return; }
+            // 4.13.2: VOICE_RECOGNITION, not VOICE_COMMUNICATION: the voice call source puts many phones in call mode,
+            // which turns the game's sound far down or off while the mic is on. No echo canceller for the same reason.
+            r = new AudioRecord(MediaRecorder.AudioSource.VOICE_RECOGNITION, RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, Math.max(min, FRAME * 2 * 4));
+            if (r.getState() != AudioRecord.STATE_INITIALIZED) {
+                r.release();
+                r = new AudioRecord(MediaRecorder.AudioSource.MIC, RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, Math.max(min, FRAME * 2 * 4));
+                if (r.getState() != AudioRecord.STATE_INITIALIZED) { r.release(); return; }
+            }
             int sid = r.getAudioSessionId();
-            if (AcousticEchoCanceler.isAvailable()) { AcousticEchoCanceler a = AcousticEchoCanceler.create(sid); if (a != null) a.setEnabled(true); }
             if (NoiseSuppressor.isAvailable()) { NoiseSuppressor a = NoiseSuppressor.create(sid); if (a != null) a.setEnabled(true); }
             if (AutomaticGainControl.isAvailable()) { AutomaticGainControl a = AutomaticGainControl.create(sid); if (a != null) a.setEnabled(true); }
             r.startRecording();

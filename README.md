@@ -121,6 +121,9 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **4.13.3**: game sound is back while voice chat is on, the black join panel waits for "Connected successfully!".
+  - No more quiet game on the default server: voice chat opened the microphone in Android's "voice call" mode, and many phones (Samsung, Xiaomi, Oppo, vivo...) then turn the game's own sound (cars, guns, radio, footsteps) far down or off. The mic (and the MP Voice app, 4.13.2) now records in the normal mode, so the game sounds the same with the mic on or off.
+  - The black side panel no longer slides in the moment you tap Connect. While connecting you keep the game, the chat and the loading window; the black panel slides in only after "Connected successfully!", then opens on the connection camera and < Spawn > as before.
 - **4.13.2**: The server in development notice comes from the server, after you are connected; black app icons, dark Moquil, original MLG textures.
   - "Server in development" is no longer shown for every default, featured and login server. The server owner turns it on in Add server > Development stage (`mp_server --dev` on a VPS); a finished server shows nothing.
   - The notice no longer opens over the black connection screen before joining: it waits until you are connected and spawned, then shows OK / Leave server (tap outside also closes it).

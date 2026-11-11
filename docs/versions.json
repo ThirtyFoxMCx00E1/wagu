@@ -1,6 +1,7 @@
 {
-"latest": "4.13.2",
+"latest": "4.13.3",
 "supported": [
+"4.13.2",
 "4.13.1",
 "4.13",
 "4.12.10",
@@ -117,6 +118,14 @@
 "3.04.6"
 ],
 "versions": [
+{
+"v": "4.13.3",
+"summary": "game sound is back while voice chat is on, the black join panel waits for \"Connected successfully!\".",
+"items": [
+"No more quiet game on the default server: voice chat opened the microphone in Android's \"voice call\" mode, and many phones (Samsung, Xiaomi, Oppo, vivo...) then turn the game's own sound (cars, guns, radio, footsteps) far down or off. The mic (and the MP Voice app, 4.13.2) now records in the normal mode, so the game sounds the same with the mic on or off.",
+"The black side panel no longer slides in the moment you tap Connect. While connecting you keep the game, the chat and the loading window; the black panel slides in only after \"Connected successfully!\", then opens on the connection camera and < Spawn > as before."
+]
+},
 {
 "v": "4.13.2",
 "summary": "The server in development notice comes from the server, after you are connected; black app icons, dark Moquil, original MLG textures.",

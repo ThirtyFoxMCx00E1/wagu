@@ -321,7 +321,11 @@ static bool CreateRecorder(int rate)
     SLAndroidConfigurationItf cfg = nullptr;
     if((*s_RecObj)->GetInterface(s_RecObj, SL_IID_ANDROIDCONFIGURATION, &cfg) == SL_RESULT_SUCCESS && cfg)
     {
-        SLuint32 preset = SL_ANDROID_RECORDING_PRESET_VOICE_COMMUNICATION;   // echo cancel + noise suppression (game sound is not sent back)
+        // 4.13.2: VOICE_RECOGNITION instead of VOICE_COMMUNICATION. The "voice call" preset switches many phones
+        // (Samsung, Xiaomi, Oppo, vivo...) into call mode while the mic is on: the game's own sound (cars, guns,
+        // radio, footsteps) is turned far down or off - "so quiet, no sound" on the default server. This preset
+        // records the plain mic with no call routing; MP's own noise gate still keeps silence out.
+        SLuint32 preset = SL_ANDROID_RECORDING_PRESET_VOICE_RECOGNITION;
         (*cfg)->SetConfiguration(cfg, SL_ANDROID_KEY_RECORDING_PRESET, &preset, sizeof(preset));
     }
     if((*s_RecObj)->Realize(s_RecObj, SL_BOOLEAN_FALSE) != SL_RESULT_SUCCESS ||

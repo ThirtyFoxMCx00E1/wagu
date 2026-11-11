@@ -56,7 +56,8 @@ static const Vec3 kJoinCamPos  = { 1093.0f, -2036.0f, 90.0f };
 static const Vec3 kJoinCamLook = {  384.0f, -1557.0f, 20.0f };
 static const Vec3 kJoinPedPark = {  836.0f, -2048.0f, -100.0f };   // Santa Maria pier: keeps the beach streamed in
 
-enum { JP_NONE, JP_COVER, JP_BLACK, JP_REVEAL, JP_WAIT, JP_PICK };
+// 4.13.2: JP_PENDING = joining, nothing on screen yet: the black panel only slides in after "Connected successfully!"
+enum { JP_NONE, JP_PENDING, JP_COVER, JP_BLACK, JP_REVEAL, JP_WAIT, JP_PICK };
 #define JOIN_SLIDE_MS   1000   // 20 ticks x 50 ms
 #define JOIN_BUTTONS_MS 3000
 static int      s_nJoinPhase = JP_NONE;
@@ -222,12 +223,14 @@ static void JoinOverlayStart()
 {
     if(s_nJoinPhase != JP_NONE) return;
     if(!Game::IsReady()) return;               // still on the loading screen: plain join
-    s_nJoinPhase = JP_COVER; s_nJoinT0 = MP_NowMs(); s_nJoinStartMs = s_nJoinT0;
+    // 4.13.2: no black panel while connecting (the world, chat and the loading window stay on screen):
+    // it slides in once the server has accepted you (FinishJoin / quiet rejoin), see JP_PENDING
+    s_nJoinPhase = JP_PENDING; s_nJoinT0 = MP_NowMs(); s_nJoinStartMs = s_nJoinT0;
     s_bJoinConnected = false; s_bJoinCamSet = false; s_bSpawnNow = false; s_nSpawnStep = 0;
     s_bJoinSpawnPicked = false; s_SpawnSettle.until = 0;
     s_nSpawnSel = 0; s_bCine = false; s_bCineFinal = false;
-    FloatMenu::CloseAll();
 }
+static bool JoinScreenUp() { return s_nJoinPhase >= JP_COVER; }   // 4.13.2: the black / connection view / spawn picker is on screen
 
 static void JoinRestoreGame(bool teleportGrove)
 {
@@ -262,6 +265,7 @@ static void JoinAfterSaveLoad(int ped)
 static void JoinOverlayCancel()
 {
     if(s_nJoinPhase == JP_NONE) return;
+    if(s_nJoinPhase == JP_PENDING) { s_nJoinPhase = JP_NONE; return; }   // 4.13.2: nothing was hidden yet
     s_bCine = false;
     JoinRestoreGame(false);
     s_nJoinPhase = JP_NONE;
@@ -313,6 +317,22 @@ static void JoinFlowProcess(int ped, uint64_t now)
 {
     SpawnSettleTick(ped, now);
     if(s_nJoinPhase == JP_NONE) return;
+    if(s_nJoinPhase == JP_PENDING)
+    {   // 4.13.2: still connecting - the game stays as it is. The black slides in after "Connected successfully!"
+        const bool conn = client.GetState() == NET_CONNECTED, noFeed = s_nFeedStep < 0 && s_nFeedRes < 0;
+        if(client.GetState() == NET_DISCONNECTED && !MP::IsSearching() && noFeed && !s_bTakeoverPending) { s_nJoinPhase = JP_NONE; return; }
+        if(!s_bJoinConnected && conn && noFeed && now - s_nJoinStartMs > 1500) s_bJoinConnected = true;   // quiet rejoin (no loading feed)
+        if(!s_bJoinConnected && conn && now - s_nJoinStartMs > 25000) s_bJoinConnected = true;
+        if(!s_bJoinConnected && !conn && now - s_nJoinStartMs > 25000)
+        {
+            s_nJoinPhase = JP_NONE;
+            SysMsg(COL_YELLOW, "Still connecting - you can move meanwhile. On a hotspot: the host should keep the game open and the screen on.");
+            return;
+        }
+        if(!s_bJoinConnected) return;
+        s_nJoinPhase = JP_COVER; s_nJoinT0 = now; s_nJoinStartMs = now;
+        FloatMenu::CloseAll();
+    }
     uint64_t t = now - s_nJoinT0;
     if(!s_bJoinHudOff) { Game::ShowGameHud(false); Game::SetPlayerControl(false); s_bJoinHudOff = true; }
     else if(now % 1000 < 40) { Game::ShowGameHud(false); Game::SetPlayerControl(false); }   // scripts may switch them back

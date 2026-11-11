@@ -999,7 +999,7 @@ bool MP::DzConnScreenShown() { return DzConnScreen(); }
 static void Render219(void*)
 {
     // 4.02: the Project Day Z connection screen (cabin) is a join screen too: no top bar, no chat box
-    const bool joinScreen = JoinFlowActive() || DzConnScreen();
+    const bool joinScreen = JoinScreenUp() || DzConnScreen();   // 4.13.2: not while still connecting (no black yet)
     FloatMenu::SetHidden(joinScreen);   // join screen: no top bar
     RenderPairPopup();
     RenderBehindCountdown();   // 2.28
@@ -1028,4 +1028,4 @@ static void Render219(void*)
     RenderLoadWindow();        // 3.40: Please Wait, Loading Server Data...
 }
 
-bool MP::JoinScreenActive() { return JoinFlowActive(); }
+bool MP::JoinScreenActive() { return JoinScreenUp(); }

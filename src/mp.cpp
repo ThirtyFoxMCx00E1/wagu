@@ -675,6 +675,7 @@ bool MP_WallhackOn() { return s_Cheat.wallhack; }
 // 2.19 (mp_cmds.inc / mp_join.inc, included further down)
 static void ShowPairPopup(int from);
 static bool JoinFlowActive();
+static bool JoinScreenUp();   // 4.13.2
 static void SpawnLight(int ped, const Vec3& at, float heading, bool findGround);   // 4.12.9 (mp_join.inc)
 static void JoinOverlayStart();
 static void LeaveServer(const char* msg);
@@ -4278,7 +4279,7 @@ void MP::Process()
         else if(s_bLaunchHudOff)
         {
             s_bLaunchHudOff = false;
-            if(!JoinFlowActive() && !DzConnScreen()) { Game::ShowGameHud(true); Game::SetPlayerControl(true); }
+            if(!JoinScreenUp() && !DzConnScreen()) { Game::ShowGameHud(true); Game::SetPlayerControl(true); }   // 4.13.2: still connecting = normal HUD
         }
     }
     BcwProcess(ped, now);        // 3.04: Brief Case War
