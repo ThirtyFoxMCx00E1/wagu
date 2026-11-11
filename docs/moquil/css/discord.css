@@ -168,3 +168,29 @@ html.inchat:not(.portrait) .topbar [data-act="back"] { display: none; }
 .msg .tx { font-size: 15px; line-height: 1.375; color: var(--d-text); opacity: 1; }
 .composer, .cmp { background: #202126 !important; border: 0 !important; border-radius: 8px !important; }
 .composer .inp { background: transparent !important; outline: 0 !important; }
+
+/* 4.13.2: Server Profile (icon + banner from the files app), banner on the channel list */
+.spv { position: relative; border-radius: 8px; background: var(--d-card); }
+.spv .ban { height: 120px; border-radius: 8px 8px 0 0; background-size: cover; background-position: center; }
+.spv .ico { position: absolute; left: 16px; top: 74px; }
+.srv-bn { height: 72px; border-radius: 8px; border: 2px dashed #b5bac1; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 12px; font-weight: 700; color: #b5bac1; cursor: pointer; margin-bottom: 4px; background-size: cover; background-position: center; }
+.srvhd.hasbn { height: 120px; align-items: flex-start; padding-top: 14px; background-size: cover; background-position: center; text-shadow: 0 1px 3px rgba(0,0,0,.8); color: #fff; }
+/* 4.13.2: open source communities on Discord (github.com/ThirtyFoxMCx00E1/discord-open-source) */
+.oss { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
+.oss .o { background: var(--d-card); border-radius: 8px; padding: 14px; display: flex; flex-direction: column; gap: 8px; }
+.oss .o .lg { width: 44px; height: 44px; border-radius: 12px; background: #24252b center / 70% no-repeat; flex: none; }
+.oss .o .q { font-size: 12.5px; color: var(--d-mute); line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; min-height: 54px; }
+.oss .o .row .btn { flex: 1; }
+
+/* 4.13.2: Discord message formatting */
+.tx b { font-weight: 700; } .tx code.mdc, code.mdc { background: #0b0b0d; border-radius: 4px; padding: 1px 4px; font: 85% Consolas, "Courier New", monospace; }
+.mdpre { background: #0b0b0d; border: 1px solid rgba(255,255,255,.06); border-radius: 4px; padding: 8px; margin: 4px 0; font: 13px/1.4 Consolas, "Courier New", monospace; white-space: pre-wrap; overflow-x: auto; }
+.mdq { border-left: 4px solid #4e5058; padding-left: 10px; margin: 2px 0; } .mdli::before { content: "\2022"; margin: 0 8px 0 4px; }
+.mdh1 { font-size: 22px; font-weight: 800; margin: 6px 0 2px; color: var(--d-head); } .mdh2 { font-size: 19px; font-weight: 800; margin: 6px 0 2px; color: var(--d-head); } .mdh3 { font-size: 16px; font-weight: 700; margin: 4px 0 2px; color: var(--d-head); }
+.mdsub { font-size: 12px; color: var(--d-mute); }
+.spoil { background: #1e1f22; color: transparent; border-radius: 3px; cursor: pointer; padding: 0 2px; user-select: none; } .spoil.on { background: rgba(255,255,255,.1); color: inherit; user-select: text; cursor: auto; }
+.spoil a, .spoil .mdmen { visibility: hidden; } .spoil.on a, .spoil.on .mdmen { visibility: visible; }
+.mdts { background: rgba(255,255,255,.08); border-radius: 3px; padding: 0 3px; }
+.mdmen { background: rgba(88,101,242,.3); color: #c9cdfb; border-radius: 3px; padding: 0 2px; font-weight: 600; cursor: pointer; } .mdmen:hover { background: #5865f2; color: #fff; }
+.mdprev { max-width: 45%; text-align: right; font-size: 13px; }
+.msg .tx { white-space: pre-wrap; }

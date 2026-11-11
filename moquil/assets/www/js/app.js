@@ -3,7 +3,7 @@
    (left menu, middle page, friends on the right). On the web it sits in a desktop window. */
 (function (G) {
   'use strict';
-  var VERSION = '1.2';
+  var VERSION = '1.3';
   var B = G.Moquil || null;                    // the Android bridge (null on the web)
   var IS_WEB = !B;
   var D = document, $ = function (s, r) { return (r || D).querySelector(s); }, $$ = function (s, r) { return Array.prototype.slice.call((r || D).querySelectorAll(s)); };
@@ -106,6 +106,7 @@
     });
     D.body.appendChild(bg); o.onOpen && o.onOpen(bg); return { el: bg, close: close };
   }
+  function closeDialogs() { Array.prototype.forEach.call(D.querySelectorAll('.dlg-bg'), function (x) { x.remove(); }); }
   function prompt2(title, label, val, cb, opt) {
     opt = opt || {};
     dialog({ title: title, body: '<label class="lbl">' + esc(label) + '</label>' + (opt.area ? '<textarea class="inp" id="pv" maxlength="' + (opt.max || 300) + '">' + esc(val || '') + '</textarea>' : '<input class="inp" id="pv" maxlength="' + (opt.max || 60) + '" value="' + esc(val || '') + '" placeholder="' + esc(opt.ph || '') + '">') + (opt.extra || ''),
@@ -120,14 +121,15 @@
       buttons: [{ t: 'Close', fn: function () {} }, { t: 'Create', cls: 'hide', fn: function () { setTimeout(createServer, 30); } }, { t: 'Join', cls: 'hide', fn: function () { setTimeout(joinServer, 30); } }] });
   }
   function createServer() {
-    var icon = '';
+    var icon = '', banner = '';
     dialog({ title: 'Create Your Server', body: '<div class="small dim" style="text-align:center;margin:-4px 0 12px">Give your new server a personality with a name and an icon. You can change the icon later.</div>' +
-      '<div style="display:flex;justify-content:center;margin-bottom:12px"><div class="srv-up" id="sup">' + ic('image') + '<span>UPLOAD</span></div></div>' +
+      '<div style="display:flex;justify-content:center;margin-bottom:12px"><div class="srv-up" id="sup">' + ic('image') + '<span>ICON</span></div></div>' +
+      '<div class="srv-bn" id="sbn">' + ic('image') + '<span>Add a banner (.png / .jpg, optional)</span></div>' +
       '<label class="lbl">Server name</label><input class="inp" id="sn" maxlength="40" value="' + esc((prof().display || SESSION.user) + "'s server") + '">' +
       '<label class="lbl">Description</label><textarea class="inp" id="sd" maxlength="300" placeholder="What is it about?"></textarea>' +
       '<div class="tiny dim" style="margin-top:8px">By creating a server you agree to keep it friendly for MP players.</div>',
-      onOpen: function (bg) { $('#sup', bg).addEventListener('click', function () { pickImage(512, 512, .9, function (d) { cropSquare(d, 96, function (sq) { icon = sq; var u = $('#sup', bg); u.style.background = '#222 url(' + sq + ') center / cover'; u.innerHTML = ''; }); }); }); },
-      buttons: [{ t: 'Back', fn: function () { setTimeout(addServer, 30); } }, { t: 'Create', cls: 'go', fn: function (bg) { var n = $('#sn', bg).value; if (!n.trim()) return false; Soc.createCommunity(n, $('#sd', bg).value).then(function (cid) { if (!cid) return; if (icon) Soc.setCommunityIcon(cid, icon); award('founder'); quest('com'); comCh = 'general'; go('community', cid); }); } }] });
+      onOpen: function (bg) { $('#sup', bg).addEventListener('click', function () { pickIcon(function (sq) { icon = sq; var u = $('#sup', bg); u.style.background = '#222 url(' + sq + ') center / cover'; u.innerHTML = ''; }); }); $('#sbn', bg).addEventListener('click', function () { pickBanner(function (d) { banner = d; var u = $('#sbn', bg); u.style.background = '#111 url(' + d + ') center / cover'; u.innerHTML = ''; }); }); },
+      buttons: [{ t: 'Back', fn: function () { setTimeout(addServer, 30); } }, { t: 'Create', cls: 'go', fn: function (bg) { var n = $('#sn', bg).value; if (!n.trim()) return false; Soc.createCommunity(n, $('#sd', bg).value).then(function (cid) { if (!cid) return; if (icon) Soc.setCommunityIcon(cid, icon); if (banner) Soc.setCommunityBanner(cid, banner); award('founder'); quest('com'); comCh = 'general'; go('community', cid); }); } }] });
   }
   function joinServer() {
     dialog({ title: 'Join a Server', body: '<div class="small dim" style="text-align:center;margin:-4px 0 12px">Enter an invite below to join an existing server.</div><label class="lbl">Invite code or link</label><input class="inp" id="ivc" placeholder="12345678-a1b2c3">' +
@@ -140,22 +142,65 @@
         wait();
       } }] });
   }
-  function pickImage(maxW, maxH, q, cb) {
-    var i = D.createElement('input'); i.type = 'file'; i.accept = 'image/*';
+  // 4.13.2: pictures come from the files app / file manager: .png and .jpg (PNG stays PNG, transparency kept)
+  function pickImage(maxW, maxH, q, cb, pngOnly) {
+    var i = D.createElement('input'); i.type = 'file'; i.accept = 'image/png,image/jpeg,.png,.jpg,.jpeg';
     i.onchange = function () {
       var f = i.files && i.files[0]; if (!f) return;
+      var isPng = /png$/i.test(f.type) || /\.png$/i.test(f.name), isJpg = /jpe?g$/i.test(f.type) || /\.jpe?g$/i.test(f.name);
+      if (!isPng && !isJpg) { toast('Pick a .png or .jpg picture'); return; }
       var r = new FileReader(); r.onload = function () {
         var im = new Image(); im.onload = function () {
           var s = Math.min(1, maxW / im.width, maxH / im.height), c = D.createElement('canvas');
           c.width = Math.max(1, Math.round(im.width * s)); c.height = Math.max(1, Math.round(im.height * s));
-          c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); cb(c.toDataURL('image/jpeg', q));
+          c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); cb(isPng ? c.toDataURL('image/png') : c.toDataURL('image/jpeg', q), isPng);
         }; im.src = r.result;
       }; r.readAsDataURL(f);
     };
     i.click();
   }
   function cropSquare(dataUrl, size, cb) {
-    var im = new Image(); im.onload = function () { var m = Math.min(im.width, im.height), c = D.createElement('canvas'); c.width = c.height = size; c.getContext('2d').drawImage(im, (im.width - m) / 2, (im.height - m) / 2, m, m, 0, 0, size, size); cb(c.toDataURL('image/jpeg', .82)); }; im.src = dataUrl;
+    var png = /^data:image\/png/.test(dataUrl);
+    var im = new Image(); im.onload = function () { var m = Math.min(im.width, im.height), c = D.createElement('canvas'); c.width = c.height = size; c.getContext('2d').drawImage(im, (im.width - m) / 2, (im.height - m) / 2, m, m, 0, 0, size, size); var o = png ? c.toDataURL('image/png') : c.toDataURL('image/jpeg', .85); if (o.length > 58000) o = c.toDataURL('image/jpeg', .8); cb(o); }; im.src = dataUrl;
+  }
+  function cropBanner(dataUrl, cb) {   // 4.13.2: server banner 3:1 (480x160), small enough for one signed message
+    var im = new Image(); im.onload = function () {
+      var r = 3, sw = im.width, sh = im.width / r; if (sh > im.height) { sh = im.height; sw = sh * r; }
+      var c = D.createElement('canvas'); c.width = 480; c.height = 160; c.getContext('2d').drawImage(im, (im.width - sw) / 2, (im.height - sh) / 2, sw, sh, 0, 0, 480, 160);
+      var q = .82, o = c.toDataURL('image/jpeg', q); while (o.length > 58000 && q > .3) { q -= .1; o = c.toDataURL('image/jpeg', q); } cb(o);
+    }; im.src = dataUrl;
+  }
+  function pickIcon(cb) { pickImage(512, 512, .9, function (d) { cropSquare(d, 128, cb); }); }
+  function pickBanner(cb) { pickImage(1200, 1200, .9, function (d) { cropBanner(d, cb); }); }
+  // 4.13.2: Server Profile (owner): icon and banner from the files app (.png / .jpg), name and description
+  function serverProfile(cid) {
+    var c = Soc.community(cid); if (!c || c.ownerId !== Soc.id) return;
+    var icon = c.icon || '', banner = c.banner || '';
+    var prev = function (bg) {
+      var b = $('#spb', bg); b.style.background = banner ? '#111 url(' + banner + ') center / cover' : 'linear-gradient(135deg,' + colorOf(c.cid) + ',' + colorOf(c.cid + 'x') + ')';
+      var i = $('#spi', bg); i.innerHTML = srvIcon({ cid: c.cid, name: $('#spn', bg).value || c.name, icon: icon }, 80, 'border:6px solid var(--d-card);border-radius:50%;');
+    };
+    dialog({ title: 'Server Profile', body: '<div class="small dim" style="text-align:center;margin:-4px 0 12px">Customize how ' + esc(c.name) + ' looks to everyone. Pictures: .png or .jpg from your files.</div>' +
+      '<div class="spv"><div class="ban" id="spb"></div><div class="ico" id="spi"></div></div>' +
+      '<div class="row" style="gap:8px;flex-wrap:wrap;margin-top:46px"><button class="btn sm go" id="spui">' + ic('image', 's') + ' Upload icon</button><button class="btn sm" id="spri">Remove icon</button><span class="grow"></span><button class="btn sm go" id="spub">' + ic('image', 's') + ' Upload banner</button><button class="btn sm" id="sprb">Remove banner</button></div>' +
+      '<label class="lbl">Server name</label><input class="inp" id="spn" maxlength="40" value="' + esc(c.name) + '">' +
+      '<label class="lbl">Description</label><textarea class="inp" id="spd" maxlength="300" placeholder="What is it about?">' + esc(c.desc || '') + '</textarea>' +
+      '<div class="tiny dim" style="margin-top:8px">Icon: square, shown at 128x128. Banner: 3:1, shown at the top of the channel list and in Discover.</div>',
+      onOpen: function (bg) {
+        prev(bg);
+        $('#spui', bg).onclick = function () { pickIcon(function (d) { icon = d; prev(bg); }); };
+        $('#spri', bg).onclick = function () { icon = ''; prev(bg); };
+        $('#spub', bg).onclick = function () { pickBanner(function (d) { banner = d; prev(bg); }); };
+        $('#sprb', bg).onclick = function () { banner = ''; prev(bg); };
+        $('#spn', bg).oninput = function () { prev(bg); };
+      },
+      buttons: [{ t: 'Cancel', fn: function () {} }, { t: 'Save Changes', cls: 'go', fn: function (bg) {
+        var n = $('#spn', bg).value; if (!n.trim()) { toast('The server needs a name'); return false; }
+        var jobs = [Soc.updateCommunity(cid, n, $('#spd', bg).value)];
+        if (icon !== (c.icon || '')) jobs.push(Soc.setCommunityIcon(cid, icon));
+        if (banner !== (c.banner || '')) jobs.push(Soc.setCommunityBanner(cid, banner));
+        Promise.all(jobs).then(function () { toast('Server profile saved'); render(); });
+      } }] });
   }
   function stars(v, big, mod) {
     var o = '<span class="stars' + (big ? ' big' : '') + '">';
@@ -493,11 +538,11 @@
   }
   function serverSide(c) {
     var owner = c.ownerId === Soc.id, room = 'c' + c.cid, vs = G.MoqVoice && MoqVoice.state.room === room;
-    return '<div class="sbhd srvhd" data-srvmenu="' + esc(c.cid) + '"><span class="grow ell b">' + esc(c.name) + '</span>' + ic('chev', 's') + '</div><div class="scroll grow sbody">' +
+    return '<div class="sbhd srvhd' + (c.banner ? ' hasbn" style="background-image:linear-gradient(180deg,rgba(0,0,0,.55),rgba(0,0,0,0) 60%),url(' + c.banner + ')' : '') + '" data-srvmenu="' + esc(c.cid) + '"><span class="grow ell b">' + esc(c.name) + '</span>' + ic('chev', 's') + '</div><div class="scroll grow sbody">' +
       '<div class="srvinfo">' + srvIcon(c, 56) + '<div class="tiny dim" style="margin-top:8px">' + esc(c.desc || 'Welcome to ' + c.name) + '</div><div class="row" style="gap:6px;margin-top:8px"><span class="tiny dim">' + (c.members || 0) + ' Members</span><span class="grow"></span><button class="btn sm go" data-invite="' + esc(c.cid) + '">' + ic('user', 's') + ' Invite</button></div></div>' +
       '<div class="chcat">' + ic('chev', 's') + ' Text Channels</div><div class="chi' + (comCh === 'general' ? ' on' : '') + '" data-ch="general">' + ic('hash', 's') + '<span class="grow">general</span></div>' +
       '<div class="chcat">' + ic('chev', 's') + ' Voice Channels</div><div class="chi" data-voice="' + esc(room) + '" data-vt="' + esc(c.name) + '">' + ic('vol', 's') + '<span class="grow">Lounge</span>' + (vs ? '<span class="chip green">on</span>' : '') + '</div>' +
-      (owner ? '<div class="chcat">' + ic('chev', 's') + ' Server Settings</div><div class="chi" data-srvicon="' + esc(c.cid) + '">' + ic('image', 's') + '<span class="grow">Change icon</span></div><div class="chi danger" data-delcom="' + esc(c.cid) + '">' + ic('x', 's') + '<span class="grow">Delete server</span></div>' :
+      (owner ? '<div class="chcat">' + ic('chev', 's') + ' Server Settings</div><div class="chi" data-srvicon="' + esc(c.cid) + '">' + ic('image', 's') + '<span class="grow">Server Profile</span></div><div class="chi danger" data-delcom="' + esc(c.cid) + '">' + ic('x', 's') + '<span class="grow">Delete server</span></div>' :
         '<div class="chcat"></div><div class="chi' + (c.joined ? ' danger' : '') + '" data-join="' + esc(c.cid) + '">' + ic(c.joined ? 'out' : 'plus', 's') + '<span class="grow">' + (c.joined ? 'Leave server' : 'Join server') + '</span></div>') +
       '</div>';
   }
@@ -552,14 +597,26 @@
     }
     return { top: top, body: body, after: function () { var q = $('#fq2'); if (q) { q.oninput = function () { FQ = q.value; var p = q.selectionStart; render(); var q2 = $('#fq2'); if (q2) { q2.focus(); q2.setSelectionRange(p, p); } }; } } };
   };
+  // 4.13.2: Open source communities living on Discord (github.com/ThirtyFoxMCx00E1/discord-open-source)
+  var OSS_ALL = false;
+  function ossSection(q) {
+    var L = (G.MOQ_OSS || []).filter(function (o) { return !q || (o.t + ' ' + o.q).toLowerCase().indexOf(q) >= 0; });
+    if (!L.length) return '';
+    var shown = OSS_ALL || q ? L : L.slice(0, 12);
+    return '<div class="sec">Open source communities<span class="count">' + L.length + '</span><span class="grow"></span>' + (!q && L.length > 12 ? '<button class="btn sm" data-act="ossall">' + (OSS_ALL ? 'Show less' : 'Show all') + '</button>' : '') + '</div>' +
+      '<div class="oss">' + shown.map(function (o) { return '<div class="o"><div class="row" style="gap:10px"><div class="lg" style="background-image:url(img/oss/' + encodeURI(o.l) + ')"></div><div class="grow"><div class="b ell">' + esc(o.t) + '</div><div class="tiny dim ell">discord.gg/' + esc(o.i) + '</div></div></div><div class="q">' + esc(o.q) + '</div>' +
+        '<div class="row" style="gap:6px"><button class="btn sm go" data-open="https://discord.gg/' + esc(o.i) + '">' + ic('chat', 's') + ' Join on Discord</button>' + (o.g ? '<button class="btn sm" data-open="' + esc(o.g) + '">GitHub</button>' : '') + '</div></div>'; }).join('') + '</div>' +
+      '<div class="tiny dim" style="margin:8px 2px 0">From the open source list on Discord. Opens the Discord invite in your browser or the Discord app.</div>';
+  }
   // Discover (servers) - after the "Find your community" explore design
   PAGES.discover = function () {
     var all = Soc.id ? Soc.communities() : [], q = (CUR.arg || '').toLowerCase();
     var list = all.filter(function (c) { return !q || (c.name + ' ' + (c.desc || '')).toLowerCase().indexOf(q) >= 0; }).sort(function (a, b) { return (b.members || 0) - (a.members || 0) || b.ts - a.ts; });
-    var card = function (c) { return '<div class="dsc" data-com="' + esc(c.cid) + '"><div class="ban" style="background:' + (c.icon ? '#222 url(' + c.icon + ') center / cover' : 'linear-gradient(135deg,' + colorOf(c.cid) + ',' + colorOf(c.cid + 'x') + ')') + '"></div><div class="ico">' + srvIcon(c, 44, 'border-radius:14px;border:4px solid var(--d-card);') + '</div><div class="bd"><div class="b ell">' + esc(c.name) + '</div><div class="small dim cl2">' + esc(c.desc || 'A server by ' + (c.ownerName || 'an MP player')) + '</div><div class="tiny dim row" style="gap:12px;margin-top:8px"><span><i class="gdot"></i>' + (c.followers || 0) + ' Following</span><span><i class="gdot g"></i>' + (c.members || 0) + ' Members</span></div></div></div>'; };
+    var card = function (c) { return '<div class="dsc" data-com="' + esc(c.cid) + '"><div class="ban" style="background:' + (c.banner ? '#111 url(' + c.banner + ') center / cover' : c.icon ? '#222 url(' + c.icon + ') center / cover' : 'linear-gradient(135deg,' + colorOf(c.cid) + ',' + colorOf(c.cid + 'x') + ')') + '"></div><div class="ico">' + srvIcon(c, 44, 'border-radius:14px;border:4px solid var(--d-card);') + '</div><div class="bd"><div class="b ell">' + esc(c.name) + '</div><div class="small dim cl2">' + esc(c.desc || 'A server by ' + (c.ownerName || 'an MP player')) + '</div><div class="tiny dim row" style="gap:12px;margin-top:8px"><span><i class="gdot"></i>' + (c.followers || 0) + ' Following</span><span><i class="gdot g"></i>' + (c.members || 0) + ' Members</span></div></div></div>'; };
     var body = '<div class="dhero"><div class="tx"><h1>Find your server on Moquil</h1><p>From MP crews to mod makers, there is a place for you.</p><form id="dsf"><input class="inp" id="dsq" placeholder="Explore servers" value="' + esc(CUR.arg || '') + '"></form></div></div>' +
       '<div class="sec">' + (q ? 'Results' : 'Featured servers') + '<span class="count">' + list.length + '</span><span class="grow"></span><button class="btn sm go" data-act="newcom">' + ic('plus', 's') + ' Create a server</button></div>' +
       (list.length ? '<div class="dgrid">' + list.slice(0, 48).map(card).join('') + '</div>' : '<div class="fempty">No servers yet. Make the first one.</div>') +
+      ossSection(q) +
       '<div class="sec">Popular mods</div><div class="dgrid">' + MOQ_MODS.slice(0, 6).map(function (m) { return '<div class="dsc" data-mod="' + m.id + '"><div class="ban" style="background:#000 url(' + m.cover + ') center / cover"></div><div class="ico"><div class="guild img" style="width:44px;height:44px;border-radius:14px;border:4px solid var(--d-card);background:#000 url(' + m.icon + ') center / cover"></div></div><div class="bd"><div class="b ell">' + esc(m.name) + '</div><div class="small dim cl2">' + esc(m.short || m.desc || '') + '</div></div></div>'; }).join('') + '</div>';
     return { top: '<div class="ftop">' + ic('search') + '<b>Discover</b><span class="grow"></span></div>', body: body, after: function () { $('#dsf').onsubmit = function (e) { e.preventDefault(); go('discover', $('#dsq').value.trim()); }; } };
   };
@@ -806,15 +863,51 @@
       '<button class="ibtn" data-voice="' + room + '" data-vt="' + esc(nm) + '" title="Voice">' + ic('mic') + '</button>' + (c.kind === 1 ? '<button class="ibtn" data-gadd="' + esc(c.key) + '" title="Add people">' + ic('plus') + '</button><button class="ibtn" data-gleave="' + esc(c.key) + '" title="Leave">' + ic('door') + '</button>' : '');
     return { top: top, full: true, body: voiceBar(room) + '<div class="msgs scroll" id="msgs"></div>' + composer('Message ' + nm), after: function () { updateMsgs(true); bindComposer(function (txt) { if (Soc.send(c.key, txt)) quest('msg'); updateMsgs(true); }); } };
   };
-  function composer(ph) { return '<div class="composer card"><button class="ibtn" data-act="emoji" title="Emoji">' + ic('smile', 's') + '</button><input class="inp grow" id="ci" maxlength="400" placeholder="' + esc(ph) + '" autocomplete="off"><button class="ibtn" data-act="gift" title="Send Orbs">' + ic('gift', 's') + '</button><button class="ibtn" id="csend" title="Send">' + ic('send', 's') + '</button></div>'; }
+  function composer(ph) { return '<div class="composer card"><button class="ibtn" data-act="emoji" title="Emoji">' + ic('smile', 's') + '</button><input class="inp grow" id="ci" maxlength="400" placeholder="' + esc(ph) + '" autocomplete="off"><button class="ibtn" data-act="mdhelp" title="Text formatting">' + ic('edit', 's') + '</button><button class="ibtn" data-act="gift" title="Send Orbs">' + ic('gift', 's') + '</button><button class="ibtn" id="csend" title="Send">' + ic('send', 's') + '</button></div>'; }
   function bindComposer(fn) { var i = $('#ci'); var send = function () { var v = i.value.trim(); if (!v) return; i.value = ''; fn(v); i.focus(); }; i.onkeydown = function (e) { if (e.key === 'Enter') { e.preventDefault(); send(); } }; $('#csend').onclick = send; }
   function msgHtml(m, prev) {
     if (!m.fromId) return '<div class="msg sys">' + esc(m.text) + '</div>';
     var same = prev && prev.fromId === m.fromId && m.ts - prev.ts < 300;
     var me = m.fromId === Soc.id, pr = me ? G.MoqProfile() : Soc.profile(m.fromId), nm = me ? (prof().display || SESSION.user) : (pr && pr.display || m.fromName);
-    return '<div class="msg"' + (same ? ' style="padding-top:0"' : '') + '>' + (same ? '<div style="width:40px;flex:none"></div>' : '<div data-user="' + m.fromId + '">' + avatar(m.fromId, nm, pr, 'av') + '</div>') + '<div class="w">' + (same ? '' : '<div><span class="n ' + esc(pr && pr.nametag || '') + '">' + esc(nm) + '</span><span class="tm">' + clock(m.ts) + '</span></div>') + '<div class="tx">' + linkify(esc(m.text)) + '</div></div></div>';
+    return '<div class="msg"' + (same ? ' style="padding-top:0"' : '') + '>' + (same ? '<div style="width:40px;flex:none"></div>' : '<div data-user="' + m.fromId + '">' + avatar(m.fromId, nm, pr, 'av') + '</div>') + '<div class="w">' + (same ? '' : '<div><span class="n ' + esc(pr && pr.nametag || '') + '">' + esc(nm) + '</span><span class="tm">' + clock(m.ts) + '</span></div>') + '<div class="tx">' + md(m.text) + '</div></div></div>';
   }
   function linkify(s) { return s.replace(/(https?:\/\/[^\s<]+)/g, '<a href="#" data-open="$1">$1</a>'); }
+  // 4.13.2: Discord message formatting (discord-api-docs > Reference > Message Formatting):
+  // **bold** *italic* __underline__ ~~strike~~ `code` ```blocks``` ||spoiler|| > quote, # / ## / ### headers, -# subtext,
+  // [text](https://link), <@id> mentions, <t:unix> / <t:unix:t|T|d|D|f|F|s|S|R> timestamps in your own time zone.
+  function tsFmt(sec, st) {
+    var d = new Date(sec * 1000); if (isNaN(d)) return '';
+    var o = { t: { hour: 'numeric', minute: '2-digit' }, T: { hour: 'numeric', minute: '2-digit', second: '2-digit' }, d: { day: '2-digit', month: '2-digit', year: 'numeric' }, D: { day: 'numeric', month: 'long', year: 'numeric' },
+      f: { day: 'numeric', month: 'long', year: 'numeric', hour: 'numeric', minute: '2-digit' }, F: { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: 'numeric', minute: '2-digit' },
+      s: { day: '2-digit', month: '2-digit', year: 'numeric', hour: 'numeric', minute: '2-digit' }, S: { day: '2-digit', month: '2-digit', year: 'numeric', hour: 'numeric', minute: '2-digit', second: '2-digit' } };
+    if (st === 'R') {
+      var df = (d.getTime() - Date.now()) / 1000, a = Math.abs(df), u = [[31536000, 'year'], [2592000, 'month'], [86400, 'day'], [3600, 'hour'], [60, 'minute'], [1, 'second']];
+      for (var i = 0; i < u.length; i++) if (a >= u[i][0] || i === u.length - 1) { var n = Math.round(df / u[i][0]); try { return new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' }).format(n, u[i][1]); } catch (e) { return Math.abs(n) + ' ' + u[i][1] + 's ' + (n < 0 ? 'ago' : 'from now'); } }
+    }
+    try { return d.toLocaleString(undefined, o[st] || o.f); } catch (e) { return d.toString(); }
+  }
+  function md(raw) {
+    var t = esc(raw), keep = [];
+    var hold = function (h) { keep.push(h); return '\u0000' + (keep.length - 1) + '\u0000'; };
+    t = t.replace(/```(?:[a-z0-9+#-]*\n)?([\s\S]*?)```/gi, function (_, c) { return hold('<pre class="mdpre">' + c.replace(/^\n|\n$/g, '') + '</pre>'); });
+    t = t.replace(/`([^`\n]+)`/g, function (_, c) { return hold('<code class="mdc">' + c + '</code>'); });
+    t = t.replace(/&lt;t:(-?\d{1,12})(?::([tTdDfFsSR]))?&gt;/g, function (_, n, st) { var f = tsFmt(+n, st || 'f'); return f ? hold('<span class="mdts" title="' + esc(tsFmt(+n, 'F')) + '">' + esc(f) + '</span>') : _; });
+    t = t.replace(/&lt;@!?(\d{8})&gt;/g, function (_, id) { var me = id === Soc.id, p = me ? G.MoqProfile() : Soc.profile(id); return hold('<span class="mdmen" data-user="' + id + '">@' + esc(me ? (prof().display || SESSION.user) : (p && p.display) || Soc.nameOf && Soc.nameOf(id) || id) + '</span>'); });
+    t = t.replace(/\[([^\]\n]{1,80})\]\((https?:\/\/[^\s)]+)\)/g, function (_, l, u) { return hold('<a href="#" data-open="' + u + '">' + l + '</a>'); });
+    t = t.replace(/(https?:\/\/[^\s<\u0000]+)/g, function (u) { return hold('<a href="#" data-open="' + u + '">' + u + '</a>'); });
+    t = t.split('\n').map(function (l) {
+      var m;
+      if ((m = l.match(/^-# (.+)/))) return '<div class="mdsub">' + m[1] + '</div>';
+      if ((m = l.match(/^(#{1,3}) (.+)/))) return '<div class="mdh' + m[1].length + '">' + m[2] + '</div>';
+      if ((m = l.match(/^&gt; ?(.*)/))) return '<div class="mdq">' + m[1] + '</div>';
+      if ((m = l.match(/^\s*[-*] (.+)/))) return '<div class="mdli">' + m[1] + '</div>';
+      return l + '\n';
+    }).join('').replace(/\n$/, '');
+    t = t.replace(/\|\|(.+?)\|\|/g, '<span class="spoil" title="Spoiler">$1</span>')
+      .replace(/\*\*\*(.+?)\*\*\*/g, '<b><i>$1</i></b>').replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/__(.+?)__/g, '<u>$1</u>')
+      .replace(/(^|[^*\w])\*([^*\n]+)\*(?!\*)/g, '$1<i>$2</i>').replace(/(^|[^_\w])_([^_\n]+)_(?!_)/g, '$1<i>$2</i>').replace(/~~(.+?)~~/g, '<s>$1</s>');
+    return t.replace(/\u0000(\d+)\u0000/g, function (_, i) { return keep[+i]; }).replace(/<\/pre>\n/g, '</pre>');
+  }
   function updateMsgs(force) {
     var box = $('#msgs'); if (!box) return;
     var list = [];
@@ -936,7 +1029,7 @@
   // ===== SETTINGS (Discord list) =====
   var SETQ = '';
   var SETTINGS = [
-    ['Account Settings', [['account', 'Account', 'user'], ['profiles', 'Profiles', 'edit'], ['content', 'Content & Social', 'users'], ['privacy', 'Data & Privacy', 'shield'], ['apps', 'Authorized Apps', 'lock'], ['devices', 'Devices', 'phone'], ['connections', 'Connections', 'link']]],
+    ['Account Settings', [['account', 'Account', 'user'], ['profiles', 'Profiles', 'edit'], ['content', 'Content & Social', 'users'], ['privacy', 'Data & Privacy', 'shield'], ['apps', 'Authorized Apps', 'lock'], ['devices', 'Devices', 'phone'], ['connections', 'Connections', 'link'], ['servers', 'Servers', 'users']]],
     ['App Settings', [['appearance', 'Appearance', 'palette'], ['voice', 'Voice & Audio', 'mic'], ['notifications', 'Notifications', 'bell'], ['permissions', 'Permissions', 'lock']]],
     ['Billing Settings', [['shop', 'Shop', 'store'], ['quests', 'Quests', 'quest']]],
     ['Support', [['support', 'Support', 'help'], ['debug', 'Upload debug logs', 'bug'], ['ack', 'Acknowledgements', 'info']]],
@@ -957,6 +1050,14 @@
   function sw(k, label, sub) { return '<div class="li" data-sw="' + k + '"><div class="grow"><div>' + label + '</div>' + (sub ? '<div class="tiny dim">' + sub + '</div>' : '') + '</div><div class="sw' + (SET[k] ? ' on' : '') + '"></div></div>'; }
   function slider(k, label, min, max, unit) { return '<div class="li" style="display:block"><div class="row"><span class="grow">' + label + '</span><b id="v_' + k + '">' + SET[k] + (unit || '') + '</b></div><input type="range" min="' + min + '" max="' + max + '" value="' + SET[k] + '" data-range="' + k + '" data-unit="' + (unit || '') + '"></div>'; }
   var SUBS = {
+    servers: function () {   // 4.13.2: your servers: Server Profile (icon / banner from your files), create, join
+      var all = Soc.id ? Soc.communities() : [], mine = all.filter(function (c) { return c.ownerId === Soc.id; }), joined = all.filter(function (c) { return c.joined && c.ownerId !== Soc.id; });
+      var row = function (c, own) { return '<div class="li">' + srvIcon(c, 40) + '<div class="grow" data-com="' + esc(c.cid) + '"><div class="b ell">' + esc(c.name) + '</div><div class="tiny dim ell">' + (c.members || 0) + ' members' + (c.banner ? ' &middot; banner' : '') + '</div></div>' + (own ? '<button class="btn sm go" data-srvicon="' + esc(c.cid) + '">' + ic('edit', 's') + ' Server Profile</button>' : '<button class="btn sm" data-com="' + esc(c.cid) + '">Open</button>') + '</div>'; };
+      return { t: 'Servers', b: '<div class="card list"><div class="li" data-act="newcom">' + ic('plus') + '<div class="grow"><div class="b">Create or join a server</div><div class="tiny dim">Pick an icon and a banner from your files (.png / .jpg)</div></div>' + ic('chev', 's') + '</div></div>' +
+        '<div class="sec">Servers you own<span class="count">' + mine.length + '</span></div>' + (mine.length ? '<div class="card list">' + mine.map(function (c) { return row(c, true); }).join('') + '</div>' : '<div class="card pad small dim">You have no servers yet.</div>') +
+        '<div class="sec">Servers you joined<span class="count">' + joined.length + '</span></div>' + (joined.length ? '<div class="card list">' + joined.map(function (c) { return row(c, false); }).join('') + '</div>' : '<div class="card pad small dim">Join one from Discover or with an invite.</div>') +
+        '<div class="card pad small dim" style="margin-top:12px">Server Profile changes (icon, banner, name, description) show for everyone right away.</div>' };
+    },
     account: function () { return { t: 'Account', b: '<div class="card list"><div class="li">' + ic('user') + '<div class="grow"><div class="tiny dim">MP account</div><div class="b">' + esc(SESSION.user) + '</div></div></div><div class="li">' + ic('hash') + '<div class="grow"><div class="tiny dim">Your social ID</div><div class="b">#' + (Soc.id || '') + '</div></div><button class="btn sm" data-copy="' + (Soc.id || '') + '">Copy</button></div><div class="li">' + ic('sparkle') + '<div class="grow"><div class="tiny dim">Member since</div><div class="b">' + dateStr(memberSince()) + '</div></div></div>' +
       '<div class="li" data-act="pwd">' + ic('lock') + '<div class="grow">Change password</div>' + ic('chev', 's') + '</div><div class="li" data-open="discord">' + ic('chat') + '<div class="grow">MP Discord server</div>' + ic('chev', 's') + '</div></div><div class="card pad small dim" style="margin-top:12px">You stay logged in on this ' + (IS_WEB ? 'browser' : 'phone') + ' until you tap Log Out. Log in on the web or another phone with the same MP account and your ID, friends and chats follow you.</div>' +
       '<div class="card list" style="margin-top:12px"><div class="li danger" data-act="logout">' + ic('out') + '<div class="grow b">Log Out</div></div></div>' }; },
@@ -1032,7 +1133,7 @@
     if ((el = t.closest('[data-go]'))) { var pg = el.dataset.go; if (el.dataset.subto) go('settings', el.dataset.subto); else go(pg, '', el.dataset.tabto); return; }
     if ((el = t.closest('[data-tab]'))) { CUR.tab = TABS[CUR.page] = el.dataset.tab; render(); return; }
     if ((el = t.closest('[data-ftab2]'))) { FTAB = el.dataset.ftab2; render(); return; }
-    if ((el = t.closest('[data-srvmenu]'))) { var smc = Soc.community(el.dataset.srvmenu); if (!smc) return; var so = smc.ownerId === Soc.id; dialog({ title: smc.name, body: '<div class="card list"><div class="li" data-invite="' + esc(smc.cid) + '">' + ic('user') + '<div class="grow b">Invite People</div></div>' + (so ? '<div class="li" data-srvicon="' + esc(smc.cid) + '">' + ic('image') + '<div class="grow b">Change Server Icon</div></div><div class="li" data-delcom="' + esc(smc.cid) + '" style="color:#f23f42">' + ic('x') + '<div class="grow b">Delete Server</div></div>' : (smc.joined ? '<div class="li" data-join="' + esc(smc.cid) + '" style="color:#f23f42">' + ic('out') + '<div class="grow b">Leave Server</div></div>' : '')) + '</div>', buttons: [] }); return; }
+    if ((el = t.closest('[data-srvmenu]'))) { var smc = Soc.community(el.dataset.srvmenu); if (!smc) return; var so = smc.ownerId === Soc.id; dialog({ title: smc.name, body: '<div class="card list"><div class="li" data-invite="' + esc(smc.cid) + '">' + ic('user') + '<div class="grow b">Invite People</div></div>' + (so ? '<div class="li" data-srvicon="' + esc(smc.cid) + '">' + ic('image') + '<div class="grow b">Server Profile</div></div><div class="li" data-delcom="' + esc(smc.cid) + '" style="color:#f23f42">' + ic('x') + '<div class="grow b">Delete Server</div></div>' : (smc.joined ? '<div class="li" data-join="' + esc(smc.cid) + '" style="color:#f23f42">' + ic('out') + '<div class="grow b">Leave Server</div></div>' : '')) + '</div>', buttons: [] }); return; }
     if ((el = t.closest('[data-ftab]'))) { friendTab = el.dataset.ftab; renderRight(); return; }
     if ((el = t.closest('[data-set]'))) { location.hash = 'settings/' + el.dataset.set; return; }
     if ((el = t.closest('[data-chat]'))) { go('chat', el.dataset.chat); return; }
@@ -1052,7 +1153,8 @@
     if ((el = t.closest('[data-join]'))) { var jc = Soc.community(el.dataset.join); if (jc) { Soc.joinCommunity(jc.cid, !jc.joined); if (!jc.joined) {} else quest('com'); } render(); return; }
     if ((el = t.closest('[data-invite]'))) { var iv = el.dataset.invite, ivs = Soc.community(iv); dialog({ title: 'Invite friends to ' + (ivs ? ivs.name : 'the server'), body: '<label class="lbl">Send a server invite to a friend</label><div class="row"><input class="inp grow" readonly value="moquil://server/' + esc(iv) + '"><button class="btn go" data-cpy="moquil://server/' + esc(iv) + '">Copy</button></div><div class="tiny dim" style="margin-top:8px">They tap + Add a Server, then Join a Server, and paste it.</div>', buttons: [{ t: 'Done', cls: 'go', fn: function () {} }] }); return; }
     if ((el = t.closest('[data-cpy]'))) { copy(el.dataset.cpy); return; }
-    if ((el = t.closest('[data-srvicon]'))) { var sc = el.dataset.srvicon; pickImage(512, 512, .9, function (d) { cropSquare(d, 96, function (sq) { Soc.setCommunityIcon(sc, sq).then(function () { toast('Server icon updated'); render(); }); }); }); return; }
+    if ((el = t.closest('.spoil'))) { el.classList.add('on'); return; }
+    if ((el = t.closest('[data-srvicon]'))) { closeDialogs(); serverProfile(el.dataset.srvicon); return; }
     if ((el = t.closest('[data-delcom]'))) { var dc = el.dataset.delcom; dialog({ title: 'Delete server', body: 'Delete it for everyone? The posts go too.', buttons: [{ t: 'Cancel', fn: function () {} }, { t: 'Delete', cls: 'red', fn: function () { Soc.deleteCommunity(dc); go('social', '', 'communities'); } }] }); return; }
     if ((el = t.closest('[data-ch]'))) { comCh = el.dataset.ch; comView = 'chat'; render(); return; }
     if ((el = t.closest('[data-voice]'))) { joinVoice(el.dataset.voice, el.dataset.vt); return; }
@@ -1133,6 +1235,12 @@
     copylogs: function () { copy('Moquil ' + VERSION + (IS_WEB ? ' web' : '') + ' ID ' + Soc.id + '\n' + (G.MOQ_LOG || []).join('\n')); },
     appset: function () { B.openAppSettings(); },
     pickwall: pickWall, nowall: function () { SET.wallData = ''; SET.wall = 'default'; saveSet(); render(); },
+    ossall: function () { OSS_ALL = !OSS_ALL; render(); },
+    mdhelp: function () {   // 4.13.2: the Discord formatting cheat sheet; tap a row to put it in the message box
+      var ex = [['**bold**', 'Bold'], ['*italic*', 'Italic'], ['__underline__', 'Underline'], ['~~strike~~', 'Strikethrough'], ['||spoiler||', 'Spoiler (tap to show)'], ['`code`', 'Inline code'], ['```\ncode block\n```', 'Code block'], ['> quote', 'Quote'], ['# Big header', 'Header (#, ##, ###)'], ['-# small text', 'Subtext'], ['- item', 'List'], ['[MP website](https://mpsamp-open.github.io/)', 'Masked link'], ['<t:' + Math.floor(Date.now() / 1000 + 3600) + ':R>', 'Timestamp (t T d D f F s S R)'], ['<@' + (Soc.id || '12345678') + '>', 'Mention by #ID']];
+      dialog({ title: 'Text Formatting', body: '<div class="small dim" style="margin:-4px 0 10px">Moquil uses the same formatting as Discord. Tap one to add it to your message.</div><div class="card list">' + ex.map(function (e, i) { return '<div class="li" data-mdx="' + i + '"><div class="grow"><div class="tiny dim">' + esc(e[1]) + '</div><code class="mdc">' + esc(e[0]) + '</code></div><div class="mdprev">' + md(e[0]) + '</div></div>'; }).join('') + '</div>',
+        onOpen: function (bg) { bg.addEventListener('click', function (ev) { var r = ev.target.closest('[data-mdx]'); if (!r) return; var i = $('#ci'); if (i) { i.value = (i.value ? i.value + ' ' : '') + ex[+r.dataset.mdx][0].replace(/\n/g, ' '); i.focus(); } bg.remove(); }); }, buttons: [{ t: 'Close', fn: function () {} }] });
+    },
     resetlook: function () { ['theme', 'accent', 'bg', 'glass', 'blur', 'wall', 'wallData', 'wallColor', 'dim', 'round'].forEach(function (k) { SET[k] = SET_DEF[k]; }); saveSet(); render(); },
     mictest: function () { askPerm('mic', function (ok) { if (!ok) return; navigator.mediaDevices.getUserMedia({ audio: true }).then(function (s) { var a = new Audio(); a.srcObject = s; a.play(); var v = $('#mtv'); if (v) v.textContent = 'Talk now...'; setTimeout(function () { s.getTracks().forEach(function (t) { t.stop(); }); if ($('#mtv')) $('#mtv').textContent = 'Done. Tap to test again'; }, 5000); }, function (e) { toast('Mic error: ' + e.message); }); }); }
   };
