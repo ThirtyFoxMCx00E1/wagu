@@ -3,7 +3,7 @@
    (left menu, middle page, friends on the right). On the web it sits in a desktop window. */
 (function (G) {
   'use strict';
-  var VERSION = '1.0';
+  var VERSION = '1.1';
   var B = G.Moquil || null;                    // the Android bridge (null on the web)
   var IS_WEB = !B;
   var D = document, $ = function (s, r) { return (r || D).querySelector(s); }, $$ = function (s, r) { return Array.prototype.slice.call((r || D).querySelectorAll(s)); };
@@ -56,7 +56,7 @@
     if (G.Notification && Notification.permission === 'granted' && D.hidden) try { new Notification(title, { body: text, icon: 'img/logo.png' }); } catch (e) {}
   }
   var PERMS = {
-    mic: { name: 'Microphone', icon: 'mic', why: 'Moquil needs the microphone for voice chat in communities, groups and the party. You can still use text chat without it.' },
+    mic: { name: 'Microphone', icon: 'mic', why: 'Moquil needs the microphone for voice chat in servers, groups and the party. You can still use text chat without it.' },
     notif: { name: 'Notifications', icon: 'bell', why: 'Show a notification when a friend messages you, sends a friend request or invites you to a party.' },
     storage: { name: 'Storage', icon: 'dl', why: 'Save downloaded mods (zip files) and apps to the Download/Moquil folder.' },
     audio: { name: 'Audio', icon: 'vol', why: 'Play voice chat and sounds, and change the audio route (speaker / headset) while you talk.' }
@@ -112,6 +112,34 @@
       onOpen: function (bg) { var i = $('#pv', bg); setTimeout(function () { i.focus(); }, 50); i.addEventListener('keydown', function (e) { if (e.key === 'Enter' && !opt.area) { $('[data-b="1"]', bg).click(); } }); },
       buttons: [{ t: 'Cancel', fn: function () {} }, { t: opt.ok || 'Save', cls: 'go', fn: function (bg) { return cb($('#pv', bg).value, bg); } }] });
   }
+  // ===== Add a Server (Discord style): create your own or join with an invite =====
+  function addServer() {
+    dialog({ title: 'Add a Server', body: '<div class="small dim" style="text-align:center;margin:-4px 0 12px">Your server is where you and your friends hang out. Make yours and start talking.</div>' +
+      '<div class="card list"><div class="li" data-b="1">' + ic('plus') + '<div class="grow"><div class="b">Create My Own</div><div class="tiny dim">A new server with #general and a voice Lounge</div></div>' + ic('chev', 's') + '</div></div>' +
+      '<div class="sec" style="justify-content:center">Have an invite already?</div><div class="card list"><div class="li" data-b="2">' + ic('link') + '<div class="grow"><div class="b">Join a Server</div><div class="tiny dim">Paste an invite code from a friend</div></div>' + ic('chev', 's') + '</div></div>',
+      buttons: [{ t: 'Close', fn: function () {} }, { t: 'Create', cls: 'hide', fn: function () { setTimeout(createServer, 30); } }, { t: 'Join', cls: 'hide', fn: function () { setTimeout(joinServer, 30); } }] });
+  }
+  function createServer() {
+    var icon = '';
+    dialog({ title: 'Create Your Server', body: '<div class="small dim" style="text-align:center;margin:-4px 0 12px">Give your new server a personality with a name and an icon. You can change the icon later.</div>' +
+      '<div style="display:flex;justify-content:center;margin-bottom:12px"><div class="srv-up" id="sup">' + ic('image') + '<span>UPLOAD</span></div></div>' +
+      '<label class="lbl">Server name</label><input class="inp" id="sn" maxlength="40" value="' + esc((prof().display || SESSION.user) + "'s server") + '">' +
+      '<label class="lbl">Description</label><textarea class="inp" id="sd" maxlength="300" placeholder="What is it about?"></textarea>' +
+      '<div class="tiny dim" style="margin-top:8px">By creating a server you agree to keep it friendly for MP players.</div>',
+      onOpen: function (bg) { $('#sup', bg).addEventListener('click', function () { pickImage(512, 512, .9, function (d) { cropSquare(d, 96, function (sq) { icon = sq; var u = $('#sup', bg); u.style.background = '#222 url(' + sq + ') center / cover'; u.innerHTML = ''; }); }); }); },
+      buttons: [{ t: 'Back', fn: function () { setTimeout(addServer, 30); } }, { t: 'Create', cls: 'go', fn: function (bg) { var n = $('#sn', bg).value; if (!n.trim()) return false; Soc.createCommunity(n, $('#sd', bg).value).then(function (cid) { if (!cid) return; if (icon) Soc.setCommunityIcon(cid, icon); award('founder'); quest('com'); comCh = 'general'; go('community', cid); }); } }] });
+  }
+  function joinServer() {
+    dialog({ title: 'Join a Server', body: '<div class="small dim" style="text-align:center;margin:-4px 0 12px">Enter an invite below to join an existing server.</div><label class="lbl">Invite code or link</label><input class="inp" id="ivc" placeholder="12345678-a1b2c3">' +
+      '<div class="tiny dim" style="margin-top:8px">Invites look like 12345678-a1b2c3 or moquil://server/12345678-a1b2c3</div>',
+      onOpen: function (bg) { setTimeout(function () { $('#ivc', bg).focus(); }, 50); },
+      buttons: [{ t: 'Back', fn: function () { setTimeout(addServer, 30); } }, { t: 'Join Server', cls: 'go', fn: function (bg) {
+        var cid = Soc.findCommunity($('#ivc', bg).value); if (!cid) { toast('That invite is not valid'); return false; }
+        Soc.viewCommunity(cid); toast('Looking for the server...');
+        var tries = 0, wait = function () { var c = Soc.community(cid); if (c && c.name) { Soc.joinCommunity(cid, true); quest('com'); comCh = 'general'; go('community', cid); } else if (++tries < 20) setTimeout(wait, 400); else toast('No server found for that invite'); };
+        wait();
+      } }] });
+  }
   function pickImage(maxW, maxH, q, cb) {
     var i = D.createElement('input'); i.type = 'file'; i.accept = 'image/*';
     i.onchange = function () {
@@ -157,12 +185,12 @@
   function storeItem(id) { for (var i = 0; i < STORE.length; i++) for (var j = 0; j < STORE[i].items.length; j++) if (STORE[i].items[j][0] === id) return { cat: STORE[i].cat, id: id, name: STORE[i].items[j][1], price: STORE[i].items[j][2] }; return null; }
   var BADGES = {
     member: ['\u{1F7E2}', 'Moquil member', 'Made a Moquil account'], early: ['\u{1F331}', 'Early supporter', 'Joined Moquil in its first year'], linked: ['\u{1F3AE}', 'Linked MP game', 'Linked Moquil with the MP game'],
-    friends5: ['\u{1F91D}', 'Social', 'Has 5 friends'], founder: ['\u{1F3F0}', 'Community founder', 'Made a community'], critic: ['\u2B50', 'Critic', 'Rated a mod'],
+    friends5: ['\u{1F91D}', 'Social', 'Has 5 friends'], founder: ['\u{1F3F0}', 'Server founder', 'Made a server'], critic: ['\u2B50', 'Critic', 'Rated a mod'],
     voice: ['\u{1F399}', 'On the mic', 'Joined a voice room'], quests10: ['\u{1F3C6}', 'Quest master', 'Finished 10 quests'], collector: ['\u{1F48E}', 'Collector', 'Owns 5 store items'], hivemq: ['\u{1F41D}', 'HiveMQ powered', 'Connected over HiveMQ']
   };
   function award(b) { var w = wallet(); if (w.badges.indexOf(b) >= 0) return; w.badges.push(b); saveWallet(w); toast('Badge unlocked: ' + BADGES[b][1]); if (G.Soc && Soc.id) Soc.publishRich(); }
   var QUESTS = [
-    ['open', 'Open Moquil today', 50], ['msg', 'Send a message', 50], ['friend', 'Add or accept a friend', 100], ['com', 'Join or make a community', 100], ['rate', 'Rate a mod', 50], ['voice', 'Join a voice room', 75], ['dl', 'Download a mod', 50]
+    ['open', 'Open Moquil today', 50], ['msg', 'Send a message', 50], ['friend', 'Add or accept a friend', 100], ['com', 'Join or make a server', 100], ['rate', 'Rate a mod', 50], ['voice', 'Join a voice room', 75], ['dl', 'Download a mod', 50]
   ];
   function quest(k) {
     var w = wallet(); if (w.q.day !== today()) w.q = { day: today(), done: {}, claimed: {} };
@@ -194,7 +222,7 @@
   if (mqDark && mqDark.addEventListener) mqDark.addEventListener('change', applyLook);
   function layout() {
     var h = D.documentElement, w = G.innerWidth, ht = G.innerHeight;
-    h.classList.toggle('portrait', ht > w || w < 700); h.classList.toggle('wide', w >= 900 && ht >= 520); h.classList.toggle('web', IS_WEB);
+    h.classList.toggle('portrait', w < 700); h.classList.toggle('wide', w >= 900 && ht >= 520); h.classList.toggle('web', IS_WEB);
   }
   G.addEventListener('resize', function () { var was = D.documentElement.className; layout(); if (D.documentElement.className !== was && SESSION) render(); });
 
@@ -213,11 +241,10 @@
   }
   function st(t, cls) { var s = $('#status'); if (s) { s.textContent = t; s.className = 'status ' + (cls || ''); } }
   function busy(on) { $$('#auth button[type=submit]').forEach(function (b) { b.disabled = !!on; }); }
-  function authShell(title, sub, inner, foot) {
-    return '<div class="auth-win glass"><div class="auth-form"><div class="mp-bar"><b>PLAY</b><span>Moquil ' + VERSION + '</span><i>powered by HiveMQ/ThirtyFoxMC</i></div><div class="body scroll">' +
-      '<img class="auth-logo" src="img/logo.png" alt=""><h1>' + title + '</h1><div class="sub">' + sub + '</div>' + inner + '<div id="status" class="status"></div></div>' +
-      '<div class="footer-link" style="justify-content:center">' + foot + '</div></div>' +
-      '<div class="auth-art"><div class="tag"><h2>Moquil</h2><div>Your MP friends, chats, communities and voice. On the phone and on the web.</div></div></div></div>';
+  function authShell(title, sub, inner, foot, qr) {   // 4.13.1: the Discord login (brand top left, starry purple sky, dark card, QR on the side)
+    return '<div class="dauth"><div class="sky"><i class="s1"></i><i class="s2"></i><i class="s3"></i><i class="orb o1"></i><i class="orb o2"></i></div><div class="dbrand"><img src="img/logo.png" alt="">Moquil</div>' +
+      '<div class="dcard' + (qr ? ' hasqr' : '') + '"><div class="dform"><h1>' + title + '</h1><div class="sub">' + sub + '</div>' + inner + '<div id="status" class="status"></div><div class="dfoot">' + foot + '</div></div>' +
+      (qr ? '<div class="dqr"><div class="qrbox"><img src="img/qr.png" alt="QR code"></div><h2>Open Moquil with a QR Code</h2><p>Scan this with your phone camera to open <b>Moquil</b> on the phone too.</p><a href="#" data-open="discord">Or get help in the MP Discord</a></div>' : '') + '</div></div>';
   }
   function discordBtns() { return '<div class="row" style="margin-top:8px"><button type="button" class="btn sm" id="again">New code</button><span class="grow"></span><button type="button" class="btn sm blue" data-open="discord">Open Discord</button></div>'; }
   function codeFlow(c, onVerified) {
@@ -235,8 +262,8 @@
         '<label class="lbl">Account name</label><input id="user" class="inp" required minlength="3" maxlength="24" pattern="[A-Za-z0-9_\\[\\].$=@()]+">' +
         '<div class="row"><div class="grow"><label class="lbl">Password</label><input id="pass" type="password" class="inp" required minlength="6"></div><div class="grow"><label class="lbl">Repeat</label><input id="pass2" type="password" class="inp" required></div></div>' +
         '<div class="row"><div class="grow"><label class="lbl">Gender</label><select id="gender" class="inp"><option value="male">Male</option><option value="female">Female</option></select></div><div class="grow"><label class="lbl">Age</label><input id="age" type="number" class="inp" min="13" max="99" value="18" required></div></div>' +
-        '<button type="submit" class="btn go wide" style="margin-top:14px">Create account</button></form>',
-        'Already have an account? <a href="#" data-auth="login">Log in</a>');
+        '<button type="submit" class="btn go wide dbtn">Continue</button></form>',
+        '<a href="#" data-auth="login">Already have an account?</a>');
       var vtoken = '', flow;
       var c = acct({ link: function () { if (!flow) flow = codeFlow(c, function (a) {
           if (a.vtoken === vtoken) return; vtoken = a.vtoken;
@@ -257,8 +284,8 @@
       A.innerHTML = authShell('Forgot password', 'Prove the account is yours with its Discord account',
         '<p class="small dim" style="margin:0 0 8px">In the #verification channel of the <a href="#" data-open="discord">MP Discord server</a> type:</p><div id="code" class="code">/gen ........</div>' + discordBtns() +
         '<form id="rs" class="hide" autocomplete="off"><div class="chip green" id="who"></div><label class="lbl">New password</label><input id="pass" type="password" class="inp" required minlength="6"><label class="lbl">Confirm password</label><input id="pass2" type="password" class="inp" required>' +
-        '<label class="chk" style="margin-top:10px"><input type="checkbox" id="lo" checked> Log out all devices</label><button type="submit" class="btn go wide" style="margin-top:12px">Reset password</button></form>',
-        'Remember your password? <a href="#" data-auth="login">Log in</a>');
+        '<label class="chk" style="margin-top:10px"><input type="checkbox" id="lo" checked> Log out all devices</label><button type="submit" class="btn go wide dbtn">Reset Password</button></form>',
+        '<a href="#" data-auth="login">Back to Log In</a>');
       var r = null, flow2, t2 = 0;
       var c2 = acct({ link: function () { if (!flow2) flow2 = codeFlow(c2, function (a) {
           if (a.has !== '1') { st('This Discord account has no MP account yet. Create one.', 'bad'); setTimeout(function () { showAuth('register'); }, 2200); return; }
@@ -277,14 +304,14 @@
     }
     // login (Ankama "Welcome back")
     var last = ls('moq_last_user') || '';
-    A.innerHTML = authShell(last ? 'Welcome back' : 'Log in', 'Log in with your MP account',
-      '<form id="lf" autocomplete="on"><label class="lbl">MP account name</label><input id="user" class="inp" required maxlength="24" autocomplete="username" value="' + esc(last) + '">' +
-      '<div class="row" style="justify-content:space-between"><label class="lbl">Password</label><a href="#" data-auth="forgot" class="small">Forgot password?</a></div>' +
-      '<input id="pass" type="password" class="inp" required autocomplete="current-password">' +
-      '<label class="chk" style="margin-top:12px"><input type="checkbox" id="rem" checked> Remember me</label>' +
-      '<button type="submit" class="btn go wide" style="margin-top:14px">Log in</button></form>' +
-      '<div class="alt-row"><button class="ibtn" data-open="discord" title="MP Discord">' + ic('chat') + '</button><button class="ibtn" data-open="site" title="MP website">' + ic('game') + '</button></div>',
-      "Don't have an account? <a href=\"#\" data-auth=\"register\">Create one</a>");
+    A.innerHTML = authShell('Welcome back', 'We\'re so excited to see you again',
+      '<form id="lf" autocomplete="on"><label class="lbl">MP Account Name <em>*</em></label><input id="user" class="inp" required maxlength="24" autocomplete="username" value="' + esc(last) + '">' +
+      '<label class="lbl">Password <em>*</em></label><div class="pwbox"><input id="pass" type="password" class="inp" required autocomplete="current-password"><button type="button" class="eye" id="eye" title="Show password">' + ic('eye', 's') + '</button></div>' +
+      '<a href="#" data-auth="forgot" class="small fgt">Forgot your password?</a>' +
+      '<label class="chk hide"><input type="checkbox" id="rem" checked> Remember me</label>' +
+      '<button type="submit" class="btn go wide dbtn">Log In</button></form>',
+      'Need an account? <a href="#" data-auth="register">Register</a>', true);
+    $('#eye').onclick = function () { var pi = $('#pass'); pi.type = pi.type === 'password' ? 'text' : 'password'; };
     var t = 0;
     var c3 = acct({ login: function (a) {
       clearTimeout(t); busy(false);
@@ -354,14 +381,34 @@
   }
   function checkStatusClear() { var p = prof(); if (p.status && p.status.until && p.status.until < Date.now() && (p.status.t || p.status.e)) { p.status = { t: '', e: '', until: 0 }; saveProf(p); soon(); } }
   var rT = 0; function soon() { clearTimeout(rT); rT = setTimeout(function () { soonShell(); refresh(); }, 120); }
-  function soonShell() { renderSide(); renderRight(); renderNav(); }
+  function soonShell() { renderSide(); renderRightD(); renderNav(); renderRail(); renderUbar(); }
+  // ---- 4.13.1: Discord mobile layout (portrait): server rail on the left, Messages, user bar at the bottom ----
+  function isPortrait() { return D.documentElement.classList.contains('portrait'); }
+  function renderRail() {
+    var r = $('#rail'); if (!r) return; var u = Soc.id ? Soc.unreadChats() + Soc.S.inc.length : 0;
+    var on = function (k) { return CUR.page === k || (k === 'dms' && /^(chat|social)$/.test(CUR.page)); };
+    var it = function (k, inner, cls, tip, badge, attr) { return '<div class="ri' + (k && on(k) ? ' on' : '') + (cls ? ' ' + cls : '') + '" ' + (attr || 'data-go="' + k + '"') + ' title="' + esc(tip) + '"><i class="pill"></i><div class="sq">' + inner + '</div>' + (badge ? '<span class="badge">' + badge + '</span>' : '') + '</div>'; };
+    var coms = Soc.id ? Soc.communities().filter(function (c) { return c.joined || c.ownerId === Soc.id; }) : [];
+    var P = isPortrait(), logo = '<img src="img/logo.png" alt="" style="width:100%;height:100%;object-fit:cover">';
+    var home = '<div class="ri logo' + (on(P ? 'dms' : 'friends') || (!P && /^(friends|chat|home|library|store|search|user|profile|settings)$/.test(CUR.page)) ? ' on' : '') + '" data-go="' + (P ? 'dms' : 'friends') + '" title="Direct Messages"><i class="pill"></i><div class="sq">' + logo + '</div>' + (u ? '<span class="badge">' + u + '</span>' : '') + '</div>';
+    r.innerHTML = home + (P ? it('home', ic('home'), '', 'Home') + it('store', ic('store'), '', 'Shop') + it('library', ic('library'), '', 'Library') : '') + '<div class="rsep"></div>' +
+      coms.map(function (c) { var un = (c.posts || []).filter(function (x) { return x.ts > (c.seen || 0) && x.fromId !== Soc.id; }).length; return '<div class="ri srv' + (CUR.page === 'community' && CUR.arg === c.cid ? ' on' : '') + (un ? ' unread' : '') + '" data-com="' + esc(c.cid) + '" title="' + esc(c.name) + '"><i class="pill"></i><div class="sq"' + (c.icon ? ' style="background:#222 url(' + c.icon + ') center / cover"></div>' : ' style="background:' + colorOf(c.cid) + ';color:#fff;font-weight:800;font-size:' + (srvInit(c.name).length > 2 ? 13 : 16) + 'px">' + srvInit(c.name) + '</div>') + (un ? '<span class="badge">' + un + '</span>' : '') + '</div>'; }).join('') +
+      it('', ic('plus'), 'add', 'Add a Server', 0, 'data-act="newcom"') + it('discover', ic('search'), 'add', 'Discover servers') + (P ? '' : it('library', ic('dl'), 'add', 'Get the MP apps'));
+  }
+  function renderUbar() {
+    var b = $('#ubar'); if (!b || !SESSION) return; var p = prof(), n = Soc.id ? Soc.unreadInbox() : 0, w = wallet();
+    var badge = (w.badges || [])[0], bd = badge && BADGES[badge];
+    b.className = 'ubar ' + esc(p.nameplate || '');
+    b.innerHTML = '<div class="me" data-go="profile">' + avatar(Soc.id || '', SESSION.user, p, 'av l', true) + '<div class="grow"><div class="row" style="gap:6px"><span class="b ell ' + esc(p.nametag || '') + '" style="font-size:16px">' + esc(p.display || SESSION.user) + '</span>' + (bd ? '<span class="tagchip">' + esc(bd[0] + ' ' + String(bd[1]).split(' ')[0]) + '</span>' : '') + ic('chev', 's') + '</div><div class="small dim ell">' + esc(statusLine(p) || presName(p.pres)) + '</div></div></div>' +
+      '<button class="ibtn round donly" data-act="vmute" title="Mute">' + ic(G.MoqVoice && MoqVoice.state.muted ? 'micoff' : 'mic') + '</button><button class="ibtn round donly" data-act="vdeaf" title="Deafen">' + ic('head') + '</button>' + '<button class="ibtn round" data-act="inbox" title="Inbox">' + ic('bell') + (n ? '<span class="badge">' + n + '</span>' : '') + '</button><button class="ibtn round" data-go="settings" title="Settings">' + ic('gear') + '</button>';
+  }
 
   function renderShell() {
     var A = $('#app');
     A.innerHTML = '<div class="win glass"><div class="titlebar"><div class="lights"><i></i><i></i><i></i></div><div class="ttl">Moquil - ' + esc(SESSION.user) + '</div><span class="tiny dim">web</span></div>' +
       '<div class="mp-bar"><b>PLAY</b><span>Moquil ' + VERSION + ' &middot; <span id="netst">connecting...</span></span><i>powered by HiveMQ/ThirtyFoxMC</i></div>' +
-      '<div class="shell"><aside class="side" id="side"></aside><main class="main"><div class="topbar" id="top"></div><div class="page scroll" id="page"></div></main><aside class="right" id="right"></aside></div></div>' +
-      '<nav class="nav" id="nav"></nav>';
+      '<div class="shell"><aside class="rail scroll" id="rail"></aside><aside class="side" id="side"></aside><main class="main"><div class="topbar" id="top"></div><div class="page scroll" id="page"></div></main><aside class="right" id="right"></aside></div></div>' +
+      '<nav class="nav" id="nav"></nav><div class="ubar" id="ubar"></div>';
     soonShell();
   }
   function unreadSocial() { return (Soc.id ? Soc.unreadChats() + Soc.unreadInbox() + Soc.S.inc.length : 0); }
@@ -371,7 +418,7 @@
     var ns = $('#netst'); if (ns) ns.innerHTML = Soc.id ? (Soc.up() ? '<span style="color:#6ec85a">online</span> &middot; ID ' + Soc.id : 'connecting to ' + esc(Soc.broker || 'HiveMQ') + '...') : 'starting...';
   }
   function miniAv() { var p = prof(); return '<div class="av s" style="width:24px;height:24px">' + avPic(p.avatar, SESSION.user) + '<span class="dot ' + presCls(p.pres, true) + '" style="border-width:2px"></span></div>'; }
-  function renderSide() {
+  function renderSideOld() {
     var s = $('#side'); if (!s) return; var p = prof(), u = unreadSocial();
     var item = function (k, t, i, b) { return '<div class="nav-i' + (CUR.page === k || (k === 'social' && /chat|community/.test(CUR.page)) ? ' on' : '') + '" data-go="' + k + '">' + ic(i) + '<span>' + t + '</span>' + (b ? '<span class="badge">' + b + '</span>' : '') + '</div>'; };
     var favMods = (ls('moq_favmods') || ['mp', 'mlg', 'camfx']).map(function (id) { return MOQ_MODS.filter(function (m) { return m.id === id; })[0]; }).filter(Boolean);
@@ -379,7 +426,7 @@
     s.innerHTML = '<div class="me" data-go="profile">' + avatar(Soc.id || '', SESSION.user, p, 'av s', true) + '<div class="grow"><div class="b ell ' + esc(p.nametag) + '">' + esc(p.display || SESSION.user) + '</div><div class="tiny dim ell">' + esc(statusLine(p) || presName(p.pres)) + '</div></div>' + ic('chev', 's') + '</div>' +
       '<div class="scroll grow" style="padding:6px 0">' + item('home', 'Home', 'home') + item('search', 'Search', 'search') + item('store', 'Store', 'store') + item('library', 'Library', 'library') + item('social', 'Social', 'chat', u) + item('settings', 'Settings', 'gear') +
       '<div class="grp">My apps</div>' + favMods.map(function (m) { return '<div class="mini" data-mod="' + m.id + '"><div class="ic" style="background-image:url(' + m.cover + ')"></div><div class="grow ell">' + esc(m.name) + '</div></div>'; }).join('') +
-      '<div class="grp">My communities<a href="#" data-act="newcom">' + ic('plus', 's') + '</a></div>' + (coms.length ? coms.map(function (c) { return '<div class="mini' + (CUR.arg === c.cid ? ' on' : '') + '" data-com="' + esc(c.cid) + '"><div class="ic" style="background:' + colorOf(c.cid) + ';display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff">' + esc(c.name[0] || '#') + '</div><div class="grow ell">' + esc(c.name) + '</div></div>'; }).join('') : '<div class="tiny dim" style="padding:2px 16px">None yet</div>') +
+      '<div class="grp">My servers<a href="#" data-act="newcom">' + ic('plus', 's') + '</a></div>' + (coms.length ? coms.map(function (c) { return '<div class="mini' + (CUR.arg === c.cid ? ' on' : '') + '" data-com="' + esc(c.cid) + '"><div class="ic" style="background:' + colorOf(c.cid) + ';display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff">' + esc(c.name[0] || '#') + '</div><div class="grow ell">' + esc(c.name) + '</div></div>'; }).join('') : '<div class="tiny dim" style="padding:2px 16px">None yet</div>') +
       '</div><div class="footer-link">' + ic('sparkle', 's') + '<span>By ThirtyFox &middot; Powered by HiveMQ</span></div>';
   }
   // right panel (Ankama friends list)
@@ -409,6 +456,11 @@
     if (pr && pr.status && pr.status.t && (!pr.status.until || pr.status.until > Date.now())) line = (pr.status.e ? pr.status.e + ' ' : '') + pr.status.t;
     return '<div class="mini ' + esc(pr && pr.nameplate || '') + '" data-user="' + f.id + '">' + avatar(f.id, f.name, pr, 'av s', on) + '<div class="grow"><div class="ell b ' + esc(pr && pr.nametag || '') + '">' + esc(pr && pr.display || f.name) + '</div><div class="tiny dim ell">' + esc(line) + '</div></div></div>';
   }
+  function srvInit(n) { var w = String(n || '#').trim().split(/\s+/).filter(Boolean); return esc((w.length > 1 ? w.slice(0, 3).map(function (x) { return x[0]; }).join('') : (w[0] || '#').slice(0, 2)).toUpperCase()); }
+  function srvIcon(c, px, extra) {   // Discord-style server icon: the uploaded picture, or the initials on a colour
+    px = px || 42; var st = 'width:' + px + 'px;height:' + px + 'px;font-size:' + Math.round(px * .36) + 'px;' + (extra || '');
+    return c.icon ? '<div class="guild img" style="' + st + 'background:#222 url(' + c.icon + ') center / cover"></div>' : '<div class="guild" style="' + st + 'background:' + colorOf(c.cid) + '">' + srvInit(c.name) + '</div>';
+  }
   function colorOf(id) { var h = 0, s = String(id); for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return 'hsl(' + (h % 360) + ',45%,42%)'; }
   function avPic(src, name, id) { return '<div class="pic" style="' + (src ? 'background-image:url(' + src + ')' : 'background:' + colorOf(id || name)) + '">' + (src ? '' : esc((name || '?').slice(0, 1).toUpperCase())) + '</div>'; }
   function presCls(p, on) { if (!on) return ''; return p === 'idle' ? 'idle' : p === 'dnd' ? 'dnd' : p === 'invisible' ? '' : 'on'; }
@@ -420,20 +472,117 @@
     return '<div class="' + (cls || 'av') + '">' + avPic(pr && pr.avatar, (pr && pr.display) || name, id) + (pr && pr.deco ? '<span class="deco ' + esc(pr.deco) + '"></span>' : '') + '<span class="dot ' + presCls(pr && pr.pres, on) + '"></span></div>';
   }
 
+  var PAGES = {};
+  // ===== 4.13.1: Discord desktop layout (also "desktop site" on a phone): rail | DM or channel sidebar | main | Active Now =====
+  var FTAB = 'online', FQ = '';
+  function sideNav(k, t, i, b, extra, attr) { var on = CUR.page === k && (attr ? CUR.tab === 'quests' : !(k === 'store' && CUR.tab === 'quests')); return '<div class="dnav' + (on ? ' on' : '') + '" data-go="' + k + '"' + (attr || '') + '>' + ic(i) + '<span class="grow ell">' + t + '</span>' + (extra || '') + (b ? '<span class="badge">' + b + '</span>' : '') + '</div>'; }
+  function dmSideList() {
+    if (!Soc.id) return '';
+    var had = {}, out = Soc.convs().map(function (c) {
+      var dm = c.kind === 0, id = dm ? c.key.slice(1) : '', pr = dm ? Soc.profile(id) : null; if (dm) had[id] = 1;
+      var nm = dm ? (pr && pr.display || Soc.nameOf(id) || c.title) : c.title, on = CUR.page === 'chat' && CUR.arg === c.key;
+      var sub = dm ? (statusLine(pr) || (Soc.isOnline(id) && Soc.activity(id) && Soc.activity(id) !== 'Moquil' ? 'Playing ' + Soc.activity(id) : '')) : (c.members ? c.members.length + ' Members' : 'Group');
+      return '<div class="dmi' + (on ? ' on' : '') + (c.unread ? ' unread' : '') + '" data-chat="' + esc(c.key) + '">' + (dm ? avatar(id, nm, pr, 'av s') : '<div class="guild" style="width:32px;height:32px;border-radius:50%;font-size:12px;background:' + colorOf(c.key) + '">' + ic(c.kind === 2 ? 'party' : 'users', 's') + '</div>') +
+        '<div class="grow"><div class="nm ell ' + esc(pr && pr.nametag || '') + '">' + esc(nm) + '</div>' + (sub ? '<div class="sb ell">' + esc(sub) + '</div>' : '') + '</div>' + (c.unread ? '<span class="badge">' + c.unread + '</span>' : '') + '</div>';
+    });
+    Soc.S.friends.filter(function (f) { return !had[f.id]; }).forEach(function (f) {
+      var pr = Soc.profile(f.id);
+      out.push('<div class="dmi" data-user="' + f.id + '">' + avatar(f.id, f.name, pr, 'av s') + '<div class="grow"><div class="nm ell ' + esc(pr && pr.nametag || '') + '">' + esc(pr && pr.display || f.name) + '</div>' + (statusLine(pr) ? '<div class="sb ell">' + esc(statusLine(pr)) + '</div>' : '') + '</div><button class="wave" data-wave="' + f.id + '">\uD83D\uDC4B Wave</button></div>');
+    });
+    return out.length ? out.join('') : '<div class="tiny dim" style="padding:10px 16px">No direct messages yet.</div>';
+  }
+  function serverSide(c) {
+    var owner = c.ownerId === Soc.id, room = 'c' + c.cid, vs = G.MoqVoice && MoqVoice.state.room === room;
+    return '<div class="sbhd srvhd" data-srvmenu="' + esc(c.cid) + '"><span class="grow ell b">' + esc(c.name) + '</span>' + ic('chev', 's') + '</div><div class="scroll grow sbody">' +
+      '<div class="srvinfo">' + srvIcon(c, 56) + '<div class="tiny dim" style="margin-top:8px">' + esc(c.desc || 'Welcome to ' + c.name) + '</div><div class="row" style="gap:6px;margin-top:8px"><span class="tiny dim">' + (c.members || 0) + ' Members</span><span class="grow"></span><button class="btn sm go" data-invite="' + esc(c.cid) + '">' + ic('user', 's') + ' Invite</button></div></div>' +
+      '<div class="chcat">' + ic('chev', 's') + ' Text Channels</div><div class="chi' + (comCh === 'general' ? ' on' : '') + '" data-ch="general">' + ic('hash', 's') + '<span class="grow">general</span></div>' +
+      '<div class="chcat">' + ic('chev', 's') + ' Voice Channels</div><div class="chi" data-voice="' + esc(room) + '" data-vt="' + esc(c.name) + '">' + ic('vol', 's') + '<span class="grow">Lounge</span>' + (vs ? '<span class="chip green">on</span>' : '') + '</div>' +
+      (owner ? '<div class="chcat">' + ic('chev', 's') + ' Server Settings</div><div class="chi" data-srvicon="' + esc(c.cid) + '">' + ic('image', 's') + '<span class="grow">Change icon</span></div><div class="chi danger" data-delcom="' + esc(c.cid) + '">' + ic('x', 's') + '<span class="grow">Delete server</span></div>' :
+        '<div class="chcat"></div><div class="chi' + (c.joined ? ' danger' : '') + '" data-join="' + esc(c.cid) + '">' + ic(c.joined ? 'out' : 'plus', 's') + '<span class="grow">' + (c.joined ? 'Leave server' : 'Join server') + '</span></div>') +
+      '</div>';
+  }
+  function renderSide() {
+    var s = $('#side'); if (!s || !SESSION) return;
+    var c = CUR.page === 'community' && Soc.id && Soc.community(CUR.arg);
+    if (c) { s.innerHTML = serverSide(c); return; }
+    if (CUR.page === 'discover') {
+      s.innerHTML = '<div class="sbhd"><span class="b" style="font-size:18px;padding:0 8px">Discover</span></div><div class="scroll grow sbody">' + sideNav('discover', 'Servers', 'search') + sideNav('home', 'Mods and news', 'game') + sideNav('store', 'Shop', 'store') + sideNav('library', 'Apps', 'library') + '</div>';
+      return;
+    }
+    var inc = Soc.id ? Soc.S.inc.length : 0;
+    s.innerHTML = '<div class="sbhd"><button class="findc" data-go="search">Find or start a conversation</button></div><div class="scroll grow sbody">' +
+      sideNav('friends', 'Friends', 'users', inc) + sideNav('home', 'Home', 'home') + sideNav('library', 'Library', 'library') + sideNav('store', 'Shop', 'store', 0, '<span class="promo">ORBS</span>') + sideNav('store', 'Quests', 'quest', 0, '', ' data-tabto="quests"') +
+      '<div class="dmh"><span class="grow">Direct Messages</span><a data-act="newgroup" title="Create DM">' + ic('plus', 's') + '</a></div>' + dmSideList() + '</div>';
+  }
+  function activeNow() {
+    var act = Soc.id ? Soc.S.friends.filter(function (f) { return Soc.isOnline(f.id); }) : [];
+    return '<div class="anow"><div class="b" style="font-size:20px;margin:4px 0 14px">Active Now</div>' + (act.length ? act.map(function (f) {
+      var pr = Soc.profile(f.id), a = Soc.activity(f.id), game = a && a !== 'Moquil' ? a : '';
+      var m = game ? MOQ_MODS.filter(function (mm) { return game.toLowerCase().indexOf(mm.name.toLowerCase().split(' ')[0]) >= 0; })[0] || MOQ_MODS[0] : null;
+      return '<div class="anc" data-user="' + f.id + '"><div class="row">' + avatar(f.id, f.name, pr, 'av s', true) + '<div class="grow"><div class="b ell">' + esc(pr && pr.display || f.name) + '</div><div class="tiny dim ell">' + esc(game ? game : 'On Moquil') + '</div></div>' + (m ? '<div class="gi" style="background-image:url(' + m.icon + ')"></div>' : '') + '</div></div>';
+    }).join('') : '<div class="anempty"><div class="b">It\'s quiet for now...</div><div class="small dim">When a friend starts an activity, like playing MP or hanging out in voice, it shows here.</div></div>') + '</div>';
+  }
+  PAGES.friends = function () {
+    if (!Soc.id) return { top: '<div class="b">Friends</div>', body: '<div class="empty">Starting...</div>' };
+    var inc = Soc.S.inc.length, t = FTAB;
+    var top = '<div class="ftop">' + ic('users') + '<b>Friends</b><i class="dot-sep"></i>' + [['online', 'Online'], ['all', 'All'], ['pending', 'Pending' + (inc ? ' <span class="badge">' + inc + '</span>' : '')]].map(function (x) { return '<div class="ft' + (t === x[0] ? ' on' : '') + '" data-ftab2="' + x[0] + '">' + x[1] + '</div>'; }).join('') +
+      '<div class="ft add' + (t === 'add' ? ' on' : '') + '" data-ftab2="add">Add Friend</div><span class="grow"></span><button class="ibtn" data-act="newgroup" title="New Group DM">' + ic('chat') + '</button><button class="ibtn" data-act="inbox" title="Inbox">' + ic('bell') + (Soc.unreadInbox() ? '<span class="badge">' + Soc.unreadInbox() + '</span>' : '') + '</button></div>';
+    var body = '';
+    if (t === 'add') {
+      body = '<div class="addf"><div class="b up" style="font-size:16px">Add Friend</div><div class="small dim" style="margin:6px 0 14px">You can add friends with their Moquil ID. It is the same 8 digit ID as in the game (Social &gt; Friends).</div>' +
+        '<form class="addbox" id="addf"><input class="inp" id="addid" maxlength="9" placeholder="You can add friends with their 8 digit ID" inputmode="numeric"><button class="btn go" type="submit">Send Friend Request</button></form><div class="tiny dim" style="margin-top:10px">Your ID is <b>' + Soc.id + '</b> <a href="#" data-copy="' + Soc.id + '">Copy</a></div></div>' +
+        '<div class="sec">Other places to make friends</div><div class="card list"><div class="li" data-act="discover">' + ic('search') + '<div class="grow"><div class="b">Explore Discoverable Servers</div></div>' + ic('chev', 's') + '</div></div>';
+      return { top: top, body: body, after: function () { $('#addf').onsubmit = function (e) { e.preventDefault(); var v = $('#addid').value.replace(/\D/g, ''); if (v.length !== 8) { toast('The ID has 8 digits'); return; } if (v === Soc.id) { toast('That is you'); return; } Soc.watchProfile(v); if (Soc.addFriend(v)) { quest('friend'); toast('Friend request sent to #' + v); $('#addid').value = ''; } }; } };
+    }
+    var list;
+    if (t === 'pending') {
+      list = Soc.S.inc.map(function (f) { return { f: f, kind: 'in' }; }).concat(Soc.S.out.map(function (f) { return { f: f, kind: 'out' }; }));
+      body = '<div class="fsec">Pending &mdash; ' + list.length + '</div>' + (list.length ? list.map(function (x) { var f = x.f;
+        return '<div class="frow">' + avatar(f.id, f.name, Soc.profile(f.id), 'av s') + '<div class="grow"><div class="b ell">' + esc(f.name) + ' <span class="tiny dim">#' + f.id + '</span></div><div class="tiny dim">' + (x.kind === 'in' ? 'Incoming Friend Request' : 'Outgoing Friend Request') + '</div></div>' +
+          (x.kind === 'in' ? '<button class="rb ok" data-acc="' + f.id + '" title="Accept">' + ic('check', 's') + '</button><button class="rb no" data-dec="' + f.id + '" title="Ignore">' + ic('x', 's') + '</button>' : '<button class="rb no" data-can="' + f.id + '" title="Cancel">' + ic('x', 's') + '</button>') + '</div>'; }).join('') : '<div class="fempty">There are no pending friend requests. Here\'s a Wumpus-free zone for now.</div>');
+    } else {
+      var fs = Soc.S.friends.filter(function (f) { return t === 'all' || Soc.isOnline(f.id); }).filter(function (f) { return !FQ || f.name.toLowerCase().indexOf(FQ.toLowerCase()) >= 0 || f.id.indexOf(FQ) === 0; });
+      fs.sort(function (a, b) { return (Soc.isOnline(b.id) ? 1 : 0) - (Soc.isOnline(a.id) ? 1 : 0) || a.name.localeCompare(b.name); });
+      body = '<div class="fsearch"><input class="inp" id="fq2" placeholder="Search" value="' + esc(FQ) + '">' + ic('search', 's') + '</div><div class="fsec">' + (t === 'all' ? 'All friends' : 'Online') + ' &mdash; ' + fs.length + '</div>' +
+        (fs.length ? fs.map(function (f) { var pr = Soc.profile(f.id), on = Soc.isOnline(f.id), a = Soc.activity(f.id), w = (Soc.wallet && 0);
+          var line = statusLine(pr) || (on ? (a && a !== 'Moquil' ? 'Playing ' + a : 'Online') : 'Offline');
+          return '<div class="frow" data-user="' + f.id + '">' + avatar(f.id, f.name, pr, 'av s') + '<div class="grow"><div class="row" style="gap:6px"><span class="b ell ' + esc(pr && pr.nametag || '') + '">' + esc(pr && pr.display || f.name) + '</span><span class="tiny dim fid">#' + f.id + '</span></div><div class="tiny dim ell">' + esc(line) + '</div></div>' +
+            '<button class="rb" data-dm="' + f.id + '" title="Message">' + ic('chat', 's') + '</button><button class="rb" data-user="' + f.id + '" title="More">' + ic('more', 's') + '</button></div>'; }).join('') :
+          '<div class="fempty">' + (t === 'all' ? 'No friends yet. Tap Add Friend and type a friend\'s 8 digit ID.' : 'No one\'s around to play with right now.') + '</div>');
+    }
+    return { top: top, body: body, after: function () { var q = $('#fq2'); if (q) { q.oninput = function () { FQ = q.value; var p = q.selectionStart; render(); var q2 = $('#fq2'); if (q2) { q2.focus(); q2.setSelectionRange(p, p); } }; } } };
+  };
+  // Discover (servers) - after the "Find your community" explore design
+  PAGES.discover = function () {
+    var all = Soc.id ? Soc.communities() : [], q = (CUR.arg || '').toLowerCase();
+    var list = all.filter(function (c) { return !q || (c.name + ' ' + (c.desc || '')).toLowerCase().indexOf(q) >= 0; }).sort(function (a, b) { return (b.members || 0) - (a.members || 0) || b.ts - a.ts; });
+    var card = function (c) { return '<div class="dsc" data-com="' + esc(c.cid) + '"><div class="ban" style="background:' + (c.icon ? '#222 url(' + c.icon + ') center / cover' : 'linear-gradient(135deg,' + colorOf(c.cid) + ',' + colorOf(c.cid + 'x') + ')') + '"></div><div class="ico">' + srvIcon(c, 44, 'border-radius:14px;border:4px solid var(--d-card);') + '</div><div class="bd"><div class="b ell">' + esc(c.name) + '</div><div class="small dim cl2">' + esc(c.desc || 'A server by ' + (c.ownerName || 'an MP player')) + '</div><div class="tiny dim row" style="gap:12px;margin-top:8px"><span><i class="gdot"></i>' + (c.followers || 0) + ' Following</span><span><i class="gdot g"></i>' + (c.members || 0) + ' Members</span></div></div></div>'; };
+    var body = '<div class="dhero"><div class="tx"><h1>Find your server on Moquil</h1><p>From MP crews to mod makers, there is a place for you.</p><form id="dsf"><input class="inp" id="dsq" placeholder="Explore servers" value="' + esc(CUR.arg || '') + '"></form></div></div>' +
+      '<div class="sec">' + (q ? 'Results' : 'Featured servers') + '<span class="count">' + list.length + '</span><span class="grow"></span><button class="btn sm go" data-act="newcom">' + ic('plus', 's') + ' Create a server</button></div>' +
+      (list.length ? '<div class="dgrid">' + list.slice(0, 48).map(card).join('') + '</div>' : '<div class="fempty">No servers yet. Make the first one.</div>') +
+      '<div class="sec">Popular mods</div><div class="dgrid">' + MOQ_MODS.slice(0, 6).map(function (m) { return '<div class="dsc" data-mod="' + m.id + '"><div class="ban" style="background:#000 url(' + m.cover + ') center / cover"></div><div class="ico"><div class="guild img" style="width:44px;height:44px;border-radius:14px;border:4px solid var(--d-card);background:#000 url(' + m.icon + ') center / cover"></div></div><div class="bd"><div class="b ell">' + esc(m.name) + '</div><div class="small dim cl2">' + esc(m.short || m.desc || '') + '</div></div></div>'; }).join('') + '</div>';
+    return { top: '<div class="ftop">' + ic('search') + '<b>Discover</b><span class="grow"></span></div>', body: body, after: function () { $('#dsf').onsubmit = function (e) { e.preventDefault(); go('discover', $('#dsq').value.trim()); }; } };
+  };
+  function renderRightD() {
+    var r = $('#right'); if (!r) return;
+    var show = CUR.page === 'friends' && !isPortrait();
+    r.style.display = show ? '' : 'none'; if (show) r.innerHTML = activeNow();
+  }
   // ---------- router ----------
   var TABS = {};
   function go(page, arg, tab) { if (tab) TABS[page] = tab; else if (page === 'user') TABS.user = 'main'; var h = page + (arg ? '/' + encodeURIComponent(arg) : ''); if (location.hash.replace(/^#/, '') === h) route(); else location.hash = h; }
   var DEF_TAB = { home: 'general', social: 'chats', library: 'all', store: 'shop', profile: 'main', search: '' };
   function route() {
     var h = (location.hash || '').replace(/^#/, ''), p = h.split('/');
-    CUR.page = p[0] || 'home'; CUR.arg = p[1] ? decodeURIComponent(p[1]) : ''; CUR.tab = TABS[CUR.page] || DEF_TAB[CUR.page] || (CUR.page === 'user' ? 'main' : '');
+    CUR.page = p[0] || (isPortrait() ? 'dms' : 'friends'); CUR.arg = p[1] ? decodeURIComponent(p[1]) : ''; CUR.tab = TABS[CUR.page] || DEF_TAB[CUR.page] || (CUR.page === 'user' ? 'main' : '');
     CUR.sub = CUR.page === 'settings' ? CUR.arg : '';
     render();
   }
   G.addEventListener('hashchange', function () { if (SESSION) route(); });
   G.MOQ_back = function () {   // Android back button: true = handled
     var s = $('.dlg-bg') || $('.sheet-bg'); if (s) { s.remove(); return true; }
-    if (CUR.page !== 'home') { history.back(); return true; }
+    if (CUR.page === 'community' && comView === 'chat' && isPortrait()) { comView = 'list'; render(); return true; }
+    if (CUR.page !== 'home' && CUR.page !== 'dms' && CUR.page !== 'friends') { history.back(); return true; }
     return false;
   };
 
@@ -441,6 +590,7 @@
     if (!SESSION) return; soonShell();
     var top = $('#top'), pg = $('#page'); if (!pg) return;
     var R = PAGES[CUR.page] || PAGES.home;
+    D.documentElement.classList.toggle('inchat', /^(chat|community)$/.test(CUR.page));
     var r = R(); top.innerHTML = r.top || ''; pg.innerHTML = r.body || '';
     pg.className = 'page scroll' + (r.full ? ' full' : '');
     pg.style.display = r.full ? 'flex' : ''; pg.style.flexDirection = r.full ? 'column' : '';
@@ -455,7 +605,33 @@
   function topRight() { var n = Soc.id ? Soc.unreadInbox() : 0; return '<span class="grow"></span><button class="ibtn" data-go="search" title="Search">' + ic('search') + '</button><button class="ibtn" data-act="inbox" title="Inbox">' + ic('bell') + (n ? '<span class="badge">' + n + '</span>' : '') + '</button>'; }
   function title(t, back) { return (back ? '<button class="ibtn" data-act="back">' + ic('back') + '</button>' : '') + '<div class="b up" style="font-size:16px;letter-spacing:.06em">' + t + '</div>'; }
 
-  var PAGES = {};
+  // ===== 4.13.1: MESSAGES (Discord mobile: actions, friends' activity cards, DM list with Wave) =====
+  PAGES.dms = function () {
+    if (!Soc.id) return { top: '<div class="b" style="font-size:22px">Messages</div>', body: '<div class="empty">Starting...</div>' };
+    var inb = Soc.unreadInbox() + Soc.S.inc.length;
+    var body = '<div class="dm-acts"><button class="ibtn sqb" data-go="search" title="Search">' + ic('search') + '</button><button class="ibtn sqb" data-act="inbox" title="Inbox">' + ic('bell') + (inb ? '<span class="cnt">' + inb + '</span>' : '') + '</button><button class="btn sqb grow" data-act="addfriend">' + ic('user', 's') + ' Add Friends</button><button class="btn sqb go blue" data-act="newgroup" title="New group">' + ic('plus') + '</button></div>';
+    var act = Soc.S.friends.filter(function (f) { return Soc.isOnline(f.id); }).map(function (f) { return { f: f, a: Soc.activity(f.id) }; });
+    act.sort(function (x, y) { return (y.a && y.a !== 'Moquil' ? 1 : 0) - (x.a && x.a !== 'Moquil' ? 1 : 0); });
+    if (act.length) body += '<div class="acts hscroll">' + act.slice(0, 12).map(function (x) {
+      var pr = Soc.profile(x.f.id), game = x.a && x.a !== 'Moquil' ? x.a : 'Moquil';
+      var m = MOQ_MODS.filter(function (mm) { return game.toLowerCase().indexOf(mm.name.toLowerCase().split(' ')[0]) >= 0; })[0] || (game === 'Moquil' ? null : MOQ_MODS[0]);
+      return '<div class="actc" data-user="' + x.f.id + '"><div class="gi" style="background-image:url(' + (m ? m.icon : 'img/logo.png') + ')"></div><div class="grow"><div class="row" style="gap:6px">' + avatar(x.f.id, x.f.name, pr, 'av s', true) + '</div><div class="b ell" style="margin-top:6px">' + esc(pr && pr.display || x.f.name) + '</div><div class="small dim ell">' + esc(game === 'Moquil' ? 'On Moquil' : game) + '</div></div></div>';
+    }).join('') + '</div>';
+    var cs = Soc.convs(), had = {};
+    var rows = cs.map(function (c) {
+      var last = (c.msgs || [])[c.msgs.length - 1], dm = c.kind === 0, id = dm ? c.key.slice(1) : '', pr = dm ? Soc.profile(id) : null;
+      if (dm) had[id] = 1;
+      var nm = dm ? (pr && pr.display || Soc.nameOf(id) || c.title) : c.title;
+      return '<div class="dmr' + (c.unread ? ' unread' : '') + '" data-chat="' + esc(c.key) + '">' + (dm ? avatar(id, nm, pr, 'av l') : '<div class="guild" style="width:48px;height:48px;border-radius:50%;background:' + colorOf(c.key) + '">' + ic(c.kind === 2 ? 'party' : 'users') + '</div>') +
+        '<div class="grow"><div class="row" style="gap:6px"><span class="nm ell ' + esc(pr && pr.nametag || '') + '">' + esc(nm) + '</span><span class="grow"></span><span class="tiny dim">' + (last ? ago(last.ts) : '') + '</span></div><div class="ln ell">' + (last ? esc((last.mine ? 'You: ' : last.fromName ? last.fromName + ': ' : '') + last.text) : 'No messages yet') + '</div></div>' + (c.unread ? '<span class="badge">' + c.unread + '</span>' : '') + '</div>';
+    });
+    Soc.S.friends.filter(function (f) { return !had[f.id]; }).forEach(function (f) {
+      var pr = Soc.profile(f.id);
+      rows.push('<div class="dmr" data-user="' + f.id + '">' + avatar(f.id, f.name, pr, 'av l') + '<div class="grow"><span class="nm ell ' + esc(pr && pr.nametag || '') + '">' + esc(pr && pr.display || f.name) + '</span>' + (statusLine(pr) ? '<div class="ln ell">' + esc(statusLine(pr)) + '</div>' : '') + '</div><button class="btn wave" data-wave="' + f.id + '">' + ic('smile', 's') + ' Wave</button></div>');
+    });
+    body += rows.length ? '<div class="dml">' + rows.join('') + '</div>' : '<div class="empty">' + ic('chat', 'l') + '<p>No messages yet. Tap Add Friends and type a friend\'s 8 digit ID.<br>Your ID: <b>' + Soc.id + '</b></p></div>';
+    return { top: '<div class="b" style="font-size:22px">Messages</div>', body: body };
+  };
   // ===== HOME (General / News / Discover) =====
   PAGES.home = function () {
     var t = CUR.tab || 'general', body = '';
@@ -473,14 +649,14 @@
     } else {
       var coms = Soc.id ? Soc.communities() : [];
       body = '<div class="sec">Mods and apps</div><div class="tiles">' + MOQ_MODS.map(tile).join('') + '</div>' +
-        '<div class="sec">Communities<span class="count">' + coms.length + '</span><span class="grow"></span><button class="btn sm" data-act="newcom">' + ic('plus', 's') + ' New</button></div>' +
-        (coms.length ? '<div class="card list">' + coms.slice(0, 30).map(comRow).join('') + '</div>' : '<div class="card pad dim small">Communities made in the game or in Moquil show here.</div>');
+        '<div class="sec">Servers<span class="count">' + coms.length + '</span><span class="grow"></span><button class="btn sm" data-act="newcom">' + ic('plus', 's') + ' New</button></div>' +
+        (coms.length ? '<div class="card list">' + coms.slice(0, 30).map(comRow).join('') + '</div>' : '<div class="card pad dim small">Servers made in the game or in Moquil show here.</div>');
     }
     return { top: tabs([['general', 'General'], ['news', 'News'], ['discover', 'Discover']], t) + topRight(), body: body };
   };
   var NEWS = [
-    { tag: 'Moquil', date: '2026-11-11', title: 'Moquil 1.0 is here', text: 'Friends, chats, communities, voice rooms, a Store and a Library for the MP mods. The same account and friends as the game, on the phone and on the web.' },
-    { tag: 'MP 4.13', date: '2026-11-11', title: 'The game Social page is linked with Moquil', text: 'Social > Moquil in MP Launcher shows a link code. Type it in Moquil > Settings > Connections and both become the same player: friends, chats and communities on both. Friends see your bio, pronouns, status and member since date in the game.', mod: 'mp' },
+    { tag: 'Moquil', date: '2026-11-11', title: 'Moquil 1.0 is here', text: 'Friends, chats, servers, voice rooms, a Store and a Library for the MP mods. The same account and friends as the game, on the phone and on the web.' },
+    { tag: 'MP 4.13', date: '2026-11-11', title: 'The game Social page is linked with Moquil', text: 'Social > Moquil in MP Launcher shows a link code. Type it in Moquil > Settings > Connections and both become the same player: friends, chats and servers on both. Friends see your bio, pronouns, status and member since date in the game.', mod: 'mp' },
     { tag: 'MP 4.12.10', date: '2026-11-11', title: 'Mission sync in cutscenes', text: 'Everyone in a synced mission now shows in the cutscenes and on the map, up to 16 players.', mod: 'mp' },
     { tag: 'MLG Production', date: '1.6.2', title: 'Record while driving', text: 'The folded timeline bar has Record / Stop, and getting in a car right after Record starts the take again for the car.', mod: 'mlg' },
     { tag: 'CamFX', date: '2.1', title: 'The 64-bit fix and the SACamFX options', text: 'Fall zoom only when sky diving, drunk effect when falling, and the arm64 script output fix.', mod: 'camfx' }
@@ -489,7 +665,7 @@
     var r = Soc.id ? Soc.rating(m.id) : { avg: 0, n: 0 };
     return '<div class="tile" data-info="' + m.id + '"><div class="img" style="background-image:url(' + m.cover + ')"><span class="k"></span><span class="info-b" data-info="' + m.id + '" title="More information">!</span></div><div class="t ell">' + esc(m.name) + '</div><div class="s row">' + stars(r.avg) + '<span>' + (r.n ? r.avg.toFixed(1) + ' (' + r.n + ')' : 'No ratings') + '</span></div></div>';
   }
-  function comRow(c) { return '<div class="li" data-com="' + esc(c.cid) + '"><div class="guild" style="width:42px;height:42px;background:' + colorOf(c.cid) + '">' + esc((c.name[0] || '#').toUpperCase()) + '</div><div class="grow"><div class="b ell">' + esc(c.name) + '</div><div class="small dim ell">' + esc(c.desc || 'By ' + (c.ownerName || '')) + '</div></div><span class="tiny dim">' + (c.members || 0) + ' members</span></div>'; }
+  function comRow(c) { return '<div class="li" data-com="' + esc(c.cid) + '">' + srvIcon(c, 42) + '<div class="grow"><div class="b ell">' + esc(c.name) + '</div><div class="small dim ell">' + esc(c.desc || 'By ' + (c.ownerName || '')) + '</div></div><span class="tiny dim">' + (c.members || 0) + ' members</span></div>'; }
 
   // ===== SEARCH =====
   var SQ = '';
@@ -504,8 +680,8 @@
         var fr = Soc.isFriend(p.id), out = Soc.isOut(p.id);
         return '<div class="li" data-user="' + p.id + '">' + avatar(p.id, p.name, Soc.profile(p.id), 'av') + '<div class="grow"><div class="b">' + esc(p.name) + '</div><div class="small dim">#' + p.id + (Soc.isOnline(p.id) ? ' &middot; online' : '') + '</div></div>' + (fr ? '<span class="chip green">Friend</span>' : out ? '<span class="chip">Sent</span>' : '<button class="btn sm go" data-add="' + p.id + '">' + ic('plus', 's') + ' Add</button>') + '</div>';
       }).join('') + '</div>' : '<div class="dim small">Type a name (3+ letters) or an 8 digit ID.</div>');
-      body += '<div class="sec">Communities<span class="count">' + coms.length + '</span></div>' + (coms.length ? '<div class="card list">' + coms.map(comRow).join('') + '</div>' : '<div class="dim small">Nothing</div>');
-    } else body = '<div class="empty">' + ic('search', 'l') + '<p>Search mods, people (name or #ID) and communities.</p></div>';
+      body += '<div class="sec">Servers<span class="count">' + coms.length + '</span></div>' + (coms.length ? '<div class="card list">' + coms.map(comRow).join('') + '</div>' : '<div class="dim small">Nothing</div>');
+    } else body = '<div class="empty">' + ic('search', 'l') + '<p>Search mods, people (name or #ID) and servers.</p></div>';
     return { top: '<div class="row grow"><span style="position:relative;flex:1"><input class="inp" id="sq" placeholder="Search Moquil" value="' + esc(SQ) + '"></span></div>',
       body: body, after: function () { var i = $('#sq'); i.oninput = function () { SQ = i.value; if (Soc.id) Soc.search(SQ); clearTimeout(i._t); i._t = setTimeout(function () { var p = i.selectionStart; render(); var j = $('#sq'); j.focus(); j.setSelectionRange(p, p); }, 250); }; if (!SQ) i.focus(); } };
   };
@@ -578,7 +754,7 @@
     Soc.on('rating', off);
   }
 
-  // ===== SOCIAL (Chats / Friends / Communities / Party / Inbox) =====
+  // ===== SOCIAL (Chats / Friends / Servers / Party / Inbox) =====
   PAGES.social = function () {
     var t = CUR.tab || 'chats', body = '';
     if (!Soc.id) return { top: title('Social'), body: '<div class="empty">Starting...</div>' };
@@ -599,8 +775,8 @@
       body += '<div class="sec">Friends<span class="count">' + fs.length + '</span></div>' + (fs.length ? '<div class="card list">' + fs.map(function (f) { var pr = Soc.profile(f.id); return '<div class="li ' + esc(pr && pr.nameplate || '') + '" data-user="' + f.id + '">' + avatar(f.id, f.name, pr, 'av') + '<div class="grow"><div class="b ' + esc(pr && pr.nametag || '') + '">' + esc(pr && pr.display || f.name) + '</div><div class="small dim ell">' + esc(statusLine(pr) || (Soc.isOnline(f.id) ? (Soc.activity(f.id) === 'Moquil' ? 'On Moquil' : 'Playing ' + Soc.activity(f.id)) : 'Offline')) + '</div></div><button class="ibtn" data-dm="' + f.id + '">' + ic('chat', 's') + '</button></div>'; }).join('') + '</div>' : '<div class="dim small">No friends yet.</div>');
     } else if (t === 'communities') {
       var all = Soc.communities(), mine = all.filter(function (c) { return c.joined || c.ownerId === Soc.id; });
-      body = '<div class="guilds">' + mine.map(function (c) { return '<div class="guild" data-com="' + esc(c.cid) + '" style="background:' + colorOf(c.cid) + '" title="' + esc(c.name) + '">' + esc((c.name[0] || '#').toUpperCase()) + '</div>'; }).join('') + '<div class="guild add" data-act="newcom" title="New community">' + ic('plus') + '</div></div>';
-      body += '<div class="sec">Your communities<span class="count">' + mine.length + '</span></div>' + (mine.length ? '<div class="card list">' + mine.map(comRow).join('') + '</div>' : '<div class="dim small">Join one below or make your own.</div>');
+      body = '<div class="guilds">' + mine.map(function (c) { return '<div data-com="' + esc(c.cid) + '" title="' + esc(c.name) + '">' + srvIcon(c, 48) + '</div>'; }).join('') + '<div class="guild add" data-act="newcom" title="Add a Server">' + ic('plus') + '</div></div>';
+      body += '<div class="sec">Your servers<span class="count">' + mine.length + '</span></div>' + (mine.length ? '<div class="card list">' + mine.map(comRow).join('') + '</div>' : '<div class="dim small">Join one below or make your own.</div>');
       var other = all.filter(function (c) { return mine.indexOf(c) < 0; });
       body += '<div class="sec">Discover<span class="count">' + other.length + '</span></div>' + (other.length ? '<div class="card list">' + other.slice(0, 40).map(comRow).join('') + '</div>' : '<div class="dim small">Nothing to show yet.</div>');
     } else if (t === 'party') {
@@ -617,7 +793,7 @@
       }).join('') + '</div>' : '<div class="empty">' + ic('bell', 'l') + '<p>Nothing new.</p></div>');
     }
     var u = Soc.unreadChats(), ni = Soc.unreadInbox();
-    return { top: tabs([['chats', 'Chats' + (u ? ' <span class="badge">' + u + '</span>' : '')], ['friends', 'Friends' + (Soc.S.inc.length ? ' <span class="badge">' + Soc.S.inc.length + '</span>' : '')], ['communities', 'Communities'], ['party', 'Party'], ['inbox', 'Inbox' + (ni ? ' <span class="badge">' + ni + '</span>' : '')]], t), body: body };
+    return { top: tabs([['chats', 'Chats' + (u ? ' <span class="badge">' + u + '</span>' : '')], ['friends', 'Friends' + (Soc.S.inc.length ? ' <span class="badge">' + Soc.S.inc.length + '</span>' : '')], ['communities', 'Servers'], ['party', 'Party'], ['inbox', 'Inbox' + (ni ? ' <span class="badge">' + ni + '</span>' : '')]], t), body: body };
   };
 
   // ===== a chat (DM / group / party) =====
@@ -657,21 +833,24 @@
       '<div class="vbar"><button class="btn sm ' + (V.muted ? 'red' : '') + '" data-act="vmute">' + ic(V.muted ? 'micoff' : 'mic', 's') + (V.muted ? ' Unmute' : ' Mute') + '</button><button class="btn sm ' + (V.deaf ? 'red' : '') + '" data-act="vdeaf">' + ic('head', 's') + (V.deaf ? ' Undeafen' : ' Deafen') + '</button><button class="btn sm red" data-act="vleave">' + ic('x', 's') + ' Leave</button></div></div>';
   }
 
-  // ===== a community (the glass community screen: channels, chat, members) =====
-  var comCh = 'general';
+  // ===== a community (the glass server screen: channels, chat, members) =====
+  var comCh = 'general', comView = 'list';
   PAGES.community = function () {
-    var c = Soc.id && Soc.community(CUR.arg); if (!c) return { top: title('Community', true), body: '<div class="empty">Loading the community...</div>', after: function () { if (Soc.id) Soc.viewCommunity(CUR.arg); } };
+    var c = Soc.id && Soc.community(CUR.arg); if (!c) return { top: title('Server', true), body: '<div class="empty">Loading the server...</div>', after: function () { if (Soc.id) Soc.viewCommunity(CUR.arg); } };
     Soc.viewCommunity(c.cid);
     var owner = c.ownerId === Soc.id, can = c.joined || owner, room = 'c' + c.cid;
-    var top = '<button class="ibtn" data-act="back">' + ic('back') + '</button><div class="guild" style="width:34px;height:34px;border-radius:10px;background:' + colorOf(c.cid) + '">' + esc((c.name[0] || '#').toUpperCase()) + '</div><div class="grow"><div class="b ell">' + esc(c.name) + '</div><div class="tiny dim">' + (c.members || 0) + ' members &middot; ' + (c.followers || 0) + ' following</div></div>' +
+    var top = '<button class="ibtn" data-act="back">' + ic('back') + '</button>' + srvIcon(c, 34, 'border-radius:10px;') + '<div class="grow"><div class="b ell">' + esc(c.name) + '</div><div class="tiny dim">' + (c.members || 0) + ' members &middot; ' + (c.followers || 0) + ' following</div></div>' +
+      '<button class="ibtn" data-invite="' + esc(c.cid) + '" title="Invite people">' + ic('plus') + '</button>' + (owner ? '<button class="ibtn" data-srvicon="' + esc(c.cid) + '" title="Change server icon">' + ic('image') + '</button>' : '') +
       (owner ? '<button class="ibtn" data-delcom="' + esc(c.cid) + '" title="Delete">' + ic('x') + '</button>' : '<button class="btn sm ' + (c.joined ? '' : 'go') + '" data-join="' + esc(c.cid) + '">' + (c.joined ? 'Leave' : 'Join') + '</button>');
+    if (!isPortrait()) top = '<div class="ftop">' + ic('hash') + '<b>general</b>' + (c.desc ? '<i class="dot-sep"></i><span class="small ell grow">' + esc(c.desc) + '</span>' : '<span class="grow"></span>') + '<button class="ibtn" data-invite="' + esc(c.cid) + '" title="Invite people">' + ic('user') + '</button></div>';
+    else if (comView === 'chat') top = '<button class="ibtn" data-act="comback">' + ic('back') + '</button>' + ic('hash', 's') + '<div class="grow"><div class="b ell">general</div><div class="tiny dim ell">' + esc(c.name) + '</div></div><button class="ibtn" data-voice="' + esc(room) + '" data-vt="' + esc(c.name) + '">' + ic('vol') + '</button>';
     var mem = (c.memberList || []);
     var chs = '<div class="chs card"><div class="small dim" style="margin-bottom:8px">' + esc(c.desc || 'Welcome to ' + c.name) + '</div><div class="tiny dim up" style="margin:6px 4px">Text channels</div><div class="ch-list"><div class="ch' + (comCh === 'general' ? ' on' : '') + '" data-ch="general">' + ic('hash', 's') + ' general</div></div>' +
       '<div class="tiny dim up" style="margin:12px 4px 6px">Voice channels</div><div class="ch-list"><div class="ch" data-voice="' + esc(room) + '" data-vt="' + esc(c.name) + '">' + ic('vol', 's') + ' Lounge' + (G.MoqVoice && MoqVoice.state.room === room ? ' <span class="chip green">on</span>' : '') + '</div></div>' +
       '<div class="grow"></div><div class="mini" style="margin:10px 0 0;padding:6px;border-top:1px solid var(--line2)">' + avatar(Soc.id, SESSION.user, null, 'av s') + '<div class="grow ell small b">' + esc(prof().display || SESSION.user) + '</div><button class="ibtn" data-act="vmute">' + ic(G.MoqVoice && MoqVoice.state.muted ? 'micoff' : 'mic', 's') + '</button><button class="ibtn" data-act="vdeaf">' + ic('head', 's') + '</button><button class="ibtn" data-go="settings">' + ic('gear', 's') + '</button></div></div>';
-    var mid = '<div class="cm card"><div class="row small dim" style="padding-bottom:8px;border-bottom:1px solid var(--line2)">' + ic('hash', 's') + '<b style="color:var(--text)">general</b></div>' + voiceBar(room) + '<div class="msgs scroll" id="msgs"></div>' + (can ? composer('Message #general') : '<div class="card pad small dim" style="text-align:center">Join the community to post. <button class="btn sm go" data-join="' + esc(c.cid) + '">Join</button></div>') + '</div>';
+    var mid = '<div class="cm card"><div class="row small dim" style="padding-bottom:8px;border-bottom:1px solid var(--line2)">' + ic('hash', 's') + '<b style="color:var(--text)">general</b></div>' + voiceBar(room) + '<div class="msgs scroll" id="msgs"></div>' + (can ? composer('Message #general') : '<div class="card pad small dim" style="text-align:center">Join the server to post. <button class="btn sm go" data-join="' + esc(c.cid) + '">Join</button></div>') + '</div>';
     var mm = '<div class="mem card scroll"><div class="tiny dim up" style="margin-bottom:6px">Members - ' + mem.length + '</div>' + mem.map(function (m) { return '<div class="mini" data-user="' + m.id + '" style="margin:0">' + avatar(m.id, m.name, Soc.profile(m.id), 'av s') + '<div class="grow ell small">' + esc(m.name) + '</div></div>'; }).join('') + '</div>';
-    return { top: top, full: true, body: '<div class="comm-split">' + chs + mid + mm + '</div>', after: function () { updateMsgs(true); if (can) bindComposer(function (txt) { Soc.post(c.cid, txt).then(function (ok) { if (ok) quest('msg'); updateMsgs(true); }); }); } };
+    return { top: top, full: true, body: '<div class="comm-split v-' + comView + '">' + chs + mid + mm + '</div>', after: function () { updateMsgs(true); if (can) bindComposer(function (txt) { Soc.post(c.cid, txt).then(function (ok) { if (ok) quest('msg'); updateMsgs(true); }); }); } };
   };
 
   // ===== PROFILE (Discord) =====
@@ -702,7 +881,7 @@
     } else {
       var fr = me ? Soc.S.friends.length : 0;
       html += '<div class="card list">' + (badges.length ? badges.filter(function (b) { return BADGES[b]; }).map(function (b) { return '<div class="li"><span style="font-size:22px">' + BADGES[b][0] + '</span><div class="grow"><div class="b">' + BADGES[b][1] + '</div><div class="small dim">' + BADGES[b][2] + '</div></div></div>'; }).join('') : '<div class="li dim">No badges yet</div>') + '</div>';
-      if (me) html += '<div class="sec">Stats</div><div class="card pad small">' + fr + ' friends &middot; ' + Soc.communities().filter(function (c) { return c.joined; }).length + ' communities &middot; ' + Soc.convs().length + ' chats</div>';
+      if (me) html += '<div class="sec">Stats</div><div class="card pad small">' + fr + ' friends &middot; ' + Soc.communities().filter(function (c) { return c.joined; }).length + ' servers &middot; ' + Soc.convs().length + ' chats</div>';
     }
     return { top: me ? title('You') + topRight() : title(esc(disp), true), body: html };
   }
@@ -788,7 +967,7 @@
     devices: function () { return { t: 'Devices', b: '<div class="card list"><div class="li">' + ic(IS_WEB ? 'game' : 'phone') + '<div class="grow"><div class="b">This ' + (IS_WEB ? 'browser' : 'phone') + '</div><div class="small dim">' + esc(IS_WEB ? navigator.userAgent.slice(0, 90) : (B.deviceInfo ? B.deviceInfo() : 'Android')) + '</div></div><span class="chip green">Now</span></div></div><div class="card pad small dim" style="margin-top:12px">Other phones and browsers with your account use the same ID. Change your password (Forgot password, Log out all devices) to stop them.</div>' }; },
     connections: function () {
       var k = ls('moq_key') || {};
-      return { t: 'Connections', b: '<div class="card pad"><div class="row">' + ic('game', 'l') + '<div class="grow"><div class="b" style="font-size:17px">MP Multiplayer (the game)</div><div class="small dim">' + (k.linked ? 'Linked. Your friends, chats, party and communities are the same in the game and here.' : 'Link the game so it and Moquil are the same player.') + '</div></div></div>' +
+      return { t: 'Connections', b: '<div class="card pad"><div class="row">' + ic('game', 'l') + '<div class="grow"><div class="b" style="font-size:17px">MP Multiplayer (the game)</div><div class="small dim">' + (k.linked ? 'Linked. Your friends, chats, party and servers are the same in the game and here.' : 'Link the game so it and Moquil are the same player.') + '</div></div></div>' +
         '<ol class="small" style="line-height:1.6;padding-left:18px"><li>Open MP Launcher on the phone with the game (MP 4.13 or newer).</li><li>Social &gt; <b>Moquil</b> &gt; Link code. A 10 character code shows.</li><li>Type it here.</li></ol>' +
         '<div class="row"><input class="inp grow" id="lcode" maxlength="12" placeholder="ABCDE12345" style="text-transform:uppercase;letter-spacing:2px"><button class="btn go" data-act="link">Link</button></div><div class="status" id="lst"></div></div>' +
         '<div class="card list" style="margin-top:12px"><div class="li" data-open="discord">' + ic('chat') + '<div class="grow"><div>Discord</div><div class="tiny dim">MP Discord server</div></div>' + ic('chev', 's') + '</div><div class="li" data-open="site">' + ic('game') + '<div class="grow"><div>MP website</div><div class="tiny dim">mpsamp-open.github.io</div></div>' + ic('chev', 's') + '</div></div>' };
@@ -820,7 +999,7 @@
     },
     shop: function () { setTimeout(function () { go('store', '', 'shop'); }, 0); return { t: 'Shop', b: '' }; },
     quests: function () { setTimeout(function () { go('store', '', 'quests'); }, 0); return { t: 'Quests', b: '' }; },
-    support: function () { return { t: 'Support', b: '<div class="card list"><div class="li" data-open="discord">' + ic('chat') + '<div class="grow"><div class="b">MP Discord server</div><div class="tiny dim">Ask the staff and the community</div></div>' + ic('chev', 's') + '</div><div class="li" data-open="site">' + ic('game') + '<div class="grow"><div class="b">MP website</div><div class="tiny dim">Downloads and guides</div></div>' + ic('chev', 's') + '</div></div>' }; },
+    support: function () { return { t: 'Support', b: '<div class="card list"><div class="li" data-open="discord">' + ic('chat') + '<div class="grow"><div class="b">MP Discord server</div><div class="tiny dim">Ask the staff and the server</div></div>' + ic('chev', 's') + '</div><div class="li" data-open="site">' + ic('game') + '<div class="grow"><div class="b">MP website</div><div class="tiny dim">Downloads and guides</div></div>' + ic('chev', 's') + '</div></div>' }; },
     debug: function () { return { t: 'Upload debug logs', b: '<div class="card pad small">Copy the logs and paste them in the MP Discord #support channel.</div><button class="btn go wide" style="margin-top:12px" data-act="copylogs">' + ic('copy', 's') + ' Copy logs</button>' }; },
     ack: function () { return { t: 'Acknowledgements', b: '<div class="card pad small" style="line-height:1.6">Moquil by ThirtyFox (ThirtyFoxMC).<br>Messaging over the public <b>HiveMQ</b> MQTT broker (broker.hivemq.com).<br>Voice with WebRTC and Google STUN.<br>MP Multiplayer, MLG Production and CamFX by the TYFMC team.<br>Layout ideas from the Ankama Launcher and Discord. No code or art from them is included.</div>' }; },
     getapp: function () {
@@ -834,7 +1013,7 @@
     whatsnew: function () { return { t: 'What\'s New', b: NEWS.map(function (n) { return '<div class="card pad" style="margin-bottom:10px"><div class="row"><span class="chip">' + esc(n.tag) + '</span><span class="tiny dim">' + esc(n.date) + '</span></div><div class="b" style="margin:6px 0 2px">' + esc(n.title) + '</div><div class="small dim">' + esc(n.text) + '</div></div>'; }).join('') }; },
     version: function () { return { t: 'App Version', b: '<div class="card pad"><div class="b" style="font-size:22px">Moquil ' + VERSION + '</div><div class="small dim">' + (IS_WEB ? 'Web version' : 'Android ' + (B.appVersion ? B.appVersion() : '')) + '</div></div>' }; },
     device: function () { return { t: 'Device Info', b: '<div class="card pad small" style="word-break:break-word">' + esc(B && B.deviceInfo ? B.deviceInfo() : navigator.userAgent) + '<br>Screen ' + screen.width + 'x' + screen.height + ' &middot; window ' + innerWidth + 'x' + innerHeight + ' &middot; ' + (D.documentElement.classList.contains('portrait') ? 'portrait' : 'landscape') + '</div>' }; },
-    client: function () { return { t: 'Client Info', b: '<div class="card pad small" style="line-height:1.6">ID #' + (Soc.id || '') + '<br>Broker ' + esc(Soc.broker) + ' (' + (Soc.up() ? 'connected' : 'not connected') + ')<br>Friends ' + Soc.S.friends.length + ' &middot; chats ' + Soc.convs().length + ' &middot; communities ' + Soc.communities().length + '<br>Public key ' + esc((Soc.pubHex || '').slice(0, 24)) + '...</div>' }; },
+    client: function () { return { t: 'Client Info', b: '<div class="card pad small" style="line-height:1.6">ID #' + (Soc.id || '') + '<br>Broker ' + esc(Soc.broker) + ' (' + (Soc.up() ? 'connected' : 'not connected') + ')<br>Friends ' + Soc.S.friends.length + ' &middot; chats ' + Soc.convs().length + ' &middot; servers ' + Soc.communities().length + '<br>Public key ' + esc((Soc.pubHex || '').slice(0, 24)) + '...</div>' }; },
     logs: function () { return { t: 'Logs', b: '<pre class="card pad tiny scroll" style="white-space:pre-wrap;max-height:60vh">' + esc((G.MOQ_LOG || ['(empty)']).join('\n')) + '</pre>' }; },
     cache: function () { return { t: 'Cache Actions', b: '<div class="card list"><div class="li" data-act="clearcache">' + ic('x') + '<div class="grow"><div>Clear cache</div><div class="tiny dim">Images and downloaded pages. You stay logged in.</div></div></div><div class="li" data-act="resync">' + ic('link') + '<div class="grow"><div>Reconnect and sync</div><div class="tiny dim">Get your friends and chats again from the backup</div></div></div><div class="li danger" data-act="wipe">' + ic('x') + '<div class="grow">Delete all local data</div></div></div>' }; }
   };
@@ -852,10 +1031,13 @@
     if (t.closest('.dlg-bg') || t.closest('.sheet-bg')) return;
     if ((el = t.closest('[data-go]'))) { var pg = el.dataset.go; if (el.dataset.subto) go('settings', el.dataset.subto); else go(pg, '', el.dataset.tabto); return; }
     if ((el = t.closest('[data-tab]'))) { CUR.tab = TABS[CUR.page] = el.dataset.tab; render(); return; }
+    if ((el = t.closest('[data-ftab2]'))) { FTAB = el.dataset.ftab2; render(); return; }
+    if ((el = t.closest('[data-srvmenu]'))) { var smc = Soc.community(el.dataset.srvmenu); if (!smc) return; var so = smc.ownerId === Soc.id; dialog({ title: smc.name, body: '<div class="card list"><div class="li" data-invite="' + esc(smc.cid) + '">' + ic('user') + '<div class="grow b">Invite People</div></div>' + (so ? '<div class="li" data-srvicon="' + esc(smc.cid) + '">' + ic('image') + '<div class="grow b">Change Server Icon</div></div><div class="li" data-delcom="' + esc(smc.cid) + '" style="color:#f23f42">' + ic('x') + '<div class="grow b">Delete Server</div></div>' : (smc.joined ? '<div class="li" data-join="' + esc(smc.cid) + '" style="color:#f23f42">' + ic('out') + '<div class="grow b">Leave Server</div></div>' : '')) + '</div>', buttons: [] }); return; }
     if ((el = t.closest('[data-ftab]'))) { friendTab = el.dataset.ftab; renderRight(); return; }
     if ((el = t.closest('[data-set]'))) { location.hash = 'settings/' + el.dataset.set; return; }
     if ((el = t.closest('[data-chat]'))) { go('chat', el.dataset.chat); return; }
-    if ((el = t.closest('[data-com]'))) { comCh = 'general'; go('community', el.dataset.com); return; }
+    if ((el = t.closest('[data-com]'))) { comCh = 'general'; comView = 'list'; go('community', el.dataset.com); return; }
+    if ((el = t.closest('[data-wave]'))) { e.stopPropagation(); var wk = Soc.openDm(el.dataset.wave); if (wk) { Soc.send(wk.key || wk, '\uD83D\uDC4B'); toast('You waved'); soon(); } return; }
     if ((el = t.closest('[data-dm]'))) { e.stopPropagation(); var k = Soc.openDm(el.dataset.dm); if (k) go('chat', k.key || k); return; }
     if ((el = t.closest('[data-add]'))) { e.stopPropagation(); if (Soc.addFriend(el.dataset.add)) { quest('friend'); toast('Friend request sent'); } soon(); return; }
     if ((el = t.closest('[data-acc]'))) { e.stopPropagation(); Soc.accept(el.dataset.acc); quest('friend'); if (Soc.S.friends.length >= 5) award('friends5'); soon(); return; }
@@ -868,8 +1050,11 @@
     if ((el = t.closest('[data-pdec]'))) { Soc.declineParty(el.dataset.pdec); soon(); return; }
     if ((el = t.closest('[data-pinv]'))) { Soc.inviteParty(el.dataset.pinv); toast('Invite sent'); soon(); return; }
     if ((el = t.closest('[data-join]'))) { var jc = Soc.community(el.dataset.join); if (jc) { Soc.joinCommunity(jc.cid, !jc.joined); if (!jc.joined) {} else quest('com'); } render(); return; }
-    if ((el = t.closest('[data-delcom]'))) { var dc = el.dataset.delcom; dialog({ title: 'Delete community', body: 'Delete it for everyone? The posts go too.', buttons: [{ t: 'Cancel', fn: function () {} }, { t: 'Delete', cls: 'red', fn: function () { Soc.deleteCommunity(dc); go('social', '', 'communities'); } }] }); return; }
-    if ((el = t.closest('[data-ch]'))) { comCh = el.dataset.ch; render(); return; }
+    if ((el = t.closest('[data-invite]'))) { var iv = el.dataset.invite, ivs = Soc.community(iv); dialog({ title: 'Invite friends to ' + (ivs ? ivs.name : 'the server'), body: '<label class="lbl">Send a server invite to a friend</label><div class="row"><input class="inp grow" readonly value="moquil://server/' + esc(iv) + '"><button class="btn go" data-cpy="moquil://server/' + esc(iv) + '">Copy</button></div><div class="tiny dim" style="margin-top:8px">They tap + Add a Server, then Join a Server, and paste it.</div>', buttons: [{ t: 'Done', cls: 'go', fn: function () {} }] }); return; }
+    if ((el = t.closest('[data-cpy]'))) { copy(el.dataset.cpy); return; }
+    if ((el = t.closest('[data-srvicon]'))) { var sc = el.dataset.srvicon; pickImage(512, 512, .9, function (d) { cropSquare(d, 96, function (sq) { Soc.setCommunityIcon(sc, sq).then(function () { toast('Server icon updated'); render(); }); }); }); return; }
+    if ((el = t.closest('[data-delcom]'))) { var dc = el.dataset.delcom; dialog({ title: 'Delete server', body: 'Delete it for everyone? The posts go too.', buttons: [{ t: 'Cancel', fn: function () {} }, { t: 'Delete', cls: 'red', fn: function () { Soc.deleteCommunity(dc); go('social', '', 'communities'); } }] }); return; }
+    if ((el = t.closest('[data-ch]'))) { comCh = el.dataset.ch; comView = 'chat'; render(); return; }
     if ((el = t.closest('[data-voice]'))) { joinVoice(el.dataset.voice, el.dataset.vt); return; }
     if ((el = t.closest('[data-gadd]'))) { var gk = el.dataset.gadd, gc = Soc.conv(gk); pickFriends('Add to ' + gc.title, function (ids) { ids.forEach(function (id) { Soc.addToGroup(gk, id); }); updateMsgs(true); }, gc.members.map(function (m) { return m.id; })); return; }
     if ((el = t.closest('[data-gleave]'))) { var lk = el.dataset.gleave; dialog({ title: 'Leave group', body: 'Leave this group?', buttons: [{ t: 'Cancel', fn: function () {} }, { t: 'Leave', cls: 'red', fn: function () { Soc.leaveGroup(lk); go('social', '', 'chats'); } }] }); return; }
@@ -920,7 +1105,9 @@
     editprof: editProfile, status: statusDialog,
     addfriend: function () { prompt2('Add a friend', 'Their 8 digit ID (in the game: Social > Friends, or in Moquil: Social > Friends)', '', function (v) { v = v.replace(/\D/g, ''); if (v.length !== 8) { toast('The ID has 8 digits'); return false; } if (v === Soc.id) { toast('That is you'); return false; } Soc.watchProfile(v); if (Soc.addFriend(v)) { quest('friend'); toast('Friend request sent to #' + v); } else toast('Already a friend or sent'); soon(); }, { ph: '12345678', ok: 'Send request', max: 9 }); },
     newgroup: function () { pickFriends('New group', function (ids) { if (!ids.length) return; prompt2('Group name', 'Name (optional)', '', function (n) { var k = Soc.createGroup(n, ids); go('chat', k); }); }); },
-    newcom: function () { prompt2('New community', 'Name', '', function (n, bg) { var d = $('#cd', bg).value; if (!n.trim()) return false; Soc.createCommunity(n, d).then(function (cid) { if (cid) { award('founder'); quest('com'); go('community', cid); } }); }, { ok: 'Create', max: 40, extra: '<label class="lbl">Description</label><textarea class="inp" id="cd" maxlength="300"></textarea>' }); },
+    newcom: function () { addServer(); },
+    comback: function () { comView = 'list'; render(); },
+    discover: function () { go('discover'); },
     mkparty: function () { Soc.createParty(); render(); },
     leaveparty: function () { Soc.leaveParty(); render(); },
     readall: function () { Soc.markInboxRead(); render(); },

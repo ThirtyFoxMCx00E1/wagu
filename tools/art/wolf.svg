@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <!-- MLG wolf mark: flat geometric shapes, two tones per side -->
+  <polygon points="34,14 74,62 30,84" fill="#c9cdd6"/>
+  <polygon points="166,14 126,62 170,84" fill="#9aa0ad"/>
+  <polygon points="40,32 64,62 38,74" fill="#e2468f"/>
+  <polygon points="160,32 136,62 162,74" fill="#b8346f"/>
+  <polygon points="30,84 74,62 100,72 100,190 70,152 40,124" fill="#dfe2e8"/>
+  <polygon points="170,84 126,62 100,72 100,190 130,152 160,124" fill="#b3b8c3"/>
+  <polygon points="100,72 82,94 100,112" fill="#c4c8d1"/>
+  <polygon points="100,72 118,94 100,112" fill="#9fa5b1"/>
+  <polygon points="30,84 56,96 40,124" fill="#c4c8d1"/>
+  <polygon points="170,84 144,96 160,124" fill="#9096a3"/>
+  <polygon points="58,100 88,108 64,114" fill="#15161a"/>
+  <polygon points="142,100 112,108 136,114" fill="#15161a"/>
+  <polygon points="64,104 82,108 68,111" fill="#4cb8ff"/>
+  <polygon points="136,104 118,108 132,111" fill="#4cb8ff"/>
+  <polygon points="80,122 100,114 100,190 72,150" fill="#f4f5f7"/>
+  <polygon points="120,122 100,114 100,190 128,150" fill="#d6d9df"/>
+  <polygon points="90,158 110,158 100,172" fill="#15161a"/>
+</svg>

@@ -121,6 +121,13 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **4.13.1**: Moquil looks like Discord, Servers, matching app icons, the server notice can be closed.
+  - Moquil 1.1 uses the Discord layout everywhere: desktop and desktop-site mode get the server rail, the Friends page (Online / All / Pending / Add Friend), Active Now, direct messages and the channel sidebar; phones get the Discord mobile layout. The web app at [mpsamp-open.github.io/moquils-web](https://mpsamp-open.github.io/moquils-web/) is the same.
+  - New Discord style login: "Welcome back", show password, Forgot your password?, Register, and a QR code that opens Moquil on the web.
+  - Communities are now **Servers**: Create My Own (name, description, icon) or Join a Server with an invite code or `moquil://server/...` link, an invite button, and the server icon in the rail. New Discover page ("Find your server on Moquil") with featured servers and popular mods.
+  - Moquil, MP Voice and MP Textdraw Editor have the same full-bleed adaptive icon (same shape and color, no white background or small icon), each with its own glyph. New flat, hand-drawn style art for the mods and the app.
+  - MLG Production 1.6.3: no animated textures any more; only the MLG Production title has a shine sweep.
+  - The "This server is in development" notice on the default, featured and auth servers can be closed again: Close, Join anyway and tapping outside work (the dim background no longer took the focus), and the yellow outline is gone.
 - **4.13**: Moquil, the MP social app (Android + web).
   - New app **Moquil** (`moquil/`, `Moquil.apk`): your MP friends, chats, group chats, party, communities and voice rooms, like Discord. Rotates portrait and landscape. The same app runs in the browser at [mpsamp-open.github.io/moquils-web](https://mpsamp-open.github.io/moquils-web/) (also `mpsamp-open.github.io/moquil/`) in a desktop window.
   - Log in, sign up (Discord `/gen` code) and forgot password with your MP account. Moquil remembers you on every device until you press Log Out ("Remember me" off = only until the browser closes). Your social key is saved with your account, so the web and other phones are the same #ID.

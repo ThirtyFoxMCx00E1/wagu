@@ -188,7 +188,7 @@
         gen++; Object.keys(subs).forEach(function (f) { M.sub(T(f)); });
         while (outQ.length) { var o = outQ.shift(); M.pub(T(o[0]), o[1], o[2]); }
         publishProfile(); publishPresence(); publishRich();
-        S.coms.forEach(function (c) { if (c.ownerId === K.id && !c.deleted && c.name) makeEnv('com', '', c.name + RS + (c.desc || '')).then(function (e) { pub('c/' + c.cid + '/i', e, true); }); });
+        S.coms.forEach(function (c) { if (c.ownerId === K.id && !c.deleted && c.name) makeEnv('com', '', c.name + RS + (c.desc || '')).then(function (e) { pub('c/' + c.cid + '/i', e, true); }); if (c.ownerId === K.id && !c.deleted && c.icon) makeEnv('cic', c.cid, c.icon).then(function (e) { pub('c/' + c.cid + '/ic', e, true); }); });
         emit('link', true);
       },
       msg: function (topic, data) { onTopic(topic, data); },
@@ -371,6 +371,11 @@
       if (comWatched(cc)) comSubs(cc, true);
       emit('change'); return;
     }
+    if (p.length === 3 && p[0] === 'c' && p[2] === 'ic' && e.kind === 'cic' && e.to === p[1]) {   // 4.13.1: server icon (Moquil only)
+      if (p[1].indexOf(e.from + '-') !== 0 || !/^data:image\/(jpeg|png|webp);base64,/.test(e.body)) return;
+      var ci = com(p[1]); if (!ci) { ci = { cid: p[1], posts: [], seen: 0 }; S.coms.push(ci); }
+      ci.icon = e.body; emit('change'); return;
+    }
     if (p.length === 4 && p[0] === 'c' && p[2] === 'm' && e.kind === 'cm' && e.from === p[3] && e.to === p[1]) {
       S.comMem[p[1]] = S.comMem[p[1]] || {}; S.comMem[p[1]][e.from] = e.body.slice(0, 2); S.comMemName[e.from] = e.name;
       var c5 = com(p[1]); if (c5) comCount(c5); emit('change'); return;
@@ -449,7 +454,7 @@
     var keep = [40, 15, 3, 0], j = '';
     for (var i = 0; i < keep.length; i++) {
       var o = { v: 1, at: Date.now(), friends: S.friends, inc: S.inc, out: S.out, favs: S.favs, myRatings: S.myRatings, partyOk: S.partyOk,
-        coms: S.coms.filter(function (c) { return !c.deleted; }).map(function (c) { return { cid: c.cid, name: c.name, desc: c.desc, ownerId: c.ownerId, ownerName: c.ownerName, ts: c.ts, joined: c.joined, followed: c.followed }; }),
+        coms: S.coms.filter(function (c) { return !c.deleted; }).map(function (c) { return { cid: c.cid, name: c.name, desc: c.desc, ownerId: c.ownerId, ownerName: c.ownerName, ts: c.ts, joined: c.joined, followed: c.followed, icon: c.ownerId === K.id ? c.icon : undefined }; }),
         convs: S.convs.map(function (c) { var x = Object.assign({}, c); x.msgs = (c.msgs || []).slice(-keep[i]); return x; }) };
       j = JSON.stringify(o); if (j.length < 40000) break;
     }
@@ -489,7 +494,7 @@
     start: async function (name) {
       await loadOrMakeKey(); load(); S.name = cleanName(name || '');
       S.coms.forEach(function (c) { c.deleted = false; });
-      sub('m/' + K.id + '/#'); sub('s/' + K.id); sub('o/+'); sub('c/+/i'); sub('u/' + K.id);
+      sub('m/' + K.id + '/#'); sub('s/' + K.id); sub('o/+'); sub('c/+/i'); sub('c/+/ic'); sub('u/' + K.id);
       S.friends.forEach(function (f) { sub('p/' + f.id); });
       sub('p/' + K.id);
       S.coms.forEach(function (c) { if (comWatched(c)) comSubs(c, true); });
@@ -571,6 +576,13 @@
       S.coms.push(c); pub('c/' + c.cid + '/i', await makeEnv('com', '', c.name + RS + c.desc), true);
       comSubs(c, true); publishMembership(c); dirty(); return c.cid;
     },
+    setCommunityIcon: async function (cid, dataUrl) {
+      var c = com(cid); if (!c || c.ownerId !== K.id) return false;
+      c.icon = dataUrl || ''; pub('c/' + cid + '/ic', dataUrl ? await makeEnv('cic', cid, dataUrl) : '', true); dirty(); emit('change'); return true;
+    },
+    findCommunity: function (code) {   // an invite: the server ID (owner#-xxxxxx) or a moquil link with it
+      code = String(code || '').trim(); var m = code.match(/(\d{8}-[0-9a-f]{6})/i); return m ? m[1].toLowerCase() : '';
+    },
     joinCommunity: function (cid, j) { var c = com(cid); if (!c || !!c.joined === j) return; c.joined = j; if (j) c.followed = true; publishMembership(c); comSubs(c, comWatched(c)); dirty(); },
     followCommunity: function (cid, f) { var c = com(cid); if (!c || !!c.followed === f) return; c.followed = f; publishMembership(c); comSubs(c, comWatched(c)); dirty(); },
     post: async function (cid, text) {
@@ -580,7 +592,7 @@
       pub('c/' + cid + '/p/' + pid, await makeEnv('cp', cid, text), true);
       c.posts = c.posts || []; c.posts.unshift({ id: pid, fromId: K.id, fromName: S.name, text: text, ts: now() }); c.seen = now(); dirty(); return true;
     },
-    deleteCommunity: function (cid) { var c = com(cid); if (!c || c.ownerId !== K.id) return; (c.posts || []).forEach(function (p) { pub('c/' + cid + '/p/' + p.id, '', true); }); pub('c/' + cid + '/m/' + K.id, '', true); pub('c/' + cid + '/i', '', true); comSubs(c, false); c.deleted = true; c.joined = c.followed = false; dirty(); },
+    deleteCommunity: function (cid) { var c = com(cid); if (!c || c.ownerId !== K.id) return; (c.posts || []).forEach(function (p) { pub('c/' + cid + '/p/' + p.id, '', true); }); pub('c/' + cid + '/m/' + K.id, '', true); pub('c/' + cid + '/i', '', true); if (c.icon) pub('c/' + cid + '/ic', '', true); comSubs(c, false); c.deleted = true; c.joined = c.followed = false; dirty(); },
     viewCommunity: function (cid) {
       var old = com(S.viewCid); S.viewCid = cid; if (old && !comWatched(old)) comSubs(old, false);
       var c = com(cid); if (c) { comSubs(c, true); if (c.posts && c.posts[0]) c.seen = c.posts[0].ts; S.notifs.forEach(function (n) { if (n.kind === 'com' && n.ref === cid) n.read = true; }); dirty(); }

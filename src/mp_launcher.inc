@@ -656,7 +656,7 @@ static bool LAlreadyOn(const LRow& r)
 static void LLeave(const LRow& r) { if(r.kind == 0) { if(IsOnDefault()) LeaveServer("Disconnected from the server."); } else LeaveServer("Left the server."); }
 // 4.13: the default server, the featured 24/7 servers and custom servers with the login system
 // (Authentication) are still on the developing stage - joining one shows a notice first.
-static bool s_bDevAsk = false; static LRow s_DevRow; static std::set<std::string> s_DevOk;
+static bool s_bDevAsk = false, s_bDevFocus = false; static LRow s_DevRow; static std::set<std::string> s_DevOk;
 static bool LIsDevServer(const LRow& r)
 {
     if(r.kind == 0 || (r.kind >= 3 && r.kind <= 6)) return true;
@@ -670,7 +670,7 @@ static void LJoin(const LRow& r)
     if(!r.on && LIsDevServer(r))
     {
         char k[64]; snprintf(k, sizeof(k), "%d|%s|%d", r.kind, r.name, r.port);
-        if(!s_DevOk.count(k)) { s_DevRow = r; s_bDevAsk = true; return; }
+        if(!s_DevOk.count(k)) { s_DevRow = r; s_bDevAsk = true; s_bDevFocus = true; return; }
     }
     LJoinNow(r);
 }
@@ -680,19 +680,22 @@ static void LDevNotice()
     const ImVec2 ds = ImGui::GetIO().DisplaySize;
     const float w = ImMin(UI::S(760), ds.x - UI::S(40)), pw = UI::S(22);
     ImGui::SetNextWindowPos(ImVec2(0, 0)); ImGui::SetNextWindowSize(ds);
+    // 4.13.1: the dim layer no longer takes the focus every frame (it stole it from the notice, so
+    // "Join anyway" / "Cancel" never got the touch). Tapping the dark area outside closes the notice.
     ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 0.55f));
-    ImGui::SetNextWindowFocus();
-    ImGui::Begin("##MPDevDim", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollbar);
+    ImGui::Begin("##MPDevDim", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollbar |
+                 ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav);
+    const bool tapOutside = ImGui::IsWindowHovered() && ImGui::IsMouseReleased(0);
     ImGui::End();
     ImGui::PopStyleColor();
     ImGui::SetNextWindowPos(ImVec2(ds.x * 0.5f, ds.y * 0.5f), 0, ImVec2(0.5f, 0.5f));
     ImGui::SetNextWindowSize(ImVec2(w, 0));
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(pw, pw));
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, UI::S(1));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);   // 4.13.1: no yellow outline
     ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(36 / 255.f, 40 / 255.f, 46 / 255.f, 252 / 255.f));
-    ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(1.0f, 0.78f, 0.25f, 0.9f));
-    ImGui::SetNextWindowFocus();
+    ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0, 0, 0, 0));
+    if(s_bDevFocus) { ImGui::SetNextWindowFocus(); s_bDevFocus = false; }   // only when it opens
     if(ImGui::Begin("##MPDevNotice", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize))
     {
         const LRow& r = s_DevRow;
@@ -715,7 +718,9 @@ static void LDevNotice()
         ImGui::SameLine(0, UI::S(12));
         if(ImGui::Button("Cancel", ImVec2(bw, bh))) s_bDevAsk = false;
     }
+    const bool overNotice = ImGui::IsWindowHovered(ImGuiHoveredFlags_AllowWhenBlockedByActiveItem);
     ImGui::End();
+    if(tapOutside && !overNotice) s_bDevAsk = false;
     ImGui::PopStyleColor(2);
     ImGui::PopStyleVar(3);
 }
