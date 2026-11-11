@@ -677,6 +677,7 @@ static void ShowPairPopup(int from);
 static bool JoinFlowActive();
 static bool JoinScreenUp();   // 4.13.2
 static void MenuMpProcess(int ped, uint64_t now);   // 4.13.4 (mp_menu.inc)
+static bool MenuMpActive();                          // 4.13.5 (mp_menu.inc)
 static void SpawnLight(int ped, const Vec3& at, float heading, bool findGround);   // 4.12.9 (mp_join.inc)
 static void JoinOverlayStart();
 static void LeaveServer(const char* msg);
@@ -4171,6 +4172,10 @@ void MP::Process()
     // pause menu = paused for the others; they keep playing, we keep our seat (heartbeat thread)
     const bool paused = Game::IsPaused();
     client.SetGamePaused(paused);
+    // 4.13.5: no idle (AFK) camera while you are in multiplayer / on MP's screens (the JPatch idle camera
+    // crashed in CCamera::Process on the black server select: libJPatch.so + 0x1A5A4)
+    if(MenuMpActive() || client.GetState() != NET_DISCONNECTED || s_Server.IsRunning() || FloatMenu::IsModal() || JoinFlowActive())
+        Game::KeepPadAwake();
     client.Poll(&s_Events);
     AuthFrame(MP_NowMs());   // 3.21.6: login screens + ticket
     // 2.17: kill feed lines no longer expire - they stay until pushed out by newer kills.

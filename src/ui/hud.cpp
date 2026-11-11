@@ -1332,11 +1332,15 @@ void PadDrawCursor();   // main.cpp
 // instead of the splash pictures. false = not drawn (the game draws its own).
 bool HUD::RenderLoading(float pct)
 {
-    if(!s_bInit) return false;   // never the first init on the loading screen
+    // 4.13.5: the first init may happen here (Multiplayer tapped on the title menu: no in-game frame yet)
+    if(!RsGlobal || RsGlobal->maximumWidth < 64 || RsGlobal->maximumHeight < 64) return false;
+    if(!s_bInit && !Init()) return false;
+    ImGuiContext* g = ImGui::GetCurrentContext();
+    if(!g || g->WithinFrameScope) return false;
     ImGuiIO& io = ImGui::GetIO();
     io.DisplaySize = ImVec2((float)RsGlobal->maximumWidth, (float)RsGlobal->maximumHeight);
-    if(io.DisplaySize.x < 64 || io.DisplaySize.y < 64) return false;
     ImGui_ImplRenderWare_NewFrame();
+    if(io.DeltaTime <= 0.0f) io.DeltaTime = 1.0f / 30.0f;
     ImGui::NewFrame();
     MP::DrawMenuLoading(ImGui::GetBackgroundDrawList(), pct, true);
     ImGui::EndFrame();

@@ -121,6 +121,10 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **4.13.5**: fix for the crash in the camera code (libJPatch.so + 0x1A5A4 from CCamera::Process) on the main menu Multiplayer screen and the launcher, and a new custom MP loading screen.
+  - The crash: JPatch brings back the idle (AFK) camera. While MP's launcher or the black server select is open they take every touch, so the game thought the phone was idle, started the idle camera with no target and crashed (SIGSEGV at 0x0). MP now keeps the pad "touched" while the launcher, server select, join flow, a modal menu or a connection is active, so the idle camera never starts.
+  - New loading screen when you tap Multiplayer on the main menu: the ui_bg city background, MP launcher panel style (top bar, MULTIPLAYER title, welcome line, FEATURED SERVERS / ONLINE 24/7 chips, sound chip, square progress bar with percent and tips, rising sparks). Normal single player loads keep the game's own loading screen.
+  - The loading screen no longer falls back to the game splash when the HUD was not ready yet (tapping Multiplayer straight from the title menu).
 - **4.13.4**: a Multiplayer tile on the main menu (MP loading screen, a black, silent Grove Street server select with the launcher after about 5 s). New 24/7 featured server: San Andreas Online League (Rocket Soccer, port 1934) with the original SA:O / Neon RL style HUD: boost gauge, score line, navy name tags, car lobby at Grove Street, ranked 5-minute matches with MMR tiers, free play, /team /stats /rank /top.
 - **4.13.3**: game sound is back while voice chat is on, the black join panel waits for "Connected successfully!".
   - No more quiet game on the default server: voice chat opened the microphone in Android's "voice call" mode, and many phones (Samsung, Xiaomi, Oppo, vivo...) then turn the game's own sound (cars, guns, radio, footsteps) far down or off. The mic (and the MP Voice app, 4.13.2) now records in the normal mode, so the game sounds the same with the mic on or off.

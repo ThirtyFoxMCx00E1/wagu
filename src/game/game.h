@@ -141,6 +141,9 @@ namespace Game
     bool  IsMainMenuShown();           // the game's own main menu (title or pause) is on screen
     bool  IsFrontendMenu();            // any menu screen of the game is on screen
     void  SetGameSoundFader(float f);  // 0 = silent .. 1 = normal (effects + music)
+    // 4.13.5: tells the game's pad "touched just now" (CPad::LastTimeTouched) so the idle camera never
+    // starts while MP's own screens take every touch (JPatch's AFK camera crashed: libJPatch + 0x1A5A4)
+    void  KeepPadAwake();
     float ProgressPercent();           // stats "Progress made" / "Total progress" * 100, -1 if unknown
 
     // ---- 2.13 player state + environment (netstate.cpp) ------------------------------------

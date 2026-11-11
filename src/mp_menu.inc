@@ -109,6 +109,7 @@ static void MenuMpProcess(int ped, uint64_t now)
     s_bMenuMpCard = st == NET_DISCONNECTED && !FloatMenu::IsPageOpen(FloatMenu::PAGE_SERVER);
 }
 
+static bool MenuMpActive() { return s_bMenuMp.load(); }
 bool MP::MenuMpBlack() { return s_bMenuMp.load() && s_bMenuMpBlack.load(); }
 bool MP::MenuMpLoading() { return s_bMenuMpOn && s_bMenuMp.load() && !s_bMenuMpLoaded.load(); }
 
@@ -120,68 +121,145 @@ static const char* const kMenuMpTips[] = {
     "Tip: Settings > Servers keeps your favourite servers",
     "Tip: /help lists the commands of the server you are on",
 };
-static const char* const kMenuMpServers[] = {
-    "MP Default Server", "Brief Case War 24/7", "Modern Warfare 3 24/7", "Mega Vil Futuristic Roleplay",
-    "Project Day Z Legacy", "San Andreas Online League",
-};
-// pct 0..100. full = the whole screen is ours (game loading screen); else over the black hologram.
-// Only the draw list is used (no ImGui windows): it never takes a touch.
+// 4.13.5: the loading screen of a main menu [Multiplayer] tap (Screenshots/animated-fivem-loading-screen-
+// template-main-view.png layout) in the MP launcher's look: ui_bg.jpg (the launcher backdrop) over the whole
+// screen, slate glass, square chips, the launcher's blue accent. Bottom left: title, "Welcome, <name>", two
+// info chips. Middle: status, progress bar, percent. Right: sound chip. Centre right: the faded MP mark.
+// pct 0..100. loadingScreen = the game's loading screen (save / new game), else the 6 s countdown over the
+// black hologram before the launcher opens. Only the draw list is used (no ImGui windows): it never takes a touch.
+static inline float MlHash(int i, int k) { uint32_t h = (uint32_t)i * 2654435761u ^ (uint32_t)k * 2246822519u; h ^= h >> 13; h *= 3266489917u; h ^= h >> 16; return (h & 0xFFFFFF) / 16777216.0f; }
+static void MlChip(ImDrawList* dl, ImVec2 a, ImVec2 b, const char* label, ImU32 txt)
+{
+    VChamfer(dl, a, b, 0, IM_COL32(255, 255, 255, 22), IM_COL32(255, 255, 255, 46), UI::S(1.5f));
+    const float fs = ImGui::GetFontSize() * 0.86f;
+    ImVec2 ts = UI::Font()->CalcTextSizeA(fs, FLT_MAX, 0, label);
+    dl->AddText(UI::Font(), fs, ImVec2(floorf((a.x + b.x - ts.x) * 0.5f), floorf((a.y + b.y - ts.y) * 0.5f)), txt, label);
+}
+static float MlChipW(const char* label) { return UI::Font()->CalcTextSizeA(ImGui::GetFontSize() * 0.86f, FLT_MAX, 0, label).x + UI::S(56); }
+static void MlBoldText(ImDrawList* dl, ImFont* f, float fs, ImVec2 p, ImU32 col, const char* t)
+{
+    dl->AddText(f, fs, ImVec2(p.x + UI::S(2), p.y + UI::S(3)), IM_COL32(0, 0, 0, 120), t);   // soft drop shadow
+    dl->AddText(f, fs, p, col, t);
+    dl->AddText(f, fs, ImVec2(p.x + UI::S(1.2f), p.y), col, t);                               // a little heavier
+}
 void MP::DrawMenuLoading(ImDrawList* dl, float pct, bool loadingScreen)
 {
     if(!dl) return;
     const ImVec2 ds = ImGui::GetIO().DisplaySize;
     if(pct < 0) pct = 0; else if(pct > 100) pct = 100;
-    dl->AddRectFilled(ImVec2(0, 0), ds, IM_COL32(0, 0, 0, 255));
-    const float mx = ds.x * 0.025f, my = ds.y * 0.03f;
-    ImVec2 a(mx, my), b(ds.x - mx, ds.y - my);
-    if(loadingScreen) dl->AddRectFilledMultiColor(a, b, IM_COL32(30, 36, 46, 255), IM_COL32(30, 36, 46, 255), IM_COL32(10, 12, 16, 255), IM_COL32(10, 12, 16, 255));
-    else VBackdrop(dl, a, b);   // the launcher's blurred city (already loaded in game)
-    VGlass(dl, a, b);
-    dl->AddRect(a, b, IM_COL32(0, 0, 0, 150), 0, 0, UI::S(1));
+    const uint64_t nowMs = MP_NowMs();
+    const float tsec = (float)(nowMs % 600000) / 1000.0f;
     ImFont* f = UI::Font(); const float fs = ImGui::GetFontSize();
-    // title bar, same as the launcher
-    const float titleH = UI::S(70), pad = UI::S(22);
-    dl->AddText(f, fs * 1.25f, ImVec2(a.x + pad, a.y + (titleH - fs * 1.25f) * 0.5f), IM_COL32_WHITE, "PLAY");
-    dl->AddText(f, fs, ImVec2(a.x + pad + ImGui::CalcTextSize("PLAY").x * 1.25f + UI::S(22), a.y + (titleH - fs) * 0.5f), kVDim, "MP Launcher  v" MP_VERSION_STR);
-    dl->AddLine(ImVec2(a.x, a.y + titleH), ImVec2(b.x, a.y + titleH), kVLine);
-    // sidebar
-    const float sideW = UI::S(210);
-    dl->AddRectFilled(ImVec2(a.x, a.y + titleH), ImVec2(a.x + sideW, b.y), IM_COL32(0, 0, 0, 60));
-    static const char* const side[] = { "Internet", "Featured", "Favorites", "History", "LAN" };
-    for(int i = 0; i < 5; ++i)
+
+    // ---- background: the launcher's blurred night city over the whole screen
+    dl->AddRectFilled(ImVec2(0, 0), ds, IM_COL32(8, 11, 20, 255));
+    ImVec2 uv(1, 1);
+    if(void* t = HUD::Texture("ui_bg.jpg", &uv)) LImageCover(dl, t, uv, ImVec2(0, 0), ds, IM_COL32(255, 255, 255, 255));
+    // navy tint (the picture stays visible), the launcher-blue glow bottom left, dark floor for the text
+    dl->AddRectFilled(ImVec2(0, 0), ds, IM_COL32(10, 16, 34, 120));
+    dl->AddRectFilledMultiColor(ImVec2(0, 0), ImVec2(ds.x * 0.62f, ds.y), IM_COL32(40, 70, 110, 70), IM_COL32(40, 70, 110, 0), IM_COL32(40, 70, 110, 0), IM_COL32(70, 120, 180, 120));
+    dl->AddRectFilledMultiColor(ImVec2(0, ds.y * 0.48f), ds, IM_COL32(4, 6, 12, 0), IM_COL32(4, 6, 12, 0), IM_COL32(4, 6, 12, 200), IM_COL32(4, 6, 12, 200));
+    dl->AddRectFilledMultiColor(ImVec2(0, 0), ImVec2(ds.x, ds.y * 0.16f), IM_COL32(4, 6, 12, 150), IM_COL32(4, 6, 12, 150), IM_COL32(4, 6, 12, 0), IM_COL32(4, 6, 12, 0));
+
+    // ---- floating sparks (slowly rising, launcher blue + a few white)
+    for(int i = 0; i < 46; ++i)
     {
-        float y = a.y + titleH + UI::S(16) + i * UI::S(52);
-        if(i == 1) dl->AddRectFilled(ImVec2(a.x, y - UI::S(8)), ImVec2(a.x + sideW, y + fs + UI::S(8)), kVTealDim);
-        if(i == 1) dl->AddRectFilled(ImVec2(a.x, y - UI::S(8)), ImVec2(a.x + UI::S(4), y + fs + UI::S(8)), kVTeal);
-        dl->AddText(ImVec2(a.x + pad, y), i == 1 ? kVText : kVDim, side[i]);
+        const float sp = 0.018f + MlHash(i, 3) * 0.035f;                     // screen heights per second
+        float yy = fmodf(MlHash(i, 2) + tsec * sp, 1.0f);
+        const float x = (MlHash(i, 1) + 0.03f * sinf(tsec * (0.4f + MlHash(i, 5)) + i)) * ds.x;
+        const float y = ds.y * (1.04f - yy * 1.08f);
+        const float r = UI::S(1.6f + MlHash(i, 4) * 2.6f);
+        int al = (int)(200 * (yy < 0.12f ? yy / 0.12f : yy > 0.85f ? (1.0f - yy) / 0.15f : 1.0f));
+        if(al <= 0) continue;
+        dl->AddCircleFilled(ImVec2(x, y), r, (i % 5 == 0) ? IM_COL32(236, 240, 245, al) : VAlpha(kVTeal, al / 255.0f), 10);
     }
-    // main: the featured servers (greyed while loading) + the progress
-    const float cx0 = a.x + sideW + pad, cx1 = b.x - pad;
-    float y = a.y + titleH + UI::S(18);
-    dl->AddText(f, fs * 1.1f, ImVec2(cx0, y), kVText, loadingScreen ? "Loading San Andreas" : "Opening the server list"); y += fs * 1.1f + UI::S(14);
-    for(int i = 0; i < (int)(sizeof(kMenuMpServers) / sizeof(kMenuMpServers[0])); ++i)
+
+    // ---- top bar: the launcher's title (PLAY | MP Launcher vX) + a turning ring (it is alive)
+    const float pad = UI::S(54);
     {
-        ImVec2 ra(cx0, y), rb(cx1, y + UI::S(44));
-        if(rb.y > b.y - UI::S(120)) break;
-        dl->AddRectFilled(ra, rb, (i & 1) ? IM_COL32(255, 255, 255, 10) : IM_COL32(255, 255, 255, 18));
-        dl->AddText(ImVec2(ra.x + UI::S(12), ra.y + (UI::S(44) - fs) * 0.5f), kVDim, kMenuMpServers[i]);
-        const char* w = "24/7"; float tw = ImGui::CalcTextSize(w).x;
-        dl->AddText(ImVec2(rb.x - tw - UI::S(12), ra.y + (UI::S(44) - fs) * 0.5f), IM_COL32(126, 178, 226, 160), w);
-        y += UI::S(48);
-    }
-    // progress bar
-    const float by0 = b.y - UI::S(70), by1 = by0 + UI::S(10);
-    dl->AddRectFilled(ImVec2(cx0, by0), ImVec2(cx1, by1), IM_COL32(255, 255, 255, 30));
-    dl->AddRectFilled(ImVec2(cx0, by0), ImVec2(cx0 + (cx1 - cx0) * pct / 100.0f, by1), kVTeal);
-    char pt[24]; snprintf(pt, sizeof(pt), "%d%%", (int)pct);
-    dl->AddText(ImVec2(cx1 - ImGui::CalcTextSize(pt).x, by0 - fs - UI::S(8)), kVText, pt);
-    const int tip = (int)((MP_NowMs() / 3000) % (sizeof(kMenuMpTips) / sizeof(kMenuMpTips[0])));
-    dl->AddText(ImVec2(cx0, by1 + UI::S(14)), kVDim, kMenuMpTips[tip]);
-    // a turning ring next to the title (it is alive)
-    {
-        const float r = UI::S(11), t = (float)(MP_NowMs() % 1200) / 1200.0f * 6.2831853f;
-        ImVec2 c(cx1 - r, a.y + titleH + UI::S(18) + fs * 0.55f);
+        const float ty = UI::S(30);
+        MlBoldText(dl, f, fs * 1.1f, ImVec2(pad, ty), IM_COL32_WHITE, "PLAY");
+        dl->AddText(f, fs * 0.9f, ImVec2(pad + f->CalcTextSizeA(fs * 1.1f, FLT_MAX, 0, "PLAY").x + UI::S(20), ty + fs * 0.12f), kVDim, "MP Launcher  v" MP_VERSION_STR);
+        dl->AddLine(ImVec2(pad, ty + fs * 1.1f + UI::S(14)), ImVec2(ds.x - pad, ty + fs * 1.1f + UI::S(14)), kVLine, UI::S(1));
+        const float r = UI::S(12), t = (float)(nowMs % 1200) / 1200.0f * 6.2831853f;
+        ImVec2 c(ds.x - pad - r, ty + fs * 0.55f);
+        dl->AddCircle(c, r, IM_COL32(255, 255, 255, 30), 24, UI::S(3));
         dl->PathArcTo(c, r, t, t + 4.4f, 24); dl->PathStroke(kVTeal, 0, UI::S(3));
+    }
+
+    // ---- centre right: the faded MP mark (like the template's logo)
+    {
+        const float lh = ds.y * 0.20f;
+        ImVec2 c(ds.x * 0.66f, ds.y * 0.42f);
+        ImVec2 iuv(1, 1);
+        if(void* ic = HUD::Texture("mp_menu.png", &iuv))
+            dl->AddImage((ImTextureID)ic, ImVec2(c.x - lh * 0.5f, c.y - lh * 1.05f), ImVec2(c.x + lh * 0.5f, c.y - lh * 0.05f), ImVec2(0, 0), iuv, IM_COL32(150, 175, 215, 80));
+        ImFont* big = UI::PricedownFont() ? UI::PricedownFont() : f;
+        const char* l1 = "MULTIPLAYER";
+        const float bfs = ds.y * 0.13f;
+        ImVec2 s1 = big->CalcTextSizeA(bfs, FLT_MAX, 0, l1);
+        dl->AddText(big, bfs, ImVec2(c.x - s1.x * 0.5f, c.y), IM_COL32(112, 132, 170, 96), l1);
+        const char* l2 = "SAN ANDREAS";
+        const float sfs = bfs * 0.34f;
+        ImVec2 s2 = f->CalcTextSizeA(sfs, FLT_MAX, 0, l2);
+        dl->AddText(f, sfs, ImVec2(c.x - s2.x * 0.5f, c.y + s1.y + UI::S(4)), IM_COL32(150, 170, 205, 90), l2);
+    }
+
+    // ---- bottom row geometry: chips + bar share one baseline
+    const float chipH = UI::S(62), rowY = ds.y - UI::S(70) - chipH;
+    // ---- bottom left: title, welcome, two chips
+    {
+        const char* title = loadingScreen ? "SAN ANDREAS MULTIPLAYER" : "MP MULTIPLAYER";
+        float tfs = fs * 2.5f;
+        const float maxW = ds.x * 0.44f;
+        ImVec2 tsz = f->CalcTextSizeA(tfs, FLT_MAX, 0, title);
+        if(tsz.x > maxW) { tfs *= maxW / tsz.x; tsz = f->CalcTextSizeA(tfs, FLT_MAX, 0, title); }
+        const float wfs = fs * 1.05f;
+        const float wy = rowY - UI::S(34) - wfs;
+        const float ty = wy - UI::S(8) - tsz.y;
+        MlBoldText(dl, f, tfs, ImVec2(pad, ty), IM_COL32_WHITE, title);
+        const char* nm = settings.name[0] ? settings.name : "Player";
+        dl->AddText(f, wfs, ImVec2(pad, wy), kVText, "Welcome,");
+        const float wx = pad + f->CalcTextSizeA(wfs, FLT_MAX, 0, "Welcome, ").x;
+        MlBoldText(dl, f, wfs, ImVec2(wx, wy), kVTeal, nm);
+        const char* c1 = "FEATURED SERVERS";
+        const char* c2 = "ONLINE 24/7";
+        const float w1 = MlChipW(c1), w2 = MlChipW(c2);
+        MlChip(dl, ImVec2(pad, rowY), ImVec2(pad + w1, rowY + chipH), c1, kVText);
+        MlChip(dl, ImVec2(pad + w1 + UI::S(16), rowY), ImVec2(pad + w1 + UI::S(16) + w2, rowY + chipH), c2, kVText);
+    }
+    // ---- bottom right: sound chip (the black server select is silent)
+    float rightX0;
+    {
+        const char* sc = loadingScreen ? "SOUND: ON" : "SOUND: OFF";
+        const float w = MlChipW("SOUND: OFF");
+        rightX0 = ds.x - pad - w;
+        MlChip(dl, ImVec2(rightX0, rowY), ImVec2(ds.x - pad, rowY + chipH), sc, kVText);
+    }
+    // ---- middle: status, bar, percent, tip
+    {
+        const float bx0 = ds.x * 0.265f, bx1 = ImMin(ds.x * 0.735f, rightX0 - UI::S(40));
+        const float bh = UI::S(12), by0 = rowY + chipH * 0.5f - bh * 0.5f, by1 = by0 + bh;
+        const char* st = loadingScreen ? "LOADING SAN ANDREAS..." : "ESTABLISHING CONNECTION...";
+        const float sfs = fs * 0.8f;
+        ImVec2 ss = f->CalcTextSizeA(sfs, FLT_MAX, 0, st);
+        dl->AddText(f, sfs, ImVec2(floorf((bx0 + bx1 - ss.x) * 0.5f), by0 - UI::S(16) - ss.y), kVDim, st);
+        dl->AddRectFilled(ImVec2(bx0, by0), ImVec2(bx1, by1), IM_COL32(255, 255, 255, 28));
+        const float fx = bx0 + (bx1 - bx0) * pct / 100.0f;
+        if(fx > bx0 + 1)
+        {
+            dl->AddRectFilledMultiColor(ImVec2(bx0, by0), ImVec2(fx, by1), IM_COL32(86, 140, 200, 255), kVTeal, kVTeal, IM_COL32(86, 140, 200, 255));
+            dl->AddRectFilled(ImVec2(ImMax(bx0, fx - UI::S(26)), by0), ImVec2(fx, by1), IM_COL32(255, 255, 255, 60));   // bright head
+        }
+        dl->AddRect(ImVec2(bx0, by0), ImVec2(bx1, by1), IM_COL32(0, 0, 0, 120), 0, 0, UI::S(1));
+        char pt[16]; snprintf(pt, sizeof(pt), "%d%%", (int)pct);
+        const float pfs = fs * 0.95f;
+        ImVec2 ps = f->CalcTextSizeA(pfs, FLT_MAX, 0, pt);
+        MlBoldText(dl, f, pfs, ImVec2(floorf((bx0 + bx1 - ps.x) * 0.5f), by1 + UI::S(14)), IM_COL32_WHITE, pt);
+        const int tip = (int)((nowMs / 3000) % (sizeof(kMenuMpTips) / sizeof(kMenuMpTips[0])));
+        const float tfs = fs * 0.78f;
+        ImVec2 tz = f->CalcTextSizeA(tfs, FLT_MAX, 0, kMenuMpTips[tip]);
+        dl->AddText(f, tfs, ImVec2(floorf((bx0 + bx1 - tz.x) * 0.5f), by1 + UI::S(22) + ps.y), IM_COL32(150, 157, 166, 200), kMenuMpTips[tip]);
     }
 }
 

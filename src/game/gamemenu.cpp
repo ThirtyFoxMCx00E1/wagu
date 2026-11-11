@@ -18,6 +18,12 @@ static bool (*MobileMenu_IsMainMenuScreen)(void*) = nullptr;
 static void* s_pAudioEngine = nullptr;
 static void (*AE_SetEffectsFader)(void*, float) = nullptr;
 static void (*AE_SetMusicFader)(void*, float) = nullptr;
+// 4.13.5: idle camera guard
+static void**    s_ppCurrentPad = nullptr;            // currentPad (CPad*)
+static void*   (*CPad_GetPad)(int) = nullptr;
+static uint32_t* s_pTimeMs = nullptr;                 // CTimer::m_snTimeInMilliseconds
+static const int kPadLastTouchedOfs = 0x134;          // CPad::LastTimeTouched (2.00 32-bit and 64-bit,
+                                                      // read by CIdleCam::ProcessIdleCamTicker)
 
 void Game::InitMenu(void* h)
 {
@@ -27,6 +33,10 @@ void Game::InitMenu(void* h)
     SET_TO(s_pAudioEngine, aml->GetSym(h, "AudioEngine"));
     SET_TO(AE_SetEffectsFader, aml->GetSym(h, "_ZN12CAudioEngine28SetEffectsFaderScalingFactorEf"));
     SET_TO(AE_SetMusicFader, aml->GetSym(h, "_ZN12CAudioEngine26SetMusicFaderScalingFactorEf"));
+    SET_TO(s_ppCurrentPad, aml->GetSym(h, "currentPad"));
+    SET_TO(CPad_GetPad, aml->GetSym(h, "_ZN4CPad6GetPadEi"));
+    SET_TO(s_pTimeMs, aml->GetSym(h, "_ZN6CTimer22m_snTimeInMillisecondsE"));
+    logger->Info("Idle camera guard: pad %s, timer %s", (s_ppCurrentPad || CPad_GetPad) ? "yes" : "no", s_pTimeMs ? "yes" : "no");
     logger->Info("Main menu: menu %s, main-screen check %s, sound fader %s", s_pMobileMenu ? "yes" : "no",
         MobileMenu_IsMainMenuScreen ? "yes" : "no", (s_pAudioEngine && AE_SetEffectsFader) ? "yes" : "no");
 }
@@ -51,6 +61,22 @@ void Game::SetGameSoundFader(float f)
     if(f < 0) f = 0; else if(f > 1) f = 1;
     if(AE_SetEffectsFader) AE_SetEffectsFader(s_pAudioEngine, f);
     if(AE_SetMusicFader) AE_SetMusicFader(s_pAudioEngine, f);
+}
+
+// CIdleCam::ProcessIdleCamTicker counts the idle time while CPad::LastTimeTouched stays the same and resets
+// it when the value changes. MP's launcher / black server select / chat keyboard take every touch, so the
+// game thinks nobody touched the phone, the idle (AFK) camera kicks in (JPatch brings it back) and picks a
+// target that is gone / null -> SIGSEGV in libJPatch.so called from CCamera::Process. A new value every
+// frame keeps the ticker at 0.
+void Game::KeepPadAwake()
+{
+    if(!s_pTimeMs) return;
+    uint8_t* pad = (uint8_t*)(s_ppCurrentPad ? *s_ppCurrentPad : nullptr);
+    if(!pad && CPad_GetPad) pad = (uint8_t*)CPad_GetPad(0);
+    if(!pad) return;
+    uint32_t* last = (uint32_t*)(pad + kPadLastTouchedOfs);
+    uint32_t t = *s_pTimeMs;
+    *last = (*last == t) ? t + 1 : t;
 }
 
 bool Game::AddMainMenuTile(const char* name, const char* pngRel, const char* pngFull, void (*onTap)(void*))
