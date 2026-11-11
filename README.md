@@ -121,6 +121,11 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **4.12.10**: Mission sync in cutscenes.
+  - Your Mission sync group (up to 16 phones) now sees each other in mission cutscenes too, not only during the mission. Before, a cutscene hid every other player, so two phones in the same scene never saw each other.
+  - Group members stay on the map and their mission markers stay while one of you watches a cutscene.
+  - Players who are not in your Mission sync group stay hidden on missions and in cutscenes, as before. Damage from group members is still off during your cutscene.
+
 - **4.12.9**: start crash fix, no second teleport, no freeze at Grove Street, lighter join for custom modpacks.
   - Start crash (game closes by itself): SIGSEGV in LIB_PointerGetButton <- MobileMenu::Update <- PCMenu. MP no longer hooks LIB_PointerGetButton (PCMenu, TouchFixes and Unified Button Tweaks use the same touch path; 3.04.6 never hooked it). The launcher still keeps taps away from the game through the CPad / CHID / CTouchInterface / CWidget checks.
   - ScreenGuard no longer changes the game window from a background thread every second from the first frame on; only the UI thread does it, a few seconds after the start.

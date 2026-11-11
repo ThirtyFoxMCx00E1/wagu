@@ -1,6 +1,7 @@
 {
-"latest": "4.12.9",
+"latest": "4.12.10",
 "supported": [
+"4.12.9",
 "4.12.8",
 "4.12.7",
 "4.12.6",
@@ -113,6 +114,15 @@
 "3.04.6"
 ],
 "versions": [
+{
+"v": "4.12.10",
+"summary": "Mission sync in cutscenes.",
+"items": [
+"Your Mission sync group (up to 16 phones) now sees each other in mission cutscenes too, not only during the mission. Before, a cutscene hid every other player, so two phones in the same scene never saw each other.",
+"Group members stay on the map and their mission markers stay while one of you watches a cutscene.",
+"Players who are not in your Mission sync group stay hidden on missions and in cutscenes, as before. Damage from group members is still off during your cutscene."
+]
+},
 {
 "v": "4.12.9",
 "summary": "start crash fix, no second teleport, no freeze at Grove Street, lighter join for custom modpacks.",

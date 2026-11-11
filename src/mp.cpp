@@ -968,8 +968,8 @@ static void UpdateLocalStory(uint64_t now)
         if(mission && AnyGroupActive())
         {
             int n = GroupCount();
-            if(n > 1) SysMsg(COL_SYSTEM, "*** %s: other players are hidden until it ends. Your Mission sync group (%d players) stays with you.", MP::MissionTitle(name), n + 1);
-            else SysMsg(COL_SYSTEM, "*** %s: other players are hidden until it ends. %s (Mission sync) stays with you.", MP::MissionTitle(name), s_nPartner < MP_MAX_PLAYERS ? players[s_nPartner].name : "your partner");
+            if(n > 1) SysMsg(COL_SYSTEM, "*** %s: other players are hidden until it ends. Your Mission sync group (%d players) stays with you, cutscenes too.", MP::MissionTitle(name), n + 1);
+            else SysMsg(COL_SYSTEM, "*** %s: other players are hidden until it ends. %s (Mission sync) stays with you, cutscenes too.", MP::MissionTitle(name), s_nPartner < MP_MAX_PLAYERS ? players[s_nPartner].name : "your partner");
         }
         else
             SysMsg(COL_SYSTEM, "*** %s: other players are hidden until it ends (your own story).",
@@ -1831,7 +1831,9 @@ static void UpdateRemote(int id, int localPed, uint64_t now)
     // separate story worlds: hide players on a mission / in a cutscene, and everyone while we are
     // 2.16: a mission partner stays visible on missions (cutscenes still hide everybody)
     bool hide = p.status || (s.flags & (SYNC_MISSION | SYNC_CUTSCENE)) || s_bLocalSeparate;
-    if(hide && IsPartner(id) && !(p.status & STATUS_CUTSCENE) && !(s.flags & SYNC_CUTSCENE) && !s_bLocalCutscene) hide = false;
+    // 4.12.10: Mission sync group (up to 16): you see each other on missions AND in the cutscenes now
+    // (cutscenes used to hide everybody, so two phones in the same scene never saw each other)
+    if(hide && IsPartner(id)) hide = false;
     if(p.invisible) hide = true;   // 2.19 /invisible
     // 2.19: a mission script can delete our avatar / its car (clear area, mission cleanup): the
     // handle is dead then and the avatar never came back -> forget it, it is rebuilt below
@@ -3234,7 +3236,7 @@ static void ProcessMissionSync(uint64_t now)
     {
         RemotePlayer& q = players[i];
         if(!q.mmCount) continue;
-        bool keep = IsPartner(i) && q.active && now - q.mmTime < 3500 && !s_bLocalCutscene;
+        bool keep = IsPartner(i) && q.active && now - q.mmTime < 3500;   // 4.12.10: kept through cutscenes
         if(!keep) ClearMissionMarkers(q);
     }
 }
@@ -3295,7 +3297,7 @@ static int MapMarkersLive(Game::MapMarker* out, int maxOut)
         if(i == myId || !p.active || !p.hasSync || !p.name[0]) continue;
         // separate story worlds stay hidden (a mission partner is shown)
         bool hide = p.status || (p.sync.flags & (SYNC_MISSION | SYNC_CUTSCENE)) || s_bLocalSeparate;
-        if(hide && IsPartner(i) && !(p.status & STATUS_CUTSCENE) && !s_bLocalCutscene) hide = false;
+        if(hide && IsPartner(i)) hide = false;   // 4.12.10: group members on the map in cutscenes too
         if(hide) continue;
         Vec3 at;
         if(p.ped && p.drawValid) at = p.drawPos;
