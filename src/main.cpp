@@ -29,7 +29,7 @@
 #include "net/server.h"
 
 // 4.12.7: the config is files/TYFMC/TYFMC.MP.ini (the old configs/net.thirtyfox.mp.ini is moved there)
-TYFMC_MODCFG(net.thirtyfox.mp, MP Multiplayer, 4.13.7, ThirtyFoxMCx00E1, MP, net.thirtyfox.mp)
+TYFMC_MODCFG(net.thirtyfox.mp, MP Multiplayer, 4.13.8, ThirtyFoxMCx00E1, MP, net.thirtyfox.mp)
 NEEDGAME(com.rockstargames.gtasa)
 
 // Globals used by the embedded RenderWare ImGui backend
@@ -93,8 +93,10 @@ static bool s_bIgnoredFinger[16] = { false };
 static void PollTouches();
 
 // ---- Game logic tick ------------------------------------------------------------------
+static void JPatchGuardSetup();
 DECL_HOOKv(CGame_Process)
 {
+    JPatchGuardSetup();   // 4.13.8 (normally done in OnAllModsLoaded already)
     CGame_Process();
     ScriptGuard::Tick();   // 3.21.3
     MP::Process();
@@ -107,6 +109,48 @@ DECL_HOOKv(CCamera_Process, void* self)
     CCamera_Process(self);
     Game::IdleCamGuard(false);
 }
+
+// 4.13.8: the 4.13.7 guard used the game's m_pWidgets symbol, the crash went on. Now MP looks at JPatch
+// 1.10.2.1 itself (research/libJPatch.so): its CCam::Process hook (+0x1A558) reads the widget list pointer
+// it keeps at +0x5EAA8 and calls a virtual on entry 175 (+0x2BC) without a null check (crash +0x1A5A4).
+// JPatch's own "original CCam::Process" is at +0xFB330. MP hooks CCam::Process on top of JPatch (after
+// all mods loaded); when JPatch's widget #175 (or its list) is empty - right after Resume / Start / Load
+// game, behind the Multiplayer screens - that one frame goes straight to JPatch's original (the game's
+// camera code, JPatch's idle camera skipped), every other frame runs through JPatch as before. Only used
+// when JPatch's code matches 1.10.2.1 byte for byte; JPatch's file is not changed.
+#ifdef AML32
+static const uint8_t kJPatchIdleSig[] = {   // libJPatch.so 1.10.2.1 +0x1A558 .. +0x1A5B2
+    0xF0, 0xB5, 0x03, 0xAF, 0x2D, 0xE9, 0x00, 0x0F, 0x89, 0xB0, 0x80, 0x46, 0xCC, 0x48, 0xCD, 0x49, 0x78, 0x44, 0x79, 0x44,
+    0x05, 0x68, 0x08, 0x68, 0xCB, 0x4C, 0x29, 0x68, 0x08, 0x91, 0x7C, 0x44, 0xD0, 0xF8, 0x00, 0xB0, 0x47, 0xF2, 0x30, 0x50,
+    0x21, 0x68, 0x58, 0x44, 0x81, 0x42, 0x84, 0xBF, 0x00, 0x21, 0x21, 0x60, 0xC5, 0x4E, 0x7E, 0x44, 0x31, 0x68, 0x81, 0x42,
+    0x84, 0xBF, 0x00, 0x20, 0x30, 0x60, 0xC3, 0x48, 0x78, 0x44, 0x00, 0x68, 0xD0, 0xF8, 0xBC, 0x02, 0x01, 0x68, 0x0A, 0x6D,
+    0x00, 0x21, 0xCD, 0xE9, 0x05, 0x11, 0x05, 0xA9, 0x90, 0x47 };
+static uintptr_t s_pJPatchWidgets = 0;   // &JPatch's widget list pointer
+static uintptr_t s_pJPatchOrig = 0;      // &JPatch's original CCam::Process
+static int s_nJPatchSkips = 0;
+static uint32_t ThumbPcRelTarget(uintptr_t lib, uint32_t ldrAt, uint32_t addPcAt)
+{   // "ldr rX, [pc, #imm8*4]" (16-bit) ... "add rX, pc"
+    const uint16_t ld = *(const uint16_t*)(lib + ldrAt);
+    if((ld & 0xF800) != 0x4800) return 0;
+    const uint32_t lit = *(const uint32_t*)(lib + ((ldrAt + 4) & ~3u) + (ld & 0xFF) * 4);
+    return lit + addPcAt + 4;
+}
+DECL_HOOKv(CCam_Process, void* self)
+{
+    if(s_pJPatchWidgets && s_pJPatchOrig)
+    {
+        void** w = *(void***)s_pJPatchWidgets;
+        auto orig = *(void(**)(void*))s_pJPatchOrig;
+        if((!w || !w[0x2BC / 4]) && orig)
+        {
+            if(s_nJPatchSkips++ < 3) logger->Info("JPatch guard: touch widget #175 is empty - JPatch's idle camera skipped this frame (no crash)");
+            orig(self);
+            return;
+        }
+    }
+    CCam_Process(self);
+}
+#endif
 
 // ---- 2D render: our whole HUD + floating menu ------------------------------------------
 DECL_HOOKv(Render2dStuff)
@@ -730,6 +774,25 @@ static void MP_Terminate()   // an uncaught C++ exception in MP: say so in the l
     abort();
 }
 
+static void JPatchGuardSetup()
+{
+#ifdef AML32
+    static bool done = false;
+    if(done || !s_bMpLoaded) return;
+    done = true;
+    uintptr_t jp = aml->GetLib("libJPatch.so");
+    if(!jp) { logger->Info("JPatch guard: JPatch not loaded"); return; }
+    if(memcmp((const void*)(jp + 0x1A558), kJPatchIdleSig, sizeof(kJPatchIdleSig)) != 0)
+    { logger->Info("JPatch guard: JPatch is not 1.10.2.1 (idle camera code differs) - off"); return; }
+    const uint32_t wv = ThumbPcRelTarget(jp, 0x1A59A, 0x1A59C);
+    const uint32_t ov = ThumbPcRelTarget(jp, 0x3843C, 0x38442);
+    if(wv != 0x5EAA8 || ov != 0xFB330) { logger->Info("JPatch guard: JPatch layout differs (0x%X / 0x%X) - off", wv, ov); return; }
+    s_pJPatchWidgets = jp + wv; s_pJPatchOrig = jp + ov;
+    HOOKSYM(CCam_Process, pGameHandle, "_ZN4CCam7ProcessEv");
+    logger->Info("JPatch guard: on (JPatch 1.10.2.1 idle camera, CCam::Process)");
+#endif
+}
+
 extern "C" void OnModLoad()
 {
     atexit(MP_QuickExit);          // registered last = runs first, before the static destructors
@@ -798,6 +861,7 @@ extern "C" void OnModLoad()
 ON_ALL_MODS_LOAD()
 {
     ModScan::Scan();
+    JPatchGuardSetup();   // 4.13.8: on top of JPatch's CCam::Process hook
     if(s_bMpLoaded) MP::InitMainMenu();   // 4.13.4: [Multiplayer] on the game's main menu (SAUtils tile)
     if(ModScan::CheatMenu()) logger->Info("MP: %s found - you can't join or host servers while it is installed", ModScan::What());
 }

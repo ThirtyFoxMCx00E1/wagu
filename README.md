@@ -121,6 +121,9 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **4.13.8**: the JPatch crash (libJPatch.so + 0x1A5A4) is guarded inside JPatch's own data now.
+  - 4.13.7 filled the game's touch widget #175 during CCamera::Process, but the crash went on. MP now reads JPatch 1.10.2.1's own widget list pointer (+0x5EAA8) and its saved original CCam::Process (+0xFB330), hooks CCam::Process on top of JPatch after all mods loaded, and when JPatch's widget #175 is empty (right after Resume / Start / Load game, behind the Multiplayer screens) runs the game's camera code directly for that frame, skipping only JPatch's idle camera. Only used when JPatch's code matches 1.10.2.1 byte for byte; JPatch itself is not changed. The log says "JPatch guard: ...".
+
 - **4.13.7**: the JPatch crash (libJPatch.so + 0x1A5A4 from CCamera::Process) found in JPatch 1.10.2.1 itself and fixed, and a new Multiplayer loading screen.
   - JPatch hooks CCam::Process for its PC-style idle camera and, to check for screen touches, calls touch widget #175 (CTouchInterface::m_pWidgets[175]) without checking that it exists. That widget is still empty right after Resume / Start / Load game and while the game runs behind MP's Multiplayer screens, so the game crashed. MP now puts a harmless placeholder widget in that empty slot only while CCamera::Process runs and takes it out right after; JPatch is not changed. 4.13.6's code restore (written for another game build) is removed.
   - Loading screen: ui_bg background, the new San Andreas Multiplayer title in the centre, the tip bottom left (blue GAMEPLAY TIP heading, white text) and only the percent bottom right. No loading bar.
