@@ -121,6 +121,12 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **4.13.2**: The server in development notice comes from the server, after you are connected; black app icons, dark Moquil, original MLG textures.
+  - "Server in development" is no longer shown for every default, featured and login server. The server owner turns it on in Add server > Development stage (`mp_server --dev` on a VPS); a finished server shows nothing.
+  - The notice no longer opens over the black connection screen before joining: it waits until you are connected and spawned, then shows OK / Leave server (tap outside also closes it).
+  - Moquil 1.2: Appearance > Dark is a real dark theme (near black) instead of grey. The mod and app pictures in Home and Library are new hand-painted artwork instead of screenshots.
+  - Moquil, MP Voice and MP Textdraw Editor icons are black with a white symbol.
+  - MLG Production 1.6.4: the original MLG textures are back (wolf logo and photo buttons), only now they do not move; the title shine is the only animation.
 - **4.13.1**: Moquil looks like Discord, Servers, matching app icons, the server notice can be closed.
   - Moquil 1.1 uses the Discord layout everywhere: desktop and desktop-site mode get the server rail, the Friends page (Online / All / Pending / Add Friend), Active Now, direct messages and the channel sidebar; phones get the Discord mobile layout. The web app at [mpsamp-open.github.io/moquils-web](https://mpsamp-open.github.io/moquils-web/) is the same.
   - New Discord style login: "Welcome back", show password, Forgot your password?, Register, and a QR code that opens Moquil on the web.

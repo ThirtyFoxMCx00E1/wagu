@@ -97,6 +97,7 @@ struct MPSettings
     bool  hostAc            = false;   // 3.50: Add server > Gamemodes > Anti-cheat (custom servers; featured servers: always on)
     unsigned long long hostAcMask = 0xFFFFFFFFFFull;   // 3.50: which anti-cheat checks (eAcCheck bits)
     bool  phoneKeyboard     = false;   // 4.12.3: Settings > Display > Keyboard: false = MP keyboard, true = the phone's own
+    bool  hostDevStage      = false;   // 4.13.2: Add server > Development stage notice (custom servers you host)
     bool  hostCineCam       = true;    // 4.12: + Add server > Cinematic Join Camera (custom servers you host)
     bool  hostAuth          = false;   // 3.21.6: Add server > Authentication system (login with Discord) for a NEW server you host
     bool  allowCheatMenu    = false;   // 3.00: host permission (custom servers): players may use CheatMenu (libCheatMenu.so / libCheatMenu64.so)

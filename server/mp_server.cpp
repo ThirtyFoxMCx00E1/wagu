@@ -6,7 +6,7 @@
 // Standalone MP server (Linux / Windows / Termux). Same core as the in-game "Host LAN server".
 //   g++ -O2 -std=c++17 -pthread -I../src mp_server.cpp ../src/net/server.cpp ../src/net/lan.cpp ../src/net/online.cpp -o mp_server
 //   ./mp_server [port] [server name] [max players 1-100] [region: Asia|Europe|NA|Oceania] [--persistent] [--no-online]
-//               [--broker-file broker.txt] [--password pw] [--admin-hash sha256hex] [--no-safezones] [--auth] [--anticheat [hexmask]] [--no-anticheat]
+//               [--broker-file broker.txt] [--password pw] [--admin-hash sha256hex] [--no-safezones] [--auth] [--dev] [--anticheat [hexmask]] [--no-anticheat]
 //               3.04: Brief Case War 24/7: ./mp_server 1930 "Brief Case War" 20 Asia --persistent [--bcw-min 20]
 //               3.25: Mega Vil Futuristic (Roleplay) 24/7: ./mp_server 1932 "Mega Vil Futuristic" 250 Asia --persistent [--rp-file rp_citizens.txt]
 //               3.58: Project Day Z 24/7: ./mp_server 1933 "Project Day Z Legacy" 250 Asia --persistent [--dz-file dayz_survivors.txt]
@@ -122,6 +122,7 @@ int main(int argc, char** argv)
     // 3.21.6: --auth = login system (Discord verification + account) on a custom server too.
     // The default server and Brief Case War always have it.
     for(int i = 1; i < argc; ++i) if(!strcasecmp(argv[i], "--auth")) server.SetAuth(true);
+    for(int i = 1; i < argc; ++i) if(!strcasecmp(argv[i], "--dev")) server.SetDevStage(true);   // 4.13.2: "server in development" notice for players
     // 3.50: --anticheat [checks] = Nex-AC anti-cheat on a custom server (all checks, or a hex mask of
     // eAcCheck bits); --no-anticheat = off. Always on for the default, Mega Vil, Brief Case War and MW3.
     for(int i = 1; i < argc; ++i)

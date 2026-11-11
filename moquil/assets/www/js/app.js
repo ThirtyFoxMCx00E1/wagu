@@ -3,7 +3,7 @@
    (left menu, middle page, friends on the right). On the web it sits in a desktop window. */
 (function (G) {
   'use strict';
-  var VERSION = '1.1';
+  var VERSION = '1.2';
   var B = G.Moquil || null;                    // the Android bridge (null on the web)
   var IS_WEB = !B;
   var D = document, $ = function (s, r) { return (r || D).querySelector(s); }, $$ = function (s, r) { return Array.prototype.slice.call((r || D).querySelectorAll(s)); };
@@ -164,7 +164,7 @@
   }
 
   // ---------- settings / profile / wallet ----------
-  var SET_DEF = { theme: 'dark', accent: '#7eb2e2', bg: '#1a1d22', glass: 37, blur: 3, wall: 'default', wallData: '', wallColor: 'linear-gradient(135deg,#1d2b64,#5b2a86)', dim: 45, round: false, notif: true, sounds: true, dmFriends: true, showAct: true, noiseSup: true, echo: true, inVol: 100, outVol: 100, ptt: false, compact: false };
+  var SET_DEF = { theme: 'dark', accent: '#7eb2e2', bg: '#16171a', glass: 37, blur: 3, wall: 'default', wallData: '', wallColor: 'linear-gradient(135deg,#1d2b64,#5b2a86)', dim: 45, round: false, notif: true, sounds: true, dmFriends: true, showAct: true, noiseSup: true, echo: true, inVol: 100, outVol: 100, ptt: false, compact: false };
   var SET = Object.assign({}, SET_DEF, ls('moq_settings') || {});
   function setv(k) { return SET[k]; }
   function saveSet() { ls('moq_settings', SET); applyLook(); }
@@ -977,7 +977,7 @@
       var walls = [['default', 'Default', 'url(img/ui_bg.jpg)'], ['none', 'None', 'var(--bg)'], ['color', 'Colors', SET.wallColor], ['custom', 'Custom', SET.wallData ? 'url(' + SET.wallData + ')' : '#333']];
       var grads = ['linear-gradient(135deg,#1d2b64,#5b2a86)', 'linear-gradient(135deg,#0f2027,#2c5364)', 'linear-gradient(135deg,#232526,#414345)', 'linear-gradient(135deg,#42275a,#734b6d)', 'linear-gradient(135deg,#134e5e,#71b280)', 'linear-gradient(135deg,#ff512f,#dd2476)', 'linear-gradient(135deg,#e0eafc,#cfdef3)', '#000000', '#ffffff'];
       return { t: 'Appearance', b:
-        '<div class="sec">Theme</div><div class="sw-grid">' + themes.map(function (t) { var bgc = { system: 'linear-gradient(135deg,#1a1d22 50%,#e8ecf1 50%)', dark: '#1e2228', black: '#000', white: '#fff', light: '#e8ecf1', custom: 'linear-gradient(135deg,' + SET.accent + ',' + SET.bg + ')' }[t[0]]; return '<div class="sw-opt' + (SET.theme === t[0] ? ' on' : '') + '" data-theme="' + t[0] + '" style="background:' + bgc + '"><span class="lb">' + t[1] + '</span></div>'; }).join('') + '</div>' +
+        '<div class="sec">Theme</div><div class="sw-grid">' + themes.map(function (t) { var bgc = { system: 'linear-gradient(135deg,#1a1d22 50%,#e8ecf1 50%)', dark: '#16171a', black: '#000', white: '#fff', light: '#e8ecf1', custom: 'linear-gradient(135deg,' + SET.accent + ',' + SET.bg + ')' }[t[0]]; return '<div class="sw-opt' + (SET.theme === t[0] ? ' on' : '') + '" data-theme="' + t[0] + '" style="background:' + bgc + '"><span class="lb">' + t[1] + '</span></div>'; }).join('') + '</div>' +
         (SET.theme === 'custom' ? '<div class="card list" style="margin-top:10px"><div class="li"><div class="grow">Accent color</div><input type="color" data-color="accent" value="' + SET.accent + '"></div><div class="li"><div class="grow">Background color</div><input type="color" data-color="bg" value="' + SET.bg + '"></div></div>' : '') +
         '<div class="sec">Transparency</div><div class="card list">' + slider('glass', 'Panel see-through (lower = more transparent)', 0, 90, '%') + slider('blur', 'Blur behind panels', 0, 20, 'px') + slider('dim', 'Darken the wallpaper', 0, 90, '%') + sw('round', 'Rounded corners', 'Off = square boxes like the MP Launcher') + '</div>' +
         '<div class="sec">Background</div><div class="sw-grid">' + walls.map(function (w) { return '<div class="sw-opt' + (SET.wall === w[0] ? ' on' : '') + '" data-wall="' + w[0] + '" style="background:' + w[2] + ';background-size:cover"><span class="lb">' + w[1] + '</span></div>'; }).join('') + '</div>' +

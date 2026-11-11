@@ -13,10 +13,10 @@
       gallery: ['img/mods/mp_1.jpg', 'img/mods/mp_2.jpg', 'img/mods/mp_3.jpg', 'img/mods/mp_4.jpg', 'img/mods/mp_5.jpg']
     },
     {
-      id: 'mlg', name: 'MLG Production', ver: '1.6.3', kind: 'AML mod', size: '1.6 MB', tag: 'Movie maker',
-      cover: 'img/mods/mlg_cover.jpg', icon: 'img/mods/mlg_icon.png', file: SITE + 'mods/MLG-Production-1.6.3.zip', fileName: 'MLG-Production-1.6.3.zip', action: 'Download',
+      id: 'mlg', name: 'MLG Production', ver: '1.6.4', kind: 'AML mod', size: '1.6 MB', tag: 'Movie maker',
+      cover: 'img/mods/mlg_cover.jpg', icon: 'img/mods/mlg_icon.png', file: SITE + 'mods/MLG-Production-1.6.4.zip', fileName: 'MLG-Production-1.6.4.zip', action: 'Download',
       short: 'A movie-making panel: free cam, camera paths, ped tools, chroma key, scenes, weather and a recording timeline.',
-      desc: 'MLG Production adds a top-right menu with the MLG wolf logo and eight flat buttons (only the title shines), plus a bottom recording timeline. Record the player on foot or in a car at 30 fps, replay takes on any ped, pose bones and make your own animations, then fly the camera along a path of 3D arrows. The zip has libMLG32.so (32-bit) and libMLG64.so (64-bit): copy the one for your game into the AML mods folder.',
+      desc: 'MLG Production adds a top-right menu with the MLG wolf logo and eight photo buttons (all still, only the title shines), plus a bottom recording timeline. Record the player on foot or in a car at 30 fps, replay takes on any ped, pose bones and make your own animations, then fly the camera along a path of 3D arrows. The zip has libMLG32.so (32-bit) and libMLG64.so (64-bit): copy the one for your game into the AML mods folder.',
       features: ['Free Cam: free fly, orbit and follow, smooth movement, FOV', 'Camera paths made of 3D arrows (ease in-out, smooth, linear)', 'Ped Tools: select, bring, freeze, hide, spawn any ped', 'Chroma Key backdrop (green, blue, black, white, pink)', 'Scene: game speed, density, triggers; all 23 weathers and time of day', 'Entity Tools: bone posing, animation keys, timeline like PumaStudio', 'Record / Stop while driving from the folded timeline bar'],
       gallery: ['img/mods/mlg_cover.jpg', 'img/mods/mlg_atlas.jpg', 'img/mods/mlg_buttons.jpg']
     },
@@ -38,11 +38,11 @@
     },
     {
       id: 'voice', name: 'MP Voice', ver: 'latest', kind: 'Android app', size: 'about 1 MB', tag: 'Voice',
-      cover: 'img/login.jpg', icon: 'img/mods/voice_icon.png', file: SITE + 'downloads/MP-Voice.apk', fileName: 'MP-Voice.apk', action: 'Download',
+      cover: 'img/mods/voice_cover.jpg', icon: 'img/mods/voice_icon.png', file: SITE + 'downloads/MP-Voice.apk', fileName: 'MP-Voice.apk', action: 'Download',
       short: 'Voice chat helper for MP servers.',
       desc: 'MP Voice keeps the voice chat of MP servers running next to the game. Moquil also has voice rooms of its own in every community and group chat.',
       features: ['Push to talk or open mic', 'Works with MP servers that have voice chat'],
-      gallery: ['img/login.jpg']
+      gallery: ['img/mods/voice_cover.jpg']
     }
   ];
 })(window);

@@ -4762,6 +4762,7 @@ static bool StartLocalServer(const char* name, int port)
         s_Server.SetAuth(auth);
     }
     s_Server.SetCineCam(settings.hostCineCam && !bcw && !MP::IsDefaultServer(name, port));   // 4.12
+    s_Server.SetDevStage(settings.hostDevStage && !bcw && !MP::IsDefaultServer(name, port));   // 4.13.2
     MP_CopyStr(settings.hostedPassword, MP::IsDefaultServer(name, port) || bcw ? "" : s_szJoinPw, sizeof(settings.hostedPassword));
     ApplyServerPerms();   // 2.16
     ApplyServerRules();   // 3.39
@@ -5445,7 +5446,7 @@ void MP::SaveConfig()
     F("NametagSize", settings.nametagSize); F("NametagDistance", settings.nametagDistance);
     B("ShowOwnNametag", settings.showOwnTag); B("ShowHealthBars", settings.showHealthBars); B("ShowRadarIcons", settings.showRadarIcons);
     B("ShowChat", settings.showChat); B("ShowKillFeed", settings.showKillFeed); B("ShowStatus", settings.showStatus);
-    B("SyncAnims", settings.syncAnims); B("BrokerStandby", settings.brokerStandby); B("SyncEnv", settings.syncEnv); B("SyncNPCs", settings.syncNpcs); B("AllowMissionPair", settings.allowMissionPair); B("AllowCheatMenu", settings.allowCheatMenu); B("HostAuth", settings.hostAuth); B("HostCineCam", settings.hostCineCam); B("PhoneKeyboard", settings.phoneKeyboard); B("HostAntiCheat", settings.hostAc); { char m[24]; snprintf(m, sizeof(m), "%llX", settings.hostAcMask); S("HostAntiCheatMask", m); } B("HitSound", settings.hitSound); B("DisableCheats", settings.disableCheats);
+    B("SyncAnims", settings.syncAnims); B("BrokerStandby", settings.brokerStandby); B("SyncEnv", settings.syncEnv); B("SyncNPCs", settings.syncNpcs); B("AllowMissionPair", settings.allowMissionPair); B("AllowCheatMenu", settings.allowCheatMenu); B("HostAuth", settings.hostAuth); B("HostCineCam", settings.hostCineCam); B("HostDevStage", settings.hostDevStage); B("PhoneKeyboard", settings.phoneKeyboard); B("HostAntiCheat", settings.hostAc); { char m[24]; snprintf(m, sizeof(m), "%llX", settings.hostAcMask); S("HostAntiCheatMask", m); } B("HitSound", settings.hitSound); B("DisableCheats", settings.disableCheats);
     F("ChatX", settings.chatX); F("ChatY", settings.chatY); I("Skin", settings.skin);
     I("ChatLines", settings.chatLines); F("ChatSize", settings.chatSize); F("ChatScale", settings.chatScale); F("ChatWidth", settings.chatWidth);   // 2.19.6
     I("ChatFade", settings.chatFade); B("ChatFadeOn", settings.chatFadeOn); B("ChatBackground", settings.chatBg);
@@ -5496,6 +5497,7 @@ static void LoadConfig()
     settings.allowCheatMenu = ::cfg->GetBool("AllowCheatMenu", false, "MP");   // 3.00
     settings.hostAuth        = ::cfg->GetBool("HostAuth", false, "MP");   // 3.21.6
     settings.hostCineCam     = ::cfg->GetBool("HostCineCam", true, "MP");   // 4.12
+    settings.hostDevStage    = ::cfg->GetBool("HostDevStage", false, "MP");   // 4.13.2
     settings.phoneKeyboard   = ::cfg->GetBool("PhoneKeyboard", false, "MP");   // 4.12.3
     VKeyboard::SetPhoneKeyboard(settings.phoneKeyboard);
     settings.hostAc          = ::cfg->GetBool("HostAntiCheat", false, "MP");   // 3.50
@@ -6855,6 +6857,20 @@ static void SectionAddServer(void*)
         ImGui::TextDisabled("The default server and Mega Vil Futuristic Roleplay always have it.");
     }
 
+    // 4.13.2: Development stage notice - players see "This server is in development" once they are connected
+    ImGui::Separator();
+    ImGui::TextUnformatted("Development stage");
+    {
+        const bool own = s_Server.IsRunning() && !IsHostingDefault() && !s_Server.IsBcwServer();
+        if(FloatMenu::ToggleSwitch("Server in development notice", &settings.hostDevStage))
+        {
+            SaveConfig();
+            if(own) { s_Server.SetDevStage(settings.hostDevStage); SysMsg(COL_GREEN, "Development notice %s on \"%s\" (players who join from now on).", settings.hostDevStage ? "on" : "off", s_Server.GetName()); }
+        }
+        ImGui::TextDisabled(settings.hostDevStage ? "On: players who join see \"This server is in development\" after they are connected and spawned. Turn it off when your server is finished."
+                                                  : "Off: the server is finished, no notice.");
+    }
+
     // 3.21.6: Authentication system - players verify with Discord (/gen code), then sign up / log in
     ImGui::Separator();
     ImGui::TextUnformatted("Authentication system");
@@ -7592,6 +7608,7 @@ void MP::Init(const char* dataDir)
     FloatMenu::AddFloatingWindow(Render219);
     FloatMenu::SetServerPageRenderer(RenderLauncher);   // 2.25: full-screen launcher
     FloatMenu::AddFloatingWindow(RenderKickDialog);     // 2.25: "You are banned from the server!"
+    FloatMenu::AddFloatingWindow(RenderDevNotice);      // 4.13.2: "server in development" (after you are connected)
     FloatMenu::AddFloatingWindow(RenderCheatGateDialog);  // 2.37: "This server doesn't allow cheat menus"
     client.SetUid(settings.deviceId);
     VKeyboard::SetValidator(OnName, NameBlocked);       // 2.37: SENJI turns red, Enter refused

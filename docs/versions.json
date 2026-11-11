@@ -1,6 +1,7 @@
 {
-"latest": "4.13.1",
+"latest": "4.13.2",
 "supported": [
+"4.13.1",
 "4.13",
 "4.12.10",
 "4.12.9",
@@ -116,6 +117,17 @@
 "3.04.6"
 ],
 "versions": [
+{
+"v": "4.13.2",
+"summary": "The server in development notice comes from the server, after you are connected; black app icons, dark Moquil, original MLG textures.",
+"items": [
+"\"Server in development\" is no longer shown for every default, featured and login server. The server owner turns it on in Add server > Development stage (`mp_server --dev` on a VPS); a finished server shows nothing.",
+"The notice no longer opens over the black connection screen before joining: it waits until you are connected and spawned, then shows OK / Leave server (tap outside also closes it).",
+"Moquil 1.2: Appearance > Dark is a real dark theme (near black) instead of grey. The mod and app pictures in Home and Library are new hand-painted artwork instead of screenshots.",
+"Moquil, MP Voice and MP Textdraw Editor icons are black with a white symbol.",
+"MLG Production 1.6.4: the original MLG textures are back (wolf logo and photo buttons), only now they do not move; the title shine is the only animation."
+]
+},
 {
 "v": "4.13.1",
 "summary": "Moquil looks like Discord, Servers, matching app icons, the server notice can be closed.",

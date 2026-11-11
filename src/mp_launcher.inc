@@ -654,35 +654,33 @@ static bool LAlreadyOn(const LRow& r)
     return true;
 }
 static void LLeave(const LRow& r) { if(r.kind == 0) { if(IsOnDefault()) LeaveServer("Disconnected from the server."); } else LeaveServer("Left the server."); }
-// 4.13: the default server, the featured 24/7 servers and custom servers with the login system
-// (Authentication) are still on the developing stage - joining one shows a notice first.
-static bool s_bDevAsk = false, s_bDevFocus = false; static LRow s_DevRow; static std::set<std::string> s_DevOk;
-static bool LIsDevServer(const LRow& r)
-{
-    if(r.kind == 0 || (r.kind >= 3 && r.kind <= 6)) return true;
-    if(r.kind == 2) { if(ServerEntry* e = ServerList::Get(r.saved)) return SrvAuthGet(e->name, e->port) == 1; }
-    return SrvAuthGet(r.name, r.port) == 1;
-}
+// 4.13.2: the "server in development" notice comes from the server itself (MP_SRVF_DEVSTAGE in the
+// welcome packet: the owner's Add server > Development stage switch, mp_server --dev). A finished
+// server sends no flag, so no notice. It no longer opens before joining over the black connection
+// screen: it waits until you are connected, past the join / login screens and spawned.
+static bool AuthScreenUp();
+static bool s_bDevAsk = false, s_bDevFocus = false, s_bDevShown = false;
 static void LJoinNow(const LRow& r);
 static void LJoin(const LRow& r)
 {
     if(LAlreadyOn(r)) return;
-    if(!r.on && LIsDevServer(r))
-    {
-        char k[64]; snprintf(k, sizeof(k), "%d|%s|%d", r.kind, r.name, r.port);
-        if(!s_DevOk.count(k)) { s_DevRow = r; s_bDevAsk = true; s_bDevFocus = true; return; }
-    }
     LJoinNow(r);
 }
 static void LDevNotice()
 {
+    if(client.GetState() != NET_CONNECTED) { s_bDevAsk = false; s_bDevShown = false; return; }   // next join asks again
+    if(!s_bDevShown)
+    {
+        if(!(client.GetServerFlags() & MP_SRVF_DEVSTAGE)) return;
+        if(JoinFlowActive() || AuthScreenUp() || Game::LocalPed() <= 0) return;   // wait: connected successfully + spawned
+        s_bDevShown = true; s_bDevAsk = true; s_bDevFocus = true;
+    }
     if(!s_bDevAsk) return;
     const ImVec2 ds = ImGui::GetIO().DisplaySize;
     const float w = ImMin(UI::S(760), ds.x - UI::S(40)), pw = UI::S(22);
     ImGui::SetNextWindowPos(ImVec2(0, 0)); ImGui::SetNextWindowSize(ds);
-    // 4.13.1: the dim layer no longer takes the focus every frame (it stole it from the notice, so
-    // "Join anyway" / "Cancel" never got the touch). Tapping the dark area outside closes the notice.
-    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 0.55f));
+    // the dim layer never takes the focus (4.13.1), tapping the dark area outside closes the notice
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 0.45f));
     ImGui::Begin("##MPDevDim", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollbar |
                  ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav);
     const bool tapOutside = ImGui::IsWindowHovered() && ImGui::IsMouseReleased(0);
@@ -692,38 +690,33 @@ static void LDevNotice()
     ImGui::SetNextWindowSize(ImVec2(w, 0));
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(pw, pw));
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);   // 4.13.1: no yellow outline
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);   // no yellow outline
     ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(36 / 255.f, 40 / 255.f, 46 / 255.f, 252 / 255.f));
     ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0, 0, 0, 0));
     if(s_bDevFocus) { ImGui::SetNextWindowFocus(); s_bDevFocus = false; }   // only when it opens
+    bool overNotice = false;
     if(ImGui::Begin("##MPDevNotice", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize))
     {
-        const LRow& r = s_DevRow;
         ImGui::TextColored(ImVec4(1.0f, 0.78f, 0.25f, 1.0f), "SERVER IN DEVELOPMENT");
         ImGui::Separator();
         ImGui::PushTextWrapPos(0.0f);
-        const char* what = r.kind == 0 ? "the default server" : (r.kind >= 3 && r.kind <= 6) ? "a featured server" : "a custom server with the login system (Authentication) on";
-        ImGui::Text("%s is %s.", r.name[0] ? r.name : "This server", what);
-        ImGui::TextUnformatted("This server is on the developing stage. We are updating it on GitHub, so joining, the /gen code login or some features may not work yet.");
+        ImGui::Text("%s is still in development.", client.GetServerName()[0] ? client.GetServerName() : "This server");
+        ImGui::TextUnformatted("The owner is still working on it, so some features may not work yet. You can keep playing.");
         ImGui::TextDisabled("Updates: github.com/ThirtyFoxMCx00E1/wagu  |  Discord: %s", MP_AUTH_DISCORD_URL);
         ImGui::PopTextWrapPos();
         ImGui::Spacing();
         const float bw = (ImGui::GetContentRegionAvail().x - UI::S(12)) * 0.5f, bh = UI::S(64);
-        if(ImGui::Button("Join anyway", ImVec2(bw, bh)))
-        {
-            char k[64]; snprintf(k, sizeof(k), "%d|%s|%d", r.kind, r.name, r.port);
-            s_DevOk.insert(k); s_bDevAsk = false;
-            LRow copy = r; LJoinNow(copy);
-        }
+        if(ImGui::Button("OK", ImVec2(bw, bh))) s_bDevAsk = false;
         ImGui::SameLine(0, UI::S(12));
-        if(ImGui::Button("Cancel", ImVec2(bw, bh))) s_bDevAsk = false;
+        if(ImGui::Button("Leave server", ImVec2(bw, bh))) { s_bDevAsk = false; LeaveServer("Left the server."); }
+        overNotice = ImGui::IsWindowHovered(ImGuiHoveredFlags_AllowWhenBlockedByActiveItem);
     }
-    const bool overNotice = ImGui::IsWindowHovered(ImGuiHoveredFlags_AllowWhenBlockedByActiveItem);
     ImGui::End();
     if(tapOutside && !overNotice) s_bDevAsk = false;
     ImGui::PopStyleColor(2);
     ImGui::PopStyleVar(3);
 }
+static void RenderDevNotice(void*) { LDevNotice(); }   // 4.13.2: a floating window: shows in the game, not only in the launcher
 static void LJoinNow(const LRow& r)
 {
     if(r.kind == 0) { if(IsOnDefault()) MP::ToggleConnect(); else { LeaveServer(nullptr); MP::ToggleConnect(); } return; }
@@ -2356,7 +2349,6 @@ static void RenderLauncher(void* openPtr)
     ImGui::End();
     ImGui::PopStyleColor(3);
     ImGui::PopStyleVar(3);
-    LDevNotice();            // 4.13: "server in development" notice before joining
     LRegionPicker(nearby);   // 3.25.1: the region list opened by the toolbar icon (its own window, on top of the launcher)
 }
 

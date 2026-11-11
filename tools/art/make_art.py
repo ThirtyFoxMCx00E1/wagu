@@ -103,4 +103,4 @@ def main():
             for i in range(0, len(data), 24): f.write(','.join(str(x) for x in data[i:i+24]) + ',\n')
             f.write('};\n')
     print('ok')
-main()
+if __name__ == "__main__": main()
