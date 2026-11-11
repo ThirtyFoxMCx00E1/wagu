@@ -18,7 +18,7 @@
   <br>
   <a href="https://mpsamp-open.github.io/"><img alt="GTA SA Android" src="https://img.shields.io/badge/GTA%20SA-Android-e2554b?style=for-the-badge&labelColor=3a3a3a"></a>
   <a href="https://github.com/ThirtyFoxMCx00E1/AndroidModLoader"><img alt="AML" src="https://img.shields.io/badge/AML-AndroidModLoader-8a5cf6?style=for-the-badge&labelColor=3a3a3a"></a>
-  <a href="https://discord.gg/tbsDknk34y"><img alt="Discord" src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/live-status/discord.json&style=for-the-badge&labelColor=3a3a3a&cacheSeconds=600"></a>
+  <a href="https://discord.gg/QSdtut3SWV"><img alt="Discord" src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/live-status/discord.json&style=for-the-badge&labelColor=3a3a3a&cacheSeconds=600"></a>
 </p>
 
 <p align="center">
@@ -28,9 +28,9 @@
 </p>
 
 <p align="center">
-  <a href="https://discord.gg/tbsDknk34y" title="Join the MP Discord"><img src="Screenshots/discord.png" alt="Join us on Discord" width="300"></a>
+  <a href="https://discord.gg/QSdtut3SWV" title="Join the MP Discord"><img src="Screenshots/discord.png" alt="Join us on Discord" width="300"></a>
   <br>
-  <sub>Tap the Discord logo to open the server in the Discord app: <a href="https://discord.gg/tbsDknk34y">discord.gg/tbsDknk34y</a></sub>
+  <sub>Tap the Discord logo to open the server in the Discord app: <a href="https://discord.gg/QSdtut3SWV">discord.gg/QSdtut3SWV</a></sub>
 </p>
 
 MP is an AML (AndroidModLoader) mod that brings multiplayer to GTA San Andreas Mobile. Players meet
@@ -660,7 +660,7 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
   - **Discord:** `/stats` and `/char` show an account card with your avatar and Refresh / Switch view buttons (only you see it). Each command shows once (no more double `/gen`).
   - **Login screen:** if the broker answers but the bot doesn't, the game now says the login bot is offline (not your internet) and links the live status page.
 - **3.21.6**: login system (accounts verified with Discord).
-  - **First join:** after connecting, a "Code authentication" screen shows a random 8-character code (a new one every time, never the same; it works 10 minutes). Join the Discord server [discord.gg/tbsDknk34y](https://discord.gg/tbsDknk34y) (**Open Discord** button) and type `/gen CODE` in the **#verification** channel. The game then shows **Sign up**: User, Password, Gender (Male / Female / Other), Age and **Create**, then "Your account was created successfully" and the **< Spawn >** buttons. One account per Discord account.
+  - **First join:** after connecting, a "Code authentication" screen shows a random 8-character code (a new one every time, never the same; it works 10 minutes). Join the Discord server [discord.gg/QSdtut3SWV](https://discord.gg/QSdtut3SWV) (**Open Discord** button) and type `/gen CODE` in the **#verification** channel. The game then shows **Sign up**: User, Password, Gender (Male / Female / Other), Age and **Create**, then "Your account was created successfully" and the **< Spawn >** buttons. One account per Discord account.
   - **Rejoin:** only the **Login** screen (User + Password). A reconnect in the same game session (host change, lost connection) logs you in by itself. "New account" asks for a new Discord code; a Discord account that already has one goes back to Login.
   - **Where:** always on the default server and Brief Case War. Custom servers: launcher **+ Add** page, scroll down to **Authentication system** > "Login with Discord" (kept per server, also when another phone takes it over). Dedicated `mp_server`: `--auth` (the default server name and Brief Case War always use it; update Termux servers with `mp-server update`).
   - **Brief Case War** has its own look: briefcase icon, red + black panel with a glowing frame, moving highlight bars and sparks.

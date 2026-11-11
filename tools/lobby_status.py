@@ -22,7 +22,7 @@ import paho.mqtt.client as mqtt
 TOPIC = "thirtyfox/mp5/l/+"
 BROKERS = [("broker.hivemq.com", 1883), ("broker.emqx.io", 1883), ("test.mosquitto.org", 1883)]
 REG = ["Asia", "Europe", "NA", "Oceania"]
-DISCORD_INVITE = "tbsDknk34y"
+DISCORD_INVITE = "QSdtut3SWV"
 
 
 def listen(host, port, secs):

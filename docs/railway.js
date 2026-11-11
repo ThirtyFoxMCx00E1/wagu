@@ -193,7 +193,7 @@
     'ss-deploy': function () {
       rw('discordpy-bot: git pull - newest commit (Streaming status 24/7)');
       rw('discordpy-bot: installing requirements · restarting');
-      if (online()) p('g', '  online - Streaming: Watch on YouTube · Subscribe on YouTube · Join discord.gg/tbsDknk34y · Playing MP - GTA SA Multiplayer');
+      if (online()) p('g', '  online - Streaming: Watch on YouTube · Subscribe on YouTube · Join discord.gg/QSdtut3SWV · Playing MP - GTA SA Multiplayer');
       else p('y', '  the website only sees the bot after it is started on YOUR server (Termius): run this there, then sudo mp-railway status');
     },
     'ss-token': function () {   // 4.12.3: the new token - typed on the server only, never on this page

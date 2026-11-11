@@ -114,5 +114,5 @@
   Client.code = function () { var A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789', b = rnd(8), o = ''; for (var i = 0; i < 8; i++) o += A[b[i] & 31]; return o; };
   Client.chal = function () { return b2hex(rnd(16)); };
 
-  G.MPAuth = { Client: Client, BROKERS: BROKERS, DISCORD: 'https://discord.gg/tbsDknk34y' };
+  G.MPAuth = { Client: Client, BROKERS: BROKERS, DISCORD: 'https://discord.gg/QSdtut3SWV' };
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -19,7 +19,7 @@
 // the bot's public key (uncompressed P-256 point, hex). Its private key is the Railway variable
 // AUTH_PRIVATE_KEY of the Discord bot - it is in no repository.
 #define MP_AUTH_BOT_PUBKEY "047bfb24d8637c172eb9353130450cca575553ef9cb1d8a9538451fa940eac0d12246f940a367ccc3f5231b61701d19c2a3d56a80eb49215ad71baf7405701e006"
-#define MP_AUTH_DISCORD_URL "https://discord.gg/tbsDknk34y"
+#define MP_AUTH_DISCORD_URL "https://discord.gg/QSdtut3SWV"
 #define MP_AUTH_CODE_LEN    8
 #define MP_AUTH_TOPIC_REQ   "wagu/auth1/req"
 #define MP_AUTH_TOPIC_RES   "wagu/auth1/res/"   // + session id (16 hex)
