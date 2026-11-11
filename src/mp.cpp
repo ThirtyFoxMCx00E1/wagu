@@ -4174,10 +4174,9 @@ void MP::Process()
     client.SetGamePaused(paused);
     // 4.13.5: no idle (AFK) camera while you are in multiplayer / on MP's screens (the JPatch idle camera
     // crashed in CCamera::Process on the black server select: libJPatch.so + 0x1A5A4)
-    {   // 4.13.6: + JPatch's idle camera call is taken out of CCamera::Process while MP is active
+    {   // (4.13.7: the real fix is Game::IdleCamGuard around CCamera::Process)
         const bool mpOn = MenuMpActive() || client.GetState() != NET_DISCONNECTED || s_Server.IsRunning() || FloatMenu::IsModal() || JoinFlowActive();
         if(mpOn) Game::KeepPadAwake();
-        Game::BlockIdleCam(mpOn);
     }
     client.Poll(&s_Events);
     AuthFrame(MP_NowMs());   // 3.21.6: login screens + ticket

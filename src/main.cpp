@@ -29,7 +29,7 @@
 #include "net/server.h"
 
 // 4.12.7: the config is files/TYFMC/TYFMC.MP.ini (the old configs/net.thirtyfox.mp.ini is moved there)
-TYFMC_MODCFG(net.thirtyfox.mp, MP Multiplayer, 4.13.6, ThirtyFoxMCx00E1, MP, net.thirtyfox.mp)
+TYFMC_MODCFG(net.thirtyfox.mp, MP Multiplayer, 4.13.7, ThirtyFoxMCx00E1, MP, net.thirtyfox.mp)
 NEEDGAME(com.rockstargames.gtasa)
 
 // Globals used by the embedded RenderWare ImGui backend
@@ -98,6 +98,14 @@ DECL_HOOKv(CGame_Process)
     CGame_Process();
     ScriptGuard::Tick();   // 3.21.3
     MP::Process();
+}
+
+// 4.13.7: JPatch's idle camera (hooked CCam::Process) reads touch widget #175 with no null check
+DECL_HOOKv(CCamera_Process, void* self)
+{
+    Game::IdleCamGuard(true);
+    CCamera_Process(self);
+    Game::IdleCamGuard(false);
 }
 
 // ---- 2D render: our whole HUD + floating menu ------------------------------------------
@@ -752,6 +760,9 @@ extern "C" void OnModLoad()
     ScriptGuard::InitFaultGuard(pGameHandle);   // 3.21.3: any script opcode that crashes stops that script, not the game
 
     HOOKSYM(CGame_Process, pGameHandle, "_ZN5CGame7ProcessEv");
+#ifdef AML32
+    HOOKSYM(CCamera_Process, pGameHandle, "_ZN7CCamera7ProcessEv");   // 4.13.7
+#endif
     HOOKSYM(Render2dStuff, pGameHandle, "_Z13Render2dStuffv");
     HookTouchInterface();   // 2.19.5
     // 4.05.8: back on. 4.05.5 switched it off, and phones that still have a texdb pack in the game

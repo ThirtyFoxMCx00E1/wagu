@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/MP/title_logo_connected.png" alt="MP Multiplayer" width="720">
+  <img src="assets/MP/title.png" alt="San Andreas Multiplayer" width="720">
 </p>
 
 # MP – Multiplayer for GTA San Andreas Mobile
@@ -120,6 +120,11 @@ wget -qO- https://mpsamp-open.github.io/HiveMQ/vps-setup.sh | bash -s europe
 Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in the provider's image list instead of the ISO. Ping depends on where the machine is: each region needs its own VPS in its city - Asia = Singapore, Europe = Frankfurt, North America = Los Angeles, Oceania = Sydney. All 4 on Vultr in one command, or Misaka / OVHcloud / Hetzner by hand: [docs/REGIONS_VPS.md](docs/REGIONS_VPS.md).
 
 ## Changelog
+
+- **4.13.7**: the JPatch crash (libJPatch.so + 0x1A5A4 from CCamera::Process) found in JPatch 1.10.2.1 itself and fixed, and a new Multiplayer loading screen.
+  - JPatch hooks CCam::Process for its PC-style idle camera and, to check for screen touches, calls touch widget #175 (CTouchInterface::m_pWidgets[175]) without checking that it exists. That widget is still empty right after Resume / Start / Load game and while the game runs behind MP's Multiplayer screens, so the game crashed. MP now puts a harmless placeholder widget in that empty slot only while CCamera::Process runs and takes it out right after; JPatch is not changed. 4.13.6's code restore (written for another game build) is removed.
+  - Loading screen: ui_bg background, the new San Andreas Multiplayer title in the centre, the tip bottom left (blue GAMEPLAY TIP heading, white text) and only the percent bottom right. No loading bar.
+  - New title.png (white background removed) in the MP folder and at the top of this README.
 
 - **4.13.6**: the JPatch idle-camera crash (libJPatch.so + 0x1A5A4 from CCamera::Process) is really fixed, and a cleaner Multiplayer loading screen.
   - JPatch puts a call to its idle (AFK) camera into CCamera::Process. Its idle timer does not only use the pad's last-touch time, so 4.13.5's fix did not stop it. While MP is active (Multiplayer menu, server select, launcher, joining, on a server, hosting) MP now puts the game's original CCamera::Process code back over that call; JPatch's code comes back in single player. The pad refresh also covers pad 0 now.

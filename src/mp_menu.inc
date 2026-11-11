@@ -121,8 +121,9 @@ static const char* const kMenuMpTips[] = {
     "Tip: Settings > Servers keeps your favourite servers",
     "Tip: /help lists the commands of the server you are on",
 };
-// 4.13.6: the loading screen of a main menu [Multiplayer] tap: ui_bg.jpg (the launcher backdrop), the bar
-// and the tips. Only the draw list is used (no ImGui windows): it never takes a touch.
+// 4.13.7: the loading screen of a main menu [Multiplayer] tap: ui_bg.jpg (the launcher backdrop), title.png
+// in the centre, the tip bottom left (blue heading + white text, the Rust / Facepunch style) and only the
+// percent bottom right. Only the draw list is used (no ImGui windows): it never takes a touch.
 static void MlBoldText(ImDrawList* dl, ImFont* f, float fs, ImVec2 p, ImU32 col, const char* t)
 {
     dl->AddText(f, fs, ImVec2(p.x + UI::S(2), p.y + UI::S(3)), IM_COL32(0, 0, 0, 120), t);   // soft drop shadow
@@ -130,38 +131,52 @@ static void MlBoldText(ImDrawList* dl, ImFont* f, float fs, ImVec2 p, ImU32 col,
     dl->AddText(f, fs, ImVec2(p.x + UI::S(1.2f), p.y), col, t);                               // a little heavier
 }
 void MP::DrawMenuLoading(ImDrawList* dl, float pct, bool loadingScreen)
-{   // 4.13.6: only the ui_bg background, the loading bar and the tips (no title bar, ring, logo, chips,
-    // sound chip, status text or percent)
+{
     (void)loadingScreen;
     if(!dl) return;
     const ImVec2 ds = ImGui::GetIO().DisplaySize;
     if(pct < 0) pct = 0; else if(pct > 100) pct = 100;
     const uint64_t nowMs = MP_NowMs();
     ImFont* f = UI::Font(); const float fs = ImGui::GetFontSize();
+    const ImU32 kBlue = IM_COL32(72, 160, 255, 255);
 
-    // ---- background: the launcher's blurred night city over the whole screen
+    // ---- background: the launcher's blurred night city over the whole screen, darker at the edges
     dl->AddRectFilled(ImVec2(0, 0), ds, IM_COL32(8, 11, 20, 255));
     ImVec2 uv(1, 1);
     if(void* t = HUD::Texture("ui_bg.jpg", &uv)) LImageCover(dl, t, uv, ImVec2(0, 0), ds, IM_COL32(255, 255, 255, 255));
-    dl->AddRectFilled(ImVec2(0, 0), ds, IM_COL32(10, 16, 34, 110));
-    dl->AddRectFilledMultiColor(ImVec2(0, ds.y * 0.60f), ds, IM_COL32(4, 6, 12, 0), IM_COL32(4, 6, 12, 0), IM_COL32(4, 6, 12, 190), IM_COL32(4, 6, 12, 190));
+    dl->AddRectFilled(ImVec2(0, 0), ds, IM_COL32(6, 8, 16, 120));
+    const ImU32 c0 = IM_COL32(0, 0, 0, 0), c1 = IM_COL32(0, 0, 0, 170);
+    dl->AddRectFilledMultiColor(ImVec2(0, 0), ImVec2(ds.x * 0.18f, ds.y), c1, c0, c0, c1);
+    dl->AddRectFilledMultiColor(ImVec2(ds.x * 0.82f, 0), ds, c0, c1, c1, c0);
+    dl->AddRectFilledMultiColor(ImVec2(0, ds.y * 0.62f), ds, c0, c0, IM_COL32(0, 0, 0, 200), IM_COL32(0, 0, 0, 200));
 
-    // ---- bottom centre: the bar, the tip under it
-    const float bx0 = ds.x * 0.22f, bx1 = ds.x * 0.78f;
-    const float bh = UI::S(12);
-    const float tfs = fs * 0.82f;
-    const float by1 = ds.y - UI::S(64) - tfs, by0 = by1 - bh;
-    dl->AddRectFilled(ImVec2(bx0, by0), ImVec2(bx1, by1), IM_COL32(255, 255, 255, 28));
-    const float fx = bx0 + (bx1 - bx0) * pct / 100.0f;
-    if(fx > bx0 + 1)
+    // ---- centre: the title
+    ImVec2 tuv(1, 1);
+    if(void* t = HUD::Texture("title.png", &tuv))
     {
-        dl->AddRectFilledMultiColor(ImVec2(bx0, by0), ImVec2(fx, by1), IM_COL32(86, 140, 200, 255), kVTeal, kVTeal, IM_COL32(86, 140, 200, 255));
-        dl->AddRectFilled(ImVec2(ImMax(bx0, fx - UI::S(26)), by0), ImVec2(fx, by1), IM_COL32(255, 255, 255, 60));   // bright head
+        const float w = ImMin(ds.x * 0.46f, ds.y * 1.25f), h = w * (318.0f / 1024.0f);
+        const ImVec2 c(ds.x * 0.5f, ds.y * 0.46f);
+        dl->AddImage((ImTextureID)t, ImVec2(c.x - w * 0.5f, c.y - h * 0.5f), ImVec2(c.x + w * 0.5f, c.y + h * 0.5f), ImVec2(0, 0), tuv);
     }
-    dl->AddRect(ImVec2(bx0, by0), ImVec2(bx1, by1), IM_COL32(0, 0, 0, 120), 0, 0, UI::S(1));
-    const int tip = (int)((nowMs / 3000) % (sizeof(kMenuMpTips) / sizeof(kMenuMpTips[0])));
-    ImVec2 tz = f->CalcTextSizeA(tfs, FLT_MAX, 0, kMenuMpTips[tip]);
-    MlBoldText(dl, f, tfs, ImVec2(floorf((bx0 + bx1 - tz.x) * 0.5f), by1 + UI::S(18)), IM_COL32(205, 212, 222, 235), kMenuMpTips[tip]);
+
+    // ---- bottom left: (!) TIP heading in blue, the tip in white
+    const float m = UI::S(44), hfs = fs * 0.80f, bfs = fs * 0.70f;
+    const int nt = (int)(sizeof(kMenuMpTips) / sizeof(kMenuMpTips[0]));
+    const char* tip = kMenuMpTips[(nowMs / 3000) % nt];
+    if(!strncmp(tip, "Tip: ", 5)) tip += 5;
+    const float by = ds.y - m - bfs, hy = by - UI::S(8) - hfs;
+    const float r = hfs * 0.55f; const ImVec2 ic(m + r, hy + hfs * 0.5f);
+    dl->AddCircleFilled(ic, r, kBlue, 24);
+    dl->AddRectFilled(ImVec2(ic.x - r * 0.13f, ic.y - r * 0.62f), ImVec2(ic.x + r * 0.13f, ic.y + r * 0.18f), IM_COL32(255, 255, 255, 255));
+    dl->AddCircleFilled(ImVec2(ic.x, ic.y + r * 0.45f), r * 0.15f, IM_COL32(255, 255, 255, 255), 10);
+    MlBoldText(dl, f, hfs, ImVec2(m + r * 2 + UI::S(12), hy), kBlue, "GAMEPLAY TIP");
+    MlBoldText(dl, f, bfs, ImVec2(m, by), IM_COL32(255, 255, 255, 235), tip);
+
+    // ---- bottom right: only the percent
+    char ps[8]; snprintf(ps, sizeof(ps), "%d%%", (int)pct);
+    const float pfs = fs * 0.95f;
+    ImVec2 pz = f->CalcTextSizeA(pfs, FLT_MAX, 0, ps);
+    MlBoldText(dl, f, pfs, ImVec2(ds.x - m - pz.x, ds.y - m - pz.y), IM_COL32(255, 255, 255, 245), ps);
 }
 
 // HUD, after NewFrame (under everything): the black

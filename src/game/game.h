@@ -146,7 +146,7 @@ namespace Game
     void  KeepPadAwake();
     // 4.13.6: while MP is active the original CCamera::Process code is put back over JPatch's injected
     // idle (AFK) camera call (libGTASA 2.00 32-bit + 0x3DCA1E..0x3DCA80); off = JPatch's bytes come back
-    void  BlockIdleCam(bool block);
+    void  IdleCamGuard(bool enter);   // 4.13.7: JPatch idle camera null widget
     float ProgressPercent();           // stats "Progress made" / "Total progress" * 100, -1 if unknown
 
     // ---- 2.13 player state + environment (netstate.cpp) ------------------------------------

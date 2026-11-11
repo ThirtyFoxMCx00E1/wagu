@@ -1,6 +1,7 @@
 {
-"latest": "4.13.6",
+"latest": "4.13.7",
 "supported": [
+"4.13.6",
 "4.13.5",
 "4.13.4",
 "4.13.3",
@@ -121,6 +122,15 @@
 "3.04.6"
 ],
 "versions": [
+{
+"v": "4.13.7",
+"summary": "the JPatch crash (libJPatch.so + 0x1A5A4 from CCamera::Process) found in JPatch 1.10.2.1 itself and fixed, and a new Multiplayer loading screen.",
+"items": [
+"JPatch hooks CCam::Process for its PC-style idle camera and, to check for screen touches, calls touch widget #175 (CTouchInterface::m_pWidgets[175]) without checking that it exists. That widget is still empty right after Resume / Start / Load game and while the game runs behind MP's Multiplayer screens, so the game crashed. MP now puts a harmless placeholder widget in that empty slot only while CCamera::Process runs and takes it out right after; JPatch is not changed. 4.13.6's code restore (written for another game build) is removed.",
+"Loading screen: ui_bg background, the new San Andreas Multiplayer title in the centre, the tip bottom left (blue GAMEPLAY TIP heading, white text) and only the percent bottom right. No loading bar.",
+"New title.png (white background removed) in the MP folder and at the top of this README."
+]
+},
 {
 "v": "4.13.6",
 "summary": "the JPatch idle-camera crash (libJPatch.so + 0x1A5A4 from CCamera::Process) is really fixed, and a cleaner Multiplayer loading screen.",
