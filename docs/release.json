@@ -6,22 +6,22 @@
  "assets": [
   {
    "name": "bin/libMP32.so",
-   "size": 10367876,
+   "size": 10835572,
    "download_count": 0
   },
   {
    "name": "bin/libMP64.so",
-   "size": 12211192,
+   "size": 12678840,
    "download_count": 0
   },
   {
    "name": "release/MP-4.13.8-full.zip",
-   "size": 55222068,
+   "size": 57087878,
    "download_count": 0
   },
   {
    "name": "release/MP-4.13.8-client.zip",
-   "size": 47138683,
+   "size": 49004490,
    "download_count": 0
   },
   {

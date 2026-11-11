@@ -154,7 +154,7 @@ void MP::DrawMenuLoading(ImDrawList* dl, float pct, bool loadingScreen)
     ImVec2 tuv(1, 1);
     if(void* t = HUD::Texture("title.png", &tuv))
     {
-        const float w = ImMin(ds.x * 0.46f, ds.y * 1.25f), h = w * (318.0f / 1024.0f);
+        const float w = ImMin(ds.x * 0.46f, ds.y * 1.25f), h = w * (601.0f / 1920.0f);
         const ImVec2 c(ds.x * 0.5f, ds.y * 0.46f);
         dl->AddImage((ImTextureID)t, ImVec2(c.x - w * 0.5f, c.y - h * 0.5f), ImVec2(c.x + w * 0.5f, c.y + h * 0.5f), ImVec2(0, 0), tuv);
     }
