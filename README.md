@@ -2,7 +2,7 @@
   <img src="assets/MP/title.png" alt="San Andreas Multiplayer" width="720">
 </p>
 
-# MP – Multiplayer for GTA San Andreas Mobile
+# Multiplayer for GTA San Andreas Mobile
 
 <p align="center">
   <a href="https://github.com/ThirtyFoxMCx00E1/wagu/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/ThirtyFoxMCx00E1/wagu?style=for-the-badge&labelColor=3a3a3a&label=release&color=f0a830&display_name=tag&cacheSeconds=600"></a>
