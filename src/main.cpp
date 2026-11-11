@@ -29,7 +29,7 @@
 #include "net/server.h"
 
 // 4.12.7: the config is files/TYFMC/TYFMC.MP.ini (the old configs/net.thirtyfox.mp.ini is moved there)
-TYFMC_MODCFG(net.thirtyfox.mp, MP Multiplayer, 4.12.8, ThirtyFoxMCx00E1, MP, net.thirtyfox.mp)
+TYFMC_MODCFG(net.thirtyfox.mp, MP Multiplayer, 4.12.9, ThirtyFoxMCx00E1, MP, net.thirtyfox.mp)
 NEEDGAME(com.rockstargames.gtasa)
 
 // Globals used by the embedded RenderWare ImGui backend
@@ -277,7 +277,6 @@ static inline bool ScreenBlocksGame()
     if(VKeyboard::IsOpen() || FloatMenu::IsModal()) { s_nScreenBlockMs = MP_NowMs(); return true; }
     return s_nScreenBlockMs && MP_NowMs() - s_nScreenBlockMs < 350;   // the release of the last tap too
 }
-DECL_HOOK(int,  Ptr_GetButton, int f, int b)                { const int r = Ptr_GetButton(f, b); return ScreenBlocksGame() ? 0 : r; }
 DECL_HOOK(bool, Pad_CycleWeapL, void* self)                 { return ScreenBlocksGame() ? false : Pad_CycleWeapL(self); }
 DECL_HOOK(bool, Pad_CycleWeapR, void* self)                 { return ScreenBlocksGame() ? false : Pad_CycleWeapR(self); }
 DECL_HOOK(bool, Hid_JustPressed, int m)                     { return ScreenBlocksGame() ? false : Hid_JustPressed(m); }
@@ -634,11 +633,11 @@ static void HookTouchInterface()
     HOOK_IF(Hid_Released,      "_ZN4CHID10IsReleasedE10HIDMapping");
     HOOK_IF(Hid_DoubleTapped,  "_ZN4CHID14IsDoubleTappedE10HIDMapping");
     HOOK_IF(Hid_Pressed,       "_ZN4CHID9IsPressedE10HIDMappingPf");
-    if(void* a = (void*)aml->GetSym(pGameHandle, "_Z20LIB_PointerGetButtonii"))
-    {   // MP's own touch poll keeps the real state (the original function), the game sees "up" behind the launcher
-        HOOK(Ptr_GetButton, a); ++hooked;
-        LIB_PointerGetButton = Ptr_GetButton;
-    }
+    // 4.12.9: LIB_PointerGetButton is no longer hooked. Crash log (TECNO KL5, Android 14, 33 mods): SIGSEGV in
+    // LIB_PointerGetButton+40 <- MobileMenu::Update <- PCMenu64 HookOf_MobileMenu_Update at the game start.
+    // PCMenu, TouchFixes and Unified Button Tweaks patch the same touch path; a 2nd inline patch on that tiny
+    // function broke it for them. 3.04.6 never hooked it - the CPad / CHID / CTouchInterface / CWidget hooks
+    // above already keep the taps on the launcher away from the game.
     logger->Info("Keyboard HUD block: %d touch checks hooked", hooked);
 }
 

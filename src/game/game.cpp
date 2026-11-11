@@ -584,6 +584,20 @@ void Game::Teleport(int ped, const Vec3& foot, float heading)
     SetCharHeading(ped, heading);
 }
 
+// 4.12.9: the same without LOAD_SCENE (no blocking stream of the whole area on the game thread). Used for the
+// spawn picker: the place has been streaming in while the camera flew there; MP holds the player until the
+// ground is in (SpawnSettle in mp_join.inc).
+void Game::TeleportLight(int ped, const Vec3& foot, float heading)
+{
+    if(ped <= 0) return;
+    CALLSCM(SET_AREA_VISIBLE, 0);
+    CALLSCM(SET_CHAR_AREA_VISIBLE, ped, 0);
+    CALLSCM(REQUEST_COLLISION, foot.x, foot.y);
+    if(IsCharInAnyCar(ped)) WarpOutOfCar(ped, foot);
+    else CALLSCM(SET_CHAR_COORDINATES, ped, foot.x, foot.y, foot.z);
+    SetCharHeading(ped, heading);
+}
+
 bool Game::WorldToScreen(const Vec3& w, float& sx, float& sy, float& depth)
 {
     if(!CalcScreenCoors) return false;

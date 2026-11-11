@@ -93,6 +93,7 @@ namespace Game
 
     // World
     void  Teleport(int ped, const Vec3& footPos, float heading);
+    void  TeleportLight(int ped, const Vec3& footPos, float heading);   // 4.12.9: no LOAD_SCENE
     bool  LoadModel(int model);               // 3.32: NON-blocking (REQUEST_MODEL, the game streams it in); true = loaded now
     bool  LoadModelNow(int model);            // 3.32: blocking (LOAD_ALL_MODELS_NOW) - only for your own one-off actions
     int   ModelStatus(int model);             // 3.32: 1 loaded, 0 streaming in, -1 unknown / gave up (10 s)

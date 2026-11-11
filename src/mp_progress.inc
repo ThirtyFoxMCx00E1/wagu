@@ -51,9 +51,16 @@ static void ProgProcess(int ped, uint64_t now)
         if(!s_Prog.settledAt) { s_Prog.settledAt = now; return; }
         if(now - s_Prog.settledAt < 1200) return;
         const PktProgress& g = s_Prog.p;
-        if(Game::IsCharInAnyCar(ped)) Game::WarpOutOfCar(ped, { g.x, g.y, g.z });
-        if(g.interior) { Game::SetInterior(ped, g.interior); Game::Teleport(ped, { g.x, g.y, g.z - 1.0f }, g.heading); }
-        else { Game::SetInterior(ped, 0); Game::TeleportGround(ped, { g.x, g.y, g.z }, g.heading); }
+        // 4.12.9: you just picked a place in the < Spawn > picker: you stay there. This was the 2nd teleport that
+        // came with the rules window (login done + join screen gone = saved place applied), and its LOAD_SCENE
+        // of your last place (often Grove Street) froze the game. Money, weapons, health, hunger still come back.
+        const bool keepPlace = s_bJoinSpawnPicked || s_SpawnSettle.until != 0;
+        if(!keepPlace)
+        {
+            if(Game::IsCharInAnyCar(ped)) Game::WarpOutOfCar(ped, { g.x, g.y, g.z });
+            if(g.interior) { Game::SetInterior(ped, g.interior); Game::Teleport(ped, { g.x, g.y, g.z - 1.0f }, g.heading); }
+            else { Game::SetInterior(ped, 0); Game::TeleportGround(ped, { g.x, g.y, g.z }, g.heading); }
+        }
         const int cur = Game::GetMoney(); if(g.money != cur) Game::AddMoney(g.money - cur);
         Game::SetCharHealth(ped, std::max(10, (int)g.health));
         { int ar = Game::GetCharArmour(ped); if(g.armour > ar) Game::AddArmour(ped, g.armour - ar); }
@@ -63,7 +70,7 @@ static void ProgProcess(int ped, uint64_t now)
         Game::SetCurrentWeapon(ped, 0);
         if(g.hunger || g.energy) { s_Need.hunger = g.hunger; s_Need.energy = g.energy; }
         s_Prog.applied = true; s_Prog.sendAt = now;
-        SysMsg(COL_GREEN, "Your progress is back: your place, $%d, %d weapon%s, health and hunger.", g.money, nw, nw == 1 ? "" : "s");
+        SysMsg(COL_GREEN, "Your progress is back: %s$%d, %d weapon%s, health and hunger.", keepPlace ? "" : "your place, ", g.money, nw, nw == 1 ? "" : "s");
         return;
     }
     if(s_Prog.applied && now - s_Prog.sendAt > 15000) ProgSendNow();

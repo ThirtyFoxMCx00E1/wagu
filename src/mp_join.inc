@@ -65,6 +65,9 @@ static bool     s_bJoinConnected = false;   // FinishJoin happened (maybe while 
 static bool     s_bJoinCamSet = false, s_bJoinHudOff = false;
 static int      s_nSpawnSel = 0;
 static bool     s_bSpawnNow = false;
+// 4.12.9: the place you picked this connection (no second teleport after it: saved server position, 100% save)
+static bool     s_bJoinSpawnPicked = false;
+static struct { int ped = 0; Vec3 at = { 0, 0, 0 }; float heading = 0; bool ground = false; uint64_t until = 0; } s_SpawnSettle;
 static int      s_nSpawnStep = 0;            // -1 / +1 pressed (done on the game tick)
 // camera flight
 static Vec3     s_CamFromP, s_CamFromL, s_CamToP, s_CamToL, s_CamNowP, s_CamNowL;
@@ -221,6 +224,7 @@ static void JoinOverlayStart()
     if(!Game::IsReady()) return;               // still on the loading screen: plain join
     s_nJoinPhase = JP_COVER; s_nJoinT0 = MP_NowMs(); s_nJoinStartMs = s_nJoinT0;
     s_bJoinConnected = false; s_bJoinCamSet = false; s_bSpawnNow = false; s_nSpawnStep = 0;
+    s_bJoinSpawnPicked = false; s_SpawnSettle.until = 0;
     s_nSpawnSel = 0; s_bCine = false; s_bCineFinal = false;
     FloatMenu::CloseAll();
 }
@@ -276,9 +280,38 @@ static void StartCamFlight(const Vec3& toP, const Vec3& toL)
     s_nCamT0 = MP_NowMs(); s_bCamEaseOut = false;
 }
 
+// 4.12.9: after < Spawn >: wait (frozen, at the spot) for the ground under the player, then let go
+static void SpawnSettleTick(int ped, uint64_t now)
+{
+    if(!s_SpawnSettle.until) return;
+    if(ped <= 0 || ped != s_SpawnSettle.ped || s_nJoinPhase != JP_NONE) { s_SpawnSettle.until = 0; return; }
+    const Vec3& a = s_SpawnSettle.at;
+    const float g = Game::GroundBelow(a.x, a.y, a.z + 3.0f);
+    const bool in = g > -999.0f && g > a.z - (s_SpawnSettle.ground ? 30.0f : 4.0f);
+    if(!in && now < s_SpawnSettle.until) return;
+    s_SpawnSettle.until = 0;
+    if(s_SpawnSettle.ground) Game::PlaceChar(ped, { a.x, a.y, in ? g + 1.0f : -100.0f });   // -100 = the game finds the ground
+    Game::FreezeChar(ped, false);
+    Game::SetCharHeading(ped, s_SpawnSettle.heading);
+}
+
+// 4.12.9: put the player at a spot without LOAD_SCENE; held there until the ground is in (max 4 s)
+static void SpawnLight(int ped, const Vec3& at, float heading, bool findGround)
+{
+    if(ped <= 0) return;
+    Game::PreloadArea(at, false);
+    Game::FreezeChar(ped, false);
+    Game::TeleportLight(ped, at, heading);
+    if(Game::IsCharInAnyCar(ped)) return;   // the car carries you (WarpOutOfCar put you out = on foot again)
+    Game::FreezeChar(ped, true);
+    s_SpawnSettle.ped = ped; s_SpawnSettle.at = at; s_SpawnSettle.heading = heading;
+    s_SpawnSettle.ground = findGround; s_SpawnSettle.until = MP_NowMs() + 4000;
+}
+
 // game tick
 static void JoinFlowProcess(int ped, uint64_t now)
 {
+    SpawnSettleTick(ped, now);
     if(s_nJoinPhase == JP_NONE) return;
     uint64_t t = now - s_nJoinT0;
     if(!s_bJoinHudOff) { Game::ShowGameHud(false); Game::SetPlayerControl(false); s_bJoinHudOff = true; }
@@ -407,12 +440,14 @@ static void JoinFlowProcess(int ped, uint64_t now)
             {
                 s_bSpawnNow = false;
                 const SpawnSpot& sp = kSpawns[s_nSpawnSel];
-                Game::FreezeChar(ped, false);
+                // 4.12.9: no LOAD_SCENE here any more. It ran twice (PreloadArea(blocking) + Teleport) on the game
+                // thread while the server's players / cars / objects were being made around you - with a custom
+                // modpack (HD Grove Street models + textures) that is the freeze after < Spawn > at Grove Street.
+                // The area has streamed in while the camera flew there; the player is held (frozen) at the spot
+                // until the ground is in (SpawnSettleTick), max 4 s.
                 Game::SetCharVisible(ped, !s_Cheat.invisible);
-                Vec3 at = { sp.x, sp.y, sp.findGround ? -100.0f : sp.z };
-                Game::PreloadArea({ sp.x, sp.y, sp.z }, true);
-                Game::Teleport(ped, sp.findGround ? Vec3{ sp.x, sp.y, sp.z } : at, sp.heading);
-                if(sp.findGround) Game::PlaceChar(ped, at);
+                SpawnLight(ped, { sp.x, sp.y, sp.z }, sp.heading, sp.findGround);
+                s_bJoinSpawnPicked = true;
                 s_bJoinCamSet = false; s_bCine = false;
                 Game::RestoreCamera();
                 JoinRestoreGame(false);

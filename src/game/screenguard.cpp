@@ -217,6 +217,7 @@ namespace
         return n;
     }
 
+    uint64_t s_nUiAfter = 0;   // 4.12.9: the UI thread starts securing the window after this (ms, monotonic)
     pthread_mutex_t s_Mx = PTHREAD_MUTEX_INITIALIZER;   // s_Done is used by the guard thread and the UI thread
     bool s_bLoggedOk = false;
     void LogOnce(int n)
@@ -252,7 +253,7 @@ void ScreenGuard::OnUiThread()
     static uint64_t s_nNext = 0;
     struct timespec ts; clock_gettime(CLOCK_MONOTONIC, &ts);
     const uint64_t now = (uint64_t)ts.tv_sec * 1000ull + ts.tv_nsec / 1000000;
-    if(now < s_nNext) return;
+    if(now < s_nNext || now < s_nUiAfter) return;
     s_nNext = now + 1000;
     JavaVM* vm = aml->GetJavaVM(); JNIEnv* env = nullptr;
     if(!vm || vm->GetEnv((void**)&env, JNI_VERSION_1_6) != JNI_OK || !env) return;
@@ -275,8 +276,14 @@ void ScreenGuard::Init(const char* mpDir)
     if(!s_nKey) { snprintf(p, sizeof(p), "%s/../src_Access.txt", mpDir); s_nKey = CheckKeyFile(p); }   // files/src_Access.txt too
     s_bLocked = s_nKey == 0;
     if(!s_bLocked) { logger->Info("ScreenGuard: src_Access.txt key #%04d - screen recording allowed", s_nKey); return; }
-    pthread_t t;
-    if(pthread_create(&t, nullptr, GuardThread, nullptr) == 0) pthread_detach(t);
+    // 4.12.9: no background guard thread any more. It called ViewRootImpl.setLayoutParams() on the game's
+    // window from a non-UI thread every second from the first frame on (Android 14: a window relayout while the
+    // game / PCMenu / TouchFixes set up their touch + menu state at the start - "the game closes by itself").
+    // Only the UI thread secures the window now (Window.setAttributes, the normal Android way), and only once
+    // the game has been running for a few seconds.
+    struct timespec ts; clock_gettime(CLOCK_MONOTONIC, &ts);
+    s_nUiAfter = (uint64_t)ts.tv_sec * 1000ull + ts.tv_nsec / 1000000 + 8000;
+    (void)&GuardThread;
 }
 bool ScreenGuard::Locked() { return s_bLocked; }
 int  ScreenGuard::KeyNumber() { return s_nKey; }

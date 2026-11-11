@@ -121,6 +121,14 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **4.12.9**: start crash fix, no second teleport, no freeze at Grove Street, lighter join for custom modpacks.
+  - Start crash (game closes by itself): SIGSEGV in LIB_PointerGetButton <- MobileMenu::Update <- PCMenu. MP no longer hooks LIB_PointerGetButton (PCMenu, TouchFixes and Unified Button Tweaks use the same touch path; 3.04.6 never hooked it). The launcher still keeps taps away from the game through the CPad / CHID / CTouchInterface / CWidget checks.
+  - ScreenGuard no longer changes the game window from a background thread every second from the first frame on; only the UI thread does it, a few seconds after the start.
+  - Second teleport after < Spawn >: when the rules window came up, the saved server progress moved you back to your last place. The place you pick in the spawn picker is kept now (money, weapons, health and hunger still come back).
+  - Default server: the 100% progress save only loads while the join screen still holds you, never after you spawned (it threw you to the save point and back and reloaded the whole world).
+  - Spawn freeze (Grove Street and every spot, all servers): the spawn ran LOAD_SCENE twice on the game thread while the server's players, cars and objects were made around you. Now the player is placed without LOAD_SCENE and held for up to 4 s until the ground is in. The automatic Grove Street teleport works the same way.
+  - Custom modpacks (ZyZ ModLoader, texture packs, SkyGFX, limit adjusters): the Day Z model / texture loader hooks are only installed when the Day Z model pack is on the phone. The first download on Day Z asks for a game restart.
+  - Voice chat: the voice player only starts when someone talks (or your mic is on) and stops after 60 s of silence, instead of running the whole time you are connected.
 - **4.12.8**: spawn fix (no more jump to Grove Street) and the Grove Street freeze.
   - Default, featured and custom servers: after you spawn (Ganton or any spot), a save load no longer throws you to Grove Street. On the default server the 100% progress save loads about 4 s after the join; guests (no login to wait for) got the spawn picker first, and the load then moved them to Grove Street, with the rules window on top. On another server right after the default one, putting your own save back did the same.
   - The spawn picker now waits for that save load (up to 30 s), and after any save load you are put back where you were.

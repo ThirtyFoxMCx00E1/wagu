@@ -44,6 +44,7 @@
 #include <unordered_map>
 #include <ctype.h>
 #include <algorithm>
+#include <dirent.h>
 #include "dzmodels.h"
 #include "../net/online.h"
 #include "../../imgui/rw_glue.h"
@@ -869,6 +870,27 @@ bool DzModels::SetBoxCollision(int model, const float* boxes, int nBoxes, uint8_
     return true;
 }
 
+// 4.12.9: cross-modpack compatibility. The texture / model loader hooks below sit on the same engine functions
+// as ZyZ ModLoader, texture packs, SkyGFX and limit adjusters (TextureDatabaseRuntime::GetTexture,
+// RwTextureStreamRead, CFileLoader::LoadClumpFile, CStreaming::ConvertBufferToObject...). They were installed for
+// everyone since 3.61, also for players who never joined Project Day Z. Now they are only installed when the
+// Day Z model pack is on the phone (downloaded once); otherwise the engine stays exactly as the modpack set it,
+// like 3.04.6. The first download on Day Z asks for one game restart before the models are used.
+static bool s_HooksSkipped = false;
+static bool HasPackFiles(const std::string& dir)
+{
+    if(dir.empty()) return false;
+    DIR* d = opendir(dir.c_str()); if(!d) return false;
+    bool any = false;
+    while(dirent* e = readdir(d))
+    {
+        const char* n = e->d_name; const size_t l = strlen(n);
+        if(l > 4 && (!strcasecmp(n + l - 4, ".dff") || !strcasecmp(n + l - 4, ".txd") || !strcasecmp(n + l - 4, ".pak") || !strcasecmp(n + l - 4, ".bin"))) { any = true; break; }
+    }
+    closedir(d);
+    return any;
+}
+
 void DzModels::Init(void* h)
 {
     *(void**)&SetColModelFn = (void*)aml->GetSym(h, "_ZN14CBaseModelInfo11SetColModelEP9CColModelb");   // 4.08
@@ -887,6 +909,16 @@ void DzModels::Init(void* h)
     // 4.02: the mobile texture database lookup (flat, by name) - ours first while an MTA dff is read
     *(void**)&DictFindTex = (void*)aml->GetSym(h, "_Z31RwTexDictionaryFindNamedTextureP15RwTexDictionaryPKc");
     if(!DictFindTex) *(void**)&DictFindTex = (void*)aml->GetSym(h, "RwTexDictionaryFindNamedTexture");
+    s_Cache = FindCacheDir();
+    if(!HasPackFiles(s_Cache))
+    {
+        s_HooksSkipped = true;
+        if(!DictAddTex) *(void**)&DictAddTex = (void*)aml->GetSym(h, "RwTexDictionaryAddTexture");
+        if(!TexCreate) *(void**)&TexCreate = (void*)aml->GetSym(h, "RwTextureCreate");
+        if(!s_Cache.empty()) LoadBad();
+        DzLog(false, "DzModels: no Day Z model pack on this phone - no engine hooks (custom modpacks untouched)");
+        return;
+    }
     if(DictFindTex)
         if(void* g = (void*)aml->GetSym(h, "_ZN22TextureDatabaseRuntime10GetTextureEPKc")) aml->Hook(g, (void*)&HookDbGetTexture, (void**)&DbGetTexture_orig);
     if(!TexCreate) *(void**)&TexCreate = (void*)aml->GetSym(h, "RwTextureCreate");
@@ -928,11 +960,17 @@ void DzModels::Init(void* h)
 void DzModels::Tick(bool on, const int* objIds, int nObj)
 {
     if(s_Disabled) return;
-    if(on && !s_Started && !s_Cache.empty() && CBTO_orig && !s_CloudBusy)
+    if(on && !s_Started && !s_Cache.empty() && (CBTO_orig || s_HooksSkipped) && !s_CloudBusy)
     {
         s_Started = true; s_Busy = true;
         std::vector<int> ids(objIds, objIds + (nObj > 0 ? nObj : 0));
         std::thread(DownloadThread, ids).detach();
+    }
+    if(s_HooksSkipped)
+    {   // 4.12.9: downloaded now, used after the next game start (the hooks go in at start only)
+        static bool s_bSaid = false;
+        if(on && s_ListReady && !s_bSaid) { s_bSaid = true; std::lock_guard<std::mutex> lk(s_M); s_Err = "model pack downloaded - restart the game to use it"; DzLog(false, "DzModels: pack ready, used after a game restart"); }
+        return;
     }
     if(!s_ListReady) return;
     uint64_t now = NowMs();

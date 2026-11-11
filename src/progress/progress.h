@@ -19,6 +19,10 @@ namespace Progress
     // 3.29: Mega Vil Futuristic (roleplay) sets the day + weather itself: while held no save is
     // loaded at all (no 100% save, no switching back to your own) - it waits until you leave
     void SetHold(bool hold);
+    // 4.12.9: the 100% save may only START while the join screen / spawn picker still holds you. Already
+    // spawned = no save load for this visit (it threw you to the save point and back = a 2nd teleport,
+    // and reloaded the whole world under you)
+    void SetAllowStart(bool allow);
     bool IsActive();             // 100% save is loaded (or loading)
     bool Pending();              // 3.22.1: a save load is about to start or running (the login pop-up waits for it)
     const char* StatusText();    // one line for the menu

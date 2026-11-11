@@ -675,6 +675,7 @@ bool MP_WallhackOn() { return s_Cheat.wallhack; }
 // 2.19 (mp_cmds.inc / mp_join.inc, included further down)
 static void ShowPairPopup(int from);
 static bool JoinFlowActive();
+static void SpawnLight(int ped, const Vec3& at, float heading, bool findGround);   // 4.12.9 (mp_join.inc)
 static void JoinOverlayStart();
 static void LeaveServer(const char* msg);
 static char s_szDirectRelay[32] = "";   // 3.11: relay address of the server we joined over direct UDP
@@ -1382,6 +1383,7 @@ static int s_nHelperPrevState = 0;
 static float VoiceDistanceGain(float d) { return Voice::DistanceGain(d, MP_VOICE_RANGE); }
 static void VoiceSend(const void* pkt, int len) { if(client.GetState() == NET_CONNECTED) client.Send(pkt, len); }   // audio thread
 static bool s_bVoiceInit = false;
+static uint64_t s_nVoiceHeardAt = 0;   // 4.12.9: last voice packet from another player
 static void VoiceEnsure() { if(!s_bVoiceInit) { s_bVoiceInit = true; Voice::Init(VoiceSend); } }
 static int VoiceMicState()   // the mic pill: 0 not connected, 1 off, 2 on, 3 talking
 {
@@ -1413,9 +1415,14 @@ static void ProcessVoice()
 {
     bool conn = MP::IsConnected();
     if(!conn) { if(s_bVoiceInit) { if(Voice::MicOn()) Voice::StopMic(); Voice::SetOutput(false); } return; }
+    // 4.12.9: no audio engine work on join any more. The voice player (an OpenSL ES queue + a mixing thread,
+    // all the time while connected since 3.11) now starts with the first voice that comes in or your mic,
+    // and stops again after 60 s of silence - 3.04.6 had no voice at all and joined lighter.
+    const bool heard = s_nVoiceHeardAt && MP_NowMs() - s_nVoiceHeardAt < 60000;
+    if(!s_bVoiceInit && !heard) return;
     VoiceEnsure();
     if(!Voice::Available()) return;
-    Voice::SetOutput(settings.voiceChat);
+    Voice::SetOutput(settings.voiceChat && (heard || Voice::MicOn()));
     if(!settings.voiceChat && Voice::MicOn()) Voice::StopMic();
     Voice::SetVolume(settings.voiceVolume);
     Voice::SetMicGain(settings.micGain);
@@ -2756,6 +2763,7 @@ public:
     {
         if(id < 0 || id >= MP_MAX_PLAYERS || id == myId || !players[id].active || !settings.voiceChat) return;
         if(VoiceMutedId(id)) return;   // muted in the player list: not even decoded
+        s_nVoiceHeardAt = MP_NowMs();  // 4.12.9: the voice player only runs while someone talks
         Voice::OnPacket(id, seq, flags, opus, len);
     }
     void OnClothes(const PktClothes& c0) override   // 3.10: clothing sync
@@ -4162,6 +4170,7 @@ void MP::Process()
     ProcessFeed(now);
     AdvTick();   // 4.12.3: only puts the player's original Advanced Settings HUD back (page removed)
     UpdateLocalStory(now);
+    Progress::SetAllowStart(JoinFlowActive());   // 4.12.9: only before you spawn
     Progress::SetHold(MP::IsOnRp());   // 3.29: no save loads / swaps on Mega Vil (day + weather are the server's)
     Progress::Process(now, settings.fullProgressDefault, client.GetState() == NET_CONNECTED && MP::IsOnDefault(),
                       client.GetState() == NET_CONNECTED && !MP::IsOnDefault(),
@@ -4231,12 +4240,12 @@ void MP::Process()
     if(s_bWantTeleport)
     {
         s_bWantTeleport = false; s_bWantRestorePos = false;
-        Game::Teleport(ped, kGroveStreet, kGroveHeading);
+        SpawnLight(ped, kGroveStreet, kGroveHeading, false);   // 4.12.9: no blocking LOAD_SCENE of Grove Street
     }
     if(s_bWantRestorePos && ped > 0)
     {   // 4.12.8: after a save load: back to the spot you were at (the load put you at the save point)
         s_bWantRestorePos = false;
-        Game::Teleport(ped, s_PreLoadPos, s_fPreLoadHead);
+        SpawnLight(ped, s_PreLoadPos, s_fPreLoadHead, false);
     }
     {   // 3.23.2: a signal stack for the game thread. Without one a crash from a too deep / too big
         // stack has nowhere to run the crash handlers and the game just closes with no crash log.

@@ -287,6 +287,8 @@ static int LoadDone(uint64_t now, bool canLoad)
 
 static bool s_bHold = false;
 void Progress::SetHold(bool hold) { s_bHold = hold; }
+static bool s_bAllowStart = true, s_bSkipVisit = false;
+void Progress::SetAllowStart(bool allow) { s_bAllowStart = allow; }
 void Progress::Process(uint64_t now, bool enabled, bool onDefault, bool connectedElsewhere, bool canLoad)
 {
     if(s_bHold && (s_Phase == PH_IDLE || s_Phase == PH_WAIT || s_Phase == PH_ACTIVE))
@@ -307,11 +309,18 @@ void Progress::Process(uint64_t now, bool enabled, bool onDefault, bool connecte
                 s_bSkipMsg = true;
                 Msg(COL_WARN, "100%% progress is off for now: the game crashed while loading a save last time (another mod can clash with the game's save loading). Your own progress is used; it tries again in a few game starts.");
             }
-            if(enabled && onDefault && !s_bFailed) { s_Phase = PH_WAIT; s_nPhaseAt = now; }
+            if(!onDefault) s_bSkipVisit = false;
+            if(enabled && onDefault && !s_bFailed && !s_bSkipVisit) { s_Phase = PH_WAIT; s_nPhaseAt = now; }
             break;
         case PH_WAIT:      // a few seconds on the server first (feed, teleport), and not mid-mission
             if(!enabled || !onDefault) { s_Phase = PH_IDLE; break; }
-            if(canLoad && now - s_nPhaseAt > 4000) Enter(now);
+            if(!s_bAllowStart && now - s_nPhaseAt > 1000)
+            {   // 4.12.9: you are already playing (spawned): this visit stays on your own progress
+                s_bSkipVisit = true; s_Phase = PH_IDLE;
+                logger->Info("[Progress] 100%% save skipped: the player had already spawned");
+                break;
+            }
+            if(canLoad && s_bAllowStart && now - s_nPhaseAt > 4000) Enter(now);
             break;
         case PH_LOADING_100:
         {

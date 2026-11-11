@@ -1,6 +1,7 @@
 {
-"latest": "4.12.8",
+"latest": "4.12.9",
 "supported": [
+"4.12.8",
 "4.12.7",
 "4.12.6",
 "4.12.5",
@@ -112,6 +113,19 @@
 "3.04.6"
 ],
 "versions": [
+{
+"v": "4.12.9",
+"summary": "start crash fix, no second teleport, no freeze at Grove Street, lighter join for custom modpacks.",
+"items": [
+"Start crash (game closes by itself): SIGSEGV in LIB_PointerGetButton <- MobileMenu::Update <- PCMenu. MP no longer hooks LIB_PointerGetButton (PCMenu, TouchFixes and Unified Button Tweaks use the same touch path; 3.04.6 never hooked it). The launcher still keeps taps away from the game through the CPad / CHID / CTouchInterface / CWidget checks.",
+"ScreenGuard no longer changes the game window from a background thread every second from the first frame on; only the UI thread does it, a few seconds after the start.",
+"Second teleport after < Spawn >: when the rules window came up, the saved server progress moved you back to your last place. The place you pick in the spawn picker is kept now (money, weapons, health and hunger still come back).",
+"Default server: the 100% progress save only loads while the join screen still holds you, never after you spawned (it threw you to the save point and back and reloaded the whole world).",
+"Spawn freeze (Grove Street and every spot, all servers): the spawn ran LOAD_SCENE twice on the game thread while the server's players, cars and objects were made around you. Now the player is placed without LOAD_SCENE and held for up to 4 s until the ground is in. The automatic Grove Street teleport works the same way.",
+"Custom modpacks (ZyZ ModLoader, texture packs, SkyGFX, limit adjusters): the Day Z model / texture loader hooks are only installed when the Day Z model pack is on the phone. The first download on Day Z asks for a game restart.",
+"Voice chat: the voice player only starts when someone talks (or your mic is on) and stops after 60 s of silence, instead of running the whole time you are connected."
+]
+},
 {
 "v": "4.12.8",
 "summary": "spawn fix (no more jump to Grove Street) and the Grove Street freeze.",
