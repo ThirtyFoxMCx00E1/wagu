@@ -6873,6 +6873,12 @@ static void SectionAddServer(void*)
                                           : "Off: players spawn right away (no account).");
     ImGui::TextDisabled("Discord: %s  (accounts are kept by the MP bot, never by the host, never shown to the others)", MP_AUTH_DISCORD_URL);
     ImGui::TextDisabled("The default server and Brief Case War always use it. Needs MP %s or newer on every phone.", MP_VERSION_STR);
+    if(settings.hostAuth)   // 4.13: the login system is still being worked on
+    {
+        ImGui::PushTextWrapPos(0.0f);
+        ImGui::TextColored(ImVec4(1.0f, 0.78f, 0.25f, 1.0f), "IN DEVELOPMENT: this server login system is on the developing stage. We are updating it on GitHub (github.com/ThirtyFoxMCx00E1/wagu) - players who join will see this notice first.");
+        ImGui::PopTextWrapPos();
+    }
     if(ownCustom) ImGui::TextColored(s_Server.AuthOn() ? kGreenTxt : kYellowTxt, "\"%s\": login %s", s_Server.GetName(), s_Server.AuthOn() ? "on" : "off");
 }
 

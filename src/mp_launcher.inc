@@ -18,6 +18,7 @@ enum { LT_INTERNET = 0, LT_FAVORITES, LT_HOSTED, LT_ADD, LT_PLAYERS, LT_BANS, LT
        LT_FRIENDS, LT_CHATS, LT_PARTY, LT_COMMUNITY, LT_INBOX,                           // 3.63: social (mp_social.inc)
        LT_CLOUD,                                                                         // 4.02: Cloud Storage (downloads)
        LT_LAN,                                                                           // 4.03: Wi-Fi servers only (CS:GO style top tab)
+       LT_MOQUIL,                                                                        // 4.13: Moquil (link code, get the app)
        LT_SECTIONS };
 static int   s_nLTab = LT_INTERNET;
 static int   s_nInetSub = 0;   // 3.58: Internet = PUBLIC (default + custom servers) || FEATURED (the 24/7 Broker servers)
@@ -653,9 +654,73 @@ static bool LAlreadyOn(const LRow& r)
     return true;
 }
 static void LLeave(const LRow& r) { if(r.kind == 0) { if(IsOnDefault()) LeaveServer("Disconnected from the server."); } else LeaveServer("Left the server."); }
+// 4.13: the default server, the featured 24/7 servers and custom servers with the login system
+// (Authentication) are still on the developing stage - joining one shows a notice first.
+static bool s_bDevAsk = false; static LRow s_DevRow; static std::set<std::string> s_DevOk;
+static bool LIsDevServer(const LRow& r)
+{
+    if(r.kind == 0 || (r.kind >= 3 && r.kind <= 6)) return true;
+    if(r.kind == 2) { if(ServerEntry* e = ServerList::Get(r.saved)) return SrvAuthGet(e->name, e->port) == 1; }
+    return SrvAuthGet(r.name, r.port) == 1;
+}
+static void LJoinNow(const LRow& r);
 static void LJoin(const LRow& r)
 {
     if(LAlreadyOn(r)) return;
+    if(!r.on && LIsDevServer(r))
+    {
+        char k[64]; snprintf(k, sizeof(k), "%d|%s|%d", r.kind, r.name, r.port);
+        if(!s_DevOk.count(k)) { s_DevRow = r; s_bDevAsk = true; return; }
+    }
+    LJoinNow(r);
+}
+static void LDevNotice()
+{
+    if(!s_bDevAsk) return;
+    const ImVec2 ds = ImGui::GetIO().DisplaySize;
+    const float w = ImMin(UI::S(760), ds.x - UI::S(40)), pw = UI::S(22);
+    ImGui::SetNextWindowPos(ImVec2(0, 0)); ImGui::SetNextWindowSize(ds);
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 0.55f));
+    ImGui::SetNextWindowFocus();
+    ImGui::Begin("##MPDevDim", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollbar);
+    ImGui::End();
+    ImGui::PopStyleColor();
+    ImGui::SetNextWindowPos(ImVec2(ds.x * 0.5f, ds.y * 0.5f), 0, ImVec2(0.5f, 0.5f));
+    ImGui::SetNextWindowSize(ImVec2(w, 0));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(pw, pw));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, UI::S(1));
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(36 / 255.f, 40 / 255.f, 46 / 255.f, 252 / 255.f));
+    ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(1.0f, 0.78f, 0.25f, 0.9f));
+    ImGui::SetNextWindowFocus();
+    if(ImGui::Begin("##MPDevNotice", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize))
+    {
+        const LRow& r = s_DevRow;
+        ImGui::TextColored(ImVec4(1.0f, 0.78f, 0.25f, 1.0f), "SERVER IN DEVELOPMENT");
+        ImGui::Separator();
+        ImGui::PushTextWrapPos(0.0f);
+        const char* what = r.kind == 0 ? "the default server" : (r.kind >= 3 && r.kind <= 6) ? "a featured server" : "a custom server with the login system (Authentication) on";
+        ImGui::Text("%s is %s.", r.name[0] ? r.name : "This server", what);
+        ImGui::TextUnformatted("This server is on the developing stage. We are updating it on GitHub, so joining, the /gen code login or some features may not work yet.");
+        ImGui::TextDisabled("Updates: github.com/ThirtyFoxMCx00E1/wagu  |  Discord: %s", MP_AUTH_DISCORD_URL);
+        ImGui::PopTextWrapPos();
+        ImGui::Spacing();
+        const float bw = (ImGui::GetContentRegionAvail().x - UI::S(12)) * 0.5f, bh = UI::S(64);
+        if(ImGui::Button("Join anyway", ImVec2(bw, bh)))
+        {
+            char k[64]; snprintf(k, sizeof(k), "%d|%s|%d", r.kind, r.name, r.port);
+            s_DevOk.insert(k); s_bDevAsk = false;
+            LRow copy = r; LJoinNow(copy);
+        }
+        ImGui::SameLine(0, UI::S(12));
+        if(ImGui::Button("Cancel", ImVec2(bw, bh))) s_bDevAsk = false;
+    }
+    ImGui::End();
+    ImGui::PopStyleColor(2);
+    ImGui::PopStyleVar(3);
+}
+static void LJoinNow(const LRow& r)
+{
     if(r.kind == 0) { if(IsOnDefault()) MP::ToggleConnect(); else { LeaveServer(nullptr); MP::ToggleConnect(); } return; }
     if(r.kind == 3) { if(!MP::IsOnBcw()) LeaveServer(nullptr); MP::JoinBcw(); return; }   // 3.04
     if(r.kind == 4) { if(!MP::IsOnMw3()) LeaveServer(nullptr); MP::JoinMw3(); return; }   // 3.23
@@ -2059,7 +2124,7 @@ static void RenderLauncher(void* openPtr)
         {   // 4.03: pages stay in the left sidebar - the top row only shows the page name
             const char* pt = s_nLTab == LT_ADD || s_nLTab == LT_HOSTED ? "Add server" : s_nLTab == LT_CLOUD ? "Cloud Storage" : s_nLTab == LT_PLAYERS ? "Players" :
                              s_nLTab == LT_BANS ? "Bans" : s_nLTab == LT_SRVMGMT ? "Server Management" : s_nLTab == LT_FRIENDS ? "Friends" : s_nLTab == LT_CHATS ? "Chats" :
-                             s_nLTab == LT_PARTY ? "Party" : s_nLTab == LT_COMMUNITY ? "Communities" : s_nLTab == LT_INBOX ? "Inbox" :
+                             s_nLTab == LT_PARTY ? "Party" : s_nLTab == LT_COMMUNITY ? "Communities" : s_nLTab == LT_INBOX ? "Inbox" : s_nLTab == LT_MOQUIL ? "Moquil" :
                              (s_nLTab >= LT_SECTIONS && s_nLTab - LT_SECTIONS < FloatMenu::SectionCount()) ? FloatMenu::SectionTitle(s_nLTab - LT_SECTIONS) : "";
             dl->AddText(ImVec2(x, y + (btnH - ImGui::GetTextLineHeight()) * 0.5f), IM_COL32_WHITE, pt);
         }
@@ -2161,7 +2226,7 @@ static void RenderLauncher(void* openPtr)
         case LT_BANS:    LPageBans(); break;
         case LT_SRVMGMT: LPageServerMgmt(); break;   // 3.53
         case LT_CLOUD:   LPageCloud(contentW - pad * 2); break;   // 4.02
-        case LT_FRIENDS: case LT_CHATS: case LT_PARTY: case LT_COMMUNITY: case LT_INBOX: SocPage(s_nLTab, contentW - pad * 2, bodyH - pad); break;   // 3.63
+        case LT_FRIENDS: case LT_CHATS: case LT_PARTY: case LT_COMMUNITY: case LT_INBOX: case LT_MOQUIL: SocPage(s_nLTab, contentW - pad * 2, bodyH - pad); break;   // 3.63
         default:
             if(s_nLTab >= LT_SECTIONS && s_nLTab - LT_SECTIONS < FloatMenu::SectionCount()) FloatMenu::DrawSection(s_nLTab - LT_SECTIONS);
             else s_nLTab = LT_INTERNET;
@@ -2286,6 +2351,7 @@ static void RenderLauncher(void* openPtr)
     ImGui::End();
     ImGui::PopStyleColor(3);
     ImGui::PopStyleVar(3);
+    LDevNotice();            // 4.13: "server in development" notice before joining
     LRegionPicker(nearby);   // 3.25.1: the region list opened by the toolbar icon (its own window, on top of the launcher)
 }
 

@@ -121,6 +121,16 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **4.13**: Moquil, the MP social app (Android + web).
+  - New app **Moquil** (`moquil/`, `Moquil.apk`): your MP friends, chats, group chats, party, communities and voice rooms, like Discord. Rotates portrait and landscape. The same app runs in the browser at [mpsamp-open.github.io/moquils-web](https://mpsamp-open.github.io/moquils-web/) (also `mpsamp-open.github.io/moquil/`) in a desktop window.
+  - Log in, sign up (Discord `/gen` code) and forgot password with your MP account. Moquil remembers you on every device until you press Log Out ("Remember me" off = only until the browser closes). Your social key is saved with your account, so the web and other phones are the same #ID.
+  - Home (General / News / Discover with Install), Search, Store (avatar decorations, profile effects, frames, nameplates, nametags with Orbs from Quests), Library with the MP client, MLG Production, CamFX, MP Textdraw Editor and MP Voice: description, rating, Download, and a (!) button that opens a near full screen page with the image gallery, features, made by / powered by HiveMQ.
+  - Discord style profile: banner, avatar, decoration, effect, frame, nameplate, nametag, badges, pronouns, About me (bio), Member since, custom status with Clear after (don't clear, 30 minutes, 1 hour, 4 hours, today, 3 days, 7 days).
+  - Settings like Discord: Account, Profiles, Content & Social, Privacy, Devices, Connections, Appearance (System / Dark / Black / White / Light / Custom, transparency, blur, wallpaper default / none / colors / your image), Voice & Audio, Notifications, Permissions (microphone, notifications, storage popup: Allow / Don't allow / Never ask), Support, Developer.
+  - **Server in development notice**: joining the default server (MP LAN Server), a featured server (Brief Case War, MW3, Mega Vil RP, Project Day Z) or a custom server with Authentication (Login with Discord) on now first says the server is on the developing stage and is being updated on GitHub, with Join anyway / Cancel. Add server > Authentication shows the same note when the login system is on.
+  - The 24/7 featured servers are restarted on the new build (the shift that was running still had the old 4.12.8 code, so new phones could fail to get the /gen code on the default server).
+  - MP Launcher > Social > **Moquil**: make a link code (10 minutes, once) and type it in Moquil > Settings > Connections to be the same player in Moquil. Chats you send in Moquil also show in the game. Friends' Moquil status and pronouns show in the Friends list ("Online on Moquil").
+
 - **4.12.10**: Mission sync in cutscenes.
   - Your Mission sync group (up to 16 phones) now sees each other in mission cutscenes too, not only during the mission. Before, a cutscene hid every other player, so two phones in the same scene never saw each other.
   - Group members stay on the map and their mission markers stay while one of you watches a cutscene.

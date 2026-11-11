@@ -24,6 +24,9 @@ files = {
 for d, s in files.items():
     if not os.path.isfile(s): sys.exit("missing %s (run tools/make_release.py %s first)" % (s, V))
     shutil.copy2(s, os.path.join(dl, d))
+# 4.13: optional files (the Moquil APK is built by .github/workflows/moquil.yml and committed to release/)
+for d, s in {"Moquil.apk": "release/Moquil.apk"}.items():
+    if os.path.isfile(s): shutil.copy2(s, os.path.join(dl, d)); files[d] = s
 # server source for the Termux installer (server/ + src/net + mbedtls - no game code)
 def keep(ti):
     b = os.path.basename(ti.name)

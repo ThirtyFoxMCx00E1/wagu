@@ -162,6 +162,7 @@ static void SocSideItems(float iw, float ih)
         { "spa", IC_PARTY,    "Party",       LT_PARTY,     0 },
         { "sco", IC_FLAG,     "Communities", LT_COMMUNITY, 0 },
         { "sin", IC_BELL,     "Inbox",       LT_INBOX,     Social::UnreadInbox() },
+        { "smq", IC_GLOBE,    "Moquil",      LT_MOQUIL,    0 },   // 4.13
     };
     for(auto& it : items)
     {
@@ -190,7 +191,15 @@ static void SocPersonRow(const Social::Person& p, float W, int mode)
     SocText(dl, ImVec2(tx, cy - fs * 0.95f), kVText, p.name.empty() ? "?" : p.name.c_str());
     char idb[16]; snprintf(idb, sizeof(idb), "#%s", p.id.c_str());
     SocText(dl, ImVec2(tx + SocTextW(p.name.empty() ? "?" : p.name.c_str()) + UI::S(10), cy - fs * 0.85f), kVDim, idb, 0.85f);
-    SocText(dl, ImVec2(tx, cy + fs * 0.12f), online ? kVTeal : kVDim, online ? "Online" : "Offline", 0.8f);
+    {   // 4.13: Moquil profile: pronouns after the ID, "on Moquil" + custom status under the name
+        const Social::Rich* r = Social::RichOf(p.id);
+        if(r && !r->pronouns.empty())
+            SocText(dl, ImVec2(tx + SocTextW(p.name.empty() ? "?" : p.name.c_str()) + UI::S(10) + SocTextW(idb, 0.85f) + UI::S(10), cy - fs * 0.85f), kVDim, r->pronouns.c_str(), 0.8f);
+        std::string st = online ? (Social::OnMoquil(p.id) ? "Online on Moquil" : "Online") : "Offline";
+        if(r && !r->status.empty() && (!r->statusUntil || r->statusUntil > (int64_t)time(nullptr))) { st += "  -  "; st += r->status; }
+        if(st.size() > 70) { st.resize(67); while(!st.empty() && ((unsigned char)st.back() & 0xC0) == 0x80) st.pop_back(); st += "..."; }
+        SocText(dl, ImVec2(tx, cy + fs * 0.12f), online ? kVTeal : kVDim, st.c_str(), 0.8f);
+    }
     // buttons from the right
     float x = a.x + W - UI::S(14);
     float by = cy - bh * 0.5f;
@@ -770,6 +779,72 @@ static void SocPageInbox(float W)
     if(s_nSocInboxSeenAt && MP_NowMs() - s_nSocInboxSeenAt > 1500) { Social::MarkInboxRead(); s_nSocInboxSeenAt = 0; }
 }
 
+// ---- 4.13: Moquil (the MP social app: Android + web). Same ID with a link code. ----
+static const char* MP_MOQUIL_WEB = "https://mpsamp-open.github.io/moquils-web/";
+static const char* MP_MOQUIL_APK = "https://mpsamp-open.github.io/downloads/Moquil.apk";
+static void SocPageMoquil(float W)
+{
+    ImDrawList* dl = ImGui::GetWindowDrawList();
+    const float fs = ImGui::GetFontSize(), bh = UI::S(62);
+    SocSection("MOQUIL");
+    ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + W);
+    ImGui::TextColored(ImVec4(0.92f, 0.91f, 0.88f, 1), "Your MP friends, chats, communities and voice on your phone (portrait or landscape) and in any browser.");
+    ImGui::TextColored(ImVec4(0.62f, 0.62f, 0.6f, 1), "Log in to Moquil with your MP account. To be the same player there (same #ID, the same friends see you), make a link code here and type it in Moquil > Settings > Connections.");
+    ImGui::PopTextWrapPos();
+    ImGui::Dummy(ImVec2(1, UI::S(10)));
+    ImVec2 a = ImGui::GetCursorScreenPos();
+    const float boxH = UI::S(150);
+    ImGui::Dummy(ImVec2(W, boxH));
+    ImVec2 next = ImGui::GetCursorScreenPos();
+    VChamfer(dl, a, ImVec2(a.x + W, a.y + boxH), UI::S(12), kVPanel, IM_COL32(236, 232, 225, 22));
+    const std::string& code = Social::LinkCode();
+    int left = Social::LinkCodeLeft();
+    if(!code.empty() && left > 0)
+    {
+        std::string shown = code.substr(0, 5) + " " + code.substr(5);
+        SocText(dl, ImVec2(a.x + UI::S(24), a.y + UI::S(22)), kVTeal, shown.c_str(), 2.0f);
+        char b[96]; snprintf(b, sizeof(b), "Link code - %d:%02d left. Don't show it to anyone: it is your player key.", left / 60, left % 60);
+        SocText(dl, ImVec2(a.x + UI::S(24), a.y + boxH - fs * 1.6f), kVDim, b, 0.82f);
+        ImGui::SetCursorScreenPos(ImVec2(a.x + W - UI::S(170), a.y + (boxH - bh) * 0.5f));
+        if(VBtn("mqcl", "Clear", UI::S(150), bh, 3)) Social::ClearLinkCode();
+        ImGui::SetCursorScreenPos(ImVec2(a.x + W - UI::S(340), a.y + (boxH - bh) * 0.5f));
+        if(VBtn("mqcp", "Copy", UI::S(150), bh, 0)) ImGui::SetClipboardText(code.c_str());
+    }
+    else
+    {
+        SocText(dl, ImVec2(a.x + UI::S(24), a.y + UI::S(28)), kVText, "Link Moquil with this game");
+        SocText(dl, ImVec2(a.x + UI::S(24), a.y + UI::S(28) + fs * 1.4f), kVDim, Social::Up() ? "A code works for 10 minutes and only once." : "Connecting to the social server...", 0.85f);
+        ImGui::SetCursorScreenPos(ImVec2(a.x + W - UI::S(300), a.y + (boxH - bh) * 0.5f));
+        if(VBtn("mqmk", "MAKE LINK CODE", UI::S(280), bh, 1, Social::Up(), IC_PLUS)) Social::MakeLinkCode();
+    }
+    ImGui::SetCursorScreenPos(next);
+    ImGui::Dummy(ImVec2(1, UI::S(14)));
+    ImVec2 r = ImGui::GetCursorScreenPos();
+    float bw = (W - UI::S(12)) * 0.5f;
+    if(VBtn("mqapk", "GET MOQUIL (ANDROID)", bw, bh, 2, true, IC_CLOUD)) Voice::OpenUrl(MP_MOQUIL_APK);
+    ImGui::SetCursorScreenPos(ImVec2(r.x + bw + UI::S(12), r.y));
+    if(VBtn("mqweb", "OPEN MOQUIL ON THE WEB", bw, bh, 0, true, IC_GLOBE)) Voice::OpenUrl(MP_MOQUIL_WEB);
+    ImGui::Dummy(ImVec2(1, UI::S(16)));
+    if(const Social::Rich* me = Social::RichOf(Social::MyId()))
+    {
+        SocSection("YOUR MOQUIL PROFILE");
+        ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + W);
+        if(!me->pronouns.empty()) ImGui::TextColored(ImVec4(0.62f, 0.62f, 0.6f, 1), "%s", me->pronouns.c_str());
+        std::string st = Social::StatusOf(Social::MyId());
+        if(!me->status.empty() && (!me->statusUntil || me->statusUntil > (int64_t)time(nullptr))) ImGui::TextColored(ImVec4(0.3f, 0.85f, 0.75f, 1), "Status: %s", me->status.c_str());
+        if(!me->bio.empty()) ImGui::TextWrapped("%s", me->bio.c_str());
+        if(me->since > 0) { time_t t = (time_t)me->since; struct tm tmv; localtime_r(&t, &tmv); char d[40]; strftime(d, sizeof(d), "%b %d, %Y", &tmv); ImGui::TextColored(ImVec4(0.62f, 0.62f, 0.6f, 1), "Member since %s", d); }
+        ImGui::PopTextWrapPos();
+        (void)st;
+    }
+    else
+    {
+        ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + W);
+        ImGui::TextColored(ImVec4(0.62f, 0.62f, 0.6f, 1), "After linking, your Moquil bio, pronouns and status show here and next to your name in your friends' lists.");
+        ImGui::PopTextWrapPos();
+    }
+}
+
 static void SocPage(int tab, float W, float H)
 {
     s_nSocPageFrame = ImGui::GetFrameCount();
@@ -786,6 +861,7 @@ static void SocPage(int tab, float W, float H)
     case LT_CHATS:     SocPageChats(W, H - UI::S(8)); break;
     case LT_PARTY:     SocPageParty(W, H - UI::S(8)); break;
     case LT_COMMUNITY: SocPageCommunity(W, H - UI::S(8)); break;
+    case LT_MOQUIL:    SocPageMoquil(W); break;
     case LT_INBOX:     if(!s_nSocInboxSeenAt && Social::UnreadInbox()) s_nSocInboxSeenAt = MP_NowMs(); SocPageInbox(W); break;
     }
 }

@@ -120,6 +120,23 @@ namespace Social
     void  DeleteCommunity(const std::string& cid);   // owner only
     void  ViewCommunity(const std::string& cid);     // load its posts + member counts ("" = none)
 
+    // ---- 4.13: Moquil (the MP social app for Android / the web, moquil/) ----
+    struct Rich                                  // a player's Moquil profile (p/<id>, kind pf2)
+    {
+        std::string display, pronouns, bio, status, statusEmoji, app;
+        int64_t     statusUntil = 0;             // unix s, 0 = never clears
+        int64_t     since = 0;                   // member since (unix s)
+        bool        has = false;
+    };
+    const Rich* RichOf(const std::string& id);   // nullptr = no Moquil profile seen
+    std::string StatusOf(const std::string& id); // custom status text ("" none / cleared)
+    bool        OnMoquil(const std::string& id); // their presence comes from Moquil (not the game)
+    // link code: Moquil types it in Settings > Connections and becomes this same player (same ID, friends, chats)
+    const std::string& LinkCode();               // "" = none; makes nothing by itself
+    void        MakeLinkCode();                  // new 10 character code, valid 10 minutes
+    int         LinkCodeLeft();                  // seconds left (0 = expired / none)
+    void        ClearLinkCode();
+
     // ---- inbox ----
     std::vector<Notif*> Inbox();                 // newest first
     int   UnreadInbox();

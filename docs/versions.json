@@ -1,6 +1,7 @@
 {
-"latest": "4.12.10",
+"latest": "4.13",
 "supported": [
+"4.12.10",
 "4.12.9",
 "4.12.8",
 "4.12.7",
@@ -114,6 +115,18 @@
 "3.04.6"
 ],
 "versions": [
+{
+"v": "4.13",
+"summary": "Moquil, the MP social app (Android + web).",
+"items": [
+"New app **Moquil** (`moquil/`, `Moquil.apk`): your MP friends, chats, group chats, party, communities and voice rooms, like Discord. Rotates portrait and landscape. The same app runs in the browser at [mpsamp-open.github.io/moquils-web](https://mpsamp-open.github.io/moquils-web/) (also `mpsamp-open.github.io/moquil/`) in a desktop window.",
+"Log in, sign up (Discord `/gen` code) and forgot password with your MP account. Moquil remembers you on every device until you press Log Out (\"Remember me\" off = only until the browser closes). Your social key is saved with your account, so the web and other phones are the same #ID.",
+"Home (General / News / Discover with Install), Search, Store (avatar decorations, profile effects, frames, nameplates, nametags with Orbs from Quests), Library with the MP client, MLG Production, CamFX, MP Textdraw Editor and MP Voice: description, rating, Download, and a (!) button that opens a near full screen page with the image gallery, features, made by / powered by HiveMQ.",
+"Discord style profile: banner, avatar, decoration, effect, frame, nameplate, nametag, badges, pronouns, About me (bio), Member since, custom status with Clear after (don't clear, 30 min, 1 h, 4 h, today, this week).",
+"Settings like Discord: Account, Profiles, Content & Social, Privacy, Devices, Connections, Appearance (System / Dark / Black / White / Light / Custom, transparency, blur, wallpaper default / none / colors / your image), Voice & Audio, Notifications, Permissions (microphone, notifications, storage popup: Allow / Don't allow / Never ask), Support, Developer.",
+"MP Launcher > Social > **Moquil**: make a link code (10 minutes, once) and type it in Moquil > Settings > Connections to be the same player in Moquil. Chats you send in Moquil also show in the game. Friends' Moquil status and pronouns show in the Friends list (\"Online on Moquil\")."
+]
+},
 {
 "v": "4.12.10",
 "summary": "Mission sync in cutscenes.",

@@ -64,6 +64,12 @@ namespace
     int64_t g_LastPres = 0;
     bool g_bDirty = false; int64_t g_SaveAt = 0;
     std::string g_LastProfileName;
+    // 4.13 Moquil
+    std::map<std::string, Rich> g_Rich;               // id -> Moquil profile
+    std::set<std::string> g_MoqPres;                  // ids whose last presence was "ts|Moquil"
+    std::set<std::string> g_RichSub;
+    std::set<std::string> g_OwnCopies;               // mailbox ids of our own "dmc" copies
+    std::string g_LinkCode, g_LinkTopic; int64_t g_LinkUntil = 0;
 
     int64_t Now() { return (int64_t)time(nullptr); }
     uint64_t NowMs() { return (uint64_t)std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count(); }
@@ -265,8 +271,8 @@ namespace
     // a private message into someone's mailbox (waits on the broker until they come online)
     bool Mail(const std::string& to, const std::string& kind, const std::string& body)
     {
-        if(to.empty() || to == g_Me) return false;
-        std::string pub = PubOf(to);
+        if(to.empty() || (to == g_Me && kind != "dmc")) return false;
+        std::string pub = to == g_Me ? g_PubHex : PubOf(to);
         if(pub.empty())
         {   // don't know their key yet: ask the directory, send when it comes
             Sub("u/" + to);
@@ -275,7 +281,9 @@ namespace
         }
         std::string sealed;
         if(!Seal(pub, body, sealed)) return false;
-        Pub("m/" + to + "/" + RandHex(8), MakeEnv(kind, to, sealed), true);
+        std::string mid = RandHex(8);
+        if(to == g_Me) g_OwnCopies.insert(mid);   // 4.13: our copy for Moquil: Moquil reads and clears it
+        Pub("m/" + to + "/" + mid, MakeEnv(kind, to, sealed), true);
         return true;
     }
 
@@ -347,6 +355,74 @@ namespace
         if(f.empty()) g_ComMem[c->cid].erase(g_Me); else { g_ComMem[c->cid][g_Me] = f; g_ComMemName[g_Me] = g_MyName; }
         ComCount(c);
     }
+
+    // ---- 4.13: tiny JSON readers for the Moquil profile (flat strings / numbers, one nested object) ----
+    void PutUtf8(std::string& o, uint32_t c)
+    {
+        if(c < 0x80) o += (char)c;
+        else if(c < 0x800) { o += (char)(0xC0 | (c >> 6)); o += (char)(0x80 | (c & 63)); }
+        else if(c < 0x10000) { o += (char)(0xE0 | (c >> 12)); o += (char)(0x80 | ((c >> 6) & 63)); o += (char)(0x80 | (c & 63)); }
+        else { o += (char)(0xF0 | (c >> 18)); o += (char)(0x80 | ((c >> 12) & 63)); o += (char)(0x80 | ((c >> 6) & 63)); o += (char)(0x80 | (c & 63)); }
+    }
+    // the value position of "key": inside j (top level of that object only is not checked: keys are unique enough)
+    size_t JsonAt(const std::string& j, const std::string& key)
+    {
+        std::string k = "\"" + key + "\":";
+        size_t p = j.find(k); if(p == std::string::npos) return p;
+        p += k.size(); while(p < j.size() && j[p] == ' ') ++p;
+        return p;
+    }
+    std::string JsonStr(const std::string& j, const std::string& key, size_t maxLen)
+    {
+        size_t p = JsonAt(j, key); std::string o;
+        if(p == std::string::npos || p >= j.size() || j[p] != '"') return o;
+        for(++p; p < j.size() && j[p] != '"' && o.size() < maxLen + 8; ++p)
+        {
+            char c = j[p];
+            if(c != '\\') { o += c; continue; }
+            if(++p >= j.size()) break;
+            c = j[p];
+            if(c == 'n' || c == 'r' || c == 't') o += ' ';
+            else if(c == 'u' && p + 4 < j.size())
+            {
+                uint32_t v = 0; bool ok = true;
+                for(int i = 1; i <= 4; ++i) { int h = HexVal(j[p + i]); if(h < 0) ok = false; v = v * 16 + (h < 0 ? 0 : h); }
+                p += 4; if(!ok) continue;
+                if(v >= 0xD800 && v < 0xDC00 && p + 6 < j.size() && j[p + 1] == '\\' && j[p + 2] == 'u')
+                {   // surrogate pair
+                    uint32_t w = 0; for(int i = 3; i <= 6; ++i) { int h = HexVal(j[p + i]); w = w * 16 + (h < 0 ? 0 : h); }
+                    if(w >= 0xDC00 && w < 0xE000) { v = 0x10000 + ((v - 0xD800) << 10) + (w - 0xDC00); p += 6; }
+                }
+                PutUtf8(o, v);
+            }
+            else o += c;   // \" \\ \/
+        }
+        return Clean(o, maxLen);
+    }
+    int64_t JsonNum(const std::string& j, const std::string& key)
+    {
+        size_t p = JsonAt(j, key); if(p == std::string::npos) return 0;
+        return atoll(j.c_str() + p);
+    }
+    void OnRich(const Env& e)
+    {
+        const std::string& j = e.body;
+        Rich r; r.has = true;
+        r.display  = JsonStr(j, "display", 32);
+        r.pronouns = JsonStr(j, "pronouns", 40);
+        r.bio      = JsonStr(j, "bio", 190);
+        r.app      = JsonStr(j, "app", 32);
+        int64_t since = JsonNum(j, "since"); r.since = since > 100000000000LL ? since / 1000 : since;   // Moquil: ms
+        size_t st = j.find("\"status\":{");
+        if(st != std::string::npos)
+        {
+            size_t en = j.find('}', st); std::string sj = j.substr(st + 9, en == std::string::npos ? std::string::npos : en - st - 8);
+            r.status = JsonStr(sj, "t", 128); r.statusEmoji = JsonStr(sj, "e", 16);
+            int64_t u = JsonNum(sj, "until"); r.statusUntil = u > 100000000000LL ? u / 1000 : u;
+        }
+        g_Rich[e.from] = r;
+    }
+    void WatchRich(const std::string& id) { if(id.empty() || g_RichSub.count(id)) return; g_RichSub.insert(id); Sub("p/" + id); }
 
     // ---- save / load (tab separated, one record per line) ----
     std::string T(const std::string& s) { std::string o = s; for(char& c : o) if(c == '\t' || c == '\n' || c == '\r') c = ' '; return o; }
@@ -428,6 +504,18 @@ namespace
         if(Person* fr = FindIn(g_Friends, e.from)) if(!fr->pub.empty() && fr->pub != e.pub) { SLOG("mail from %s with a different key: ignored", e.from.c_str()); return; }
         std::string body;
         if(!Unseal(e.pub, e.body, body)) return;
+        if(e.from == g_Me)
+        {   // 4.13: a copy from your other device (Moquil linked to this game): your own sent message
+            if(e.pub != g_PubHex) return;
+            if(e.kind == "dmc")
+            {
+                std::vector<std::string> f = Split(body, RS); if(f.size() < 2 || f[0].size() < 2) return;
+                Conv* c = ConvByKey(f[0]);
+                if(!c && f[0][0] == 'u' && IsFriend(f[0].substr(1))) c = MakeDm(f[0].substr(1), NameOf(f[0].substr(1)));
+                if(c) { AddMsg(c, g_Me, g_MyName, f[1], e.ts, true); }
+            }
+            return;
+        }
         g_People[e.from] = Person{ e.from, e.name, e.pub, Now() };
         const std::string& k = e.kind;
         if(k == "freq")
@@ -439,7 +527,7 @@ namespace
                 g_Friends.push_back(Person{ e.from, e.name, e.pub, Now() });
                 Mail(e.from, "facc", "");
                 AddNotif(N_FRIEND_ACC, e.from, e.name, "", e.name + " is now your friend");
-                Sub("o/" + e.from);
+                Sub("o/" + e.from); WatchRich(e.from);
                 return;
             }
             if(!FindIn(g_In, e.from)) g_In.push_back(Person{ e.from, e.name, e.pub, Now() });
@@ -450,7 +538,7 @@ namespace
         {
             if(!FindIn(g_Out, e.from) && !FindIn(g_Friends, e.from)) return;   // you never asked
             RemoveFrom(g_Out, e.from);
-            if(!FindIn(g_Friends, e.from)) { g_Friends.push_back(Person{ e.from, e.name, e.pub, Now() }); AddNotif(N_FRIEND_ACC, e.from, e.name, "", e.name + " accepted your friend request. You can chat now."); }
+            if(!FindIn(g_Friends, e.from)) { g_Friends.push_back(Person{ e.from, e.name, e.pub, Now() }); AddNotif(N_FRIEND_ACC, e.from, e.name, "", e.name + " accepted your friend request. You can chat now."); WatchRich(e.from); }
         }
         else if(k == "fdec")
         {
@@ -538,11 +626,13 @@ namespace
         if(p.size() == 2 && p[0] == "o")
         {
             if(payload.empty()) g_Pres.erase(p[1]);
-            else { int64_t ts = atoll(payload.c_str()); if(ts > 0) g_Pres[p[1]] = ts; }
+            else { int64_t ts = atoll(payload.c_str()); if(ts > 0) g_Pres[p[1]] = ts; if(payload.find("|Moquil") != std::string::npos) g_MoqPres.insert(p[1]); else g_MoqPres.erase(p[1]); }
             return;
         }
+        if(p.size() == 2 && p[0] == "k") return;   // link codes are for Moquil
         if(payload.empty())
         {
+            if(p.size() == 2 && p[0] == "p") { g_Rich.erase(p[1]); return; }
             if(p.size() == 3 && p[0] == "c" && p[2] == "i") { if(Community* c = ComById(p[1])) if(c->ownerId != g_Me || !c->joined) c->deleted = true; }
             else if(p.size() == 4 && p[0] == "c" && p[2] == "m") { g_ComMem[p[1]].erase(p[3]); if(Community* c = ComById(p[1])) ComCount(c); }
             else if(p.size() == 4 && p[0] == "c" && p[2] == "p") { if(Community* c = ComById(p[1])) c->posts.erase(std::remove_if(c->posts.begin(), c->posts.end(), [&](const Post& x) { return x.id == p[3]; }), c->posts.end()); }
@@ -567,8 +657,14 @@ namespace
             }
             return;
         }
+        if(p.size() == 2 && p[0] == "p" && e.kind == "pf2" && e.from == p[1])
+        {   // 4.13: a Moquil profile (bio, pronouns, status, member since)
+            if(e.from == g_Me || FindIn(g_Friends, e.from)) OnRich(e);
+            return;
+        }
         if(p.size() == 3 && p[0] == "m" && p[1] == g_Me)
         {
+            if(g_OwnCopies.count(p[2])) return;
             OnMail(p[2], e);
             Pub(t, "", true);   // read: clear it from the broker
             return;
@@ -621,6 +717,8 @@ void Social::Init(const char* dataDir)
     Sub("m/" + g_Me + "/#");   // the mailbox
     Sub("o/+");                // who is online
     Sub("c/+/i");              // communities
+    WatchRich(g_Me);           // 4.13: Moquil profiles (yours and your friends')
+    for(auto& f : g_Friends) WatchRich(f.id);
     for(auto& c : g_Coms) if(ComWatched(c.get())) ComSubs(c.get(), true);
     SLOG("social: you are #%s", g_Me.c_str());
 }
@@ -655,6 +753,7 @@ void Social::Tick()
     // old waiting mails
     int64_t now = Now();
     g_Pending.erase(std::remove_if(g_Pending.begin(), g_Pending.end(), [&](const PendingMail& p) { return p.until < now; }), g_Pending.end());
+    if(!g_LinkCode.empty() && now >= g_LinkUntil) ClearLinkCode();
     if(g_bDirty && now - g_SaveAt >= 2) { g_SaveAt = now; Save(); }
 }
 
@@ -740,6 +839,7 @@ void Social::Accept(const std::string& id)
     if(!IsFriend(id)) g_Friends.push_back(f);
     Mail(id, "facc", "");
     DoneNotifs(N_FRIEND_REQ, id, "");
+    WatchRich(id);
     Dirty();
 }
 void Social::Decline(const std::string& id)
@@ -794,6 +894,8 @@ bool Social::SendText(const std::string& key, const std::string& text0)
     }
     else { std::string b = c->gid; b += RS; b += text; GroupBroadcast(c, "gmsg", b); }
     AddMsg(c, g_Me, g_MyName, text, Now(), true);
+    // 4.13: a copy for your Moquil (same ID), only when a Moquil was seen on this ID
+    if(g_MoqPres.count(g_Me) || g_Rich.count(g_Me)) { std::string b = key; b += RS; b += text; Mail(g_Me, "dmc", b); }
     return true;
 }
 std::string Social::CreateGroup(const std::string& name, const std::vector<std::string>& ids)
@@ -959,4 +1061,44 @@ void Social::ClearInbox()
     g_Notifs.erase(std::remove_if(g_Notifs.begin(), g_Notifs.end(), [](const std::unique_ptr<Notif>& n) {
         return !((n->kind == N_FRIEND_REQ || n->kind == N_PARTY_INV) && !n->done); }), g_Notifs.end());
     Dirty();
+}
+
+// ---- 4.13: Moquil ----
+const Rich* Social::RichOf(const std::string& id) { auto it = g_Rich.find(id); return it != g_Rich.end() && it->second.has ? &it->second : nullptr; }
+std::string Social::StatusOf(const std::string& id)
+{
+    const Rich* r = RichOf(id); if(!r || r->status.empty()) return "";
+    if(r->statusUntil && r->statusUntil < Now()) return "";
+    return r->statusEmoji.empty() ? r->status : r->statusEmoji + " " + r->status;
+}
+bool Social::OnMoquil(const std::string& id) { return g_MoqPres.count(id) != 0; }
+const std::string& Social::LinkCode() { return g_LinkCode; }
+int Social::LinkCodeLeft() { if(g_LinkCode.empty()) return 0; int64_t l = g_LinkUntil - Now(); return l > 0 ? (int)l : 0; }
+void Social::ClearLinkCode()
+{
+    if(!g_LinkTopic.empty() && g_bInit) Pub(g_LinkTopic, "", true);
+    g_LinkCode.clear(); g_LinkTopic.clear(); g_LinkUntil = 0;
+}
+void Social::MakeLinkCode()
+{
+    if(!g_bInit) return;
+    ClearLinkCode();
+    static const char AB[] = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";   // no 0/O, 1/I
+    uint8_t r[10]; if(!AuthCrypto::Random(r, 10)) for(int i = 0; i < 10; ++i) r[i] = (uint8_t)rand();
+    std::string code; for(int i = 0; i < 10; ++i) code += AB[r[i] % 32];
+    // topic k/<sha256("moquil-link:"+code) hex, 24 chars>, payload hex(iv || AES-GCM(sha256("moquil-link-key:"+code), AAD "ML1", "dHex qHex name"))
+    uint8_t h[32]; std::string a = "moquil-link:" + code; mbedtls_sha256((const unsigned char*)a.data(), a.size(), h, 0);
+    std::string topic = "k/" + Hex(h, 32).substr(0, 24);
+    uint8_t key[32]; std::string b = "moquil-link-key:" + code; mbedtls_sha256((const unsigned char*)b.data(), b.size(), key, 0);
+    uint8_t d[32]; if(mbedtls_mpi_write_binary(&g_D, d, 32) != 0) return;
+    std::string plain = Hex(d, 32) + " " + g_PubHex + " " + g_MyName; memset(d, 0, sizeof(d));
+    uint8_t iv[12]; if(!AuthCrypto::Random(iv, 12)) return;
+    std::string buf(12 + plain.size() + 16, '\0'); memcpy(&buf[0], iv, 12);
+    mbedtls_gcm_context g; mbedtls_gcm_init(&g);
+    bool ok = mbedtls_gcm_setkey(&g, MBEDTLS_CIPHER_ID_AES, key, 256) == 0 &&
+              mbedtls_gcm_crypt_and_tag(&g, MBEDTLS_GCM_ENCRYPT, plain.size(), iv, 12, (const unsigned char*)"ML1", 3, (const unsigned char*)plain.data(), (unsigned char*)&buf[12], 16, (unsigned char*)&buf[12 + plain.size()]) == 0;
+    mbedtls_gcm_free(&g); memset(key, 0, sizeof(key)); std::fill(plain.begin(), plain.end(), 0);
+    if(!ok) return;
+    Pub(topic, Hex((const uint8_t*)buf.data(), buf.size()), true);
+    g_LinkCode = code; g_LinkTopic = topic; g_LinkUntil = Now() + 600;
 }
