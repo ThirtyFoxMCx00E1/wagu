@@ -121,6 +121,7 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **4.13.4**: a Multiplayer tile on the main menu (MP loading screen, a black, silent Grove Street server select with the launcher after about 5 s). New 24/7 featured server: San Andreas Online League (Rocket Soccer, port 1934) with the original SA:O / Neon RL style HUD: boost gauge, score line, navy name tags, car lobby at Grove Street, ranked 5-minute matches with MMR tiers, free play, /team /stats /rank /top.
 - **4.13.3**: game sound is back while voice chat is on, the black join panel waits for "Connected successfully!".
   - No more quiet game on the default server: voice chat opened the microphone in Android's "voice call" mode, and many phones (Samsung, Xiaomi, Oppo, vivo...) then turn the game's own sound (cars, guns, radio, footsteps) far down or off. The mic (and the MP Voice app, 4.13.2) now records in the normal mode, so the game sounds the same with the mic on or off.
   - The black side panel no longer slides in the moment you tap Connect. While connecting you keep the game, the chat and the loading window; the black panel slides in only after "Connected successfully!", then opens on the connection camera and < Spawn > as before.

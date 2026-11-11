@@ -11,7 +11,7 @@ cd "$(dirname "$0")" || exit 1
 REGION="${1:-${REGION:-Asia}}"
 if [ "$REGION" = stop ]; then
     for p in run/*.pid; do [ -f "$p" ] && kill "$(cat "$p")" 2>/dev/null; rm -f "$p"; done
-    pkill -f "mp_server 19(22|30|31|32|33) " 2>/dev/null; echo "stopped"; exit 0
+    pkill -f "mp_server 19(22|30|31|32|33|34) " 2>/dev/null; echo "stopped"; exit 0
 fi
 [ -x ./mp_server ] || make -j"$(nproc 2>/dev/null || echo 2)" || exit 1
 mkdir -p logs run
@@ -31,7 +31,8 @@ keep 1930 "Brief Case War" 20
 keep 1931 "Call Of Duty: Modern Warfare 3" 64 --mw3-file mw3_stats.txt
 keep 1932 "Mega Vil Futuristic" 250 --rp-file rp_citizens.txt
 keep 1933 "Project Day Z Legacy" 250 --dz-file dayz_survivors.txt   # 3.58
-if [ "${FOREGROUND:-0}" = 1 ]; then   # 3.38: Docker / Railway: stay in the foreground, stop all 5 on exit
+keep 1934 "San Andreas Online League" 16 --lg-file league_stats.txt   # 4.13.4: Rocket Soccer
+if [ "${FOREGROUND:-0}" = 1 ]; then   # 3.38: Docker / Railway: stay in the foreground, stop all 6 on exit
     trap 'kill 0' TERM INT
     tail -n 0 -F logs/*.log & wait
 fi

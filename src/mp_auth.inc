@@ -318,7 +318,7 @@ static void AuthFrame(uint64_t now)
         {
             s_bChecked = true;
             const char* sn = client.GetServerName();
-            if(sn[0] && !MP::IsDefaultServer(sn, client.GetPort()) && !MP_IsBcwServerName(sn) && !MP_IsMw3ServerName(sn) && !MP_IsRpServerName(sn) && !MP_IsDzServerName(sn) && SrvAuthGet(sn, client.GetPort()) > 0)
+            if(sn[0] && !MP::IsDefaultServer(sn, client.GetPort()) && !MP_IsBcwServerName(sn) && !MP_IsMw3ServerName(sn) && !MP_IsRpServerName(sn) && !MP_IsDzServerName(sn) && !MP_IsLgServerName(sn) && SrvAuthGet(sn, client.GetPort()) > 0)
             { SrvAuthPut(sn, client.GetPort(), false); logger->Info("4.12.4: %s has no login system any more - forgotten", sn); }
         }
     }

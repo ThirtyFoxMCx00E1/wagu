@@ -317,6 +317,13 @@ namespace MP
     bool DealerBack();    // 3.55: controller B: back one step (false = not open)
     bool LauncherPadPage(int dir);
     void LauncherTouchDown(float x, float y);   // 4.05.8: raw finger press (touch thread) - region icon fallback   // 3.53: controller LB / RB = previous / next launcher page (false = launcher not open)
+    // 4.13.4: main menu [Multiplayer] (mp_menu.inc)
+    void InitMainMenu();          // all mods loaded: the SAUtils tile
+    bool MenuMpBlack();           // the black server-select screen is up
+    bool MenuMpLoading();         // a Multiplayer load is running: MP draws the loading screen
+    void DrawMenuLoading(ImDrawList* dl, float pct, bool loadingScreen);
+    void DrawMenuMpBack(ImDrawList* bg);
+    void DrawMenuMpFront();
     bool JoinScreenActive();   // 2.19.1: join screen / connection view / spawn picker on screen
     // 3.04: Brief Case War (private 24/7 gamemode server, pinned in the Internet list)
     void JoinMw3();            // 3.23: Call Of Duty: Modern Warfare 3 24/7 (join it, or leave it when you are on it)
@@ -327,6 +334,10 @@ namespace MP
     bool Mw3SubTag(int id, char* out, size_t n);   // "Rank - Class" over the name
     void JoinRp();             // 3.25: Mega Vil Futuristic 24/7 Roleplay (join it, or leave it when you are on it)
     bool IsOnRp();
+    void JoinLg();             // 4.13.4: San Andreas Online League 24/7 (join it, or leave it when you are on it)
+    bool IsOnLg();
+    bool LgOwnTags();          // 4.13.4: the league draws the name tags (navy boxes)
+    void LgDrawTags(ImDrawList* dl);
     void JoinDz();             // 3.58: Project Day Z Legacy 24/7 (join it, or leave it when you are on it)
     bool IsOnDz();
     bool RpOwnTagHidden();

@@ -1015,6 +1015,7 @@ static void Render219(void*)
     DzModelsTick();            // 3.61: MTA DayZ models from GitHub
     SocialFrame();             // 3.63: MP social (friends, chats, party, communities, inbox)
     RenderDz();                // 3.58: Project Day Z Legacy
+    RenderLg();                // 4.13.4: San Andreas Online League
     CgRender();                // 4.09: CGRP labels, ENTER / EXIT, /editor
     HkRender(); NeedsRender(); Modes2Render(); DealerRender();   // 3.39 / 3.55
     HudRenderExtras();   // 4.07: HUD Player + Ammo Info

@@ -170,6 +170,28 @@ bool Game::RequestLoadSlot(int slot)
 bool Game::IsLoadPending() { return m_MobileMenu && m_MobileMenu[MM_WANTLOAD_OFS] != 0; }
 void Game::CancelLoad()    { if(m_MobileMenu) m_MobileMenu[MM_WANTLOAD_OFS] = 0; }
 
+// 4.13.4: main menu [Multiplayer] - the newest valid save slot (-1 = none), or a new game
+#include <sys/stat.h>
+int Game::NewestSaveSlot()
+{
+    int best = -1; long long bt = -1;
+    for(int i = 0; i < 8; ++i)   // 9 / 10 are the auto / mission saves on some builds: never picked
+    {
+        char path[420]; if(!SaveSlotPath(i, path, sizeof(path))) continue;
+        struct stat st; if(stat(path, &st) != 0 || st.st_size < 1024) continue;
+        if(CheckSlotDataValid && !CheckSlotDataValid(i, false)) continue;
+        if((long long)st.st_mtime > bt) { bt = (long long)st.st_mtime; best = i; }
+    }
+    return best;
+}
+bool Game::RequestNewGame()
+{
+    if(!m_MobileMenu) return false;
+    m_MobileMenu[MM_WANTLOAD_OFS - 1] = 1;   // m_bWantToRestart (u8, right before m_bWantToLoad)
+    logger->Info("Requested a new game (main menu Multiplayer)");
+    return true;
+}
+
 float Game::ProgressPercent()
 {
     if(!m_StatFloat) return -1.0f;

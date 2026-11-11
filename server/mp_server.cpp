@@ -54,7 +54,7 @@ int main(int argc, char** argv)
     // 4.11: --samp-test <folder> ["cmd;cmd;dlg:1:0:text"] = run a SA-MP gamemode with one pretend player
     for(int i = 1; i + 1 < argc; ++i) if(!strcasecmp(argv[i], "--samp-test")) { MPServer t; return t.SampTestRun(SampResolve(argv[i + 1]).c_str(), i + 2 < argc ? argv[i + 2] : ""); }
     int port = argc > 1 ? atoi(argv[1]) : MP_DEFAULT_PORT;
-    const char* name = argc > 2 ? argv[2] : (port == MP_DEFAULT_PORT ? MP_DEFAULT_SERVER_NAME : (port == MP_BCW_PORT ? MP_BCW_SERVER_NAME : (port == MP_MW3_PORT ? MP_MW3_SERVER_NAME : (port == MP_RP_PORT ? MP_RP_SERVER_NAME : "MP Server"))));   // 2.29: port 1922 = the default server, 3.04: 1930 = Brief Case War
+    const char* name = argc > 2 ? argv[2] : (port == MP_DEFAULT_PORT ? MP_DEFAULT_SERVER_NAME : (port == MP_BCW_PORT ? MP_BCW_SERVER_NAME : (port == MP_MW3_PORT ? MP_MW3_SERVER_NAME : (port == MP_RP_PORT ? MP_RP_SERVER_NAME : (port == MP_LG_PORT ? MP_LG_SERVER_NAME : "MP Server")))));   // 2.29: port 1922 = the default server, 3.04: 1930 = Brief Case War
     int maxPlayers = argc > 3 ? atoi(argv[3]) : MP_STD_MAX_PLAYERS;
     int region = REGION_ASIA;
     bool persistent = false;
@@ -137,6 +137,7 @@ int main(int argc, char** argv)
     }
     for(int i = 1; i + 1 < argc; ++i) if(!strcasecmp(argv[i], "--password")) server.SetPassword(argv[i + 1]);   // 2.19 (max 16 chars)
     for(int i = 1; i + 1 < argc; ++i) if(!strcasecmp(argv[i], "--dz-file")) MPServerSetDzFile(argv[i + 1]);   // 3.58: before Start (it loads them)
+    for(int i = 1; i + 1 < argc; ++i) if(!strcasecmp(argv[i], "--lg-file")) MPServerSetLgFile(argv[i + 1]);   // 4.13.4
     if(!server.Start((uint16_t)port, name, nullptr, maxPlayers, region)) return 1;
     server.SetIcon(icon);   // 2.24
     {   // 3.04.6: old MP versions are refused and logged
@@ -174,6 +175,13 @@ int main(int argc, char** argv)
         const char* df = "dayz_survivors.txt";
         for(int i = 1; i + 1 < argc; ++i) if(!strcasecmp(argv[i], "--dz-file")) df = argv[i + 1];
         printf("[MP Server] Project Day Z Legacy (Proper DAYZ): %d players max, login on, cheats + CLEO + CheatMenu off, parties of %d, survivors in %s\n", MP_DZ_MAX_PLAYERS, MP_DZ_PARTY_MAX, df);
+    }
+    // 4.13.4: San Andreas Online League. --lg-file PATH = ranked MMR + career stats
+    if(server.IsLgServer())
+    {
+        const char* lf = "league_stats.txt";
+        for(int i = 1; i + 1 < argc; ++i) if(!strcasecmp(argv[i], "--lg-file")) lf = argv[i + 1];
+        printf("[MP Server] San Andreas Online League (Rocket Soccer): %d players max, login on, cheats off, ranked MMR in %s\n", MP_LG_MAX_PLAYERS, lf);
     }
     // 3.39: Home Kit houses. --home-file PATH (default homes.txt; Mega Vil: homes_rp.txt)
     {

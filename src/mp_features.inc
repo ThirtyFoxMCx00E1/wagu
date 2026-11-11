@@ -10,7 +10,7 @@
 static bool FeatFeatured()
 {
     if(client.GetState() != NET_CONNECTED) return false;
-    return MP::IsOnDefault() || MP::IsOnBcw() || MP::IsOnMw3() || MP::IsOnRp() || MP::IsOnDz();
+    return MP::IsOnDefault() || MP::IsOnBcw() || MP::IsOnMw3() || MP::IsOnRp() || MP::IsOnDz() || MP::IsOnLg();
 }
 static bool FeatOn(uint8_t perm)
 {

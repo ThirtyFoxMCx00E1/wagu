@@ -113,7 +113,7 @@ static bool     s_bCamEaseOut = false;    // 4.12.1: a flight that leaves the mo
 static bool CineWanted()
 {
     if(s_bRpJoin || MP_IsRpServerName(client.GetServerName())) return true;
-    if(s_bBcwJoin || s_bDzJoin || s_bMw3Join) return false;
+    if(s_bBcwJoin || s_bDzJoin || s_bMw3Join || s_bLgJoin) return false;
     if(s_bConnectingDefault || (client.GetState() == NET_CONNECTED && MP::IsOnDefault())) return true;
     return client.GetState() == NET_CONNECTED && (client.GetServerFlags() & MP_SRVF_CINECAM);
 }
@@ -414,6 +414,12 @@ static void JoinFlowProcess(int ped, uint64_t now)
             // the < Spawn > picker (it opens after JOIN_BUTTONS_MS as before) until you pick a place
             if(t >= JOIN_BUTTONS_MS && !AuthHoldsJoin(now))   // 3.21.6: login first
             {
+                if(s_bLgJoin || MP_IsLgServerName(client.GetServerName()))
+                {   // 4.13.4: San Andreas Online League: the Grove Street lobby (pick a car, then the mode)
+                    s_bJoinCamSet = false; s_bJoinHudOff = false; s_nJoinPhase = JP_NONE;
+                    LgJoinTakeover(ped);
+                    return;
+                }
                 if(s_bDzJoin || MP_IsDzServerName(client.GetServerName()))
                 {   // 3.58: Project Day Z: the cabin connection screen (PLAY / RULES / CREDITS / SETTINGS)
                     s_bJoinCamSet = false; s_bJoinHudOff = false; s_nJoinPhase = JP_NONE;

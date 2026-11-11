@@ -133,6 +133,14 @@ namespace Game
     bool  RequestLoadSlot(int slot);   // same as picking the slot in Load Game (gMobileMenu)
     bool  IsLoadPending();             // the game hasn't picked the request up yet
     void  CancelLoad();
+    int   NewestSaveSlot();            // 4.13.4: newest valid slot 0..7, -1 = none
+    bool  RequestNewGame();            // 4.13.4: like Start Game -> New Game
+    // 4.13.4 (gamemenu.cpp): main menu [Multiplayer] tile (SAUtils), main menu check, game sound fader
+    void  InitMenu(void* gameHandle);
+    bool  AddMainMenuTile(const char* name, const char* pngRel, const char* pngFull, void (*onTap)(void*));   // false = SAUtils missing / too old
+    bool  IsMainMenuShown();           // the game's own main menu (title or pause) is on screen
+    bool  IsFrontendMenu();            // any menu screen of the game is on screen
+    void  SetGameSoundFader(float f);  // 0 = silent .. 1 = normal (effects + music)
     float ProgressPercent();           // stats "Progress made" / "Total progress" * 100, -1 if unknown
 
     // ---- 2.13 player state + environment (netstate.cpp) ------------------------------------

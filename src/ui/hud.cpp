@@ -960,6 +960,7 @@ static void DrawNameTag(ImDrawList* dl, const Vec3& head, const char* name, uint
 static void DrawNameTags(ImDrawList* dl)
 {
     if(MP::classSelect) return;   // 3.01: class selection shows the skin only, no name tags
+    if(MP::LgOwnTags()) { MP::LgDrawTags(dl); return; }   // 4.13.4: San Andreas Online League
     Vec3 ref = MP::myDrawPos;
     for(int i = 0; i < MP_MAX_PLAYERS; ++i)
     {
@@ -1327,6 +1328,23 @@ static void GlobalClickTick()
 // ---- frame ----------------------------------------------------------------------------------
 static void PublishHitRects();   // 2.22
 void PadDrawCursor();   // main.cpp
+// 4.13.4: the game's loading screen while a main menu Multiplayer load runs: MP's launcher-styled panel
+// instead of the splash pictures. false = not drawn (the game draws its own).
+bool HUD::RenderLoading(float pct)
+{
+    if(!s_bInit) return false;   // never the first init on the loading screen
+    ImGuiIO& io = ImGui::GetIO();
+    io.DisplaySize = ImVec2((float)RsGlobal->maximumWidth, (float)RsGlobal->maximumHeight);
+    if(io.DisplaySize.x < 64 || io.DisplaySize.y < 64) return false;
+    ImGui_ImplRenderWare_NewFrame();
+    ImGui::NewFrame();
+    MP::DrawMenuLoading(ImGui::GetBackgroundDrawList(), pct, true);
+    ImGui::EndFrame();
+    ImGui::Render();
+    ImGui_ImplRenderWare_RenderDrawData(ImGui::GetDrawData());
+    return true;
+}
+
 void HUD::Render()
 {
     if(!s_bInit && !Init()) return;
@@ -1338,6 +1356,7 @@ void HUD::Render()
     ImGui::NewFrame();
 
     ImDrawList* dl = ImGui::GetBackgroundDrawList();
+    MP::DrawMenuMpBack(dl);   // 4.13.4: main menu Multiplayer: the black server-select screen (under the launcher)
     if(!Game::IsPaused())
     {
         // 2.19 join screen: full black slide overlay (under the chat + title logo)
@@ -1360,6 +1379,7 @@ void HUD::Render()
         FloatMenu::Render();
         VKeyboard::Render();
     }
+    MP::DrawMenuMpFront();   // 4.13.4: its 6 s loading panel / [Servers] card / the main menu tile (no SAUtils)
     PadDrawCursor();   // 3.39.2: controller cursor
     GlobalClickTick();   // 3.60
 

@@ -164,7 +164,7 @@ bool MP::IsConnected() { return client.GetState() == NET_CONNECTED; }
 bool MP::IsHosting() { return s_Server.IsRunning(); }
 // 3.23.5: the default server, Brief Case War and MW3 are hosted by the bot "Broker": the game never
 // shows a player as their host, even when this phone runs the copy (VPS down)
-static bool FeaturedName(const char* n, int port) { return n && n[0] && (MP_IsBcwServerName(n) || MP_IsMw3ServerName(n) || MP_IsRpServerName(n) || MP_IsDzServerName(n) || (port == MP_DEFAULT_PORT && !strcasecmp(n, MP_DEFAULT_SERVER_NAME))); }
+static bool FeaturedName(const char* n, int port) { return n && n[0] && (MP_IsBcwServerName(n) || MP_IsMw3ServerName(n) || MP_IsRpServerName(n) || MP_IsDzServerName(n) || MP_IsLgServerName(n) || (port == MP_DEFAULT_PORT && !strcasecmp(n, MP_DEFAULT_SERVER_NAME))); }
 bool MP::IsBotHosted()
 {
     if(s_Server.IsRunning() && s_Server.HasBot()) return true;
@@ -676,6 +676,7 @@ bool MP_WallhackOn() { return s_Cheat.wallhack; }
 static void ShowPairPopup(int from);
 static bool JoinFlowActive();
 static bool JoinScreenUp();   // 4.13.2
+static void MenuMpProcess(int ped, uint64_t now);   // 4.13.4 (mp_menu.inc)
 static void SpawnLight(int ped, const Vec3& at, float heading, bool findGround);   // 4.12.9 (mp_join.inc)
 static void JoinOverlayStart();
 static void LeaveServer(const char* msg);
@@ -708,6 +709,11 @@ static bool Mw3ListTeam(int id, const char** tag, uint32_t* rgba);
 static int  Mw3RadarZones(Game::RadarZone* out, int maxOut);
 // 3.58: Project Day Z Legacy (mp_dayz.inc)
 static bool s_bDzJoin = false;
+static bool s_bLgJoin = false;   // 4.13.4: San Andreas Online League
+static bool LgJoinTakeover(int ped);   // mp_league.inc
+static void LgProcess(int ped, uint64_t now);
+static void LgOnPacket(const uint8_t* d, int len);
+static void RenderLg();
 static bool DzOnServer();
 static bool DzHideCorner();   // 3.60
 static void DzModelsTick();   // 3.61: mp_dayz.inc
@@ -2529,7 +2535,7 @@ public:
         s_bPermsSeen = true;
         // 3.10: remember this custom server's Cheat Menu permission, so if this phone ever hosts it
         // (the host left / nobody runs it yet) it keeps the permission its creator chose
-        if(!MP::IsOnDefault() && !MP_IsBcwServerName(client.GetServerName()) && !MP_IsMw3ServerName(client.GetServerName()) && !MP_IsRpServerName(client.GetServerName()) && !MP_IsDzServerName(client.GetServerName()) && client.GetServerName()[0])
+        if(!MP::IsOnDefault() && !MP_IsBcwServerName(client.GetServerName()) && !MP_IsMw3ServerName(client.GetServerName()) && !MP_IsRpServerName(client.GetServerName()) && !MP_IsDzServerName(client.GetServerName()) && !MP_IsLgServerName(client.GetServerName()) && client.GetServerName()[0])
             SrvCmPut(client.GetServerName(), client.GetPort(), (m.perms & PERM_CHEAT_MENU) != 0);
         GamemodesChanged(m.modesMagic == MP_MODES_MAGIC ? m.modes : 0);   // 3.02   // 3.00: allowed -> you just play; not allowed -> Process() refuses at once
         if(nc1 && !nc0) SysMsg(COL_YELLOW, "*** Cheats were disabled on this server (MP cheats).");
@@ -2702,6 +2708,7 @@ public:
     void OnMw3(const uint8_t* d, int len) override { Mw3OnPacket(d, len); }   // 3.23
     void OnRp(const uint8_t* d, int len) override { RpOnPacket(d, len); }     // 3.25
     void OnDz(const uint8_t* d, int len) override { DzOnPacket(d, len); }     // 3.58
+    void OnLg(const uint8_t* d, int len) override { LgOnPacket(d, len); }     // 4.13.4
     void OnCg(const uint8_t* d, int len) override { CgOnPacket(d, len); }
     void OnSamp(const uint8_t* d, int len) override { SampSrvOnPacket(d, len); }   // 4.11     // 4.09
     void OnBcw(const uint8_t* d, int len) override { BcwOnPacket(d, len); }   // 3.04   // 2.25: the dialog opens; PKT_REJECT follows
@@ -4264,6 +4271,7 @@ void MP::Process()
             }
         }
     }
+    MenuMpProcess(ped, now);     // 4.13.4: main menu Multiplayer: black server-select screen
     JoinFlowProcess(ped, now);   // 2.19: join screen, connection camera, spawn picker
     // 4.07: the MP launcher (server UI) hides the game's HUD + touch widgets the same way the connection
     // screen does (ShowGameHud(false) + no player control, again every second because scripts switch them
@@ -4286,6 +4294,7 @@ void MP::Process()
     Mw3Process(ped, now);        // 3.23: Modern Warfare 3
     RpProcess(ped, now);         // 3.25: Mega Vil Futuristic
     DzProcess(ped, now);         // 3.58: Project Day Z
+    LgProcess(ped, now);         // 4.13.4: San Andreas Online League
     CgProcess(ped, now);         // 4.09: CGRP systems
     SampSrvProcess(ped, now);    // 4.11: SA-MP gamemode servers
     HkProcess(ped, now); NeedsProcess(ped, now); MvProcess(now); Modes2Process(ped, now); RulesProcess(now); ModCheckProcess(now); ProgProcess(ped, now); AdmProcess(ped); DealerProcess(ped, now);   // 3.39 / 3.54 staff commands
@@ -4470,6 +4479,7 @@ int MP_DzPackMigrate();   // mp_launcher.inc
 #include "mp_tdeplug.inc"   // 3.50: Add server > Plugins (Textdraw .mptd files)
 #include "mp_tde.inc"       // 3.50: in-game MP Textdraw Editor (/tde)
 #include "mp_dayz.inc"      // 3.58: Project Day Z Legacy (Proper DAYZ)
+#include "mp_league.inc"    // 4.13.4: San Andreas Online League (Rocket Soccer)
 
 // 2.37: CheatMenu (libCheatMenu.so / libCheatMenu64.so) is not allowed on any server - the default
 // server and every custom server. Detected with aml->HasMod() in ON_ALL_MODS_LOAD (+ a re-check of
@@ -4480,7 +4490,7 @@ static CheatGateInfo s_CheatGate = {};
 // its permissions (PKT_PERMS, right after the welcome) whether Cheat Menu is allowed - see Process().
 static bool CheatMenuBlocks(const char* serverName, bool isDefault)
 {
-    if(!(isDefault || MP_IsBcwServerName(serverName) || MP_IsMw3ServerName(serverName) || MP_IsRpServerName(serverName) || MP_IsDzServerName(serverName)) || !ModScan::Recheck()) return false;   // 3.04: Brief Case War refuses cheat menus too
+    if(!(isDefault || MP_IsBcwServerName(serverName) || MP_IsMw3ServerName(serverName) || MP_IsRpServerName(serverName) || MP_IsDzServerName(serverName) || MP_IsLgServerName(serverName)) || !ModScan::Recheck()) return false;   // 3.04: Brief Case War refuses cheat menus too
     JoinOverlayCancel();
     StopFeed();
     s_CheatGate.show = true;
@@ -4642,7 +4652,7 @@ static int SrvCmGet(const char* name, int port)   // -1 = unknown, 0 = not allow
 }
 static void SrvCmPut(const char* name, int port, bool allow)
 {
-    if(!name || !*name || MP::IsDefaultServer(name, port) || MP_IsBcwServerName(name) || MP_IsMw3ServerName(name) || MP_IsRpServerName(name) || MP_IsDzServerName(name)) return;
+    if(!name || !*name || MP::IsDefaultServer(name, port) || MP_IsBcwServerName(name) || MP_IsMw3ServerName(name) || MP_IsRpServerName(name) || MP_IsDzServerName(name) || MP_IsLgServerName(name)) return;
     if(SrvCmGet(name, port) == (allow ? 1 : 0)) return;
     char k[16]; SrvModesKey(name, port, k, sizeof(k)); k[0] = 'C'; k[1] = 'M';
     ConfigEntry* e = ::cfg->Bind(k, allow ? 1 : 0, "MPServerCheatMenu"); e->SetInt(allow ? 1 : 0); delete e;
@@ -4657,7 +4667,7 @@ static int SrvAuthGet(const char* name, int port)   // -1 = unknown, 0 = off, 1 
 }
 static void SrvAuthPut(const char* name, int port, bool on)
 {
-    if(!name || !*name || MP::IsDefaultServer(name, port) || MP_IsBcwServerName(name) || MP_IsMw3ServerName(name) || MP_IsRpServerName(name) || MP_IsDzServerName(name)) return;
+    if(!name || !*name || MP::IsDefaultServer(name, port) || MP_IsBcwServerName(name) || MP_IsMw3ServerName(name) || MP_IsRpServerName(name) || MP_IsDzServerName(name) || MP_IsLgServerName(name)) return;
     if(SrvAuthGet(name, port) == (on ? 1 : 0)) return;
     char k[16]; SrvModesKey(name, port, k, sizeof(k)); k[0] = 'A'; k[1] = 'U';
     ConfigEntry* e = ::cfg->Bind(k, on ? 1 : 0, "MPServerAuth"); e->SetInt(on ? 1 : 0); delete e;
@@ -4678,7 +4688,7 @@ static void SrvModesPut(const char* name, int port, uint16_t modes)
 static void ApplyServerRules()
 {
     if(!s_Server.IsRunning()) return;
-    const bool featured = MP::IsDefaultServer(s_Server.GetName(), s_Server.GetPort()) || MP_IsBcwServerName(s_Server.GetName()) || MP_IsMw3ServerName(s_Server.GetName()) || MP_IsRpServerName(s_Server.GetName()) || MP_IsDzServerName(s_Server.GetName());
+    const bool featured = MP::IsDefaultServer(s_Server.GetName(), s_Server.GetPort()) || MP_IsBcwServerName(s_Server.GetName()) || MP_IsMw3ServerName(s_Server.GetName()) || MP_IsRpServerName(s_Server.GetName()) || MP_IsDzServerName(s_Server.GetName()) || MP_IsLgServerName(s_Server.GetName());
     const char* lines[10]; for(int i = 0; i < 10; ++i) lines[i] = settings.rules[i];
     s_Server.SetRules(!featured && settings.rulesOn, settings.rulesTitle[0] ? settings.rulesTitle : "SERVER RULES", lines);
 }
@@ -4687,7 +4697,7 @@ static bool StartLocalServer(const char* name, int port)
     // 3.39: the 4 featured servers (default 1922, Brief Case War, MW3, Mega Vil) are hosted by the 24/7 bot.
     // A phone may only keep them up when it is the administrator's or a moderator's (moderator.txt).
     {
-        const bool featured = MP::IsDefaultServer(name, port) || MP_IsBcwServerName(name) || MP_IsMw3ServerName(name) || MP_IsRpServerName(name) || MP_IsDzServerName(name) || port == MP_MW3_PORT || port == MP_RP_PORT || port == MP_DZ_PORT;
+        const bool featured = MP::IsDefaultServer(name, port) || MP_IsBcwServerName(name) || MP_IsMw3ServerName(name) || MP_IsRpServerName(name) || MP_IsDzServerName(name) || MP_IsLgServerName(name) || port == MP_MW3_PORT || port == MP_RP_PORT || port == MP_DZ_PORT || port == MP_LG_PORT;
         if(featured)   // 3.53: no phone at all (admin / moderators too): the 24/7 console hosts them
         {
             static uint64_t s_nSaidAt = 0;
@@ -4706,12 +4716,13 @@ static bool StartLocalServer(const char* name, int port)
     s_Server.SetPersistent(true);
     // 3.04: Brief Case War: open, 20 players, its own gamemode only
     // 3.23.1: MW3 the same way: the VPS copy wins when it is up, otherwise this phone keeps it 24/7
-    const bool bcw = MP_IsBcwServerName(name) || MP_IsMw3ServerName(name) || port == MP_MW3_PORT || MP_IsRpServerName(name) || port == MP_RP_PORT || MP_IsDzServerName(name) || port == MP_DZ_PORT;   // 3.25: Mega Vil too (3.58: + Day Z)
+    const bool bcw = MP_IsBcwServerName(name) || MP_IsMw3ServerName(name) || port == MP_MW3_PORT || MP_IsRpServerName(name) || port == MP_RP_PORT || MP_IsDzServerName(name) || MP_IsLgServerName(name) || port == MP_DZ_PORT || port == MP_LG_PORT;   // 3.25: Mega Vil too (3.58: + Day Z)
     s_Server.SetPassword(MP::IsDefaultServer(name, port) || bcw ? "" : s_szJoinPw);   // 2.19
     // 2.29: the default server always has the full 100 slots (0/100), wherever it runs
     int maxp = MP::IsDefaultServer(name, port) ? MP_STD_MAX_PLAYERS : settings.maxPlayers;
     if(MP_IsRpServerName(name) || port == MP_RP_PORT) maxp = MP_RP_MAX_PLAYERS;   // 3.25: 250
     else if(MP_IsDzServerName(name) || port == MP_DZ_PORT) maxp = MP_DZ_MAX_PLAYERS;   // 3.58
+    else if(MP_IsLgServerName(name) || port == MP_LG_PORT) maxp = MP_LG_MAX_PLAYERS;   // 4.13.4
     else if(MP_IsMw3ServerName(name)) maxp = MP_MW3_MAX_PLAYERS;        // 3.24: a phone copy listed itself as x/100
     else if(MP_IsBcwServerName(name)) maxp = MP_BCW_MAX_PLAYERS;
     { char mf[512]; snprintf(mf, sizeof(mf), "%s/moderators_server.txt", s_szDataDir); s_Server.SetModFile(mf); }   // 3.35: list of your server's moderators
@@ -4812,6 +4823,7 @@ void MP::ToggleConnect()
     s_bMw3Join = false;       // 3.23
     s_bRpJoin = false;        // 3.25
     s_bDzJoin = false;        // 3.58
+    s_bLgJoin = false;        // 4.13.4
     s_bQuietRejoin = false;   // 2.27: a join you start yourself shows the normal feed
     s_szJoinPw[0] = 0;   // the default server is open
     JoinOverlayStart();  // 2.19: black slide + connection camera
@@ -4847,6 +4859,7 @@ void MP::JoinServer(const char* host, int port, const char* name)
     s_bMw3Join = MP_IsMw3ServerName(name);   // 3.23
     s_bRpJoin = MP_IsRpServerName(name);     // 3.25
     s_bDzJoin = MP_IsDzServerName(name);     // 3.58
+    s_bLgJoin = MP_IsLgServerName(name);     // 4.13.4
     s_bQuietRejoin = false;   // 2.27
     s_szJoinPw[0] = 0;   // 2.19: the saved password of that custom server
     for(int i = 0; i < ServerList::Count(); ++i)
@@ -4874,7 +4887,7 @@ void MP::SetHostLan(bool on, bool autoConnect)
         // 2.19.6: hosting used to fail silently. With the default name + port, "Host" found the
         // default server online and just joined it; a custom name on port 1922 was refused.
         // Now the name / port are fixed up so you always get your own server.
-        if(!settings.serverName[0] || !strcasecmp(settings.serverName, MP_DEFAULT_SERVER_NAME) || MP_IsBcwServerName(settings.serverName) || MP_IsMw3ServerName(settings.serverName) || MP_IsRpServerName(settings.serverName) || MP_IsDzServerName(settings.serverName))   // 3.04: Brief Case War is private
+        if(!settings.serverName[0] || !strcasecmp(settings.serverName, MP_DEFAULT_SERVER_NAME) || MP_IsBcwServerName(settings.serverName) || MP_IsMw3ServerName(settings.serverName) || MP_IsRpServerName(settings.serverName) || MP_IsDzServerName(settings.serverName) || MP_IsLgServerName(settings.serverName))   // 3.04: Brief Case War is private
         {
             char nm[64]; snprintf(nm, sizeof(nm), "%s's server", settings.name[0] ? settings.name : "Player");
             MP_CopyStr(settings.serverName, nm, sizeof(settings.serverName));
@@ -6395,7 +6408,7 @@ static void AntiCheatSection()
 // or something on this phone already holds it. The same name + port is the same server (you join it).
 static bool PortReserved(int port)
 {
-    return port == MP_DEFAULT_PORT || port == MP_BCW_PORT || port == MP_MW3_PORT || port == MP_RP_PORT || port == MP_DZ_PORT;
+    return port == MP_DEFAULT_PORT || port == MP_BCW_PORT || port == MP_MW3_PORT || port == MP_RP_PORT || port == MP_DZ_PORT || port == MP_LG_PORT;
 }
 static bool PortBusyHere(int port)
 {   // something on this phone holds the UDP port (our own running server does not count)
@@ -6412,7 +6425,7 @@ static bool PortTakenBy(int port, const char* myName, const std::vector<LanServe
     if(port <= 0 || port > 65535) return false;
     if(PortReserved(port))
     {
-        const char* f = port == MP_DEFAULT_PORT ? MP_DEFAULT_SERVER_NAME : port == MP_BCW_PORT ? MP_BCW_SERVER_NAME : port == MP_MW3_PORT ? MP_MW3_SERVER_NAME : port == MP_DZ_PORT ? MP_DZ_SERVER_NAME : MP_RP_SERVER_NAME;
+        const char* f = port == MP_DEFAULT_PORT ? MP_DEFAULT_SERVER_NAME : port == MP_BCW_PORT ? MP_BCW_SERVER_NAME : port == MP_MW3_PORT ? MP_MW3_SERVER_NAME : port == MP_DZ_PORT ? MP_DZ_SERVER_NAME : port == MP_LG_PORT ? MP_LG_SERVER_NAME : MP_RP_SERVER_NAME;
         if(who) MP_CopyStr(who, f, n);
         return true;
     }
@@ -6737,6 +6750,8 @@ static void SectionAddServer(void*)
             SysMsg(COL_YELLOW, "Mega Vil Futuristic is a 24/7 featured Roleplay server - it is always in the Internet list, just tap it.");
         else if(MP_IsDzServerName(s_szNewName) || port == MP_DZ_PORT)   // 3.58
             SysMsg(COL_YELLOW, "Project Day Z Legacy is a 24/7 featured server - it is in Internet > Featured, just tap it.");
+        else if(MP_IsLgServerName(s_szNewName) || port == MP_LG_PORT)   // 4.13.4
+            SysMsg(COL_YELLOW, "San Andreas Online League is a 24/7 featured server - it is in Internet > Featured, just tap it.");
         else if(port == MP_DEFAULT_PORT && !IsDefaultServer(s_szNewName[0] ? s_szNewName : settings.serverName, port))
             SysMsg(COL_RED, "Port %d is for the default server. Use %d or higher for a custom server.", MP_DEFAULT_PORT, MP_DEFAULT_PORT + 1);
         else if(portTaken)   // 3.35.2: another server already has this port
@@ -6768,6 +6783,8 @@ static void SectionAddServer(void*)
             SysMsg(COL_YELLOW, "Mega Vil Futuristic is a 24/7 featured Roleplay server - it is always in the Internet list, just tap it.");
         else if(MP_IsDzServerName(s_szNewName) || atoi(s_szNewPort) == MP_DZ_PORT)   // 3.58
             SysMsg(COL_YELLOW, "Project Day Z Legacy is a 24/7 featured server - it is in Internet > Featured, just tap it.");
+        else if(MP_IsLgServerName(s_szNewName) || atoi(s_szNewPort) == MP_LG_PORT)   // 4.13.4
+            SysMsg(COL_YELLOW, "San Andreas Online League is a 24/7 featured server - it is in Internet > Featured, just tap it.");
         else if(IsDefaultServer(s_szNewName, atoi(s_szNewPort)) || IsLocalHost(s_szNewHost))
             SysMsg(COL_YELLOW, "That is the default server - it is always on top, just tap Connect.");
         else if(atoi(s_szNewPort) == MP_DEFAULT_PORT)
@@ -7526,6 +7543,7 @@ static void MpFreeAllObjects()
 // ------------------------------------------------------------------------------------------
 #include "mp_launcher.inc"   // 2.25: full-screen server launcher, player management, kick / ban
 #include "mp_psettings.inc"  // 3.35: player list > Settings (SA-MP style dialog)
+#include "mp_menu.inc"       // 4.13.4: main menu [Multiplayer], MP loading screen, black server select
 
 // 4.07.1: the short sounds (button click, hit, "connected") come from the media host too, like the
 // music: a sound missing from files/TYFMC/MP is downloaded once from Host/Media into files/TYFMC/MP (cache), so

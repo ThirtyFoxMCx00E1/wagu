@@ -29,7 +29,7 @@
 #include "net/server.h"
 
 // 4.12.7: the config is files/TYFMC/TYFMC.MP.ini (the old configs/net.thirtyfox.mp.ini is moved there)
-TYFMC_MODCFG(net.thirtyfox.mp, MP Multiplayer, 4.13.3, ThirtyFoxMCx00E1, MP, net.thirtyfox.mp)
+TYFMC_MODCFG(net.thirtyfox.mp, MP Multiplayer, 4.13.4, ThirtyFoxMCx00E1, MP, net.thirtyfox.mp)
 NEEDGAME(com.rockstargames.gtasa)
 
 // Globals used by the embedded RenderWare ImGui backend
@@ -111,6 +111,27 @@ DECL_HOOKv(Render2dStuff)
     if(cm > 0 && s_nClearMouse.compare_exchange_strong(cm, cm - 1) && cm == 1) QueueIO(TQ_CLEAR);
 }
 
+// ---- 4.13.4: the loading screen of a main menu Multiplayer load = MP's launcher-styled panel ----------
+static float* s_pPercentLoaded = nullptr;
+static bool   s_bMpLoaded = false;   // OnModLoad got through (MP is on)
+static bool   s_bMpSplashDrawn = false;
+DECL_HOOKv(LS_RenderSplash)
+{
+    s_bMpSplashDrawn = false;
+    if(s_bRWReady && MP::MenuMpLoading())
+    {
+        float pct = s_pPercentLoaded ? *s_pPercentLoaded : 0.0f;
+        if(!(pct >= 0.0f && pct <= 100.0f)) pct = 0.0f;
+        if(HUD::RenderLoading(pct)) { s_bMpSplashDrawn = true; return; }
+    }
+    LS_RenderSplash();
+}
+DECL_HOOKv(LS_RenderLoadingBar)
+{
+    if(s_bMpSplashDrawn && MP::MenuMpLoading()) return;   // our panel has its own bar
+    LS_RenderLoadingBar();
+}
+
 // ---- Touch routing ----------------------------------------------------------------------
 // The game reports: 1 = release, 2 = push, 3 = move, 4 = pointer-up (a finger lifted while
 // another one is still down, e.g. while holding the movement joystick). v1.0 ignored type 4,
@@ -144,7 +165,7 @@ static void MapTouch(int& x, int& y)
 static bool s_bGameFinger[16] = { false };   // the game saw this finger's press (it must get the release)
 static inline bool MPScreenOwnsTouches()
 {
-    return FloatMenu::IsModal() || VKeyboard::IsOpen() || MP::AuthScreenShown() || MP::DealerShown();
+    return FloatMenu::IsModal() || VKeyboard::IsOpen() || MP::AuthScreenShown() || MP::DealerShown() || MP::MenuMpBlack();
 }
 // Routes one touch to MP's UI. Returns true if MP used it (the game must not see it).
 static bool DispatchTouch(int type, int finger, int x, int y)
@@ -738,6 +759,14 @@ extern "C" void OnModLoad()
     if(void* rle = (void*)aml->GetSym(pGameHandle, "_Z13RLEDecompressPhjPKhjj")) { HOOK(TexRLEDecompress, rle); logger->Info("Texture database RLE guard on (4.05.8)"); }   // 4.04.2
     { int hooked = 0; HOOK_IF(RwCamFarClip, "_Z23RwCameraSetFarClipPlaneP8RwCameraf"); HOOK_IF(RwCamFogDist, "_Z22RwCameraSetFogDistanceP8RwCameraf"); logger->Info("Fog: %d camera hooks", hooked); }   // 3.58
     HookGamepad();          // 3.39.2: controller
+    {   // 4.13.4: main menu Multiplayer
+        Game::InitMenu(pGameHandle);
+        SET_TO(s_pPercentLoaded, aml->GetSym(pGameHandle, "_ZN14CLoadingScreen15m_PercentLoadedE"));
+        int hooked = 0;
+        HOOK_IF(LS_RenderSplash, "_ZN14CLoadingScreen12RenderSplashEv");
+        HOOK_IF(LS_RenderLoadingBar, "_ZN14CLoadingScreen16RenderLoadingBarEv");
+        logger->Info("Loading screen: %d hooks, percent %s", hooked, s_pPercentLoaded ? "yes" : "no");
+    }
 
 #ifdef AML32
     // GTA SA 2.00 (32-bit): the touch handler must be hooked through its PLT slot
@@ -747,6 +776,7 @@ extern "C" void OnModLoad()
     HOOKSYM(AND_TouchEvent, pGameHandle, "_Z14AND_TouchEventiiii");
 #endif
 
+    s_bMpLoaded = true;
     logger->Info("MP %s loaded. Data folder: %s", BYBIT("32-bit", "64-bit"), dir);
 }
 
@@ -755,5 +785,6 @@ extern "C" void OnModLoad()
 ON_ALL_MODS_LOAD()
 {
     ModScan::Scan();
+    if(s_bMpLoaded) MP::InitMainMenu();   // 4.13.4: [Multiplayer] on the game's main menu (SAUtils tile)
     if(ModScan::CheatMenu()) logger->Info("MP: %s found - you can't join or host servers while it is installed", ModScan::What());
 }

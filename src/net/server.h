@@ -10,6 +10,9 @@
 #include "turf.h"
 #include "bcw.h"
 #include "mw3.h"   // 3.23
+#include "league.h"   // 4.13.4
+#include <map>
+#include <string>
 #include "rp.h"
 #include "dayz.h"    // 3.25: Mega Vil Futuristic
 #include "dz_map.h"  // 4.10: Project Day Z dynamic mapping
@@ -47,7 +50,7 @@ public:
     bool IsPersistent() const { return m_bPersistent; }
 
     // Player limit 1..100. Lowering it never kicks anyone; it only blocks new joins.
-    void SetMaxPlayers(int n) { m_nMaxPlayers = n < 1 ? 1 : (n > MP_STD_MAX_PLAYERS ? MP_STD_MAX_PLAYERS : n); if(IsBcwServer()) m_nMaxPlayers = MP_BCW_MAX_PLAYERS; else if(IsMw3Server()) m_nMaxPlayers = MP_MW3_MAX_PLAYERS; else if(IsRpServer()) m_nMaxPlayers = MP_RP_MAX_PLAYERS; else if(IsDayzServer()) m_nMaxPlayers = MP_DZ_MAX_PLAYERS; else if(IsDefaultServer()) m_nMaxPlayers = MP_STD_MAX_PLAYERS; }   // 3.04: Brief Case War = 20; 3.10: the default server is always 100; 3.25: Mega Vil Futuristic = 250
+    void SetMaxPlayers(int n) { m_nMaxPlayers = n < 1 ? 1 : (n > MP_STD_MAX_PLAYERS ? MP_STD_MAX_PLAYERS : n); if(IsBcwServer()) m_nMaxPlayers = MP_BCW_MAX_PLAYERS; else if(IsMw3Server()) m_nMaxPlayers = MP_MW3_MAX_PLAYERS; else if(IsRpServer()) m_nMaxPlayers = MP_RP_MAX_PLAYERS; else if(IsDayzServer()) m_nMaxPlayers = MP_DZ_MAX_PLAYERS; else if(IsLgServer()) m_nMaxPlayers = MP_LG_MAX_PLAYERS; else if(IsDefaultServer()) m_nMaxPlayers = MP_STD_MAX_PLAYERS; }   // 3.04: Brief Case War = 20; 3.10: the default server is always 100; 3.25: Mega Vil Futuristic = 250
     int  GetMaxPlayers() const { return m_nMaxPlayers; }
     void SetRegion(int r) { m_nRegion = (r >= 0 && r < REGION_COUNT) ? r : REGION_ASIA; }
     int  GetRegion() const { return m_nRegion; }
@@ -69,6 +72,7 @@ public:
     bool IsBcwServer() const;                   // 3.04: the name is MP_BCW_SERVER_NAME (Brief Case War)
     bool IsMw3Server() const;                   // 3.23: Call Of Duty: Modern Warfare 3
     bool IsDayzServer() const;                  // 3.58: Project Day Z Legacy
+    bool IsLgServer() const;                    // 4.13.4: San Andreas Online League (Rocket Soccer)
     void SetMw3File(const char* path);          // 3.23: MW3 stats + zone owners (default mw3_stats.txt)
     bool IsRpServer() const;                    // 3.25: Mega Vil Futuristic (Roleplay)
     void SetRpFile(const char* path);           // 3.25: citizens (money, bank, job, house...) + house owners (default rp_citizens.txt)
@@ -100,11 +104,11 @@ public:
     void BridgeTakeChat(std::vector<std::pair<int, std::string>>& out);   // their chat since last call
     // 3.23.5: the 3 featured servers (default 100, Brief Case War 20, MW3 64) always have the bot
     // "Broker" in them (id MP_BOT_ID): 1/100, 1/20, 1/64 with nobody else, on the VPS or a phone copy
-    bool HasBot() const { return IsDefaultServer() || IsBcwServer() || IsMw3Server() || IsRpServer() || IsDayzServer(); }
+    bool HasBot() const { return IsDefaultServer() || IsBcwServer() || IsMw3Server() || IsRpServer() || IsDayzServer() || IsLgServer(); }
 #ifdef MP_AUTH_OFF_FOR_TESTS   // 3.40.1: unit tests only (they have no login bot)
     bool AuthOn() const { return false; }
 #else
-    bool AuthOn() const { return IsDefaultServer() || IsBcwServer() || IsMw3Server() || IsRpServer() || IsDayzServer() || m_bAuthCustom; }
+    bool AuthOn() const { return IsDefaultServer() || IsBcwServer() || IsMw3Server() || IsRpServer() || IsDayzServer() || IsLgServer() || m_bAuthCustom; }
 #endif
     // 3.50: anti-cheat (Nex-AC checks). Always on (every check) on the default server, Mega Vil
     // Futuristic, Brief Case War and MW3. Custom servers: Add server -> Gamemode -> Anti-cheat.
@@ -245,7 +249,7 @@ private:
     char     m_szProgFile[256] = "progress.txt";
     std::map<std::string, PktProgress> m_Prog;
     bool     m_bProgLoaded = false, m_bProgDirty = false; uint64_t m_nProgSaveAt = 0;
-    bool ProgressOn() const { return !IsBcwServer() && !IsMw3Server() && !IsRpServer(); }
+    bool ProgressOn() const { return !IsBcwServer() && !IsMw3Server() && !IsRpServer() && !IsLgServer(); }
     void ProgLoad(); void ProgSave(); void ProgTick(uint64_t now);
     void ProgSend(int slot); void OnProgress(int slot, const PktProgress& p);
     void HomeSendIndex(int slot); void HomeSend(int slot, int idx);
@@ -371,6 +375,27 @@ private:
     void DzLoadVars(); void DzSaveVars(); void DzLog(const char* fmt, ...);
     void DzCheckAch(int slot); void DzUnlock(int slot, int ach); int DzSkillPts(int slot) const;
     void DzSendWeather(int slot); int DzNearStation(int slot, float maxDist) const; void DzRemove1(int slot, int i);
+    // 4.13.4: San Andreas Online League (server_league.inc)
+    struct LgPlayer
+    {
+        bool loaded = false; uint8_t team = 255, car = 0; uint64_t teamAt = 0, teamCmdAt = 0, lastTouch = 0, lastShot = 0, qchatAt = 0;
+        int score = 0, goals = 0, assists = 0, saves = 0, shots = 0, touches = 0; bool ffVote = false;
+        int mmr = 600, peak = 600, streak = 0; uint32_t games = 0, wins = 0, tGoals = 0, tAssists = 0, tSaves = 0, tShots = 0, mvps = 0;
+    };
+    LgPlayer m_Lg[MP_MAX_PLAYERS];
+    LgBall   m_LgBall;
+    std::map<std::string, std::string> m_LgSaved;
+    uint8_t  m_nLgPhase = 0; bool m_bLgOT = false, m_bLgDirty = false;
+    int      m_nLgScore[2] = { 0, 0 }, m_nLgLast = -1, m_nLgPrev = -1, m_nLgMvp = -1, m_nLgTip = 0;
+    uint32_t m_nLgClockMs = 0, m_nLgSeq = 0;
+    uint64_t m_nLgPhaseEnd = 0, m_nLgLastAt = 0, m_nLgPrevAt = 0, m_nLgPushAt = 0, m_nLgPlayersAt = 0, m_nLgSaveAt = 0, m_nLgTickAt = 0, m_nLgTipAt = 0;
+    void LgReset(); void LgLoad(); void LgSave(); void LgStore(int slot); void LgTick(uint64_t now);
+    void LgOnAuthed(int slot); void LgOnJoin(int slot, bool fresh); void LgOnLeave(int slot); bool LgChat(int slot, const char* text);
+    void LgHandleCmd(int slot, const PktLgCmd& c); void LgTouch(int slot, const PktLgCmd& c, uint64_t now);
+    void LgMsg(int slot, uint32_t col, const char* fmt, ...); void LgEvent(int slot, uint8_t ev, int a, int b, int c, int val, const float* pos, const char* text);
+    void LgSendMe(int slot); int LgCount(int team) const; void LgSpawnOne(int slot, int order); void LgKickoff(uint64_t now); void LgNewMatch(uint64_t now);
+    void LgBalance(bool quiet); void LgSetTeam(int slot, int want); void LgEndMatch(uint64_t now); void LgGoal(int team, uint64_t now);
+    void LgPushState(uint64_t now); void LgPushPlayers();
     bool DzUseExtra(int slot, int i, const PktDzCmd& c); void DzTreat(int slot, const PktDzCmd& c); void DzCheckBody(int slot, int id);
     // 4.08: base building (net/server_dzbase.inc)
     struct DzPiece { DzBaseRow r; std::string owner; };
@@ -700,4 +725,5 @@ private:
 
 uint64_t MP_NowMs();
 
+void MPServerSetLgFile(const char* path);   // 4.13.4: league ranks (default league_stats.txt)
 void MPServerSetDzFile(const char* path);   // 3.58: Project Day Z survivors (default dayz_survivors.txt)

@@ -388,7 +388,7 @@ static void LSetFav(const char* name, int port, bool on)
 static ImU32 LModeColor(const LRow& r)
 {
     if(r.modeCol > 0 && r.modeCol < kModeColCount) return kModeCols[r.modeCol].col;
-    switch(r.kind) { case 3: return kModeCols[2].col; case 4: return kModeCols[3].col; case 5: return kModeCols[4].col; case 6: return kModeCols[5].col; }
+    switch(r.kind) { case 3: return kModeCols[2].col; case 4: return kModeCols[3].col; case 5: return kModeCols[4].col; case 6: return kModeCols[5].col; case 7: return kModeCols[9].col; }
     // auto: a stable colour from the gamemode name
     const char* m = r.mode[0] ? r.mode : "Freeroam"; unsigned h = 5381; for(const char* c = m; *c; ++c) h = h * 33 + (unsigned char)tolower((unsigned char)*c);
     return !strcasecmp(m, "Freeroam") ? kModeCols[0].col : kModeCols[1 + h % (kModeColCount - 1)].col;
@@ -410,6 +410,8 @@ static void LFeaturedDetails(LRow& r)
             ds = "Mega Vil Futuristic roleplay: jobs, houses, cars and a city that never sleeps."; break;
     case 6: md = "Day Z"; tg = "dayz,zombies,survival,loot,pvp,24/7"; bg = "bg_dz.jpg";
             ds = "Project Day Z Legacy: survive the zombies, find loot, build a camp, trust nobody."; break;
+    case 7: md = "Rocket Soccer"; tg = "rocketleague,soccar,cars,ranked,mmr,24/7";
+            ds = "San Andreas Online League: Rocket League in San Andreas. Pick a car at Grove Street, boost, jump and score - ranked MMR from Bronze to Supersonic Legend."; break;
     default: return;
     }
     MP_CopyStr(r.cc, MP_CC_GLOBAL, sizeof(r.cc));   // 4.05.3: the featured 24/7 servers are worldwide - Global flag
@@ -558,6 +560,23 @@ static void LBuildRows(int tab, const std::vector<LanServer>& nearby, std::vecto
             LFillDetails(w, bf >= 0 ? &nearby[bf] : nullptr);
             if(LMatch(w.name) || LMatch("dayz") || LMatch("day z") || LMatch("zombie")) rows.push_back(w);
         }
+        {   // 4.13.4: San Andreas Online League - 24/7 featured (Broker bot on GitHub Actions)
+            LRow w; memset(&w, 0, sizeof(w));
+            w.kind = 7; MP_CopyStr(w.name, MP_LG_SERVER_NAME, sizeof(w.name)); w.port = MP_LG_PORT;
+            w.region = -1; w.icon = 0; w.saved = -1; w.live = true;
+            w.on = MP::IsOnLg();
+            int bf = -1;
+            for(int i = 0; i < (int)nearby.size(); ++i)
+                if(MP_IsLgServerName(nearby[i].name) && nearby[i].dedicated && bf < 0) bf = i;
+            bool hosting = s_Server.IsRunning() && s_Server.IsLgServer();
+            if(w.on && IsConnected())  { w.players = OnlineCount(); w.maxp = OnlineMax(); w.ping = MP::DisplayPing(); }
+            else if(hosting)           { w.players = s_Server.GetPlayerCount(); w.maxp = MP_LG_MAX_PLAYERS; w.ping = 0; w.mine = true; }
+            else if(bf >= 0)           { w.players = nearby[bf].players; w.maxp = nearby[bf].maxPlayers; w.ping = nearby[bf].ping; w.internet = nearby[bf].token != 0; }
+            else                       { w.players = 0; w.maxp = MP_LG_MAX_PLAYERS; w.ping = -1; }
+            MP_CopyStr(w.lang, "All", sizeof(w.lang));
+            LFillDetails(w, bf >= 0 ? &nearby[bf] : nullptr);
+            if(LMatch(w.name) || LMatch("rocket") || LMatch("league") || LMatch("soccer") || LMatch("rl")) rows.push_back(w);
+        }
         }   // 3.58: end of the FEATURED page
         for(auto& sv : nearby)
         {
@@ -568,6 +587,7 @@ static void LBuildRows(int tab, const std::vector<LanServer>& nearby, std::vecto
             if(MP_IsMw3ServerName(sv.name)) continue;   // 3.23: the pinned row
             if(MP_IsRpServerName(sv.name)) continue;    // 3.25: the pinned row
             if(MP_IsDzServerName(sv.name)) continue;    // 3.58: the pinned row
+            if(MP_IsLgServerName(sv.name)) continue;    // 4.13.4: the pinned row
             if(tab == LT_INTERNET && !settings.lobbyAuto && sv.token != 0 && sv.region != settings.region) continue;   // 3.25: region switch (Wi-Fi servers always show)
             LRow q; memset(&q, 0, sizeof(q));
             q.kind = 1; MP_CopyStr(q.name, sv.name, sizeof(q.name)); MP_CopyStr(q.ip, sv.ip, sizeof(q.ip)); q.port = sv.port;
@@ -630,7 +650,7 @@ static void LBuildRows(int tab, const std::vector<LanServer>& nearby, std::vecto
     if(s_nSortCol >= 0 && rows.size() > 1)
     {
         size_t from = 0;   // the default server + Brief Case War stay on top
-        while(tab == LT_INTERNET && from < rows.size() && (rows[from].kind == 0 || rows[from].kind == 3 || rows[from].kind == 4 || rows[from].kind == 5 || rows[from].kind == 6)) ++from;
+        while(tab == LT_INTERNET && from < rows.size() && (rows[from].kind == 0 || rows[from].kind == 3 || rows[from].kind == 4 || rows[from].kind == 5 || rows[from].kind == 6 || rows[from].kind == 7)) ++from;
         auto key = [](const LRow& r, int c) -> int { return c == 1 ? r.players : (c == 2 ? (r.ping < 0 ? 99999 : r.ping) : (c == 3 ? r.region : 0)); };
         std::stable_sort(rows.begin() + from, rows.end(), [&](const LRow& a, const LRow& b)
         {
@@ -724,6 +744,7 @@ static void LJoinNow(const LRow& r)
     if(r.kind == 4) { if(!MP::IsOnMw3()) LeaveServer(nullptr); MP::JoinMw3(); return; }   // 3.23
     if(r.kind == 5) { if(!MP::IsOnRp()) LeaveServer(nullptr); MP::JoinRp(); return; }     // 3.25
     if(r.kind == 6) { if(!MP::IsOnDz()) LeaveServer(nullptr); MP::JoinDz(); return; }     // 3.58
+    if(r.kind == 7) { if(!MP::IsOnLg()) LeaveServer(nullptr); MP::JoinLg(); return; }     // 4.13.4
     if(r.on) { LeaveServer("Left the server."); return; }
     if(r.kind == 1) MP::JoinServer(r.ip, r.port, r.name);
     else if(ServerEntry* e = ServerList::Get(r.saved)) MP::JoinServer(e->host, e->port, e->name);
@@ -1082,7 +1103,7 @@ static void LTable(std::vector<LRow>& rows, float w, float h)
                 float bw = W * 0.46f;
                 LImageCoverFade(dl, bt, uv, a, ImVec2(a.x + bw, a.y + rowH), 150, 0.45f);   // 4.08: soft fade on the right edge, no cut
             }
-            if(r.kind >= 3 && r.kind <= 6)   // featured: gamemode colour highlight
+            if(r.kind >= 3 && r.kind <= 7)   // featured: gamemode colour highlight
                 dl->AddRectFilledMultiColor(a, ImVec2(a.x + W, a.y + rowH), VAlpha(mc, 0.30f), VAlpha(mc, 0.04f), VAlpha(mc, 0.04f), VAlpha(mc, 0.30f));
             if((r.kind != 1 && r.kind != 2) || r.modeCol) dl->AddRectFilled(a, ImVec2(a.x + UI::S(4), a.y + rowH), mc);   // gamemode colour stripe
             if(sel) dl->AddRectFilled(a, ImVec2(a.x + W, a.y + rowH), IM_COL32(255, 255, 255, 26));
@@ -1128,7 +1149,7 @@ static void LTable(std::vector<LRow>& rows, float w, float h)
             if(r.players >= 0) snprintf(b, sizeof(b), "%d/%d", r.players, r.maxp); else snprintf(b, sizeof(b), "-");
             bool full = r.players >= 0 && r.maxp > 0 && r.players >= r.maxp;
             dl->AddText(ImVec2(a.x + cPl, ty), full ? IM_COL32(222, 74, 60, 255) : (r.players > 0 ? IM_COL32(230, 200, 90, 255) : IM_COL32(200, 204, 210, 255)), b);
-            const char* map = r.kind == 3 ? "Bone County" : r.kind == 5 ? "Mega Vil" : r.kind == 6 ? "SA Wasteland" : r.kind == 4 ? "SA Warzone" : "San Andreas";
+            const char* map = r.kind == 3 ? "Bone County" : r.kind == 5 ? "Mega Vil" : r.kind == 6 ? "SA Wasteland" : r.kind == 7 ? "LV Airport Arena" : r.kind == 4 ? "SA Warzone" : "San Andreas";
             dl->PushClipRect(ImVec2(a.x + cMap, a.y), ImVec2(a.x + cPing - UI::S(8), a.y + rowH), true);
             dl->AddText(ImVec2(a.x + cMap, ty), IM_COL32(200, 204, 210, 255), map);
             dl->PopClipRect();
@@ -1326,7 +1347,17 @@ static void LRightPanel(const LRow* r, float w, float h)
             { "weather",   "server synced" },
             { "icon",      ic },
         };
-        if(r->kind == 6)
+        if(r->kind == 7)
+        {   // 4.13.4
+            const char* lg[][2] = {
+                { "address",   "24/7 featured (Broker bot, GitHub Actions)" }, { "gamemode", MP_LG_GAMEMODE }, { "port", pt },
+                { "players",   pl }, { "lobby", "Grove Street at night - pick a car" }, { "arena", "LV Airport (Neon Pitch)" },
+                { "match",     "5:00, golden goal overtime" }, { "ranked", "MMR, Bronze .. Supersonic Legend" },
+                { "cars",      "Octane, Fennec, Dominus, Breakout, Merc, Backfire" }, { "cheats", "off" }, { "login", "required" }, { "version", "MP 4.13.4" },
+            };
+            for(auto& kv : lg) { ImVec2 p = ImGui::GetCursorScreenPos(); LTwoCol(dl, p, W, rh, kv[0], kv[1], false); ImGui::Dummy(ImVec2(W, rh)); }
+        }
+        else if(r->kind == 6)
         {   // 3.58
             const char* dz[][2] = {
                 { "address",   "24/7 featured (Broker bot, GitHub Actions)" }, { "gamemode", MP_DZ_GAMEMODE }, { "port", pt },
@@ -1382,7 +1413,7 @@ static void LRightPanel(const LRow* r, float w, float h)
 //   (moderator.txt + the name Trunk) - also with many players on it, the first joiner is nobody special;
 //   a custom server -> only its host owner (the phone that hosts it).
 static bool LSrvMgmtAvailable() { return client.GetState() == NET_CONNECTED; }
-static bool LSrvFeatured() { return MP::IsOnDefault() || BcwOnServer() || Mw3OnServer() || RpOnServer() || DzOnServer(); }
+static bool LSrvFeatured() { return MP::IsOnDefault() || BcwOnServer() || Mw3OnServer() || RpOnServer() || DzOnServer() || LgOnServer(); }
 static void LSrvHeader(const char* t) { ImGui::Dummy(ImVec2(0, UI::S(10))); ImGui::TextColored(ImVec4(1.0f, 0.65f, 0.15f, 1), "%s", t); ImGui::Separator(); }
 static void LPageServerMgmt()
 {
@@ -1564,7 +1595,7 @@ static void LPagePlayersAdmin()
 static void LPagePlayers()
 {
     // 3.39: admin + moderators manage the 4 featured servers only; a custom server is managed by its host owner
-    const bool onFeatured = client.GetState() == NET_CONNECTED && (MP::IsOnDefault() || BcwOnServer() || Mw3OnServer() || RpOnServer() || DzOnServer());
+    const bool onFeatured = client.GetState() == NET_CONNECTED && (MP::IsOnDefault() || BcwOnServer() || Mw3OnServer() || RpOnServer() || DzOnServer() || LgOnServer());
     if(client.GetState() == NET_CONNECTED && FloatMenu::BigButton("Server Management (gamemodes / permissions / rules)")) s_nLTab = LT_SRVMGMT;   // 3.53
     if(onFeatured && !MP::IsLocalMod() && !MP::IsDefaultAdmin() && MP::LocalModName())   // 3.50.1
     { ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 0.85f, 0.2f, 1)); ImGui::TextWrapped("moderator.txt has the MP moderator key, but this server didn't give you [MOD] (older MP copy). Type /modcheck, then rejoin."); ImGui::PopStyleColor(); }

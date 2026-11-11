@@ -5,6 +5,7 @@ namespace HUD
     bool Init();
     bool HasGlobalClick();   // 3.60: <MP folder>/global_click.mp3 is there (every ImGui button clicks)
     bool IsInitialised();
+    bool RenderLoading(float pct);     // 4.13.4: MP loading screen (main menu Multiplayer), false = not drawn
     void Render();                     // from Render2dStuff hook
     bool WantsTouch(float x, float y); // should this touch be eaten by MP UI?
     // 2.24: server icon texture (0 = default main_df_icon.png, 1..250 = icon_N.png); nullptr if no file

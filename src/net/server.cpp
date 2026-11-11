@@ -170,6 +170,14 @@ bool MPServer::Start(uint16_t port, const char* serverName, MPServerLogFn log, i
     Mw3Reset();                               // 3.23
     RpReset();                                // 3.25
     DzReset();                                // 3.58
+    LgReset();                                // 4.13.4
+    if(IsLgServer())
+    {   // 4.13.4: San Andreas Online League - Rocket Soccer only, 16 players, no cheats, no other gamemodes
+        m_nMaxPlayers = MP_LG_MAX_PLAYERS;
+        m_bTurfWars = false; m_bSafeZones = false;
+        m_nBasePerms = PERM_NO_CHEATS; m_nPerms = PERM_NO_CHEATS;
+        LgLoad();
+    }
     if(IsDayzServer())
     {   // 3.58: Project Day Z Legacy - survival only, all 250 places, no cheats, no other gamemodes
         m_nMaxPlayers = MP_DZ_MAX_PLAYERS;
@@ -213,6 +221,7 @@ void MPServer::Stop()
         if(IsMw3Server()) Mw3Save();   // 3.23
         if(IsRpServer()) RpSave();     // 3.25
         if(IsDayzServer()) DzSave();   // 3.58
+        if(IsLgServer()) LgSave();     // 4.13.4
         if(m_bHomeDirty) HomeSave();   // 3.39.1: never lose a house that was just built
         SampUnload();                   // 4.11: OnGameModeExit (the gamemode saves its players)
         if(m_bProgDirty) ProgSave();   // 3.39.1
@@ -456,7 +465,7 @@ void MPServer::SetAdminHash(const char* h)
 // Not on Brief Case War servers (own base protection: BcwOnDamage).
 bool MPServer::SafeZoneBlocks(int from, int to) const
 {
-    if(!m_bSafeZones || IsBcwServer() || IsMw3Server() || IsRpServer() || IsDayzServer()) return false;
+    if(!m_bSafeZones || IsBcwServer() || IsMw3Server() || IsRpServer() || IsDayzServer() || IsLgServer()) return false;
     if(to < 0 || to >= MP_MAX_PLAYERS || !m_Slots[to].used) return false;
     const Slot& t = m_Slots[to];
     if(t.spawnProtUntil && MP_NowMs() < t.spawnProtUntil) return true;
@@ -472,7 +481,7 @@ bool MPServer::IsDefaultServer() const { return !strcasecmp(m_szName, MP_DEFAULT
 void MPServer::SetPermsLocked(uint8_t perms)
 {
     if(IsDefaultServer()) perms &= ~PERM_CHEAT_MENU;   // 3.00: never a cheat menu on the default server
-    if(IsBcwServer() || IsMw3Server() || IsRpServer() || IsDayzServer()) { perms &= ~(PERM_CHEAT_MENU | PERM_MISSION_PAIR); perms |= PERM_NO_CHEATS; }   // 3.04 / 3.23 MW3: Brief Case War: no CheatMenu, MP + CLEO menu cheats off
+    if(IsBcwServer() || IsMw3Server() || IsRpServer() || IsDayzServer() || IsLgServer()) { perms &= ~(PERM_CHEAT_MENU | PERM_MISSION_PAIR); perms |= PERM_NO_CHEATS; }   // 3.04 / 3.23 MW3: Brief Case War: no CheatMenu, MP + CLEO menu cheats off
     if(m_nPerms == perms) return;
     m_nPerms = perms;
     if(!(perms & PERM_MISSION_PAIR))
@@ -488,7 +497,7 @@ void MPServer::MakePerms(PktPerms& p, uint8_t perms) const
     p.type = PKT_PERMS; p.perms = perms | PERM_V219;
     p.modesMagic = MP_MODES_MAGIC; p.modes = GetModes();
 }
-uint16_t MPServer::GetModes() const { if(IsRpServer()) return GM_HOME; if(IsBcwServer() || IsMw3Server() || IsDayzServer()) return 0; return IsDefaultServer() ? (m_bStaffModes ? (uint16_t)(m_nModes & GM_ALL) : (uint16_t)GM_ALL) : (uint16_t)(m_nModes & GM_ALL); }   // 3.53: + staff choice   // 3.04: Brief Case War runs only its own gamemode
+uint16_t MPServer::GetModes() const { if(IsRpServer()) return GM_HOME; if(IsBcwServer() || IsMw3Server() || IsDayzServer() || IsLgServer()) return 0; return IsDefaultServer() ? (m_bStaffModes ? (uint16_t)(m_nModes & GM_ALL) : (uint16_t)GM_ALL) : (uint16_t)(m_nModes & GM_ALL); }   // 3.53: + staff choice   // 3.04: Brief Case War runs only its own gamemode
 void MPServer::SetModes(uint16_t modes)
 {
     std::lock_guard<std::mutex> lk(m_Mutex);
@@ -577,6 +586,7 @@ void MPServer::AuthHandle(int slot, const uint8_t* data, int len)
     Mw3OnAuthed(slot);   // 3.23: load the MW3 stats of this account
     RpOnAuthed(slot);    // 3.25: load the citizen (money, job, house...)
     DzOnAuthed(slot);    // 3.58: load the survivor
+    LgOnAuthed(slot);    // 4.13.4: league rank
     ProgSend(slot);      // 3.39.1: my saved progress (place, money, weapons...)
     s.spawnProtUntil = now + MP_SPAWN_PROTECT_MS;
 }
@@ -601,6 +611,7 @@ void MPServer::Drop(int slot, uint8_t reason)
     Mw3OnLeave(slot);   // 3.23
     RpOnLeave(slot);    // 3.25
     DzOnLeave(slot);    // 3.58 (anti-relog: leaving in combat = death)
+    LgOnLeave(slot);    // 4.13.4
     CgOnLeave(slot);    // 4.09: CGRP systems
     PktPlayerLeave p; p.type = PKT_PLAYER_LEAVE; p.id = (uint8_t)slot; p.reason = reason;
     Broadcast(&p, sizeof(p));
@@ -677,6 +688,7 @@ void MPServer::Loop()
             Mw3Tick(now);   // 3.23
             RpTick(now);    // 3.25
             DzTick(now);    // 3.58
+            LgTick(now);    // 4.13.4
             HomeTick(now);  // 3.39
             CgTick(now);    // 4.09: CGRP systems
             SampTick(now);  // 4.11: SA-MP gamemode timers
@@ -827,7 +839,7 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             {   // 3.04.6: old MP versions (no build / too old) are refused and tracked - they allowed cheats
                 uint32_t build = 0;
                 if(len >= (int)sizeof(PktJoin5)) memcpy(&build, data + offsetof(PktJoin5, build), sizeof(build));
-                if(build < m_nMinBuild || (AuthOn() && build < MP_AUTH_MIN_BUILD) || (IsMw3Server() && build < MW3_MIN_BUILD) || (IsRpServer() && build < MP_RP_BUILD))   // 3.23: MW3 needs 3.23   // 3.21.6: older phones can't log in
+                if(build < m_nMinBuild || (AuthOn() && build < MP_AUTH_MIN_BUILD) || (IsMw3Server() && build < MW3_MIN_BUILD) || (IsRpServer() && build < MP_RP_BUILD) || (IsLgServer() && build < MP_LG_BUILD))   // 3.23: MW3 needs 3.23   // 3.21.6: older phones can't log in
                 {
                     TrackOutdated(from, data, len, build);
                     PktServerMsg m; memset(&m, 0, sizeof(m)); m.type = PKT_SERVER_MSG; m.color = 0xFF5050FF;
@@ -1001,7 +1013,7 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
                 s.admin = isAdmin;
                 s.authed = !AuthOn();   // 3.21.6
                 s.mod = isMod && !isAdmin;
-                s.owner = m_szOwnerUid[0] && juid[0] && !strcmp(juid, m_szOwnerUid) && !IsDefaultServer() && !IsBcwServer() && !IsMw3Server() && !IsRpServer() && !IsDayzServer();   // 3.39
+                s.owner = m_szOwnerUid[0] && juid[0] && !strcmp(juid, m_szOwnerUid) && !IsDefaultServer() && !IsBcwServer() && !IsMw3Server() && !IsRpServer() && !IsDayzServer() && !IsLgServer();   // 3.39
                 s.hkLastCmd = 0;
                 if(s.mod && MP_IsModReservedName(s.name)) MP_CopyStr(s.name, MP_MOD_RESERVED_SHOW, MP_NAME_LEN);   // 3.40.1: "trunk" / "TRUNK" -> "Trunk"
                 if(s.mod) { char tmp[MP_NAME_LEN]; snprintf(tmp, sizeof(tmp), MP_MOD_TAG "%.17s", s.name); MP_CopyStr(s.name, tmp, MP_NAME_LEN); Log("%s is a moderator (moderator.txt)", s.name); }
@@ -1085,6 +1097,7 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             Mw3OnJoin(slot, fresh);        // 3.23: MW3 state
             RpOnJoin(slot, fresh);         // 3.25: Mega Vil Futuristic
             DzOnJoin(slot, fresh);         // 3.58: Project Day Z
+            LgOnJoin(slot, fresh);         // 4.13.4: San Andreas Online League
             CgOnJoin(slot);                // 4.09: CGRP systems
             if(!s.authed) AuthBegin(slot);              // 3.21.6: log in first (the others see you after that)
             else if(fresh || rankChanged) AnnounceJoin(slot);   // 3.40.1: everyone sees the new [MOD] tag
@@ -1327,7 +1340,8 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             p.text[MP_CHAT_LEN - 1] = 0;
             Log("[chat] %s: %s", m_Slots[slot].name, p.text);
             if(m_bBridge && !m_Slots[slot].ghost && p.text[0] != '/') m_BridgeChatOut.emplace_back(slot, std::string(p.text));   // 4.12
-            if(IsDayzServer() && DzChat(slot, p.text)) break;   // 3.58: party chat colours / commands
+            if(IsDayzServer() && DzChat(slot, p.text)) break;
+            if(IsLgServer() && LgChat(slot, p.text)) break;   // 4.13.4   // 3.58: party chat colours / commands
             if(m_bSampLoaded && !SampOnChat(slot, p.text)) break;   // 4.11: OnPlayerText (0 = not shown) / a /command
             if(IsRpServer())
             {   // 3.25: roleplay: people hear you only when they are close ("Name says: ...")
@@ -1630,6 +1644,13 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             if(slot < 0 || len < (int)sizeof(PktDialogResp)) return;
             PktDialogResp r; memcpy(&r, data, sizeof(r));
             if(AcDialog(slot, r)) { if(CgOn()) CgDialog(slot, r); if(m_bSampLoaded) SampOnDialog(slot, r); }   // 3.50: dialog hack; 4.09: CGRP dialogs (ids 0x6000-0x60FF); 4.11: SA-MP
+            break;
+        }
+        case PKT_LG:     // 4.13.4: San Andreas Online League
+        {
+            if(slot < 0 || len < (int)sizeof(PktLgCmd) || !IsLgServer() || data[1] != LGO_CMD) return;
+            PktLgCmd c; memcpy(&c, data, sizeof(c)); c.text[sizeof(c.text) - 1] = 0;
+            LgHandleCmd(slot, c);
             break;
         }
         case PKT_SAMP:   // 4.11: SA-MP gamemode (commands, textdraw clicks, checkpoints)
@@ -2081,7 +2102,8 @@ void MPServer::RaceQueueTick(uint64_t now, bool changed)
 
 #include "server_bcw.inc"   // 3.04: Brief Case War
 #include "server_mw3.inc"
-#include "server_dayz.inc"   // 3.58   // 3.23: Call Of Duty: Modern Warfare 3
+#include "server_dayz.inc"   // 3.58
+#include "server_league.inc"   // 4.13.4   // 3.23: Call Of Duty: Modern Warfare 3
 #include "server_rp.inc"    // 3.25: Mega Vil Futuristic (Roleplay)
 #include "server_home.inc"  // 3.39: Home Kit, rules, live settings
 #include "server_ac.inc"    // 3.50: anti-cheat (Nex-AC)
