@@ -1,6 +1,7 @@
 {
-"latest": "4.13.5",
+"latest": "4.13.6",
 "supported": [
+"4.13.5",
 "4.13.4",
 "4.13.3",
 "4.13.2",
@@ -120,6 +121,14 @@
 "3.04.6"
 ],
 "versions": [
+{
+"v": "4.13.6",
+"summary": "the JPatch idle-camera crash (libJPatch.so + 0x1A5A4 from CCamera::Process) is really fixed, and a cleaner Multiplayer loading screen.",
+"items": [
+"JPatch puts a call to its idle (AFK) camera into CCamera::Process. Its idle timer does not only use the pad's last-touch time, so 4.13.5's fix did not stop it. While MP is active (Multiplayer menu, server select, launcher, joining, on a server, hosting) MP now puts the game's original CCamera::Process code back over that call; JPatch's code comes back in single player. The pad refresh also covers pad 0 now.",
+"The Multiplayer loading screen is only the ui_bg background, the loading bar and the tips: no PLAY / MP Launcher title line, no spinning ring, no MULTIPLAYER logo, no chips, no sound chip, no percent."
+]
+},
 {
 "v": "4.13.5",
 "summary": "fix for the crash in the camera code (libJPatch.so + 0x1A5A4 from CCamera::Process) on the main menu Multiplayer screen and the launcher, and a new custom MP loading screen.",

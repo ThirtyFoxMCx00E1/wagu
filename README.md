@@ -121,6 +121,9 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **4.13.6**: the JPatch idle-camera crash (libJPatch.so + 0x1A5A4 from CCamera::Process) is really fixed, and a cleaner Multiplayer loading screen.
+  - JPatch puts a call to its idle (AFK) camera into CCamera::Process. Its idle timer does not only use the pad's last-touch time, so 4.13.5's fix did not stop it. While MP is active (Multiplayer menu, server select, launcher, joining, on a server, hosting) MP now puts the game's original CCamera::Process code back over that call; JPatch's code comes back in single player. The pad refresh also covers pad 0 now.
+  - The Multiplayer loading screen is only the ui_bg background, the loading bar and the tips: no PLAY / MP Launcher title line, no spinning ring, no MULTIPLAYER logo, no chips, no sound chip, no percent.
 - **4.13.5**: fix for the crash in the camera code (libJPatch.so + 0x1A5A4 from CCamera::Process) on the main menu Multiplayer screen and the launcher, and a new custom MP loading screen.
   - The crash: JPatch brings back the idle (AFK) camera. While MP's launcher or the black server select is open they take every touch, so the game thought the phone was idle, started the idle camera with no target and crashed (SIGSEGV at 0x0). MP now keeps the pad "touched" while the launcher, server select, join flow, a modal menu or a connection is active, so the idle camera never starts.
   - New loading screen when you tap Multiplayer on the main menu: the ui_bg city background, MP launcher panel style (top bar, MULTIPLAYER title, welcome line, FEATURED SERVERS / ONLINE 24/7 chips, sound chip, square progress bar with percent and tips, rising sparks). Normal single player loads keep the game's own loading screen.
