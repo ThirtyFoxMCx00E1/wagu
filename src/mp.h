@@ -337,6 +337,7 @@ namespace MP
     bool IsOnRp();
     struct MultiplayerApi { int version; void (*Multiplayer)(); int (*Available)(); };   // 4.13.10: AML "MPMultiplayer"
     MultiplayerApi* GetMultiplayerApi();
+    void SetMenuApiReady();        // 4.13.11: OnModLoad got through
     void JoinLg();             // 4.13.4: Rocket League (was San Andreas Online League) 24/7 (join it, or leave it when you are on it)
     bool IsOnLg();
     bool LgOwnTags();          // 4.13.4: the league draws the name tags (navy boxes)

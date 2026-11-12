@@ -38,9 +38,10 @@ static const uint64_t kMenuMpQuickHoldMs = 400, kMenuMpFadeMs = 500;
 static bool              s_bMenuMpQuick = false;      // this black screen follows a save load
 static std::atomic<int>  s_nMenuMpFade{0};            // 0..255 black over the loading screen
 
+static bool s_bMenuMpViaApi = false;   // 4.13.11: started by another mod (PCMenu), works even with MainMenuMultiplayer = 0
 static void MenuMpTap(void*)
 {
-    if(!s_bMenuMpOn) return;
+    if(!s_bMenuMpOn && !s_bMenuMpViaApi) return;
     const bool again = s_bMenuMp.load();
     s_bMenuMp = true; s_bMenuMpExit = false;
     s_nMenuMpTapAt = MP_NowMs();
@@ -55,16 +56,26 @@ static void MenuMpTap(void*)
 
 // 4.13.10: the "MPMultiplayer" AML interface: other mods (PCMenu's MULTIPLAYER button) start the same Multiplayer flow
 // as the main menu tile.  struct { int version; void (*Multiplayer)(); int (*Available)(); }  (version 1)
-static std::atomic<bool> s_bMenuMpReady{false};   // InitMainMenu ran (MP is loaded and the game is up)
-static void MpApiMultiplayer() { if(s_bMenuMpReady.load() && s_bMenuMpOn) MenuMpTap(nullptr); }
-static int  MpApiAvailable() { return s_bMenuMpReady.load() && s_bMenuMpOn ? 1 : 0; }
+// 4.13.11: ready as soon as MP's OnModLoad got through (MP::SetMenuApiReady). 4.13.10 waited for OnAllModsLoaded and
+// MainMenuMultiplayer = 1, so PCMenu said "MULTIPLAYER NOT AVAILABLE" with MP installed when that call never came
+// (older AML) or the tile was switched off.
+static std::atomic<bool> s_bMenuMpReady{false};
+static void MpApiMultiplayer()
+{
+    if(!s_bMenuMpReady.load()) { logger->Info("MPMultiplayer: called before MP finished loading - ignored"); return; }
+    logger->Info("MPMultiplayer: Multiplayer requested by another mod (PCMenu)");
+    s_bMenuMpViaApi = true; MenuMpTap(nullptr);
+}
+static int  MpApiAvailable() { return s_bMenuMpReady.load() ? 1 : 0; }
 static MP::MultiplayerApi s_MpApi = { 1, MpApiMultiplayer, MpApiAvailable };
 MP::MultiplayerApi* MP::GetMultiplayerApi() { return &s_MpApi; }
+void MP::SetMenuApiReady() { s_bMenuMpReady = true; }
+// the same API as a plain export, for mods that look MP up with dlsym (no AML interface list needed)
+extern "C" __attribute__((visibility("default"))) void* MP_GetMultiplayerApi() { return &s_MpApi; }
 
 void MP::InitMainMenu()
 {
     s_bMenuMpOn = ::cfg->GetBool("MainMenuMultiplayer", true, "MP");
-    s_bMenuMpReady = true;
     if(!s_bMenuMpOn) { logger->Info("Main menu: Multiplayer tile off (MainMenuMultiplayer = 0)"); return; }
     std::string full = std::string(MP::DataDir()) + "/mp_menu.png";
     // SAUtils reads the picture relative to the game's files folder: files/TYFMC/MP/mp_menu.png
@@ -158,7 +169,7 @@ void MP::MenuMpMenuTick()
     logger->Info("Main menu: Multiplayer load done -> game menu closed (%s)", ok ? "ok" : "no MobileMenu::Exit");
 }
 bool MP::MenuMpBlack() { return s_bMenuMp.load() && s_bMenuMpBlack.load(); }
-bool MP::MenuMpLoading() { return s_bMenuMpOn && s_bMenuMp.load() && !s_bMenuMpLoaded.load(); }
+bool MP::MenuMpLoading() { return (s_bMenuMpOn || s_bMenuMpViaApi) && s_bMenuMp.load() && !s_bMenuMpLoaded.load(); }
 
 // ---- the launcher-styled loading panel ------------------------------------------------------
 static const char* const kMenuMpTips[] = {

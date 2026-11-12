@@ -29,7 +29,7 @@
 #include "net/server.h"
 
 // 4.12.7: the config is files/TYFMC/TYFMC.MP.ini (the old configs/net.thirtyfox.mp.ini is moved there)
-TYFMC_MODCFG(net.thirtyfox.mp, MP Multiplayer, 4.13.10, ThirtyFoxMCx00E1, MP, net.thirtyfox.mp)
+TYFMC_MODCFG(net.thirtyfox.mp, MP Multiplayer, 4.13.11, ThirtyFoxMCx00E1, MP, net.thirtyfox.mp)
 NEEDGAME(com.rockstargames.gtasa)
 
 // Globals used by the embedded RenderWare ImGui backend
@@ -762,6 +762,7 @@ extern "C" void OnModPreLoad()
     logger->SetTag(BYBIT("MP32", "MP64"));
     RegisterInterface("MPMenu", FloatMenu::GetInterface());
     RegisterInterface("MPMultiplayer", MP::GetMultiplayerApi());   // 4.13.10: PCMenu's MULTIPLAYER button
+    logger->Info("MPMultiplayer interface registered (%s)", GetInterface("MPMultiplayer") ? "ok" : "AML refused it");
 }
 
 // 3.11.4: crash on closing the game. exit() destroys every library's global objects (mutexes, maps...)
@@ -861,6 +862,7 @@ extern "C" void OnModLoad()
 #endif
 
     s_bMpLoaded = true;
+    MP::SetMenuApiReady();   // 4.13.11: PCMenu's MULTIPLAYER works from here on (no need to wait for OnAllModsLoaded)
     logger->Info("MP %s loaded. Data folder: %s", BYBIT("32-bit", "64-bit"), dir);
 }
 

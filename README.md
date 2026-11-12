@@ -121,6 +121,10 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **4.13.11**: PCMenu's MULTIPLAYER button said "MULTIPLAYER NOT AVAILABLE" with MP installed. MP now counts as
+  ready as soon as it is loaded (4.13.10 waited for the "all mods loaded" call and for `MainMenuMultiplayer=1`), the
+  button works even with the main menu tile switched off, and MP also exports `MP_GetMultiplayerApi` so PCMenu 1.2.5
+  finds it whatever the file is called. Use PCMenu 1.2.5 or newer.
 - **4.13.10**: San Andreas Online League is now **Rocket League**, on a floating pitch high above the downtown Los Santos
   skyscrapers with the real Soccar size (102.4 x 81.9 m, 20.5 m ceiling, 17.9 x 6.4 m goals, cut corners, the real
   kickoff and boost pad spots): SA-MP grass 19529 as the floor, objects 946 / 947 scaled as the goals, DockBarr1_LA
