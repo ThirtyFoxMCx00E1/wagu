@@ -341,6 +341,7 @@ namespace MP
     bool PCMenuLoadingActive();    // 4.13.12: PCMenu's PC loading screen is on (then MP does not draw its own)        // 4.13.11: OnModLoad got through
     void JoinLg();             // 4.13.4: Rocket League (was San Andreas Online League) 24/7 (join it, or leave it when you are on it)
     bool IsOnLg();
+    int  LgClockMinute();   // 4.13.14: the League's own time of day (minute of the day) while you are in it, -1 = not
     bool LgOwnTags();          // 4.13.4: the league draws the name tags (navy boxes)
     void LgDrawTags(ImDrawList* dl);
     void JoinDz();             // 3.58: Project Day Z Legacy 24/7 (join it, or leave it when you are on it)

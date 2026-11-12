@@ -1042,6 +1042,7 @@ static void ApplyWorld(uint64_t now)
     float frac = (float)(el % 1000) / 1000.0f;
     int forced = s_World.mode == WORLD_NATURAL ? -1 : (int)s_World.weather;
     if(s_nCgWeather >= 0) forced = s_nCgWeather;   // 4.09: CGRP /weather [id]
+    { const int lgm = MP::LgClockMinute(); if(lgm >= 0) { absMin = (uint32_t)lgm; frac = 0; s_nWorldSyncedAt = now; } }   // 4.13.14: League night, one clock
     int fixed = Game::EnforceWorld(absMin, frac, forced);
     if(!s_nWorldSyncedAt) { s_nWorldSyncedAt = now; return; }     // first lock after joining: not a cheat
     if(fixed && now - s_nWorldSyncedAt > 3000)

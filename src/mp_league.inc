@@ -61,6 +61,10 @@ static bool LgOnServer()
     return client.GetState() == NET_CONNECTED && MP_IsLgServerName(client.GetServerName()[0] ? client.GetServerName() : s_szCurServer);
 }
 bool MP::IsOnLg() { return LgOnServer(); }
+// 4.13.14: the League night is the clock the server-world lock holds (ApplyWorld, every frame). Before, the lock put
+// the server's time back every frame and the lobby set 23:30 every 4 s - the sky jumped between the two
+// (a black flicker at Grove Street that single player never has).
+int MP::LgClockMinute() { return (s_Lg.engaged && LgOnServer() && s_Lg.view >= 1) ? (s_Lg.view == 3 ? 22 * 60 : 23 * 60 + 30) : -1; }
 bool MP::LgOwnTags() { return s_Lg.engaged && LgOnServer() && s_Lg.view >= 1; }
 
 // 4.13.10: the active arena centre: kLgCenter (the sky pitch over downtown LS), or the old LV airport apron when the
@@ -461,7 +465,7 @@ static void LgArenaProcess(int ped, uint64_t now, float dt)
     if(s_Lg.arenaWait)
     {   // 4.13.10: the floating floor first
         const float side = s_Lg.freePlay ? -1.0f : (s_Lg.me.team == 1 ? 1.0f : -1.0f);
-        const Vec3 at = LgWorld(side * 46.08f, 0, 1.0f);
+        const Vec3 at = LgWorld(side * 46.08f * LG_SCALE, 0, 1.0f);
         if(!LgFloorReady())
         {
             if(!s_Lg.frozen) { Game::FreezeCar(s_Lg.myCar, true); s_Lg.frozen = true; }
@@ -558,7 +562,7 @@ static void LgArenaProcess(int ped, uint64_t now, float dt)
 
 static void LgLobbyProcess(int ped, uint64_t now)
 {
-    if(now >= s_Lg.nightAt) { s_Lg.nightAt = now + 4000; Game::SetTimeOfDay(23, 30); }
+    // 4.13.14: the night is held by the world lock (MP::LgClockMinute) - no more SetTimeOfDay every 4 s
     // the parked cars (they stream in: CreateCar gives 0 until the model is loaded)
     for(int i = 0; i < LG_CAR_COUNT; ++i)
     {
@@ -595,7 +599,7 @@ static void LgGoArena(bool freePlay)
     // 4.13.10: no TeleportGround (it would find the street 380 m below the sky pitch): the car waits frozen at its
     // kickoff spot until the floor object exists (LgArenaProcess), then it is put down on the grass
     if(!s_bLgArenaPlanned) LgPlanArena();
-    const Vec3 at = LgWorld(side * 46.08f, 0, 1.0f);
+    const Vec3 at = LgWorld(side * 46.08f * LG_SCALE, 0, 1.0f);
     Game::PreloadArea(at, false);
     if(LgCarOk(s_Lg.myCar) && Game::IsCharInCar(ped, s_Lg.myCar))
     { Game::SetCarPos(s_Lg.myCar, at, 0.0f); Game::SetCarHeading(s_Lg.myCar, side < 0 ? 270.0f : 90.0f); Game::SetMoveSpeed(s_Lg.myCar, true, { 0, 0, 0 }); Game::FreezeCar(s_Lg.myCar, true); s_Lg.frozen = true; }

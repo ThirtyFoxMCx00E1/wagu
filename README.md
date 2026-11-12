@@ -121,6 +121,9 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **4.13.14**: Fixed the black flicker in the Rocket League lobby (Grove Street). The server's time lock and the
+  League's own night (23:30 every 4 s) fought each other, so the sky jumped between day and night. The League night
+  is now the time the lock holds. Also: the car's kickoff spot fits the 4x arena.
 - **4.13.13**: Rocket League arena is 4x bigger (409.6 x 327.7 m, ceiling 81.9 m), closer to the real pitch shape,
   on SA-MP grass 19529 over the LA skyscrapers. The basketball hoops are gone: each goal is now a tunnel (18776) with
   a blue or orange neon frame (18647/18648/18650) and a fire blast (18688/18693) when someone scores. Bigger ball,
