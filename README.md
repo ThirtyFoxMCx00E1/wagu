@@ -121,6 +121,8 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **4.13.12**: Multiplayer loads show PCMenu's PC loading screen when PCMenu 1.2.6+ is installed with its loading
+  screen on (MP's own panel covered it before). PCMenu shows "CONNECTING TO MULTIPLAYER" through the MPMultiplayer API v2.
 - **4.13.11**: PCMenu's MULTIPLAYER button said "MULTIPLAYER NOT AVAILABLE" with MP installed. MP now counts as
   ready as soon as it is loaded (4.13.10 waited for the "all mods loaded" call and for `MainMenuMultiplayer=1`), the
   button works even with the main menu tile switched off, and MP also exports `MP_GetMultiplayerApi` so PCMenu 1.2.5

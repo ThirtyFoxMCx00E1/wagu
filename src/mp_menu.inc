@@ -60,14 +60,27 @@ static void MenuMpTap(void*)
 // MainMenuMultiplayer = 1, so PCMenu said "MULTIPLAYER NOT AVAILABLE" with MP installed when that call never came
 // (older AML) or the tile was switched off.
 static std::atomic<bool> s_bMenuMpReady{false};
+static void LookUpPCMenuLoading();   // 4.13.12 (below)
 static void MpApiMultiplayer()
 {
     if(!s_bMenuMpReady.load()) { logger->Info("MPMultiplayer: called before MP finished loading - ignored"); return; }
     logger->Info("MPMultiplayer: Multiplayer requested by another mod (PCMenu)");
-    s_bMenuMpViaApi = true; MenuMpTap(nullptr);
+    s_bMenuMpViaApi = true; LookUpPCMenuLoading(); MenuMpTap(nullptr);
 }
 static int  MpApiAvailable() { return s_bMenuMpReady.load() ? 1 : 0; }
-static MP::MultiplayerApi s_MpApi = { 1, MpApiMultiplayer, MpApiAvailable };
+static int  MpApiLoading() { return MP::MenuMpLoading() ? 1 : 0; }   // 4.13.12: PCMenu shows "CONNECTING TO MULTIPLAYER"
+static MP::MultiplayerApi s_MpApi = { 2, MpApiMultiplayer, MpApiAvailable, MpApiLoading };
+// 4.13.12: PCMenu 1.2.6+ registers "PCMenuLoading". While its PC loading screen is on, MP leaves the loading screen to
+// it (before, MP's panel covered it whenever MULTIPLAYER loaded the game). Looked up on the main thread only.
+struct PCMenuLoadingApi { int version; int (*Active)(); };
+static std::atomic<PCMenuLoadingApi*> s_pPcLoading{nullptr};
+static void LookUpPCMenuLoading()
+{
+    if(s_pPcLoading.load()) return;
+    PCMenuLoadingApi* a = (PCMenuLoadingApi*)GetInterface("PCMenuLoading");
+    if(a && a->version >= 1 && a->Active) { s_pPcLoading = a; logger->Info("PCMenu loading screen found: MP uses it for Multiplayer loads"); }
+}
+bool MP::PCMenuLoadingActive() { PCMenuLoadingApi* a = s_pPcLoading.load(); return a && a->Active() != 0; }
 MP::MultiplayerApi* MP::GetMultiplayerApi() { return &s_MpApi; }
 void MP::SetMenuApiReady() { s_bMenuMpReady = true; }
 // the same API as a plain export, for mods that look MP up with dlsym (no AML interface list needed)
@@ -76,6 +89,7 @@ extern "C" __attribute__((visibility("default"))) void* MP_GetMultiplayerApi() {
 void MP::InitMainMenu()
 {
     s_bMenuMpOn = ::cfg->GetBool("MainMenuMultiplayer", true, "MP");
+    LookUpPCMenuLoading();
     if(!s_bMenuMpOn) { logger->Info("Main menu: Multiplayer tile off (MainMenuMultiplayer = 0)"); return; }
     std::string full = std::string(MP::DataDir()) + "/mp_menu.png";
     // SAUtils reads the picture relative to the game's files folder: files/TYFMC/MP/mp_menu.png

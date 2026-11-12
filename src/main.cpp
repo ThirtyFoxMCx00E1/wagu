@@ -29,7 +29,7 @@
 #include "net/server.h"
 
 // 4.12.7: the config is files/TYFMC/TYFMC.MP.ini (the old configs/net.thirtyfox.mp.ini is moved there)
-TYFMC_MODCFG(net.thirtyfox.mp, MP Multiplayer, 4.13.11, ThirtyFoxMCx00E1, MP, net.thirtyfox.mp)
+TYFMC_MODCFG(net.thirtyfox.mp, MP Multiplayer, 4.13.12, ThirtyFoxMCx00E1, MP, net.thirtyfox.mp)
 NEEDGAME(com.rockstargames.gtasa)
 
 // Globals used by the embedded RenderWare ImGui backend
@@ -170,7 +170,7 @@ static bool   s_bMpSplashDrawn = false;
 DECL_HOOKv(LS_RenderSplash)
 {
     s_bMpSplashDrawn = false;
-    if(MP::MenuMpLoading())
+    if(MP::MenuMpLoading() && !MP::PCMenuLoadingActive())   // 4.13.12: PCMenu's PC loading screen wins when it is on
     {   // 4.13.5: tapping Multiplayer on the title menu = no in-game frame yet (Render2dStuff never ran),
         // so RenderWare + MP's UI are set up right here; before, the game's own splash showed instead
         if(!s_bRWReady) { InitRenderWareFunctions(); s_bRWReady = true; }

@@ -1,6 +1,7 @@
 {
-"latest": "4.13.11",
+"latest": "4.13.12",
 "supported": [
+"4.13.11",
 "4.13.10",
 "4.13.9",
 "4.13.8",
@@ -126,6 +127,11 @@
 "3.04.6"
 ],
 "versions": [
+{
+"v": "4.13.12",
+"summary": "Multiplayer loads show PCMenu's PC loading screen when PCMenu 1.2.6+ is installed with its loading screen on (MP's own panel covered it before). PCMenu shows \"CONNECTING TO MULTIPLAYER\" through the MPMultiplayer API v2.",
+"items": []
+},
 {
 "v": "4.13.11",
 "summary": "PCMenu's MULTIPLAYER button said \"MULTIPLAYER NOT AVAILABLE\" with MP installed. MP now counts as ready as soon as it is loaded (4.13.10 waited for the \"all mods loaded\" call and for `MainMenuMultiplayer=1`), the button works even with the main menu tile switched off, and MP also exports `MP_GetMultiplayerApi` so PCMenu 1.2.5 finds it whatever the file is called. Use PCMenu 1.2.5 or newer.",
