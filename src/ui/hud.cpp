@@ -960,7 +960,7 @@ static void DrawNameTag(ImDrawList* dl, const Vec3& head, const char* name, uint
 static void DrawNameTags(ImDrawList* dl)
 {
     if(MP::classSelect) return;   // 3.01: class selection shows the skin only, no name tags
-    if(MP::LgOwnTags()) { MP::LgDrawTags(dl); return; }   // 4.13.4: San Andreas Online League
+    if(MP::LgOwnTags()) { MP::LgDrawTags(dl); return; }   // 4.13.4: Rocket League (was San Andreas Online League)
     Vec3 ref = MP::myDrawPos;
     for(int i = 0; i < MP_MAX_PLAYERS; ++i)
     {

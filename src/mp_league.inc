@@ -1,9 +1,9 @@
-// MP 4.13.4 (included by mp.cpp): San Andreas Online League - the phone side of Rocket Soccer.
+// MP 4.13.4 (included by mp.cpp): Rocket League (4.13.10 name; was San Andreas Online League) - the phone side of Rocket Soccer.
 //
 // The HUD is the one of the original SA:O / MTA Neon "GTA Rocket League" (DryxioGTA,
 // github.com/ThirtyFoxMCx00E1/san-andreas-online):
 //   lobby (Grove Street at night): the cars parked with their RL name in white caps over them, cyan
-//     "SA:O / ROCKET SOCCER" at the top, a small "Choose a car. Settings: ..." line top left and
+//     "ROCKET LEAGUE" at the top, a small "Choose a car. Settings: ..." line top left and
 //     "Choose a car, then your game mode and arena" at the bottom
 //   match: a small white status line at the top centre with "0 : 0" under it, the boost gauge at the
 //     bottom right (a thick dark ring, 12 cream ticks, a big squared white number, a small orange
@@ -20,10 +20,13 @@ static const Vec3  kLgLobbyCars[LG_CAR_COUNT] = {
 static const float kLgLobbyCarHead[LG_CAR_COUNT] = { 210, 190, 180, 165, 140, 235 };
 // boost pads (relative): 6 big (100) like RL Soccar + small ones (+12)
 struct LgPad { float x, y; bool big; uint64_t backAt; };
-static LgPad s_LgPads[] = {
-    { -46, -30, true, 0 }, { -46, 30, true, 0 }, { 46, -30, true, 0 }, { 46, 30, true, 0 }, { 0, -32, true, 0 }, { 0, 32, true, 0 },
-    { -24, 0, false, 0 }, { 24, 0, false, 0 }, { -12, -18, false, 0 }, { -12, 18, false, 0 }, { 12, -18, false, 0 }, { 12, 18, false, 0 },
-    { -36, -10, false, 0 }, { -36, 10, false, 0 }, { 36, -10, false, 0 }, { 36, 10, false, 0 }, { 0, -10, false, 0 }, { 0, 10, false, 0 },
+static LgPad s_LgPads[] = {   // 4.13.10: the real Soccar spots (uu / 100, x along the length)
+    { -40.96f, -30.72f, true, 0 }, { -40.96f, 30.72f, true, 0 }, { 40.96f, -30.72f, true, 0 }, { 40.96f, 30.72f, true, 0 }, { 0, -35.84f, true, 0 }, { 0, 35.84f, true, 0 },
+    { -10.24f, 0, false, 0 }, { 10.24f, 0, false, 0 }, { -23.04f, 0, false, 0 }, { 23.04f, 0, false, 0 },
+    { -10.24f, -17.92f, false, 0 }, { -10.24f, 17.92f, false, 0 }, { 10.24f, -17.92f, false, 0 }, { 10.24f, 17.92f, false, 0 },
+    { -28.16f, -9.4f, false, 0 }, { -28.16f, 9.4f, false, 0 }, { 28.16f, -9.4f, false, 0 }, { 28.16f, 9.4f, false, 0 },
+    { -40.96f, -11.0f, false, 0 }, { -40.96f, 11.0f, false, 0 }, { 40.96f, -11.0f, false, 0 }, { 40.96f, 11.0f, false, 0 },
+    { 0, -24.0f, false, 0 }, { 0, 24.0f, false, 0 }, { -17.92f, -30.72f, false, 0 }, { -17.92f, 30.72f, false, 0 }, { 17.92f, -30.72f, false, 0 }, { 17.92f, 30.72f, false, 0 },
 };
 
 struct LgClient
@@ -43,6 +46,7 @@ struct LgClient
     // car
     float    boost = 33; bool boostHeld = false, jumpTap = false; uint64_t jumpAt = 0; bool dodged = false; bool airborne = false;
     bool     frozen = false; uint64_t spawnAt = 0;
+    bool     arenaWait = false;   // 4.13.10: the car waits (frozen) until the sky floor exists
     // banners
     char     banner[72] = ""; char bannerSub[72] = ""; uint32_t bannerCol = 0xFFFFFFFF; uint64_t bannerUntil = 0;
     char     feed[4][72] = {}; uint64_t feedAt[4] = {}; int feedN = 0;
@@ -58,7 +62,103 @@ static bool LgOnServer()
 bool MP::IsOnLg() { return LgOnServer(); }
 bool MP::LgOwnTags() { return s_Lg.engaged && LgOnServer() && s_Lg.view >= 1; }
 
-static Vec3 LgWorld(float x, float y, float z) { return { kLgCenter[0] + x, kLgCenter[1] + y, kLgCenter[2] + z }; }
+// 4.13.10: the active arena centre: kLgCenter (the sky pitch over downtown LS), or the old LV airport apron when the
+// SA-MP model pack (grass plane 19529) is missing - there is no floor in the sky without it. The server always works
+// in kLgCenter coordinates (it subtracts kLgCenter from touches), so LgToCanon() converts before sending.
+static const float kLgFallbackCenter[3] = { 1477.0f, 1500.0f, 10.82f };
+static float s_LgC[3] = { kLgCenter[0], kLgCenter[1], kLgCenter[2] };
+static bool  s_bLgSky = true;
+static Vec3 LgWorld(float x, float y, float z) { return { s_LgC[0] + x, s_LgC[1] + y, s_LgC[2] + z }; }
+static void LgToCanon(float* p) { for(int k = 0; k < 3; ++k) p[k] = p[k] - s_LgC[k] + kLgCenter[k]; }
+
+// ---- 4.13.10: the arena objects (built progressively: CreateMapObject gives 0 while a model streams in) ----
+// floor: SA-MP 19529 Plane125x125Grass1 (125 x 125 m, solid); goals: 946 bskball_lax (947 bskballhub_lax01 when
+// 946 is missing), 1.76 x 1.48 x 4.42 m, scaled to the 17.86 x 8.8 x 6.42 m RL goal (visual only, collision off:
+// the goal is the ball physics + the car cage); barriers: 3578 DockBarr1_LA (10.3 m long, solid) on the side walls,
+// the 45 deg corners and the end walls beside the goal mouths, drawn 2.5x taller. The scale is visual (RwFrame), so
+// it is applied again every 250 ms (the game rebuilds the matrix when an object streams back in).
+struct LgObj { int model; float x, y, z, rz, sx, sy, sz; bool solid; int h; };
+static std::vector<LgObj> s_LgObjs;
+static bool     s_bLgArenaPlanned = false;
+static uint64_t s_nLgScaleAt = 0, s_nLgBuildAt = 0;
+static bool LgFloorReady() { return !s_bLgSky || (!s_LgObjs.empty() && s_LgObjs[0].h > 0); }
+static void LgPlanArena()
+{
+    s_LgObjs.clear(); s_bLgArenaPlanned = true;
+    s_bLgSky = Game::IsKnownModel(19529);
+    const float* c = s_bLgSky ? kLgCenter : kLgFallbackCenter;
+    for(int k = 0; k < 3; ++k) s_LgC[k] = c[k];
+    logger->Info("LEAGUE: arena %s (%.0f %.0f %.0f)", s_bLgSky ? "Sky Pitch above Los Santos (19529)" : "LV airport fallback (no SA-MP model 19529)", s_LgC[0], s_LgC[1], s_LgC[2]);
+    if(s_bLgSky)   // the floor: the field + both goal boxes (120 x 82 m)
+        s_LgObjs.push_back({ 19529, 0, 0, 0, 0, (2 * (LG_HALF_L + LG_GOAL_DEPTH)) / 125.0f, (2 * LG_HALF_W) / 125.0f, 1.0f, true, 0 });
+    const int goal = Game::IsKnownModel(946) ? 946 : (Game::IsKnownModel(947) ? 947 : 0);
+    if(goal)
+        for(int sd = -1; sd <= 1; sd += 2)   // the hoop's long side across the goal mouth, at the back of the goal box
+            s_LgObjs.push_back({ goal, sd * (LG_HALF_L + LG_GOAL_DEPTH * 0.5f), 0, 0, sd > 0 ? 90.0f : 270.0f,
+                                 (2 * LG_GOAL_HALF_W) / 1.763f, LG_GOAL_DEPTH / 1.479f, LG_GOAL_H / 4.42f, false, 0 });
+    if(Game::IsKnownModel(3578))
+    {
+        const float L = 10.31f, sz = 2.5f;
+        auto Line = [&](float x0, float y0, float x1, float y1)
+        {
+            const float dx = x1 - x0, dy = y1 - y0, len = sqrtf(dx * dx + dy * dy);
+            const int n = (int)ceilf(len / L - 0.05f); if(n <= 0) return;
+            const float rz = atan2f(dy, dx) * 57.29578f, sx = len / (n * L);
+            for(int i = 0; i < n; ++i)
+            {
+                const float t = (i + 0.5f) / n;
+                s_LgObjs.push_back({ 3578, x0 + dx * t, y0 + dy * t, 0, rz, sx, 1.0f, sz, true, 0 });
+            }
+        };
+        const float cx = LG_CORNER - LG_HALF_W, cy = LG_CORNER - LG_HALF_L;   // where the corner cut meets the end / side walls
+        for(int sy = -1; sy <= 1; sy += 2)
+        {
+            Line(-cx, sy * LG_HALF_W, cx, sy * LG_HALF_W);                                   // side walls
+            for(int sx = -1; sx <= 1; sx += 2)
+            {
+                Line(sx * cx, sy * LG_HALF_W, sx * LG_HALF_L, sy * cy);                     // the 45 deg corners
+                Line(sx * LG_HALF_L, sy * cy, sx * LG_HALF_L, sy * LG_GOAL_HALF_W);          // end walls beside the goal
+            }
+        }
+        for(int sx = -1; sx <= 1; sx += 2)
+        {   // the goal box sides + back (the cars can't fall off behind the goal)
+            const float x0 = sx * LG_HALF_L, x1 = sx * (LG_HALF_L + LG_GOAL_DEPTH);
+            Line(x0, -LG_GOAL_HALF_W, x1, -LG_GOAL_HALF_W); Line(x0, LG_GOAL_HALF_W, x1, LG_GOAL_HALF_W);
+            Line(x1, -LG_GOAL_HALF_W, x1, LG_GOAL_HALF_W);
+        }
+    }
+}
+static void LgArenaBuild(uint64_t now)
+{
+    if(!s_bLgArenaPlanned) LgPlanArena();
+    if(now >= s_nLgBuildAt)
+    {
+        s_nLgBuildAt = now + 100;
+        int made = 0;
+        for(auto& o : s_LgObjs)
+        {
+            if(o.h > 0 || o.h < 0 || made >= 6) continue;
+            const int h = Game::CreateMapObject(o.model, LgWorld(o.x, o.y, o.z), 0, 0, o.rz);
+            if(h == 0) break;                         // streaming in: try again next round
+            o.h = h > 0 ? h : -1; ++made;
+            if(h > 0)
+            {
+                if(!o.solid) Game::SetObjectCollision(h, false);
+                BoneAttach::ScaleObject(h, o.sx, o.sy, o.sz);
+            }
+        }
+    }
+    if(now >= s_nLgScaleAt)
+    {
+        s_nLgScaleAt = now + 250;
+        for(auto& o : s_LgObjs) if(o.h > 0) BoneAttach::ScaleObject(o.h, o.sx, o.sy, o.sz);
+    }
+}
+static void LgArenaFree()
+{
+    for(auto& o : s_LgObjs) if(o.h > 0) Game::DeleteWorldObject(o.h);
+    s_LgObjs.clear(); s_bLgArenaPlanned = false;
+}
 static bool LgCarOk(int car) { return car > 0 && Game::CarExists(car) && !Game::IsCarDead(car); }
 static void LgSend(uint8_t cmd, int a, const float* pos = nullptr, const float* vel = nullptr)
 {
@@ -144,6 +244,7 @@ static void LgRelease()
     int ped = Game::LocalPed();
     LgDeleteMyCar();
     LgDeleteLobbyCars(0);
+    LgArenaFree();
     if(ped > 0) { Game::SetCharGodMode(ped, false); Game::FreezeChar(ped, false); Game::SetCharVisible(ped, true); }
     s_Lg = LgClient();
     memset(s_Lg.teamOf, 255, sizeof(s_Lg.teamOf));
@@ -192,7 +293,7 @@ static void LgOnPacket(const uint8_t* d, int len)
             {
                 case LGE_SPAWN:
                 {
-                    if(s_Lg.view != 3 || s_Lg.freePlay) break;
+                    if(s_Lg.view != 3 || s_Lg.freePlay || s_Lg.arenaWait) break;   // (4.13.10: after the floor exists the phone asks again)
                     for(int k = 0; k < 4; ++k) if(!std::isfinite(e.pos[k])) return;
                     int ped = Game::LocalPed();
                     Vec3 at = LgWorld(e.pos[0], e.pos[1], e.pos[2]);
@@ -247,6 +348,28 @@ static void LgArenaProcess(int ped, uint64_t now, float dt)
         return;
     }
     if(!Game::IsCharInCar(ped, s_Lg.myCar)) { if(!Game::IsCharGettingInToACar(ped)) Game::WarpIntoCar(ped, s_Lg.myCar); return; }
+    if(s_Lg.arenaWait)
+    {   // 4.13.10: the floating floor first
+        const float side = s_Lg.freePlay ? -1.0f : (s_Lg.me.team == 1 ? 1.0f : -1.0f);
+        const Vec3 at = LgWorld(side * 46.08f, 0, 1.0f);
+        if(!LgFloorReady())
+        {
+            if(!s_Lg.frozen) { Game::FreezeCar(s_Lg.myCar, true); s_Lg.frozen = true; }
+            Game::SetCarPos(s_Lg.myCar, at, 0.0f); Game::SetMoveSpeed(s_Lg.myCar, true, { 0, 0, 0 });
+            if(now - s_Lg.viewAt > 15000)
+            {   // the floor never came (object pool full / model pack broken): the LV apron instead
+                logger->Error("LEAGUE: the sky floor did not appear in 15 s - using the LV airport apron");
+                LgArenaFree(); s_bLgArenaPlanned = true; s_bLgSky = false;
+                for(int k = 0; k < 3; ++k) s_LgC[k] = kLgFallbackCenter[k];
+                s_Lg.viewAt = now;
+            }
+            return;
+        }
+        s_Lg.arenaWait = false;
+        Game::SetCarPos(s_Lg.myCar, at, 0.3f); Game::SetCarHeading(s_Lg.myCar, side < 0 ? 270.0f : 90.0f); Game::SetMoveSpeed(s_Lg.myCar, true, { 0, 0, 0 });
+        Game::FreezeCar(s_Lg.myCar, false); s_Lg.frozen = false;
+        if(!s_Lg.freePlay) LgSend(LGC_SPAWN, 0);   // the server's kickoff spot again, now that there is a floor
+    }
     if(now >= s_Lg.keepAt) { s_Lg.keepAt = now + 2000; LgSetupCar(s_Lg.myCar, s_Lg.freePlay ? 255 : s_Lg.me.team); Game::FixCar(s_Lg.myCar); }
     // kickoff: the cars wait for GO
     const bool kick = !s_Lg.freePlay && s_Lg.hasState && s_Lg.st.phase == LGP_KICKOFF && s_Lg.me.team <= 1;
@@ -254,7 +377,7 @@ static void LgArenaProcess(int ped, uint64_t now, float dt)
 
     Vec3 cp; if(!Game::GetCarPos(s_Lg.myCar, cp)) return;
     Vec3 v = { 0, 0, 0 }; Game::GetMoveSpeed(s_Lg.myCar, true, v);
-    float rel[3] = { cp.x - kLgCenter[0], cp.y - kLgCenter[1], cp.z - kLgCenter[2] };
+    float rel[3] = { cp.x - s_LgC[0], cp.y - s_LgC[1], cp.z - s_LgC[2] };
     // far away (fell through, drove off): back on the pitch
     if(fabsf(rel[0]) > LG_HALF_L + 25 || fabsf(rel[1]) > LG_HALF_W + 25 || rel[2] < -15 || rel[2] > 80)
     {
@@ -268,6 +391,12 @@ static void LgArenaProcess(int ped, uint64_t now, float dt)
     if(rel[0] > lx && v.x > 0) { v.x = -v.x * 0.4f; hit = true; } else if(rel[0] < -lx && v.x < 0) { v.x = -v.x * 0.4f; hit = true; }
     const float ly = fabsf(rel[0]) > LG_HALF_L ? LG_GOAL_HALF_W - 1.2f : LG_HALF_W - 1.2f;
     if(rel[1] > ly && v.y > 0) { v.y = -v.y * 0.4f; hit = true; } else if(rel[1] < -ly && v.y < 0) { v.y = -v.y * 0.4f; hit = true; }
+    if(fabsf(rel[0]) < LG_HALF_L && fabsf(rel[0]) + fabsf(rel[1]) > LG_CORNER - 1.7f)
+    {   // 4.13.10: the 45 deg corner walls
+        const float nx = (rel[0] < 0 ? -1.0f : 1.0f) * 0.70711f, ny = (rel[1] < 0 ? -1.0f : 1.0f) * 0.70711f;
+        const float vn = v.x * nx + v.y * ny;
+        if(vn > 0) { v.x -= 1.4f * vn * nx; v.y -= 1.4f * vn * ny; hit = true; }
+    }
 
     // boost / jump / dodge
     float fwd[3] = { 0, 1, 0 }, up[3] = { 0, 0, 1 };
@@ -313,7 +442,7 @@ static void LgArenaProcess(int ped, uint64_t now, float dt)
         s_Lg.touchAt = now;
         float cv[3] = { v.x, v.y, v.z };
         LgBallHit(s_Lg.ball, rel, cv);   // instant feedback; the server answers with its own ball
-        if(!s_Lg.freePlay) { float wp[3] = { cp.x, cp.y, cp.z }; LgSend(LGC_TOUCH, 0, wp, cv); }
+        if(!s_Lg.freePlay) { float wp[3] = { cp.x, cp.y, cp.z }; LgToCanon(wp); LgSend(LGC_TOUCH, 0, wp, cv); }
     }
 }
 
@@ -353,7 +482,16 @@ static void LgGoArena(bool freePlay)
     LgDeleteLobbyCars(s_Lg.myCar);
     if(LgCarOk(s_Lg.myCar)) LgSetupCar(s_Lg.myCar, freePlay ? 255 : s_Lg.me.team);
     const float side = freePlay ? -1.0f : (s_Lg.me.team == 1 ? 1.0f : -1.0f);
-    Game::TeleportGround(ped, LgWorld(side * 40.0f, 0, 1.0f), side < 0 ? 270.0f : 90.0f);   // the car comes along
+    // 4.13.10: no TeleportGround (it would find the street 380 m below the sky pitch): the car waits frozen at its
+    // kickoff spot until the floor object exists (LgArenaProcess), then it is put down on the grass
+    if(!s_bLgArenaPlanned) LgPlanArena();
+    const Vec3 at = LgWorld(side * 46.08f, 0, 1.0f);
+    Game::PreloadArea(at, false);
+    if(LgCarOk(s_Lg.myCar) && Game::IsCharInCar(ped, s_Lg.myCar))
+    { Game::SetCarPos(s_Lg.myCar, at, 0.0f); Game::SetCarHeading(s_Lg.myCar, side < 0 ? 270.0f : 90.0f); Game::SetMoveSpeed(s_Lg.myCar, true, { 0, 0, 0 }); Game::FreezeCar(s_Lg.myCar, true); s_Lg.frozen = true; }
+    else Game::TeleportLight(ped, at, side < 0 ? 270.0f : 90.0f);
+    s_Lg.arenaWait = true;
+    if(!LgFloorReady()) LgBanner("BUILDING THE ARENA", "Sky Pitch above Los Santos", 0xFFFFFFFF, 2500);
     if(freePlay) LgBallReset(s_Lg.ball);
     else LgSend(LGC_TEAM, 2);   // auto team (balanced); the server sends the kickoff spot
     s_Lg.view = 3; s_Lg.viewAt = MP_NowMs(); s_Lg.boost = 33;
@@ -373,7 +511,7 @@ static void LgProcess(int ped, uint64_t now)
     float dt = s_Lg.lastFrame ? (now - s_Lg.lastFrame) / 1000.0f : 0.0f; s_Lg.lastFrame = now;
     if(dt > 0.1f) dt = 0.1f;
     if(s_Lg.view == 1 || s_Lg.view == 2) LgLobbyProcess(ped, now);
-    else if(s_Lg.view == 3) LgArenaProcess(ped, now, dt);
+    else if(s_Lg.view == 3) { LgArenaBuild(now); LgArenaProcess(ped, now, dt); }
 }
 
 // ---- drawing ----------------------------------------------------------------------------------
@@ -402,54 +540,81 @@ static void LgDigit(ImDrawList* dl, ImVec2 o, float w, float h, float t, int d, 
     if(m & 0x20) V(o.x, o.y, o.y + hh + t * 0.5f);
     if(m & 0x40) dl->AddRectFilled(ImVec2(o.x + t * 0.6f, o.y + hh - t * 0.5f), ImVec2(o.x + w, o.y + hh + t * 0.5f), col);
 }
+// 4.13.10: the HUD of the reference screenshot (Screenshots/Screenshot_20261112-094939.png): a solid orange arc in a
+// dark ring with white ticks, the big white boost number, a small orange BOOST
 static void LgDrawBoost(ImDrawList* dl, ImVec2 ds)
 {
-    const float R = UI::S(92), th = UI::S(15);
-    const ImVec2 c(ds.x - R - UI::S(46), ds.y - R - UI::S(40));
-    dl->AddCircle(c, R, IM_COL32(8, 26, 26, 235), 64, th);
-    // the boost amount as a light arc inside the ring (RL fills it clockwise from the bottom)
+    const float R = UI::S(78), th = UI::S(13);
+    const ImVec2 c(ds.x - R - UI::S(40), ds.y - R - UI::S(34));
+    dl->AddCircleFilled(c, R + th * 0.5f, IM_COL32(10, 14, 20, 120), 64);
+    dl->AddCircle(c, R, IM_COL32(16, 18, 24, 235), 64, th);
     const float f = s_Lg.boost / 100.0f;
     if(f > 0.005f)
-    {
+    {   // RL fills it clockwise from the bottom
         const float a0 = IM_PI * 0.5f, a1 = a0 + f * IM_PI * 2.0f;
-        dl->PathArcTo(c, R, a0, a1, 64); dl->PathStroke(IM_COL32(255, 150, 40, 120), 0, th * 0.35f);
+        dl->PathArcTo(c, R, a0, a1, 64); dl->PathStroke(IM_COL32(255, 128, 20, 255), 0, th * 0.62f);
     }
     for(int i = 0; i < 12; ++i)
-    {   // 12 small cream ticks on the ring
-        const float a = i * IM_PI * 2.0f / 12.0f;
-        const ImVec2 dir(cosf(a), sinf(a));
-        dl->AddLine(ImVec2(c.x + dir.x * (R - th * 0.32f), c.y + dir.y * (R - th * 0.32f)), ImVec2(c.x + dir.x * (R + th * 0.32f), c.y + dir.y * (R + th * 0.32f)), IM_COL32(236, 226, 196, 235), UI::S(2.2f));
+    {
+        const float a = i * IM_PI * 2.0f / 12.0f; const ImVec2 dir(cosf(a), sinf(a));
+        dl->AddLine(ImVec2(c.x + dir.x * (R - th * 0.5f), c.y + dir.y * (R - th * 0.5f)), ImVec2(c.x + dir.x * (R + th * 0.5f), c.y + dir.y * (R + th * 0.5f)), IM_COL32(245, 245, 245, 230), UI::S(2.0f));
     }
     char b[8]; snprintf(b, sizeof(b), "%d", (int)(s_Lg.boost + 0.5f));
     const int n = (int)strlen(b);
-    const float dw = UI::S(36), dh = UI::S(46), st = UI::S(7.5f), gap = UI::S(14);
+    const float dw = UI::S(28), dh = UI::S(36), st = UI::S(6.0f), gap = UI::S(10);
     const float tw = n * dw + (n - 1) * gap;
     float x = c.x - tw * 0.5f;
-    for(int i = 0; i < n; ++i) { LgDigit(dl, ImVec2(x + 2, c.y - dh * 0.62f + 2), dw, dh, st, b[i] - '0', IM_COL32(0, 0, 0, 90)); LgDigit(dl, ImVec2(x, c.y - dh * 0.62f), dw, dh, st, b[i] - '0', IM_COL32(242, 240, 228, 255)); x += dw + gap; }
-    LgText(dl, UI::S(15), ImVec2(c.x, c.y + R * 0.50f), IM_COL32(242, 168, 40, 255), "BOOST", false);
+    for(int i = 0; i < n; ++i) { LgDigit(dl, ImVec2(x + 2, c.y - dh * 0.6f + 2), dw, dh, st, b[i] - '0', IM_COL32(0, 0, 0, 90)); LgDigit(dl, ImVec2(x, c.y - dh * 0.6f), dw, dh, st, b[i] - '0', IM_COL32(250, 250, 250, 255)); x += dw + gap; }
+    LgText(dl, UI::S(12), ImVec2(c.x, c.y + R * 0.46f), IM_COL32(255, 140, 30, 255), "BOOST", false);
 }
+// the team name under the score box: one player = the name ("YOU" for this phone), more = "BLUE x3"
+static void LgTeamLabel(int team, char* out, int n)
+{
+    int cnt = 0; const char* nm = nullptr; const uint8_t me = client.GetMyId();
+    for(int i = 0; i < s_Lg.nRows; ++i)
+    {
+        const LgRow& r = s_Lg.rows[i]; if(r.team != team) continue;
+        ++cnt;
+        if(!nm) nm = r.id == me ? "YOU" : (r.id < MP_MAX_PLAYERS && MP::players[r.id].active ? MP::players[r.id].name : "?");
+    }
+    if(cnt == 0) snprintf(out, n, "%s", team ? "ORANGE" : "BLUE");
+    else if(cnt == 1) snprintf(out, n, "%s (%s)", nm, team ? "ORANGE" : "BLUE");
+    else snprintf(out, n, "%s x%d", team ? "ORANGE" : "BLUE", cnt);
+    for(char* p = out; *p; ++p) if(*p >= 'a' && *p <= 'z') *p -= 32;
+}
+// the score box: blue score | dark navy clock | orange score, the small white caps line under it
 static void LgDrawTop(ImDrawList* dl, ImVec2 ds)
 {
-    char line[96];
     const PktLgState& s = s_Lg.st;
-    if(s_Lg.freePlay) snprintf(line, sizeof(line), "FREE PLAY \xC2\xB7 LV Airport \xC2\xB7 ball %d km/h \xC2\xB7 boost %d %%",
-                               (int)(sqrtf(s_Lg.ball.v[0] * s_Lg.ball.v[0] + s_Lg.ball.v[1] * s_Lg.ball.v[1] + s_Lg.ball.v[2] * s_Lg.ball.v[2]) * 3.6f), (int)s_Lg.boost);
-    else
-    {
-        static const char* const ph[5] = { "WARMUP", "KICKOFF", "LIVE", "GOAL REPLAY", "MATCH OVER" };
-        const char* p = s.phase < 5 ? ph[s.phase] : "";
-        if(s.overtime) snprintf(line, sizeof(line), "RANKED SOCCAR \xC2\xB7 OVERTIME +%d:%02d \xC2\xB7 %dv%d \xC2\xB7 %s", s.clock / 60, s.clock % 60, s.blueN, s.orangeN, p);
-        else snprintf(line, sizeof(line), "RANKED SOCCAR \xC2\xB7 %d:%02d \xC2\xB7 %dv%d \xC2\xB7 %s", s.clock / 60, s.clock % 60, s.blueN, s.orangeN, p);
-    }
-    LgText(dl, UI::S(19), ImVec2(ds.x * 0.5f, UI::S(30)), IM_COL32(238, 244, 244, 255), line);
-    char sc[24];
-    if(s_Lg.freePlay) snprintf(sc, sizeof(sc), "%d : %d", s_Lg.fpScore[0], s_Lg.fpScore[1]);
-    else snprintf(sc, sizeof(sc), "%d : %d", s.score[0], s.score[1]);
-    LgText(dl, UI::S(30), ImVec2(ds.x * 0.5f, UI::S(70)), IM_COL32(250, 250, 250, 255), sc);
+    const int sb = s_Lg.freePlay ? s_Lg.fpScore[0] : s.score[0], so = s_Lg.freePlay ? s_Lg.fpScore[1] : s.score[1];
+    char clock[24];
+    if(s_Lg.freePlay) snprintf(clock, sizeof(clock), "FREE PLAY");
+    else if(s.overtime) snprintf(clock, sizeof(clock), "+%d:%02d", s.clock / 60, s.clock % 60);
+    else snprintf(clock, sizeof(clock), "%d:%02d", s.clock / 60, s.clock % 60);
+    const float h = UI::S(46), sw = UI::S(60), mw = UI::S(150), y0 = UI::S(10);
+    const float x0 = ds.x * 0.5f - mw * 0.5f - sw;
+    dl->AddRectFilled(ImVec2(x0, y0), ImVec2(x0 + sw, y0 + h), IM_COL32(26, 74, 168, 245));
+    dl->AddRectFilled(ImVec2(x0 + sw, y0), ImVec2(x0 + sw + mw, y0 + h), IM_COL32(12, 20, 34, 240));
+    dl->AddRectFilled(ImVec2(x0 + sw + mw, y0), ImVec2(x0 + 2 * sw + mw, y0 + h), IM_COL32(196, 90, 24, 245));
+    char t[16];
+    snprintf(t, sizeof(t), "%d", sb); LgText(dl, UI::S(24), ImVec2(x0 + sw * 0.5f, y0 + h * 0.5f), IM_COL32(150, 200, 255, 255), t, false);
+    snprintf(t, sizeof(t), "%d", so); LgText(dl, UI::S(24), ImVec2(x0 + sw * 1.5f + mw, y0 + h * 0.5f), IM_COL32(255, 205, 130, 255), t, false);
+    LgText(dl, UI::S(s_Lg.freePlay ? 17 : 22), ImVec2(ds.x * 0.5f, y0 + h * 0.5f), IM_COL32(250, 250, 250, 255), clock, false);
+    char line[128];
+    if(s_Lg.freePlay)
+        snprintf(line, sizeof(line), "%s \xC2\xB7 BALL %d KM/H", s_bLgSky ? "LS SKY PITCH" : "LV AIRPORT",
+                 (int)(sqrtf(s_Lg.ball.v[0] * s_Lg.ball.v[0] + s_Lg.ball.v[1] * s_Lg.ball.v[1] + s_Lg.ball.v[2] * s_Lg.ball.v[2]) * 3.6f));
+    else { char bl[48], og[48]; LgTeamLabel(0, bl, sizeof(bl)); LgTeamLabel(1, og, sizeof(og)); snprintf(line, sizeof(line), "%s  vs  %s", bl, og); }
+    LgText(dl, UI::S(14), ImVec2(ds.x * 0.5f, y0 + h + UI::S(14)), IM_COL32(240, 240, 240, 255), line);
     if(!s_Lg.freePlay && s.phase == LGP_KICKOFF && s.phaseMs > 0)
     {
         char k[8]; snprintf(k, sizeof(k), "%d", (s.phaseMs + 999) / 1000);
         LgText(dl, UI::S(96), ImVec2(ds.x * 0.5f, ds.y * 0.36f), IM_COL32(255, 255, 255, 240), k);
+    }
+    else if(!s_Lg.freePlay && (s.phase == LGP_GOAL || s.phase == LGP_END || s.phase == LGP_WARMUP))
+    {
+        static const char* const ph[5] = { "WARMUP", "", "", "GOAL REPLAY", "MATCH OVER" };
+        LgText(dl, UI::S(13), ImVec2(ds.x * 0.5f, y0 + h + UI::S(32)), IM_COL32(200, 210, 220, 230), ph[s.phase]);
     }
 }
 static void LgDrawField(ImDrawList* dl)
@@ -468,8 +633,12 @@ static void LgDrawField(ImDrawList* dl)
         }
     };
     const float z = 0.05f, w = UI::S(2.2f);
-    Seg(-LG_HALF_L, -LG_HALF_W, z, LG_HALF_L, -LG_HALF_W, z, line, w); Seg(-LG_HALF_L, LG_HALF_W, z, LG_HALF_L, LG_HALF_W, z, line, w);
-    Seg(-LG_HALF_L, -LG_HALF_W, z, -LG_HALF_L, LG_HALF_W, z, line, w); Seg(LG_HALF_L, -LG_HALF_W, z, LG_HALF_L, LG_HALF_W, z, line, w);
+    const float cxw = LG_CORNER - LG_HALF_W, cyl = LG_CORNER - LG_HALF_L;   // 4.13.10: the corner cuts
+    for(int sy = -1; sy <= 1; sy += 2)
+    {
+        Seg(-cxw, sy * LG_HALF_W, z, cxw, sy * LG_HALF_W, z, line, w);
+        for(int sx = -1; sx <= 1; sx += 2) { Seg(sx * cxw, sy * LG_HALF_W, z, sx * LG_HALF_L, sy * cyl, z, line, w); Seg(sx * LG_HALF_L, sy * cyl, z, sx * LG_HALF_L, 0, z, line, w); }
+    }
     Seg(0, -LG_HALF_W, z, 0, LG_HALF_W, z, line, w);
     for(int i = 0; i < 24; ++i)
     {   // centre circle
@@ -478,11 +647,15 @@ static void LgDrawField(ImDrawList* dl)
     }
     // the cage walls (top rails) + the goal frames
     const float wh = 4.0f;
-    Seg(-LG_HALF_L, -LG_HALF_W, wh, LG_HALF_L, -LG_HALF_W, wh, wall, w); Seg(-LG_HALF_L, LG_HALF_W, wh, LG_HALF_L, LG_HALF_W, wh, wall, w);
+    for(int sy = -1; sy <= 1; sy += 2)
+    {
+        Seg(-cxw, sy * LG_HALF_W, wh, cxw, sy * LG_HALF_W, wh, wall, w);
+        for(int sx = -1; sx <= 1; sx += 2) Seg(sx * cxw, sy * LG_HALF_W, wh, sx * LG_HALF_L, sy * cyl, wh, wall, w);
+    }
     for(int s = -1; s <= 1; s += 2)
     {
         const float x = s * LG_HALF_L;
-        Seg(x, -LG_HALF_W, wh, x, -LG_GOAL_HALF_W, wh, wall, w); Seg(x, LG_GOAL_HALF_W, wh, x, LG_HALF_W, wh, wall, w);
+        Seg(x, -cyl, wh, x, -LG_GOAL_HALF_W, wh, wall, w); Seg(x, LG_GOAL_HALF_W, wh, x, cyl, wh, wall, w);
         const ImU32 gc = s > 0 ? IM_COL32(255, 154, 46, 230) : IM_COL32(63, 160, 255, 230);
         const float gw = UI::S(4.0f);
         Seg(x, -LG_GOAL_HALF_W, 0, x, -LG_GOAL_HALF_W, LG_GOAL_H, gc, gw); Seg(x, LG_GOAL_HALF_W, 0, x, LG_GOAL_HALF_W, LG_GOAL_H, gc, gw);
@@ -490,16 +663,25 @@ static void LgDrawField(ImDrawList* dl)
         const float bx = x + s * LG_GOAL_DEPTH;
         Seg(bx, -LG_GOAL_HALF_W, 0, bx, LG_GOAL_HALF_W, 0, gc, w); Seg(x, -LG_GOAL_HALF_W, LG_GOAL_H, bx, -LG_GOAL_HALF_W, LG_GOAL_H * 0.7f, gc, w); Seg(x, LG_GOAL_HALF_W, LG_GOAL_H, bx, LG_GOAL_HALF_W, LG_GOAL_H * 0.7f, gc, w);
     }
-    // boost pads
+    // boost pads: yellow rings lying on the ground (the screenshot), the big ones with a white outer ring
     const uint64_t now = MP_NowMs();
     for(const auto& p : s_LgPads)
     {
-        ImVec2 c; if(!LgW2S(LgWorld(p.x, p.y, 0.1f), c)) continue;
-        ImVec2 e; if(!LgW2S(LgWorld(p.x + (p.big ? 1.6f : 0.9f), p.y, 0.1f), e)) continue;
-        const float r = fabsf(e.x - c.x) + fabsf(e.y - c.y) * 0.3f; if(r < 1.5f || r > 300) continue;
         const bool on = !p.backAt || now >= p.backAt;
-        dl->AddCircleFilled(c, r, on ? IM_COL32(255, 170, 40, p.big ? 150 : 110) : IM_COL32(90, 70, 40, 70), 20);
-        if(on && p.big) dl->AddCircle(c, r * 1.25f, IM_COL32(255, 210, 120, 160), 20, UI::S(2));
+        const float r = p.big ? 2.6f : 1.4f; const int n = 20;
+        const ImU32 col = on ? IM_COL32(255, 214, 60, p.big ? 230 : 190) : IM_COL32(110, 100, 60, 90);
+        for(int ring = 0; ring < (p.big ? 2 : 1); ++ring)
+        {
+            const float rr = ring ? r * 1.45f : r; const ImU32 cc = ring ? IM_COL32(235, 240, 245, on ? 170 : 60) : col;
+            ImVec2 a; bool va = LgW2S(LgWorld(p.x + rr, p.y, 0.08f), a);
+            for(int i = 1; i <= n; ++i)
+            {
+                const float t = i * IM_PI * 2 / n; ImVec2 b;
+                const bool vb = LgW2S(LgWorld(p.x + cosf(t) * rr, p.y + sinf(t) * rr, 0.08f), b);
+                if(va && vb && fabsf(a.x - b.x) < 400) dl->AddLine(a, b, cc, UI::S(p.big ? 2.6f : 1.8f));
+                a = b; va = vb;
+            }
+        }
     }
 }
 static void LgDrawBall(ImDrawList* dl)
@@ -631,7 +813,7 @@ static void LgDrawLobby(ImDrawList* dl, ImVec2 ds)
         ImVec2 s; if(!LgW2S({ p.x, p.y, p.z + 1.75f }, s)) continue;
         LgText(dl, UI::S(15), s, IM_COL32(250, 250, 250, 240), g_LgCars[i].name);
     }
-    LgText(dl, UI::S(19), ImVec2(ds.x * 0.5f, UI::S(30)), IM_COL32(110, 220, 230, 255), "SA:O / ROCKET SOCCER");
+    LgText(dl, UI::S(19), ImVec2(ds.x * 0.5f, UI::S(30)), IM_COL32(110, 220, 230, 255), "ROCKET LEAGUE");
     dl->AddText(UI::Font(), UI::S(14), ImVec2(UI::S(70), UI::S(96)), IM_COL32(220, 225, 225, 170), "Choose a car.  Settings: /team  /stats  /top  /help");
     if(s_Lg.view == 1) LgText(dl, UI::S(17), ImVec2(ds.x * 0.5f, ds.y - UI::S(56)), IM_COL32(250, 250, 250, 245), "Choose a car, then your game mode and arena");
     if(s_Lg.hasMe)
@@ -653,7 +835,7 @@ static void LgDrawLobby(ImDrawList* dl, ImVec2 ds)
         ImDrawList* w = ImGui::GetWindowDrawList(); ImVec2 o = ImGui::GetWindowPos();
         char t[48]; snprintf(t, sizeof(t), "%s", s_Lg.carIdx >= 0 ? g_LgCars[s_Lg.carIdx].name : "CAR");
         LgText(w, UI::S(22), ImVec2(o.x + sz.x * 0.5f, o.y + UI::S(26)), IM_COL32(110, 220, 230, 255), t);
-        LgText(w, UI::S(14), ImVec2(o.x + sz.x * 0.5f, o.y + UI::S(50)), IM_COL32(200, 210, 210, 220), "Game mode  \xC2\xB7  Arena: LV Airport (Neon Pitch)");
+        LgText(w, UI::S(14), ImVec2(o.x + sz.x * 0.5f, o.y + UI::S(50)), IM_COL32(200, 210, 210, 220), "Game mode  \xC2\xB7  Arena: Sky Pitch above Los Santos");
         ImGui::SetCursorPos(ImVec2(UI::S(20), UI::S(72)));
         const float bw = sz.x - UI::S(40), bh = UI::S(62);
         if(ImGui::Button("RANKED SOCCAR   (up to 8v8)", ImVec2(bw, bh))) LgGoArena(false);
@@ -717,15 +899,15 @@ static void RenderLg()
         const float a = age > 5000 ? 1.0f - (age - 5000) / 1000.0f : 1.0f;
         fg->AddText(UI::Font(), UI::S(15), ImVec2(ds.x - UI::S(330), UI::S(110) + i * UI::S(22)), IM_COL32(240, 245, 245, (int)(230 * a)), s_Lg.feed[i]);
     }
-    char build[64]; snprintf(build, sizeof(build), "MP %s - San Andreas Online League", MP_VERSION_STR);
+    char build[64]; snprintf(build, sizeof(build), "MP %s - Rocket League", MP_VERSION_STR);
     ImVec2 bs = UI::Font()->CalcTextSizeA(UI::S(11), FLT_MAX, 0, build);
     fg->AddText(UI::Font(), UI::S(11), ImVec2(ds.x - bs.x - UI::S(8), ds.y - bs.y - UI::S(4)), IM_COL32(230, 230, 230, 140), build);
 }
 
-// launcher / menu entry: join the 24/7 San Andreas Online League (the Broker bot on GitHub Actions)
+// launcher / menu entry: join the 24/7 Rocket League (the Broker bot on GitHub Actions)
 void MP::JoinLg()
 {
-    if(LgOnServer()) { LeaveServer("Left San Andreas Online League."); return; }
+    if(LgOnServer()) { LeaveServer("Left Rocket League."); return; }
     s_bLgJoin = true;
     MP::JoinServer("", MP_LG_PORT, MP_LG_SERVER_NAME);
     if(!JoinFlowActive() && client.GetState() == NET_DISCONNECTED && !IsBusy()) s_bLgJoin = false;

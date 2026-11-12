@@ -710,7 +710,7 @@ static bool Mw3ListTeam(int id, const char** tag, uint32_t* rgba);
 static int  Mw3RadarZones(Game::RadarZone* out, int maxOut);
 // 3.58: Project Day Z Legacy (mp_dayz.inc)
 static bool s_bDzJoin = false;
-static bool s_bLgJoin = false;   // 4.13.4: San Andreas Online League
+static bool s_bLgJoin = false;   // 4.13.4: Rocket League (was San Andreas Online League)
 static bool LgJoinTakeover(int ped);   // mp_league.inc
 static void LgProcess(int ped, uint64_t now);
 static void LgOnPacket(const uint8_t* d, int len);
@@ -4301,7 +4301,7 @@ void MP::Process()
     Mw3Process(ped, now);        // 3.23: Modern Warfare 3
     RpProcess(ped, now);         // 3.25: Mega Vil Futuristic
     DzProcess(ped, now);         // 3.58: Project Day Z
-    LgProcess(ped, now);         // 4.13.4: San Andreas Online League
+    LgProcess(ped, now);         // 4.13.4: Rocket League (was San Andreas Online League)
     CgProcess(ped, now);         // 4.09: CGRP systems
     SampSrvProcess(ped, now);    // 4.11: SA-MP gamemode servers
     HkProcess(ped, now); NeedsProcess(ped, now); MvProcess(now); Modes2Process(ped, now); RulesProcess(now); ModCheckProcess(now); ProgProcess(ped, now); AdmProcess(ped); DealerProcess(ped, now);   // 3.39 / 3.54 staff commands
@@ -4486,7 +4486,7 @@ int MP_DzPackMigrate();   // mp_launcher.inc
 #include "mp_tdeplug.inc"   // 3.50: Add server > Plugins (Textdraw .mptd files)
 #include "mp_tde.inc"       // 3.50: in-game MP Textdraw Editor (/tde)
 #include "mp_dayz.inc"      // 3.58: Project Day Z Legacy (Proper DAYZ)
-#include "mp_league.inc"    // 4.13.4: San Andreas Online League (Rocket Soccer)
+#include "mp_league.inc"    // 4.13.4: Rocket League (was San Andreas Online League) (Rocket Soccer)
 
 // 2.37: CheatMenu (libCheatMenu.so / libCheatMenu64.so) is not allowed on any server - the default
 // server and every custom server. Detected with aml->HasMod() in ON_ALL_MODS_LOAD (+ a re-check of
@@ -6758,7 +6758,7 @@ static void SectionAddServer(void*)
         else if(MP_IsDzServerName(s_szNewName) || port == MP_DZ_PORT)   // 3.58
             SysMsg(COL_YELLOW, "Project Day Z Legacy is a 24/7 featured server - it is in Internet > Featured, just tap it.");
         else if(MP_IsLgServerName(s_szNewName) || port == MP_LG_PORT)   // 4.13.4
-            SysMsg(COL_YELLOW, "San Andreas Online League is a 24/7 featured server - it is in Internet > Featured, just tap it.");
+            SysMsg(COL_YELLOW, "Rocket League is a 24/7 featured server - it is in Internet > Featured, just tap it.");
         else if(port == MP_DEFAULT_PORT && !IsDefaultServer(s_szNewName[0] ? s_szNewName : settings.serverName, port))
             SysMsg(COL_RED, "Port %d is for the default server. Use %d or higher for a custom server.", MP_DEFAULT_PORT, MP_DEFAULT_PORT + 1);
         else if(portTaken)   // 3.35.2: another server already has this port
@@ -6791,7 +6791,7 @@ static void SectionAddServer(void*)
         else if(MP_IsDzServerName(s_szNewName) || atoi(s_szNewPort) == MP_DZ_PORT)   // 3.58
             SysMsg(COL_YELLOW, "Project Day Z Legacy is a 24/7 featured server - it is in Internet > Featured, just tap it.");
         else if(MP_IsLgServerName(s_szNewName) || atoi(s_szNewPort) == MP_LG_PORT)   // 4.13.4
-            SysMsg(COL_YELLOW, "San Andreas Online League is a 24/7 featured server - it is in Internet > Featured, just tap it.");
+            SysMsg(COL_YELLOW, "Rocket League is a 24/7 featured server - it is in Internet > Featured, just tap it.");
         else if(IsDefaultServer(s_szNewName, atoi(s_szNewPort)) || IsLocalHost(s_szNewHost))
             SysMsg(COL_YELLOW, "That is the default server - it is always on top, just tap Connect.");
         else if(atoi(s_szNewPort) == MP_DEFAULT_PORT)

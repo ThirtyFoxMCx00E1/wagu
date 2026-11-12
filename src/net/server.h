@@ -72,7 +72,7 @@ public:
     bool IsBcwServer() const;                   // 3.04: the name is MP_BCW_SERVER_NAME (Brief Case War)
     bool IsMw3Server() const;                   // 3.23: Call Of Duty: Modern Warfare 3
     bool IsDayzServer() const;                  // 3.58: Project Day Z Legacy
-    bool IsLgServer() const;                    // 4.13.4: San Andreas Online League (Rocket Soccer)
+    bool IsLgServer() const;                    // 4.13.4: Rocket League (was San Andreas Online League) (Rocket Soccer)
     void SetMw3File(const char* path);          // 3.23: MW3 stats + zone owners (default mw3_stats.txt)
     bool IsRpServer() const;                    // 3.25: Mega Vil Futuristic (Roleplay)
     void SetRpFile(const char* path);           // 3.25: citizens (money, bank, job, house...) + house owners (default rp_citizens.txt)
@@ -375,7 +375,7 @@ private:
     void DzLoadVars(); void DzSaveVars(); void DzLog(const char* fmt, ...);
     void DzCheckAch(int slot); void DzUnlock(int slot, int ach); int DzSkillPts(int slot) const;
     void DzSendWeather(int slot); int DzNearStation(int slot, float maxDist) const; void DzRemove1(int slot, int i);
-    // 4.13.4: San Andreas Online League (server_league.inc)
+    // 4.13.4: Rocket League (was San Andreas Online League) (server_league.inc)
     struct LgPlayer
     {
         bool loaded = false; uint8_t team = 255, car = 0; uint64_t teamAt = 0, teamCmdAt = 0, lastTouch = 0, lastShot = 0, qchatAt = 0;

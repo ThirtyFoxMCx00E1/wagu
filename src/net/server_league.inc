@@ -57,7 +57,7 @@ void MPServer::LgSave()
     if(!m_bLgDirty && !m_LgSaved.empty()) return;
     char tmp[300]; snprintf(tmp, sizeof(tmp), "%s.tmp", s_szLgFile);
     FILE* f = fopen(tmp, "w"); if(!f) return;
-    fprintf(f, "# San Andreas Online League - account\\tmmr\\tpeak\\tgames\\twins\\tgoals\\tassists\\tsaves\\tshots\\tmvps\\tstreak\\tname\n");
+    fprintf(f, "# Rocket League - account\\tmmr\\tpeak\\tgames\\twins\\tgoals\\tassists\\tsaves\\tshots\\tmvps\\tstreak\\tname\n");
     for(auto& kv : m_LgSaved) fprintf(f, "%s\t%s\n", kv.first.c_str(), kv.second.c_str());
     fclose(f); rename(tmp, s_szLgFile);
     m_bLgDirty = false;
@@ -102,8 +102,8 @@ int MPServer::LgCount(int team) const
 void MPServer::LgSpawnOne(int slot, int order)
 {
     LgPlayer& p = m_Lg[slot]; if(p.team > 1) return;
-    // RL kickoff spots: one centred far back, two diagonals, then spread along the back
-    static const float sp[6][2] = { { 40, 0 }, { 30, -14 }, { 30, 14 }, { 44, -7 }, { 44, 7 }, { 36, 0 } };
+    // the real RL kickoff spots (uu / 100): back centre (0, 4608), the diagonals (+-2048, 2560), back left / right (+-256, 3840)
+    static const float sp[6][2] = { { 46.08f, 0 }, { 25.6f, -20.48f }, { 25.6f, 20.48f }, { 38.4f, -2.56f }, { 38.4f, 2.56f }, { 42.0f, 0 } };
     const int k = order % 6; const float side = p.team == 0 ? -1.0f : 1.0f;
     float pos[4] = { side * sp[k][0], sp[k][1] + (order >= 6 ? (order - 5) * 3.0f : 0.0f), 1.2f, p.team == 0 ? 270.0f : 90.0f };
     LgEvent(slot, LGE_SPAWN, p.team, p.car, order, 0, pos, nullptr);
@@ -165,7 +165,7 @@ void MPServer::LgOnAuthed(int slot)
     if(p.peak < p.mmr) p.peak = p.mmr;
     LgSendMe(slot);
     static const char* const dv[4] = { "I", "II", "III", "IV" };
-    LgMsg(slot, LGC_CYAN, "[LEAGUE] Welcome to San Andreas Online League. Rank: %s %s (%d MMR) - %u wins in %u games.",
+    LgMsg(slot, LGC_CYAN, "[LEAGUE] Welcome to Rocket League. Rank: %s %s (%d MMR) - %u wins in %u games.",
           g_LgTierName[LgTierOf(p.mmr)], LgTierOf(p.mmr) >= 7 ? "" : dv[LgDivOf(p.mmr)], p.mmr, p.wins, p.games);
     LgMsg(slot, LGC_GREY, "[LEAGUE] Choose a car, then your game mode and arena. /team blue|orange|auto, /top, /stats, /ff");
 }

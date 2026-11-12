@@ -11,30 +11,39 @@
 #include <strings.h>
 #include <math.h>
 
-#define MP_LG_SERVER_NAME   "San Andreas Online League"
-#define MP_LG_SHORT_NAME    "SAO League"
+#define MP_LG_SERVER_NAME   "Rocket League"          // 4.13.10 (was "San Andreas Online League")
+#define MP_LG_SHORT_NAME    "Rocket League"
+#define MP_LG_OLD_NAME      "San Andreas Online League"
 #define MP_LG_GAMEMODE      "Rocket Soccer"
 #define MP_LG_PORT          1934
 #define MP_LG_MAX_PLAYERS   16
-#define MP_LG_BUILD         41304   // phones older than 4.13.4 are refused (no league client)
+#define MP_LG_BUILD         41310   // 4.13.10: the floating sky arena (older phones play on another pitch: refused)
 #define MP_LG_TEAMS         2       // 0 = Blue, 1 = Orange
 
 static inline bool MP_IsLgServerName(const char* n)
 {
     if(!n || !n[0]) return false;
-    if(!strcasecmp(n, MP_LG_SERVER_NAME) || !strcasecmp(n, MP_LG_SHORT_NAME)) return true;
+    if(!strcasecmp(n, MP_LG_SERVER_NAME) || !strcasecmp(n, MP_LG_OLD_NAME) || !strcasecmp(n, "SAO League")) return true;
     return strcasestr(n, "Andreas Online League") != nullptr || strcasestr(n, "Rocket League") != nullptr;
 }
 
-// ---- the arena: Las Venturas airport apron (flat, open, far from traffic) ----
+// ---- the arena ----
+// 4.13.10: a big floating pitch high above the downtown Los Santos skyscrapers (the tallest roof is at
+// ~330 m): SA-MP grass plane 19529 (Plane125x125Grass1) scaled to the field, the goals from models
+// 946 / 947 scaled to the goal mouth, DockBarr1_LA barriers all around. Before: the LV airport apron.
 // Field along X: Blue defends -X (attacks +X), Orange defends +X.
-static const float kLgCenter[3]   = { 1477.0f, 1500.0f, 10.82f };
-#define LG_HALF_L       52.0f    // goal line at +-52 m
-#define LG_HALF_W       34.0f    // side walls at +-34 m
-#define LG_GOAL_HALF_W   9.0f
-#define LG_GOAL_H        6.6f
-#define LG_GOAL_DEPTH    8.0f
-#define LG_CEIL         28.0f
+static const float kLgCenter[3]   = { 1545.0f, -1300.0f, 380.0f };
+// 4.13.10: the standard Rocket League (Soccar) arena, 1 uu = 1 cm: 10240 x 8192 uu, ceiling 2048 uu,
+// goals 1785.5 x 642.8 uu, 880 uu deep; flat side walls 7936 uu, back walls 5888 uu, the four corners 1629.2 uu
+// across at 45 deg (|x| + |y| <= 8064 uu); kickoff at (0, 0, 0), each goal line 5120 uu from the centre.
+// The cars stay GTA size (an Octane is 118 uu = 1.18 m: RC car scale in RL), so the pitch feels smaller than in RL.
+#define LG_HALF_L       51.2f    // goal line at +-51.2 m (102.4 m long)
+#define LG_HALF_W       40.96f   // side walls at +-40.96 m (81.92 m wide)
+#define LG_CORNER       80.64f   // corner walls: |x| + |y| <= 80.64 m (11.5 m cut on each side)
+#define LG_GOAL_HALF_W   8.9275f // 1785.5 uu = 17.86 m wide
+#define LG_GOAL_H        6.43f   // 642.8 uu
+#define LG_GOAL_DEPTH    8.80f
+#define LG_CEIL         20.48f
 #define LG_BALL_R        1.85f   // drawn + collision radius (m)
 #define LG_BALL_MAXV    60.0f
 #define LG_GRAV         13.0f    // RL ball is floaty: 650 uu/s^2 = 6.5 m/s^2; a bit more on a phone screen
@@ -109,6 +118,18 @@ static inline int LgBallStep(LgBall& b, float dt)
     // side walls
     if(b.p[1] > LG_HALF_W - R)  { b.p[1] = LG_HALF_W - R;  if(b.v[1] > 0) b.v[1] = -b.v[1] * 0.6f; }
     if(b.p[1] < -LG_HALF_W + R) { b.p[1] = -LG_HALF_W + R; if(b.v[1] < 0) b.v[1] = -b.v[1] * 0.6f; }
+    // corner walls (45 deg): |x| + |y| <= LG_CORNER, reflect the speed on the diagonal
+    {
+        const float sx = b.p[0] < 0 ? -1.0f : 1.0f, sy = b.p[1] < 0 ? -1.0f : 1.0f;
+        const float over = fabsf(b.p[0]) + fabsf(b.p[1]) + R * 1.41421f - LG_CORNER;
+        if(over > 0 && fabsf(b.p[0]) < LG_HALF_L)
+        {
+            const float nx = sx * 0.70711f, ny = sy * 0.70711f;      // outward normal
+            b.p[0] -= nx * over * 0.70711f; b.p[1] -= ny * over * 0.70711f;
+            const float vn = b.v[0] * nx + b.v[1] * ny;
+            if(vn > 0) { b.v[0] -= 1.6f * vn * nx; b.v[1] -= 1.6f * vn * ny; }
+        }
+    }
     // end walls with the goal mouths
     const bool mouth = fabsf(b.p[1]) < LG_GOAL_HALF_W - R * 0.3f && b.p[2] < LG_GOAL_H - R * 0.3f;
     if(b.p[0] > LG_HALF_L - R && !mouth) { b.p[0] = LG_HALF_L - R; if(b.v[0] > 0) b.v[0] = -b.v[0] * 0.6f; }

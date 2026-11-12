@@ -172,7 +172,7 @@ bool MPServer::Start(uint16_t port, const char* serverName, MPServerLogFn log, i
     DzReset();                                // 3.58
     LgReset();                                // 4.13.4
     if(IsLgServer())
-    {   // 4.13.4: San Andreas Online League - Rocket Soccer only, 16 players, no cheats, no other gamemodes
+    {   // 4.13.4: Rocket League (was San Andreas Online League) - Rocket Soccer only, 16 players, no cheats, no other gamemodes
         m_nMaxPlayers = MP_LG_MAX_PLAYERS;
         m_bTurfWars = false; m_bSafeZones = false;
         m_nBasePerms = PERM_NO_CHEATS; m_nPerms = PERM_NO_CHEATS;
@@ -1097,7 +1097,7 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             Mw3OnJoin(slot, fresh);        // 3.23: MW3 state
             RpOnJoin(slot, fresh);         // 3.25: Mega Vil Futuristic
             DzOnJoin(slot, fresh);         // 3.58: Project Day Z
-            LgOnJoin(slot, fresh);         // 4.13.4: San Andreas Online League
+            LgOnJoin(slot, fresh);         // 4.13.4: Rocket League (was San Andreas Online League)
             CgOnJoin(slot);                // 4.09: CGRP systems
             if(!s.authed) AuthBegin(slot);              // 3.21.6: log in first (the others see you after that)
             else if(fresh || rankChanged) AnnounceJoin(slot);   // 3.40.1: everyone sees the new [MOD] tag
@@ -1646,7 +1646,7 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             if(AcDialog(slot, r)) { if(CgOn()) CgDialog(slot, r); if(m_bSampLoaded) SampOnDialog(slot, r); }   // 3.50: dialog hack; 4.09: CGRP dialogs (ids 0x6000-0x60FF); 4.11: SA-MP
             break;
         }
-        case PKT_LG:     // 4.13.4: San Andreas Online League
+        case PKT_LG:     // 4.13.4: Rocket League (was San Andreas Online League)
         {
             if(slot < 0 || len < (int)sizeof(PktLgCmd) || !IsLgServer() || data[1] != LGO_CMD) return;
             PktLgCmd c; memcpy(&c, data, sizeof(c)); c.text[sizeof(c.text) - 1] = 0;

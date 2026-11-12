@@ -411,7 +411,7 @@ static void LFeaturedDetails(LRow& r)
     case 6: md = "Day Z"; tg = "dayz,zombies,survival,loot,pvp,24/7"; bg = "bg_dz.jpg";
             ds = "Project Day Z Legacy: survive the zombies, find loot, build a camp, trust nobody."; break;
     case 7: md = "Rocket Soccer"; tg = "rocketleague,soccar,cars,ranked,mmr,24/7";
-            ds = "San Andreas Online League: Rocket League in San Andreas. Pick a car at Grove Street, boost, jump and score - ranked MMR from Bronze to Supersonic Legend."; break;
+            ds = "Rocket League: car soccer in San Andreas on a floating pitch high above the Los Santos skyscrapers. Pick a car at Grove Street, boost, jump and score - ranked MMR from Bronze to Supersonic Legend."; break;
     default: return;
     }
     MP_CopyStr(r.cc, MP_CC_GLOBAL, sizeof(r.cc));   // 4.05.3: the featured 24/7 servers are worldwide - Global flag
@@ -560,7 +560,7 @@ static void LBuildRows(int tab, const std::vector<LanServer>& nearby, std::vecto
             LFillDetails(w, bf >= 0 ? &nearby[bf] : nullptr);
             if(LMatch(w.name) || LMatch("dayz") || LMatch("day z") || LMatch("zombie")) rows.push_back(w);
         }
-        {   // 4.13.4: San Andreas Online League - 24/7 featured (Broker bot on GitHub Actions)
+        {   // 4.13.4: Rocket League (was San Andreas Online League) - 24/7 featured (Broker bot on GitHub Actions)
             LRow w; memset(&w, 0, sizeof(w));
             w.kind = 7; MP_CopyStr(w.name, MP_LG_SERVER_NAME, sizeof(w.name)); w.port = MP_LG_PORT;
             w.region = -1; w.icon = 0; w.saved = -1; w.live = true;
@@ -1351,7 +1351,7 @@ static void LRightPanel(const LRow* r, float w, float h)
         {   // 4.13.4
             const char* lg[][2] = {
                 { "address",   "24/7 featured (Broker bot, GitHub Actions)" }, { "gamemode", MP_LG_GAMEMODE }, { "port", pt },
-                { "players",   pl }, { "lobby", "Grove Street at night - pick a car" }, { "arena", "LV Airport (Neon Pitch)" },
+                { "players",   pl }, { "lobby", "Grove Street at night - pick a car" }, { "arena", "Sky Pitch above Los Santos" },
                 { "match",     "5:00, golden goal overtime" }, { "ranked", "MMR, Bronze .. Supersonic Legend" },
                 { "cars",      "Octane, Fennec, Dominus, Breakout, Merc, Backfire" }, { "cheats", "off" }, { "login", "required" }, { "version", "MP 4.13.4" },
             };

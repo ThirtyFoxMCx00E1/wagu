@@ -31,6 +31,12 @@ static std::atomic<float>    s_fMenuMpShown{0.0f};    // the percent on screen (
 static std::atomic<bool>     s_bMenuMpViaLoad{false}; // this countdown follows a save load (90..100)
 static std::atomic<uint64_t> s_nMenuMpSplashMs{0};    // last frame of the game's loading screen
 static std::atomic<bool>     s_bMenuMpCloseMenu{false};   // close the game's menu once the load is done
+// 4.13.10: after a save load the 6 s countdown is skipped (the custom screen stayed up for seconds after the game had
+// loaded): 100 % is held 0.4 s, the screen fades to black in 0.5 s, then the server select opens. Coming back from a
+// server keeps the countdown.
+static const uint64_t kMenuMpQuickHoldMs = 400, kMenuMpFadeMs = 500;
+static bool              s_bMenuMpQuick = false;      // this black screen follows a save load
+static std::atomic<int>  s_nMenuMpFade{0};            // 0..255 black over the loading screen
 
 static void MenuMpTap(void*)
 {
@@ -47,9 +53,18 @@ static void MenuMpTap(void*)
     if(!ok) s_bMenuMp = false;
 }
 
+// 4.13.10: the "MPMultiplayer" AML interface: other mods (PCMenu's MULTIPLAYER button) start the same Multiplayer flow
+// as the main menu tile.  struct { int version; void (*Multiplayer)(); int (*Available)(); }  (version 1)
+static std::atomic<bool> s_bMenuMpReady{false};   // InitMainMenu ran (MP is loaded and the game is up)
+static void MpApiMultiplayer() { if(s_bMenuMpReady.load() && s_bMenuMpOn) MenuMpTap(nullptr); }
+static int  MpApiAvailable() { return s_bMenuMpReady.load() && s_bMenuMpOn ? 1 : 0; }
+static MP::MultiplayerApi s_MpApi = { 1, MpApiMultiplayer, MpApiAvailable };
+MP::MultiplayerApi* MP::GetMultiplayerApi() { return &s_MpApi; }
+
 void MP::InitMainMenu()
 {
     s_bMenuMpOn = ::cfg->GetBool("MainMenuMultiplayer", true, "MP");
+    s_bMenuMpReady = true;
     if(!s_bMenuMpOn) { logger->Info("Main menu: Multiplayer tile off (MainMenuMultiplayer = 0)"); return; }
     std::string full = std::string(MP::DataDir()) + "/mp_menu.png";
     // SAUtils reads the picture relative to the game's files folder: files/TYFMC/MP/mp_menu.png
@@ -94,6 +109,7 @@ static void MenuMpProcess(int ped, uint64_t now)
     {   // the black hologram: Grove Street, invisible, frozen, no HUD, no sound
         s_bMenuMpBlack = true; s_bMenuMpLoaded = true;
         s_nMenuMpBlackAt = now;
+        s_bMenuMpQuick = s_bMenuMpViaLoad.load(); s_nMenuMpFade = 0;
         if(!s_bMenuMpViaLoad.load()) s_fMenuMpShown = 0.0f;   // back from a server: the countdown alone, 0..100
         s_bMenuMpLaunched = false; s_bMenuMpCard = false;
         if(st == NET_DISCONNECTED) SpawnLight(ped, kGroveStreet, kGroveHeading, false);
@@ -111,12 +127,15 @@ static void MenuMpProcess(int ped, uint64_t now)
     const uint64_t t = now - s_nMenuMpBlackAt;
     if(!s_bMenuMpLaunched)
     {
-        if(st == NET_DISCONNECTED && t < kMenuMpDelayMs + kMenuMpHold100Ms)
+        const uint64_t delay = s_bMenuMpQuick ? 0 : kMenuMpDelayMs, hold = s_bMenuMpQuick ? kMenuMpQuickHoldMs : kMenuMpHold100Ms;
+        const uint64_t fade = s_bMenuMpQuick ? kMenuMpFadeMs : 0;
+        if(st == NET_DISCONNECTED && t < delay + hold + fade)
         {
-            s_nMenuMpPct = t < kMenuMpDelayMs ? (int)(t * 100 / kMenuMpDelayMs) : 100;
+            s_nMenuMpPct = t < delay ? (int)(t * 100 / delay) : 100;
+            s_nMenuMpFade = t > delay + hold ? (int)((t - delay - hold) * 255 / (fade ? fade : 1)) : 0;
             s_bMenuMpCard = false; return;
         }
-        s_nMenuMpPct = -1;
+        s_nMenuMpPct = -1; s_nMenuMpFade = 0;
         s_bMenuMpViaLoad = false;
         s_bMenuMpLaunched = true;
         if(st == NET_DISCONNECTED) FloatMenu::OpenPage(FloatMenu::PAGE_SERVER);
@@ -179,7 +198,7 @@ void MP::DrawMenuLoading(ImDrawList* dl, float pct, bool loadingScreen)
     dl->AddRectFilled(ImVec2(0, 0), ds, IM_COL32(8, 11, 20, 255));
     ImVec2 uv(1, 1);
     if(void* t = HUD::Texture("ui_bg.jpg", &uv)) LImageCover(dl, t, uv, ImVec2(0, 0), ds, IM_COL32(255, 255, 255, 255));
-    dl->AddRectFilled(ImVec2(0, 0), ds, IM_COL32(6, 8, 16, 100));
+    dl->AddRectFilled(ImVec2(0, 0), ds, IM_COL32(6, 8, 12, 130));   // 4.13.10: darker, like the Rust screen
     {   // 4.13.9: a soft round vignette all around (clear in the middle, a see-through dark at the edges)
         const ImVec2 c(ds.x * 0.5f, ds.y * 0.5f), uvw = dl->_Data->TexUvWhitePixel;
         const int seg = 48;
@@ -212,24 +231,26 @@ void MP::DrawMenuLoading(ImDrawList* dl, float pct, bool loadingScreen)
         dl->AddImage((ImTextureID)t, ImVec2(c.x - w * 0.5f, c.y - h * 0.5f), ImVec2(c.x + w * 0.5f, c.y + h * 0.5f), ImVec2(0, 0), tuv);
     }
 
-    // ---- bottom left: (!) TIP heading in blue, the tip in white
-    const float m = UI::S(44), hfs = fs * 0.80f, bfs = fs * 0.70f;
+    // ---- 4.13.10: the Rust (Facepunch) loading screen: bottom left a red (!) + red caps heading with a small grey
+    // text under it, bottom right the loading step in light grey caps with the percent
+    const ImU32 kRed = IM_COL32(205, 65, 43, 255);
+    const float m = UI::S(44), hfs = fs * 0.62f, bfs = fs * 0.50f;
     const int nt = (int)(sizeof(kMenuMpTips) / sizeof(kMenuMpTips[0]));
     const char* tip = kMenuMpTips[(nowMs / 3000) % nt];
     if(!strncmp(tip, "Tip: ", 5)) tip += 5;
     const float by = ds.y - m - bfs, hy = by - UI::S(8) - hfs;
-    const float r = hfs * 0.55f; const ImVec2 ic(m + r, hy + hfs * 0.5f);
-    dl->AddCircleFilled(ic, r, kBlue, 24);
-    dl->AddRectFilled(ImVec2(ic.x - r * 0.13f, ic.y - r * 0.62f), ImVec2(ic.x + r * 0.13f, ic.y + r * 0.18f), IM_COL32(255, 255, 255, 255));
+    const float r = hfs * 0.62f; const ImVec2 ic(m + r, hy + hfs * 0.5f);
+    dl->AddCircleFilled(ic, r, kRed, 24);
+    dl->AddRectFilled(ImVec2(ic.x - r * 0.13f, ic.y - r * 0.60f), ImVec2(ic.x + r * 0.13f, ic.y + r * 0.18f), IM_COL32(255, 255, 255, 255));
     dl->AddCircleFilled(ImVec2(ic.x, ic.y + r * 0.45f), r * 0.15f, IM_COL32(255, 255, 255, 255), 10);
-    MlBoldText(dl, f, hfs, ImVec2(m + r * 2 + UI::S(12), hy), kBlue, "GAMEPLAY TIP");
-    MlBoldText(dl, f, bfs, ImVec2(m, by), IM_COL32(255, 255, 255, 235), tip);
-
-    // ---- bottom right: only the percent
-    char ps[8]; snprintf(ps, sizeof(ps), "%d%%", (int)pct);
-    const float pfs = fs * 0.95f;
+    MlBoldText(dl, f, hfs, ImVec2(m + r * 2 + UI::S(10), hy), kRed, "GAMEPLAY TIP");
+    dl->AddText(f, bfs, ImVec2(m, by), IM_COL32(170, 170, 170, 235), tip);
+    char ps[64];
+    const char* step = loadingScreen ? "LOADING WORLD" : (pct >= 100 ? "READY" : "CONNECTING TO MULTIPLAYER");
+    snprintf(ps, sizeof(ps), "%s  %d%%", step, (int)pct);
+    const float pfs = fs * 0.62f;
     ImVec2 pz = f->CalcTextSizeA(pfs, FLT_MAX, 0, ps);
-    MlBoldText(dl, f, pfs, ImVec2(ds.x - m - pz.x, ds.y - m - pz.y), IM_COL32(255, 255, 255, 245), ps);
+    MlBoldText(dl, f, pfs, ImVec2(ds.x - m - pz.x, ds.y - m - pz.y), IM_COL32(215, 215, 215, 240), ps);
 }
 
 // HUD, after NewFrame (under everything): the black
@@ -246,7 +267,14 @@ void MP::DrawMenuMpFront()
     if(MenuMpBlack())
     {
         int pct = s_nMenuMpPct.load();
-        if(pct >= 0) { DrawMenuLoading(ImGui::GetForegroundDrawList(), (float)pct, false); return; }
+        if(pct >= 0)
+        {
+            ImDrawList* fg = ImGui::GetForegroundDrawList();
+            DrawMenuLoading(fg, (float)pct, false);
+            const int a = s_nMenuMpFade.load();   // 4.13.10: the fade to black after a save load
+            if(a > 0) fg->AddRectFilled(ImVec2(0, 0), ds, IM_COL32(0, 0, 0, a > 255 ? 255 : a));
+            return;
+        }
         if(s_bMenuMpCard.load() && !FloatMenu::IsModal())
         {
             const ImVec2 sz(UI::S(460), UI::S(200));

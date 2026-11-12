@@ -163,6 +163,19 @@ void BoneAttach::Init(void* h)
                  GetHier != nullptr, HAnimIdx != nullptr, EntUpdateRW != nullptr, MatUpdateRW != nullptr, EntUpdateFrame != nullptr, EntUpdateRpHAnim != nullptr);
 }
 bool BoneAttach::Available() { return PRAT_orig != nullptr; }
+bool BoneAttach::ScaleObject(int obj, float sx, float sy, float sz)
+{
+    if(!GetObj || obj <= 0 || !(sx > 0.01f && sy > 0.01f && sz > 0.01f && sx < 100.0f && sy < 100.0f && sz < 100.0f)) return false;
+    void* o = GetObj(obj); if(!o) return false;
+    M4* om = MatOf(o); void* rw = ClumpOf(o); if(!om || !rw) return false;
+    void* frame = *(void**)((char*)rw + kObjParentOff); if(!frame) return false;
+    M4* fm = (M4*)((char*)frame + kFrameModelOff);
+    for(int k = 0; k < 3; ++k) { fm->r[k] = om->r[k] * sx; fm->u[k] = om->u[k] * sy; fm->a[k] = om->a[k] * sz; fm->p[k] = om->p[k]; }
+    fm->f = 0;
+    if(RwMatUpdate) RwMatUpdate(fm);
+    if(EntUpdateFrame) EntUpdateFrame(o);
+    return true;
+}
 void BoneAttach::SetCalFile(const char* path)
 {
     snprintf(s_szCalFile, sizeof(s_szCalFile), "%s", path ? path : "");

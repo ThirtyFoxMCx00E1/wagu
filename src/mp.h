@@ -335,7 +335,9 @@ namespace MP
     bool Mw3SubTag(int id, char* out, size_t n);   // "Rank - Class" over the name
     void JoinRp();             // 3.25: Mega Vil Futuristic 24/7 Roleplay (join it, or leave it when you are on it)
     bool IsOnRp();
-    void JoinLg();             // 4.13.4: San Andreas Online League 24/7 (join it, or leave it when you are on it)
+    struct MultiplayerApi { int version; void (*Multiplayer)(); int (*Available)(); };   // 4.13.10: AML "MPMultiplayer"
+    MultiplayerApi* GetMultiplayerApi();
+    void JoinLg();             // 4.13.4: Rocket League (was San Andreas Online League) 24/7 (join it, or leave it when you are on it)
     bool IsOnLg();
     bool LgOwnTags();          // 4.13.4: the league draws the name tags (navy boxes)
     void LgDrawTags(ImDrawList* dl);

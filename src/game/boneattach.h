@@ -12,4 +12,8 @@ namespace BoneAttach
     void Calibrate(int obj);     // call while the ped stands still on foot: stores the bag relative to the bone
     bool Calibrated(int obj);
     void Stop(int obj);
+    // 4.13.10: draw a map object bigger / smaller (sx, sy, sz along the model's own x, y, z). Only the
+    // picture is scaled (the collision stays the model's). Call again from time to time: the game rebuilds
+    // the frame when the object streams in again or moves.
+    bool ScaleObject(int obj, float sx, float sy, float sz);
 }

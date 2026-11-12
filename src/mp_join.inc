@@ -56,7 +56,7 @@ static const Vec3 kJoinCamPos  = { 1093.0f, -2036.0f, 90.0f };
 static const Vec3 kJoinCamLook = {  384.0f, -1557.0f, 20.0f };
 static const Vec3 kJoinPedPark = {  836.0f, -2048.0f, -100.0f };   // Santa Maria pier: keeps the beach streamed in
 
-// 4.13.2: JP_PENDING = joining, nothing on screen yet: the black panel only slides in after "Connected successfully!"
+// JP_PENDING = joining, the next game tick starts the black slide (4.13.10; 4.13.2 waited for "Connected successfully!")
 enum { JP_NONE, JP_PENDING, JP_COVER, JP_BLACK, JP_REVEAL, JP_WAIT, JP_PICK };
 #define JOIN_SLIDE_MS   1000   // 20 ticks x 50 ms
 #define JOIN_BUTTONS_MS 3000
@@ -223,8 +223,7 @@ static void JoinOverlayStart()
 {
     if(s_nJoinPhase != JP_NONE) return;
     if(!Game::IsReady()) return;               // still on the loading screen: plain join
-    // 4.13.2: no black panel while connecting (the world, chat and the loading window stay on screen):
-    // it slides in once the server has accepted you (FinishJoin / quiet rejoin), see JP_PENDING
+    // 4.13.10: JP_PENDING lasts one game tick: the black panel slides in as soon as connecting starts
     s_nJoinPhase = JP_PENDING; s_nJoinT0 = MP_NowMs(); s_nJoinStartMs = s_nJoinT0;
     s_bJoinConnected = false; s_bJoinCamSet = false; s_bSpawnNow = false; s_nSpawnStep = 0;
     s_bJoinSpawnPicked = false; s_SpawnSettle.until = 0;
@@ -318,18 +317,11 @@ static void JoinFlowProcess(int ped, uint64_t now)
     SpawnSettleTick(ped, now);
     if(s_nJoinPhase == JP_NONE) return;
     if(s_nJoinPhase == JP_PENDING)
-    {   // 4.13.2: still connecting - the game stays as it is. The black slides in after "Connected successfully!"
-        const bool conn = client.GetState() == NET_CONNECTED, noFeed = s_nFeedStep < 0 && s_nFeedRes < 0;
+    {   // 4.13.10: the black slides in right away when connecting starts (4.13.2 waited for "Connected successfully!",
+        // so the screen flipped only at the end). COVER -> BLACK then waits for s_bJoinConnected before REVEAL; the
+        // join failure check and the 25 s watchdog below give the game back as before.
+        const bool noFeed = s_nFeedStep < 0 && s_nFeedRes < 0;
         if(client.GetState() == NET_DISCONNECTED && !MP::IsSearching() && noFeed && !s_bTakeoverPending) { s_nJoinPhase = JP_NONE; return; }
-        if(!s_bJoinConnected && conn && noFeed && now - s_nJoinStartMs > 1500) s_bJoinConnected = true;   // quiet rejoin (no loading feed)
-        if(!s_bJoinConnected && conn && now - s_nJoinStartMs > 25000) s_bJoinConnected = true;
-        if(!s_bJoinConnected && !conn && now - s_nJoinStartMs > 25000)
-        {
-            s_nJoinPhase = JP_NONE;
-            SysMsg(COL_YELLOW, "Still connecting - you can move meanwhile. On a hotspot: the host should keep the game open and the screen on.");
-            return;
-        }
-        if(!s_bJoinConnected) return;
         s_nJoinPhase = JP_COVER; s_nJoinT0 = now; s_nJoinStartMs = now;
         FloatMenu::CloseAll();
     }
@@ -415,7 +407,7 @@ static void JoinFlowProcess(int ped, uint64_t now)
             if(t >= JOIN_BUTTONS_MS && !AuthHoldsJoin(now))   // 3.21.6: login first
             {
                 if(s_bLgJoin || MP_IsLgServerName(client.GetServerName()))
-                {   // 4.13.4: San Andreas Online League: the Grove Street lobby (pick a car, then the mode)
+                {   // 4.13.4: Rocket League (was San Andreas Online League): the Grove Street lobby (pick a car, then the mode)
                     s_bJoinCamSet = false; s_bJoinHudOff = false; s_nJoinPhase = JP_NONE;
                     LgJoinTakeover(ped);
                     return;

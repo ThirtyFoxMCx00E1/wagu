@@ -31,7 +31,7 @@ keep 1930 "Brief Case War" 20
 keep 1931 "Call Of Duty: Modern Warfare 3" 64 --mw3-file mw3_stats.txt
 keep 1932 "Mega Vil Futuristic" 250 --rp-file rp_citizens.txt
 keep 1933 "Project Day Z Legacy" 250 --dz-file dayz_survivors.txt   # 3.58
-keep 1934 "San Andreas Online League" 16 --lg-file league_stats.txt   # 4.13.4: Rocket Soccer
+keep 1934 "Rocket League" 16 --lg-file league_stats.txt   # 4.13.4: Rocket Soccer
 if [ "${FOREGROUND:-0}" = 1 ]; then   # 3.38: Docker / Railway: stay in the foreground, stop all 6 on exit
     trap 'kill 0' TERM INT
     tail -n 0 -F logs/*.log & wait

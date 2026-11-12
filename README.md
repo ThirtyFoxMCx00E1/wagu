@@ -121,6 +121,14 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **4.13.10**: San Andreas Online League is now **Rocket League**, on a floating pitch high above the downtown Los Santos
+  skyscrapers with the real Soccar size (102.4 x 81.9 m, 20.5 m ceiling, 17.9 x 6.4 m goals, cut corners, the real
+  kickoff and boost pad spots): SA-MP grass 19529 as the floor, objects 946 / 947 scaled as the goals, DockBarr1_LA
+  barriers all around (without the SA-MP model pack: the LV airport apron). New HUD like the reference (blue / navy
+  clock / orange score box, orange boost ring, yellow pad rings). Multiplayer loading screen in the Rust style; after a
+  save load it goes straight to 100 %, fades to black and opens the server select (no 6 s wait). Joining a server: the
+  black screen slides in when connecting starts. New AML interface `MPMultiplayer`
+  (`struct { int version; void (*Multiplayer)(); int (*Available)(); }`) used by PCMenu's MULTIPLAYER button.
 - **4.13.9**: one loading percent from 0% to 100%, no pause menu after a Multiplayer load, soft vignette.
   - The Multiplayer loading screen showed the game's load (0..99%) and then MP's own countdown started again at 0%. Now it is one number: the game load counts to 90%, the last part to 100%, it never goes back, and 100% stays up for half a second before the server list opens.
   - After loading from the Multiplayer button the game's pause menu stayed open behind it. MP now closes the game menu the same way Resume does (MobileMenu::Exit) once the load is done. The log says "Main menu: Multiplayer load done -> game menu closed".
