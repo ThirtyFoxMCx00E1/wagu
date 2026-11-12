@@ -5,6 +5,7 @@
 #include <string.h>
 #include "game.h"
 #include "dzmodels.h"
+#include "lgball.h"
 #include "boneattach.h"
 #include "scripting.h"
 #include "net/protocol.h"
@@ -62,6 +63,7 @@ bool Game::Init(void* h)
     InitSkins(h);         // 2.19.6: player model sync + story characters
     DzModels::Init(h);    // 3.61: Day Z model pack (MTA DayZ dff / txd from GitHub)
     BoneAttach::Init(h);  // 4.00: the Day Z backpack follows the spine bone
+    RlBall::Init(h);      // 4.13.13: the Rocket League ball model (in place of object 1946)
     SET_TO(CalcScreenCoors, aml->GetSym(h, "_ZN7CSprite15CalcScreenCoorsERK5RwV3dPS0_PfS4_bb"));
     SET_TO(m_UserPause, aml->GetSym(h, "_ZN6CTimer11m_UserPauseE"));
     SET_TO(m_CodePause, aml->GetSym(h, "_ZN6CTimer11m_CodePauseE"));

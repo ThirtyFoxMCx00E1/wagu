@@ -105,7 +105,7 @@ void MPServer::LgSpawnOne(int slot, int order)
     // the real RL kickoff spots (uu / 100): back centre (0, 4608), the diagonals (+-2048, 2560), back left / right (+-256, 3840)
     static const float sp[6][2] = { { 46.08f, 0 }, { 25.6f, -20.48f }, { 25.6f, 20.48f }, { 38.4f, -2.56f }, { 38.4f, 2.56f }, { 42.0f, 0 } };
     const int k = order % 6; const float side = p.team == 0 ? -1.0f : 1.0f;
-    float pos[4] = { side * sp[k][0], sp[k][1] + (order >= 6 ? (order - 5) * 3.0f : 0.0f), 1.2f, p.team == 0 ? 270.0f : 90.0f };
+    float pos[4] = { side * sp[k][0] * LG_SCALE, sp[k][1] * LG_SCALE + (order >= 6 ? (order - 5) * 6.0f : 0.0f), 1.2f, p.team == 0 ? 270.0f : 90.0f };
     LgEvent(slot, LGE_SPAWN, p.team, p.car, order, 0, pos, nullptr);
 }
 

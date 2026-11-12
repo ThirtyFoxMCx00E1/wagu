@@ -53,6 +53,7 @@ namespace DzModels
     // min xyz + max xyz each, 6 floats a box). The GTA collision of the host model is replaced while
     // the game runs; called again every second (the collision streamer may put the GTA one back).
     bool SetBoxCollision(int model, const float* boxes, int nBoxes, uint8_t material);
+    void* BoxCol(int model);               // 4.13.13: the CColModel SetBoxCollision made for it (nullptr = none)
     void GetCloud(Cloud& c);               // main thread
     void CloudRefresh();                   // get the file list (background)
     bool CloudDownload(int group);         // -1 = everything. false = busy

@@ -9,7 +9,8 @@
 //     bottom right (a thick dark ring, 12 cream ticks, a big squared white number, a small orange
 //     BOOST), navy name boxes over the cars, a small control hint at the bottom, the build bottom right
 // The server owns the ball (server_league.inc); the phone predicts it between the 10 Hz states
-// and draws it (a big dark RL ball with teal lights) - a GTA object can't be scaled that big.
+// and shows it as GTA object 1946 with the real Rocket League ball mesh + texture (4.13.13, RlBall); the old
+// drawn ball (a dark sphere with teal lights) is only the fallback.
 
 static const Vec3  kLgLobby = { 2495.20f, -1672.60f, 13.34f };    // Grove Street, between the houses
 static const float kLgLobbyHeading = 0.0f;
@@ -21,12 +22,12 @@ static const float kLgLobbyCarHead[LG_CAR_COUNT] = { 210, 190, 180, 165, 140, 23
 // boost pads (relative): 6 big (100) like RL Soccar + small ones (+12)
 struct LgPad { float x, y; bool big; uint64_t backAt; };
 static LgPad s_LgPads[] = {   // 4.13.10: the real Soccar spots (uu / 100, x along the length)
-    { -40.96f, -30.72f, true, 0 }, { -40.96f, 30.72f, true, 0 }, { 40.96f, -30.72f, true, 0 }, { 40.96f, 30.72f, true, 0 }, { 0, -35.84f, true, 0 }, { 0, 35.84f, true, 0 },
-    { -10.24f, 0, false, 0 }, { 10.24f, 0, false, 0 }, { -23.04f, 0, false, 0 }, { 23.04f, 0, false, 0 },
-    { -10.24f, -17.92f, false, 0 }, { -10.24f, 17.92f, false, 0 }, { 10.24f, -17.92f, false, 0 }, { 10.24f, 17.92f, false, 0 },
-    { -28.16f, -9.4f, false, 0 }, { -28.16f, 9.4f, false, 0 }, { 28.16f, -9.4f, false, 0 }, { 28.16f, 9.4f, false, 0 },
-    { -40.96f, -11.0f, false, 0 }, { -40.96f, 11.0f, false, 0 }, { 40.96f, -11.0f, false, 0 }, { 40.96f, 11.0f, false, 0 },
-    { 0, -24.0f, false, 0 }, { 0, 24.0f, false, 0 }, { -17.92f, -30.72f, false, 0 }, { -17.92f, 30.72f, false, 0 }, { 17.92f, -30.72f, false, 0 }, { 17.92f, 30.72f, false, 0 },
+    { -40.96f * LG_SCALE, -30.72f * LG_SCALE, true, 0 }, { -40.96f * LG_SCALE, 30.72f * LG_SCALE, true, 0 }, { 40.96f * LG_SCALE, -30.72f * LG_SCALE, true, 0 }, { 40.96f * LG_SCALE, 30.72f * LG_SCALE, true, 0 }, { 0 * LG_SCALE, -35.84f * LG_SCALE, true, 0 }, { 0 * LG_SCALE, 35.84f * LG_SCALE, true, 0 },
+    { -10.24f * LG_SCALE, 0 * LG_SCALE, false, 0 }, { 10.24f * LG_SCALE, 0 * LG_SCALE, false, 0 }, { -23.04f * LG_SCALE, 0 * LG_SCALE, false, 0 }, { 23.04f * LG_SCALE, 0 * LG_SCALE, false, 0 },
+    { -10.24f * LG_SCALE, -17.92f * LG_SCALE, false, 0 }, { -10.24f * LG_SCALE, 17.92f * LG_SCALE, false, 0 }, { 10.24f * LG_SCALE, -17.92f * LG_SCALE, false, 0 }, { 10.24f * LG_SCALE, 17.92f * LG_SCALE, false, 0 },
+    { -28.16f * LG_SCALE, -9.4f * LG_SCALE, false, 0 }, { -28.16f * LG_SCALE, 9.4f * LG_SCALE, false, 0 }, { 28.16f * LG_SCALE, -9.4f * LG_SCALE, false, 0 }, { 28.16f * LG_SCALE, 9.4f * LG_SCALE, false, 0 },
+    { -40.96f * LG_SCALE, -11.0f * LG_SCALE, false, 0 }, { -40.96f * LG_SCALE, 11.0f * LG_SCALE, false, 0 }, { 40.96f * LG_SCALE, -11.0f * LG_SCALE, false, 0 }, { 40.96f * LG_SCALE, 11.0f * LG_SCALE, false, 0 },
+    { 0 * LG_SCALE, -24.0f * LG_SCALE, false, 0 }, { 0 * LG_SCALE, 24.0f * LG_SCALE, false, 0 }, { -17.92f * LG_SCALE, -30.72f * LG_SCALE, false, 0 }, { -17.92f * LG_SCALE, 30.72f * LG_SCALE, false, 0 }, { 17.92f * LG_SCALE, -30.72f * LG_SCALE, false, 0 }, { 17.92f * LG_SCALE, 30.72f * LG_SCALE, false, 0 },
 };
 
 struct LgClient
@@ -72,16 +73,29 @@ static Vec3 LgWorld(float x, float y, float z) { return { s_LgC[0] + x, s_LgC[1]
 static void LgToCanon(float* p) { for(int k = 0; k < 3; ++k) p[k] = p[k] - s_LgC[k] + kLgCenter[k]; }
 
 // ---- 4.13.10: the arena objects (built progressively: CreateMapObject gives 0 while a model streams in) ----
-// floor: SA-MP 19529 Plane125x125Grass1 (125 x 125 m, solid); goals: 946 bskball_lax (947 bskballhub_lax01 when
-// 946 is missing), 1.76 x 1.48 x 4.42 m, scaled to the 17.86 x 8.8 x 6.42 m RL goal (visual only, collision off:
-// the goal is the ball physics + the car cage); barriers: 3578 DockBarr1_LA (10.3 m long, solid) on the side walls,
-// the 45 deg corners and the end walls beside the goal mouths, drawn 2.5x taller. The scale is visual (RwFrame), so
-// it is applied again every 250 ms (the game rebuilds the matrix when an object streams back in).
-struct LgObj { int model; float x, y, z, rz, sx, sy, sz; bool solid; int h; };
+// floor: SA-MP 19529 Plane125x125Grass1 (125 x 125 m, solid).
+// 4.13.13 goals: a Rocket League goal tunnel instead of the 946/947 basketball hoops:
+//   tunnel SA-MP 18776 TunnelJoinSection4 (10.42 wide x 5.62 long x 6.39 high, collision off) turned to run into
+//          the end wall and scaled to the 71.4 x 35.2 x 25.7 m goal; its bottom is put on the floor with the model's
+//          own bounding box (GET_MODEL_DIMENSIONS). Without 18776: wall005 (19357) panels for the back, sides, roof;
+//   frame  SA-MP neon tubes (2 m): 18648 blue for the blue goal, 18647 red + 18650 yellow (= orange) for the orange
+//          goal, along the posts, the crossbar and the goal line;
+//   blast  SA-MP particles 18688 (fire) + 18693 (flame) inside the net for 2.5 s when a goal is scored.
+//   Without the SA-MP models the goal is just the barrier box (3578) and the HUD frame.
+// floor: 19529 tiles, NOT scaled (the collision of a scaled object stays 125 x 125 m): 4 x 3 tiles = 500 x 375 m.
+// barriers: 3578 DockBarr1_LA (10.3 m long, solid) on the side walls, the 45 deg corners and the end walls beside
+// the goal mouths, drawn 2.5x taller. The scale is visual (RwFrame), so it is applied again every 250 ms (the game
+// rebuilds the matrix when an object streams back in).
+struct LgObj { int model; float x, y, z, rz, sx, sy, sz; bool solid; int h; float rx = 0, ry = 0; bool onFloor = false; };
 static std::vector<LgObj> s_LgObjs;
 static bool     s_bLgArenaPlanned = false;
 static uint64_t s_nLgScaleAt = 0, s_nLgBuildAt = 0;
-static bool LgFloorReady() { return !s_bLgSky || (!s_LgObjs.empty() && s_LgObjs[0].h > 0); }
+static bool LgFloorReady()   // 4.13.13: every floor tile is there
+{
+    if(!s_bLgSky) return true;
+    int n = 0; for(const auto& o : s_LgObjs) if(o.model == 19529) { if(o.h <= 0) return false; ++n; }
+    return n > 0;
+}
 static void LgPlanArena()
 {
     s_LgObjs.clear(); s_bLgArenaPlanned = true;
@@ -89,21 +103,54 @@ static void LgPlanArena()
     const float* c = s_bLgSky ? kLgCenter : kLgFallbackCenter;
     for(int k = 0; k < 3; ++k) s_LgC[k] = c[k];
     logger->Info("LEAGUE: arena %s (%.0f %.0f %.0f)", s_bLgSky ? "Sky Pitch above Los Santos (19529)" : "LV airport fallback (no SA-MP model 19529)", s_LgC[0], s_LgC[1], s_LgC[2]);
-    if(s_bLgSky)   // the floor: the field + both goal boxes (120 x 82 m)
-        s_LgObjs.push_back({ 19529, 0, 0, 0, 0, (2 * (LG_HALF_L + LG_GOAL_DEPTH)) / 125.0f, (2 * LG_HALF_W) / 125.0f, 1.0f, true, 0 });
-    const int goal = Game::IsKnownModel(946) ? 946 : (Game::IsKnownModel(947) ? 947 : 0);
-    if(goal)
-        for(int sd = -1; sd <= 1; sd += 2)   // the hoop's long side across the goal mouth, at the back of the goal box
-            s_LgObjs.push_back({ goal, sd * (LG_HALF_L + LG_GOAL_DEPTH * 0.5f), 0, 0, sd > 0 ? 90.0f : 270.0f,
-                                 (2 * LG_GOAL_HALF_W) / 1.763f, LG_GOAL_DEPTH / 1.479f, LG_GOAL_H / 4.42f, false, 0 });
+    if(s_bLgSky)   // the floor: the field + both goal boxes, unscaled 125 m tiles (solid where they look solid)
+    {
+        const float TL = 2 * (LG_HALF_L + LG_GOAL_DEPTH), TW = 2 * LG_HALF_W;
+        const int nx = (int)ceilf(TL / 125.0f), ny = (int)ceilf(TW / 125.0f);
+        for(int ix = 0; ix < nx; ++ix) for(int iy = 0; iy < ny; ++iy)
+            s_LgObjs.push_back({ 19529, (ix - (nx - 1) * 0.5f) * 125.0f, (iy - (ny - 1) * 0.5f) * 125.0f, 0, 0, 1.0f, 1.0f, 1.0f, true, 0 });
+    }
+    for(int sd = -1; sd <= 1; sd += 2)   // sd < 0: the blue goal (x-), sd > 0: the orange goal (x+)
+    {
+        const float mx = sd * LG_HALF_L, bx = sd * (LG_HALF_L + LG_GOAL_DEPTH), cxg = sd * (LG_HALF_L + LG_GOAL_DEPTH * 0.5f);
+        const float W = 2 * LG_GOAL_HALF_W, H = LG_GOAL_H, D = LG_GOAL_DEPTH;
+        if(Game::IsKnownModel(18776))
+        {   // the tunnel: its 5.62 m length (local y) runs along x into the end wall, the 10.42 m width across the mouth
+            LgObj t = { 18776, cxg, 0, 0, 90.0f, W / 10.42188f, D / 5.61719f, H / 6.39062f, false, 0 }; t.onFloor = true;
+            s_LgObjs.push_back(t);
+        }
+        else if(Game::IsKnownModel(19357))
+        {   // wall005: thin along x, 3.215 m along y, 3.5 m high, origin in the middle
+            const float pw = 3.21515f, ph = 3.50048f;
+            s_LgObjs.push_back({ 19357, bx, 0, H * 0.5f, 0, 1.0f, W / pw, H / ph, false, 0 });                       // back
+            for(int sy = -1; sy <= 1; sy += 2)
+                s_LgObjs.push_back({ 19357, cxg, sy * LG_GOAL_HALF_W, H * 0.5f, 90.0f, 1.0f, D / pw, H / ph, false, 0 });   // sides
+            LgObj roof = { 19357, cxg, 0, H, 0, 1.0f, W / pw, D / ph, false, 0 }; roof.ry = 90.0f;                    // roof (lying flat)
+            s_LgObjs.push_back(roof);
+        }
+        const int neons[2] = { sd < 0 ? 18648 : 18647, sd < 0 ? 0 : 18650 };   // blue, or red + yellow = orange
+        for(int k = 0; k < 2; ++k)
+        {
+            const int m = neons[k]; if(!m || !Game::IsKnownModel(m)) continue;
+            const float in = sd * (0.4f + 0.35f * k);    // just in front of the goal mouth (the two orange ones side by side)
+            s_LgObjs.push_back({ m, mx - in, 0, H, 0, 6.0f, W / 2.0f, 6.0f, false, 0 });                             // crossbar
+            s_LgObjs.push_back({ m, mx - in, 0, 0.2f, 0, 6.0f, W / 2.0f, 6.0f, false, 0 });                          // goal line
+            for(int sy = -1; sy <= 1; sy += 2)
+            {
+                LgObj post = { m, mx - in, sy * LG_GOAL_HALF_W, H * 0.5f, 0, 6.0f, H / 2.0f, 6.0f, false, 0 }; post.rx = 90.0f;
+                s_LgObjs.push_back(post);                                                                          // posts
+                s_LgObjs.push_back({ m, cxg, sy * (LG_GOAL_HALF_W - 0.3f), H - 0.3f, 90.0f, 6.0f, D / 2.0f, 6.0f, false, 0 });   // roof edges
+            }
+        }
+    }
     if(Game::IsKnownModel(3578))
     {
-        const float L = 10.31f, sz = 2.5f;
+        const float L = 10.31f * 2.0f, sz = 6.0f;   // 4.13.13: drawn 2x long (half the objects on the x4 arena) and 6x tall
         auto Line = [&](float x0, float y0, float x1, float y1)
         {
             const float dx = x1 - x0, dy = y1 - y0, len = sqrtf(dx * dx + dy * dy);
             const int n = (int)ceilf(len / L - 0.05f); if(n <= 0) return;
-            const float rz = atan2f(dy, dx) * 57.29578f, sx = len / (n * L);
+            const float rz = atan2f(dy, dx) * 57.29578f, sx = len / (n * 10.31f);
             for(int i = 0; i < n; ++i)
             {
                 const float t = (i + 0.5f) / n;
@@ -138,13 +185,18 @@ static void LgArenaBuild(uint64_t now)
         for(auto& o : s_LgObjs)
         {
             if(o.h > 0 || o.h < 0 || made >= 6) continue;
-            const int h = Game::CreateMapObject(o.model, LgWorld(o.x, o.y, o.z), 0, 0, o.rz);
+            const int h = Game::CreateMapObject(o.model, LgWorld(o.x, o.y, o.z), o.rx, o.ry, o.rz);
             if(h == 0) break;                         // streaming in: try again next round
             o.h = h > 0 ? h : -1; ++made;
             if(h > 0)
             {
                 if(!o.solid) Game::SetObjectCollision(h, false);
                 BoneAttach::ScaleObject(h, o.sx, o.sy, o.sz);
+                if(o.onFloor)
+                {   // the model is loaded now: lift it so its (scaled) bottom sits on the floor
+                    const float b = Game::ModelBottom(o.model);
+                    if(b <= 0.0f) { o.z = -b * o.sz; Game::PlaceMapObject(h, LgWorld(o.x, o.y, o.z), o.rx, o.ry, o.rz); }
+                }
             }
         }
     }
@@ -154,8 +206,65 @@ static void LgArenaBuild(uint64_t now)
         for(auto& o : s_LgObjs) if(o.h > 0) BoneAttach::ScaleObject(o.h, o.sx, o.sy, o.sz);
     }
 }
+// 4.13.13: the goal blast (SA-MP particle objects inside the net that was scored in)
+struct LgFx { int h; uint64_t until; };
+static std::vector<LgFx> s_LgFx;
+static void LgGoalBlast(int side)   // side: +1 the orange net (x+), -1 the blue net (x-)
+{
+    if(s_Lg.view != 3) return;
+    static const int kFx[2] = { 18688, 18693 };
+    const uint64_t until = MP_NowMs() + 2500;
+    for(int i = 0; i < 6; ++i)
+    {
+        const int m = kFx[i & 1]; if(!Game::IsKnownModel(m)) continue;
+        const float x = side * (LG_HALF_L + LG_GOAL_DEPTH * (0.25f + 0.25f * (i % 3)));
+        const float y = (i < 3 ? -0.45f : 0.45f) * LG_GOAL_HALF_W;
+        const int h = Game::CreateMapObject(m, LgWorld(x, y, 1.0f + 6.0f * (i & 1)), 0, 0, 0);
+        if(h > 0) { Game::SetObjectCollision(h, false); BoneAttach::ScaleObject(h, 6.0f, 6.0f, 6.0f); s_LgFx.push_back({ h, until }); }
+    }
+}
+static void LgFxTick(uint64_t now)
+{
+    for(size_t i = 0; i < s_LgFx.size();)
+        if(now >= s_LgFx[i].until) { Game::DeleteWorldObject(s_LgFx[i].h); s_LgFx.erase(s_LgFx.begin() + i); } else ++i;
+}
+// 4.13.13: the ball is a real object now - GTA object 1946 (baskt_ball_hi) with the Rocket League ball mesh and
+// texture put in by RlBall (src/game/lgball.cpp, from assets/MP/ball_-_rocket_league.glb). It follows the
+// predicted ball every frame and rolls with it. The drawn ball is only used when that swap is not possible.
+static const int kLgBallModel = 1946;
+static int   s_LgBallObj = 0;
+static float s_LgBallRot[2] = { 0, 0 }, s_LgBallLast[2] = { 0, 0 };
+static void LgBallObjTick()
+{
+    const float* b = s_Lg.ball.p;
+    if(s_LgBallObj > 0 && !Game::WorldObjectExists(s_LgBallObj)) s_LgBallObj = 0;
+    if(s_LgBallObj <= 0)
+    {
+        if(RlBall::Failed() || !LgFloorReady() || !RlBall::Ready(kLgBallModel)) return;
+        s_LgBallObj = Game::CreateWorldObject(kLgBallModel, LgWorld(b[0], b[1], b[2]));
+        if(s_LgBallObj > 0) { Game::SetObjectCollision(s_LgBallObj, false); s_LgBallLast[0] = b[0]; s_LgBallLast[1] = b[1]; }
+        return;
+    }
+    const float dx = b[0] - s_LgBallLast[0], dy = b[1] - s_LgBallLast[1];
+    s_LgBallLast[0] = b[0]; s_LgBallLast[1] = b[1];
+    if(fabsf(dx) < 60.0f && fabsf(dy) < 60.0f)
+    {   // rolling: turn by the distance over the radius, around the axis across the motion
+        s_LgBallRot[0] = fmodf(s_LgBallRot[0] + dy / LG_BALL_R * 57.29578f, 360.0f);
+        s_LgBallRot[1] = fmodf(s_LgBallRot[1] - dx / LG_BALL_R * 57.29578f, 360.0f);
+    }
+    Game::PlaceMapObject(s_LgBallObj, LgWorld(b[0], b[1], b[2]), s_LgBallRot[0], s_LgBallRot[1], 0.0f);
+}
+static void LgBallObjFree()
+{
+    if(s_LgBallObj > 0) Game::DeleteWorldObject(s_LgBallObj);
+    s_LgBallObj = 0;
+    RlBall::Restore(kLgBallModel);   // the GTA basketball is back for everything else
+}
 static void LgArenaFree()
 {
+    LgBallObjFree();
+    for(auto& f : s_LgFx) Game::DeleteWorldObject(f.h);
+    s_LgFx.clear();
     for(auto& o : s_LgObjs) if(o.h > 0) Game::DeleteWorldObject(o.h);
     s_LgObjs.clear(); s_bLgArenaPlanned = false;
 }
@@ -307,6 +416,7 @@ static void LgOnPacket(const uint8_t* d, int len)
                     char t[72]; snprintf(t, sizeof(t), "%s SCORED", e.a ? "ORANGE" : "BLUE");
                     char sub[72]; snprintf(sub, sizeof(sub), "%s  -  %d km/h", e.text, (int)e.val);
                     LgBanner(t, sub, e.a ? 0xFF9A2EFF : 0x3FA0FFFF, 4500);
+                    LgGoalBlast(e.a ? -1 : 1);   // 4.13.13: blue scores into the orange net (x+)
                     break;
                 }
                 case LGE_SAVE: { char t[72]; snprintf(t, sizeof(t), "SAVE!  %s", e.text); LgFeed(t); break; }
@@ -379,9 +489,9 @@ static void LgArenaProcess(int ped, uint64_t now, float dt)
     Vec3 v = { 0, 0, 0 }; Game::GetMoveSpeed(s_Lg.myCar, true, v);
     float rel[3] = { cp.x - s_LgC[0], cp.y - s_LgC[1], cp.z - s_LgC[2] };
     // far away (fell through, drove off): back on the pitch
-    if(fabsf(rel[0]) > LG_HALF_L + 25 || fabsf(rel[1]) > LG_HALF_W + 25 || rel[2] < -15 || rel[2] > 80)
+    if(fabsf(rel[0]) > LG_HALF_L + LG_GOAL_DEPTH + 25 || fabsf(rel[1]) > LG_HALF_W + 25 || rel[2] < -15 || rel[2] > LG_CEIL + 20)
     {
-        Game::SetCarPos(s_Lg.myCar, LgWorld(s_Lg.me.team == 1 ? 40.0f : -40.0f, 0, 1.0f), 0.0f); Game::SetMoveSpeed(s_Lg.myCar, true, { 0, 0, 0 });
+        Game::SetCarPos(s_Lg.myCar, LgWorld(s_Lg.me.team == 1 ? LG_HALF_L * 0.8f : -LG_HALF_L * 0.8f, 0, 1.0f), 0.0f); Game::SetMoveSpeed(s_Lg.myCar, true, { 0, 0, 0 });
         return;
     }
     // the arena walls (invisible): bounce back like the RL cage
@@ -432,7 +542,7 @@ static void LgArenaProcess(int ped, uint64_t now, float dt)
     if(s_Lg.freePlay || !s_Lg.hasState || s_Lg.st.phase == LGP_PLAY || s_Lg.st.phase == LGP_WARMUP || s_Lg.st.phase == LGP_GOAL)
     {
         const int g = LgBallStep(s_Lg.ball, dt);
-        if(g && s_Lg.freePlay) { s_Lg.fpScore[g - 1]++; LgBanner("GOAL!", g == 1 ? "into the orange net" : "into the blue net", g == 1 ? 0x3FA0FFFF : 0xFF9A2EFF, 2500); LgBallReset(s_Lg.ball); }
+        if(g && s_Lg.freePlay) { s_Lg.fpScore[g - 1]++; LgGoalBlast(g == 1 ? 1 : -1); LgBanner("GOAL!", g == 1 ? "into the orange net" : "into the blue net", g == 1 ? 0x3FA0FFFF : 0xFF9A2EFF, 2500); LgBallReset(s_Lg.ball); }
     }
     if(!s_Lg.freePlay && s_Lg.hasState && s_Lg.st.phase == LGP_KICKOFF) LgBallReset(s_Lg.ball);
     const float bx = s_Lg.ball.p[0] - rel[0], by = s_Lg.ball.p[1] - rel[1], bz = s_Lg.ball.p[2] - (rel[2] + 0.4f);
@@ -511,7 +621,7 @@ static void LgProcess(int ped, uint64_t now)
     float dt = s_Lg.lastFrame ? (now - s_Lg.lastFrame) / 1000.0f : 0.0f; s_Lg.lastFrame = now;
     if(dt > 0.1f) dt = 0.1f;
     if(s_Lg.view == 1 || s_Lg.view == 2) LgLobbyProcess(ped, now);
-    else if(s_Lg.view == 3) { LgArenaBuild(now); LgArenaProcess(ped, now, dt); }
+    else if(s_Lg.view == 3) { LgArenaBuild(now); LgFxTick(now); LgArenaProcess(ped, now, dt); LgBallObjTick(); }
 }
 
 // ---- drawing ----------------------------------------------------------------------------------
@@ -698,6 +808,9 @@ static void LgDrawBall(ImDrawList* dl)
             dl->PathFillConvex(IM_COL32(0, 0, 0, (int)(120 * k)));
         }
     }
+    // 4.13.13: the real ball object is there (or still coming): no drawn ball. Only when the model swap can't
+    // be done (or the object never came) is the old drawn ball used.
+    if(s_LgBallObj > 0 || (!RlBall::Failed() && MP_NowMs() - s_Lg.viewAt < 8000)) return;
     if(!LgW2S(LgWorld(b[0], b[1], b[2]), c)) return;
     float x, y, d; if(!Game::WorldToScreen(LgWorld(b[0], b[1], b[2]), x, y, d)) return;
     // the screen radius from a point one radius "up" (keeps it round from any camera)

@@ -17,7 +17,7 @@
 #define MP_LG_GAMEMODE      "Rocket Soccer"
 #define MP_LG_PORT          1934
 #define MP_LG_MAX_PLAYERS   16
-#define MP_LG_BUILD         41310   // 4.13.10: the floating sky arena (older phones play on another pitch: refused)
+#define MP_LG_BUILD         41313   // 4.13.13: the x4 arena (older phones play on another pitch: refused)
 #define MP_LG_TEAMS         2       // 0 = Blue, 1 = Orange
 
 static inline bool MP_IsLgServerName(const char* n)
@@ -30,23 +30,26 @@ static inline bool MP_IsLgServerName(const char* n)
 // ---- the arena ----
 // 4.13.10: a big floating pitch high above the downtown Los Santos skyscrapers (the tallest roof is at
 // ~330 m): SA-MP grass plane 19529 (Plane125x125Grass1) scaled to the field, the goals from models
-// 946 / 947 scaled to the goal mouth, DockBarr1_LA barriers all around. Before: the LV airport apron.
+// 4.13.13: tunnel goals (18776), DockBarr1_LA barriers all around. Before: the LV airport apron.
 // Field along X: Blue defends -X (attacks +X), Orange defends +X.
 static const float kLgCenter[3]   = { 1545.0f, -1300.0f, 380.0f };
 // 4.13.10: the standard Rocket League (Soccar) arena, 1 uu = 1 cm: 10240 x 8192 uu, ceiling 2048 uu,
 // goals 1785.5 x 642.8 uu, 880 uu deep; flat side walls 7936 uu, back walls 5888 uu, the four corners 1629.2 uu
 // across at 45 deg (|x| + |y| <= 8064 uu); kickoff at (0, 0, 0), each goal line 5120 uu from the centre.
-// The cars stay GTA size (an Octane is 118 uu = 1.18 m: RC car scale in RL), so the pitch feels smaller than in RL.
-#define LG_HALF_L       51.2f    // goal line at +-51.2 m (102.4 m long)
-#define LG_HALF_W       40.96f   // side walls at +-40.96 m (81.92 m wide)
-#define LG_CORNER       80.64f   // corner walls: |x| + |y| <= 80.64 m (11.5 m cut on each side)
-#define LG_GOAL_HALF_W   8.9275f // 1785.5 uu = 17.86 m wide
-#define LG_GOAL_H        6.43f   // 642.8 uu
-#define LG_GOAL_DEPTH    8.80f
-#define LG_CEIL         20.48f
-#define LG_BALL_R        1.85f   // drawn + collision radius (m)
-#define LG_BALL_MAXV    60.0f
-#define LG_GRAV         13.0f    // RL ball is floaty: 650 uu/s^2 = 6.5 m/s^2; a bit more on a phone screen
+// 4.13.13: everything x LG_SCALE. The cars stay GTA size (~4.7 m) and an Octane is 118 uu, so a 1:1 pitch was tiny
+// for GTA cars; x4 keeps the real proportions between the car, the ball and the arena: 409.6 x 327.7 m, ceiling
+// 81.9 m, goals 71.4 x 25.7 x 35.2 m, ball 7.4 m across (RL: 185.5 uu, bigger than the car).
+#define LG_SCALE         4.0f
+#define LG_HALF_L       (51.2f * LG_SCALE)     // goal line at +-204.8 m
+#define LG_HALF_W       (40.96f * LG_SCALE)    // side walls at +-163.8 m
+#define LG_CORNER       (80.64f * LG_SCALE)    // corner walls: |x| + |y| <= 322.6 m
+#define LG_GOAL_HALF_W  (8.9275f * LG_SCALE)   // 1785.5 uu wide
+#define LG_GOAL_H       (6.43f * LG_SCALE)     // 642.8 uu
+#define LG_GOAL_DEPTH   (8.80f * LG_SCALE)     // 880 uu
+#define LG_CEIL         (20.48f * LG_SCALE)    // 2048 uu
+#define LG_BALL_R       (0.9275f * LG_SCALE)   // 92.75 uu: 3.71 m (drawn + collision radius)
+#define LG_BALL_MAXV    70.0f
+#define LG_GRAV         16.0f    // RL ball is floaty: 650 uu/s^2 = 6.5 m/s^2; a bit more on a phone screen
 #define LG_MATCH_SEC    300      // 5:00
 #define LG_KICKOFF_MS   3000
 #define LG_GOAL_MS      5000
@@ -163,7 +166,7 @@ static inline void LgBallHit(LgBall& b, const float car[3], const float cv[3])
     const float maxUp = hz * 0.22f + (cv[2] > 0 ? cv[2] * 1.2f : 0.0f) + 2.0f;
     if(add[2] > maxUp) add[2] = maxUp;
     for(int k = 0; k < 3; ++k) b.v[k] += add[k];
-    const float bs = sqrtf(b.v[0] * b.v[0] + b.v[1] * b.v[1] + b.v[2] * b.v[2]); if(bs > 60.0f) for(int k = 0; k < 3; ++k) b.v[k] *= 60.0f / bs;   // RL max ball speed
+    const float bs = sqrtf(b.v[0] * b.v[0] + b.v[1] * b.v[1] + b.v[2] * b.v[2]); if(bs > LG_BALL_MAXV) for(int k = 0; k < 3; ++k) b.v[k] *= LG_BALL_MAXV / bs;   // RL max ball speed
     // out of the car
     const float need = LG_BALL_R + 1.7f;
     if(l < need) for(int k = 0; k < 3; ++k) b.p[k] = car[k] + (k == 2 ? 0.4f : 0.0f) + d[k] / sqrtf(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]) * need;

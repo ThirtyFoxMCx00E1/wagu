@@ -834,6 +834,7 @@ void (*SetColModelFn)(void*, void*, bool) = nullptr;
 struct BoxColModel { int model = 0; void* col = nullptr; };
 std::vector<BoxColModel> s_BoxCols;
 }
+void* DzModels::BoxCol(int model) { for(auto& b : s_BoxCols) if(b.model == model) return b.col; return nullptr; }
 bool DzModels::SetBoxCollision(int model, const float* boxes, int nBoxes, uint8_t material)
 {
     if(!s_MI || !SetColModelFn || model <= 0 || model >= 20000 || !s_MI[model] || !boxes || nBoxes <= 0 || nBoxes > 16) return false;

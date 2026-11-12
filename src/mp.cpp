@@ -48,6 +48,7 @@
 #include "game/screenguard.h"   // 4.12.2
 #include "game/dzmodels.h"   // 3.61: Day Z model pack
 #include "game/boneattach.h"  // 4.00: bag on the spine bone
+#include "game/lgball.h"     // 4.13.13: the Rocket League ball model
 #include "net/admin.h"
 #include "net/samp.h"    // 4.11: SA-MP gamemodes on MP servers
 #include "net/samp_import.h"

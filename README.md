@@ -121,6 +121,12 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **4.13.13**: Rocket League arena is 4x bigger (409.6 x 327.7 m, ceiling 81.9 m), closer to the real pitch shape,
+  on SA-MP grass 19529 over the LA skyscrapers. The basketball hoops are gone: each goal is now a tunnel (18776) with
+  a blue or orange neon frame (18647/18648/18650) and a fire blast (18688/18693) when someone scores. Bigger ball,
+  longer barriers. The ball is a real object now: GTA object 1946 with the real Rocket League ball mesh and texture
+  (assets/MP/ball_-_rocket_league.glb, built into libMP, no files to copy); the drawn ball is only a fallback.
+  The Multiplayer tile is on the title menu only, not the pause menu. Old clients cannot join League.
 - **4.13.12**: Multiplayer loads show PCMenu's PC loading screen when PCMenu 1.2.6+ is installed with its loading
   screen on (MP's own panel covered it before). PCMenu shows "CONNECTING TO MULTIPLAYER" through the MPMultiplayer API v2.
 - **4.13.11**: PCMenu's MULTIPLAYER button said "MULTIPLAYER NOT AVAILABLE" with MP installed. MP now counts as

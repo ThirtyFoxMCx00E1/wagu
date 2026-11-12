@@ -91,10 +91,10 @@ void MP::InitMainMenu()
     s_bMenuMpOn = ::cfg->GetBool("MainMenuMultiplayer", true, "MP");
     LookUpPCMenuLoading();
     if(!s_bMenuMpOn) { logger->Info("Main menu: Multiplayer tile off (MainMenuMultiplayer = 0)"); return; }
-    std::string full = std::string(MP::DataDir()) + "/mp_menu.png";
-    // SAUtils reads the picture relative to the game's files folder: files/TYFMC/MP/mp_menu.png
-    s_bMenuMpTile = Game::AddMainMenuTile("Multiplayer", "TYFMC/MP/mp_menu.png", full.c_str(), MenuMpTap);
-    if(!s_bMenuMpTile) logger->Info("Main menu: no SAUtils - MP draws its own Multiplayer tile");
+    // 4.13.13: no SAUtils tile any more - SAUtils puts it on the pause menu too. MP draws its own tile, on the
+    // title menu only (no game loaded yet).
+    s_bMenuMpTile = false;
+    logger->Info("Main menu: Multiplayer tile on the title menu only");
 }
 
 static void MenuMpRelease(int ped)
@@ -326,6 +326,7 @@ void MP::DrawMenuMpFront()
     }
     // no SAUtils: our own tile on the game's main menu, bottom left (the menu's tiles are in the middle)
     if(!s_bMenuMpOn || s_bMenuMpTile || s_bMenuMp.load() || !Game::IsMainMenuShown()) return;
+    if(Game::LocalPed() > 0) return;   // 4.13.13: a game is loaded = the pause menu: no Multiplayer tile there
     const ImVec2 sz(ds.x * 0.11f, ds.y * 0.17f), at(ds.x * 0.13f, ds.y * 0.70f);
     ImGui::SetNextWindowPos(at); ImGui::SetNextWindowSize(sz);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
