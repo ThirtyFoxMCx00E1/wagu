@@ -54,10 +54,9 @@ with zf("release/MP-%s-full.zip" % V) as z:
     f = "MP-%s" % V
     z.write("release/MP-Voice.apk", f + "/MP-Voice.apk"); z.write("release/MP-Textdraw-Editor.apk", f + "/MP-Textdraw-Editor.apk")   # 3.59: both APKs
     if os.path.isfile("release/Moquil.apk"): z.write("release/Moquil.apk", f + "/Moquil.apk")   # 4.13.20: the Moquil app too
-    z.writestr(f + "/ADMIN_KEY_README.txt", admin); z.writestr(f + "/MODERATOR_README.txt", MOD)
+    # 4.13.20: the full zip is only the libs, the assets and the 3 APKs (no readmes, HiveMQ kit, termux, website)
     z.write("bin/libMP64.so", f + "/lib/arm64-v8a/libMP64.so"); z.write("bin/libMP32.so", f + "/lib/armeabi-v7a/libMP32.so")
-    tree(z, "assets/MP", f + "/assets/MP"); tree(z, "docs", f + "/website"); tree(z, "HiveMQ", f + "/HiveMQ-kit", kit_skip)
-    z.write("termux/install.sh", f + "/termux/install.sh")
+    tree(z, "assets/MP", f + "/assets/MP")
 for n in ("client", "full"): print("release/MP-%s-%s.zip" % (V, n), os.path.getsize("release/MP-%s-%s.zip" % (V, n)))
 print("release/HiveMQ-kit-%s.zip" % V, os.path.getsize("release/HiveMQ-kit-%s.zip" % V))
 # 4.05.4: keep docs/release.json on the new version (it was stuck at 4.01, so the website's
