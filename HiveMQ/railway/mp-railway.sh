@@ -78,12 +78,13 @@ ask_secret() {   # prompt -> REPLY (hidden); works with curl | bash too (reads t
 packages() {
     if [ "$MODE" = user ]; then command -v git >/dev/null && command -v python3 >/dev/null || die "needs git + python3"
     elif [ "$MODE" = termux ]; then
-        pkg install -y git python python-cryptography termux-services </dev/null >/dev/null 2>&1 || pkg install -y git python </dev/null || die "pkg install failed"
+        pkg install -y git python python-cryptography termux-services ffmpeg </dev/null >/dev/null 2>&1 || pkg install -y git python </dev/null || die "pkg install failed"
     else
         local miss=()
         command -v git >/dev/null || miss+=(git)
         command -v python3 >/dev/null || miss+=(python3)
         python3 -c 'import venv, ensurepip' 2>/dev/null || miss+=(python3-venv)
+        command -v ffmpeg >/dev/null || miss+=(ffmpeg)   # 4.13.16: /streaming (24/7 YouTube live in voice)
         [ ${#miss[@]} -eq 0 ] || { say "installing ${miss[*]}"; apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq "${miss[@]}" >/dev/null || die "apt-get install ${miss[*]} failed"; }
         id "$RUN_USER" >/dev/null 2>&1 || useradd --system --home-dir "$DATA" --shell /usr/sbin/nologin "$RUN_USER"
     fi
@@ -245,7 +246,7 @@ health() {   # app
         l="$(svc_log_new "$1")"
         if grep -q "Slash commands in" <<<"$l"; then
             grep -E "Logged in as|Slash commands in|No slash commands" <<<"$l" | tail -n 4 | sed 's/^.* INFO //; s/^.* WARNING /WARNING /'
-            say "$1: ONLINE - /gen, /stats, /help are in your Discord server"; return 0
+            say "$1: ONLINE - /gen, /stats, /help, /streaming are in your Discord server"; return 0
         fi
         grep -qE "Improper token|LoginFailure|401 Unauthorized" <<<"$l" && { HEALTH_FAIL=1; warn "$1: Discord refused the token - sudo mp-railway env set DISCORD_TOKEN (Developer Portal > Bot > Reset Token)"; return 1; }
         grep -q "PrivilegedIntentsRequired" <<<"$l" && { warn "$1: intents error - see mp-railway logs"; return 1; }

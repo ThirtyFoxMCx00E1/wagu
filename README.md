@@ -138,6 +138,8 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
   players (street peds / cars, map objects) is built while the world loads or in the first 6 s, and at most 3
   network models stream in at once (a model that never loads is skipped). Website ping is a real MQTT round trip. Discord bot: `/help` (tutorial: install, account, playing, commands)
   replaces `/chardc`; `/statsdc` is `/stats` again; the character card is `/stats` > Switch view.
+  Discord bot 4.13.16: `/streaming on` (server managers) - the bot joins your voice channel and plays the MP
+  YouTube live (https://www.youtube.com/live/rFZHOHl-L8A) 24/7, back by itself after restarts; `/streaming off`.
 - **4.13.14**: Fixed the black flicker in the Rocket League lobby (Grove Street). The server's time lock and the
   League's own night (23:30 every 4 s) fought each other, so the sky jumped between day and night. The League night
   is now the time the lock holds. Also: the car's kickoff spot fits the 4x arena.
@@ -1441,7 +1443,7 @@ This kit now also lives inside the main repo: [wagu/HiveMQ](https://github.com/T
 - **No ping climb when 25 / 100 players join:** `mp_server` keeps a per-player send budget (far players are sent less often when the server is full, near players and shots always go first), and the phone measures ping on its own channel so it is not stuck behind game packets.
 - **The 4 servers stay online 24/7 with the bot (1/100):** MP LAN Server, Brief Case War, Modern Warfare 3 and Mega Vil Futuristic always show the bot as a player, even when nobody plays. `mp-keepalive` now also **asks every server like the lobby does** (UDP query) and restarts one that has its port open but does not answer (hung / frozen), so the list never shows it offline.
 - **Console autobot:** the Termius / Termux pages run several bot typers at once (one per lane), each in its own endless loop, so the console never gets stuck on one long command.
-- **Discord bot:** `/stats` works in the game and in Discord (Discord: Switch view = the character card; was `/statsdc`); `/help` in Discord is the tutorial (4.13.15, replaces `/chardc`).
+- **Discord bot:** `/stats` works in the game and in Discord (Discord: Switch view = the character card; was `/statsdc`); `/help` in Discord is the tutorial (4.13.15, replaces `/chardc`); `/streaming on|off|status` plays the YouTube live 24/7 in a voice channel (4.13.16, audio - bots can not screen-share).
 
 #### MP 3.33: the 4 servers run only here, 24/7 - no Broker bot, lower ping
 
