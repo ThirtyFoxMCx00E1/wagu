@@ -12,7 +12,7 @@
 #   sudo mp-railway apps | remove NAME
 # The app name defaults to discordpy-bot; put another name last (mp-railway logs myapp).
 set -uo pipefail
-RW_VERSION="3.21.7"
+RW_VERSION="4.13.16"
 DEFAULT_APP="discordpy-bot"
 DEFAULT_REPO="https://github.com/ThirtyFoxMCx00E1/discordpy-bot.git"
 SELF_URL="https://mpsamp-open.github.io/HiveMQ/railway/mp-railway.sh"
@@ -179,6 +179,13 @@ build() {   # app
         fi
         "$dir/venv/bin/python" -m pip install -q --upgrade pip >/dev/null 2>&1 || true
         "$dir/venv/bin/python" -m pip install -q -r "$src/requirements.txt" </dev/null || die "$app: pip install failed"
+        # 4.13.16: the bot's /streaming needs ffmpeg - auto deploys (watch) install it too, not only setup
+        if grep -qi 'yt-dlp' "$src/requirements.txt" && ! command -v ffmpeg >/dev/null; then
+            say "$app: installing ffmpeg (/streaming)"
+            if [ "$MODE" = termux ]; then pkg install -y ffmpeg </dev/null >/dev/null 2>&1
+            elif [ "$(id -u)" = 0 ]; then { apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq ffmpeg; } </dev/null >/dev/null 2>&1; fi
+            command -v ffmpeg >/dev/null || say "$app: ffmpeg missing - /streaming stays off until: sudo apt install ffmpeg"
+        fi
     elif [ -f "$src/package.json" ]; then
         command -v npm >/dev/null || { [ "$MODE" = termux ] && pkg install -y nodejs </dev/null >/dev/null; } || apt-get install -y -qq nodejs npm >/dev/null || die "$app: needs nodejs"
         say "$app: Node app - npm install"
@@ -344,7 +351,12 @@ cmd_watch() {   # timer: deploy apps whose branch has a new commit
           r="$(remote_head "$REPO" "$BRANCH")"; [ -n "$r" ] || exit 0
           c="$(current_commit "$a")"
           if [ "$r" != "$c" ]; then echo "$(date -u +%FT%TZ) new commit ${r:0:7} (was ${c:0:7}) - deploying"; deploy "$a"
-          elif ! svc_active "$a"; then echo "$(date -u +%FT%TZ) $a was down - starting"; svc_start "$a"; fi
+          elif ! svc_active "$a"; then echo "$(date -u +%FT%TZ) $a was down - starting"; svc_start "$a"
+          elif [ "$(id -u)" = 0 ] && ! command -v ffmpeg >/dev/null && grep -qis 'yt-dlp' "$APPS/$a/src/requirements.txt"; then
+              # 4.13.16: an app deployed before this version still needs ffmpeg (/streaming) - install once, restart
+              echo "$(date -u +%FT%TZ) $a: installing ffmpeg"
+              { apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq ffmpeg; } </dev/null >/dev/null 2>&1 && svc_restart "$a"
+          fi
         ) 2>&1 | tee -a "$LOGS/watch.log"
     done
     # keep the tool itself current (MP kit updates replace it too)
