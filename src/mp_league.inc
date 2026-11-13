@@ -73,6 +73,7 @@ bool MP::LgOwnTags() { return s_Lg.engaged && LgOnServer() && s_Lg.view >= 1; }
 static const float kLgFallbackCenter[3] = { 1477.0f, 1500.0f, 10.82f };
 static float s_LgC[3] = { kLgCenter[0], kLgCenter[1], kLgCenter[2] };
 static bool  s_bLgSky = true;
+static int   s_nLgFloor = 19529;   // 4.13.20: the floor model (19529, or the game's own 6959 court without the SA-MP pack)
 static Vec3 LgWorld(float x, float y, float z) { return { s_LgC[0] + x, s_LgC[1] + y, s_LgC[2] + z }; }
 static void LgToCanon(float* p) { for(int k = 0; k < 3; ++k) p[k] = p[k] - s_LgC[k] + kLgCenter[k]; }
 
@@ -136,22 +137,32 @@ static uint64_t s_nLgScaleAt = 0, s_nLgBuildAt = 0;
 static bool LgFloorReady()   // 4.13.13: every floor tile is there
 {
     if(!s_bLgSky) return true;
-    int n = 0; for(const auto& o : s_LgObjs) if(o.model == 19529) { if(o.h <= 0) return false; ++n; }
+    int n = 0; for(const auto& o : s_LgObjs) if(o.model == s_nLgFloor) { if(o.h <= 0) return false; ++n; }
     return n > 0;
 }
 static void LgPlanArena()
 {
     s_LgObjs.clear(); s_bLgArenaPlanned = true;
-    s_bLgSky = Game::IsKnownModel(19529);
+    // 4.13.20: without the SA-MP pack the sky floor is built from the game's own flat court 6959 (vegasNbball1,
+    // 41.36 x 40.0 m, solid). Before, those phones got the LV airport apron, but the x4 arena (4.13.13) is far bigger
+    // than the apron: it ran through the airport buildings and fences and players spawned stuck inside them.
+    s_nLgFloor = Game::IsKnownModel(19529) ? 19529 : Game::IsKnownModel(6959) ? 6959 : 0;
+    s_bLgSky = s_nLgFloor != 0;
     const float* c = s_bLgSky ? kLgCenter : kLgFallbackCenter;
     for(int k = 0; k < 3; ++k) s_LgC[k] = c[k];
-    logger->Info("LEAGUE: arena %s (%.0f %.0f %.0f)", s_bLgSky ? "Sky Pitch above Los Santos (19529)" : "LV airport fallback (no SA-MP model 19529)", s_LgC[0], s_LgC[1], s_LgC[2]);
-    if(s_bLgSky)   // the floor: the field + both goal boxes, unscaled 125 m tiles (solid where they look solid)
+    logger->Info("LEAGUE: arena %s (%.0f %.0f %.0f), floor %d", s_bLgSky ? "Sky Pitch above Los Santos" : "LV airport fallback (no floor model)", s_LgC[0], s_LgC[1], s_LgC[2], s_nLgFloor);
+    if(s_bLgSky)   // the floor: the field + both goal boxes, unscaled tiles (solid where they look solid)
     {
         const float TL = 2 * (LG_HALF_L + LG_GOAL_DEPTH), TW = 2 * LG_HALF_W;
-        const int nx = (int)ceilf(TL / 125.0f), ny = (int)ceilf(TW / 125.0f);
+        // 6959: 40 m steps both ways whatever way the model lies (41.36 x 40.0: no gaps, a 1.36 m overlap); every other
+        // tile 1 cm higher so the overlaps don't flicker
+        const float T = s_nLgFloor == 19529 ? 125.0f : 40.0f;
+        const int nx = (int)ceilf(TL / T), ny = (int)ceilf(TW / T);
         for(int ix = 0; ix < nx; ++ix) for(int iy = 0; iy < ny; ++iy)
-            s_LgObjs.push_back({ 19529, (ix - (nx - 1) * 0.5f) * 125.0f, (iy - (ny - 1) * 0.5f) * 125.0f, 0, 0, 1.0f, 1.0f, 1.0f, true, 0 });
+        {
+            const float z = (s_nLgFloor != 19529 && ((ix + iy) & 1)) ? 0.01f : 0.0f;
+            s_LgObjs.push_back({ s_nLgFloor, (ix - (nx - 1) * 0.5f) * T, (iy - (ny - 1) * 0.5f) * T, z, 0, 1.0f, 1.0f, 1.0f, true, 0 });
+        }
     }
     for(int sd = -1; sd <= 1; sd += 2)   // sd < 0: the blue goal (x-), sd > 0: the orange goal (x+)
     {
@@ -242,6 +253,11 @@ static void LgArenaBuild(uint64_t now)
                 if(!o.solid) Game::SetObjectCollision(h, false);
                 if(o.fit) { LgApplyFit(o); Game::PlaceMapObject(h, LgWorld(o.x, o.y, o.z), o.rx, o.ry, o.rz); }   // 4.13.15
                 BoneAttach::ScaleObject(h, o.sx, o.sy, o.sz);
+                if(o.solid && o.model == s_nLgFloor && o.model != 19529)
+                {   // 4.13.20: the 6959 court's top on the pitch level (the model is loaded now)
+                    float mn[3], mx[3];
+                    if(Game::ModelDims(o.model, mn, mx) && fabsf(mx[2]) < 5.0f) { o.z -= mx[2]; Game::PlaceMapObject(h, LgWorld(o.x, o.y, o.z), o.rx, o.ry, o.rz); }
+                }
                 if(o.onFloor)
                 {   // the model is loaded now: lift it so its (scaled) bottom sits on the floor
                     const float b = Game::ModelBottom(o.model);
