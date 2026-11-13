@@ -1,5 +1,9 @@
 @everyone # Changelogs
 
+- fix Rocket League spawning you stuck inside the LV airport buildings when you don't have the SA-MP models, now everyone plays on the sky pitch
+
+- the Moquil Library no longer shows the generated pictures of the mods and apps, now they show unknown
+
 - fix players walking or running backwards was using the running animation (the Michael Jackson moonwalk), now they turn and face where they go like the real GTA SA, and turning while moving backwards is normal again
 
 - fix other players arm not raising when they press the aim / scope button, now lock-on, free aim and the sniper / rocket / camera scope raise the arm on your screen too (spray can and extinguisher also)
@@ -10,4 +14,4 @@
 
 - the Moquil app 1.4 is now included inside the full zip (server roles, channels, moderation, polls and the Discord-style avatar decorations)
 
-[Multiplayer Client FULL 4.13.20](https://github.com/ThirtyFoxMCx00E1/wagu/raw/main/assets/MP/MP.zip)
+[Multiplayer Client FULL 4.13.21](https://github.com/ThirtyFoxMCx00E1/wagu/raw/main/assets/MP/MP.zip)
