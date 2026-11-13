@@ -1,0 +1,28 @@
+name: Project Day Z pack release
+# 4.13.15: publishes Host/DayZ/pack/MP_ProjectDayZ.zip as the release "DayZ-Pack"
+# (the game's launcher downloads it from the website first, this release is the fallback).
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['Host/DayZ/pack/MP_ProjectDayZ.zip']
+permissions:
+  contents: write
+jobs:
+  pack:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: Host/DayZ/pack
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+          if gh release view DayZ-Pack >/dev/null 2>&1; then
+            gh release upload DayZ-Pack Host/DayZ/pack/MP_ProjectDayZ.zip --clobber
+          else
+            gh release create DayZ-Pack Host/DayZ/pack/MP_ProjectDayZ.zip --title "Project Day Z pack" --latest=false \
+              --notes "MP_ProjectDayZ.zip - the Project Day Z mod pack for MP (the game's launcher downloads it)."
+          fi
