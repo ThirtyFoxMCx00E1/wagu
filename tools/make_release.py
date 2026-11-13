@@ -48,7 +48,7 @@ with zf("release/MP-%s-client.zip" % V) as z:
     z.write("release/MP-Voice.apk", c + "/MP-Voice.apk"); z.write("release/MP-Textdraw-Editor.apk", c + "/MP-Textdraw-Editor.apk")   # 3.59: both APKs
     z.writestr(c + "/INSTALL.txt", inst); z.writestr(c + "/MODERATOR_README.txt", MOD)
     z.write("bin/libMP64.so", c + "/lib/arm64-v8a/libMP64.so"); z.write("bin/libMP32.so", c + "/lib/armeabi-v7a/libMP32.so")
-    tree(z, "assets/MP", c + "/files/TYFMC/MP")   # 4.12.7: files/TYFMC/MP
+    tree(z, "assets/MP", c + "/files/TYFMC/MP", ("MP.zip",))   # 4.12.7: files/TYFMC/MP
 with zf("release/HiveMQ-kit-%s.zip" % V) as z: tree(z, "HiveMQ", "HiveMQ-kit", kit_skip)
 with zf("release/MP-%s-full.zip" % V) as z:
     f = "MP-%s" % V
@@ -56,7 +56,9 @@ with zf("release/MP-%s-full.zip" % V) as z:
     if os.path.isfile("release/Moquil.apk"): z.write("release/Moquil.apk", f + "/Moquil.apk")   # 4.13.20: the Moquil app too
     # 4.13.20: the full zip is only the libs, the assets and the 3 APKs (no readmes, HiveMQ kit, termux, website)
     z.write("bin/libMP64.so", f + "/lib/arm64-v8a/libMP64.so"); z.write("bin/libMP32.so", f + "/lib/armeabi-v7a/libMP32.so")
-    tree(z, "assets/MP", f + "/assets/MP")
+    tree(z, "assets/MP", f + "/assets/MP", ("MP.zip",))
+# 4.13.20: assets/MP/MP.zip = the full zip, the direct download link of the Discord /changelog post
+import shutil; shutil.copyfile("release/MP-%s-full.zip" % V, "assets/MP/MP.zip")
 for n in ("client", "full"): print("release/MP-%s-%s.zip" % (V, n), os.path.getsize("release/MP-%s-%s.zip" % (V, n)))
 print("release/HiveMQ-kit-%s.zip" % V, os.path.getsize("release/HiveMQ-kit-%s.zip" % V))
 # 4.05.4: keep docs/release.json on the new version (it was stuck at 4.01, so the website's
