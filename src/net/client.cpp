@@ -343,7 +343,9 @@ void MPClient::Poll(INetEvents* ev)
             case PKT_MW3_STATE: case PKT_MW3_PLAYERS: case PKT_MW3_ME: case PKT_MW3_EVENT: case PKT_MW3_CARD: ev->OnMw3(buf, r); break;   // 3.24: + CARD   // 3.23
             case PKT_DZ_ME: case PKT_DZ_INV: case PKT_DZ_LOOT: case PKT_DZ_EVENT: case PKT_DZ_LIST: case PKT_DZ_BASE: case PKT_DZ_MAP: ev->OnDz(buf, r); break;   // 3.58: Project Day Z
             case PKT_CG_ENT: case PKT_CG_ME: case PKT_CG_ACT: ev->OnCg(buf, r); break;
-            case PKT_LG: ev->OnLg(buf, r); break;       // 4.13.4: Rocket League (was San Andreas Online League)
+            case PKT_LG: ev->OnLg(buf, r); break;
+            case PKT_HOST_MAP: ev->OnHostMap(buf, r); break;   // 4.13.15
+            case PKT_COOP: ev->OnCoop(buf, r); break;          // 4.13.15       // 4.13.4: Rocket League (was San Andreas Online League)
             case PKT_SAMP: ev->OnSamp(buf, r); break;   // 4.11   // 4.09: CGRP systems
             case PKT_RP_ME: case PKT_RP_PLAYERS: case PKT_RP_STATE: case PKT_RP_EVENT: case PKT_RP_CARD: case PKT_RP_INV: case PKT_RP_DROPS: case PKT_RP_FAC: case PKT_RP_PFAC: ev->OnRp(buf, r); break;   // 3.25: Mega Vil Futuristic
             case PKT_BCW_STATE: case PKT_BCW_ROLL: case PKT_BCW_SCORE: case PKT_BCW_EVENT: ev->OnBcw(buf, r); break;   // 3.04

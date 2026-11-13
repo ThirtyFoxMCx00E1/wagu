@@ -250,7 +250,7 @@ static bool HandleCommand(const char* text)
     if(TdeCommand(cmd, arg)) return true;     // 3.50: /tde Textdraw Editor
     if(DzCommand(cmd, arg)) return true;      // 3.58: Project Day Z (44+ commands, every other one blocked)
     if(CgCommand(cmd, arg)) return true;      // 4.09: CGRP systems (default server, Mega Vil)
-    if(RulesCommand(cmd, arg) || SrvSettingsCommand(cmd, arg) || ProgCommand(cmd, arg) || MvCommand(cmd, arg) || DealerCommand(cmd, arg) || HkCommand(cmd, arg) || NeedsCommand(cmd, arg) || Modes2Command(cmd, arg)) return true;   // 3.39
+    if(RulesCommand(cmd, arg) || SrvSettingsCommand(cmd, arg) || ProgCommand(cmd, arg) || MvCommand(cmd, arg) || DealerCommand(cmd, arg) || HkCommand(cmd, arg) || HmCommand(cmd, arg) || CoopCommand(cmd, arg) || NeedsCommand(cmd, arg) || Modes2Command(cmd, arg)) return true;   // 3.39
     if(Mw3Command(cmd, arg)) return true;   // 3.23: MW3 commands (others blocked)
     if(RpCommand(cmd, arg)) return true;    // 3.25: Mega Vil Futuristic RP commands (others blocked)
     if(AuthCommand(cmd)) return true;       // 3.21.6: /stats  /char (also on Brief Case War)
@@ -610,6 +610,7 @@ static void PagePlayers(void* openPtr)
         if(!armed) ImGui::BeginDisabled();
         if(ImGui::Button(bl, ImVec2(w3, UI::S(68))) && armed) { if(s_nBehindId == i) BehindCancel(nullptr); else BehindStart(i); }
         if(!armed) ImGui::EndDisabled();
+        if((s_nServerPerms & PERM_MISSION_PAIR) && IsConnected() && client.GetServerBuild() >= 41315) CoopButton(i, -1);   // 4.13.15: Co-op story (2 players)
         {   // 3.11: mute / unmute this player's voice (only for you), red X icon while muted
             bool muted = MP::VoiceMuted(i);
             ImGui::PushStyleColor(ImGuiCol_Button, muted ? ImVec4(0.70f, 0.12f, 0.12f, 0.95f) : ImVec4(0.18f, 0.18f, 0.18f, 0.95f));
@@ -1017,7 +1018,7 @@ static void Render219(void*)
     RenderDz();                // 3.58: Project Day Z Legacy
     RenderLg();                // 4.13.4: Rocket League (was San Andreas Online League)
     CgRender();                // 4.09: CGRP labels, ENTER / EXIT, /editor
-    HkRender(); NeedsRender(); Modes2Render(); DealerRender();   // 3.39 / 3.55
+    HkRender(); HmRender(); CoopRender(); NeedsRender(); Modes2Render(); DealerRender();   // 3.39 / 3.55
     HudRenderExtras();   // 4.07: HUD Player + Ammo Info
     RenderHotelPc();           // 3.36: hotel room computer (every server)
     RenderSafeZones();         // 3.21: hospital safe zones

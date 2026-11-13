@@ -1500,9 +1500,22 @@ static void LPageServerMgmt()
         ImGui::TextDisabled("speed, rapid fire, infinite ammo, packet flood. Floating / teleporting: kick, 3 kicks = permanent ban");
         ImGui::TextDisabled("(only [ADMIN] / [MOD] can unban). CLEO menus and libCheatMenu.so / libCheatMenu64.so are blocked.");
     }
+    // 4.13.15: the default server's login system: OFF by default. The admin / moderators can turn it on here;
+    // it goes off again by itself when the last admin / moderator leaves the server (rejoin to turn it on again).
+    if(st.pad & 0x20)
+    {
+        LSrvHeader("LOGIN SYSTEM");
+        bool on = (st.pad & 0x10) != 0;
+        if(!canEdit) ImGui::BeginDisabled();
+        if(FloatMenu::ToggleSwitch("Login system (authentication)", &on)) { st.pad = (uint8_t)((st.pad & ~0x10) | (on ? 0x10 : 0) | 0x80 | 0x20); send = true; }
+        if(!canEdit) ImGui::EndDisabled();
+        ImGui::TextDisabled("Off by default. When it is on, new players log in first. It turns off by itself when the");
+        ImGui::TextDisabled("last [ADMIN] / [MOD] leaves this server - join again and turn it back on if you need it.");
+    }
     if(send && canEdit) { SrvSettingsSend(); s_SrvSet.at = now; s_nAskAt = now; }
 
     LSrvHeader("MORE");
+    if(s_Hm.owner && FloatMenu::BigButton("Map editor (add / move / delete objects)")) { s_bLauncherCloseReq = true; HmOpenEditor(); }   // 4.13.15
     if(FloatMenu::BigButton("Players (kick / ban / spectate)")) s_nLTab = LT_PLAYERS;
     if(FloatMenu::BigButton("Ban list")) s_nLTab = LT_BANS;
     if(FloatMenu::BigButton("Refresh")) { s_nAskAt = 0; }
@@ -1795,15 +1808,15 @@ static void LFmtBytes(char* o, size_t n, unsigned long long b)
 // models (people, cars, objects around Grove Street) became the MTA Day Z ones on every server, so the
 // default server froze at the spawn and again in Grove Street. MP loads the Day Z models itself, only on
 // Project Day Z servers (the cloud list below), so nothing outside the MP folder is needed.
-static const char* const kDzXkiUrls[] = {
-    "https://mpsamp-open.github.io/Host/DayZ/xkiloader/MP_ProjectDayZ_XkiLoader.zip",
-    "https://github.com/ThirtyFoxMCx00E1/wagu/releases/download/DayZ-XkiLoader/MP_ProjectDayZ_XkiLoader.zip" };
-static std::atomic<int> s_nXki{ 0 };            // 0 idle, 1 downloading, 2 unpacking, 3 done, 4 failed
-static std::atomic<size_t> s_nXkiGot{ 0 };
-static std::mutex s_XkiMx; static std::string s_XkiMsg;
-static bool s_bXkiPick = false;                  // the Files app was opened by this page
+static const char* const kDzPackUrls[] = {
+    "https://mpsamp-open.github.io/Host/DayZ/pack/MP_ProjectDayZ.zip",
+    "https://github.com/ThirtyFoxMCx00E1/wagu/releases/download/DayZ-Pack/MP_ProjectDayZ.zip" };
+static std::atomic<int> s_nDzPack{ 0 };            // 0 idle, 1 downloading, 2 unpacking, 3 done, 4 failed
+static std::atomic<size_t> s_nDzPackGot{ 0 };
+static std::mutex s_DzPackMx; static std::string s_DzPackMsg;
+static bool s_bDzPackPick = false;                  // the Files app was opened by this page
 static std::string DzPackRoot() { return std::string(s_szDataDir) + "/dayz"; }   // -> files/TYFMC/MP/dayz/ProjectDayZ
-static bool DzXkiInstalled()
+static bool DzPackInstalled()
 {
     struct stat st; return stat((DzPackRoot() + "/ProjectDayZ/README_MP.txt").c_str(), &st) == 0;
 }
@@ -1829,66 +1842,66 @@ int MP_DzPackMigrate()
     }
     return n;
 }
-static void DzXkiUnpack(const std::string& zip)
+static void DzPackUnpack(const std::string& zip)
 {
-    s_nXki = 2;
+    s_nDzPack = 2;
     std::string msg; const std::string dst = DzPackRoot();
     mkdir(dst.c_str(), 0775);
     bool ok = MP_UnZip(zip, dst, msg);
     struct stat st; if(ok && stat((dst + "/ProjectDayZ").c_str(), &st) != 0) { ok = false; msg = "no ProjectDayZ folder in that zip"; }
-    { std::lock_guard<std::mutex> l(s_XkiMx); s_XkiMsg = ok ? (msg + " -> files/TYFMC/MP/dayz/ProjectDayZ") : msg; }
+    { std::lock_guard<std::mutex> l(s_DzPackMx); s_DzPackMsg = ok ? (msg + " -> files/TYFMC/MP/dayz/ProjectDayZ") : msg; }
     logger->Info("4.12.6: Day Z model pack %s: %s (%s)", ok ? "saved" : "failed", msg.c_str(), zip.c_str());
-    s_nXki = ok ? 3 : 4;
+    s_nDzPack = ok ? 3 : 4;
 }
-static void DzXkiDownload()
+static void DzPackDownload()
 {
-    if(s_nXki == 1 || s_nXki == 2) return;
-    s_nXki = 1; s_nXkiGot = 0;
+    if(s_nDzPack == 1 || s_nDzPack == 2) return;
+    s_nDzPack = 1; s_nDzPackGot = 0;
     std::thread([]{
         const std::string dir = DzPackRoot(); mkdir(dir.c_str(), 0775);
         const std::string zip = dir + "/MP_ProjectDayZ.zip";
         std::string body, why;
-        for(const char* u : kDzXkiUrls)
+        for(const char* u : kDzPackUrls)
         {
-            body.clear(); s_nXkiGot = 0;
-            if(Online::HttpsFetch(u, body, 600000, why, 200u * 1024 * 1024, &s_nXkiGot) && body.size() > 1024 && body[0] == 'P' && body[1] == 'K') break;
+            body.clear(); s_nDzPackGot = 0;
+            if(Online::HttpsFetch(u, body, 600000, why, 200u * 1024 * 1024, &s_nDzPackGot) && body.size() > 1024 && body[0] == 'P' && body[1] == 'K') break;
             logger->Error("4.12.6: Day Z model pack %s: %s", u, why.c_str()); body.clear();
         }
-        if(body.empty()) { std::lock_guard<std::mutex> l(s_XkiMx); s_XkiMsg = "Download failed: " + (why.empty() ? std::string("no answer") : why); s_nXki = 4; return; }
+        if(body.empty()) { std::lock_guard<std::mutex> l(s_DzPackMx); s_DzPackMsg = "Download failed: " + (why.empty() ? std::string("no answer") : why); s_nDzPack = 4; return; }
         FILE* f = fopen(zip.c_str(), "wb");
-        if(!f || fwrite(body.data(), 1, body.size(), f) != body.size()) { if(f) fclose(f); std::lock_guard<std::mutex> l(s_XkiMx); s_XkiMsg = "Can't write " + zip; s_nXki = 4; return; }
+        if(!f || fwrite(body.data(), 1, body.size(), f) != body.size()) { if(f) fclose(f); std::lock_guard<std::mutex> l(s_DzPackMx); s_DzPackMsg = "Can't write " + zip; s_nDzPack = 4; return; }
         fclose(f); body.clear(); body.shrink_to_fit();
-        DzXkiUnpack(zip);
+        DzPackUnpack(zip);
     }).detach();
 }
-static void DzXkiSection(float w)
+static void DzPackSection(float w)
 {
     ImGui::TextColored(ImVec4(0.25f, 0.9f, 0.75f, 1), "DAY Z MODEL PACK");
     ImGui::TextWrapped("The Project Day Z models (123 models, textures as PNG, about 50 MB), kept in your MP folder: files/TYFMC/MP/dayz/ProjectDayZ. "
                        "It never changes the game's models on other servers.");
-    if(DzXkiInstalled()) ImGui::TextColored(ImVec4(0.4f, 0.95f, 0.6f, 1), "Saved in the MP folder.");
+    if(DzPackInstalled()) ImGui::TextColored(ImVec4(0.4f, 0.95f, 0.6f, 1), "Saved in the MP folder.");
     // the Files app (only the zip this page asked for)
-    if(s_bXkiPick)
+    if(s_bDzPackPick)
     {
         const int fp = FilePick::State();
-        if(fp == 3) { s_bXkiPick = false; std::string n = FilePick::Name(); FilePick::Reset();
-                      std::string zip = DzPackRoot() + "/" + n; std::thread([zip]{ DzXkiUnpack(zip); }).detach(); }
-        else if(fp == 4 || fp == 6) { s_bXkiPick = false; SysMsg(COL_RED, "Files app: %s", FilePick::Error().empty() ? "could not open the file" : FilePick::Error().c_str()); FilePick::Reset(); }
-        else if(fp == 5 || fp == 0) { s_bXkiPick = false; FilePick::Reset(); }
+        if(fp == 3) { s_bDzPackPick = false; std::string n = FilePick::Name(); FilePick::Reset();
+                      std::string zip = DzPackRoot() + "/" + n; std::thread([zip]{ DzPackUnpack(zip); }).detach(); }
+        else if(fp == 4 || fp == 6) { s_bDzPackPick = false; SysMsg(COL_RED, "Files app: %s", FilePick::Error().empty() ? "could not open the file" : FilePick::Error().c_str()); FilePick::Reset(); }
+        else if(fp == 5 || fp == 0) { s_bDzPackPick = false; FilePick::Reset(); }
         else if(fp == 1) ImGui::TextUnformatted("Waiting for the Files app...");
         else if(fp == 2) ImGui::Text("Copying... %.1f MB", FilePick::Copied() / 1048576.0);
     }
-    const int st = s_nXki;
-    if(st == 1) ImGui::ProgressBar(fminf(1.0f, (float)(s_nXkiGot / 1048576.0) / 50.0f), ImVec2(ImMax(UI::S(200), w - UI::S(20)), UI::S(22)), (std::to_string((int)(s_nXkiGot / 1048576)) + " MB").c_str());
+    const int st = s_nDzPack;
+    if(st == 1) ImGui::ProgressBar(fminf(1.0f, (float)(s_nDzPackGot / 1048576.0) / 50.0f), ImVec2(ImMax(UI::S(200), w - UI::S(20)), UI::S(22)), (std::to_string((int)(s_nDzPackGot / 1048576)) + " MB").c_str());
     else if(st == 2) ImGui::TextUnformatted("Unpacking...");
-    else if(st == 3 || st == 4) { std::lock_guard<std::mutex> l(s_XkiMx); ImGui::TextColored(st == 3 ? ImVec4(0.6f, 0.95f, 0.7f, 1) : ImVec4(1, 0.45f, 0.4f, 1), "%s", s_XkiMsg.c_str()); }
-    const bool busy = st == 1 || st == 2 || s_bXkiPick;
+    else if(st == 3 || st == 4) { std::lock_guard<std::mutex> l(s_DzPackMx); ImGui::TextColored(st == 3 ? ImVec4(0.6f, 0.95f, 0.7f, 1) : ImVec4(1, 0.45f, 0.4f, 1), "%s", s_DzPackMsg.c_str()); }
+    const bool busy = st == 1 || st == 2 || s_bDzPackPick;
     if(busy) ImGui::BeginDisabled();
-    if(FloatMenu::BigButton(DzXkiInstalled() ? "Download the pack again" : "Download pack (into files/TYFMC/MP/dayz)")) DzXkiDownload();
+    if(FloatMenu::BigButton(DzPackInstalled() ? "Download the pack again" : "Download pack (into files/TYFMC/MP/dayz)")) DzPackDownload();
     if(FloatMenu::BigButton("Import pack (zip) - opens Files"))
     {
         mkdir(DzPackRoot().c_str(), 0775);
-        if(FilePick::Open(DzPackRoot().c_str(), "application/zip,application/x-zip-compressed,application/x-zip,application/octet-stream")) s_bXkiPick = true;
+        if(FilePick::Open(DzPackRoot().c_str(), "application/zip,application/x-zip-compressed,application/x-zip,application/octet-stream")) s_bDzPackPick = true;
         else SysMsg(COL_YELLOW, "The Files app is already open.");
     }
     if(busy) ImGui::EndDisabled();
@@ -1905,7 +1918,7 @@ static void LPageCloud(float w)
     ImGui::TextColored(ImVec4(0.25f, 0.9f, 0.75f, 1), "CLOUD STORAGE");
     ImGui::TextDisabled("Server resources hosted on GitHub (wagu repo + website downloads). They are kept in the game cache.");
     ImGui::Separator();
-    DzXkiSection(w);   // 4.12.3: the model pack first (works without the file list)
+    DzPackSection(w);   // 4.12.3: the model pack first (works without the file list)
     ImGui::Separator();
     if(!c.cache) { ImGui::TextWrapped("No writable cache folder on this phone - nothing can be downloaded."); return; }
 

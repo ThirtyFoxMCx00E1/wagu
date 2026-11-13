@@ -17,6 +17,7 @@
 #include <atomic>
 #include <mutex>
 #include <sys/stat.h>
+extern "C" unsigned long crc32(unsigned long crc, const unsigned char* buf, unsigned int len);   // 4.13.15: zlib (Co-op story saves; zlib.h defines "far")
 #include <unistd.h>
 #include <thread>
 #include <unordered_map>
@@ -723,7 +724,7 @@ static void SocialFrame();    // 3.63: mp_social.inc (friends, chats, party, com
 static int DzAdjustDamage(int hp, int dmg, bool instant);   // 3.59: helmet vs headshot, DOWN at 5%
 static bool DzHidden();
 static void HudOnConfig(const PktSrvSettings2& h);   // 4.07 (mp_hudset.inc)
-static void AdvTick();
+static void HudTick();
 static void HudReset();
 static void HudRenderExtras();
 static bool BcwOnServer();
@@ -819,6 +820,11 @@ static void ApplyServerRules();
 static void HkProcess(int ped, uint64_t now);
 static void HkRender();
 static bool HkCommand(const char* cmd, const char* arg);
+// 4.13.15: host map editor (mp_hostmap.inc) + Co-op story (mp_coop.inc)
+static void HmReset(); static void HmProcess(int ped, uint64_t now); static void HmRender(); static bool HmCommand(const char* cmd, const char* arg);
+static void HmOnPacket(const uint8_t* d, int len); static void HmOpenEditor();
+static bool CoopIsPartnerOf(int id); static void CoopOnPacket(const uint8_t* d, int len); static void CoopProcess(int ped, uint64_t now);
+static void CoopRender(); static bool CoopCommand(const char* cmd, const char* arg); static void CoopButton(int i, float w); static void CoopReset(bool restore);
 static bool Modes2Command(const char* cmd, const char* arg);
 static void Modes2Process(int ped, uint64_t now);
 static void Modes2Render();
@@ -2427,7 +2433,7 @@ public:
     void OnConnected(const PktWelcome& w) override
     {
         SampReset();   // 3.01
-        HkReset(); CgReset(); RulesReset(); Modes2Reset(); SrvSettingsReset(); HudReset(); ProgReset();   // 3.39: a new join: houses / rules / modes come again
+        HkReset(); HmReset(); CoopReset(true); CgReset(); RulesReset(); Modes2Reset(); SrvSettingsReset(); HudReset(); ProgReset();   // 3.39: a new join: houses / rules / modes come again
         myId = w.yourId; myColor = w.color;
         MP_CopyStr(s_szCurServer, w.serverName, sizeof(s_szCurServer));
         s_bWorldSynced = false;
@@ -2553,6 +2559,7 @@ public:
         {
             case PAIR_REQUEST:
                 if(!valid) break;
+                if(CoopIsPartnerOf(o)) { SendPair(PAIR_ACCEPT, (uint8_t)o); break; }   // 4.13.15: the co-op host: Mission sync comes with it
                 s_bPairAsked[o] = true;
                 ShowPairPopup(o);   // 2.19: Accept / Decline popup
                 SysMsg(COL_YELLOW, "*** %s wants Mission sync with you: Accept or Decline.", players[o].name);
@@ -2712,6 +2719,8 @@ public:
     void OnRp(const uint8_t* d, int len) override { RpOnPacket(d, len); }     // 3.25
     void OnDz(const uint8_t* d, int len) override { DzOnPacket(d, len); }     // 3.58
     void OnLg(const uint8_t* d, int len) override { LgOnPacket(d, len); }     // 4.13.4
+    void OnHostMap(const uint8_t* d, int len) override { HmOnPacket(d, len); }   // 4.13.15
+    void OnCoop(const uint8_t* d, int len) override { CoopOnPacket(d, len); }    // 4.13.15
     void OnCg(const uint8_t* d, int len) override { CgOnPacket(d, len); }
     void OnSamp(const uint8_t* d, int len) override { SampSrvOnPacket(d, len); }   // 4.11     // 4.09
     void OnBcw(const uint8_t* d, int len) override { BcwOnPacket(d, len); }   // 3.04   // 2.25: the dialog opens; PKT_REJECT follows
@@ -3932,6 +3941,9 @@ static void NpcUpdateCopies(int lp, uint64_t now)
     float dt = s_Last ? (now - s_Last) / 1000.0f : 0.016f; s_Last = now;
     if(dt > 0.1f) dt = 0.1f;
     int created = 0;
+    // 4.13.15: nothing new is built while a save / the world loads, on the join screen, or in the first
+    // 6 s on a server (the other players' street copies came all at once on top of the loading world)
+    if(!Game::IsReady() || Game::IsLoadPending() || JoinFlowActive() || !s_nNpcJoinAt || now - s_nNpcJoinAt < 6000) created = 99;
     int area = Game::GetAreaVisible();
     int myCarUsing = Game::GetCarCharIsUsing(lp);
     int myCar = Game::IsCharInAnyCar(lp) ? Game::GetCarCharIsIn(lp) : 0;
@@ -4187,11 +4199,13 @@ void MP::Process()
     if(client.GetState() == NET_DISCONNECTED && !kills.empty()) kills.clear();
     ProcessLan(now);
     ProcessFeed(now);
-    AdvTick();   // 4.12.3: only puts the player's original Advanced Settings HUD back (page removed)
+    HudTick();   // 4.13.15: MP never moves the HUD - only puts the player's original preset back once
     UpdateLocalStory(now);
     Progress::SetAllowStart(JoinFlowActive());   // 4.12.9: only before you spawn
     Progress::SetHold(MP::IsOnRp());   // 3.29: no save loads / swaps on Mega Vil (day + weather are the server's)
-    Progress::Process(now, settings.fullProgressDefault, client.GetState() == NET_CONNECTED && MP::IsOnDefault(),
+    // 4.13.15: the 100% save swap on the default server is OFF for good (its save load on join was one of the
+    // black-screen freezes). Process(enabled = false) still puts saves back after an old session / co-op.
+    Progress::Process(now, false, client.GetState() == NET_CONNECTED && MP::IsOnDefault(),
                       client.GetState() == NET_CONNECTED && !MP::IsOnDefault(),
                       Game::IsReady() && !paused && !s_bLocalSeparate && s_nFeedStep < 0);
     ApplyWorld(now);
@@ -4306,7 +4320,7 @@ void MP::Process()
     LgProcess(ped, now);         // 4.13.4: Rocket League (was San Andreas Online League)
     CgProcess(ped, now);         // 4.09: CGRP systems
     SampSrvProcess(ped, now);    // 4.11: SA-MP gamemode servers
-    HkProcess(ped, now); NeedsProcess(ped, now); MvProcess(now); Modes2Process(ped, now); RulesProcess(now); ModCheckProcess(now); ProgProcess(ped, now); AdmProcess(ped); DealerProcess(ped, now);   // 3.39 / 3.54 staff commands
+    HkProcess(ped, now); HmProcess(ped, now); CoopProcess(ped, now); NeedsProcess(ped, now); MvProcess(now); Modes2Process(ped, now); RulesProcess(now); ModCheckProcess(now); ProgProcess(ped, now); AdmProcess(ped); DealerProcess(ped, now);   // 3.39 / 3.54 staff commands
     ProcessGates(ped, now);      // 3.04.2: Area 69 gates
     ProcessHotelPc(ped, now);    // 3.36: hotel rooms with a computer (eyefind.info vehicle shops)
     ProcessClothes(now);         // 3.10: clothing sync
@@ -4454,7 +4468,7 @@ static void PSettingsPopup();
 #include "mp_hudset.inc"  // 4.07: server HUD (Textdraw): colour variant, cents, player, ammo, title logo
 #include <strings.h>
 int MP_DzPackMigrate();   // mp_launcher.inc
-#include "mp_advhud.inc"  // 4.10: ARM Advanced Settings HUD bridge (Settings > GTA HUD)
+#include "mp_hudrestore.inc"  // 4.13.15: the Advanced Settings HUD bridge is gone (one-time restore only)
 #include "mp_games.inc"  // 2.21: /spawn, /w, races, deathmatch, jobs, teleport events, open world (3.01: derbies, live race positions)
 #include "mp_world.inc"  // 3.01: 3D labels, map icons, actors, gang zones + turf wars, class selection
 #include "mp_bcw.inc"    // 3.04: Brief Case War
@@ -4489,6 +4503,8 @@ int MP_DzPackMigrate();   // mp_launcher.inc
 #include "mp_tde.inc"       // 3.50: in-game MP Textdraw Editor (/tde)
 #include "mp_dayz.inc"      // 3.58: Project Day Z Legacy (Proper DAYZ)
 #include "mp_league.inc"    // 4.13.4: Rocket League (was San Andreas Online League) (Rocket Soccer)
+#include "mp_hostmap.inc"   // 4.13.15: host map editor (custom servers, host owner only)
+#include "mp_coop.inc"      // 4.13.15: Co-op story (2 players, SA:COOP style)
 
 // 2.37: CheatMenu (libCheatMenu.so / libCheatMenu64.so) is not allowed on any server - the default
 // server and every custom server. Detected with aml->HasMod() in ON_ALL_MODS_LOAD (+ a re-check of
@@ -4738,6 +4754,7 @@ static bool StartLocalServer(const char* name, int port)
     {   // 3.39: Home Kit houses (one file per port), the host = the owner (kick / settings on a custom server)
         char hf[512]; snprintf(hf, sizeof(hf), "%s/homes_%d.txt", s_szDataDir, port); s_Server.SetHomeFile(hf);
         snprintf(hf, sizeof(hf), "%s/progress_%d.txt", s_szDataDir, port); s_Server.SetProgressFile(hf);   // 3.39.1
+        snprintf(hf, sizeof(hf), "%s/hostmap_%d.txt", s_szDataDir, port); s_Server.SetHostMapFile(hf);    // 4.13.15: map editor objects
         s_Server.SetOwnerUid(settings.deviceId);
     }
     s_Server.SetAntiCheat(settings.hostAc, settings.hostAcMask);   // 3.50 (featured servers: always on, every check)
@@ -4778,7 +4795,8 @@ static bool StartLocalServer(const char* name, int port)
         // 4.12.4: your OWN server follows your own "Login with Discord" switch (Add server). Before, a phone that
         // had once joined another server with the same name + port where login was on remembered "on" and then
         // turned login on for its own server by itself: guests without a Discord account waited forever at Spawn.
-        if(creating || own) { auth = settings.hostAuth; SrvAuthPut(name, port, auth); }
+        if(MP::IsDefaultServer(name, port)) auth = false;   // 4.13.15: the default server's login is off (its staff can turn it on)
+        else if(creating || own) { auth = settings.hostAuth; SrvAuthPut(name, port, auth); }
         else auth = au > 0;
         s_Server.SetAuth(auth);
     }
@@ -7248,11 +7266,6 @@ static void SectionDisplay(void*)
         changed |= FloatMenu::ToggleSwitch("Day Z: MTA DayZ models (download)", &settings.dzModels);   // 3.61
         changed |= FloatMenu::ToggleSwitch("Day Z: GTA V world textures (129 MB download)", &settings.dzWorldTex);   // 4.05.5
     }
-    {   // 4.12.5: HUD position - X / Y / size of the radar, weapon switch, bars ... (ARM Advanced Settings)
-        ImGui::Separator();
-        if(ImGui::CollapsingHeader("HUD position (radar, weapon switch, bars)")) AdvHudPositionUI();
-        ImGui::Separator();
-    }
     NpcStatusLine();
     SyncStatusLines();   // 2.19.6
     changed |= ChatPlacementOptions("disp");   // 2.22: scroll down - chat position, chat box background / label
@@ -7521,7 +7534,7 @@ static void SectionPlayer(void*)
     ImGui::Separator();
     if(FloatMenu::BigButton("Teleport to Grove Street")) s_bWantTeleport = true;
     ImGui::Separator();
-    if(FloatMenu::ToggleSwitch("100% progress on the default server", &settings.fullProgressDefault)) SaveConfig();
+    ImGui::TextDisabled("100%% progress on the default server: removed in 4.13.15 (your own progress everywhere)");
     ImGui::TextDisabled("%s", Progress::StatusText());
     ImGui::TextWrapped("All missions done while you play on the default server. Leaving it loads your own latest save again (your saves are backed up and put back). Custom servers always use your own progress.");
 }

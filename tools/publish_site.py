@@ -37,7 +37,7 @@ with tarfile.open(os.path.join(dl, "mp-server-src.tar.gz"), "w:gz") as t:
 # 4.12.7: wagu is private, so the website also serves the public files the mod and the VPS scripts use
 # (they used raw.githubusercontent.com/.../wagu before): the HiveMQ kit, Day Z models / mapping, media, GIFs
 with tarfile.open(os.path.join(dl, "HiveMQ-kit.tar.gz"), "w:gz") as t: t.add("HiveMQ", filter=keep)
-for p in ("HiveMQ", "Host/DayZ/models", "Host/DayZ/mapping", "Host/DayZ/xkiloader", "Host/Media"):
+for p in ("HiveMQ", "Host/DayZ/models", "Host/DayZ/mapping", "Host/DayZ/pack", "Host/Media"):
     if os.path.isdir(p): shutil.copytree(p, os.path.join(OUT, p), dirs_exist_ok=True, ignore=shutil.ignore_patterns(".git*", "obj"))
 if os.path.isdir("_gifs"): shutil.copytree("_gifs", os.path.join(OUT, "gifs"), dirs_exist_ok=True, ignore=shutil.ignore_patterns(".git*"))
 shutil.copy2("src/net/protocol.h", os.path.join(OUT, "protocol.h"))

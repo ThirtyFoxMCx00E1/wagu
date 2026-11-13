@@ -9,7 +9,7 @@ PNG files work, so:
   * the texture names are made unique ("dz<id>_<n>") and written into the DFF too: MTA DayZ uses names
     like "body", "1".."5", which would otherwise replace the same names in GTA itself (and each other).
 
-  python3 tools/make_dz_xkiloader.py [out.zip]   (default: build/MP_ProjectDayZ_XkiLoader.zip)
+  python3 tools/make_dz_pack.py [out.zip]   (default: build/MP_ProjectDayZ.zip)
 IDE names: /tmp/ide/{peds,default,vehicles}.ide (FSSRepo/cleo-editor-android assets/gtasa) + the mapping catalog.
 """
 import io, os, struct, sys, zipfile, hashlib
@@ -17,7 +17,7 @@ from PIL import Image
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DZ = os.path.join(ROOT, 'Host', 'DayZ', 'models')
-OUT = sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, 'build', 'MP_ProjectDayZ_XkiLoader.zip')
+OUT = sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, 'build', 'MP_ProjectDayZ.zip')
 FOLDER = 'ProjectDayZ'
 IDE = os.environ.get('IDE_DIR', '/tmp/ide')
 
@@ -206,13 +206,11 @@ def main():
             z.writestr('%s/%s/%s.dff' % (FOLDER, gname, gname), nd); nmodels += 1
             readme.append('%5d  %-14s %s  (%d textures)' % (mid, gname, dff, len(ren)))
         z.writestr(FOLDER + '/README_MP.txt',
-                   'MP - Project Day Z model pack for XkiLoader (MP 4.12.3)\n'
+                   'MP - Project Day Z model pack (MP 4.13.15)\n'
                    'Models: MTA DayZ (github.com/NullSystemWorks/mtadayz), textures converted to PNG.\n'
-                   'Put the folder "%s" in <game storage>/xkiloader/ (or /sdcard/xkiloader/) - MP does it for you:\n'
-                   'Server > Project Day Z > Download pack / Import pack (zip). XkiLoader (libXkiLoader.so /\n'
-                   'libXkiLoader64.so in wagu release/) must be installed as an AML mod. Restart the game after.\n'
-                   'Note: XkiLoader swaps by model name everywhere (also outside Day Z); turn the folder off in\n'
-                   'XkiLoader\'s menu / XkiiGnss.xkiloader.ini or delete it to get the normal models back.\n\n' % FOLDER
+                   'MP saves this folder in files/TYFMC/MP/dayz/%s (Server > Project Day Z > Download pack /\n'
+                   'Import pack (zip)) and loads these models only on Project Day Z servers - the normal game\n'
+                   'models stay on every other server.\n\n' % FOLDER
                    + '\n'.join(readme) + '\n')
     h = hashlib.sha256(open(OUT, 'rb').read()).hexdigest()
     print('%s: %d models, %d textures, %.1f MB, sha256 %s' % (OUT, nmodels, ntex, os.path.getsize(OUT) / 1048576, h))

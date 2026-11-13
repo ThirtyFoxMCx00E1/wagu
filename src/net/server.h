@@ -7,6 +7,8 @@
 #include <vector>
 #include "protocol.h"
 #include "homekit.h"
+#include "hostmap.h"   // 4.13.15
+#include "coop.h"      // 4.13.15
 #include "turf.h"
 #include "bcw.h"
 #include "mw3.h"   // 3.23
@@ -76,6 +78,7 @@ public:
     void SetMw3File(const char* path);          // 3.23: MW3 stats + zone owners (default mw3_stats.txt)
     bool IsRpServer() const;                    // 3.25: Mega Vil Futuristic (Roleplay)
     void SetRpFile(const char* path);           // 3.25: citizens (money, bank, job, house...) + house owners (default rp_citizens.txt)
+    void SetHostMapFile(const char* path);      // 4.13.15: host map editor objects (default hostmap.txt)
     void SetProgressFile(const char* path);     // 3.39.1: saved progress of every player (default progress.txt)
     void SetHomeFile(const char* path);         // 3.39: Home Kit houses (default homes.txt)
     // 3.50: Plugins > Textdraw (.mptd files from the MP Textdraw Editor): shown to every player
@@ -108,7 +111,7 @@ public:
 #ifdef MP_AUTH_OFF_FOR_TESTS   // 3.40.1: unit tests only (they have no login bot)
     bool AuthOn() const { return false; }
 #else
-    bool AuthOn() const { return IsDefaultServer() || IsBcwServer() || IsMw3Server() || IsRpServer() || IsDayzServer() || IsLgServer() || m_bAuthCustom; }
+    bool AuthOn() const { return (IsDefaultServer() && m_bAuthDefault) || IsBcwServer() || IsMw3Server() || IsRpServer() || IsDayzServer() || IsLgServer() || m_bAuthCustom; }
 #endif
     // 3.50: anti-cheat (Nex-AC checks). Always on (every check) on the default server, Mega Vil
     // Futuristic, Brief Case War and MW3. Custom servers: Add server -> Gamemode -> Anti-cheat.
@@ -245,6 +248,17 @@ private:
     const char* HomeKey(int slot, char* buf, size_t n) const;
     bool HomeStaff(int slot) const;
     bool HomeOwns(int slot, const char* owner) const;   // 3.39.1
+    // 4.13.15: host map editor (custom servers: only the host owner edits) + Co-op story pairs
+    char     m_szHostMapFile[256] = "hostmap.txt";
+    std::vector<DzMapRow> m_HostMap;
+    bool     m_bHostMapLoaded = false, m_bHostMapDirty = false; uint64_t m_nHostMapSaveAt = 0; uint32_t m_nHostMapNext = 1;
+    bool HostMapOn() const { return !IsDefaultServer() && !IsBcwServer() && !IsMw3Server() && !IsRpServer() && !IsDayzServer() && !IsLgServer(); }
+    void HostMapLoad(); void HostMapSave(); void HostMapTick(uint64_t now);
+    void HostMapSend(int slot); void HostMapBroadcast(uint8_t op, const DzMapRow& r, int bySlot);
+    void HostMapHandle(int slot, const uint8_t* data, int len);
+    uint8_t  m_CoopWith[MP_MAX_PLAYERS], m_CoopAsk[MP_MAX_PLAYERS]; bool m_CoopHost[MP_MAX_PLAYERS];
+    bool     m_bCoopInit = false;
+    void CoopInit(); void CoopHandle(int slot, const uint8_t* data, int len); void CoopEnd(int slot);
     // 3.39.1: saved progress (place, money, weapons, health, hunger) - the default + custom servers
     char     m_szProgFile[256] = "progress.txt";
     std::map<std::string, PktProgress> m_Prog;
@@ -275,6 +289,10 @@ private:
     void AuthHandle(int slot, const uint8_t* data, int len);
     void AnnounceJoin(int slot);                 // 3.21.6: PKT_PLAYER_JOIN to everybody else
     std::atomic<bool> m_bAuthCustom{false};
+    // 4.13.15: the default server's login: OFF by default (never saved). Its admin / moderators can turn it on in
+    // Server management; it goes off again by itself when the last admin / moderator leaves the server.
+    std::atomic<bool> m_bAuthDefault{false};
+    void AuthDefaultOff(const char* why);
     std::atomic<bool> m_bCineCam{false};
     std::atomic<bool> m_bDevStage{false};
     std::atomic<bool> m_bBridge{false};                       // 4.12

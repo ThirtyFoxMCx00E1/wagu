@@ -1454,11 +1454,13 @@ static void PublishHitRects()
     std::lock_guard<std::mutex> lk(s_HitMx);
     s_HitRects.swap(tmp);
 }
+bool MP_GizmoWantsTouch(float x, float y);
 bool HUD::WantsTouch(float x, float y)
 {
     if(!s_bInit) return false;
     if(VKeyboard::IsOpen()) return true;
     if(FloatMenu::IsModal()) return true;   // 2.26: full-screen launcher: nothing behind it gets the touch
+    if(MP_GizmoWantsTouch(x, y)) return true;   // 4.13.15: the map editor's handles (mp_hostmap.inc)
     std::lock_guard<std::mutex> lk(s_HitMx);
     for(const ImRect& r : s_HitRects) if(r.Contains(ImVec2(x, y))) return true;
     return false;

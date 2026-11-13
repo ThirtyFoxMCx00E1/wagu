@@ -25,5 +25,11 @@ namespace Progress
     void SetAllowStart(bool allow);
     bool IsActive();             // 100% save is loaded (or loading)
     bool Pending();              // 3.22.1: a save load is about to start or running (the login pop-up waits for it)
+    // 4.13.15: co-op story (net/coop.h) - load the host's save (d = a whole GTASAsf*.b). The first one backs
+    // your saves up; CoopEnd() puts them back and loads your own newest save.
+    bool CoopLoad(const uint8_t* d, size_t n, uint64_t now);
+    int  CoopTakeResult();       // once after a co-op load: 1 = it is running, -1 = it failed, 0 = nothing new
+    bool InCoop();
+    void CoopEnd(uint64_t now);
     const char* StatusText();    // one line for the menu
 }

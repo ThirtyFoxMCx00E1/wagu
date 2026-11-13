@@ -90,7 +90,46 @@ static void LgToCanon(float* p) { for(int k = 0; k < 3; ++k) p[k] = p[k] - s_LgC
 // barriers: 3578 DockBarr1_LA (10.3 m long, solid) on the side walls, the 45 deg corners and the end walls beside
 // the goal mouths, drawn 2.5x taller. The scale is visual (RwFrame), so it is applied again every 250 ms (the game
 // rebuilds the matrix when an object streams back in).
-struct LgObj { int model; float x, y, z, rz, sx, sy, sz; bool solid; int h; float rx = 0, ry = 0; bool onFloor = false; };
+struct LgObj { int model; float x, y, z, rz, sx, sy, sz; bool solid; int h; float rx = 0, ry = 0; bool onFloor = false;
+               bool fit = false; float fe[3] = { 0, 0, 0 }; float fd[3] = { 0, 0, 0 }; };   // 4.13.15: fit = sized from the model's own box
+// 4.13.15: fe = the size wanted along world x / y / z (0 = keep the model's own size on that axis), fd = the model's
+// box (length along local x / y / z) when the game can't tell it. The centre (x, y, z) is the centre of that box.
+static LgObj LgFitObj(int model, float cx, float cy, float cz, float ex, float ey, float ez, float rx, float ry, float rz, float dx, float dy, float dz)
+{
+    LgObj o = { model, cx, cy, cz, rz, 1.0f, 1.0f, 1.0f, false, 0 };
+    o.rx = rx; o.ry = ry; o.fit = true; o.fe[0] = ex; o.fe[1] = ey; o.fe[2] = ez; o.fd[0] = dx; o.fd[1] = dy; o.fd[2] = dz;
+    return o;
+}
+// the object's rotation (one axis at a time here: 0 / 90 deg, right-hand rule like CMatrix::SetRotate)
+static void LgRotMat(float rx, float ry, float rz, float R[3][3])
+{
+    const float d = 0.01745329f, a = rx * d, b = ry * d, c = rz * d;
+    const float ca = cosf(a), sa = sinf(a), cb = cosf(b), sb = sinf(b), cc = cosf(c), sc = sinf(c);
+    // R = Rz * Ry * Rx
+    R[0][0] = cc * cb; R[0][1] = cc * sb * sa - sc * ca; R[0][2] = cc * sb * ca + sc * sa;
+    R[1][0] = sc * cb; R[1][1] = sc * sb * sa + cc * ca; R[1][2] = sc * sb * ca - cc * sa;
+    R[2][0] = -sb;     R[2][1] = cb * sa;                R[2][2] = cb * ca;
+}
+static void LgApplyFit(LgObj& o)
+{
+    float mn[3], mx[3];
+    if(!Game::ModelDims(o.model, mn, mx)) { for(int k = 0; k < 3; ++k) { mn[k] = -o.fd[k] * 0.5f; mx[k] = o.fd[k] * 0.5f; } }
+    float R[3][3]; LgRotMat(o.rx, o.ry, o.rz, R);
+    float sc[3], lc[3];
+    for(int i = 0; i < 3; ++i)
+    {
+        const float ext = mx[i] - mn[i]; lc[i] = (mn[i] + mx[i]) * 0.5f;
+        int j = 0; for(int k = 1; k < 3; ++k) if(fabsf(R[k][i]) > fabsf(R[j][i])) j = k;   // local axis i lies along world axis j
+        sc[i] = (o.fe[j] > 0.0f && ext > 0.01f) ? o.fe[j] / ext : 1.0f;
+    }
+    o.sx = sc[0]; o.sy = sc[1]; o.sz = sc[2];
+    // the model's origin is not always the middle of its box: move it so the box centre is where we want it
+    for(int j = 0; j < 3; ++j)
+    {
+        float off = 0; for(int i = 0; i < 3; ++i) off += R[j][i] * sc[i] * lc[i];
+        (&o.x)[j] -= off;
+    }
+}
 static std::vector<LgObj> s_LgObjs;
 static bool     s_bLgArenaPlanned = false;
 static uint64_t s_nLgScaleAt = 0, s_nLgBuildAt = 0;
@@ -118,24 +157,30 @@ static void LgPlanArena()
     {
         const float mx = sd * LG_HALF_L, bx = sd * (LG_HALF_L + LG_GOAL_DEPTH), cxg = sd * (LG_HALF_L + LG_GOAL_DEPTH * 0.5f);
         const float W = 2 * LG_GOAL_HALF_W, H = LG_GOAL_H, D = LG_GOAL_DEPTH;
-        if(Game::IsKnownModel(18776))
-        {   // the tunnel: its 5.62 m length (local y) runs along x into the end wall, the 10.42 m width across the mouth
-            LgObj t = { 18776, cxg, 0, 0, 90.0f, W / 10.42188f, D / 5.61719f, H / 6.39062f, false, 0 }; t.onFloor = true;
-            s_LgObjs.push_back(t);
+        // 4.13.15: the goal is built from the game's OWN models (no SA-MP model pack needed): the overhead
+        // road sign frame gen_roadsign2 (1312: two posts + the beam, 26.3 x 0.7 x 8.4 m) sized to the goal
+        // mouth = the posts + the crossbar, and chain-link fence panels (983 fenceshit3, 0.09 x 6.4 x 1.4 m)
+        // as the net on the back, the sides and the roof. The old SA-MP tunnel (18776) is gone: without the
+        // pack that id was some other model and showed up as a giant block inside the goal (screenshot).
+        {
+            const float post = 2.2f;   // the frame's beam thickness after sizing (~3x the model)
+            s_LgObjs.push_back(LgFitObj(1312, mx, 0, H * 0.5f, post, W + post, H + post * 0.5f, 0, 0, 90.0f, 26.26731f, 0.684406f, 8.42215f));
+            const float ND = 0.12f;    // the net's thickness
+            const int cw = (int)ceilf(W / 36.0f), ch = (int)ceilf(H / 9.0f), cd = (int)ceilf(D / 36.0f);
+            const float gw = W / cw, gh = H / ch, gd = D / cd;
+            for(int a = 0; a < cw; ++a) for(int b = 0; b < ch; ++b)           // back net (across y, up z)
+                s_LgObjs.push_back(LgFitObj(983, bx, -LG_GOAL_HALF_W + gw * (a + 0.5f), gh * (b + 0.5f), ND, gw, gh, 0, 0, 0, 0.0891054f, 6.4471f, 1.367302f));
+            for(int sy = -1; sy <= 1; sy += 2)                                 // side nets (along x, up z)
+                for(int a = 0; a < cd; ++a) for(int b = 0; b < ch; ++b)
+                    s_LgObjs.push_back(LgFitObj(983, mx + sd * gd * (a + 0.5f), sy * LG_GOAL_HALF_W, gh * (b + 0.5f), gd, ND, gh, 0, 0, 90.0f, 0.0891054f, 6.4471f, 1.367302f));
+            for(int a = 0; a < cw; ++a) for(int b = 0; b < cd; ++b)           // roof net (lying flat: the fence turned 90 deg on y)
+                s_LgObjs.push_back(LgFitObj(983, mx + sd * gd * (b + 0.5f), -LG_GOAL_HALF_W + gw * (a + 0.5f), H, gd, gw, ND, 0, 90.0f, 0, 0.0891054f, 6.4471f, 1.367302f));
         }
-        else if(Game::IsKnownModel(19357))
-        {   // wall005: thin along x, 3.215 m along y, 3.5 m high, origin in the middle
-            const float pw = 3.21515f, ph = 3.50048f;
-            s_LgObjs.push_back({ 19357, bx, 0, H * 0.5f, 0, 1.0f, W / pw, H / ph, false, 0 });                       // back
-            for(int sy = -1; sy <= 1; sy += 2)
-                s_LgObjs.push_back({ 19357, cxg, sy * LG_GOAL_HALF_W, H * 0.5f, 90.0f, 1.0f, D / pw, H / ph, false, 0 });   // sides
-            LgObj roof = { 19357, cxg, 0, H, 0, 1.0f, W / pw, D / ph, false, 0 }; roof.ry = 90.0f;                    // roof (lying flat)
-            s_LgObjs.push_back(roof);
-        }
+        // the coloured neon tubes are SA-MP models: only with the pack (the sky pitch), never a guess
         const int neons[2] = { sd < 0 ? 18648 : 18647, sd < 0 ? 0 : 18650 };   // blue, or red + yellow = orange
         for(int k = 0; k < 2; ++k)
         {
-            const int m = neons[k]; if(!m || !Game::IsKnownModel(m)) continue;
+            const int m = neons[k]; if(!m || !s_bLgSky || !Game::IsKnownModel(m)) continue;
             const float in = sd * (0.4f + 0.35f * k);    // just in front of the goal mouth (the two orange ones side by side)
             s_LgObjs.push_back({ m, mx - in, 0, H, 0, 6.0f, W / 2.0f, 6.0f, false, 0 });                             // crossbar
             s_LgObjs.push_back({ m, mx - in, 0, 0.2f, 0, 6.0f, W / 2.0f, 6.0f, false, 0 });                          // goal line
@@ -195,6 +240,7 @@ static void LgArenaBuild(uint64_t now)
             if(h > 0)
             {
                 if(!o.solid) Game::SetObjectCollision(h, false);
+                if(o.fit) { LgApplyFit(o); Game::PlaceMapObject(h, LgWorld(o.x, o.y, o.z), o.rx, o.ry, o.rz); }   // 4.13.15
                 BoneAttach::ScaleObject(h, o.sx, o.sy, o.sz);
                 if(o.onFloor)
                 {   // the model is loaded now: lift it so its (scaled) bottom sits on the floor

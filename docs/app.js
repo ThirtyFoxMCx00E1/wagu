@@ -37,15 +37,47 @@
 
   function okWss(u) { return /^wss:\/\/[^\s/]+/i.test(u || ''); }
 
-  // ---- ping: time to open a secure WebSocket to the region's broker ----
+  // ---- ping: a real MQTT round trip to the region's broker (4.13.15) ----
+  // The WebSocket open alone counts TCP + TLS + HTTP upgrade (3+ round trips), so the old number was 2-4x the
+  // real ping. Now, once the socket is open, an MQTT 3.1.1 CONNECT goes out (as HiveMQ's client does) and
+  // CONNACK is timed, then 3 PINGREQ -> PINGRESP: the shortest one is the ping. A broker that never answers
+  // MQTT falls back to the old open time.
+  function mqttConnect() {
+    var id = 'mpping' + Math.random().toString(36).slice(2, 10);
+    var body = [0, 4, 77, 81, 84, 84, 4, 2, 0, 30, 0, id.length];
+    for (var i = 0; i < id.length; i++) body.push(id.charCodeAt(i));
+    return new Uint8Array([0x10, body.length].concat(body));
+  }
   function wsPing(url) {
     return new Promise(function (res) {
-      var t0 = performance.now(), done = false, ws;
-      var fin = function (v) { if (done) return; done = true; try { ws.close(); } catch (e) {} res(v); };
-      try { ws = new WebSocket(url, 'mqtt'); } catch (e) { return res(-1); }
-      ws.onopen = function () { fin(Math.round(performance.now() - t0)); };
-      ws.onerror = function () { fin(-1); };
-      setTimeout(function () { fin(-1); }, 6000);
+      var t0 = performance.now(), done = false, ws, openMs = -1, best = -1, sentAt = 0, pings = 0, fb = null;
+      var fin = function (v) {
+        if (done) return; done = true; clearTimeout(fb);
+        try { ws.send(new Uint8Array([0xE0, 0x00])); } catch (e) {}   // DISCONNECT
+        try { ws.close(); } catch (e) {} res(v);
+      };
+      var keep = function (ms) { if (best < 0 || ms < best) best = ms; };
+      var ping = function () { sentAt = performance.now(); try { ws.send(new Uint8Array([0xC0, 0x00])); } catch (e) { fin(best >= 0 ? best : openMs); } };
+      try { ws = new WebSocket(url, 'mqtt'); ws.binaryType = 'arraybuffer'; } catch (e) { return res(-1); }
+      ws.onopen = function () {
+        openMs = Math.round(performance.now() - t0);
+        sentAt = performance.now();
+        try { ws.send(mqttConnect()); } catch (e) { return fin(openMs); }
+        fb = setTimeout(function () { fin(best >= 0 ? best : openMs); }, 4500);
+      };
+      ws.onmessage = function (ev) {
+        var b = new Uint8Array(ev.data || []); if (!b.length) return;
+        var t = b[0] & 0xF0;
+        if (t === 0x20 || t === 0xD0) {   // CONNACK / PINGRESP
+          keep(Math.round(performance.now() - sentAt));
+          if (t === 0x20 && b.length >= 4 && b[3] !== 0) return fin(best);   // refused: the round trip still counts
+          if (++pings > 3) return fin(best);
+          ping();
+        }
+      };
+      ws.onerror = function () { fin(best >= 0 ? best : -1); };
+      ws.onclose = function () { fin(best >= 0 ? best : openMs); };
+      setTimeout(function () { fin(best >= 0 ? best : openMs); }, 8000);
     });
   }
   // 4.05.8: a round measured while the phone switches Wi-Fi <-> mobile data (offline, or nothing answers)

@@ -13,10 +13,10 @@
 // phones refuse servers older than that too (they would let old phones in).
 // 3.10: build 31000. MP_MIN_BUILD stays 30406 and the lobby stays thirtyfox/mp5/: 3.04.6 (no cheats)
 // and 3.10 phones play together on the same servers; only 3.04.5 and older (mp4) stay shut out.
-#define MP_BUILD 41314   // 4.13.14
+#define MP_BUILD 41315   // 4.13.15
 #define MP_MIN_BUILD       30406
 #define MP_AUTH_MIN_BUILD  32106   // 3.21.6: servers with the login system refuse older phones (they could not log in)
-#define MP_VERSION_STR     "4.13.14"
+#define MP_VERSION_STR     "4.13.15"
 #define MP_VOICE_BUILD     31100   // 3.11: phones from this build on get voice packets
 #define MP_DOWNLOAD_URL    "mpsamp-open.github.io"   // 4.05.4: new website (mpsamp-open org); thirtyfoxmcx00e1.github.io/wagu still works as a backup
 #define MP_DEFAULT_HOST    "127.0.0.1"
@@ -146,6 +146,8 @@ enum ePacket : uint8_t
     PKT_DZ_MAP,         // S->C          4.10: Project Day Z dynamic mapping objects (net/dz_map.h)
     PKT_SAMP,           // S<->C         4.11: a SA-MP gamemode runs on this server (net/samp.h)
     PKT_LG,             // S<->C         4.13.4: San Andreas Online League (Rocket Soccer, net/league.h)
+    PKT_HOST_MAP,       // S<->C         4.13.15: host map editor objects (custom servers, net/hostmap.h)
+    PKT_COOP,           // S<->C         4.13.15: Co-op story (2 players, net/coop.h)
 };
 
 enum eRegion : uint8_t { REGION_ASIA = 0, REGION_EUROPE, REGION_NA, REGION_OCEANIA, REGION_COUNT };
@@ -649,7 +651,7 @@ struct PktClothes
 // servers when their owner turns it on (Add server -> Authentication system, mp_server --auth).
 // Until the login is done the player is connected but nobody sees them and nothing they send
 // (position, chat, shots...) reaches anybody.
-enum eAuthOp : uint8_t { AUTH_CHALLENGE = 1, AUTH_TICKET = 2, AUTH_RESULT = 3 };
+enum eAuthOp : uint8_t { AUTH_CHALLENGE = 1, AUTH_TICKET = 2, AUTH_RESULT = 3, AUTH_OFF = 4 };   // 4.13.15: AUTH_OFF = S->C the login was turned off (close the login screen)
 enum eAuthStyle : uint8_t { AUTH_STYLE_NORMAL = 0, AUTH_STYLE_BCW = 1, AUTH_STYLE_MW3 = 2, AUTH_STYLE_RP = 3, AUTH_STYLE_DZ = 4 };   // 3.58: Project Day Z = yellow   // 3.23: MW3 = green; 3.25: Mega Vil Futuristic = sky blue
 struct PktAuthChal   { uint8_t type; uint8_t op; uint8_t style; uint8_t pad; char chal[33]; char server[32]; };
 struct PktAuthTicket { uint8_t type; uint8_t op; uint16_t plen; uint8_t sig[64]; };   // + plen bytes of ticket text

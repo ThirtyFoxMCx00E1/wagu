@@ -19,7 +19,7 @@
 #define COL_WARN   0xFFDD33FF
 #define NUM_SLOTS  10
 
-enum ePhase { PH_IDLE, PH_WAIT, PH_LOADING_100, PH_ACTIVE, PH_LOADING_OWN };
+enum ePhase { PH_IDLE, PH_WAIT, PH_LOADING_100, PH_ACTIVE, PH_LOADING_OWN, PH_COOP_LOADING, PH_COOP_ACTIVE };   // 4.13.15: co-op story
 
 static char     s_szDir[400] = "", s_szBackup[420] = "", s_szState[420] = "", s_szCustom[420] = "";
 static Progress::Callback s_Before = nullptr, s_After = nullptr;
@@ -216,7 +216,7 @@ static void Fail(const char* what)
     s_Phase = PH_IDLE;
 }
 
-static void Enter(uint64_t now)
+static void Enter(uint64_t now, const std::vector<uint8_t>* coop = nullptr)
 {
     // newest save = the player's last mission save point
     s_nOrig = -1; s_nHad = 0; s_nKeep = 0; time_t best = 0;
@@ -249,11 +249,18 @@ static void Enter(uint64_t now)
     for(int s = 7; s >= 0 && s_nTemp < 0; --s) if(!(s_nKeep & (1u << s))) s_nTemp = s;            // backed up, put back later
     if(s_nTemp < 0) { DeleteBackups(); Fail("no save slot to use"); return; }
     std::vector<uint8_t> d; char path[460];
-    if(!Get100(d) || !Game::SaveSlotPath(s_nTemp, path, sizeof(path)) || !WriteFile(path, d.data(), d.size()))
-    { RestoreAll(); DeleteBackups(); Fail("couldn't write the 100% save"); return; }
+    if(coop) d = *coop;
+    if((!coop && !Get100(d)) || !Game::SaveSlotPath(s_nTemp, path, sizeof(path)) || !WriteFile(path, d.data(), d.size()))
+    { RestoreAll(); DeleteBackups(); if(coop) { Msg(COL_WARN, "Co-op: couldn't write the host's save."); s_Phase = PH_IDLE; } else Fail("couldn't write the 100% save"); return; }
     SaveState();
     if(!StartLoad(s_nTemp))
-    { RestoreAll(); ClearState(); DeleteBackups(); Fail("the game didn't accept the 100% save"); return; }
+    { RestoreAll(); ClearState(); DeleteBackups(); if(coop) { Msg(COL_WARN, "Co-op: the game didn't accept the host's save."); s_Phase = PH_IDLE; } else Fail("the game didn't accept the 100% save"); return; }
+    if(coop)
+    {
+        Msg(COL_SYS, "Co-op: loading the host's story progress (your saves are backed up)...");
+        s_Phase = PH_COOP_LOADING; s_nPhaseAt = now; s_bSawNotReady = false; s_nReadyAt = 0;
+        return;
+    }
     Msg(COL_SYS, "Default server: loading 100%% progress (all missions done)...");
     s_Phase = PH_LOADING_100; s_nPhaseAt = now; s_bSawNotReady = false; s_nReadyAt = 0;
 }
@@ -285,6 +292,7 @@ static int LoadDone(uint64_t now, bool canLoad)
     return 0;
 }
 
+static int  s_nCoopResult = 0;   // 4.13.15
 static bool s_bHold = false;
 void Progress::SetHold(bool hold) { s_bHold = hold; }
 static bool s_bAllowStart = true, s_bSkipVisit = false;
@@ -356,6 +364,23 @@ void Progress::Process(uint64_t now, bool enabled, bool onDefault, bool connecte
             // short connection drops / host takeover: wait a bit before going back
             if(!enabled || connectedElsewhere || now - s_nOffDefaultAt > 15000) { if(canLoad || now - s_nOffDefaultAt > 60000) Leave(now); }
             break;
+        case PH_COOP_LOADING:
+        {
+            snprintf(s_szStatus, sizeof(s_szStatus), "Co-op: loading the host's save...");
+            int r = LoadDone(now, canLoad);
+            if(r != 0) MarkLoadEnd();
+            {   // the borrowed slot goes back at once (the backups stay until the co-op ends)
+                char path[460], bak[460];
+                if(r != 0 && Game::SaveSlotPath(s_nTemp, path, sizeof(path)))
+                { BackupPath(s_nTemp, bak, sizeof(bak)); if(s_nHad & (1u << s_nTemp)) CopyFile(bak, path); else unlink(path); }
+            }
+            if(r < 0) { Msg(COL_WARN, "Co-op: the host's save didn't load."); s_Phase = PH_COOP_ACTIVE; s_nCoopResult = -1; }
+            else if(r > 0) { s_Phase = PH_COOP_ACTIVE; s_nCoopResult = 1; }
+            break;
+        }
+        case PH_COOP_ACTIVE:
+            snprintf(s_szStatus, sizeof(s_szStatus), "Co-op story: the host's progress (yours is backed up)");
+            break;
         case PH_LOADING_OWN:
         {
             snprintf(s_szStatus, sizeof(s_szStatus), "Loading your own save...");
@@ -370,6 +395,31 @@ void Progress::Process(uint64_t now, bool enabled, bool onDefault, bool connecte
             break;
         }
     }
+}
+
+// 4.13.15: co-op story. The first load backs every save up (like the default server); later loads (after
+// every mission of the host) only rewrite the borrowed slot. CoopEnd puts your saves back + loads your newest.
+bool Progress::CoopLoad(const uint8_t* d, size_t n, uint64_t now)
+{
+    if(!d || n < 1000 || memcmp(d, "BLOCK", 5)) { Msg(COL_WARN, "Co-op: the host's save is not a GTA SA save."); return false; }
+    std::vector<uint8_t> v(d, d + n);
+    s_nCoopResult = 0;
+    if(s_Phase == PH_IDLE) { Enter(now, &v); return s_Phase == PH_COOP_LOADING; }
+    if(s_Phase != PH_COOP_ACTIVE) return false;
+    char path[460];
+    if(s_nTemp < 0 || !Game::SaveSlotPath(s_nTemp, path, sizeof(path)) || !WriteFile(path, v.data(), v.size())) return false;
+    if(!StartLoad(s_nTemp)) { char bak[460]; BackupPath(s_nTemp, bak, sizeof(bak)); if(s_nHad & (1u << s_nTemp)) CopyFile(bak, path); else unlink(path); return false; }
+    Msg(COL_SYS, "Co-op: loading the host's new progress...");
+    s_Phase = PH_COOP_LOADING; s_nPhaseAt = now; s_bSawNotReady = false; s_nReadyAt = 0;
+    return true;
+}
+int  Progress::CoopTakeResult() { int r = s_nCoopResult; s_nCoopResult = 0; return r; }
+bool Progress::InCoop() { return s_Phase == PH_COOP_LOADING || s_Phase == PH_COOP_ACTIVE; }
+void Progress::CoopEnd(uint64_t now)
+{
+    if(s_Phase != PH_COOP_ACTIVE && s_Phase != PH_COOP_LOADING) return;
+    if(s_Phase == PH_COOP_LOADING && Game::IsLoadPending()) Game::CancelLoad();
+    Leave(now);
 }
 
 bool Progress::Pending() { return s_Phase == PH_WAIT || s_Phase == PH_LOADING_100 || s_Phase == PH_LOADING_OWN; }

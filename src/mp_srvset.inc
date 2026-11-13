@@ -52,6 +52,7 @@ static void SrvSettingsDlg(int resp, int item, const char*, int)
         if(!(s_SrvSet.s.pad & 2)) { SysMsg(COL_YELLOW, MP::IsOnDefault() ? "The anti-cheat is always off on the default server." : "The anti-cheat always runs on Brief Case War, MW3 and Mega Vil."); SrvSettingsShow(); return; }
         s_SrvSet.s.pad ^= 1;
     }
+    else if(item == MP_GAMEMODE_COUNT + SRV_PERM_ROWS + 2 && (s_SrvSet.s.pad & 0x20)) s_SrvSet.s.pad ^= 0x10;   // 4.13.15: login system
     else return;
     SrvSettingsSend();
     SrvSettingsShow();   // redrawn again when the server answers
@@ -98,6 +99,10 @@ static void SrvSettingsShow()
         if(!(s.pad & 0x80)) snprintf(l, sizeof(l), "{FFFFFF}Gamemode: Anti-cheat\t{AAAAAA}?\n");
         else snprintf(l, sizeof(l), "{FFFFFF}Gamemode: Anti-cheat%s\t%s\n", (s.pad & 2) ? "" : ((s.pad & 1) ? " {AAAAAA}(always on)" : " {AAAAAA}(always off)"), (s.pad & 1) ? "{33CC55}ON" : "{FF4444}OFF");
         body += l;
+    }
+    if(s.pad & 0x20)
+    {   // 4.13.15: the default server's login system (off by default, back off when the last staff leaves)
+        char l[128]; snprintf(l, sizeof(l), "{FFFFFF}Login system (authentication)\t%s\n", (s.pad & 0x10) ? "{33CC55}ON" : "{FF4444}OFF"); body += l;
     }
     char cap[96]; snprintf(cap, sizeof(cap), "{FFFFFF}Server settings %s", s.can ? "{33CC55}(you can change them)" : "{AAAAAA}(view only)");
     ShowDialog(0, DIALOG_STYLE_TABLIST_HEADERS, cap, body.c_str(), s.can ? "Toggle" : "OK", "Close", SrvSettingsDlg, 0x5353);

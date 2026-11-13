@@ -8,6 +8,7 @@
 #include <mod/logger.h>
 #include <set>
 #include <map>
+#include <array>
 
 DEFOPCODE(0247, REQUEST_MODEL_304, i);
 DEFOPCODE(0248, HAS_MODEL_LOADED_304, i);
@@ -141,6 +142,23 @@ float Game::ModelBottom(int model)
     CALLSCM(GET_MODEL_DIMENSIONS_304, model, F2U(a), F2U(b), F2U(c), F2U(d), F2U(e), F2U(f));
     if(!(c == c) || c < -200.0f || c > 50.0f || !(f > c)) return 1.0f;
     s_cache[model] = c; return c;
+}
+// 4.13.15: the whole bounding box of a loaded model (min x y z, max x y z) - the League goal frame is sized
+// from it (any GTA SA model fits the goal, whatever its own size). false = unknown / not loaded.
+bool Game::ModelDims(int model, float* mn, float* mx)
+{
+    static std::map<int, std::array<float, 6>> s_cache;
+    auto it = s_cache.find(model);
+    if(it != s_cache.end()) { for(int k = 0; k < 3; ++k) { mn[k] = it->second[k]; mx[k] = it->second[k + 3]; } return true; }
+    if(!IsReady() || model <= 0 || model >= 20000 || !CALLSCM(HAS_MODEL_LOADED_304, model)) return false;
+    float a = 0, b = 0, c = 0, d = 0, e = 0, f = 0;
+    CALLSCM(GET_MODEL_DIMENSIONS_304, model, F2U(a), F2U(b), F2U(c), F2U(d), F2U(e), F2U(f));
+    const float v[6] = { a, b, c, d, e, f };
+    for(int k = 0; k < 6; ++k) if(!(v[k] == v[k]) || v[k] < -500.0f || v[k] > 500.0f) return false;
+    if(!(d > a) || !(e > b) || !(f > c)) return false;
+    s_cache[model] = { a, b, c, d, e, f };
+    for(int k = 0; k < 3; ++k) { mn[k] = v[k]; mx[k] = v[k + 3]; }
+    return true;
 }
 int Game::CreateMapObject(int model, const Vec3& p, float rx, float ry, float rz)
 {

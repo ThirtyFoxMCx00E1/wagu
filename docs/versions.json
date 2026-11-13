@@ -1,6 +1,7 @@
 {
-"latest": "4.13.14",
+"latest": "4.13.15",
 "supported": [
+"4.13.14",
 "4.13.13",
 "4.13.12",
 "4.13.11",
@@ -129,6 +130,11 @@
 "3.04.6"
 ],
 "versions": [
+{
+"v": "4.13.15",
+"summary": "Co-op story (2 players, SA:COOP style, separate from multiplayer Mission sync): player list > Co-op story or /coop invite <id>. The host's save is the story; the partner's saves are backed up and the host's newest save is loaded (a partner at a different mission state is put to the host's), the partner keeps place, money, weapons, health and armour, and gets the new progress after every host save. Mission start brings the partner to the host, mission weapons and the money reward are shared, the pair is in Mission sync (both visible in cutscenes), and in the host's cutscenes the partner stands next to CJ with listen / nod / look animations. Time and weather follow the host. Host map editor for custom servers (host owner only): /mapedit or Server management > Map editor - create, tap to select, drag X/Y/Z gizmo handles to move or rotate, snap to ground, duplicate, delete, clear; saved on the server (hostmap_<port>.txt) and streamed to everybody. Rocket League goal is a real frame (1312 posts + crossbar fitted to the goal size) with chain-link nets. The Advanced Settings HUD file is removed: MP never moves the HUD, your original preset comes back once. Project Day Z pack is now MP_ProjectDayZ.zip (no XkiLoader name). Default server: login system off; admins / moderators can turn it on in Server management, it turns off again when the last of them leaves. 100% progress save on the default server is removed (its save load on join was one of the black-screen freezes). Join freeze fixes: nothing from other players (street peds / cars, map objects) is built while the world loads or in the first 6 s, and at most 3 network models stream in at once (a model that never loads is skipped). Website ping is a real MQTT round trip.",
+"items": []
+},
 {
 "v": "4.13.14",
 "summary": "Fixed the black flicker in the Rocket League lobby (Grove Street). The server's time lock and the League's own night (23:30 every 4 s) fought each other, so the sky jumped between day and night. The League night is now the time the lock holds. Also: the car's kickoff spot fits the 4x arena.",

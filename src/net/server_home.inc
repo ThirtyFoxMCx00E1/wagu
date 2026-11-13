@@ -459,6 +459,8 @@ void MPServer::SendSrvSettings(int slot)
     p.can = CanManage(slot) ? 1 : 0;
     // 3.58: pad = anti-cheat: 0x80 valid | 1 on | 2 can be switched (custom servers; the featured ones always run it)
     p.pad = (uint8_t)(0x80 | (AcIsOn() ? 1 : 0) | ((IsDefaultServer() || IsBcwServer() || IsMw3Server() || IsRpServer() || IsDayzServer()) ? 0 : 2));
+    // 4.13.15: 0x10 = login on, 0x20 = the login can be switched here (the default server: admin / moderators)
+    if(IsDefaultServer()) p.pad |= (uint8_t)(0x20 | (AuthOn() ? 0x10 : 0));
     // 4.07: the HUD block for 4.07+ phones (older ones copy only the first 8 bytes)
     h.hudMagic = HUD_MAGIC; h.hudMode = m_nHudMode.load(); h.hudFlags = m_nHudFlags.load(); h.doorSecs = m_nDoorSecs.load();
     h.logoX = m_nLogoX.load(); h.logoY = m_nLogoY.load(); h.logoZ = m_nLogoZ.load(); h.logoValid = 1;
@@ -478,6 +480,12 @@ void MPServer::OnSrvSettings(int slot, const PktSrvSettings& p, const PktSrvSett
     m_nPerms = p.perms; m_nBasePerms = p.perms;
     m_bRulesOn = p.rulesOn != 0;
     if((p.pad & 0x80) && !(IsDefaultServer() || IsBcwServer() || IsMw3Server() || IsRpServer() || IsDayzServer())) m_bAcCustom = (p.pad & 1) != 0;   // 3.58
+    if((p.pad & 0x80) && (p.pad & 0x20) && IsDefaultServer())
+    {   // 4.13.15: the default server's login system
+        const bool on = (p.pad & 0x10) != 0;
+        if(on && !m_bAuthDefault) { m_bAuthDefault = true; Log("%s turned the login system ON (new players log in)", m_Slots[slot].name); }
+        else if(!on && m_bAuthDefault) { char why[64]; snprintf(why, sizeof(why), "turned off by %.24s", m_Slots[slot].name); AuthDefaultOff(why); }
+    }
     Log("%s changed the server settings (gamemodes 0x%04X, permissions 0x%02X)", m_Slots[slot].name, (unsigned)m_nModes.load(), (unsigned)m_nPerms.load());
     PktPerms pm; memset(&pm, 0, sizeof(pm));
     pm.type = PKT_PERMS; pm.perms = m_nPerms.load(); pm.modesMagic = 0x47; pm.modes = GetModes();
@@ -577,4 +585,25 @@ void MPServer::OnProgress(int slot, const PktProgress& in)
     m_Prog[key] = g;
     if(m_Prog.size() > 20000) m_Prog.erase(m_Prog.begin());
     if(!m_bProgDirty) { m_bProgDirty = true; m_nProgSaveAt = now + 5000; }
+}
+
+// 4.13.15: the default server's login goes off: everybody still waiting at the login screen gets in now
+void MPServer::AuthDefaultOff(const char* why)
+{
+    if(!m_bAuthDefault) return;
+    m_bAuthDefault = false;
+    Log("Login system OFF (%s)", why);
+    const uint64_t now = MP_NowMs();
+    for(int i = 0; i < MP_MAX_PLAYERS; ++i)
+    {
+        Slot& s = m_Slots[i];
+        if(!s.used || s.authed) continue;
+        s.authed = true; s.chal[0] = 0; s.authFails = 0;
+        PktAuthResult res; memset(&res, 0, sizeof(res)); res.type = PKT_AUTH; res.op = AUTH_OFF; res.ok = 1;
+        MP_CopyStr(res.msg, "The login system is off on this server.", sizeof(res.msg));
+        SendTo(i, &res, sizeof(res));
+        AnnounceJoin(i);
+        ProgSend(i);
+        s.spawnProtUntil = now + MP_SPAWN_PROTECT_MS;
+    }
 }

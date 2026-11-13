@@ -49,7 +49,7 @@ static void DzMapOnPacket(const uint8_t* d, int len)
 // every frame on Project Day Z: stream the objects near me in and out (a full pass every 250 ms)
 static void DzMapTick(const Vec3& me, uint64_t now)
 {
-    if(s_DzM.objs.empty() || now - s_DzM.scanAt < 250) return;
+    if(s_DzM.objs.empty() || now - s_DzM.scanAt < 250 || !Game::IsReady() || Game::IsLoadPending()) return;   // 4.13.15: never while the world loads
     s_DzM.scanAt = now;
     const int area = Game::GetAreaVisible();
     int made = 0;

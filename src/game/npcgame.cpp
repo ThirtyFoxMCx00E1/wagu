@@ -11,6 +11,7 @@
 #include <sys/uio.h>
 #include <sys/syscall.h>
 #include <unistd.h>
+uint64_t MP_NowMs();   // 4.13.15 (mp.cpp)
 
 typedef uint8_t u8;
 
@@ -357,6 +358,27 @@ bool Game::ModelReady(int model)
     // 2.24: NPC models come from the host's phone - only cars 400-611 and safe peds that exist here
     if(!IsKnownCarModel(model) && !IsSafePedModel(model)) return false;
     if(CALLSCM(HAS_MODEL_LOADED, model)) return true;
+    // 4.13.15: streaming budget. Every phone has its own mod packs: the copies other players send can name
+    // many different (and heavy, replaced) peds / cars at once - on a join all of them were requested in the
+    // same frame and the streamer choked (black loading screen / stuck). Now at most 3 network models
+    // load at a time; one that doesn't come in 8 s is skipped for a minute.
+    static struct { int model; uint64_t at; } s_Q[3]; static struct { int model; uint64_t until; } s_Skip[16];
+    const uint64_t now = MP_NowMs();
+    for(auto& k : s_Skip) if(k.model == model && now < k.until) return false;
+    int freeIdx = -1;
+    for(int i = 0; i < 3; ++i)
+    {
+        if(s_Q[i].model && (now - s_Q[i].at > 8000 || CALLSCM(HAS_MODEL_LOADED, s_Q[i].model)))
+        {
+            if(now - s_Q[i].at > 8000 && !CALLSCM(HAS_MODEL_LOADED, s_Q[i].model))
+            { int o = 0; for(int j = 1; j < 16; ++j) if(s_Skip[j].until < s_Skip[o].until) o = j; s_Skip[o].model = s_Q[i].model; s_Skip[o].until = now + 60000; }
+            s_Q[i].model = 0;
+        }
+        if(s_Q[i].model == model) return false;   // already on its way
+        if(!s_Q[i].model && freeIdx < 0) freeIdx = i;
+    }
+    if(freeIdx < 0) return false;                  // busy: next frame
+    s_Q[freeIdx].model = model; s_Q[freeIdx].at = now;
     CALLSCM(REQUEST_MODEL, model);
     return false;
 }

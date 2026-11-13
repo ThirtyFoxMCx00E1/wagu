@@ -225,6 +225,7 @@ void MPServer::Stop()
         if(m_bHomeDirty) HomeSave();   // 3.39.1: never lose a house that was just built
         SampUnload();                   // 4.11: OnGameModeExit (the gamemode saves its players)
         if(m_bProgDirty) ProgSave();   // 3.39.1
+        if(m_bHostMapDirty) HostMapSave();   // 4.13.15
         PktReject rj; rj.type = PKT_REJECT; rj.reason = REJECT_SHUTDOWN;
         for(int k = 0; k < 2; ++k) Broadcast(&rj, sizeof(rj));
     }
@@ -603,6 +604,7 @@ void MPServer::Drop(int slot, uint8_t reason)
 {
     if(!m_Slots[slot].used) return;
     EndPair(slot);
+    CoopEnd(slot);   // 4.13.15
     for(int i = 0; i < MP_MAX_PLAYERS; ++i) if(m_Slots[i].used && m_Slots[i].pairReq == slot) m_Slots[i].pairReq = MP_INVALID_ID;
     Log("%s (id %d) left (%s)", m_Slots[slot].name, slot, reason == LEAVE_TIMEOUT ? "Timeout" : (reason == LEAVE_KICK ? "Kicked" : "Quit"));
     SampOnLeave(slot, reason);   // 4.11: OnPlayerDisconnect (0 timeout, 1 quit, 2 kick = SA-MP's)
@@ -620,6 +622,12 @@ void MPServer::Drop(int slot, uint8_t reason)
     // calling GetPlayerCount() would lock m_Mutex again and freeze the server and the game.
     int left = 0;
     for(int i = 0; i < MP_MAX_PLAYERS; ++i) if(m_Slots[i].used) ++left;
+    if(IsDefaultServer() && m_bAuthDefault)
+    {   // 4.13.15: the login stays on only while an admin / moderator is on the server
+        bool staff = false;
+        for(int i = 0; i < MP_MAX_PLAYERS; ++i) if(m_Slots[i].used && (m_Slots[i].admin || m_Slots[i].mod)) { staff = true; break; }
+        if(!staff) AuthDefaultOff("the last admin / moderator left");
+    }
     if(left == 0 && m_nPerms != m_nBasePerms) SetPermsLocked(m_nBasePerms);   // 2.37: the admin's cheat switch ends with the session
     if(m_bPersistent && left == 0)
         Log("All players left; persistent server remains active and joinable (24/7).");
@@ -693,6 +701,7 @@ void MPServer::Loop()
             CgTick(now);    // 4.09: CGRP systems
             SampTick(now);  // 4.11: SA-MP gamemode timers
             ProgTick(now);  // 3.39.1
+            HostMapTick(now);   // 4.13.15
         }   // 3.04: 10 Hz referee
         if(now - lastCheck > 1000)
         {
@@ -1653,6 +1662,12 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             LgHandleCmd(slot, c);
             break;
         }
+        case PKT_HOST_MAP:   // 4.13.15: host map editor (the host owner of a custom server)
+            if(slot >= 0) HostMapHandle(slot, (const uint8_t*)data, len);
+            break;
+        case PKT_COOP:       // 4.13.15: Co-op story (2 players)
+            if(slot >= 0) CoopHandle(slot, (const uint8_t*)data, len);
+            break;
         case PKT_SAMP:   // 4.11: SA-MP gamemode (commands, textdraw clicks, checkpoints)
             SampHandle(slot, (const uint8_t*)data, len);
             break;
@@ -2023,6 +2038,7 @@ void MPServer::SendJoinExtras(int slot, bool fresh)
 {
     if(HomesOn()) HomeSendIndex(slot);   // 3.39: Home Kit houses
     SendSrvSettings(slot);               // 3.39
+    if(fresh) HostMapSend(slot);         // 4.13.15: host map editor objects
     if(fresh) SendRules(slot);           // 3.39: shown after the login
     if(fresh && !AuthOn()) ProgSend(slot);   // 3.39.1 (login servers: after the login)
     if(GetModes() & GM_TURF) SendTurf(slot);
@@ -2111,6 +2127,7 @@ void MPServer::RaceQueueTick(uint64_t now, bool changed)
 #include "server_cgrp.inc"  // 4.09: CGRP systems
 #include "server_samp.inc"  // 4.11: SA-MP gamemodes (Pawn AMX + SA-MP natives)
 #include "server_bridge.inc" // 4.12: open.mp cross-play bridge
+#include "server_hostmap.inc" // 4.13.15: host map editor + Co-op story pairs
 
 // 3.04.6: an old MP version tried to join: log it once per phone every 10 minutes (console + the
 // --outdated-log file of the 24/7 server) and count it

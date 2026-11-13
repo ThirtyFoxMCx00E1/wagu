@@ -203,6 +203,17 @@ static void AuthOnPacket(const uint8_t* d, int len)
         if(!s_AfUser.buf[0] && !last.empty()) MP_CopyStr(s_AfUser.buf, last.c_str(), sizeof(s_AfUser.buf));
         SrvAuthPut(client.GetServerName(), client.GetPort(), true);   // a phone that takes it over keeps it on
     }
+    else if(d[1] == AUTH_OFF)
+    {   // 4.13.15: the server's login system was turned off (default server: by its admin / moderators, or the
+        // last of them left): close the login screen, the player is in
+        if(s_Auth.state != AuthClient::IDLE && s_Auth.state != AuthClient::DONE) s_Auth.Stop();
+        s_Auth.state = AuthClient::IDLE;
+        s_bAuthReq = false; s_bAuthTicket = false; s_szAuthChal[0] = 0;
+        s_pAfEditing = nullptr;
+        if(VKeyboard::IsOpen() && !VKeyboard::IsChat()) VKeyboard::Close();
+        SrvAuthPut(client.GetServerName(), client.GetPort(), false);
+        SysMsg(COL_SYSTEM, "The login system is off on this server.");
+    }
     else if(d[1] == AUTH_RESULT && len >= (int)sizeof(PktAuthResult))
     {
         PktAuthResult r; memcpy(&r, d, sizeof(r)); r.user[23] = 0; r.msg[95] = 0;
@@ -346,7 +357,7 @@ static bool AuthHoldsJoin(uint64_t now)
     if(!s_bAuthReq)
     {   // the challenge comes right after the welcome: a short wait on servers known to use it
         const char* sn = client.GetServerName();
-        const bool expected = MP::IsDefaultServer(sn, client.GetPort()) || MP_IsBcwServerName(sn) || SrvAuthGet(sn, client.GetPort()) > 0;
+        const bool expected = MP_IsBcwServerName(sn) || SrvAuthGet(sn, client.GetPort()) > 0;   // 4.13.15: the default server's login is off by default
         return expected && now - s_nAuthJoinAt < 3500;
     }
     if(s_Auth.state != AuthClient::DONE) return true;
