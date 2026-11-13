@@ -3,7 +3,7 @@
    (left menu, middle page, friends on the right). On the web it sits in a desktop window. */
 (function (G) {
   'use strict';
-  var VERSION = '1.3';
+  var VERSION = '1.4';
   var B = G.Moquil || null;                    // the Android bridge (null on the web)
   var IS_WEB = !B;
   var D = document, $ = function (s, r) { return (r || D).querySelector(s); }, $$ = function (s, r) { return Array.prototype.slice.call((r || D).querySelectorAll(s)); };
@@ -19,6 +19,7 @@
 
   // ---------- icons ----------
   var IC = {
+    pin: '<path d="M9 3h6l-1 6 4 4H6l4-4z"/><path d="M12 13v8"/>', cal: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>', reply: '<path d="M10 8L4 13l6 5"/><path d="M4 13h10a6 6 0 0 1 6 6v1"/>', poll: '<path d="M5 20V10M12 20V4M19 20v-7"/>', role: '<path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/>', trash: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>', slow: '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/>',
     home: '<path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/>', search: '<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>',
     store: '<path d="M4 8h16l-1.5 12h-13z"/><path d="M8 8V6a4 4 0 0 1 8 0v2"/>', library: '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>',
     chat: '<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1.1-4.6A8 8 0 1 1 21 12z"/>', user: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
@@ -221,8 +222,8 @@
   (function () { var s = ls('moq_since') || {}; if (!s._first) { s._first = Date.now(); ls('moq_since', s); } })();
 
   var STORE = [
-    { cat: 'deco', title: 'Avatar decorations', items: [['deco-ring', 'Gold ring', 200], ['deco-neon', 'Neon ring', 250], ['deco-fire', 'Fire ring', 400], ['deco-hd', 'Purple haze', 300], ['deco-crown', 'Crown', 600], ['deco-halo', 'Halo', 500]] },
-    { cat: 'effect', title: 'Profile effects', items: [['fx-stars', 'Starry night', 300], ['fx-glow', 'Blue glow', 250], ['fx-fire', 'Embers', 400], ['fx-rain', 'Rain', 300], ['fx-hearts', 'Hearts', 350]] },
+    { cat: 'deco', title: 'Avatar decorations', items: [['deco-ring', 'Gold ring', 200], ['deco-neon', 'Neon ring', 250], ['deco-fire', 'Fire ring', 400], ['deco-hd', 'Purple haze', 300], ['deco-crown', 'Crown', 600], ['deco-halo', 'Halo', 500], ['deco-samurai', 'Samurai kabuto', 900], ['deco-ronin', 'Ronin hat and katana', 800], ['deco-oni', 'Oni mask', 700], ['deco-jacket', 'Leather jacket', 650], ['deco-grove', 'Grove Street jacket', 650], ['deco-hoodie', 'Hoodie', 450], ['deco-sparkle', 'Golden sparkles', 550], ['deco-lights', 'String lights', 550], ['deco-hearts', 'Love hearts', 500], ['deco-bubbles', 'Bubbles and sparks', 550], ['deco-sakura', 'Sakura branch', 600], ['deco-headphones', 'Headphones', 450], ['deco-catears', 'Cat ears', 400]] },
+    { cat: 'effect', title: 'Profile effects', items: [['fx-stars', 'Starry night', 300], ['fx-glow', 'Blue glow', 250], ['fx-fire', 'Embers', 400], ['fx-rain', 'Rain', 300], ['fx-hearts', 'Hearts', 350], ['fx-sakura', 'Sakura petals', 500], ['fx-bubbles', 'Bubbles', 450], ['fx-sparkle', 'Gold glitter', 500], ['fx-lights', 'String lights', 500]] },
     { cat: 'frame', title: 'Profile frames', items: [['frame-gold', 'Gold frame', 300], ['frame-neon', 'Neon frame', 300], ['frame-grove', 'Grove Street', 250], ['frame-temple', 'Temple', 600]] },
     { cat: 'nameplate', title: 'Nameplates', items: [['np-gold', 'Gold', 200], ['np-neon', 'Neon', 250], ['np-fire', 'Fire', 300], ['np-grove', 'Grove', 200], ['np-ice', 'Ice', 250]] },
     { cat: 'nametag', title: 'Nametags', items: [['nt-gold', 'Gold glow', 250], ['nt-neon', 'Neon', 250], ['nt-rainbow', 'Rainbow', 500], ['nt-fire', 'Fire', 300]] }
@@ -537,14 +538,220 @@
     return out.length ? out.join('') : '<div class="tiny dim" style="padding:10px 16px">No direct messages yet.</div>';
   }
   function serverSide(c) {
-    var owner = c.ownerId === Soc.id, room = 'c' + c.cid, vs = G.MoqVoice && MoqVoice.state.room === room;
-    return '<div class="sbhd srvhd' + (c.banner ? ' hasbn" style="background-image:linear-gradient(180deg,rgba(0,0,0,.55),rgba(0,0,0,0) 60%),url(' + c.banner + ')' : '') + '" data-srvmenu="' + esc(c.cid) + '"><span class="grow ell b">' + esc(c.name) + '</span>' + ic('chev', 's') + '</div><div class="scroll grow sbody">' +
-      '<div class="srvinfo">' + srvIcon(c, 56) + '<div class="tiny dim" style="margin-top:8px">' + esc(c.desc || 'Welcome to ' + c.name) + '</div><div class="row" style="gap:6px;margin-top:8px"><span class="tiny dim">' + (c.members || 0) + ' Members</span><span class="grow"></span><button class="btn sm go" data-invite="' + esc(c.cid) + '">' + ic('user', 's') + ' Invite</button></div></div>' +
-      '<div class="chcat">' + ic('chev', 's') + ' Text Channels</div><div class="chi' + (comCh === 'general' ? ' on' : '') + '" data-ch="general">' + ic('hash', 's') + '<span class="grow">general</span></div>' +
-      '<div class="chcat">' + ic('chev', 's') + ' Voice Channels</div><div class="chi" data-voice="' + esc(room) + '" data-vt="' + esc(c.name) + '">' + ic('vol', 's') + '<span class="grow">Lounge</span>' + (vs ? '<span class="chip green">on</span>' : '') + '</div>' +
-      (owner ? '<div class="chcat">' + ic('chev', 's') + ' Server Settings</div><div class="chi" data-srvicon="' + esc(c.cid) + '">' + ic('image', 's') + '<span class="grow">Server Profile</span></div><div class="chi danger" data-delcom="' + esc(c.cid) + '">' + ic('x', 's') + '<span class="grow">Delete server</span></div>' :
-        '<div class="chcat"></div><div class="chi' + (c.joined ? ' danger' : '') + '" data-join="' + esc(c.cid) + '">' + ic(c.joined ? 'out' : 'plus', 's') + '<span class="grow">' + (c.joined ? 'Leave server' : 'Join server') + '</span></div>') +
+    var owner = c.ownerId === Soc.id, cid = c.cid, ev = SV().events(cid), mgr = srvManager(cid);
+    return '<div class="sbhd srvhd' + (c.banner ? ' hasbn" style="background-image:linear-gradient(180deg,rgba(0,0,0,.55),rgba(0,0,0,0) 60%),url(' + c.banner + ')' : '') + '" data-srvmenu="' + esc(cid) + '"><span class="grow ell b">' + esc(c.name) + '</span>' + ic('chev', 's') + '</div><div class="scroll grow sbody">' +
+      '<div class="srvinfo">' + srvIcon(c, 56) + '<div class="tiny dim" style="margin-top:8px">' + esc(c.desc || 'Welcome to ' + c.name) + '</div><div class="row" style="gap:6px;margin-top:8px"><span class="tiny dim">' + SV().members(cid).length + ' Members</span><span class="grow"></span><button class="btn sm go" data-invite="' + esc(cid) + '">' + ic('user', 's') + ' Invite</button></div></div>' +
+      '<div class="chi" data-srvev="' + esc(cid) + '">' + ic('cal', 's') + '<span class="grow">' + (ev.length ? ev.length + ' Event' + (ev.length > 1 ? 's' : '') : 'Events') + '</span>' + (ev.some(SV().eventLive) ? '<span class="chip green">LIVE</span>' : '') + '</div>' +
+      (SV().cfg(cid).rules ? '<div class="chi" data-srvrules="' + esc(cid) + '">' + ic('shield', 's') + '<span class="grow">Rules</span></div>' : '') +
+      chanLists(c, 'chi') +
+      (mgr ? '<div class="chcat">' + ic('chev', 's') + ' Server Settings</div><div class="chi" data-srvset="' + esc(cid) + '">' + ic('gear', 's') + '<span class="grow">Settings</span></div>' : '') +
+      (owner ? '<div class="chi" data-srvicon="' + esc(cid) + '">' + ic('image', 's') + '<span class="grow">Server Profile</span></div><div class="chi danger" data-delcom="' + esc(cid) + '">' + ic('x', 's') + '<span class="grow">Delete server</span></div>' :
+        '<div class="chcat"></div><div class="chi' + (c.joined ? ' danger' : '') + '" data-join="' + esc(cid) + '">' + ic(c.joined ? 'out' : 'plus', 's') + '<span class="grow">' + (c.joined ? 'Leave server' : 'Join server') + '</span></div>') +
       '</div>';
+  }
+  // ===== 4.13.18: server features, with Discord.Net 3.19 as the blueprint: roles + permissions, channels (text / announcement /
+  // voice, topic, slowmode), replies, edits, reactions, polls, pins, scheduled events, AutoMod, timeouts, kicks and bans =====
+  function SV() { return G.MoqSrv; }
+  var comRe = '';
+  function srvManager(cid) { return ['admin', 'manage_server', 'manage_channels', 'manage_roles', 'manage_events', 'ban', 'kick', 'moderate'].some(function (p) { return SV().can(cid, p); }) || SV().isOwner(cid, Soc.id); }
+  function chanLists(c, cls) {
+    var cid = c.cid, mine = SV().can(cid, 'manage_channels') && SV().isOwner(cid, Soc.id);
+    var add = function (k) { return mine ? '<a class="chadd" data-chnew="' + esc(cid) + '" data-kind="' + k + '" title="Create channel">' + ic('plus', 's') + '</a>' : ''; };
+    var txt = SV().textChans(cid).map(function (k) {
+      var pins = SV().pins(cid, k.id).length;
+      return '<div class="' + cls + (comCh === k.id ? ' on' : '') + '" data-ch="' + esc(k.id) + '">' + ic(k.kind === 'news' ? 'bell' : 'hash', 's') + '<span class="grow ell">' + esc(k.name) + '</span>' + (k.slow ? '<span title="Slowmode">' + ic('slow', 's') + '</span>' : '') + (pins ? '<span class="tiny dim">' + ic('pin', 's') + '</span>' : '') + '</div>';
+    }).join('');
+    var vc = SV().voiceChans(cid).map(function (k) {
+      var room = SV().voiceRoom(cid, k.id), on = G.MoqVoice && MoqVoice.state.room === room;
+      return '<div class="' + cls + '" data-voice="' + esc(room) + '" data-vt="' + esc(c.name + ' / ' + k.name) + '">' + ic('vol', 's') + '<span class="grow ell">' + esc(k.name) + '</span>' + (on ? '<span class="chip green">on</span>' : '') + '</div>';
+    }).join('');
+    return '<div class="chcat">' + ic('chev', 's') + '<span class="grow">Text Channels</span>' + add('text') + '</div>' + txt + '<div class="chcat">' + ic('chev', 's') + '<span class="grow">Voice Channels</span>' + add('voice') + '</div>' + vc;
+  }
+  function memberPanel(cid) {
+    var groups = SV().memberGroups(cid), n = SV().members(cid).length;
+    return '<div class="tiny dim up" style="margin-bottom:6px">Members - ' + n + '</div>' + groups.map(function (g) {
+      return '<div class="tiny dim up" style="margin:10px 0 4px">' + esc(g.role.name) + ' - ' + g.list.length + '</div>' + g.list.map(function (m) {
+        var col = SV().colorOf(cid, m.id), own = SV().isOwner(cid, m.id), to = SV().timedOut(cid, m.id);
+        return '<div class="mini" data-mem="' + m.id + '" data-cid="' + esc(cid) + '" style="margin:0">' + avatar(m.id, m.name, Soc.profile(m.id), 'av s') + '<div class="grow ell small"' + (col ? ' style="color:' + col + '"' : '') + '>' + esc((Soc.profile(m.id) || {}).display || m.name) + '</div>' + (own ? '<span title="Server owner" style="color:#f0b232">' + ic('crown', 's') + '</span>' : '') + (to ? '<span title="Timed out">' + ic('slow', 's') + '</span>' : '') + '</div>';
+      }).join('');
+    }).join('');
+  }
+  function fmtLeft(sec) { return sec >= 3600 ? Math.ceil(sec / 3600) + 'h' : sec >= 60 ? Math.ceil(sec / 60) + 'm' : sec + 's'; }
+  function comComposer(c) {
+    var cid = c.cid, why = SV().blockReason(cid, comCh), k = SV().chan(cid, comCh);
+    if (why) return '<div id="ccomp" class="card pad small dim" style="text-align:center">' + esc(why) + (!(c.joined || c.ownerId === Soc.id) ? ' <button class="btn sm go" data-join="' + esc(cid) + '">Join</button>' : '') + '</div>';
+    var re = comRe && SV().post(cid, comRe);
+    return '<div id="ccomp">' + (re ? '<div class="replybar small">' + ic('reply', 's') + ' Replying to <b>' + esc(re.fromName) + '</b><span class="grow ell dim"> ' + esc(re.text.slice(0, 80)) + '</span><a data-act="cancelre">' + ic('x', 's') + '</a></div>' : '') +
+      (k.slow ? '<div class="tiny dim" id="cslow" style="padding:2px 6px">' + ic('slow', 's') + ' Slowmode is on: one post every ' + fmtLeft(k.slow) + '</div>' : '') +
+      '<div class="composer card"><button class="ibtn" data-act="emoji" title="Emoji">' + ic('smile', 's') + '</button><input class="inp grow" id="ci" maxlength="2000" placeholder="Message ' + (k.kind === 'news' ? '' : '#') + esc(k.name) + '" autocomplete="off">' +
+      (SV().can(cid, 'polls') ? '<button class="ibtn" data-poll="' + esc(cid) + '" title="Create poll">' + ic('poll', 's') + '</button>' : '') + '<button class="ibtn" data-act="mdhelp" title="Text formatting">' + ic('edit', 's') + '</button><button class="ibtn" id="csend" title="Send">' + ic('send', 's') + '</button></div></div>';
+  }
+  function comSend(cid, txt, poll) {
+    var wait = SV().slowWait(cid, comCh); if (wait) { toast('Slowmode: wait ' + fmtLeft(wait)); return false; }
+    var why = SV().blockReason(cid, comCh); if (why) { toast(why); return false; }
+    if (SV().automodHit(cid, txt + ' ' + (poll ? poll.q + ' ' + poll.o.join(' ') : '')) && !SV().can(cid, 'manage_messages') && !SV().isOwner(cid, Soc.id)) { toast('AutoMod blocked this message: it has a word the server does not allow.'); return false; }
+    if (/@(everyone|here)\b/.test(txt) && !SV().can(cid, 'mention_everyone')) txt = txt.replace(/@(everyone|here)\b/g, '@\u200b$1');
+    var opt = { ch: comCh }; if (comRe) opt.re = comRe; if (poll) opt.poll = poll;
+    comRe = '';
+    Soc.post(cid, txt, opt).then(function (ok) { if (ok) quest('msg'); refreshCom(true); });
+    return true;
+  }
+  function bindComCompose(c) {
+    var i = $('#ci'); if (!i) return;
+    var send = function () { var v = i.value.trim(); if (!v) return; if (comSend(c.cid, v)) { i.value = ''; } i.focus(); };
+    i.onkeydown = function (e) { if (e.key === 'Enter') { e.preventDefault(); send(); } }; $('#csend').onclick = send;
+  }
+  function refreshCom(force) {
+    var c = CUR.page === 'community' && Soc.community(CUR.arg); if (!c) return;
+    var mm = $('#mm'); if (mm) { var h = memberPanel(c.cid); if (mm._h !== h) { mm._h = h; mm.innerHTML = h; } }
+    var cc = $('#ccomp'), ci = $('#ci');
+    if (cc && !(ci && D.activeElement === ci && ci.value)) { var v = ci ? ci.value : '', nh = comComposer(c); if (cc._h !== nh) { var tmp = D.createElement('div'); tmp.innerHTML = nh; var nw = tmp.firstChild; nw._h = nh; cc.replaceWith(nw); bindComCompose(c); if (v && $('#ci')) $('#ci').value = v; } }
+    updateMsgs(force);
+  }
+  function comMsgHtml(cid, p, prev) {
+    var me = p.fromId === Soc.id, pr = me ? G.MoqProfile() : Soc.profile(p.fromId), nm = me ? (prof().display || SESSION.user) : (pr && pr.display || p.fromName);
+    var same = prev && prev.fromId === p.fromId && p.ts - prev.ts < 300 && !p.re && !p.poll;
+    var col = SV().colorOf(cid, p.fromId), pin = SV().pinned(cid, p.id);
+    var re = p.re ? SV().post(cid, p.re) : null;
+    var quote = p.re ? '<div class="mre small" data-jump="' + esc(p.re) + '">' + ic('reply', 's') + (re ? '<b' + (SV().colorOf(cid, re.fromId) ? ' style="color:' + SV().colorOf(cid, re.fromId) + '"' : '') + '>' + esc(re.fromName) + '</b> <span class="ell dim">' + esc(re.text.slice(0, 90)) + '</span>' : '<span class="dim">Original message was deleted</span>') + '</div>' : '';
+    var poll = '';
+    if (p.poll) {
+      var vmap = SV().votes(cid, p.id), vv = p.poll.o.map(function (_, i) { return (vmap[i] || []).length; }), tot = vv.reduce(function (a, b) { return a + b; }, 0), my = SV().myVotes(cid, p.id), ended = p.poll.end && p.poll.end < Math.floor(Date.now() / 1000);
+      poll = '<div class="poll card"><div class="b">' + esc(p.poll.q) + '</div><div class="tiny dim">' + (p.poll.multi ? 'Select one or more answers' : 'Select one answer') + '</div>' + p.poll.o.map(function (o, i) {
+        var pc = tot ? Math.round(vv[i] * 100 / tot) : 0;
+        return '<div class="popt' + (my.indexOf(i) >= 0 ? ' on' : '') + (ended ? ' ended' : '') + '" data-vote="' + esc(p.id) + '" data-i="' + i + '"><i style="width:' + pc + '%"></i><span class="grow">' + esc(o) + '</span><span class="tiny">' + vv[i] + ' &middot; ' + pc + '%</span></div>';
+      }).join('') + '<div class="tiny dim">' + tot + ' vote' + (tot === 1 ? '' : 's') + ' &middot; ' + (ended ? 'Poll closed' : p.poll.end ? 'Ends ' + tsFmt(p.poll.end, 'R') : 'Open') + '</div></div>';
+    }
+    var rx = SV().reactions(cid, p.id), rk = Object.keys(rx);
+    var rbar = rk.length ? '<div class="rxs">' + rk.map(function (e) { var mine = rx[e].indexOf(Soc.id) >= 0; return '<span class="rx' + (mine ? ' on' : '') + '" data-rx="' + esc(p.id) + '" data-e="' + e + '">' + e + ' <b>' + rx[e].length + '</b></span>'; }).join('') + '</div>' : '';
+    return '<div class="msg cmsg' + (pin ? ' pinned' : '') + '" id="m-' + esc(p.id) + '"' + (same ? ' style="padding-top:0"' : '') + '>' + (same ? '<div style="width:40px;flex:none"></div>' : '<div data-mem="' + p.fromId + '" data-cid="' + esc(cid) + '">' + avatar(p.fromId, nm, pr, 'av') + '</div>') +
+      '<div class="w">' + quote + (same ? '' : '<div><span class="n ' + esc(pr && pr.nametag || '') + '"' + (col ? ' style="color:' + col + '"' : '') + ' data-mem="' + p.fromId + '" data-cid="' + esc(cid) + '">' + esc(nm) + '</span>' + (SV().isOwner(cid, p.fromId) ? ' <span title="Server owner" style="color:#f0b232">' + ic('crown', 's') + '</span>' : '') + '<span class="tm">' + clock(p.ts) + '</span>' + (pin ? '<span class="tm" title="Pinned">' + ic('pin', 's') + '</span>' : '') + '</div>') +
+      (p.text ? '<div class="tx">' + md(p.text) + (p.ed ? ' <span class="tiny dim" title="' + esc(tsFmt(p.ed, 'F')) + '">(edited)</span>' : '') + '</div>' : '') + poll + rbar + '</div>' +
+      '<div class="mact"><button class="ibtn" data-rxpick="' + esc(p.id) + '" title="Add reaction">' + ic('smile', 's') + '</button><button class="ibtn" data-reply="' + esc(p.id) + '" title="Reply">' + ic('reply', 's') + '</button><button class="ibtn" data-pmore="' + esc(p.id) + '" title="More">' + ic('more', 's') + '</button></div></div>';
+  }
+  function memberMenu(cid, uid) {
+    var me = Soc.id, c = Soc.community(cid); if (!c) return;
+    var pr = Soc.profile(uid), nm = (pr && pr.display) || Soc.nameOf(uid) || uid, cf = SV().cfg(cid), mine = cf.assign[uid] || [];
+    var canMod = uid !== me && !SV().isOwner(cid, uid) && SV().above(cid, me, uid);
+    var roles = cf.roles.filter(function (r) { return r.id !== 'everyone'; });
+    var body = '<div class="row" style="margin-bottom:10px">' + avatar(uid, nm, pr, 'av l') + '<div class="grow"><div class="b">' + esc(nm) + '</div><div class="tiny dim">#' + esc(uid) + (SV().isOwner(cid, uid) ? ' &middot; Server owner' : '') + (SV().timedOut(cid, uid) ? ' &middot; Timed out until ' + tsFmt(SV().timedOut(cid, uid), 'f') : '') + '</div></div></div>' +
+      '<div class="tiny dim up">Roles</div><div class="rolechips">' + (mine.length ? mine.map(function (rid) { var r = cf.roles.filter(function (x) { return x.id === rid; })[0]; return r ? '<span class="rchip"><i style="background:' + (r.color || '#99aab5') + '"></i>' + esc(r.name) + '</span>' : ''; }).join('') : '<span class="tiny dim">No roles</span>') + '</div>';
+    var btn = [{ t: 'Profile', fn: function () { go('user', uid); } }];
+    if (SV().isOwner(cid, me) && roles.length) btn.push({ t: 'Roles', fn: function () { setTimeout(function () { pickRoles(cid, uid); }, 30); } });
+    if (canMod && SV().can(cid, 'moderate')) btn.push({ t: SV().timedOut(cid, uid) ? 'Remove timeout' : 'Timeout', fn: function () { setTimeout(function () { if (SV().timedOut(cid, uid)) SV().mod(cid, 'timeout', uid, 0).then(function () { toast('Timeout removed'); refreshCom(); }); else timeoutPick(cid, uid, nm); }, 30); } });
+    if (canMod && SV().can(cid, 'kick')) btn.push({ t: 'Kick', cls: 'red', fn: function () { setTimeout(function () { dialog({ title: 'Kick ' + nm, body: 'They are removed from the member list. They can come back with a new invite.', buttons: [{ t: 'Cancel', fn: function () {} }, { t: 'Kick', cls: 'red', fn: function () { SV().mod(cid, 'kick', uid).then(function (ok) { toast(ok ? nm + ' was kicked' : 'You cannot kick them'); refreshCom(); }); } }] }); }, 30); } });
+    if (canMod && SV().can(cid, 'ban')) btn.push({ t: 'Ban', cls: 'red', fn: function () { setTimeout(function () { prompt2('Ban ' + nm, 'Reason (optional, shown in the ban list)', '', function (why) { SV().mod(cid, 'ban', uid, why).then(function (ok) { toast(ok ? nm + ' was banned' : 'You cannot ban them'); refreshCom(); }); }, { ok: 'Ban', max: 120 }); }, 30); } });
+    dialog({ title: 'Member', body: body, buttons: btn });
+  }
+  function timeoutPick(cid, uid, nm) {
+    var L = [[60, '60 seconds'], [300, '5 minutes'], [600, '10 minutes'], [3600, '1 hour'], [86400, '1 day'], [604800, '1 week']];
+    dialog({ title: 'Timeout ' + nm, body: '<div class="small dim" style="margin-bottom:8px">They cannot post, react or vote until it ends.</div><div class="card list">' + L.map(function (x, i) { return '<div class="li" data-b="' + (i + 1) + '">' + ic('slow') + '<div class="grow b">' + x[1] + '</div></div>'; }).join('') + '</div>',
+      buttons: [{ t: 'Cancel', fn: function () {} }].concat(L.map(function (x) { return { t: x[1], cls: 'hide', fn: function () { SV().mod(cid, 'timeout', uid, x[0]).then(function (ok) { toast(ok ? nm + ' is timed out for ' + x[1] : 'You cannot time them out'); refreshCom(); }); } }; })) });
+  }
+  function pickRoles(cid, uid) {
+    var cf = SV().cfg(cid), mine = cf.assign[uid] || [], roles = cf.roles.filter(function (r) { return r.id !== 'everyone'; });
+    dialog({ title: 'Roles', body: roles.map(function (r) { return '<label class="row chk"><input type="checkbox" value="' + esc(r.id) + '"' + (mine.indexOf(r.id) >= 0 ? ' checked' : '') + '><i class="rdot" style="background:' + (r.color || '#99aab5') + '"></i><span class="grow">' + esc(r.name) + '</span></label>'; }).join(''),
+      buttons: [{ t: 'Cancel', fn: function () {} }, { t: 'Save', cls: 'go', fn: function (bg) { var sel = Array.prototype.map.call(bg.querySelectorAll('input:checked'), function (x) { return x.value; }); SV().setRoles(cid, uid, sel).then(function () { toast('Roles saved'); refreshCom(); }); } }] });
+  }
+  function postMenu(cid, pid) {
+    var p = SV().post(cid, pid); if (!p) return; var mine = p.fromId === Soc.id, B = [];
+    B.push({ t: 'Reply', fn: function () { comRe = pid; refreshCom(); setTimeout(function () { var i = $('#ci'); if (i) i.focus(); }, 60); } });
+    B.push({ t: 'React', fn: function () { setTimeout(function () { reactPick(cid, pid); }, 30); } });
+    B.push({ t: 'Copy text', fn: function () { copy(p.text); } });
+    if (SV().can(cid, 'pin')) B.push({ t: SV().pinned(cid, pid) ? 'Unpin' : 'Pin', fn: function () { SV().mod(cid, SV().pinned(cid, pid) ? 'unpin' : 'pin', pid).then(function () { refreshCom(); }); } });
+    if (mine && !p.poll) B.push({ t: 'Edit', fn: function () { setTimeout(function () { prompt2('Edit message', 'Message', p.text, function (v) { v = v.trim(); if (!v) return false; Soc.editPost(cid, pid, v).then(function () { refreshCom(); }); }, { area: true, max: 2000 }); }, 30); } });
+    if (mine || SV().can(cid, 'manage_messages')) B.push({ t: 'Delete', cls: 'red', fn: function () { setTimeout(function () { dialog({ title: 'Delete message', body: 'Delete this message for everyone?', buttons: [{ t: 'Cancel', fn: function () {} }, { t: 'Delete', cls: 'red', fn: function () { if (mine) Soc.deletePost(cid, pid); else SV().mod(cid, 'del', pid); refreshCom(); } }] }); }, 30); } });
+    dialog({ title: 'Message', body: '<div class="small dim ell">' + esc(p.fromName) + ': ' + esc(p.text.slice(0, 140) || (p.poll ? 'Poll: ' + p.poll.q : '')) + '</div>', buttons: B });
+  }
+  function reactPick(cid, pid) {
+    dialog({ title: 'Add reaction', body: '<div class="rxpick">' + SV().REACTS.map(function (e, i) { return '<button class="ibtn" data-b="' + (i + 1) + '">' + e + '</button>'; }).join('') + '</div>',
+      buttons: [{ t: 'Close', fn: function () {} }].concat(SV().REACTS.map(function (e) { return { t: e, cls: 'hide', fn: function () { if (!SV().react(cid, pid, e)) toast('You cannot react here right now'); refreshCom(); } }; })) });
+  }
+  function pollCreate(cid) {
+    dialog({ title: 'Create a poll', body: '<label class="lbl">Question</label><input class="inp" id="pq" maxlength="300" placeholder="What should we play tonight?"><label class="lbl">Answers</label><div id="pans">' + [1, 2, 3].map(function (i) { return '<input class="inp pa" maxlength="55" placeholder="Answer ' + i + '" style="margin-bottom:6px">'; }).join('') + '</div><button class="btn sm" data-act="pollmore">' + ic('plus', 's') + ' Add answer</button>' +
+      '<div class="row" style="margin-top:10px"><div class="grow"><label class="lbl">Duration</label><select class="inp" id="pdur"><option value="3600">1 hour</option><option value="14400">4 hours</option><option value="28800">8 hours</option><option value="86400" selected>24 hours</option><option value="259200">3 days</option><option value="604800">1 week</option><option value="0">No end</option></select></div><label class="row chk grow" style="margin-top:22px"><input type="checkbox" id="pmulti"> Allow more than one answer</label></div>',
+      buttons: [{ t: 'Cancel', fn: function () {} }, { t: 'Post', cls: 'go', fn: function (bg) {
+        var q = $('#pq', bg).value.trim(), o = Array.prototype.map.call(bg.querySelectorAll('.pa'), function (x) { return x.value.trim(); }).filter(Boolean);
+        if (!q || o.length < 2) { toast('A question and two answers'); return false; }
+        var d = +$('#pdur', bg).value; comSend(cid, '', { q: q, o: o.slice(0, 10), multi: $('#pmulti', bg).checked, end: d ? Math.floor(Date.now() / 1000) + d : 0 });
+      } }] });
+  }
+  function pinsDialog(cid) {
+    var list = SV().pins(cid, comCh);
+    dialog({ title: 'Pinned messages', icon: 'pin', body: list.length ? list.map(function (p) { return '<div class="card pad" style="margin-bottom:6px" data-jump="' + esc(p.id) + '"><div class="small"><b>' + esc(p.fromName) + '</b> <span class="tiny dim">' + tsFmt(p.ts, 'f') + '</span></div><div class="small">' + md(p.text || (p.poll ? 'Poll: ' + p.poll.q : '')) + '</div></div>'; }).join('') : '<div class="empty small">This channel has no pinned messages yet.</div>', buttons: [] });
+  }
+  function eventsDialog(cid) {
+    var list = SV().events(cid), mine = SV().can(cid, 'manage_events') && SV().isOwner(cid, Soc.id);
+    var body = list.length ? list.map(function (e) {
+      var n = SV().rsvps(cid, e.id).length, going = SV().going(cid, e.id), live = SV().eventLive(e);
+      return '<div class="card pad evc" style="margin-bottom:8px"><div class="tiny" style="color:' + (live ? '#23a55a' : '#00a8fc') + '">' + ic('cal', 's') + ' ' + (live ? 'LIVE NOW' : esc(tsFmt(e.at, 'F'))) + '</div><div class="b" style="font-size:16px;margin:4px 0">' + esc(e.title) + '</div>' + (e.desc ? '<div class="small dim">' + md(e.desc) + '</div>' : '') +
+        '<div class="row" style="margin-top:8px"><span class="tiny dim grow">' + (e.where ? ic('vol', 's') + ' ' + esc(e.where) + ' &middot; ' : '') + n + ' interested</span><button class="btn sm ' + (going ? 'go' : '') + '" data-rsvp="' + esc(e.id) + '" data-cid="' + esc(cid) + '">' + ic(going ? 'check' : 'bell', 's') + (going ? ' Interested' : ' Interested?') + '</button>' + (mine ? '<button class="btn sm red" data-evdel="' + esc(e.id) + '" data-cid="' + esc(cid) + '">' + ic('trash', 's') + '</button>' : '') + '</div></div>';
+    }).join('') : '<div class="empty small">No upcoming events. ' + (mine ? 'Create one for your next MP night.' : '') + '</div>';
+    dialog({ title: 'Events', icon: 'cal', body: body, buttons: mine ? [{ t: 'Close', fn: function () {} }, { t: 'Create Event', cls: 'go', fn: function () { setTimeout(function () { eventCreate(cid); }, 30); } }] : [] });
+  }
+  function eventCreate(cid) {
+    var d = new Date(Date.now() + 3600e3); d.setMinutes(0, 0, 0); var pad = function (n) { return (n < 10 ? '0' : '') + n; };
+    var dv = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':00';
+    dialog({ title: 'Create Event', icon: 'cal', body: '<label class="lbl">Topic</label><input class="inp" id="et" maxlength="100" placeholder="MP Race night"><label class="lbl">Start</label><input class="inp" id="ea" type="datetime-local" value="' + dv + '">' +
+      '<div class="row"><div class="grow"><label class="lbl">Length</label><select class="inp" id="ed"><option value="1800">30 minutes</option><option value="3600" selected>1 hour</option><option value="7200">2 hours</option><option value="14400">4 hours</option><option value="86400">1 day</option></select></div><div class="grow"><label class="lbl">Where</label><select class="inp" id="ew">' + SV().voiceChans(cid).map(function (k) { return '<option>' + esc(k.name) + '</option>'; }).join('') + '<option>MP server</option><option>Somewhere else</option></select></div></div>' +
+      '<label class="lbl">Description</label><textarea class="inp" id="edesc" maxlength="600"></textarea>',
+      buttons: [{ t: 'Cancel', fn: function () {} }, { t: 'Create', cls: 'go', fn: function (bg) {
+        var t = $('#et', bg).value.trim(), at = Math.floor(new Date($('#ea', bg).value).getTime() / 1000); if (!t || !at) { toast('A topic and a start time'); return false; }
+        var cf = JSON.parse(JSON.stringify(SV().cfg(cid))); cf.events.push({ id: SV().rid(), title: t, desc: $('#edesc', bg).value, at: at, dur: +$('#ed', bg).value, where: $('#ew', bg).value, by: Soc.id });
+        SV().saveCfg(cid, cf).then(function (ok) { toast(ok ? 'Event created' : 'Could not save'); soon(); });
+      } }] });
+  }
+  // ---- Server Settings (owner): Overview, Roles, Channels, AutoMod, Bans ----
+  var SSTAB = 'overview';
+  function srvSettings(cid) {
+    var c = Soc.community(cid); if (!c) return;
+    if (!SV().isOwner(cid, Soc.id)) { srvModPanel(cid); return; }
+    var cf = JSON.parse(JSON.stringify(SV().cfg(cid))), counts = SV().roleCounts(cid);
+    var tabsH = function () { return '<div class="tabs">' + [['overview', 'Overview'], ['roles', 'Roles'], ['chans', 'Channels'], ['automod', 'AutoMod'], ['bans', 'Bans']].map(function (x) { return '<div class="tab' + (SSTAB === x[0] ? ' on' : '') + '" data-sst="' + x[0] + '">' + x[1] + '</div>'; }).join('') + '</div>'; };
+    var pane = function () {
+      if (SSTAB === 'overview') return '<label class="lbl">Server name</label><input class="inp" id="sn" maxlength="40" value="' + esc(c.name) + '"><label class="lbl">Description</label><textarea class="inp" id="sdesc" maxlength="300">' + esc(c.desc || '') + '</textarea><label class="lbl">Rules (members see them in the side bar)</label><textarea class="inp" id="srules" maxlength="1500" style="min-height:110px" placeholder="1. Be kind.&#10;2. No cheats on the MP server.">' + esc(cf.rules) + '</textarea>';
+      if (SSTAB === 'roles') return '<div class="small dim" style="margin-bottom:8px">Roles at the top outrank the ones below: a moderator can only kick, ban or time out members whose top role is lower.</div>' + cf.roles.map(function (r, i) {
+        return '<div class="card pad role" data-ri="' + i + '" style="margin-bottom:8px"><div class="row"><input type="color" class="rcol" value="' + (r.color || '#99aab5') + '"' + (r.id === 'everyone' ? ' disabled' : '') + '><input class="inp grow rname" maxlength="32" value="' + esc(r.name) + '"' + (r.id === 'everyone' ? ' disabled' : '') + '><span class="tiny dim">' + (counts[r.id] || 0) + ' ' + ic('users', 's') + '</span>' +
+          (r.id !== 'everyone' ? '<button class="ibtn" data-rmove="-1" title="Move up">&#9650;</button><button class="ibtn" data-rmove="1" title="Move down">&#9660;</button><button class="ibtn" data-rdel title="Delete role">' + ic('trash', 's') + '</button>' : '') + '</div>' +
+          (r.id !== 'everyone' ? '<label class="row chk tiny"><input type="checkbox" class="rhoist"' + (r.hoist ? ' checked' : '') + '> Show members with this role on their own in the member list</label>' : '') +
+          '<details><summary class="tiny dim">Permissions (' + (r.perms.indexOf('admin') >= 0 ? 'all' : r.perms.length) + ')</summary>' + SV().PERMS.map(function (p) { return '<label class="row chk tiny" title="' + esc(p[2]) + '"><input type="checkbox" class="rperm" value="' + p[0] + '"' + (r.perms.indexOf(p[0]) >= 0 ? ' checked' : '') + '><span class="grow"><b>' + esc(p[1]) + '</b> <span class="dim">' + esc(p[2]) + '</span></span></label>'; }).join('') + '</details></div>';
+      }).join('') + '<button class="btn sm go" data-radd>' + ic('plus', 's') + ' Create Role</button>';
+      if (SSTAB === 'chans') return cf.chans.map(function (k, i) {
+        return '<div class="card pad chrow" data-ci="' + i + '" style="margin-bottom:8px"><div class="row">' + ic(k.kind === 'voice' ? 'vol' : k.kind === 'news' ? 'bell' : 'hash', 's') + '<input class="inp grow cname" maxlength="24" value="' + esc(k.name) + '">' + (k.id !== 'general' && k.id !== 'lounge' ? '<button class="ibtn" data-cdel title="Delete channel">' + ic('trash', 's') + '</button>' : '') + '</div>' +
+          (k.kind !== 'voice' ? '<input class="inp ctopic" maxlength="300" placeholder="Channel topic" value="' + esc(k.topic || '') + '"><div class="row"><label class="tiny dim">Slowmode</label><select class="inp cslow" style="width:auto">' + [[0, 'Off'], [5, '5s'], [10, '10s'], [30, '30s'], [60, '1m'], [300, '5m'], [900, '15m'], [3600, '1h'], [21600, '6h']].map(function (o) { return '<option value="' + o[0] + '"' + (+k.slow === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>' + (k.id !== 'general' ? '<label class="row chk tiny"><input type="checkbox" class="cnews"' + (k.kind === 'news' ? ' checked' : '') + '> Announcement channel</label>' : '') + '</div>' : '') + '</div>';
+      }).join('') + '<div class="row"><button class="btn sm go" data-cadd="text">' + ic('hash', 's') + ' Text channel</button><button class="btn sm go" data-cadd="voice">' + ic('vol', 's') + ' Voice channel</button></div>';
+      if (SSTAB === 'automod') return '<div class="small dim" style="margin-bottom:8px">Posts with these words are blocked before they are sent and hidden for everyone if they get through. Moderators with Manage Messages are not filtered.</div><textarea class="inp" id="samod" style="min-height:140px" placeholder="one word or phrase per line">' + esc(cf.automod.join('\n')) + '</textarea>';
+      var bans = SV().bans(cid);
+      return bans.length ? bans.map(function (b) { return '<div class="mini">' + avatar(b.id, Soc.nameOf(b.id) || b.id, Soc.profile(b.id), 'av s') + '<div class="grow small"><b>' + esc(Soc.nameOf(b.id) || b.id) + '</b><div class="tiny dim">' + esc(b.why || 'No reason') + ' &middot; ' + tsFmt(b.ts, 'd') + '</div></div><button class="btn sm" data-unban="' + b.id + '">Revoke</button></div>'; }).join('') : '<div class="empty small">Nobody is banned.</div>';
+    };
+    var collect = function (bg) {
+      if (SSTAB === 'overview') { cf.rules = $('#srules', bg).value; cf._n = $('#sn', bg).value; cf._d = $('#sdesc', bg).value; }
+      if (SSTAB === 'roles') Array.prototype.forEach.call(bg.querySelectorAll('.role'), function (el) { var r = cf.roles[+el.dataset.ri]; if (!r) return; if (r.id !== 'everyone') { r.name = $('.rname', el).value; r.color = $('.rcol', el).value === '#99aab5' ? '' : $('.rcol', el).value; r.hoist = $('.rhoist', el).checked; } r.perms = Array.prototype.map.call(el.querySelectorAll('.rperm:checked'), function (x) { return x.value; }); });
+      if (SSTAB === 'chans') Array.prototype.forEach.call(bg.querySelectorAll('.chrow'), function (el) { var k = cf.chans[+el.dataset.ci]; if (!k) return; k.name = $('.cname', el).value; if (k.kind !== 'voice') { k.topic = $('.ctopic', el).value; k.slow = +$('.cslow', el).value; var nw = $('.cnews', el); if (nw) k.kind = nw.checked ? 'news' : 'text'; } });
+      if (SSTAB === 'automod') cf.automod = $('#samod', bg).value.split('\n');
+    };
+    var dl = dialog({ title: 'Server Settings', icon: 'gear', body: '<div id="sstabs">' + tabsH() + '</div><div id="sspane" class="scroll" style="max-height:56vh">' + pane() + '</div>',
+      onOpen: function (bg) {
+        bg.addEventListener('click', function (e) {
+          var t = e.target, el, redraw = function () { $('#sstabs', bg).innerHTML = tabsH(); $('#sspane', bg).innerHTML = pane(); };
+          if ((el = t.closest('[data-sst]'))) { collect(bg); SSTAB = el.dataset.sst; redraw(); return; }
+          if (t.closest('[data-radd]')) { collect(bg); if (cf.roles.length >= 30) return; cf.roles.splice(cf.roles.length - 1, 0, { id: SV().rid().slice(0, 8), name: 'new role', color: SV().ROLE_COLORS[cf.roles.length % 10], perms: [], hoist: true }); redraw(); return; }
+          if ((el = t.closest('[data-rmove]'))) { collect(bg); var i = +el.closest('.role').dataset.ri, j = i + +el.dataset.rmove; if (j < 0 || j >= cf.roles.length - 1 || cf.roles[j].id === 'everyone') return; var tmp = cf.roles[i]; cf.roles[i] = cf.roles[j]; cf.roles[j] = tmp; redraw(); return; }
+          if ((el = t.closest('[data-rdel]'))) { collect(bg); cf.roles.splice(+el.closest('.role').dataset.ri, 1); redraw(); return; }
+          if ((el = t.closest('[data-cadd]'))) { collect(bg); if (cf.chans.length >= 40) return; var kind = el.dataset.cadd, nm = kind === 'voice' ? 'Voice ' + (SV().voiceChans(cid).length + 1) : 'new-channel'; cf.chans.push({ id: SV().chanName(nm).slice(0, 15) + '-' + SV().rid().slice(0, 4), name: nm, kind: kind, topic: '', slow: 0 }); redraw(); return; }
+          if ((el = t.closest('[data-cdel]'))) { collect(bg); cf.chans.splice(+el.closest('.chrow').dataset.ci, 1); redraw(); return; }
+          if ((el = t.closest('[data-unban]'))) { SV().mod(cid, 'unban', el.dataset.unban).then(function () { toast('Ban revoked'); redraw(); }); return; }
+        });
+      },
+      buttons: [{ t: 'Close', fn: function () {} }, { t: 'Save Changes', cls: 'go', fn: function (bg) {
+        collect(bg); var n = cf._n, d = cf._d; delete cf._n; delete cf._d;
+        SV().saveCfg(cid, cf).then(function (ok) { toast(ok ? 'Server settings saved' : 'Too big to save'); if (n !== undefined && (n !== c.name || d !== (c.desc || ''))) Soc.updateCommunity(cid, n, d); soon(); render(); });
+      } }] });
+    return dl;
+  }
+  function srvModPanel(cid) {   // moderators (not the owner): bans list + how-to
+    var bans = SV().bans(cid);
+    dialog({ title: 'Moderation', icon: 'shield', body: '<div class="small dim" style="margin-bottom:8px">Tap a member in the member list or a name in chat to time out, kick or ban them. Roles, channels and AutoMod are set by the server owner.</div><div class="tiny dim up">Bans</div>' + (bans.length ? bans.map(function (b) { return '<div class="mini"><div class="grow small"><b>' + esc(Soc.nameOf(b.id) || b.id) + '</b> <span class="tiny dim">' + esc(b.why || '') + '</span></div>' + (SV().can(cid, 'ban') ? '<button class="btn sm" onclick="MoqSrv.mod(\'' + esc(cid) + '\',\'unban\',\'' + b.id + '\')">Revoke</button>' : '') + '</div>'; }).join('') : '<div class="empty small">Nobody is banned.</div>'), buttons: [] });
   }
   function renderSide() {
     var s = $('#side'); if (!s || !SESSION) return;
@@ -654,8 +861,9 @@
     r.after && r.after(pg);
   }
   function refresh() {   // re-render without killing what you type
-    var a = D.activeElement; if (a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA') && $('#page').contains(a) && a.id !== 'sq') { if (CUR.page === 'chat' || CUR.page === 'community') updateMsgs(); return; }
-    if (CUR.page === 'chat' || CUR.page === 'community') { updateMsgs(); return; }
+    var a = D.activeElement; if (a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA') && $('#page').contains(a) && a.id !== 'sq') { if (CUR.page === 'chat') updateMsgs(); else if (CUR.page === 'community') refreshCom(); return; }
+    if (CUR.page === 'chat') { updateMsgs(); return; }
+    if (CUR.page === 'community') { refreshCom(); return; }
     var sc = $('#page') ? $('#page').scrollTop : 0; render(); if ($('#page')) $('#page').scrollTop = sc;
   }
   function tabs(list, cur, attr) { return '<div class="tabs">' + list.map(function (t) { return '<div class="tab' + (cur === t[0] ? ' on' : '') + '" data-' + (attr || 'tab') + '="' + t[0] + '">' + t[1] + '</div>'; }).join('') + '</div>'; }
@@ -912,9 +1120,9 @@
     var box = $('#msgs'); if (!box) return;
     var list = [];
     if (CUR.page === 'chat') { var c = Soc.conv(CUR.arg); if (!c) return; list = c.msgs || []; Soc.markRead(c.key); }
-    else if (CUR.page === 'community') { var cm = Soc.community(CUR.arg); if (!cm) return; list = (cm.posts || []).slice().reverse().map(function (p) { return { fromId: p.fromId, fromName: p.fromName, text: p.text, ts: p.ts }; }); }
+    else if (CUR.page === 'community') { var cm = Soc.community(CUR.arg); if (!cm) return; list = SV().posts(cm.cid, comCh).slice().reverse(); }
     var atEnd = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
-    var html = list.length ? list.map(function (m, i) { return msgHtml(m, list[i - 1]); }).join('') : '<div class="empty small">' + (CUR.page === 'community' ? 'No posts yet. Say hi.' : 'Say hi.') + '</div>';
+    var html = list.length ? list.map(function (m, i) { return cm ? comMsgHtml(cm.cid, m, list[i - 1]) : msgHtml(m, list[i - 1]); }).join('') : '<div class="empty small">' + (CUR.page === 'community' ? 'No posts yet. Say hi.' : 'Say hi.') + '</div>';
     if (box._h === html) return; box._h = html; box.innerHTML = html;
     if (force || atEnd) box.scrollTop = box.scrollHeight;
     var vb = $('#vbar'); if (vb && G.MoqVoice) vb.outerHTML = voiceBar(vb.dataset.room);
@@ -931,19 +1139,23 @@
   PAGES.community = function () {
     var c = Soc.id && Soc.community(CUR.arg); if (!c) return { top: title('Server', true), body: '<div class="empty">Loading the server...</div>', after: function () { if (Soc.id) Soc.viewCommunity(CUR.arg); } };
     Soc.viewCommunity(c.cid);
-    var owner = c.ownerId === Soc.id, can = c.joined || owner, room = 'c' + c.cid;
-    var top = '<button class="ibtn" data-act="back">' + ic('back') + '</button>' + srvIcon(c, 34, 'border-radius:10px;') + '<div class="grow"><div class="b ell">' + esc(c.name) + '</div><div class="tiny dim">' + (c.members || 0) + ' members &middot; ' + (c.followers || 0) + ' following</div></div>' +
-      '<button class="ibtn" data-invite="' + esc(c.cid) + '" title="Invite people">' + ic('plus') + '</button>' + (owner ? '<button class="ibtn" data-srvicon="' + esc(c.cid) + '" title="Change server icon">' + ic('image') + '</button>' : '') +
-      (owner ? '<button class="ibtn" data-delcom="' + esc(c.cid) + '" title="Delete">' + ic('x') + '</button>' : '<button class="btn sm ' + (c.joined ? '' : 'go') + '" data-join="' + esc(c.cid) + '">' + (c.joined ? 'Leave' : 'Join') + '</button>');
-    if (!isPortrait()) top = '<div class="ftop">' + ic('hash') + '<b>general</b>' + (c.desc ? '<i class="dot-sep"></i><span class="small ell grow">' + esc(c.desc) + '</span>' : '<span class="grow"></span>') + '<button class="ibtn" data-invite="' + esc(c.cid) + '" title="Invite people">' + ic('user') + '</button></div>';
-    else if (comView === 'chat') top = '<button class="ibtn" data-act="comback">' + ic('back') + '</button>' + ic('hash', 's') + '<div class="grow"><div class="b ell">general</div><div class="tiny dim ell">' + esc(c.name) + '</div></div><button class="ibtn" data-voice="' + esc(room) + '" data-vt="' + esc(c.name) + '">' + ic('vol') + '</button>';
-    var mem = (c.memberList || []);
-    var chs = '<div class="chs card"><div class="small dim" style="margin-bottom:8px">' + esc(c.desc || 'Welcome to ' + c.name) + '</div><div class="tiny dim up" style="margin:6px 4px">Text channels</div><div class="ch-list"><div class="ch' + (comCh === 'general' ? ' on' : '') + '" data-ch="general">' + ic('hash', 's') + ' general</div></div>' +
-      '<div class="tiny dim up" style="margin:12px 4px 6px">Voice channels</div><div class="ch-list"><div class="ch" data-voice="' + esc(room) + '" data-vt="' + esc(c.name) + '">' + ic('vol', 's') + ' Lounge' + (G.MoqVoice && MoqVoice.state.room === room ? ' <span class="chip green">on</span>' : '') + '</div></div>' +
+    var cid = c.cid, owner = c.ownerId === Soc.id, k = SV().chan(cid, comCh); comCh = k.id;
+    var room = SV().voiceRoom(cid, (SV().voiceChans(cid)[0] || { id: 'lounge' }).id), pins = SV().pins(cid, comCh).length;
+    var tools = '<button class="ibtn" data-srvev="' + esc(cid) + '" title="Events">' + ic('cal') + '</button><button class="ibtn" data-pins="' + esc(cid) + '" title="Pinned messages">' + ic('pin') + (pins ? '<span class="badge">' + pins + '</span>' : '') + '</button>' + (srvManager(cid) ? '<button class="ibtn" data-srvset="' + esc(cid) + '" title="Server Settings">' + ic('gear') + '</button>' : '');
+    var top = '<button class="ibtn" data-act="back">' + ic('back') + '</button>' + srvIcon(c, 34, 'border-radius:10px;') + '<div class="grow"><div class="b ell">' + esc(c.name) + '</div><div class="tiny dim">' + SV().members(cid).length + ' members &middot; ' + (c.followers || 0) + ' following</div></div>' +
+      '<button class="ibtn" data-invite="' + esc(cid) + '" title="Invite people">' + ic('plus') + '</button>' + tools +
+      (owner ? '' : '<button class="btn sm ' + (c.joined ? '' : 'go') + '" data-join="' + esc(cid) + '">' + (c.joined ? 'Leave' : 'Join') + '</button>');
+    var chIc = ic(k.kind === 'news' ? 'bell' : 'hash');
+    if (!isPortrait()) top = '<div class="ftop">' + chIc + '<b>' + esc(k.name) + '</b>' + (k.topic || c.desc ? '<i class="dot-sep"></i><span class="small ell grow">' + esc(k.topic || c.desc) + '</span>' : '<span class="grow"></span>') + tools + '<button class="ibtn" data-invite="' + esc(cid) + '" title="Invite people">' + ic('user') + '</button></div>';
+    else if (comView === 'chat') top = '<button class="ibtn" data-act="comback">' + ic('back') + '</button>' + ic(k.kind === 'news' ? 'bell' : 'hash', 's') + '<div class="grow"><div class="b ell">' + esc(k.name) + '</div><div class="tiny dim ell">' + esc(k.topic || c.name) + '</div></div>' + tools;
+    var chs = '<div class="chs card"><div class="small dim" style="margin-bottom:8px">' + esc(c.desc || 'Welcome to ' + c.name) + '</div>' +
+      '<div class="ch-list"><div class="ch" data-srvev="' + esc(cid) + '">' + ic('cal', 's') + ' Events' + (SV().events(cid).some(SV().eventLive) ? ' <span class="chip green">LIVE</span>' : '') + '</div>' + (SV().cfg(cid).rules ? '<div class="ch" data-srvrules="' + esc(cid) + '">' + ic('shield', 's') + ' Rules</div>' : '') + '</div>' +
+      '<div class="ch-list">' + chanLists(c, 'ch') + '</div>' +
       '<div class="grow"></div><div class="mini" style="margin:10px 0 0;padding:6px;border-top:1px solid var(--line2)">' + avatar(Soc.id, SESSION.user, null, 'av s') + '<div class="grow ell small b">' + esc(prof().display || SESSION.user) + '</div><button class="ibtn" data-act="vmute">' + ic(G.MoqVoice && MoqVoice.state.muted ? 'micoff' : 'mic', 's') + '</button><button class="ibtn" data-act="vdeaf">' + ic('head', 's') + '</button><button class="ibtn" data-go="settings">' + ic('gear', 's') + '</button></div></div>';
-    var mid = '<div class="cm card"><div class="row small dim" style="padding-bottom:8px;border-bottom:1px solid var(--line2)">' + ic('hash', 's') + '<b style="color:var(--text)">general</b></div>' + voiceBar(room) + '<div class="msgs scroll" id="msgs"></div>' + (can ? composer('Message #general') : '<div class="card pad small dim" style="text-align:center">Join the server to post. <button class="btn sm go" data-join="' + esc(c.cid) + '">Join</button></div>') + '</div>';
-    var mm = '<div class="mem card scroll"><div class="tiny dim up" style="margin-bottom:6px">Members - ' + mem.length + '</div>' + mem.map(function (m) { return '<div class="mini" data-user="' + m.id + '" style="margin:0">' + avatar(m.id, m.name, Soc.profile(m.id), 'av s') + '<div class="grow ell small">' + esc(m.name) + '</div></div>'; }).join('') + '</div>';
-    return { top: top, full: true, body: '<div class="comm-split v-' + comView + '">' + chs + mid + mm + '</div>', after: function () { updateMsgs(true); if (can) bindComposer(function (txt) { Soc.post(c.cid, txt).then(function (ok) { if (ok) quest('msg'); updateMsgs(true); }); }); } };
+    var vroom = G.MoqVoice && MoqVoice.state.room && MoqVoice.state.room.indexOf('c' + cid) === 0 ? MoqVoice.state.room : room;
+    var mid = '<div class="cm card"><div class="row small dim" style="padding-bottom:8px;border-bottom:1px solid var(--line2)">' + ic(k.kind === 'news' ? 'bell' : 'hash', 's') + '<b style="color:var(--text)">' + esc(k.name) + '</b>' + (k.topic ? '<span class="ell grow">' + esc(k.topic) + '</span>' : '') + '</div>' + voiceBar(vroom) + '<div class="msgs scroll" id="msgs"></div>' + comComposer(c) + '</div>';
+    var mm = '<div class="mem card scroll" id="mm">' + memberPanel(cid) + '</div>';
+    return { top: top, full: true, body: '<div class="comm-split v-' + comView + '">' + chs + mid + mm + '</div>', after: function () { updateMsgs(true); bindComCompose(c); } };
   };
 
   // ===== PROFILE (Discord) =====
@@ -1129,15 +1341,31 @@
     if ((el = t.closest('[data-dl]'))) { e.stopPropagation(); var m = MOQ_MODS.filter(function (x) { return x.id === el.dataset.dl; })[0]; if (!m) return; var go2 = function () { download(m.file, m.fileName); var d = ls('moq_dl') || {}; d[m.id] = Date.now(); ls('moq_dl', d); quest('dl'); }; if (!IS_WEB && permState('storage') !== 'granted' && permState('storage') !== 'never') askPerm('storage', function () { go2(); }); else go2(); return; }
     if ((el = t.closest('[data-info]'))) { if (t.closest('.sheet')) return; modSheet(el.dataset.info); return; }
     if ((el = t.closest('[data-mod]'))) { modSheet(el.dataset.mod); return; }
+    if ((el = t.closest('[data-rsvp]'))) { SV().rsvp(el.dataset.cid, el.dataset.rsvp); closeDialogs(); eventsDialog(el.dataset.cid); return; }
+    if ((el = t.closest('[data-evdel]'))) { var ec = el.dataset.cid, ecf = JSON.parse(JSON.stringify(SV().cfg(ec))), eid = el.dataset.evdel; ecf.events = ecf.events.filter(function (x) { return x.id !== eid; }); SV().saveCfg(ec, ecf).then(function () { closeDialogs(); eventsDialog(ec); }); return; }
+    if ((el = t.closest('[data-jump]'))) { closeDialogs(); var jm = $('#m-' + el.dataset.jump); if (jm) { jm.scrollIntoView({ block: 'center' }); jm.classList.add('flash'); setTimeout(function () { jm.classList.remove('flash'); }, 1600); } return; }
     if (t.closest('.dlg-bg') || t.closest('.sheet-bg')) return;
     if ((el = t.closest('[data-go]'))) { var pg = el.dataset.go; if (el.dataset.subto) go('settings', el.dataset.subto); else go(pg, '', el.dataset.tabto); return; }
     if ((el = t.closest('[data-tab]'))) { CUR.tab = TABS[CUR.page] = el.dataset.tab; render(); return; }
     if ((el = t.closest('[data-ftab2]'))) { FTAB = el.dataset.ftab2; render(); return; }
-    if ((el = t.closest('[data-srvmenu]'))) { var smc = Soc.community(el.dataset.srvmenu); if (!smc) return; var so = smc.ownerId === Soc.id; dialog({ title: smc.name, body: '<div class="card list"><div class="li" data-invite="' + esc(smc.cid) + '">' + ic('user') + '<div class="grow b">Invite People</div></div>' + (so ? '<div class="li" data-srvicon="' + esc(smc.cid) + '">' + ic('image') + '<div class="grow b">Server Profile</div></div><div class="li" data-delcom="' + esc(smc.cid) + '" style="color:#f23f42">' + ic('x') + '<div class="grow b">Delete Server</div></div>' : (smc.joined ? '<div class="li" data-join="' + esc(smc.cid) + '" style="color:#f23f42">' + ic('out') + '<div class="grow b">Leave Server</div></div>' : '')) + '</div>', buttons: [] }); return; }
+    if ((el = t.closest('[data-srvmenu]'))) { var smc = Soc.community(el.dataset.srvmenu); if (!smc) return; var so = smc.ownerId === Soc.id; dialog({ title: smc.name, body: '<div class="card list"><div class="li" data-invite="' + esc(smc.cid) + '">' + ic('user') + '<div class="grow b">Invite People</div></div><div class="li" data-srvev="' + esc(smc.cid) + '">' + ic('cal') + '<div class="grow b">Events</div></div>' + (srvManager(smc.cid) ? '<div class="li" data-srvset="' + esc(smc.cid) + '">' + ic('gear') + '<div class="grow b">Server Settings</div></div>' : '') + (so ? '<div class="li" data-srvicon="' + esc(smc.cid) + '">' + ic('image') + '<div class="grow b">Server Profile</div></div><div class="li" data-delcom="' + esc(smc.cid) + '" style="color:#f23f42">' + ic('x') + '<div class="grow b">Delete Server</div></div>' : (smc.joined ? '<div class="li" data-join="' + esc(smc.cid) + '" style="color:#f23f42">' + ic('out') + '<div class="grow b">Leave Server</div></div>' : '')) + '</div>', buttons: [] }); return; }
+    // 4.13.18 server features
+    if ((el = t.closest('[data-srvset]'))) { closeDialogs(); srvSettings(el.dataset.srvset); return; }
+    if ((el = t.closest('[data-srvev]'))) { closeDialogs(); eventsDialog(el.dataset.srvev); return; }
+    if ((el = t.closest('[data-srvrules]'))) { var rc = el.dataset.srvrules; dialog({ title: 'Rules', icon: 'shield', body: '<div class="small">' + md(SV().cfg(rc).rules) + '</div>', buttons: [] }); return; }
+    if ((el = t.closest('[data-pins]'))) { pinsDialog(el.dataset.pins); return; }
+    if ((el = t.closest('[data-poll]'))) { pollCreate(el.dataset.poll); return; }
+    if ((el = t.closest('[data-chnew]'))) { e.stopPropagation(); SSTAB = 'chans'; srvSettings(el.dataset.chnew); return; }
+    if ((el = t.closest('[data-mem]'))) { e.stopPropagation(); memberMenu(el.dataset.cid, el.dataset.mem); return; }
+    if ((el = t.closest('[data-rx]'))) { if (!SV().react(CUR.arg, el.dataset.rx, el.dataset.e)) toast('You cannot react here right now'); refreshCom(); return; }
+    if ((el = t.closest('[data-rxpick]'))) { reactPick(CUR.arg, el.dataset.rxpick); return; }
+    if ((el = t.closest('[data-reply]'))) { comRe = el.dataset.reply; refreshCom(); setTimeout(function () { var i = $('#ci'); if (i) i.focus(); }, 60); return; }
+    if ((el = t.closest('[data-pmore]'))) { postMenu(CUR.arg, el.dataset.pmore); return; }
+    if ((el = t.closest('[data-vote]'))) { if (!SV().vote(CUR.arg, el.dataset.vote, +el.dataset.i)) toast('This poll is closed'); refreshCom(); return; }
     if ((el = t.closest('[data-ftab]'))) { friendTab = el.dataset.ftab; renderRight(); return; }
     if ((el = t.closest('[data-set]'))) { location.hash = 'settings/' + el.dataset.set; return; }
     if ((el = t.closest('[data-chat]'))) { go('chat', el.dataset.chat); return; }
-    if ((el = t.closest('[data-com]'))) { comCh = 'general'; comView = 'list'; go('community', el.dataset.com); return; }
+    if ((el = t.closest('[data-com]'))) { comCh = 'general'; comView = 'list'; comRe = ''; go('community', el.dataset.com); return; }
     if ((el = t.closest('[data-wave]'))) { e.stopPropagation(); var wk = Soc.openDm(el.dataset.wave); if (wk) { Soc.send(wk.key || wk, '\uD83D\uDC4B'); toast('You waved'); soon(); } return; }
     if ((el = t.closest('[data-dm]'))) { e.stopPropagation(); var k = Soc.openDm(el.dataset.dm); if (k) go('chat', k.key || k); return; }
     if ((el = t.closest('[data-add]'))) { e.stopPropagation(); if (Soc.addFriend(el.dataset.add)) { quest('friend'); toast('Friend request sent'); } soon(); return; }
@@ -1156,7 +1384,7 @@
     if ((el = t.closest('.spoil'))) { el.classList.add('on'); return; }
     if ((el = t.closest('[data-srvicon]'))) { closeDialogs(); serverProfile(el.dataset.srvicon); return; }
     if ((el = t.closest('[data-delcom]'))) { var dc = el.dataset.delcom; dialog({ title: 'Delete server', body: 'Delete it for everyone? The posts go too.', buttons: [{ t: 'Cancel', fn: function () {} }, { t: 'Delete', cls: 'red', fn: function () { Soc.deleteCommunity(dc); go('social', '', 'communities'); } }] }); return; }
-    if ((el = t.closest('[data-ch]'))) { comCh = el.dataset.ch; comView = 'chat'; render(); return; }
+    if ((el = t.closest('[data-ch]'))) { comCh = el.dataset.ch; comView = 'chat'; comRe = ''; render(); return; }
     if ((el = t.closest('[data-voice]'))) { joinVoice(el.dataset.voice, el.dataset.vt); return; }
     if ((el = t.closest('[data-gadd]'))) { var gk = el.dataset.gadd, gc = Soc.conv(gk); pickFriends('Add to ' + gc.title, function (ids) { ids.forEach(function (id) { Soc.addToGroup(gk, id); }); updateMsgs(true); }, gc.members.map(function (m) { return m.id; })); return; }
     if ((el = t.closest('[data-gleave]'))) { var lk = el.dataset.gleave; dialog({ title: 'Leave group', body: 'Leave this group?', buttons: [{ t: 'Cancel', fn: function () {} }, { t: 'Leave', cls: 'red', fn: function () { Soc.leaveGroup(lk); go('social', '', 'chats'); } }] }); return; }
@@ -1244,6 +1472,8 @@
     resetlook: function () { ['theme', 'accent', 'bg', 'glass', 'blur', 'wall', 'wallData', 'wallColor', 'dim', 'round'].forEach(function (k) { SET[k] = SET_DEF[k]; }); saveSet(); render(); },
     mictest: function () { askPerm('mic', function (ok) { if (!ok) return; navigator.mediaDevices.getUserMedia({ audio: true }).then(function (s) { var a = new Audio(); a.srcObject = s; a.play(); var v = $('#mtv'); if (v) v.textContent = 'Talk now...'; setTimeout(function () { s.getTracks().forEach(function (t) { t.stop(); }); if ($('#mtv')) $('#mtv').textContent = 'Done. Tap to test again'; }, 5000); }, function (e) { toast('Mic error: ' + e.message); }); }); }
   };
+  ACT.pollmore = function () { var w = $('#pans'); if (!w || w.children.length >= 10) return; var i = D.createElement('input'); i.className = 'inp pa'; i.maxLength = 55; i.placeholder = 'Answer ' + (w.children.length + 1); i.style.marginBottom = '6px'; w.appendChild(i); i.focus(); };
+  ACT.cancelre = function () { comRe = ''; refreshCom(); };
 
   // ---------- start ----------
   function start() {

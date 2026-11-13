@@ -9,7 +9,12 @@
                 nameplate, nametag, badges, member since
      - r/<mod>/<id>  your rating of a mod (1-5)
      - v/<room>/... voice room signalling (WebRTC)
-     - k/<hash> link code: the game puts its key here (encrypted with the code) so Moquil becomes the same ID */
+     - k/<hash> link code: the game puts its key here (encrypted with the code) so Moquil becomes the same ID
+     - 4.13.18 server features (js/srv.js, modeled on Discord.Net 3.19's guild model):
+       c/<cid>/cfg      owner-signed server settings: roles + permissions, channels (slowmode, announcement), events, AutoMod
+       c/<cid>/x/<id>   a moderator's actions (timeout, kick, ban, delete, pin), valid only with the role permission
+       c/<cid>/e/<id>   your reactions, poll votes and event RSVPs
+       kind "cq" posts  rich posts (channel, reply, poll); plain #general posts stay "cp" so the game shows them */
 (function (G) {
   'use strict';
   var ROOT = 'wagu/soc1/', FS = '\x1f', RS = '\x1e';
@@ -142,7 +147,7 @@
   // ---- state (saved in localStorage) ----
   var S = {
     name: '', friends: [], inc: [], out: [], convs: [], coms: [], notifs: [], seen: [], partyOk: [], favs: [],
-    people: {}, pres: {}, presAct: {}, profiles: {}, comMem: {}, comMemName: {}, ratings: {}, myRatings: {}, pending: []
+    people: {}, pres: {}, presAct: {}, profiles: {}, comMem: {}, comMemName: {}, comMemTs: {}, ratings: {}, myRatings: {}, pending: []
   };
   var SAVE_KEYS = ['friends', 'inc', 'out', 'convs', 'coms', 'notifs', 'seen', 'partyOk', 'favs', 'myRatings'];
   function save() { var o = {}; SAVE_KEYS.forEach(function (k) { o[k] = S[k]; }); try { localStorage.setItem('moq_state_' + K.id, JSON.stringify(o)); } catch (e) {} }
@@ -239,7 +244,7 @@
   function removeConv(key) { for (var i = S.convs.length - 1; i >= 0; i--) if (S.convs[i].key === key) S.convs.splice(i, 1); dirty(); }
   function fixOwner(c) { if (!isMember(c, c.owner) && c.members.length) c.owner = c.members[0].id; }
   function comWatched(c) { return c.joined || c.followed || c.ownerId === K.id || c.cid === S.viewCid; }
-  function comSubs(c, onn) { var a = ['c/' + c.cid + '/m/+', 'c/' + c.cid + '/p/+']; a.forEach(onn ? sub : unsub); }
+  function comSubs(c, onn) { var a = ['c/' + c.cid + '/m/+', 'c/' + c.cid + '/p/+', 'c/' + c.cid + '/cfg', 'c/' + c.cid + '/x/+', 'c/' + c.cid + '/e/+']; a.forEach(onn ? sub : unsub); }
   function comCount(c) {
     var mm = S.comMem[c.cid] || {}; c.members = 0; c.followers = 0; c.memberList = [];
     Object.keys(mm).forEach(function (id) { if (mm[id].indexOf('j') >= 0) { c.members++; c.memberList.push({ id: id, name: S.comMemName[id] || id }); } if (mm[id].indexOf('f') >= 0) c.followers++; });
@@ -338,6 +343,11 @@
     if (p[0] === 'v') { emit('voice', { room: p[1], to: p[2], data: data }); return; }
     if (p[0] === 'k') { emit('linkcode', { h: p[1], data: data }); return; }
     if (p[0] === 's' && p.length === 2) { if (p[1] === K.id && data.length) { var eb = await parseEnv(data); if (eb && eb.kind === 'bk') await restoreBackup(eb); } return; }
+    if (p[0] === 'c' && ((p.length === 3 && p[2] === 'cfg') || (p.length === 4 && (p[2] === 'x' || p[2] === 'e')))) {   // 4.13.18
+      var ex = data.length ? await parseEnv(data) : null;
+      if (G.MoqSrv && (ex || !data.length)) { G.MoqSrv.onTopic(p, ex); emit('change'); }
+      return;
+    }
     if (!data.length) {
       if (p.length === 3 && p[0] === 'c' && p[2] === 'i') { var c = com(p[1]); if (c && (c.ownerId !== K.id || !c.joined)) { c.deleted = true; emit('change'); } }
       else if (p.length === 4 && p[0] === 'c' && p[2] === 'm') { if (S.comMem[p[1]]) delete S.comMem[p[1]][p[3]]; var c1 = com(p[1]); if (c1) comCount(c1); emit('change'); }
@@ -383,15 +393,29 @@
     }
     if (p.length === 4 && p[0] === 'c' && p[2] === 'm' && e.kind === 'cm' && e.from === p[3] && e.to === p[1]) {
       S.comMem[p[1]] = S.comMem[p[1]] || {}; S.comMem[p[1]][e.from] = e.body.slice(0, 2); S.comMemName[e.from] = e.name;
+      S.comMemTs[p[1]] = S.comMemTs[p[1]] || {}; S.comMemTs[p[1]][e.from] = e.ts;
       var c5 = com(p[1]); if (c5) comCount(c5); emit('change'); return;
     }
-    if (p.length === 4 && p[0] === 'c' && p[2] === 'p' && e.kind === 'cp' && e.to === p[1]) {
+    if (p.length === 4 && p[0] === 'c' && p[2] === 'p' && (e.kind === 'cp' || e.kind === 'cq') && e.to === p[1]) {
       var c6 = com(p[1]); if (!c6) return; c6.posts = c6.posts || [];
-      if (c6.posts.some(function (x) { return x.id === p[3]; })) return;
-      var po = { id: p[3], fromId: e.from, fromName: e.name, text: clean(e.body, 600), ts: e.ts };
-      c6.posts.push(po); c6.posts.sort(function (a, b) { return b.ts - a.ts; }); if (c6.posts.length > 200) c6.posts.pop();
-      if ((c6.joined || c6.followed) && e.from !== K.id && e.ts > (c6.seen || 0) && c6.cid !== S.viewCid)
-        addNotif('com', e.from, e.name, c6.cid, c6.name + ' - ' + e.name + ': ' + clean(e.body, 70));
+      var po = { id: p[3], fromId: e.from, fromName: e.name, text: '', ts: e.ts, ch: 'general' };
+      if (e.kind === 'cq') {   // 4.13.18 rich post: {ch, t, re, poll, ed}
+        var q; try { q = JSON.parse(e.body); } catch (x) { return; }
+        if (!q || typeof q !== 'object') return;
+        po.text = clean(String(q.t || ''), 2000); po.ch = /^[a-z0-9-]{1,24}$/.test(q.ch || '') ? q.ch : 'general';
+        if (q.re && /^\d{10}[0-9a-f]{6}$/.test(q.re)) po.re = q.re;
+        if (q.poll && q.poll.q && Array.isArray(q.poll.o)) po.poll = { q: clean(String(q.poll.q), 300), o: q.poll.o.slice(0, 10).map(function (x) { return clean(String(x), 55); }), multi: !!q.poll.multi, end: +q.poll.end || 0 };
+        if (q.ed) po.ed = +q.ed || e.ts;
+      } else { po.text = clean(e.body, 2000); }
+      var old = null; c6.posts.forEach(function (x) { if (x.id === p[3]) old = x; });
+      if (old) {   // the same post again: an edit by its author (newer), otherwise a duplicate
+        if (old.fromId !== e.from || e.ts <= (old.ets || old.ts)) return;
+        old.text = po.text; old.ed = e.ts; old.ets = e.ts; if (po.poll) old.poll = po.poll; emit('post', { cid: c6.cid, post: old }); return;
+      }
+      if (po.ed) { po.ets = po.ed; po.ts = parseInt(p[3].slice(0, 10), 10) || e.ts; }
+      c6.posts.push(po); c6.posts.sort(function (a, b) { return b.ts - a.ts; }); if (c6.posts.length > 300) c6.posts.pop();
+      if ((c6.joined || c6.followed) && e.from !== K.id && po.ts > (c6.seen || 0) && c6.cid !== S.viewCid && !(G.MoqSrv && G.MoqSrv.hidden(c6.cid, po)))
+        addNotif('com', e.from, e.name, c6.cid, c6.name + (po.ch !== 'general' ? ' #' + po.ch : '') + ' - ' + e.name + ': ' + clean(po.poll ? 'Poll: ' + po.poll.q : po.text, 70));
       emit('post', { cid: c6.cid, post: po }); return;
     }
   }
@@ -598,14 +622,27 @@
     },
     joinCommunity: function (cid, j) { var c = com(cid); if (!c || !!c.joined === j) return; c.joined = j; if (j) c.followed = true; publishMembership(c); comSubs(c, comWatched(c)); dirty(); },
     followCommunity: function (cid, f) { var c = com(cid); if (!c || !!c.followed === f) return; c.followed = f; publishMembership(c); comSubs(c, comWatched(c)); dirty(); },
-    post: async function (cid, text) {
-      var c = com(cid); if (!c || !(c.joined || c.ownerId === K.id)) return false;
-      text = clean(text, 600).trim(); if (!text) return false;
+    post: async function (cid, text, opt) {   // opt (4.13.18): { ch, re, poll }
+      var c = com(cid); if (!c || !(c.joined || c.ownerId === K.id)) return false; opt = opt || {};
+      text = clean(text, 2000).trim(); if (!text && !opt.poll) return false;
+      var ch = opt.ch || 'general', rich = ch !== 'general' || opt.re || opt.poll || text.length > 600;
       var pid = now() + hex(rnd(3));
-      pub('c/' + cid + '/p/' + pid, await makeEnv('cp', cid, text), true);
-      c.posts = c.posts || []; c.posts.unshift({ id: pid, fromId: K.id, fromName: S.name, text: text, ts: now() }); c.seen = now(); dirty(); return true;
+      var body = rich ? JSON.stringify({ ch: ch, t: text, re: opt.re || undefined, poll: opt.poll || undefined }) : text;
+      pub('c/' + cid + '/p/' + pid, await makeEnv(rich ? 'cq' : 'cp', cid, body), true);
+      c.posts = c.posts || []; c.posts.unshift({ id: pid, fromId: K.id, fromName: S.name, text: text, ts: now(), ch: ch, re: opt.re, poll: opt.poll }); c.seen = now(); dirty(); return pid;
     },
-    deleteCommunity: function (cid) { var c = com(cid); if (!c || c.ownerId !== K.id) return; (c.posts || []).forEach(function (p) { pub('c/' + cid + '/p/' + p.id, '', true); }); pub('c/' + cid + '/m/' + K.id, '', true); pub('c/' + cid + '/i', '', true); if (c.icon) pub('c/' + cid + '/ic', '', true); if (c.banner) pub('c/' + cid + '/bn', '', true); comSubs(c, false); c.deleted = true; c.joined = c.followed = false; dirty(); },
+    editPost: async function (cid, pid, text) {   // 4.13.18: your own post, republished with the same id (newer signature)
+      var c = com(cid); if (!c) return false; var po = (c.posts || []).filter(function (x) { return x.id === pid && x.fromId === K.id; })[0]; if (!po) return false;
+      text = clean(text, 2000).trim(); if (!text) return false;
+      var t = now(); po.text = text; po.ed = t; po.ets = t;
+      pub('c/' + cid + '/p/' + pid, await makeEnv('cq', cid, JSON.stringify({ ch: po.ch || 'general', t: text, re: po.re || undefined, poll: po.poll || undefined, ed: t })), true);
+      dirty(); emit('post', { cid: cid, post: po }); return true;
+    },
+    deletePost: function (cid, pid) {   // your own post (moderators: MoqSrv.mod delete)
+      var c = com(cid); if (!c) return false; var po = (c.posts || []).filter(function (x) { return x.id === pid; })[0]; if (!po || po.fromId !== K.id) return false;
+      pub('c/' + cid + '/p/' + pid, '', true); c.posts = c.posts.filter(function (x) { return x.id !== pid; }); dirty(); emit('change'); return true;
+    },
+    deleteCommunity: function (cid) { var c = com(cid); if (!c || c.ownerId !== K.id) return; (c.posts || []).forEach(function (p) { pub('c/' + cid + '/p/' + p.id, '', true); }); pub('c/' + cid + '/m/' + K.id, '', true); pub('c/' + cid + '/i', '', true); if (c.icon) pub('c/' + cid + '/ic', '', true); if (c.banner) pub('c/' + cid + '/bn', '', true); comSubs(c, false); if (G.MoqSrv) G.MoqSrv.deleteServerData(cid); c.deleted = true; c.joined = c.followed = false; dirty(); },
     viewCommunity: function (cid) {
       var old = com(S.viewCid); S.viewCid = cid; if (old && !comWatched(old)) comSubs(old, false);
       var c = com(cid); if (c) { comSubs(c, true); if (c.posts && c.posts[0]) c.seen = c.posts[0].ts; S.notifs.forEach(function (n) { if (n.kind === 'com' && n.ref === cid) n.read = true; }); dirty(); }

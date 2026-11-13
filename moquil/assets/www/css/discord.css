@@ -194,3 +194,35 @@ html.inchat:not(.portrait) .topbar [data-act="back"] { display: none; }
 .mdmen { background: rgba(88,101,242,.3); color: #c9cdfb; border-radius: 3px; padding: 0 2px; font-weight: 600; cursor: pointer; } .mdmen:hover { background: #5865f2; color: #fff; }
 .mdprev { max-width: 45%; text-align: right; font-size: 13px; }
 .msg .tx { white-space: pre-wrap; }
+
+/* ===== 4.13.18 server features (roles, replies, reactions, polls, pins, events, settings) ===== */
+.cmsg { position: relative; }
+.cmsg.pinned { background: rgba(240,178,50,.06); }
+.cmsg.flash { background: rgba(88,101,242,.22); transition: background .4s; }
+.cmsg .mact { position: absolute; top: -12px; right: 18px; display: none; gap: 2px; background: var(--d-side, #2b2d31); border: 1px solid rgba(0,0,0,.35); border-radius: 6px; padding: 1px; z-index: 3; }
+.cmsg .mact .ibtn { width: 28px; height: 28px; }
+.cmsg:hover .mact { display: flex; }
+@media (hover: none) { .cmsg .mact { display: flex; top: 2px; right: 6px; opacity: .55; background: transparent; border: 0; } .cmsg .mact [data-rxpick], .cmsg .mact [data-reply] { display: none; } }
+.mre { display: flex; align-items: center; gap: 6px; margin: 0 0 2px -2px; color: var(--d-mute); cursor: pointer; overflow: hidden; white-space: nowrap; }
+.mre .svg { width: 14px; height: 14px; transform: scaleX(-1); flex: none; }
+.rxs { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.rx { display: inline-flex; align-items: center; gap: 4px; padding: 1px 8px; border-radius: 8px; background: rgba(78,80,88,.35); border: 1px solid transparent; cursor: pointer; font-size: 14px; user-select: none; }
+.rx b { font-size: 12px; font-weight: 600; color: var(--d-mute); } .rx.on { background: rgba(88,101,242,.22); border-color: #5865f2; } .rx.on b { color: #dee0fc; }
+.rxpick { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; } .rxpick .ibtn { font-size: 24px; width: 46px; height: 46px; }
+.poll { margin-top: 6px; padding: 12px; max-width: 440px; display: flex; flex-direction: column; gap: 6px; }
+.popt { position: relative; display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,.08); cursor: pointer; overflow: hidden; }
+.popt i { position: absolute; left: 0; top: 0; bottom: 0; background: rgba(88,101,242,.25); z-index: 0; transition: width .3s; } .popt span { position: relative; z-index: 1; }
+.popt.on { border-color: #5865f2; } .popt.ended { cursor: default; }
+.replybar { display: flex; align-items: center; gap: 6px; padding: 6px 10px; background: rgba(0,0,0,.2); border-radius: 8px 8px 0 0; }
+.replybar a { cursor: pointer; }
+.rolechips { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0 6px; }
+.rchip { display: inline-flex; align-items: center; gap: 5px; padding: 2px 8px; border-radius: 4px; background: rgba(78,80,88,.35); font-size: 12px; }
+.rchip i, .rdot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex: none; }
+.chk { gap: 8px; align-items: center; margin: 4px 0; cursor: pointer; } .chk input { accent-color: #5865f2; }
+.role input[type=color] { width: 34px; height: 34px; padding: 0; border: 0; background: none; border-radius: 50%; }
+.role details summary { cursor: pointer; margin-top: 6px; }
+.chadd { margin-left: auto; cursor: pointer; opacity: .7; } .chadd:hover { opacity: 1; } .chcat .chadd .svg { transform: none; }
+.ibtn .badge { position: absolute; top: 0; right: 0; font-size: 10px; min-width: 14px; height: 14px; }
+.ibtn { position: relative; }
+.dlg .tabs { overflow-x: auto; scrollbar-width: none; flex-wrap: nowrap; } .dlg .tabs .tab { white-space: nowrap; flex: none; padding-left: 10px; padding-right: 10px; }
+html.portrait .composer [data-act="mdhelp"] { display: none; }

@@ -68,9 +68,10 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 /* avatars */
 .av { position: relative; flex: none; width: 40px; height: 40px; }
 .av .pic { width: 100%; height: 100%; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #fff; overflow: hidden; background-size: cover; background-position: center; }
-.av .dot { position: absolute; right: -1px; bottom: -1px; width: 31%; height: 31%; min-width: 10px; min-height: 10px; border-radius: 50%; border: 3px solid #15181d; background: #6e767e; }
+.av .dot { position: absolute; z-index: 3; right: -1px; bottom: -1px; width: 31%; height: 31%; min-width: 10px; min-height: 10px; border-radius: 50%; border: 3px solid #15181d; background: #6e767e; }
 .av .dot.on { background: #3ba55d; } .av .dot.idle { background: #f0b232; } .av .dot.dnd { background: #ed4245; } .av .dot.game { background: #3ba55d; }
-.av .deco { position: absolute; inset: -18%; pointer-events: none; border-radius: 50%; }
+/* 4.13.18: decorations are 120% of the avatar and centred on it (inset -10%), so the art sits on the edge like Discord's, instead of floating outside (was inset -18%) */
+.av .deco { position: absolute; inset: -10%; z-index: 2; pointer-events: none; background-position: center; background-size: 100% 100%; background-repeat: no-repeat; }
 .av.s { width: 32px; height: 32px; } .av.l { width: 56px; height: 56px; } .av.xl { width: 92px; height: 92px; }
 .av.xl .dot { border-width: 5px; }
 
@@ -252,6 +253,11 @@ html.t-light .prof .bubble, html.t-white .prof .bubble { background: #fff; }
 .nt-rainbow { background: linear-gradient(90deg, #ff5f6d, #ffc371, #47e891, #4aa3ff, #b06bff); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .nt-fire { color: #ff9a4a; text-shadow: 0 0 8px #ff4a1a; }
 .fx { position: absolute; inset: 0; pointer-events: none; z-index: 0; }
+.prof > .fx.fx-sakura, .prof > .fx.fx-bubbles, .prof > .fx.fx-sparkle, .prof > .fx.fx-lights { z-index: 4; }
+.fx-sakura { background: url(../img/fx/fx-sakura.svg) center / 100% 100% no-repeat; }
+.fx-bubbles { background: url(../img/fx/fx-bubbles.svg) center / 100% 100% no-repeat; }
+.fx-sparkle { background: url(../img/fx/fx-sparkle.svg) center / 100% 100% no-repeat; }
+.fx-lights { background: url(../img/fx/fx-lights.svg) center / 100% 100% no-repeat; }
 .fx-stars { background-image: radial-gradient(2px 2px at 20% 30%, #fff, transparent), radial-gradient(1.5px 1.5px at 70% 20%, #fff, transparent), radial-gradient(2px 2px at 40% 70%, #fff, transparent), radial-gradient(1px 1px at 85% 60%, #fff, transparent), radial-gradient(1.5px 1.5px at 10% 85%, #fff, transparent); animation: twinkle 3s infinite alternate; }
 .fx-glow { box-shadow: inset 0 0 60px rgba(126,178,226,.45); animation: pulse 3s infinite alternate; }
 .fx-fire { background: linear-gradient(0deg, rgba(255,90,30,.35), transparent 45%); animation: pulse 1.6s infinite alternate; }
@@ -261,10 +267,25 @@ html.t-light .prof .bubble, html.t-white .prof .bubble { background: #fff; }
 @keyframes rain { from { background-position: 0 0; } to { background-position: -15px 60px; } } @keyframes floatup { from { background-position: 0 30px; } to { background-position: 0 -30px; } }
 .frame-gold { box-shadow: 0 0 0 2px #f2b84b, 0 0 24px rgba(242,184,75,.45); } .frame-neon { box-shadow: 0 0 0 2px #7eb2e2, 0 0 24px rgba(126,178,226,.55); }
 .frame-temple { box-shadow: 0 0 0 3px #c99a2e, inset 0 0 0 3px rgba(180,30,30,.6), 0 0 30px rgba(242,150,40,.5); } .frame-grove { box-shadow: 0 0 0 2px #3fae4c, 0 0 20px rgba(63,174,76,.5); }
-.deco-ring { box-shadow: 0 0 0 3px #f2b84b, 0 0 14px #f2b84b; } .deco-neon { box-shadow: 0 0 0 3px #7eb2e2, 0 0 16px #4aa3ff; }
-.deco-fire { box-shadow: 0 0 0 3px #ff6a2a, 0 0 18px #ff3a0a; animation: pulse 1.2s infinite alternate; } .deco-crown::after { content: '\1F451'; position: absolute; top: -6%; left: 50%; transform: translateX(-50%) rotate(-8deg); font-size: 34%; }
-.deco-halo::after { content: ''; position: absolute; top: 2%; left: 22%; right: 22%; height: 14%; border: 3px solid #fff6b0; border-radius: 50%; box-shadow: 0 0 10px #fff6b0; }
-.deco-hd { box-shadow: 0 0 0 3px #b060ff, 0 0 16px #b060ff; }
+.deco-ring { background-image: url(../img/deco/deco-ring.svg); }
+.deco-neon { background-image: url(../img/deco/deco-neon.svg); }
+.deco-fire { background-image: url(../img/deco/deco-fire.svg); }
+.deco-hd { background-image: url(../img/deco/deco-hd.svg); }
+.deco-crown { background-image: url(../img/deco/deco-crown.svg); }
+.deco-halo { background-image: url(../img/deco/deco-halo.svg); }
+.deco-samurai { background-image: url(../img/deco/deco-samurai.svg); }
+.deco-ronin { background-image: url(../img/deco/deco-ronin.svg); }
+.deco-oni { background-image: url(../img/deco/deco-oni.svg); }
+.deco-jacket { background-image: url(../img/deco/deco-jacket.svg); }
+.deco-grove { background-image: url(../img/deco/deco-grove.svg); }
+.deco-hoodie { background-image: url(../img/deco/deco-hoodie.svg); }
+.deco-sparkle { background-image: url(../img/deco/deco-sparkle.svg); }
+.deco-lights { background-image: url(../img/deco/deco-lights.svg); }
+.deco-hearts { background-image: url(../img/deco/deco-hearts.svg); }
+.deco-bubbles { background-image: url(../img/deco/deco-bubbles.svg); }
+.deco-sakura { background-image: url(../img/deco/deco-sakura.svg); }
+.deco-headphones { background-image: url(../img/deco/deco-headphones.svg); }
+.deco-catears { background-image: url(../img/deco/deco-catears.svg); }
 .ptabs { display: flex; border-bottom: 1px solid var(--line); margin: 14px 0 12px; }
 .ptabs .tab { flex: 1; text-align: center; }
 .balance { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; }

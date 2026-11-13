@@ -1,6 +1,10 @@
 {
-"latest": "4.13.15",
+"latest": "4.13.18",
 "supported": [
+"4.13.18",
+"4.13.17",
+"4.13.16",
+"4.13.15",
 "4.13.14",
 "4.13.13",
 "4.13.12",
@@ -130,6 +134,14 @@
 "3.04.6"
 ],
 "versions": [
+{
+"v": "4.13.18",
+"summary": "Moquil 1.4: server features (roles, channels, moderation, polls, events) and Discord style avatar decorations.",
+"items": [
+"Servers, with Discord.Net 3.19 (research/v3.19.0) as the blueprint: roles with colors, hierarchy and 15 permissions (Administrator, Manage Server / Channels / Roles / Events, Kick, Ban, Timeout, Manage Messages, Pin Messages, Bypass Slowmode, Mention @everyone, Send, Polls, Reactions), members grouped by role with role counts, more text, announcement and voice channels with topics and slowmode, replies, edits, reactions, polls (one or more answers, with an end time), pinned messages, scheduled events with \"Interested\", rules, AutoMod words, timeouts (60 s to 1 week), kicks and bans with reasons and a ban list. Tap a member or a name in chat for the member menu; Server Settings for the owner. Everything is signed by the owner or moderator and checked on every client (a moderator only acts on members with a lower top role). #general posts stay plain so the game still shows them, and the Lounge is the same voice room as before.",
+"Avatar decorations sit on the avatar edge like Discord's (they floated outside it before) and are drawn art now: Samurai kabuto, Ronin hat and katana, Oni mask, Leather jacket, Grove Street jacket, Hoodie, Golden sparkles, String lights, Love hearts, Bubbles and sparks, Sakura branch, Headphones, Cat ears, plus the old rings, crown and halo redrawn. New profile effects: Sakura petals, Bubbles, Gold glitter, String lights."
+]
+},
 {
 "v": "4.13.15",
 "summary": "Co-op story (2 players, SA:COOP style, separate from multiplayer Mission sync): player list > Co-op story or /coop invite <id>. The host's save is the story; the partner's saves are backed up and the host's newest save is loaded (a partner at a different mission state is put to the host's), the partner keeps place, money, weapons, health and armour, and gets the new progress after every host save. Mission start brings the partner to the host, mission weapons and the money reward are shared, the pair is in Mission sync (both visible in cutscenes), and in the host's cutscenes the partner stands next to CJ with listen / nod / look animations. Time and weather follow the host. Host map editor for custom servers (host owner only): /mapedit or Server management > Map editor - create, tap to select, drag X/Y/Z gizmo handles to move or rotate, snap to ground, duplicate, delete, clear; saved on the server (hostmap_<port>.txt) and streamed to everybody. Rocket League goal is a real frame (1312 posts + crossbar fitted to the goal size) with chain-link nets. The Advanced Settings HUD file is removed: MP never moves the HUD, your original preset comes back once. Project Day Z pack is now MP_ProjectDayZ.zip (no XkiLoader name). Default server: login system off; admins / moderators can turn it on in Server management, it turns off again when the last of them leaves. 100% progress save on the default server is removed (its save load on join was one of the black-screen freezes). Join freeze fixes: nothing from other players (street peds / cars, map objects) is built while the world loads or in the first 6 s, and at most 3 network models stream in at once (a model that never loads is skipped). Website ping is a real MQTT round trip. Discord bot: `/help` (tutorial: install, account, playing, commands) replaces `/chardc`; `/statsdc` is `/stats` again; the character card is `/stats` > Switch view. Discord bot 4.13.16: `/streaming on` (server managers) - the bot joins your voice channel and plays the MP YouTube live (https://www.youtube.com/live/rFZHOHl-L8A) 24/7, back by itself after restarts; `/streaming off`. 4.13.17: a Watch video button in the voice channel's chat opens the live as video inside the voice channel (Watch Together; Discord blocks Go Live for bots).",

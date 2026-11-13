@@ -121,6 +121,20 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **4.13.18**: Moquil 1.4: server features (roles, channels, moderation, polls, events) and Discord style avatar decorations.
+  - Servers, with Discord.Net 3.19 (research/v3.19.0) as the blueprint: roles with colors, hierarchy and 15
+    permissions (Administrator, Manage Server / Channels / Roles / Events, Kick, Ban, Timeout, Manage Messages,
+    Pin Messages, Bypass Slowmode, Mention @everyone, Send, Polls, Reactions), members grouped by role with role
+    counts, more text, announcement and voice channels with topics and slowmode, replies, edits, reactions, polls
+    (one or more answers, with an end time), pinned messages, scheduled events with "Interested", rules, AutoMod
+    words, timeouts (60 s to 1 week), kicks and bans with reasons and a ban list. Tap a member or a name in chat for
+    the member menu; Server Settings for the owner. Everything is signed by the owner or moderator and checked on
+    every client (a moderator only acts on members with a lower top role). #general posts stay plain so the game
+    still shows them, and the Lounge is the same voice room as before.
+  - Avatar decorations sit on the avatar edge like Discord's (they floated outside it before) and are drawn art
+    now: Samurai kabuto, Ronin hat and katana, Oni mask, Leather jacket, Grove Street jacket, Hoodie, Golden
+    sparkles, String lights, Love hearts, Bubbles and sparks, Sakura branch, Headphones, Cat ears, plus the old
+    rings, crown and halo redrawn. New profile effects: Sakura petals, Bubbles, Gold glitter, String lights.
 - **4.13.15**: Co-op story (2 players, SA:COOP style, separate from multiplayer Mission sync): player list >
   Co-op story or /coop invite <id>. The host's save is the story; the partner's saves are backed up and the host's
   newest save is loaded (a partner at a different mission state is put to the host's), the partner keeps place,

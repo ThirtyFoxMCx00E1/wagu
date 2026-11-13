@@ -25,7 +25,23 @@ Moquil becomes the same #ID as the game: the same friends, and chats you send fr
   `mpsamp-open/moquils-web` repo (the website).
   - `js/soc.js` - the MP social protocol (same as `src/net/social.cpp`) over MQTT WebSocket (broker.hivemq.com)
   - `js/voice.js` - voice rooms (WebRTC, signalling over MQTT)
+  - `js/srv.js` - server features (1.4): roles + permissions, channels, moderation, reactions, polls, events (`c/<cid>/cfg`, `c/<cid>/x/<id>`, `c/<cid>/e/<id>`)
+  - `img/deco/`, `img/fx/` - avatar decorations and profile effects (SVG, made by `tools/make_decos.py`)
   - `js/mods.js` - the Library (mods and apps)
   - `js/app.js` - the UI
 - `src/.../MainActivity.java` - WebView + permissions, downloads (Download/Moquil), notifications
 - `build.sh` - aapt2 + javac + d8 + apksigner (no Gradle); `.github/workflows/moquil.yml` builds it
+
+## Servers (1.4)
+
+Modelled on Discord.Net 3.19. The owner signs the server config (`c/<cid>/cfg`, kind `ccf`): roles (order is the
+hierarchy, color, hoist, permissions), who has which role, channels (text / announcement / voice, topic, slowmode),
+scheduled events, rules and AutoMod words. Moderators publish their own signed record (`c/<cid>/x/<id>`, kind
+`cmx`: deletes, pins, kicks, bans, timeouts); a record only counts if that member has the permission and a higher
+top role than the target. Each member's reactions, poll votes and event RSVPs are in `c/<cid>/e/<id>` (kind `cre`).
+Posts in other channels, replies and polls are kind `cq`; plain #general posts stay `cp` for the game.
+
+## Avatar decorations
+
+Each decoration is a 120x120 SVG drawn around a 100 px avatar circle at the center, shown at 120% of the avatar
+(`.av .deco { inset: -10% }`), so it hugs the avatar edge in chat, the member list and the profile.
