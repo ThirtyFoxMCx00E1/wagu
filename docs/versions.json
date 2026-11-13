@@ -1,6 +1,7 @@
 {
-"latest": "4.13.18",
+"latest": "4.13.19",
 "supported": [
+"4.13.19",
 "4.13.18",
 "4.13.17",
 "4.13.16",
@@ -134,6 +135,14 @@
 "3.04.6"
 ],
 "versions": [
+{
+"v": "4.13.19",
+"summary": "Map editor object search by look, and the AI modding tools in tools/ai.",
+"items": [
+"/mapedit find and /mapping find match every word against the model name, its txd and its tags, and the tags now hold the nouns of gta-scout's 2,716 reviewed model descriptions: \"wood pallet\", \"red barrel\", \"bench\" or \"billboard\" find the models without knowing their names. Phones download the new catalog once (with the next MP build).",
+"tools/ai: gta-scout, gta-flow, reagent and ghidra-bridge copied into wagu (MIT, see tools/ai/VENDORED.md), bash tools/ai/setup.sh installs them (--ghidra also downloads Ghidra 12.2), and tools/ai/README.md tells an agent which tool to use for map objects, custom map traffic, libGTASA crash offsets and new hooks (tools/ai/mp/ghidra-bridge.yaml is set up for libGTASA.so)."
+]
+},
 {
 "v": "4.13.18",
 "summary": "Moquil 1.4: server features (roles, channels, moderation, polls, events) and Discord style avatar decorations.",

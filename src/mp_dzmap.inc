@@ -100,7 +100,7 @@ static void DzCatLoad()
             if(sz > 1000 && sz < 8 * 1024 * 1024) { text.resize((size_t)sz); text.resize(fread(&text[0], 1, (size_t)sz, f)); }
             fclose(f);
         }
-        if(text.find("dynamic mapping catalog") == std::string::npos)
+        if(text.find("dynamic mapping catalog") == std::string::npos || text.find("tags+desc") == std::string::npos)   // 4.13.19: re-download once for the description tags
         {
             text.clear();
             for(const char* u : kDzCatUrls)
@@ -120,13 +120,22 @@ static void DzCatLoad()
 static void DzCatFind(const char* q)
 {
     if(s_DzM.catState != 2) { DzCatLoad(); s_DzM.pendingFind = q; DzNotice(DZ_GRY, "Loading the model catalog..."); return; }
-    std::string lq; for(const char* s = q; *s; ++s) lq += (char)tolower((unsigned char)*s);
+    // 4.13.19: every word must match the dff, the txd or a tag (the tags hold gta-scout's reviewed
+    // descriptions too), so "/mapedit find wood pallet" or "red barrel" finds a model by its look
+    std::vector<std::string> words; std::string w;
+    for(const char* s = q;; ++s)
+    {
+        if(!*s || *s == ' ' || *s == ',') { if(!w.empty()) words.push_back(w); w.clear(); if(!*s) break; continue; }
+        w += (char)tolower((unsigned char)*s);
+    }
+    if(words.empty()) return;
     int shown = 0, hits = 0;
     std::lock_guard<std::mutex> lk(s_DzM.catM);
     for(const auto& r : s_DzM.cat)
     {
-        std::string d = r.dff; for(auto& ch : d) ch = (char)tolower((unsigned char)ch);
-        bool hit = d.find(lq) != std::string::npos || r.tags.find(lq) != std::string::npos || (isdigit((unsigned char)q[0]) && (unsigned)atoi(q) == r.id);
+        std::string d = r.dff + " " + r.txd; for(auto& ch : d) ch = (char)tolower((unsigned char)ch);
+        bool hit = isdigit((unsigned char)q[0]) && (unsigned)atoi(q) == r.id;
+        if(!hit) { hit = true; for(const auto& x : words) if(d.find(x) == std::string::npos && r.tags.find(x) == std::string::npos) { hit = false; break; } }
         if(!hit) continue;
         ++hits;
         if(shown < 14) { SysMsg(r.samp ? 0xA0A0A0FF : COL_WHITE, "%u  %s  (txd %s)%s%s%s", r.id, r.dff.c_str(), r.txd.c_str(), r.tags.empty() ? "" : "  ", r.tags.c_str(), r.samp ? "  [SA-MP]" : ""); ++shown; }

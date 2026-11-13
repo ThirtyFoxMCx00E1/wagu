@@ -1,0 +1,9 @@
+{
+  "name": "gta-asset-search-blender-preparation",
+  "private": true,
+  "version": "0.1.0-alpha.1",
+  "type": "module",
+  "description": "Optional local TXD extraction for Blender previews",
+  "dependencies": {"pngjs": "7.0.0"},
+  "scripts": {"test": "node --test tests/*.test.mjs"}
+}

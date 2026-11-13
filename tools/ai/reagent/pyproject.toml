@@ -1,0 +1,85 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "auto-re-agent"
+version = "0.4.0"
+description = "Evidence-driven autonomous reverse-engineering agent with agentic Ghidra analysis, independent LLM verification, candidate validation, and parity checks"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [{ name = "Dryxio" }]
+keywords = [
+    "reverse-engineering",
+    "ghidra",
+    "llm",
+    "ai-agent",
+    "autonomous-agent",
+    "binary-analysis",
+    "decompilation",
+    "static-analysis",
+    "source-code-recovery",
+    "cybersecurity",
+    "claude",
+    "codex",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Security",
+    "Topic :: Software Development :: Disassemblers",
+]
+dependencies = [
+    "pyyaml>=6.0",
+    "anthropic>=0.40",
+    "openai>=1.0",
+]
+
+[project.optional-dependencies]
+ghidra-bridge = ["ghidra-ai-bridge>=0.2.0"]
+headless = ["ghidra-ai-bridge[headless]>=0.2.0"]
+benchmark = ["pefile>=2024.8.26", "unicorn>=2.1"]
+dev = ["pytest>=8.0", "pytest-cov>=5.0", "ruff>=0.8", "mypy>=1.13"]
+
+[project.scripts]
+re-agent = "re_agent.cli.main:main"
+
+[project.urls]
+Homepage = "https://github.com/dryxio/reagent"
+Repository = "https://github.com/dryxio/reagent"
+Issues = "https://github.com/dryxio/reagent/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/re_agent"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 120
+src = ["src"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+
+[[tool.mypy.overrides]]
+module = ["anthropic.*", "openai.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "llm: tests that require LLM API keys",
+    "ghidra: tests that require ghidra-ai-bridge",
+]

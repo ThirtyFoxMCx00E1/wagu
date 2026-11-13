@@ -1,0 +1,25 @@
+# 4.13.19: ghidra-bridge config for MP - the Android GTA SA 2.00 libGTASA.so (ARMv7 / arm64)
+# Copy next to your Ghidra project or run with:  ghidra-bridge --config tools/ai/mp/ghidra-bridge.yaml <command>
+# First import libGTASA.so (from the phone: /data/app/<gta pkg>/lib/arm or the APK's lib/armeabi-v7a/)
+# into a Ghidra project named mp-gtasa and let auto-analysis finish (Ghidra GUI or analyzeHeadless).
+ghidra:
+  install_dir: tools/ai/ghidra/ghidra_12.2_PUBLIC     # setup.sh --ghidra puts it here
+  project_dir: ~/Ghidra
+  project_name: mp-gtasa
+  program_name: libGTASA.so
+
+paths:
+  export_dir: tools/ai/mp/exports                      # git-ignored (big)
+  address_map: tools/ai/mp/exports/address_map.json
+
+# MP hooks libGTASA by its exported C++ symbols (HOOK / HOOK_IF / aml->GetSym("_ZN...")), not by
+# fixed addresses, so the address map stays empty: use the symbol names with decompile / xrefs / search.
+source:
+  root: src
+  hook_patterns: []
+  stub_patterns: []
+  file_extensions: [.cpp, .h, .inc]
+
+# Crash logs give "libGTASA.so + 0xOFFSET": Ghidra loads the .so at 0x10000 by default, so
+#   ghidra-bridge containing 0x<0x10000 + OFFSET>
+# names the crashing function (or set the image base to 0 in Ghidra and use the offset as is).

@@ -81,6 +81,10 @@ Prebuilt binaries:
 | [AArchASMHelper](https://github.com/ThirtyFoxMCx00E1/AArchASMHelper) | AArch32 / AArch64 assembly helpers |
 | [AML_ImGui](https://github.com/ThirtyFoxMCx00E1/AML_ImGui) | Dear ImGui (graphical user interface) for AML mods |
 | [mysql-server](https://github.com/ThirtyFoxMCx00E1/mysql-server) | MySQL Server (database for the server side) |
+| [gta-scout](https://github.com/ThirtyFoxMCx00E1/gta-scout) | Reviewed descriptions and tags of SA models: the object search of the map editor and Day Z mapping (tools/ai) |
+| [gta-flow](https://github.com/ThirtyFoxMCx00E1/gta-flow) | Traffic routes (NODES) for custom maps, with Blender previews (tools/ai) |
+| [reagent](https://github.com/ThirtyFoxMCx00E1/reagent) | AI reverse engineering of game functions with Ghidra (tools/ai) |
+| [ghidra-bridge](https://github.com/Dryxio/ghidra-bridge) and [Ghidra](https://github.com/NationalSecurityAgency/ghidra) | libGTASA.so analysis: crash offsets to functions, symbols for new hooks (tools/ai, Ghidra via setup.sh) |
 
 ## Features
 
@@ -121,6 +125,15 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **4.13.19**: Map editor object search by look, and the AI modding tools in tools/ai.
+  - /mapedit find and /mapping find match every word against the model name, its txd and its tags, and the
+    tags now hold the nouns of gta-scout's 2,716 reviewed model descriptions: "wood pallet", "red barrel",
+    "bench" or "billboard" find the models without knowing their names. Phones download the new catalog once
+    (with the next MP build).
+  - tools/ai: gta-scout, gta-flow, reagent and ghidra-bridge copied into wagu (MIT, see tools/ai/VENDORED.md),
+    bash tools/ai/setup.sh installs them (--ghidra also downloads Ghidra 12.2), and tools/ai/README.md tells an
+    agent which tool to use for map objects, custom map traffic, libGTASA crash offsets and new hooks
+    (tools/ai/mp/ghidra-bridge.yaml is set up for libGTASA.so).
 - **4.13.18**: Moquil 1.4: server features (roles, channels, moderation, polls, events) and Discord style avatar decorations.
   - Servers, with Discord.Net 3.19 (research/v3.19.0) as the blueprint: roles with colors, hierarchy and 15
     permissions (Administrator, Manage Server / Channels / Roles / Events, Kick, Ban, Timeout, Manage Messages,

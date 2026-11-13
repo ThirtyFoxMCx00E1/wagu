@@ -80,6 +80,15 @@ def parse_ide(name, text, out):
         out.setdefault(mid, (dff, txd, os.path.splitext(name)[0], dd, re.sub(r"[^0-9]", "", fl) or "0", kind))
 
 
+STOP = set("""with from that this they them their there have been into over under onto near some most more less
+very also only each other others than then when where which while about above below side sides face faces
+part parts small large long short wide tall high thin thick light dark pale bright black white grey gray
+brown green blue yellow orange purple pink beige cream nearly almost mostly slightly mainly visible view
+shape shaped looks appears simple plain single double several many like used using made upper lower front
+back left right rear base flat round square straight angled curved full half piece pieces element elements
+model object surface texture textured textures colour color colored coloured tone toned plausible possibly probably likely seen appear general typical marked""".split())
+
+
 def load_tags(path):
     try:
         data = json.load(open(path, encoding="utf-8")) if path else json.loads(fetch(SCOUT))
@@ -90,12 +99,19 @@ def load_tags(path):
     for e in data.get("entries", []):
         sel = e.get("selector", {})
         dff = (sel.get("dff") or sel.get("name") or "").lower()
-        if dff and e.get("tags"):
-            tags.setdefault(dff, [])
-            for t in e["tags"]:
-                t = re.sub(r"[^a-z0-9_-]", "", t.lower().replace(" ", "_"))
-                if t and t not in tags[dff]:
-                    tags[dff].append(t)
+        if not dff:
+            continue
+        tl = tags.setdefault(dff, [])
+        for t in e.get("tags") or []:
+            t = re.sub(r"[^a-z0-9_-]", "", t.lower().replace(" ", "_"))
+            if t and t not in tl:
+                tl.append(t)
+        # 4.13.19: + the nouns of the reviewed English description, so /mapedit find works by look
+        desc = (e.get("description") or "") if e.get("kind", "model") == "model" else ""
+        en = desc.split("EN:", 1)[1] if "EN:" in desc else ""
+        for w in re.findall(r"[a-z]{4,}", en.lower()):
+            if w not in STOP and w not in tl:
+                tl.append(w)
     return tags
 
 
@@ -108,17 +124,22 @@ def main():
     tags = load_tags(scout)
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     with open(OUT, "w", newline="\n") as f:
-        f.write("# Project Day Z Legacy - dynamic mapping catalog (MP 4.10, tools/make_dz_mapping_catalog.py)\n")
+        f.write("# Project Day Z Legacy - dynamic mapping catalog (MP 4.10, tags+desc 4.13.19, tools/make_dz_mapping_catalog.py)\n")
         f.write("# IDE: github.com/Fernando-A-Rocha/mta-ide-search  tags: github.com/Dryxio/gta-scout (MIT)\n")
         f.write("# look models up: dev.prineside.com/gtasa_samp_model_id/  gtastuff.com/models/  gtastuff.com/viewer/\n")
         f.write("# id dff txd ide drawdist flags kind tags\n")
         for mid in sorted(models):
             dff, txd, ide, dd, fl, kind = models[mid]
-            tg = ",".join(tags.get(dff.lower(), [])[:6]) or "-"
+            tg = ""
+            for t in tags.get(dff.lower(), []):   # the phone reads the field with %159s
+                if len(tg) + len(t) + 1 > 150:
+                    break
+                tg = tg + "," + t if tg else t
+            tg = tg or "-"
             f.write("%d %s %s %s %s %s %s %s\n" % (mid, dff, txd, ide, dd, fl, kind, tg))
     sa = sum(1 for m in models.values() if m[5] == "sa")
     print("%s: %d models (%d GTA SA, %d SA-MP), %d with tags" % (OUT, len(models), sa, len(models) - sa,
-          sum(1 for m in models.values() if m[0].lower() in tags)))
+          sum(1 for m in models.values() if tags.get(m[0].lower()))))
 
 
 if __name__ == "__main__":
