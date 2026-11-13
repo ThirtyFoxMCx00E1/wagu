@@ -125,7 +125,7 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
-- **4.13.19**: Map editor object search by look, and the AI modding tools in tools/ai.
+- **4.13.19**: Map editor object search by look, the AI modding tools in tools/ai, and the MP app icon on the websites.
   - /mapedit find and /mapping find match every word against the model name, its txd and its tags, and the
     tags now hold the nouns of gta-scout's 2,716 reviewed model descriptions: "wood pallet", "red barrel",
     "bench" or "billboard" find the models without knowing their names. Phones download the new catalog once
@@ -134,6 +134,11 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
     bash tools/ai/setup.sh installs them (--ghidra also downloads Ghidra 12.2), and tools/ai/README.md tells an
     agent which tool to use for map objects, custom map traffic, libGTASA crash offsets and new hooks
     (tools/ai/mp/ghidra-bridge.yaml is set up for libGTASA.so).
+  - Website tab and search icons: the MP app icon (M + orange P) instead of the San Andreas Multiplayer title
+    logo, on both MP sites and the HiveMQ cloud panel: favicon.ico at the site root (what search results use),
+    32 / 192 / 512 px icons, an Apple touch icon and a web manifest (tools/art/make_site_icons.py).
+  - Release 4.13.19 (build 41319): the libraries with the map editor search; it also includes the Moquil 1.4,
+    Discord bot and HiveMQ changes of 4.13.16 - 4.13.18. Plays with 4.13.15 phones and servers.
 - **4.13.18**: Moquil 1.4: server features (roles, channels, moderation, polls, events) and Discord style avatar decorations.
   - Servers, with Discord.Net 3.19 (research/v3.19.0) as the blueprint: roles with colors, hierarchy and 15
     permissions (Administrator, Manage Server / Channels / Roles / Events, Kick, Ban, Timeout, Manage Messages,
