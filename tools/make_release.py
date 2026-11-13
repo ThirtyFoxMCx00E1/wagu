@@ -53,6 +53,7 @@ with zf("release/HiveMQ-kit-%s.zip" % V) as z: tree(z, "HiveMQ", "HiveMQ-kit", k
 with zf("release/MP-%s-full.zip" % V) as z:
     f = "MP-%s" % V
     z.write("release/MP-Voice.apk", f + "/MP-Voice.apk"); z.write("release/MP-Textdraw-Editor.apk", f + "/MP-Textdraw-Editor.apk")   # 3.59: both APKs
+    if os.path.isfile("release/Moquil.apk"): z.write("release/Moquil.apk", f + "/Moquil.apk")   # 4.13.20: the Moquil app too
     z.writestr(f + "/ADMIN_KEY_README.txt", admin); z.writestr(f + "/MODERATOR_README.txt", MOD)
     z.write("bin/libMP64.so", f + "/lib/arm64-v8a/libMP64.so"); z.write("bin/libMP32.so", f + "/lib/armeabi-v7a/libMP32.so")
     tree(z, "assets/MP", f + "/assets/MP"); tree(z, "docs", f + "/website"); tree(z, "HiveMQ", f + "/HiveMQ-kit", kit_skip)
@@ -73,6 +74,6 @@ _r["published_at"] = datetime.date.today().isoformat()
 if _sup: _r["also_supported"] = ", ".join("v" + x for x in _sup if x != V)
 _r["assets"] = [{"name": n, "size": os.path.getsize(n), "download_count": 0} for n in (
     "bin/libMP32.so", "bin/libMP64.so", "release/MP-%s-full.zip" % V, "release/MP-%s-client.zip" % V,
-    "release/HiveMQ-kit-%s.zip" % V, "release/MP-Textdraw-Editor.apk", "release/MP-Voice.apk") if os.path.isfile(n)]
+    "release/HiveMQ-kit-%s.zip" % V, "release/MP-Textdraw-Editor.apk", "release/MP-Voice.apk", "release/Moquil.apk") if os.path.isfile(n)]
 json.dump(_r, open(_rp, "w"), indent=1); open(_rp, "a").write("\n")
 print(_rp, _r["tag_name"])

@@ -16,7 +16,7 @@
   },
   {
    "name": "release/MP-4.13.20-full.zip",
-   "size": 58447550,
+   "size": 62487795,
    "download_count": 0
   },
   {
@@ -37,6 +37,11 @@
   {
    "name": "release/MP-Voice.apk",
    "size": 246694,
+   "download_count": 0
+  },
+  {
+   "name": "release/Moquil.apk",
+   "size": 4216262,
    "download_count": 0
   }
  ],
