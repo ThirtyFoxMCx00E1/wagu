@@ -1,6 +1,7 @@
 {
-"latest": "4.13.19",
+"latest": "4.13.20",
 "supported": [
+"4.13.20",
 "4.13.19",
 "4.13.18",
 "4.13.17",
@@ -135,6 +136,11 @@
 "3.04.6"
 ],
 "versions": [
+{
+"v": "4.13.20",
+"summary": "Remote players no longer moonwalk: a player walking or running backwards now turns to face where they are going (as in real GTA SA), and the smoothing no longer drags them backwards in their running animation. Pressing the aim / scope button now raises the player's arms on other phones too (lock-on, free aim and sniper / rocket / camera scope; also spray can and extinguisher).",
+"items": []
+},
 {
 "v": "4.13.19",
 "summary": "Map editor object search by look, the AI modding tools in tools/ai, and the MP app icon on the websites.",

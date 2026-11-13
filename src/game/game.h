@@ -72,6 +72,7 @@ namespace Game
     void  TaskStandStill(int ped);
     void  TaskShootAt(int ped, const Vec3& p, int timeMs);
     void  TaskAimAt(int ped, const Vec3& p, int timeMs);
+    bool  IsLocalAimHeld();   // 4.13.20: aim / scope button or 1st person weapon view
     void  TaskDuck(int ped, bool duck);
     void  TaskDie(int ped);
 

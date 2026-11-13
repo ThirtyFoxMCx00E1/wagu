@@ -1623,6 +1623,23 @@ static float LerpAngle(float a, float b, float f)
     if(r < 0) r += 360.0f; if(r >= 360.0f) r -= 360.0f;
     return r;
 }
+// 4.13.19: the heading of a direction of travel (GTA: heading h walks along -sin(h), cos(h))
+static float TravelHeading(float vx, float vy)
+{
+    float h = atan2f(-vx, vy) * 57.2957795f;
+    return h < 0 ? h + 360.0f : h;
+}
+// 4.13.19 moonwalk fix: on foot, a GTA SA ped only moves backwards / sideways while aiming or
+// strafing (lock-on). Walking, running and sprinting always face the way the ped goes, so a remote
+// player that would run one way and slide the other (lag, a sharp turn, the avatar a bit ahead of
+// the network position) faces its real direction of travel instead of the sampled heading.
+static float FacingForLoco(float sent, const Vec3& v, float speed)
+{
+    if(speed < 0.8f) return sent;
+    float th = TravelHeading(v.x, v.y);
+    float diff = fabsf(fmodf(th - sent + 540.0f, 360.0f) - 180.0f);
+    return diff > 40.0f ? th : sent;   // small differences: the sender's own turn (lean into the curve)
+}
 
 // Where the player was `delay` ms ago (between two snapshots), or a short extrapolation.
 static bool SampleMotion(RemotePlayer& p, uint64_t now, float dt, RemotePlayer::Snap& out)
@@ -2244,6 +2261,20 @@ static void UpdateRemote(int id, int localPed, uint64_t now)
                 p.moveState = 0; p.mirror = true;
             }
             float heading = haveMo ? mo.heading : s.heading;
+            // 4.13.19 moonwalk fix: walking / running / sprinting legs (no aim, no lock-on, nothing
+            // else full-body like a fall or a hit) face the direction of travel
+            {
+                const bool strafe = p.hasX2 && (p.x2flags & X2_AIMING);
+                float locoFull = 0, otherFull2 = 0;
+                for(int i = 0; i < af->n; ++i)
+                {
+                    const Game::PedAnim& a = af->a[i];
+                    if(a.flags & 0x10) continue;
+                    bool loco = a.id >= 0 && a.id <= 11 && (a.group == 0 || (a.group >= 54 && a.group <= 87));
+                    if(loco) locoFull += a.blend; else otherFull2 += a.blend;
+                }
+                if(!gunUp && !strafe && !duckWant && locoFull >= 0.5f && otherFull2 < 0.35f) heading = FacingForLoco(heading, mvel, legSpeed);
+            }
             if(gunUp)
             {
                 // 2.17 crouch desync fix: shooting / aiming crouched stays crouched here too
@@ -2274,7 +2305,11 @@ static void UpdateRemote(int id, int localPed, uint64_t now)
                     float al = e.x * fx + e.y * fy;
                     float lx = e.x - al * fx, ly = e.y - al * fy;
                     float kl = dt * 6.0f; if(kl > 1.0f) kl = 1.0f;
-                    float ka = fabsf(al) > 0.25f ? dt * 4.0f : dt * 1.0f; if(ka > 1.0f) ka = 1.0f;
+                    float ka = fabsf(al) > 0.25f ? dt * 4.0f : dt * 1.0f;
+                    // 4.13.19: ahead of the network position: let it catch up (a firm pull back slid the
+                    // running avatar backwards = moonwalk); only a big lead is pulled back firmly
+                    if(al < 0.0f) ka = al < -1.5f ? dt * 4.0f : dt * 0.6f;
+                    if(ka > 1.0f) ka = 1.0f;
                     step.x = lx * kl + fx * al * ka; step.y = ly * kl + fy * al * ka;
                 }
                 else { float k = dt * 8.0f; if(k > 1.0f) k = 1.0f; step.x = e.x * k; step.y = e.y * k; }
@@ -2355,7 +2390,9 @@ static void UpdateRemote(int id, int localPed, uint64_t now)
             float al = e.x * fx + e.y * fy;
             float lx = e.x - al * fx, ly = e.y - al * fy;
             float kl = dt * 6.0f; if(kl > 1.0f) kl = 1.0f;
-            float ka = fabsf(al) > 0.3f ? dt * 3.0f : 0.0f; if(ka > 1.0f) ka = 1.0f;
+            float ka = fabsf(al) > 0.3f ? dt * 3.0f : 0.0f;
+            if(al < 0.0f) ka = al < -1.5f ? dt * 3.0f : dt * 0.6f;   // 4.13.19: no backwards slide (moonwalk)
+            if(ka > 1.0f) ka = 1.0f;
             step.x = lx * kl + fx * al * ka; step.y = ly * kl + fy * al * ka;
         }
         else
@@ -2928,7 +2965,9 @@ static void SendLocalSync(int ped, uint64_t now)
         if(Game::IsLocalOnJetpack()) e.x2flags |= X2_JETPACK;
     }
     if(s_Cheat.invisible || JoinFlowActive() || BcwHidden() || Mw3Hidden() || RpHidden() || DzHidden()) e.x2flags |= X2_INVISIBLE;   // 3.04: Brief Case War lobby / respawn wait
-    if(!(d.flags & SYNC_IN_CAR) && d.weapon >= 22 && d.weapon <= 38 && (Game::IsPedAimingGun(ped) || (d.flags & SYNC_SHOOTING)))
+    const bool aimWeap = (d.weapon >= 22 && d.weapon <= 38) || (d.weapon >= 41 && d.weapon <= 43);   // 4.13.20: + spray can / extinguisher / camera
+    const bool aimHeld = aimWeap && !(d.flags & SYNC_IN_CAR) && (Game::IsPedAimingGun(ped) || Game::IsLocalAimHeld());   // 4.13.20: + aim / scope button
+    if(!(d.flags & SYNC_IN_CAR) && aimWeap && (aimHeld || (d.flags & SYNC_SHOOTING)))
     {
         // the real point the player aims at (was: 25 m straight ahead of the body)
         Vec3 ap;
@@ -2937,7 +2976,7 @@ static void SendLocalSync(int ped, uint64_t now)
             float dx = ap.x - pos.x, dy = ap.y - pos.y;
             if(dx * dx + dy * dy < 400.0f * 400.0f) { d.aim[0] = ap.x; d.aim[1] = ap.y; d.aim[2] = ap.z; }
         }
-        if(Game::IsPedAimingGun(ped)) e.x2flags |= X2_AIMING;
+        if(aimHeld) e.x2flags |= X2_AIMING;
     }
     if((d.flags & SYNC_IN_CAR) && (d.flags & SYNC_DRIVER))
     {

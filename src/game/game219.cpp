@@ -53,6 +53,9 @@ DEFOPCODE(03CA, DOES_OBJECT_EXIST_219, i);
 static void* (*GetPad_fn)(int) = nullptr;
 static int16_t (*GetWalkLR_fn)(void*) = nullptr;
 static int16_t (*GetWalkUD_fn)(void*) = nullptr;
+static bool (*GetTarget_fn)(void*, bool) = nullptr;   // 4.13.20: CPad::GetTarget (aim / scope button)
+static bool (*FirstPersonWeapon_fn)(void*) = nullptr;   // CCamera::Using1stPersonWeaponMode
+static void* s_pTheCamera219 = nullptr;
 static bool (*LineOfSight_fn)(const float*, const float*, bool, bool, bool, bool, bool, bool, bool) = nullptr;
 
 static bool SafeRead(const void* addr, void* out, size_t len)
@@ -68,6 +71,20 @@ void Game::InitGame219(void* h)
     SET_TO(GetWalkLR_fn, aml->GetSym(h, "_ZN4CPad19GetPedWalkLeftRightEv"));
     SET_TO(GetWalkUD_fn, aml->GetSym(h, "_ZN4CPad16GetPedWalkUpDownEv"));
     SET_TO(LineOfSight_fn, aml->GetSym(h, "_ZN6CWorld21GetIsLineOfSightClearERK7CVectorS2_bbbbbbb"));
+    SET_TO(GetTarget_fn, aml->GetSym(h, "_ZN4CPad9GetTargetEb"));
+    if(!GetTarget_fn) SET_TO(GetTarget_fn, aml->GetSym(h, "_ZN4CPad9GetTargetEv"));
+    SET_TO(FirstPersonWeapon_fn, aml->GetSym(h, "_ZN7CCamera25Using1stPersonWeaponModeEv"));
+    SET_TO(s_pTheCamera219, aml->GetSym(h, "TheCamera"));
+}
+
+// 4.13.20: the aim / scope button is held (lock-on, free aim) or the sniper / rocket / camera scope
+// view is on. The ped's "aiming gun" flag alone missed these on mobile, so other phones never
+// raised the arms.
+bool Game::IsLocalAimHeld()
+{
+    if(FirstPersonWeapon_fn && s_pTheCamera219 && FirstPersonWeapon_fn(s_pTheCamera219)) return true;
+    if(GetPad_fn && GetTarget_fn) { void* pad = GetPad_fn(0); if(pad && GetTarget_fn(pad, false)) return true; }
+    return false;
 }
 
 bool Game::GetStick(int& x, int& y)

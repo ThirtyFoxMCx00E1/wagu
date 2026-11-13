@@ -125,6 +125,7 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **4.13.20**: Remote players no longer moonwalk: a player walking or running backwards now turns to face where they are going (as in real GTA SA), and the smoothing no longer drags them backwards in their running animation. Pressing the aim / scope button now raises the player's arms on other phones too (lock-on, free aim and sniper / rocket / camera scope; also spray can and extinguisher).
 - **4.13.19**: Map editor object search by look, the AI modding tools in tools/ai, and the MP app icon on the websites.
   - /mapedit find and /mapping find match every word against the model name, its txd and its tags, and the
     tags now hold the nouns of gta-scout's 2,716 reviewed model descriptions: "wood pallet", "red barrel",
