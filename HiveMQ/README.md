@@ -223,7 +223,7 @@ This kit now also lives inside the main repo: [wagu/HiveMQ](https://github.com/T
 - **No ping climb when 25 / 100 players join:** `mp_server` keeps a per-player send budget (far players are sent less often when the server is full, near players and shots always go first), and the phone measures ping on its own channel so it is not stuck behind game packets.
 - **The 4 servers stay online 24/7 with the bot (1/100):** MP LAN Server, Brief Case War, Modern Warfare 3 and Mega Vil Futuristic always show the bot as a player, even when nobody plays. `mp-keepalive` now also **asks every server like the lobby does** (UDP query) and restarts one that has its port open but does not answer (hung / frozen), so the list never shows it offline.
 - **Console autobot:** the Termius / Termux pages run several bot typers at once (one per lane), each in its own endless loop, so the console never gets stuck on one long command.
-- **Discord bot:** the in-game `/stats` and `/char` are `/statsdc` and `/chardc` in Discord.
+- **Discord bot:** the in-game `/stats` is `/statsdc` in Discord (Switch view = the character card); `/help` in Discord is the tutorial (4.13.15, replaces `/chardc`).
 
 ## MP 3.33: the 4 servers run only here, 24/7 - no Broker bot, lower ping
 

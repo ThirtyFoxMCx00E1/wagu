@@ -136,7 +136,8 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
   Server management, it turns off again when the last of them leaves. 100% progress save on the default server is
   removed (its save load on join was one of the black-screen freezes). Join freeze fixes: nothing from other
   players (street peds / cars, map objects) is built while the world loads or in the first 6 s, and at most 3
-  network models stream in at once (a model that never loads is skipped). Website ping is a real MQTT round trip.
+  network models stream in at once (a model that never loads is skipped). Website ping is a real MQTT round trip. Discord bot: `/help` (tutorial: install, account, playing, commands)
+  replaces `/chardc`; the character card is `/statsdc` > Switch view.
 - **4.13.14**: Fixed the black flicker in the Rocket League lobby (Grove Street). The server's time lock and the
   League's own night (23:30 every 4 s) fought each other, so the sky jumped between day and night. The League night
   is now the time the lock holds. Also: the car's kickoff spot fits the 4x arena.
@@ -606,7 +607,7 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
   - **Chat scroll**: drag or use the mouse wheel on the open chat box.
   - **Settings > Display**: 9 fonts (Arial, Pricedown, Roboto, Roboto Condensed, Noto Serif, Mono, Coming Soon, Dancing Script, Carrois Gothic), font effects (none, outline, bold outline, shadow), font scale and UI scale.
   - **Voice chat**: volume up to 500%, mic boost up to 8x with a limiter (loud without crackle), pitch 0.4 - 2.2 with presets Monster, Deep, Normal, High, Chipmunk and Crazy.
-  - `/stats` and `/char` work on all 4 servers (custom servers with Authentication on); in Discord they are `/statsdc` and `/chardc`.
+  - `/stats` and `/char` work on all 4 servers (custom servers with Authentication on); in Discord it is `/statsdc` (Switch view = character); `/help` is the tutorial.
   - Website: new sa-mp.mp-style dark design with GTA SA artwork, no "Source on GitHub" button.
 - **3.32**: Fixes the **freeze when people join** a server and the **crash in CStreaming::GetNextFileOnCd** (SIGSEGV with ZyZ Limit Adjuster), plus the new **MP Oracle** page.
   - Other players' skins, clothes, cars, weapons, pickups and projectiles now stream in the background (REQUEST_MODEL) instead of LOAD_ALL_MODELS_NOW, which stopped the whole game for every player that joined and crashed inside ZyZ Limit Adjuster's streaming hook.
@@ -1440,7 +1441,7 @@ This kit now also lives inside the main repo: [wagu/HiveMQ](https://github.com/T
 - **No ping climb when 25 / 100 players join:** `mp_server` keeps a per-player send budget (far players are sent less often when the server is full, near players and shots always go first), and the phone measures ping on its own channel so it is not stuck behind game packets.
 - **The 4 servers stay online 24/7 with the bot (1/100):** MP LAN Server, Brief Case War, Modern Warfare 3 and Mega Vil Futuristic always show the bot as a player, even when nobody plays. `mp-keepalive` now also **asks every server like the lobby does** (UDP query) and restarts one that has its port open but does not answer (hung / frozen), so the list never shows it offline.
 - **Console autobot:** the Termius / Termux pages run several bot typers at once (one per lane), each in its own endless loop, so the console never gets stuck on one long command.
-- **Discord bot:** the in-game `/stats` and `/char` are `/statsdc` and `/chardc` in Discord.
+- **Discord bot:** the in-game `/stats` is `/statsdc` in Discord (Switch view = the character card); `/help` in Discord is the tutorial (4.13.15, replaces `/chardc`).
 
 #### MP 3.33: the 4 servers run only here, 24/7 - no Broker bot, lower ping
 
