@@ -1,7 +1,4 @@
 -----------------------------------------------------------------------------
--- Full copy of the LuaSocket code, modified to include
--- https and http/https redirects, and Copas async enabled.
------------------------------------------------------------------------------
 -- HTTP/1.1 client support for the Lua language.
 -- LuaSocket toolkit.
 -- Author: Diego Nehab
@@ -18,27 +15,31 @@ local string = require("string")
 local headers = require("socket.headers")
 local base = _G
 local table = require("table")
-local copas = require("copas")
-copas.http = {}
-local _M = copas.http
+socket.http = {}
+local _M = socket.http
 
 -----------------------------------------------------------------------------
 -- Program constants
 -----------------------------------------------------------------------------
 -- connection timeout in seconds
 _M.TIMEOUT = 60
--- default port for document retrieval
-_M.PORT = 80
 -- user agent field sent in request
 _M.USERAGENT = socket._VERSION
 
--- Default settings for SSL
-_M.SSLPORT = 443
-_M.SSLPROTOCOL = "tlsv1_2"
-_M.SSLOPTIONS  = "all"
-_M.SSLVERIFY   = "none"
-_M.SSLSNISTRICT = false
-
+-- supported schemes and their particulars
+local SCHEMES = {
+    http = {
+        port = 80
+        , create = function(t)
+            return socket.tcp end }
+    , https = {
+        port = 443
+        , create = function(t)
+          local https = assert(
+            require("ssl.https"), 'LuaSocket: LuaSec not found')
+          local tcp = assert(
+            https.tcp, 'LuaSocket: Function tcp() not available from LuaSec')
+          return tcp(t) end }}
 
 -----------------------------------------------------------------------------
 -- Reads MIME headers from a connection, unfolding where needed
@@ -88,7 +89,7 @@ socket.sourcet["http-chunked"] = function(sock, headers)
             -- was it the last chunk?
             if size > 0 then
                 -- if not, get chunk and skip terminating CRLF
-                local chunk, err = sock:receive(size)
+                local chunk, err, _ = sock:receive(size)
                 if chunk then sock:receive() end
                 return chunk, err
             else
@@ -118,23 +119,15 @@ end
 -----------------------------------------------------------------------------
 local metat = { __index = {} }
 
-function _M.open(reqt)
-    -- create socket with user connect function
-    local c = socket.try(reqt:create())   -- method call, passing reqt table as self!
+function _M.open(host, port, create)
+    -- create socket with user connect function, or with default
+    local c = socket.try(create())
     local h = base.setmetatable({ c = c }, metat)
     -- create finalized try
     h.try = socket.newtry(function() h:close() end)
     -- set timeout before connecting
-    local to = reqt.timeout or _M.TIMEOUT
-    if type(to) == "table" then
-      h.try(c:settimeouts(
-        to.connect or _M.TIMEOUT,
-        to.send or _M.TIMEOUT,
-        to.receive or _M.TIMEOUT))
-    else
-      h.try(c:settimeout(to))
-    end
-    h.try(c:connect(reqt.host, reqt.port or _M.PORT))
+    h.try(c:settimeout(_M.TIMEOUT))
+    h.try(c:connect(host, port))
     -- here everything worked
     return h
 end
@@ -164,10 +157,15 @@ function metat.__index:sendbody(headers, source, step)
 end
 
 function metat.__index:receivestatusline()
-    local status = self.try(self.c:receive(5))
+    local status,ec = self.try(self.c:receive(5))
     -- identify HTTP/0.9 responses, which do not contain a status line
     -- this is just a heuristic, but is what the RFC recommends
-    if status ~= "HTTP/" then return nil, status end
+    if status ~= "HTTP/" then
+        if ec == "timeout" then
+            return 408
+        end
+        return nil, status
+    end
     -- otherwise proceed reading a status line
     status = self.try(self.c:receive("*l", status))
     local code = socket.skip(2, string.find(status, "HTTP/%d*%.%d* (%d%d%d)"))
@@ -229,7 +227,10 @@ end
 
 local function adjustheaders(reqt)
     -- default headers
-    local host = string.gsub(reqt.authority, "^.-@", "")
+    local host = reqt.host
+    local port = tostring(reqt.port)
+    if port ~= tostring(SCHEMES[reqt.scheme].port) then
+        host = host .. ':' .. port end
     local lower = {
         ["user-agent"] = _M.USERAGENT,
         ["host"] = host,
@@ -239,7 +240,17 @@ local function adjustheaders(reqt)
     -- if we have authentication information, pass it along
     if reqt.user and reqt.password then
         lower["authorization"] =
-            "Basic " ..  (mime.b64(reqt.user .. ":" .. reqt.password))
+            "Basic " ..  (mime.b64(reqt.user .. ":" ..
+		url.unescape(reqt.password)))
+    end
+    -- if we have proxy authentication information, pass it along
+    local proxy = reqt.proxy or _M.PROXY
+    if proxy then
+        proxy = url.parse(proxy)
+        if proxy.user and proxy.password then
+            lower["proxy-authorization"] =
+                "Basic " ..  (mime.b64(proxy.user .. ":" .. proxy.password))
+        end
     end
     -- override with user headers
     for i,v in base.pairs(reqt.headers or lower) do
@@ -250,10 +261,8 @@ end
 
 -- default url parts
 local default = {
-    host = "",
-    port = _M.PORT,
-    path ="/",
-    scheme = "http"
+    path ="/"
+    , scheme = "http"
 }
 
 local function adjustrequest(reqt)
@@ -261,25 +270,48 @@ local function adjustrequest(reqt)
     local nreqt = reqt.url and url.parse(reqt.url, default) or {}
     -- explicit components override url
     for i,v in base.pairs(reqt) do nreqt[i] = v end
-    if nreqt.port == "" then nreqt.port = 80 end
-    socket.try(nreqt.host and nreqt.host ~= "",
-        "invalid host '" .. base.tostring(nreqt.host) .. "'")
+    -- default to scheme particulars
+    local schemedefs, host, port, method
+        = SCHEMES[nreqt.scheme], nreqt.host, nreqt.port, nreqt.method
+    if not nreqt.create then nreqt.create = schemedefs.create(nreqt) end
+    if not (port and port ~= '') then nreqt.port = schemedefs.port end
+    if not (method and method ~= '') then nreqt.method = 'GET' end
+    if not (host and host ~= "") then
+        socket.try(nil, "invalid host '" .. base.tostring(nreqt.host) .. "'")
+    end
     -- compute uri if user hasn't overriden
     nreqt.uri = reqt.uri or adjusturi(nreqt)
-    -- ajust host and port if there is a proxy
-    nreqt.host, nreqt.port = adjustproxy(nreqt)
     -- adjust headers in request
     nreqt.headers = adjustheaders(nreqt)
+    if nreqt.source
+        and not nreqt.headers["content-length"]
+        and not nreqt.headers["transfer-encoding"]
+    then
+        nreqt.headers["transfer-encoding"] = "chunked"
+    end
+
+    -- ajust host and port if there is a proxy
+    nreqt.host, nreqt.port = adjustproxy(nreqt)
     return nreqt
 end
 
 local function shouldredirect(reqt, code, headers)
-    return headers.location and
-           string.gsub(headers.location, "%s", "") ~= "" and
-           (reqt.redirect ~= false) and
+    local location = headers.location
+    if not location then return false end
+    location = string.gsub(location, "%s", "")
+    if location == "" then return false end
+    -- the RFC says the redirect URL may be relative
+    location = url.absolute(reqt.url, location)
+    local scheme = url.parse(location).scheme
+    if scheme and (not SCHEMES[scheme]) then return false end
+    -- avoid https downgrades
+    if ('https' == reqt.scheme) and ('https' ~= scheme) then return false end
+    return (reqt.redirect ~= false) and
            (code == 301 or code == 302 or code == 303 or code == 307) and
            (not reqt.method or reqt.method == "GET" or reqt.method == "HEAD")
-           and (not reqt.nredirects or reqt.nredirects < 5)
+        and ((false == reqt.maxredirects)
+                or ((reqt.nredirects or 0)
+                        < (reqt.maxredirects or 5)))
 end
 
 local function shouldreceivebody(reqt, code)
@@ -293,17 +325,22 @@ end
 local trequest, tredirect
 
 --[[local]] function tredirect(reqt, location)
+    -- the RFC says the redirect URL may be relative
+    local newurl = url.absolute(reqt.url, location)
+    -- if switching schemes, reset port and create function
+    if url.parse(newurl).scheme ~= reqt.scheme then
+        reqt.port = nil
+        reqt.create = nil end
+    -- make new request
     local result, code, headers, status = trequest {
-        -- the RFC says the redirect URL has to be absolute, but some
-        -- servers do not respect that
-        url = url.absolute(reqt.url, location),
+        url = newurl,
         source = reqt.source,
         sink = reqt.sink,
         headers = reqt.headers,
         proxy = reqt.proxy,
+        maxredirects = reqt.maxredirects,
         nredirects = (reqt.nredirects or 0) + 1,
-        create = reqt.create,
-        timeout = reqt.timeout,
+        create = reqt.create
     }
     -- pass location header back as a hint we redirected
     headers = headers or {}
@@ -315,7 +352,7 @@ end
     -- we loop until we get what we want, or
     -- until we are sure there is no way to get it
     local nreqt = adjustrequest(reqt)
-    local h = _M.open(nreqt)
+    local h = _M.open(nreqt.host, nreqt.port, nreqt.create)
     -- send request line and headers
     h:sendrequestline(nreqt.method, nreqt.uri)
     h:sendheaders(nreqt.headers)
@@ -328,6 +365,8 @@ end
     if not code then
         h:receive09body(status, nreqt.sink, nreqt.step)
         return 1, 200
+    elseif code == 408 then
+        return 1, code
     end
     local headers
     -- ignore any 100-continue messages
@@ -350,78 +389,14 @@ end
     return 1, code, headers, status
 end
 
--- Return a function which creates a tcp socket that will
--- include the optional SSL/TLS connection, and unsafe redirect checks
-function _M.getcreatefunc(params)
-   params = params or {}
-   local ssl_params = params.sslparams or {}
-   ssl_params.wrap = ssl_params.wrap or {
-      -- backward compatibility
-      protocol = params.protocol,
-      options = params.options,
-      verify = params.verify,
-   }
-   ssl_params.sni = ssl_params.sni or {
-      strict = _M.SSLSNISTRICT
-   }
-
-   -- Default settings
-   ssl_params.wrap.protocol = ssl_params.wrap.protocol or _M.SSLPROTOCOL
-   ssl_params.wrap.options = ssl_params.wrap.options or _M.SSLOPTIONS
-   if ssl_params.wrap.verify == nil then
-      ssl_params.wrap.verify = _M.SSLVERIFY
-   end
-   ssl_params.wrap.mode = "client"   -- Force client mode
-
-   if not ssl_params.sni.names then
-      -- names haven't been set, and hence will be set below. Since this alters
-      -- the table, we must make a copy. Otherwise the altered table might be
-      -- reused if a redirect is encountered.
-      local old_params = ssl_params
-      ssl_params = {}
-      for k,v in pairs(old_params) do
-        ssl_params[k] = v
-      end
-      ssl_params.sni = { strict = old_params.sni.strict }
-   end
-
-   -- upvalue to track https -> http redirection
-   local washttps = false
-
-   -- 'create' function for LuaSocket
-   return function (reqt)
-      local u = url.parse(reqt.url)
-      if (reqt.scheme or u.scheme) == "https" then
-        -- set SNI name to host if not given
-        ssl_params.sni.names = ssl_params.sni.names or u.host
-        -- https, provide an ssl wrapped socket
-        local conn = copas.wrap(socket.tcp(), ssl_params)
-        -- insert https default port, overriding http port inserted by LuaSocket
-        if not u.port then
-           u.port = _M.SSLPORT
-           reqt.url = url.build(u)
-           reqt.port = _M.SSLPORT
-        end
-        washttps = true
-        return conn
-      else
-        -- regular http, needs just a socket...
-        if washttps and params.redirect ~= "all" then
-          socket.try(nil, "Unallowed insecure redirect https to http")
-        end
-        return copas.wrap(socket.tcp())
-      end
-   end
-end
-
--- parses a shorthand form into the advanced table form.
--- adds field `target` to the table. This will hold the return values.
-_M.parseRequest = function(u, b)
+-- turns an url and a body into a generic request
+local function genericform(u, b)
+    local t = {}
     local reqt = {
         url = u,
-        target = {},
+        sink = ltn12.sink.table(t),
+        target = t
     }
-    reqt.sink = ltn12.sink.table(reqt.target)
     if b then
         reqt.source = ltn12.source.string(b)
         reqt.headers = {
@@ -433,27 +408,18 @@ _M.parseRequest = function(u, b)
     return reqt
 end
 
-_M.request = socket.protect(function(reqt, body)
-    if base.type(reqt) == "string" then
-        reqt = _M.parseRequest(reqt, body)
-        local ok, code, headers, status = _M.request(reqt)
+_M.genericform = genericform
 
-        if ok then
-            return table.concat(reqt.target), code, headers, status
-        else
-            return nil, code
-        end
-    else
-        -- strict check on timeout table to prevent typo's from going unnoticed
-        if type(reqt.timeout) == "table" then
-          local allowed = { connect = true, send = true, receive = true }
-          for k in pairs(reqt.timeout) do
-            assert(allowed[k], "'"..tostring(k).."' is not a valid timeout option. Valid: 'connect', 'send', 'receive'")
-          end
-        end
-        reqt.create = reqt.create or _M.getcreatefunc(reqt)
-        return trequest(reqt)
-    end
+local function srequest(u, b)
+    local reqt = genericform(u, b)
+    local _, code, headers, status = trequest(reqt)
+    return table.concat(reqt.target), code, headers, status
+end
+
+_M.request = socket.protect(function(reqt, body)
+    if base.type(reqt) == "string" then return srequest(reqt, body)
+    else return trequest(reqt) end
 end)
 
+_M.schemes = SCHEMES
 return _M
