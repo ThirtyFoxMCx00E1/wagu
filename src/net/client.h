@@ -112,6 +112,10 @@ public:
     int  GetLossPct() const { return m_nLossPct; }   // 4.05.8: lost pings, last 20 s
     int  GetJitter() const  { return m_nJitter; }    // 4.05.8: ms, smoothed |rtt - last rtt|
     bool IsWeakLink() const { return m_bWeakLink; }
+    // 4.13.22: nothing from the server for MP_TIMEOUT_MS: "reconnecting" (the session, the world and the player
+    // list are kept; rebinds keep going) instead of a disconnect; given up after MP_RECONNECT_GRACE_MS
+    bool IsReconnecting() const { return m_bReconnecting; }
+    uint64_t ReconnectingSince() const { return m_nReconnSince; }
 
     eNetState GetState() const { return m_eState.load(); }
     uint8_t   GetMyId() const  { return m_nMyId; }
@@ -133,6 +137,8 @@ private:
     uint32_t    m_nServerBuild = 0;   // 3.39
     uint32_t    m_nServerFlags = 0;   // 4.12
     uint64_t    m_nLastRebind = 0;    // 3.39
+    volatile bool m_bReconnecting = false;   // 4.13.22
+    uint64_t    m_nReconnSince = 0;        // 4.13.22
     uint32_t    m_nNetGenSeen = 0;    // 4.05.8: Online::NetGeneration() at the last check
     uint64_t    m_nNetChangedMs = 0;  // 4.05.8
     // 4.05.8: link quality + redundancy

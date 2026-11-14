@@ -140,6 +140,14 @@ static bool LgFloorReady()   // 4.13.13: every floor tile is there
     int n = 0; for(const auto& o : s_LgObjs) if(o.model == s_nLgFloor) { if(o.h <= 0) return false; ++n; }
     return n > 0;
 }
+static bool LgFloorAny() { if(!s_bLgSky) return true; for(const auto& o : s_LgObjs) if(o.model == s_nLgFloor && o.h > 0) return true; return false; }
+static bool LgFloorAt(float x, float y)   // 4.13.22: the floor tile under this arena point is there
+{
+    if(!s_bLgSky) return true;
+    const float T = s_nLgFloor == 19529 ? 125.0f : 40.0f;
+    for(const auto& o : s_LgObjs) if(o.model == s_nLgFloor && fabsf(o.x - x) <= T * 0.5f + 0.5f && fabsf(o.y - y) <= T * 0.5f + 0.5f && o.h > 0) return true;
+    return false;
+}
 static void LgPlanArena()
 {
     s_LgObjs.clear(); s_bLgArenaPlanned = true;
@@ -242,9 +250,18 @@ static void LgArenaBuild(uint64_t now)
     {
         s_nLgBuildAt = now + 100;
         int made = 0;
+        static uint64_t s_nRetryAt = 0;
+        if(now >= s_nRetryAt)
+        {   // 4.13.22: a floor tile that failed (the object pool was full for a moment) is tried again every 2 s -
+            // before, one failed tile kept the car frozen until the 15 s fallback
+            s_nRetryAt = now + 2000;
+            for(auto& o : s_LgObjs) if(o.h < 0 && o.model == s_nLgFloor) o.h = 0;
+        }
         for(auto& o : s_LgObjs)
         {
-            if(o.h > 0 || o.h < 0 || made >= 6) continue;
+            // the floor first (12 a round), the goals / walls after it (6 a round)
+            if(o.h > 0 || o.h < 0 || made >= (o.model == s_nLgFloor ? 12 : 6)) continue;
+            if(o.model != s_nLgFloor && !LgFloorAny()) continue;
             const int h = Game::CreateMapObject(o.model, LgWorld(o.x, o.y, o.z), o.rx, o.ry, o.rz);
             if(h == 0) break;                         // streaming in: try again next round
             o.h = h > 0 ? h : -1; ++made;
@@ -306,7 +323,7 @@ static void LgBallObjTick()
     if(s_LgBallObj > 0 && !Game::WorldObjectExists(s_LgBallObj)) s_LgBallObj = 0;
     if(s_LgBallObj <= 0)
     {
-        if(RlBall::Failed() || !LgFloorReady() || !RlBall::Ready(kLgBallModel)) return;
+        if(RlBall::Failed() || !LgFloorAny() || !RlBall::Ready(kLgBallModel)) return;
         s_LgBallObj = Game::CreateWorldObject(kLgBallModel, LgWorld(b[0], b[1], b[2]));
         if(s_LgBallObj > 0) { Game::SetObjectCollision(s_LgBallObj, false); s_LgBallLast[0] = b[0]; s_LgBallLast[1] = b[1]; }
         return;
@@ -528,12 +545,18 @@ static void LgArenaProcess(int ped, uint64_t now, float dt)
     {   // 4.13.10: the floating floor first
         const float side = s_Lg.freePlay ? -1.0f : (s_Lg.me.team == 1 ? 1.0f : -1.0f);
         const Vec3 at = LgWorld(side * 46.08f * LG_SCALE, 0, 1.0f);
-        if(!LgFloorReady())
+        // 4.13.22: no more waiting for EVERY tile (players stood frozen for seconds on the free play map, forever when
+        // one tile failed): the tile under the spawn is enough after 1 s, and after 4 s the car goes anyway - the
+        // virtual floor below holds it up where a tile (or its collision) is still missing
+        const float sx = side * 46.08f * LG_SCALE;
+        const bool under = LgFloorAt(sx, 0);
+        const uint64_t waited = now - s_Lg.viewAt;
+        if(!LgFloorReady() && !(under && waited > 1000) && !(LgFloorAny() && waited > 4000))
         {
             if(!s_Lg.frozen) { Game::FreezeCar(s_Lg.myCar, true); s_Lg.frozen = true; }
             Game::SetCarPos(s_Lg.myCar, at, 0.0f); Game::SetMoveSpeed(s_Lg.myCar, true, { 0, 0, 0 });
-            if(now - s_Lg.viewAt > 15000)
-            {   // the floor never came (object pool full / model pack broken): the LV apron instead
+            if(waited > 15000)
+            {   // not one floor tile came (object pool full / model pack broken): the LV apron instead
                 logger->Error("LEAGUE: the sky floor did not appear in 15 s - using the LV airport apron");
                 LgArenaFree(); s_bLgArenaPlanned = true; s_bLgSky = false;
                 for(int k = 0; k < 3; ++k) s_LgC[k] = kLgFallbackCenter[k];
@@ -562,6 +585,10 @@ static void LgArenaProcess(int ped, uint64_t now, float dt)
     }
     // the arena walls (invisible): bounce back like the RL cage
     bool hit = false;
+    if(s_bLgSky && fabsf(rel[0]) < LG_HALF_L + LG_GOAL_DEPTH && fabsf(rel[1]) < LG_HALF_W && rel[2] < 0.3f && rel[2] > -14.0f)
+    {   // 4.13.22: the virtual floor - a tile (or its collision) not there yet: the car is held up instead of falling
+        const float up = (0.6f - rel[2]) * 8.0f; if(v.z < up) v.z = up > 6.0f ? 6.0f : up; hit = true;
+    }
     const bool inMouth = fabsf(rel[1]) < LG_GOAL_HALF_W && rel[2] < LG_GOAL_H;
     const float lx = inMouth ? LG_HALF_L + LG_GOAL_DEPTH - 1.5f : LG_HALF_L - 1.2f;
     if(rel[0] > lx && v.x > 0) { v.x = -v.x * 0.4f; hit = true; } else if(rel[0] < -lx && v.x < 0) { v.x = -v.x * 0.4f; hit = true; }

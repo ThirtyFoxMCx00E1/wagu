@@ -11,6 +11,8 @@ namespace UI
     float S(float px);
     ImFont* Font();
     ImFont* PricedownFont();
+    ImFont* GothicFont();   // 4.13.22: neon main menu items (UnifrakturMaguntia, 64 px base)
+    ImFont* CapsFont();     // 4.13.22: neon menu names / labels (Cinzel, 36 px base)
     // 3.34: Settings > Display: 9 fonts, text effect (0 none, 1 outline, 2 bold outline, 3 shadow), font + UI scale
     #define UI_FONT_COUNT 10
     const char* FontName(int i);

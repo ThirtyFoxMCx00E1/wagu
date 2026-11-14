@@ -39,6 +39,13 @@ static bool              s_bMenuMpQuick = false;      // this black screen follo
 static std::atomic<int>  s_nMenuMpFade{0};            // 0..255 black over the loading screen
 
 static bool s_bMenuMpViaApi = false;   // 4.13.11: started by another mod (PCMenu), works even with MainMenuMultiplayer = 0
+// 4.13.22: ServerBrowserMode = neon / mp / default (mp_neon.inc)
+enum { NEON_MODE_DEFAULT = 0, NEON_MODE_MP = 1, NEON_MODE_NEON = 2 };
+static int  s_nNeonMode = NEON_MODE_NEON;
+static bool s_bNeonPendingJoin = false;   // a server picked on the neon title menu: joined after the Multiplayer load
+static bool NeonOn() { return s_nNeonMode == NEON_MODE_NEON && (s_bMenuMpOn || s_bMenuMpViaApi); }
+static bool NeonDraw();          // mp_neon.inc
+static bool NeonPendingJoin();   // mp_neon.inc
 static void MenuMpTap(void*)
 {
     if(!s_bMenuMpOn && !s_bMenuMpViaApi) return;
@@ -89,8 +96,21 @@ extern "C" __attribute__((visibility("default"))) void* MP_GetMultiplayerApi() {
 void MP::InitMainMenu()
 {
     s_bMenuMpOn = ::cfg->GetBool("MainMenuMultiplayer", true, "MP");
+    {   // 4.13.22: ServerBrowserMode = neon (the neon title menu + server browser) / mp (the [Multiplayer] tile + the
+        // launcher panel) / default (the game's own menu only)
+        char m[24] = "neon";
+        ::cfg->GetString(m, sizeof(m), "ServerBrowserMode", "neon", "MP");
+        if(!m[0]) MP_CopyStr(m, "neon", sizeof(m));
+        for(char* c = m; *c; ++c) *c = (char)tolower((unsigned char)*c);
+        if(!strcmp(m, "mp") || !strcmp(m, "launcher") || !strcmp(m, "1")) s_nNeonMode = NEON_MODE_MP;
+        else if(!strcmp(m, "default") || !strcmp(m, "off") || !strcmp(m, "game") || !strcmp(m, "0")) s_nNeonMode = NEON_MODE_DEFAULT;
+        else { s_nNeonMode = NEON_MODE_NEON; MP_CopyStr(m, "neon", sizeof(m)); }
+        { ConfigEntry* e = ::cfg->Bind("ServerBrowserMode", m, "MP"); e->SetString(m); delete e; ::cfg->Save(); }   // written to TYFMC.MP.ini
+        if(s_nNeonMode == NEON_MODE_DEFAULT) s_bMenuMpOn = false;
+        logger->Info("Main menu: ServerBrowserMode = %s", m);
+    }
     LookUpPCMenuLoading();
-    if(!s_bMenuMpOn) { logger->Info("Main menu: Multiplayer tile off (MainMenuMultiplayer = 0)"); return; }
+    if(!s_bMenuMpOn) { logger->Info("Main menu: Multiplayer tile off (MainMenuMultiplayer = 0 / ServerBrowserMode = default)"); return; }
     // 4.13.13: no SAUtils tile any more - SAUtils puts it on the pause menu too. MP draws its own tile, on the
     // title menu only (no game loaded yet).
     s_bMenuMpTile = false;
@@ -163,9 +183,13 @@ static void MenuMpProcess(int ped, uint64_t now)
         s_nMenuMpPct = -1; s_nMenuMpFade = 0;
         s_bMenuMpViaLoad = false;
         s_bMenuMpLaunched = true;
-        if(st == NET_DISCONNECTED) FloatMenu::OpenPage(FloatMenu::PAGE_SERVER);
+        if(st == NET_DISCONNECTED)
+        {   // 4.13.22: a server picked on the neon title menu is joined now; the neon menu is the server select
+            if(NeonPendingJoin()) {}
+            else if(!NeonOn()) FloatMenu::OpenPage(FloatMenu::PAGE_SERVER);
+        }
     }
-    s_bMenuMpCard = st == NET_DISCONNECTED && !FloatMenu::IsPageOpen(FloatMenu::PAGE_SERVER);
+    s_bMenuMpCard = !NeonOn() && st == NET_DISCONNECTED && !FloatMenu::IsPageOpen(FloatMenu::PAGE_SERVER);
 }
 
 static bool MenuMpActive() { return s_bMenuMp.load(); }
@@ -289,6 +313,7 @@ void MP::DrawMenuMpBack(ImDrawList* bg)
 void MP::DrawMenuMpFront()
 {
     const ImVec2 ds = ImGui::GetIO().DisplaySize;
+    HudLayout::SetScreen(ds.x, ds.y);   // 4.13.22: the GTA HUD offsets are % of the screen
     if(MenuMpBlack())
     {
         int pct = s_nMenuMpPct.load();
@@ -300,6 +325,7 @@ void MP::DrawMenuMpFront()
             if(a > 0) fg->AddRectFilled(ImVec2(0, 0), ds, IM_COL32(0, 0, 0, a > 255 ? 255 : a));
             return;
         }
+        if(NeonDraw()) return;   // 4.13.22: the neon menu on the black screen
         if(s_bMenuMpCard.load() && !FloatMenu::IsModal())
         {
             const ImVec2 sz(UI::S(460), UI::S(200));
@@ -324,7 +350,9 @@ void MP::DrawMenuMpFront()
         }
         return;
     }
+    if(NeonDraw()) return;   // 4.13.22: the neon title menu (ServerBrowserMode = neon)
     // no SAUtils: our own tile on the game's main menu, bottom left (the menu's tiles are in the middle)
+    if(s_nNeonMode != NEON_MODE_MP && !s_bMenuMpViaApi) return;
     if(!s_bMenuMpOn || s_bMenuMpTile || s_bMenuMp.load() || !Game::IsMainMenuShown()) return;
     if(Game::LocalPed() > 0) return;   // 4.13.13: a game is loaded = the pause menu: no Multiplayer tile there
     const ImVec2 sz(ds.x * 0.11f, ds.y * 0.17f), at(ds.x * 0.13f, ds.y * 0.70f);

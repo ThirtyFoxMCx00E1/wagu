@@ -576,7 +576,7 @@ void MPServer::AuthHandle(int slot, const uint8_t* data, int len)
         return;
     }
     for(int i = 0; i < MP_MAX_PLAYERS; ++i)   // the same account on another slot (other phone / ghost): the new one wins
-        if(i != slot && m_Slots[i].used && m_Slots[i].authed && !strcasecmp(m_Slots[i].account, t.user)) Drop(i, LEAVE_TIMEOUT);
+        if(i != slot && m_Slots[i].used && m_Slots[i].authed && !strcasecmp(m_Slots[i].account, t.user)) Drop(i, LEAVE_QUIT);
     s.authed = true;
     MP_CopyStr(s.account, t.user, sizeof(s.account));
     s.chal[0] = 0;   // used up
@@ -606,7 +606,7 @@ void MPServer::Drop(int slot, uint8_t reason)
     EndPair(slot);
     CoopEnd(slot);   // 4.13.15
     for(int i = 0; i < MP_MAX_PLAYERS; ++i) if(m_Slots[i].used && m_Slots[i].pairReq == slot) m_Slots[i].pairReq = MP_INVALID_ID;
-    Log("%s (id %d) left (%s)", m_Slots[slot].name, slot, reason == LEAVE_TIMEOUT ? "Timeout" : (reason == LEAVE_KICK ? "Kicked" : "Quit"));
+    Log("%s (id %d) left (%s)", m_Slots[slot].name, slot, reason == LEAVE_TIMEOUT ? "Lost connection" : (reason == LEAVE_KICK ? "Kicked" : "Quit"));
     SampOnLeave(slot, reason);   // 4.11: OnPlayerDisconnect (0 timeout, 1 quit, 2 kick = SA-MP's)
     m_Slots[slot].used = false;
     BcwOnLeave(slot);   // 3.04
@@ -712,7 +712,23 @@ void MPServer::Loop()
             OutBatch ob((int)m_Sock);
 #endif
             for(int i = 0; i < MP_MAX_PLAYERS; ++i)
-                if(m_Slots[i].used && !m_Slots[i].ghost && now - m_Slots[i].lastSeen > MP_TIMEOUT_MS) Drop(i, LEAVE_TIMEOUT);
+            {
+                Slot& s = m_Slots[i];
+                if(!s.used || s.ghost) continue;
+                const uint64_t q = now - s.lastSeen;
+                // 4.13.22: no "(Timeout)" leave: the player stays in the world (gamemode, team, money, score,
+                // position all kept) and everybody reads "{name} try to reconnecting to the server". The rebind
+                // (same uid) or any packet from the old path brings them back; only after 5 min the slot is
+                // freed - as a quiet leave, never "(Timeout)".
+                if(!s.reconn && q > MP_TIMEOUT_MS)
+                {
+                    s.reconn = true;
+                    char t[96]; snprintf(t, sizeof(t), "%s try to reconnecting to the server", s.name);
+                    ReconnMsg(t, 0xB8C2CCFFu);
+                    Log("%s (id %d) is reconnecting (no packets for %llu s)", s.name, i, (unsigned long long)(q / 1000));
+                }
+                else if(s.reconn && q > MP_RECONNECT_GRACE_MS) { s.reconn = false; Drop(i, LEAVE_QUIT); }
+            }
             static thread_local uint32_t chalTick = 0;
             if(++chalTick % 3 == 0)   // 3.21.6: the login challenge again (UDP may lose it)
                 for(int i = 0; i < MP_MAX_PLAYERS; ++i)
@@ -797,6 +813,13 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
     if(len < 1) return;
     if(!AcPacket(from, slot, data, len)) return;   // 3.50: anti-cheat (DoS, callback flood)
     if(slot >= 0) m_Slots[slot].lastSeen = MP_NowMs();
+    if(slot >= 0 && m_Slots[slot].reconn)
+    {   // 4.13.22: back from "reconnecting": everything is still loaded, it just runs on
+        m_Slots[slot].reconn = false;
+        char t[96]; snprintf(t, sizeof(t), "%s is done reconnecting", m_Slots[slot].name);
+        ReconnMsg(t, 0x8CE68CFFu);
+        Log("%s (id %d) is done reconnecting", m_Slots[slot].name, slot);
+    }
     // 3.21.6: not logged in yet: only joining, ping, leaving and the login itself
     if(slot >= 0 && !m_Slots[slot].authed)
     {
@@ -891,6 +914,9 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
                     break;
                 }
             }
+            if(slot < 0 && juid[0])   // 4.13.22: the same phone joins fresh (game restarted) while its old slot is "reconnecting"
+                for(int i = 0; i < MP_MAX_PLAYERS; ++i)
+                    if(m_Slots[i].used && m_Slots[i].reconn && !strcmp(m_Slots[i].uid, juid)) { m_Slots[i].reconn = false; Drop(i, LEAVE_QUIT); }
             if(slot < 0)
             {   // 3.50: anti-cheat (invalid version, fake NPC, reconnect / slot flood, key brute force)
                 uint32_t jb = 0;
@@ -957,7 +983,7 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
                         return;
                     }
                     for(int i = 0; i < MP_MAX_PLAYERS; ++i)   // already on (another phone / ghost slot)? the new one wins
-                        if(i != slot && m_Slots[i].used && m_Slots[i].admin) Drop(i, LEAVE_TIMEOUT);
+                        if(i != slot && m_Slots[i].used && m_Slots[i].admin) Drop(i, LEAVE_QUIT);
                     isAdmin = true;
                 }
                 else
@@ -977,7 +1003,7 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
                             return;
                         }
                         for(int i = 0; i < MP_MAX_PLAYERS; ++i)   // a ghost "[MOD] Trunk" of the same moderator: the new one wins
-                            if(i != slot && m_Slots[i].used && m_Slots[i].mod && MP_IsModReservedName(m_Slots[i].name)) Drop(i, LEAVE_TIMEOUT);
+                            if(i != slot && m_Slots[i].used && m_Slots[i].mod && MP_IsModReservedName(m_Slots[i].name)) Drop(i, LEAVE_QUIT);
                     }
                 }
                 if(slot >= 0 && !isAdmin && m_Slots[slot].mod != isMod)   // 3.40.1: the old slot learns the new rank

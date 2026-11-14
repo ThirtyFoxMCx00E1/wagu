@@ -771,7 +771,7 @@
     return '<div class="anow"><div class="b" style="font-size:20px;margin:4px 0 14px">Active Now</div>' + (act.length ? act.map(function (f) {
       var pr = Soc.profile(f.id), a = Soc.activity(f.id), game = a && a !== 'Moquil' ? a : '';
       var m = game ? MOQ_MODS.filter(function (mm) { return game.toLowerCase().indexOf(mm.name.toLowerCase().split(' ')[0]) >= 0; })[0] || MOQ_MODS[0] : null;
-      return '<div class="anc" data-user="' + f.id + '"><div class="row">' + avatar(f.id, f.name, pr, 'av s', true) + '<div class="grow"><div class="b ell">' + esc(pr && pr.display || f.name) + '</div><div class="tiny dim ell">' + esc(game ? game : 'On Moquil') + '</div></div>' + (m ? '<div class="gi" style="background-image:url(' + m.icon + ')"></div>' : '') + '</div></div>';
+      return '<div class="anc" data-user="' + f.id + '"><div class="row">' + avatar(f.id, f.name, pr, 'av s', true) + '<div class="grow"><div class="b ell">' + esc(pr && pr.display || f.name) + '</div><div class="tiny dim ell">' + esc(game ? game : 'On Moquil') + '</div></div>' + (m ? '<div class="gi" style="background-image:url(' + (m.act || 'img/logo.png') + ')"></div>' : '') + '</div></div>';
     }).join('') : '<div class="anempty"><div class="b">It\'s quiet for now...</div><div class="small dim">When a friend starts an activity, like playing MP or hanging out in voice, it shows here.</div></div>') + '</div>';
   }
   PAGES.friends = function () {
@@ -880,7 +880,7 @@
     if (act.length) body += '<div class="acts hscroll">' + act.slice(0, 12).map(function (x) {
       var pr = Soc.profile(x.f.id), game = x.a && x.a !== 'Moquil' ? x.a : 'Moquil';
       var m = MOQ_MODS.filter(function (mm) { return game.toLowerCase().indexOf(mm.name.toLowerCase().split(' ')[0]) >= 0; })[0] || (game === 'Moquil' ? null : MOQ_MODS[0]);
-      return '<div class="actc" data-user="' + x.f.id + '"><div class="gi" style="background-image:url(' + (m ? m.icon : 'img/logo.png') + ')"></div><div class="grow"><div class="row" style="gap:6px">' + avatar(x.f.id, x.f.name, pr, 'av s', true) + '</div><div class="b ell" style="margin-top:6px">' + esc(pr && pr.display || x.f.name) + '</div><div class="small dim ell">' + esc(game === 'Moquil' ? 'On Moquil' : game) + '</div></div></div>';
+      return '<div class="actc" data-user="' + x.f.id + '"><div class="gi" style="background-image:url(' + (m ? (m.act || 'img/logo.png') : 'img/logo.png') + ')"></div><div class="grow"><div class="row" style="gap:6px">' + avatar(x.f.id, x.f.name, pr, 'av s', true) + '</div><div class="b ell" style="margin-top:6px">' + esc(pr && pr.display || x.f.name) + '</div><div class="small dim ell">' + esc(game === 'Moquil' ? 'On Moquil' : game) + '</div></div></div>';
     }).join('') + '</div>';
     var cs = Soc.convs(), had = {};
     var rows = cs.map(function (c) {

@@ -47,6 +47,7 @@ extern "C" unsigned long crc32(unsigned long crc, const unsigned char* buf, unsi
 #include "game/cleoblock.h"
 #include "game/modscan.h"
 #include "game/screenguard.h"   // 4.12.2
+#include "game/hudlayout.h"     // 4.13.22: GTA HUD settings
 #include "game/dzmodels.h"   // 3.61: Day Z model pack
 #include "game/boneattach.h"  // 4.00: bag on the spine bone
 #include "game/lgball.h"     // 4.13.13: the Rocket League ball model
@@ -2546,7 +2547,7 @@ public:
         s_szDirectRelay[0] = 0;
         // decide before the player list is cleared (takeover order = player id order)
         StopFeed(); JoinOverlayCancel();
-        if(!OnLostServer()) SysMsg(COL_RED, "Lost connection to the server. (Timeout)");
+        if(!OnLostServer()) SysMsg(COL_RED, "Could not reconnect to the server.");
         ClearAllPlayers();
     }
     void OnPlayerJoin(const PktPlayerJoin& j) override
@@ -2566,8 +2567,7 @@ public:
     {
         if(l.id >= MP_MAX_PLAYERS || !players[l.id].active) return;
         SampOnPlayerLeave(l.id);   // 3.01
-        SysMsg(COL_SYSTEM, "*** %s left the server.%s", players[l.id].name,
-               l.reason == LEAVE_TIMEOUT ? " (Timeout)" : (l.reason == LEAVE_KICK ? " (Kicked)" : ""));
+        SysMsg(COL_SYSTEM, "*** %s left the server.%s", players[l.id].name, l.reason == LEAVE_KICK ? " (Kicked)" : "");   // 4.13.22: never "(Timeout)"
         if(s_bGroup[l.id]) { s_bGroup[l.id] = false; GroupFixFirst(); }   // 2.31
         if(l.id == s_nPairAskedTo) s_nPairAskedTo = MP_INVALID_ID;
         s_bPairAsked[l.id] = false;
@@ -3623,9 +3623,10 @@ static void NpcDecideRole(int ped, uint64_t now)
     bool follow = eligible && !wanted && host >= 0;
     if(!follow && s_bNpcFollow && eligible && !wanted)
     {
-        // the host walked away / stopped: wait 2 s before making my own world again
+        // the host walked away / stopped: wait before making my own world again (4.13.22: 2 -> 5 s, the NPCs
+        // blinked when a host was lost for a moment: copies deleted, my own traffic in, then the copies again)
         if(!s_nNpcNoHostSince) s_nNpcNoHostSince = now;
-        if(now - s_nNpcNoHostSince < 2000) follow = true;
+        if(now - s_nNpcNoHostSince < 5000) follow = true;
     }
     else s_nNpcNoHostSince = 0;
     bool hostNow = eligible && !wanted && !follow && !newcomer;
@@ -3989,7 +3990,7 @@ static void NpcUpdateCopies(int lp, uint64_t now)
     for(auto& c : s_NpcCar)
     {
         if(!c.used) continue;
-        if(now - c.seen > 3000 || !players[c.owner].active) { NpcDeleteCar(c); continue; }
+        if(now - c.seen > 6000 || !players[c.owner].active)   /* 4.13.22: 3 -> 6 s (a late packet deleted + respawned the copy: blinking) */ { NpcDeleteCar(c); continue; }
         if(c.car && !Game::CarPtr(c.car)) { if(c.driver && Game::PedPtr(c.driver)) Game::DeleteChar(c.driver); c.car = 0; c.driver = 0; }   // the game removed it (2.35: and its driver)
         // I take it: it's mine now (the host removes its own)
         // 2.34: "using" alone is not enough (the game keeps the last car there): close to it too
@@ -4072,7 +4073,7 @@ static void NpcUpdateCopies(int lp, uint64_t now)
     for(auto& c : s_NpcPed)
     {
         if(!c.used) continue;
-        if(now - c.seen > 3000 || !players[c.owner].active) { NpcDeletePed(c); continue; }
+        if(now - c.seen > 6000 || !players[c.owner].active)   /* 4.13.22: 3 -> 6 s (a late packet deleted + respawned the copy: blinking) */ { NpcDeletePed(c); continue; }
         if(c.ped && !Game::PedPtr(c.ped)) c.ped = 0;
         float age = (now - c.seen) / 1000.0f; if(age > 0.5f) age = 0.5f;
         Vec3 want = { c.target.x + c.vel.x * age, c.target.y + c.vel.y * age, c.target.z + c.vel.z * age };
@@ -4145,7 +4146,7 @@ static void NpcProcess(int ped, uint64_t now)
     if(s_bNpcFollow)
     {
         Game::SetAmbientPopulation(false);   // scripts may have turned the density back up
-        if(now - s_nNpcLastClear >= 1000)
+        if(now - s_nNpcLastClear >= 250)   // 4.13.22: 1 s -> 0.25 s: the game's own NPCs no longer flash up before they go
         {
             s_nNpcLastClear = now;
             Vec3 me; if(Game::GetCharPos(ped, me)) Game::ClearAmbient(me, MP_NPC_RANGE_M, s_nLastLocalCar);   // never the car I took
@@ -4232,6 +4233,28 @@ void MP::Process()
         if(mpOn) Game::KeepPadAwake();
     }
     client.Poll(&s_Events);
+    {   // 4.13.22: the link went quiet for 30 s: "reconnecting" - the world, the gamemode and the players stay loaded,
+        // the local player stops (no control, the car held) until the server answers again, then everything goes on
+        static bool s_bReconn = false; static uint64_t s_nReconnSay = 0; static int s_nReconnCar = 0;
+        const bool rc = client.GetState() == NET_CONNECTED && client.IsReconnecting();
+        const int ped = Game::LocalPed();
+        if(rc && !s_bReconn)
+        {
+            s_bReconn = true; s_nReconnSay = now + 15000;
+            SysMsg(COL_YELLOW, "Reconnecting to the server... (everything stays loaded)");
+            if(ped > 0) { s_nReconnCar = Game::GetCarCharIsIn(ped); if(s_nReconnCar > 0) Game::FreezeCar(s_nReconnCar, true); else Game::FreezeChar(ped, true); }
+            Game::SetPlayerControl(false);
+        }
+        else if(rc && now >= s_nReconnSay) { s_nReconnSay = now + 15000; SysMsg(COL_YELLOW, "Still reconnecting to the server... (%llu s)", (unsigned long long)((now - client.ReconnectingSince()) / 1000 + 30)); }
+        else if(!rc && s_bReconn)
+        {
+            s_bReconn = false;
+            if(s_nReconnCar > 0) Game::FreezeCar(s_nReconnCar, false); else if(ped > 0) Game::FreezeChar(ped, false);
+            s_nReconnCar = 0;
+            Game::SetPlayerControl(true);
+            if(client.GetState() == NET_CONNECTED) SysMsg(COL_GREEN, "Done reconnecting.");
+        }
+    }
     AuthFrame(MP_NowMs());   // 3.21.6: login screens + ticket
     // 2.17: kill feed lines no longer expire - they stay until pushed out by newer kills.
     // 2.35: ...but they belong to that server: left / lost the server = feed cleared
@@ -5522,6 +5545,11 @@ void MP::SaveConfig()
     auto I = [](const char* k, int v) { ConfigEntry* e = ::cfg->Bind(k, v, "MP"); e->SetInt(v); delete e; };
     auto F = [](const char* k, float v) { ConfigEntry* e = ::cfg->Bind(k, v, "MP"); e->SetFloat(v); delete e; };
     auto B = [](const char* k, bool v) { ConfigEntry* e = ::cfg->Bind(k, v, "MP"); e->SetBool(v); delete e; };
+    if(settings.name[0] && strcmp(settings.name, "Player") && s_szDataDir[0])
+    {   // 4.13.22: the name backup (see LoadConfig)
+        char path[512]; snprintf(path, sizeof(path), "%s/name.txt", s_szDataDir);
+        if(FILE* f = fopen(path, "wb")) { fprintf(f, "%s\n", settings.name); fclose(f); }
+    }
     S("Name", settings.name); S("Host", settings.host); S("ServerName", settings.serverName); S("HostedName", settings.hostedName); I("HostedPort", settings.hostedPort); I("Port", settings.port); B("HostLAN", settings.hostLan);
     F("NametagSize", settings.nametagSize); F("NametagDistance", settings.nametagDistance);
     B("ShowOwnNametag", settings.showOwnTag); B("ShowHealthBars", settings.showHealthBars); B("ShowRadarIcons", settings.showRadarIcons);
@@ -5552,7 +5580,14 @@ void MP::SaveConfig()
 
 static void LoadConfig()
 {
+    HudLayout::Load();   // 4.13.22: GTA HUD settings
     ::cfg->GetString(settings.name, sizeof(settings.name), "Name", "Player", "MP");
+    {   // 4.13.22: the name also lives in files/TYFMC/MP/name.txt - when the ini could not be read or written (the
+        // AML configs path, a moved ini) or the name was put back to "Player" for a session, the real one comes back
+        char bk[MP_NAME_LEN] = {0}, path[512]; snprintf(path, sizeof(path), "%s/name.txt", s_szDataDir);
+        if(FILE* f = fopen(path, "rb")) { if(fgets(bk, sizeof(bk), f)) { bk[strcspn(bk, "\r\n")] = 0; } fclose(f); }
+        if(bk[0] && (!settings.name[0] || !strcmp(settings.name, "Player"))) { MP_CopyStr(settings.name, bk, sizeof(settings.name)); logger->Info("MP: name %s from name.txt", bk); }
+    }
     ::cfg->GetString(settings.host, sizeof(settings.host), "Host", MP_DEFAULT_HOST, "MP");
     settings.port            = ::cfg->GetInt("Port", MP_DEFAULT_PORT, "MP");
     ::cfg->GetString(settings.serverName, sizeof(settings.serverName), "ServerName", MP_DEFAULT_SERVER_NAME, "MP");
@@ -7203,6 +7238,57 @@ static bool ChatColorPicker(const char* title, const char* id, uint32_t* col, co
     return changed;
 }
 
+// 4.13.22: GTA HUD settings (Settings > Display). The parts and their names are the ones of ARM's Advanced Settings
+// (HUD_PlayerInfo, HUD_BarHealth ...); MP moves them itself (src/game/hudlayout.cpp), saved in TYFMC.MP.ini [GTAHUD].
+static void GtaHudSettings()
+{
+    ImGui::Dummy(ImVec2(0, UI::S(6)));
+    ImGui::SeparatorText("GTA HUD");
+    static int s_nPart = HudLayout::BAR_HEALTH;
+    static bool dirty = false;
+    bool on = HudLayout::Enabled();
+    if(FloatMenu::ToggleSwitch("Custom GTA HUD", &on)) { HudLayout::SetEnabled(on); dirty = true; }
+    ImGui::TextDisabled(on ? (HudLayout::HookCount() ? "On: the game's HUD uses the values below." : "On: change a value to apply it.")
+                           : "Off: the game's own HUD (nothing is changed).");
+    if(!on) ImGui::BeginDisabled();
+    ImGui::TextUnformatted("HUD part");
+    ImGui::SetNextItemWidth(-FLT_MIN);
+    if(ImGui::BeginCombo("##ghpart", HudLayout::PartName(s_nPart)))
+    {
+        for(int p = 0; p < HudLayout::PART_COUNT; ++p) if(ImGui::Selectable(HudLayout::PartName(p), p == s_nPart)) s_nPart = p;
+        ImGui::EndCombo();
+    }
+    HudLayout::Cfg& c = HudLayout::Get(s_nPart);
+    bool ch = false;
+    ch |= FloatMenu::ToggleSwitch("Show", &c.show);
+    struct Row { const char* label; const char* id; float* v; float lo, hi; const char* fmt; };
+    const Row rows[] = {
+        { "X (left / right)", "##ghx", &c.x, -50, 50, "%.1f %%" }, { "Y (up / down)", "##ghy", &c.y, -50, 50, "%.1f %%" },
+        { "Z (zoom)", "##ghz", &c.z, 25, 300, "%.0f %%" }, { "Size", "##ghs", &c.size, 25, 300, "%.0f %%" },
+        { "Width", "##ghw", &c.w, 25, 300, "%.0f %%" }, { "Height", "##ghh", &c.h, 25, 300, "%.0f %%" },
+        { "Alpha", "##gha", &c.alpha, 0, 100, "%.0f %%" } };
+    for(const Row& r : rows)
+    {
+        ImGui::TextUnformatted(r.label);
+        const float bw = UI::S(56), sp = ImGui::GetStyle().ItemSpacing.x;
+        ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - 2 * (bw + sp));
+        ch |= ImGui::SliderFloat(r.id, r.v, r.lo, r.hi, r.fmt);
+        const float step = (r.hi - r.lo) > 120 ? 5.0f : 0.5f;
+        ImGui::SameLine(); ImGui::PushID(r.id);
+        if(ImGui::Button("-", ImVec2(bw, 0))) { *r.v = *r.v - step < r.lo ? r.lo : *r.v - step; ch = true; }
+        ImGui::SameLine();
+        if(ImGui::Button("+", ImVec2(bw, 0))) { *r.v = *r.v + step > r.hi ? r.hi : *r.v + step; ch = true; }
+        ImGui::PopID();
+    }
+    const float hw = (ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ItemSpacing.x) * 0.5f;
+    if(ImGui::Button("Reset this part", ImVec2(hw, UI::S(52)))) { HudLayout::Reset(s_nPart); ch = true; }
+    ImGui::SameLine();
+    if(ImGui::Button("Reset all", ImVec2(hw, UI::S(52)))) { for(int p = 0; p < HudLayout::PART_COUNT; ++p) HudLayout::Reset(p); ch = true; }
+    if(!on) ImGui::EndDisabled();
+    if(ch) { HudLayout::SetEnabled(true); dirty = true; }
+    if(dirty && !ImGui::IsAnyItemActive()) { dirty = false; HudLayout::Save(); }
+}
+
 static void SectionDisplay(void*)
 {
     bool changed = false;
@@ -7305,6 +7391,7 @@ static void SectionDisplay(void*)
         changed |= FloatMenu::ToggleSwitch("Day Z: MTA DayZ models (download)", &settings.dzModels);   // 3.61
         changed |= FloatMenu::ToggleSwitch("Day Z: GTA V world textures (129 MB download)", &settings.dzWorldTex);   // 4.05.5
     }
+    GtaHudSettings();   // 4.13.22: the game's own HUD - every part: show, X, Y, Z (zoom), size, width, height, alpha
     NpcStatusLine();
     SyncStatusLines();   // 2.19.6
     changed |= ChatPlacementOptions("disp");   // 2.22: scroll down - chat position, chat box background / label
@@ -7605,6 +7692,7 @@ static void MpFreeAllObjects()
 #include "mp_launcher.inc"   // 2.25: full-screen server launcher, player management, kick / ban
 #include "mp_psettings.inc"  // 3.35: player list > Settings (SA-MP style dialog)
 #include "mp_menu.inc"       // 4.13.4: main menu [Multiplayer], MP loading screen, black server select
+#include "mp_neon.inc"       // 4.13.22: neon title menu + server browser (ServerBrowserMode)
 
 // 4.07.1: the short sounds (button click, hit, "connected") come from the media host too, like the
 // music: a sound missing from files/TYFMC/MP is downloaded once from Host/Media into files/TYFMC/MP (cache), so

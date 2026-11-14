@@ -1,4 +1,4 @@
-/* Moquil - Library / Store catalog. 4.13.21: no generated cover art, every mod / app shows the plain "unknown" tile. Every download is a file on the MP website (never a GitHub page). */
+/* Moquil - Library / Store catalog. 4.13.21: no generated cover art, every mod / app shows the plain "unknown" tile in the Library / Store. 4.13.22: the "playing" activity of friends (Active Now, Home) uses act (the real MP icon), never the unknown tile. Every download is a file on the MP website (never a GitHub page). */
 (function (G) {
   'use strict';
   var SITE = 'https://mpsamp-open.github.io/';
@@ -6,7 +6,7 @@
   G.MOQ_MODS = [
     {
       id: 'mp', name: 'MP Multiplayer', ver: 'latest', kind: 'Multiplayer mod', size: 'about 46 MB', tag: 'Recommended',
-      cover: 'img/mods/unknown.svg', icon: 'img/mods/unknown.svg', file: SITE + 'downloads/MP-client.zip', fileName: 'MP-client.zip', action: 'Install',
+      cover: 'img/mods/unknown.svg', icon: 'img/mods/unknown.svg', act: 'img/mods/mp.png', file: SITE + 'downloads/MP-client.zip', fileName: 'MP-client.zip', action: 'Install',
       short: 'Online multiplayer for GTA San Andreas on Android: servers, Social, Mission sync, voice and more.',
       desc: 'MP (libMP32.so / libMP64.so) turns GTA San Andreas on Android into an online game. Pick a server in MP Launcher, log in with your MP account and play with up to 1000 players. The Social page in the game is the same network as Moquil: your friends, private chats, group chats, party, communities and inbox show on both.',
       features: ['Server browser with 24/7 servers, Battle Royale, DayZ, Role Play and your own servers', 'Mission sync: up to 16 players in the same story mission, visible in the cutscenes', 'Social: friends, chats, party and communities (shared with Moquil)', 'Voice chat, textdraws, custom modpacks', 'One MP account for the game, Moquil, MP Voice and MP Textdraw Editor'],

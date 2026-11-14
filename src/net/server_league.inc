@@ -63,6 +63,13 @@ void MPServer::LgSave()
     m_bLgDirty = false;
 }
 
+void MPServer::ReconnMsg(const char* text, uint32_t col)
+{
+    PktServerMsg m; memset(&m, 0, sizeof(m)); m.type = PKT_SERVER_MSG; m.color = col;
+    MP_CopyStr(m.text, text, sizeof(m.text));
+    for(int i = 0; i < MP_MAX_PLAYERS; ++i) if(m_Slots[i].used && !m_Slots[i].reconn && !m_Slots[i].ghost) SendTo(i, &m, sizeof(m));
+}
+
 void MPServer::LgMsg(int slot, uint32_t col, const char* fmt, ...)
 {
     PktServerMsg m; memset(&m, 0, sizeof(m)); m.type = PKT_SERVER_MSG; m.color = col;

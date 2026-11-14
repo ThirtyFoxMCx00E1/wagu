@@ -147,6 +147,7 @@ void MPClient::SendJoin(uint8_t flags)
 
 void MPClient::Disconnect(bool sendLeave)
 {
+    m_bReconnecting = false;   // 4.13.22
     if(m_Sock >= 0)
     {
         if(sendLeave && m_eState == NET_CONNECTED)
@@ -257,6 +258,7 @@ void MPClient::Poll(INetEvents* ev)
         }
         m_nLastRecv = now;
         m_bGotReply = true;
+        m_bReconnecting = false;   // 4.13.22: done reconnecting
 
         switch(buf[0])
         {
@@ -456,6 +458,12 @@ void MPClient::Poll(INetEvents* ev)
             SendJoin(MP_JOIN_REBIND);
             m_nLastRebind = now;
         }
-        if(quiet > MP_TIMEOUT_MS) { Disconnect(false); ev->OnLostConnection(); }
+        // 4.13.22: no "Lost connection (Timeout)" any more: keep the session and keep trying (the server keeps
+        // the slot, the gamemode and the world for MP_RECONNECT_GRACE_MS too); give up only after that
+        if(quiet > MP_TIMEOUT_MS && m_nServerBuild >= 33900 && quiet <= MP_RECONNECT_GRACE_MS)
+        {
+            if(!m_bReconnecting) { m_bReconnecting = true; m_nReconnSince = now; }
+        }
+        else if(quiet > MP_TIMEOUT_MS) { m_bReconnecting = false; Disconnect(false); ev->OnLostConnection(); }
     }
 }

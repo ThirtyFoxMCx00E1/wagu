@@ -216,6 +216,7 @@ private:
         uint32_t     build;          // 3.11: the phone's MP build (0 = older than 3.04.6)
         uint64_t     voiceWin;       // 3.11: voice rate limit
         int          voiceCount;
+        bool         reconn = false;   // 4.13.22: quiet for MP_TIMEOUT_MS: "reconnecting" (kept), dropped after MP_RECONNECT_GRACE_MS
         bool         ghost;          // 4.12: open.mp PC player (cross-play bridge), no address
         bool         hasSync;        // 4.12: lastSync is valid
         SyncData     lastSync;       // 4.12: for the bridge
@@ -410,6 +411,7 @@ private:
     void LgReset(); void LgLoad(); void LgSave(); void LgStore(int slot); void LgTick(uint64_t now);
     void LgOnAuthed(int slot); void LgOnJoin(int slot, bool fresh); void LgOnLeave(int slot); bool LgChat(int slot, const char* text);
     void LgHandleCmd(int slot, const PktLgCmd& c); void LgTouch(int slot, const PktLgCmd& c, uint64_t now);
+    void ReconnMsg(const char* text, uint32_t col);   // 4.13.22: "{name} try to reconnecting" to everybody else
     void LgMsg(int slot, uint32_t col, const char* fmt, ...); void LgEvent(int slot, uint8_t ev, int a, int b, int c, int val, const float* pos, const char* text);
     void LgSendMe(int slot); int LgCount(int team) const; void LgSpawnOne(int slot, int order); void LgKickoff(uint64_t now); void LgNewMatch(uint64_t now);
     void LgBalance(bool quiet); void LgSetTeam(int slot, int want); void LgEndMatch(uint64_t now); void LgGoal(int team, uint64_t now);

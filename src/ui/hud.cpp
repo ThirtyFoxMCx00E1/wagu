@@ -21,6 +21,7 @@
 #include "../../imgui/rw_glue.h"
 #include "../../imgui/arial.h"
 #include "../../imgui/fredoka.h"   // 3.55: the MP system font (GTA SA-like rounded labels)
+#include "../../imgui/neonfonts.h" // 4.13.22: the neon main menu fonts (blackletter + wide caps)
 
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_ONLY_PNG
@@ -46,6 +47,7 @@ void ImGui_ImplRenderWare_DestroyFontTexture();   // 3.52
 
 static ImFont*   s_pFont = nullptr;
 static ImFont*   s_pPricedown = nullptr;   // 3.00
+static ImFont*   s_pGothic = nullptr; static ImFont* s_pCaps = nullptr;   // 4.13.22
 static char      s_szPricedown[512] = "";
 static RwRaster* s_pLogo = nullptr;
 static ImVec2    s_LogoSize(0, 0);
@@ -72,6 +74,8 @@ void UI::SetLook(int font, int effect, float fontScale, float uiScale)
 float   UI::S(float px) { return px * s_fScale * s_fUiScale; }
 ImFont* UI::Font()      { ImFont* f = s_nFont && s_pFonts[s_nFont] ? s_pFonts[s_nFont] : s_pFont; return f ? f : ImGui::GetFont(); }
 ImFont* UI::PricedownFont() { return s_pPricedown; }
+ImFont* UI::GothicFont() { return s_pGothic ? s_pGothic : s_pFont; }   // 4.13.22
+ImFont* UI::CapsFont() { return s_pCaps ? s_pCaps : s_pFont; }         // 4.13.22
 const char* UI::PricedownPath() { return s_szPricedown; }
 
 // 3.00: Pricedown for the score bar. MP doesn't ship the font (its free licence doesn't cover games /
@@ -306,7 +310,7 @@ struct FontBuild
 {
     ImFontAtlas* atlas = nullptr;
     ImVector<ImWchar> ranges, script;   // must live as long as the atlas
-    ImFont* font = nullptr; ImFont* pricedown = nullptr; ImFont* fonts[UI_FONT_COUNT] = {};
+    ImFont* font = nullptr; ImFont* pricedown = nullptr; ImFont* fonts[UI_FONT_COUNT] = {}; ImFont* gothic = nullptr; ImFont* caps = nullptr;
     std::string glyphs, kind; int fontIdx = 0; uint32_t gen = 0;
     std::atomic<bool> done{false};
 };
@@ -344,6 +348,11 @@ static void BuildFontsInto(FontBuild& fb)
     // 2.19: coloured emoji glyphs (chat / keyboard)
     UI::EmojiAddGlyphs(at, fb.font, UI::S(34.0f));
     fb.pricedown = LoadPricedown(at, UI::S(40.0f));   // 3.00: score bar
+    {   // 4.13.22: the neon main menu (Latin only)
+        static const ImWchar lat[] = { 0x0020, 0x017F, 0x2010, 0x2040, 0x2190, 0x2193, 0x25B6, 0x25B6, 0 };
+        fb.gothic = at->AddFontFromMemoryTTF((void*)neonGothicData, sizeof(neonGothicData), UI::S(64.0f), &fc, lat);
+        fb.caps   = at->AddFontFromMemoryTTF((void*)neonCapsData, sizeof(neonCapsData), UI::S(36.0f), &fc, lat);
+    }
     {   // 3.34: the font list (Settings > Display)
         fb.fonts[0] = fb.font; fb.fonts[1] = fb.pricedown;
         static const char* const k2[] = { "Roboto-Regular.ttf", "Roboto-Medium.ttf", nullptr };
@@ -376,7 +385,7 @@ static FontBuild* NewFontBuild()
 static void UseFontBuild(FontBuild* fb)
 {
     ImGuiIO& io = ImGui::GetIO();
-    s_pFont = fb->font; s_pPricedown = fb->pricedown;
+    s_pFont = fb->font; s_pPricedown = fb->pricedown; s_pGothic = fb->gothic; s_pCaps = fb->caps;
     for(int i = 0; i < UI_FONT_COUNT; ++i) s_pFonts[i] = fb->fonts[i];
     io.FontDefault = s_pFont;
     s_nFontGen = fb->gen; s_nFontMerged = fb->fontIdx;
