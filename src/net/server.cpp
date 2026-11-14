@@ -882,6 +882,16 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
                     return;
                 }
             }
+            if(slot < 0)
+            {   // 4.13.35: GTA SA and GTA VC players never share a server (older phones send 0 = SA)
+                const uint8_t jg = len >= (int)sizeof(PktJoin6) ? (uint8_t)data[offsetof(PktJoin6, game)] : (uint8_t)MP_GAME_SA;
+                if(jg != m_nGame.load())
+                {
+                    PktReject rj; rj.type = PKT_REJECT; rj.reason = REJECT_WRONG_GAME; SendRaw(from, &rj, sizeof(rj));
+                    Log("Join refused (a %s phone on this %s server)", jg == MP_GAME_VC ? "GTA Vice City" : "GTA San Andreas", m_nGame.load() == MP_GAME_VC ? "Vice City" : "San Andreas");
+                    return;
+                }
+            }
             if(slot < 0 && m_szPassword[0])   // 2.19: password protected server
             {
                 char pw[MP_PASSWORD_LEN + 1] = {0};

@@ -1,4 +1,4 @@
--- TV Player for MonetLoader for MP (3.8.2-mp or newer): watch videos on the TVs in GTA SA.
+-- TV Player for MonetLoader for MP (3.8.3-mp or newer): watch videos on the TVs in GTA SA.
 -- Works in single player and on MP servers (only you see your TV).
 --
 -- Files (Android/data/com.rockstargames.gtasa/files/TYFMC/MP/moonloader/):
@@ -7,7 +7,7 @@
 --   tvplayer/config/tvplayer.ini    settings ([Player]); the PC [Keys] are not used on the phone
 --   tvplayer/videos/*.mp4           your videos (mp4 / 3gp / webm / mkv - what the phone can decode)
 --
--- How to use: walk up to a TV (a TV object in a house, a shop, ...). A [TV] button shows on the right.
+-- How to use: walk up to a TV (a TV object, or a TV that is part of the map like the one in CJ's house). A [TV] button shows on the right.
 -- Tap it to start the first video. Buttons while it plays: previous, -10 s, pause, +10 s, next, volume -, volume +, stop.
 -- The sound gets quieter as you walk away and stops after StopDistance metres.
 script_name('TV Player')
@@ -16,14 +16,14 @@ script_version('1.0-mp')
 
 local DIR = getWorkingDirectory() .. '/tvplayer'
 local cfg = { Volume = 80, PromptDistance = 2.5, StopDistance = 20, FullVolumeDistance = 4, SeekSeconds = 10,
-  VolumeStep = 10, Loop = 0, AutoNext = 1, Stretch = 0, Brightness = 100, DepthTest = 1, DepthOffset = 0.01, OsdSeconds = 4 }
+  VolumeStep = 10, Loop = 0, AutoNext = 1, Stretch = 0, Brightness = 100, DepthTest = 1, DepthOffset = 0.01, OsdSeconds = 4, Debug = 0 }
 
 local function loadIni(path)
   local f = io.open(path, 'r')
   if not f then return end
   local sec = ''
-  for line in f:lines() do
-    line = line:gsub('[\r\n]', '')
+  for raw in f:lines() do
+    local line = raw:gsub('[\r\n]', '')
     local s = line:match('^%s*%[(.-)%]')
     if s then sec = s
     elseif sec == 'Player' then
@@ -68,6 +68,7 @@ local function stop()
   if st.id ~= 0 then videoClose(st.id) end
   st.id = 0
   st.obj = nil
+  st.ent = nil
   st.paused = false
 end
 
@@ -87,7 +88,17 @@ local function start(index)
 end
 
 -- the TV's axes from the game (exact for any rotation)
+-- 3.8.3-mp: a TV can be a script object (st.obj) or part of the map (a building / dummy, st.ent from getNearbyEntities):
+-- the TV in CJ's house is a map building and getAllObjects never listed it (black screen, no [TV] button)
+local function entBasis(e)
+  return { e.x, e.y, e.z, e.rx, e.ry, e.rz, e.fx, e.fy, e.fz, e.ux, e.uy, e.uz }
+end
+local function tvValid()
+  if st.ent then return true end
+  return st.obj ~= nil and doesObjectExist(st.obj)
+end
 local function basis(obj)
+  if st.ent then return entBasis(st.ent) end
   local ox, oy, oz = getOffsetFromObjectInWorldCoords(obj, 0, 0, 0)
   local ax, ay, az = getOffsetFromObjectInWorldCoords(obj, 1, 0, 0)
   local bx, by, bz = getOffsetFromObjectInWorldCoords(obj, 0, 1, 0)
@@ -99,7 +110,7 @@ local function toWorld(b, x, y, z)
 end
 
 local function drawScreen(tex)
-  if not st.obj or not doesObjectExist(st.obj) then return end
+  if not tvValid() then return end
   local s = screens[st.mdl]
   if not s then return end
   local b = basis(st.obj)
@@ -140,7 +151,7 @@ end
 
 local function act(id)
   if id == 'tv' then
-    st.obj, st.mdl = near.obj, near.mdl
+    st.obj, st.ent, st.mdl = near.obj, near.ent, near.mdl
     start(st.index)
   elseif id == 'stop' then stop() osd('TV off')
   elseif id == 'pause' then
@@ -170,7 +181,7 @@ local function fmtTime(s)
 end
 
 local function scan()
-  near.obj, near.mdl, near.dist = nil, 0, 999
+  near.obj, near.ent, near.mdl, near.dist = nil, nil, 0, 999
   if not isPlayerPlaying(PLAYER_HANDLE) then return end
   local px, py, pz = getCharCoordinates(PLAYER_PED)
   for _, o in ipairs(getAllObjects()) do
@@ -180,16 +191,50 @@ local function scan()
       if ok == true or type(ok) == 'number' then
         if type(ok) == 'number' then x, y, z = ok, x, y end
         local d = math.sqrt((x - px) ^ 2 + (y - py) ^ 2 + (z - pz) ^ 2)
-        if d < near.dist then near.obj, near.mdl, near.dist = o, m, d end
+        if d < near.dist then near.obj, near.ent, near.mdl, near.dist = o, nil, m, d end
       end
     end
+  end
+  -- map TVs (buildings / dummies): MonetLoader for MP 3.8.3+
+  if getNearbyEntities then
+    local list = getNearbyEntities(px, py, pz, math.max(cfg.StopDistance or 15, cfg.PromptDistance or 3) + 2, 128)
+    for _, e in ipairs(list) do
+      if screens[e.model] then
+        local d = math.sqrt((e.x - px) ^ 2 + (e.y - py) ^ 2 + (e.z - pz) ^ 2)
+        if d < near.dist then near.obj, near.ent, near.mdl, near.dist = nil, e, e.model, d end
+      end
+    end
+    if cfg.Debug ~= nil and cfg.Debug ~= 0 and not st.debugDone then
+      st.debugDone = true
+      local ids = {}
+      for _, e in ipairs(list) do
+        local d = math.sqrt((e.x - px) ^ 2 + (e.y - py) ^ 2 + (e.z - pz) ^ 2)
+        if d < 6 then ids[#ids + 1] = string.format('%d(type %d, %.1f m)', e.model, e.type, d) end
+      end
+      print('TV Player debug: models within 6 m: ' .. table.concat(ids, ', '))
+    end
+  end
+  -- the playing map TV: keep its pointer fresh (it is gone when the interior streams out)
+  if st.ent then
+    local still = false
+    if getNearbyEntities then
+      for _, e in ipairs(getNearbyEntities(st.ent.x, st.ent.y, st.ent.z, 0.6, 32)) do
+        if e.ptr == st.ent.ptr and e.model == st.mdl then st.ent = e still = true break end
+      end
+    end
+    if not still then stop() osd('TV off') end
   end
 end
 
 local function tvDistance()
-  if not st.obj or not doesObjectExist(st.obj) then return 999 end
-  local ok, x, y, z = getObjectCoordinates(st.obj)
-  if type(ok) == 'number' then x, y, z = ok, x, y end
+  if not tvValid() then return 999 end
+  local x, y, z
+  if st.ent then x, y, z = st.ent.x, st.ent.y, st.ent.z
+  else
+    local ok
+    ok, x, y, z = getObjectCoordinates(st.obj)
+    if type(ok) == 'number' then x, y, z = ok, x, y end
+  end
   local px, py, pz = getCharCoordinates(PLAYER_PED)
   return math.sqrt((x - px) ^ 2 + (y - py) ^ 2 + (z - pz) ^ 2)
 end
@@ -208,6 +253,7 @@ function main()
   end
   listVideos()
   font = renderCreateFont('Arial', 12, 5)
+  if not getNearbyEntities then print('TV Player: MonetLoader for MP 3.8.3+ also finds the TVs that are part of the map (CJ\'s house)') end
   print(string.format('TV Player: %d TV models, %d videos', (function() local c = 0 for _ in pairs(screens) do c = c + 1 end return c end)(), #videos))
   local lastScan = 0
   while true do
@@ -243,7 +289,7 @@ function main()
           local x0, y0 = (sw - total) / 2, sh * 0.80
           for i, b in ipairs(ids) do button(b[1], x0 + (i - 1) * (bw + gap), y0, bw, bh, b[2]) end
         end
-      elseif near.obj and near.dist <= cfg.PromptDistance then
+      elseif (near.obj or near.ent) and near.dist <= cfg.PromptDistance then
         button('tv', sw * 0.86, sh * 0.42, sh * 0.13, sh * 0.09, 'TV')
       end
       if now() < st.osdUntil then

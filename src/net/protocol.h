@@ -13,10 +13,10 @@
 // phones refuse servers older than that too (they would let old phones in).
 // 3.10: build 31000. MP_MIN_BUILD stays 30406 and the lobby stays thirtyfox/mp5/: 3.04.6 (no cheats)
 // and 3.10 phones play together on the same servers; only 3.04.5 and older (mp4) stay shut out.
-#define MP_BUILD 41334   // 4.13.34
+#define MP_BUILD 41335   // 4.13.35
 #define MP_MIN_BUILD       30406
 #define MP_AUTH_MIN_BUILD  32106   // 3.21.6: servers with the login system refuse older phones (they could not log in)
-#define MP_VERSION_STR     "4.13.34"
+#define MP_VERSION_STR     "4.13.35"
 #define MP_VOICE_BUILD     31100   // 3.11: phones from this build on get voice packets
 #define MP_DOWNLOAD_URL    "mpsamp-open.github.io"   // 4.05.4: new website (mpsamp-open org); thirtyfoxmcx00e1.github.io/wagu still works as a backup
 #define MP_DEFAULT_HOST    "127.0.0.1"
@@ -156,7 +156,7 @@ static const char* const g_MPRegionNames[REGION_COUNT] = { "Asia", "Europe", "NA
 // 4.12: where each region's 24/7 VPS stands (regions.txt "label =" can change it)
 static const char* const g_MPRegionLong[REGION_COUNT] = { "Asia - Singapore", "Europe - Frankfurt", "North America - Los Angeles", "Oceania - Sydney" };
 
-enum eRejectReason : uint8_t { REJECT_FULL = 1, REJECT_VERSION = 2, REJECT_SHUTDOWN = 3, REJECT_PASSWORD = 4, REJECT_BANNED = 5, REJECT_KICKED = 6, REJECT_NAME_RESERVED = 7, REJECT_OUTDATED = 8, REJECT_OLD_SERVER = 9 };   // 8/9: 3.04.6 your MP is too old / the server is too old   // 7: 2.37 the name SENJI is reserved   // 5/6: 2.25 // 3: host closed the server, players take over
+enum eRejectReason : uint8_t { REJECT_FULL = 1, REJECT_VERSION = 2, REJECT_SHUTDOWN = 3, REJECT_PASSWORD = 4, REJECT_BANNED = 5, REJECT_KICKED = 6, REJECT_NAME_RESERVED = 7, REJECT_OUTDATED = 8, REJECT_OLD_SERVER = 9, REJECT_WRONG_GAME = 10 };   // 10: 4.13.35 SA phone on a VC server or the other way round   // 8/9: 3.04.6 your MP is too old / the server is too old   // 7: 2.37 the name SENJI is reserved   // 5/6: 2.25 // 3: host closed the server, players take over
 enum eLeaveReason  : uint8_t { LEAVE_TIMEOUT = 0, LEAVE_QUIT = 1, LEAVE_KICK = 2 };
 
 enum eSyncFlags : uint8_t
@@ -429,7 +429,10 @@ struct PktJoin2       { PktJoin j; char password[MP_PASSWORD_LEN + 1]; };   // 2
 struct PktJoin3       { PktJoin2 j2; char uid[MP_UID_LEN + 1]; };   // 2.25: + this phone's id (bans survive a name change)
 struct PktJoin4       { PktJoin3 j3; char adminKey[128 + 1]; };   // 2.37: + admin key (only the reserved name SENJI needs it)
 struct PktJoin5       { PktJoin4 j4; uint32_t build; };              // 3.04.6: + mod build (MP_BUILD)
-struct PktJoin6       { PktJoin5 j5; uint8_t flags; uint8_t pad[3]; };   // 3.39: flags 1 = same session, new network path (keep the slot + login)
+struct PktJoin6       { PktJoin5 j5; uint8_t flags; uint8_t game; uint8_t pad[2]; };   // 3.39: flags / 4.13.35: game (MP_GAME_*, 0 = SA: older phones)
+// 4.13.35: which game a phone / server runs. SA and VC players never meet: a server takes one game only.
+enum eMPGame : uint8_t { MP_GAME_SA = 0, MP_GAME_VC = 1 };
+#define MP_GAME_VC_TAG "vc"   // a Vice City server has this tag first in its list tags   // 3.39: flags 1 = same session, new network path (keep the slot + login)
 #define MP_JOIN_REBIND 1
 // which MP versions an old join packet can come from (they had no build number)
 inline const char* MP_GuessOldVersion(int joinLen, uint32_t build, char* out, int outLen)

@@ -420,6 +420,8 @@ static void LFeaturedDetails(LRow& r)
     if(!r.desc[0]) MP_CopyStr(r.desc, ds, sizeof(r.desc));
     r.bg = bg;
 }
+// 4.13.35: a GTA Vice City server lists the tag "vc" first (mp_server --game vc)
+static bool LIsVcRow(const LRow& r) { return !strncasecmp(r.tags, MP_GAME_VC_TAG, 2) && (r.tags[2] == 0 || r.tags[2] == ','); }
 // d/<token> "v1|cc|modeCol|mode|tags|desc|players" -> row (players stay in the string, see LDetailPlayers)
 static bool LParseDetails(const std::string& d, LRow& r, std::string* players)
 {
@@ -597,6 +599,7 @@ static void LBuildRows(int tab, const std::vector<LanServer>& nearby, std::vecto
             MP_CopyStr(q.lang, sv.lang, sizeof(q.lang));
             q.mine = s_Server.IsRunning() && s_Server.GetPort() == sv.port && !strcasecmp(s_Server.GetName(), sv.name);
             LFillDetails(q, &sv);
+            if(LIsVcRow(q) != (client.GetGame() == MP_GAME_VC)) continue;   // 4.13.35: GTA VC servers are not GTA SA servers
             if(LMatch(q.name, q.lang) || LMatch(q.tags) || LMatch(q.mode)) rows.push_back(q);
         }
     }

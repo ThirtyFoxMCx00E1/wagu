@@ -71,7 +71,7 @@ LOCAL_SRC_FILES := \
 LOCAL_STATIC_LIBRARIES := mp_mbedtls mp_opus mp_samp mp_unrar
 # 4.13.32: MonetLoader for MP built in (src/embed/monetloader_blob.S)
 LOCAL_ASFLAGS += -I$(abspath $(LOCAL_PATH)/assets/MP/neon)   # 4.13.33: src/embed/neon_blob.S
-LOCAL_ASFLAGS += '-DML_BLOB="$(abspath $(LOCAL_PATH)/monetloader/$(TARGET_ARCH_ABI)/libmonetloader.so)"'
+LOCAL_ASFLAGS += '-DML_BLOB="$(abspath $(LOCAL_PATH)/src/embed/monetloader/$(TARGET_ARCH_ABI)/libmonetloader.so)"'
 
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/include $(LOCAL_PATH)/imgui $(LOCAL_PATH)/src $(LOCAL_PATH)/third_party/mbedtls/include $(LOCAL_PATH)/third_party/opus/include
 LOCAL_CFLAGS   += -O2 -DNDEBUG -DIMGUI_DISABLE_OBSOLETE_FUNCTIONS -DHAVE_STDINT_H -DAMX_ANSIONLY -DAMX_NODYNALOAD -DAMX_DONT_RELOCATE -DFLOATPOINT -Wno-everything -Werror=non-pod-varargs -ffunction-sections -fdata-sections

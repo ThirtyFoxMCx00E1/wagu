@@ -95,7 +95,7 @@ void MP::SetMenuApiReady() { s_bMenuMpReady = true; }
 // the same API as a plain export, for mods that look MP up with dlsym (no AML interface list needed)
 extern "C" __attribute__((visibility("default"))) void* MP_GetMultiplayerApi() { return &s_MpApi; }
 
-bool MP::TitleMenuHookWanted() { return s_nNeonMode != NEON_MODE_DEFAULT; }   // 4.13.30
+bool MP::TitleMenuHookWanted() { return s_nNeonMode == NEON_MODE_NEON; }   // 4.13.30 / 4.13.35: mp needs no menu hook (ImGui button)
 // 4.13.33: ServerBrowserMode straight from files/TYFMC/TYFMC.MP.ini on the disk. AML keeps the ini in memory and
 // rewrites the whole file on every save, so a value typed in by hand while the game ran was put back to the old
 // one at the next save (the mode "stayed default"). The file is read before every save now and the hand-edited
@@ -136,19 +136,20 @@ static void ApplyMode(int mode)
     if(mode == NEON_MODE_DEFAULT) s_bMenuMpOn = false;
     else s_bMenuMpOn = true;   // 4.13.33: mp / neon always show their menu (MainMenuMultiplayer = 0 hid the mp tile)
 }
+static bool s_bModeSelfWrite = false;   // 4.13.35: MP Settings writes the mode itself (not a hand edit)
 static void CfgBeforeSave(Config* c)
 {
-    if(c != ::cfg) return;
+    if(c != ::cfg || s_bModeSelfWrite) return;
     char m[24];
     if(!ReadIniKey("MP", "ServerBrowserMode", m, sizeof(m))) return;
     char low[24]; MP_CopyStr(low, m, sizeof(low));
     const int mode = ModeFromString(low);
     if(!strcmp(low, s_szModeKnown)) return;
     logger->Info("Main menu: ServerBrowserMode changed in TYFMC.MP.ini by hand: %s -> %s%s", s_szModeKnown, low,
-        (mode != NEON_MODE_DEFAULT && !s_bTitleHookOn) ? " (restart the game to see it)" : "");
+        (mode == NEON_MODE_NEON && !s_bTitleHookOn) ? " (restart the game to see it)" : "");
     MP_CopyStr(s_szModeKnown, low, sizeof(s_szModeKnown));
     ConfigEntry* e = ::cfg->Bind("ServerBrowserMode", low, "MP"); e->SetString(low); delete e;
-    if(mode == NEON_MODE_DEFAULT || s_bTitleHookOn) ApplyMode(mode);
+    if(mode != NEON_MODE_NEON || s_bTitleHookOn) ApplyMode(mode);
 }
 void MP::SetTitleHookInstalled(bool on) { s_bTitleHookOn = on; }
 // 4.13.34: MP Settings > Display > Main menu
@@ -160,8 +161,12 @@ void MP::SetMainMenuMode(int mode)
     const char* n = mode == NEON_MODE_NEON ? kN[2] : mode == NEON_MODE_MP ? kN[1] : kN[0];
     ApplyMode(mode == NEON_MODE_NEON ? NEON_MODE_NEON : mode == NEON_MODE_MP ? NEON_MODE_MP : NEON_MODE_DEFAULT);
     MP_CopyStr(s_szModeKnown, n, sizeof(s_szModeKnown));
-    { ConfigEntry* e = ::cfg->Bind("ServerBrowserMode", n, "MP"); e->SetString(n); delete e; ::cfg->Save(); }
-    if(s_nNeonMode != NEON_MODE_DEFAULT && !s_bTitleHookOn) MP_InstallTitleHook();
+    {   // 4.13.35: 4.13.34's save read the old value back from the disk and put it back (the switch "did nothing")
+        s_bModeSelfWrite = true;
+        ConfigEntry* e = ::cfg->Bind("ServerBrowserMode", n, "MP"); if(e) { e->SetString(n); delete e; } ::cfg->Save();
+        s_bModeSelfWrite = false;
+    }
+    if(s_nNeonMode == NEON_MODE_NEON && !s_bTitleHookOn) MP_InstallTitleHook();
     logger->Info("Main menu: ServerBrowserMode = %s (MP Settings, title hook %s)", n, s_bTitleHookOn ? "on" : "off");
 }
 bool MP::MainMenuHookOn() { return s_bTitleHookOn; }
@@ -429,10 +434,12 @@ void MP::DrawMenuMpFront()
     }
     if(NeonDraw()) return;   // 4.13.22: the neon title menu (ServerBrowserMode = neon)
     // no SAUtils: our own tile on the game's main menu, bottom left (the menu's tiles are in the middle)
-    if(s_nNeonMode != NEON_MODE_MP && !s_bMenuMpViaApi) return;
+    // 4.13.35: mp = this button (like 4.13.20); neon falls back to it when its native title crashed (caught) or
+    // its files could not be loaded
+    const bool neonFallback = NeonOn() && (HUD::TitleMenuBroken() || NeonPaint::Failed());
+    if(s_nNeonMode != NEON_MODE_MP && !neonFallback && !s_bMenuMpViaApi) return;
     if(!s_bMenuMpOn || s_bMenuMpTile || s_bMenuMp.load() || !Game::IsMainMenuShown()) return;
     if(Game::LocalPed() > 0) return;   // 4.13.13: a game is loaded = the pause menu: no Multiplayer tile there
-    if(NeonPaint::Ready()) return;     // 4.13.28: painted natively in the game's menu pass (MP::NeonPaintMenu)
     const ImVec2 sz(ds.x * 0.11f, ds.y * 0.17f), at(ds.x * 0.13f, ds.y * 0.70f);
     ImGui::SetNextWindowPos(at); ImGui::SetNextWindowSize(sz);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));

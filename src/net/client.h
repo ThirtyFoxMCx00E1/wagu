@@ -166,6 +166,11 @@ private:
     char        m_szName[MP_NAME_LEN];
     char        m_szServerName[32];
     char        m_szPassword[MP_PASSWORD_LEN + 1] = {0};
+    uint8_t     m_nGame = 0;   // 4.13.35: MP_GAME_*
+public:
+    void SetGame(uint8_t g) { m_nGame = g; }
+    uint8_t GetGame() const { return m_nGame; }
+private:
     char        m_szUid[MP_UID_LEN + 1] = {0};
     char        m_szAdminKey[128 + 1] = {0};   // 2.37
     char        m_szModKey[120] = {0};         // 3.35

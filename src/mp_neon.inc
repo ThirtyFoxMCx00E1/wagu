@@ -937,9 +937,11 @@ static bool NeonPaintLoad()
 int MP::NeonPaintWanted()
 {
     if(s_nNeonMode == NEON_MODE_DEFAULT) return 0;   // 4.13.30
+    if(HUD::TitleMenuBroken()) return 0;             // 4.13.35: crashed once (caught): the ImGui [Multiplayer] button instead
     if(!Game::IsMainMenuShown() || Game::LocalPed() > 0 || s_bMenuMp.load()) return 0;
     if(NeonOn()) { if(!NeonPaintLoad()) return 0; return s_bNeonHidden ? 3 : 1; }
-    if(s_nNeonMode == NEON_MODE_MP && s_bMenuMpOn && !s_bMenuMpTile) return NeonPaintLoad() ? 2 : 0;
+    // 4.13.35: ServerBrowserMode = mp is the 4.13.20 [Multiplayer] button again (ImGui, MP::DrawMenuMpFront):
+    // no MobileMenu::Render hook, no native painting
     return 0;
 }
 bool MP::NeonNativeTitle() { return NeonPaint::Ready() && NeonPaintWanted() != 0; }

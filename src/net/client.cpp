@@ -129,6 +129,7 @@ void MPClient::SendJoin(uint8_t flags)
 {
     PktJoin6 j6; memset(&j6, 0, sizeof(j6));   // 3.39: + flags (rebind = same session on a new network path)
     j6.flags = flags;
+    j6.game = m_nGame;                          // 4.13.35: SA / VC never mix
     PktJoin5& j5 = j6.j5;                       // 3.04.6: + build (servers refuse old MP versions)
     PktJoin4& j4 = j5.j4;                       // 2.37: + admin key (older servers read only the first part)
     PktJoin3& j3 = j4.j3;                       // 2.25: + phone id

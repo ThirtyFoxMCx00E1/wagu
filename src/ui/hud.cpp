@@ -1539,6 +1539,29 @@ bool HUD::RenderTitleMenu()
     return false;
 }
 
+// 4.13.35: the same guard for MP's native (PCMenu-style) title painting from MobileMenu::Render. A crash inside fn
+// is caught and logged with the step + address; the caller turns the native title off for this run.
+bool HUD::GuardedNative(const char* what, void (*fn)(void*), void* arg)
+{
+    if(s_bTitleBroken || !fn) return false;
+    s_szTitleStep = what;
+    if(sigsetjmp(s_TitleJmp, 0) == 0)
+    {
+        TitleArm();
+        fn(arg);
+        TitleDisarm();
+        return true;
+    }
+    TitleDisarm();
+    s_bTitleBroken = true;
+    char pc[160], lr[160]; TitleWhere(s_nTitlePc, pc, sizeof(pc)); TitleWhere(s_nTitleLr, lr, sizeof(lr));
+    logger->Error("Neon title (native) CRASHED (signal %d, step \"%s\", fault address 0x%lX)", (int)s_nTitleSig, (const char*)s_szTitleStep, (unsigned long)s_nTitleAddr);
+    logger->Error("  pc: %s", pc);
+    logger->Error("  lr: %s", lr);
+    logger->Error("The neon title menu is off for this run - the [Multiplayer] button is shown instead. Please send this mp_log.txt.");
+    return false;
+}
+
 // 3.34: pause-menu map layers. The game's map screen does not go through Render2dStuff, so this is
 // its own tiny ImGui frame (only draw lists, no windows - nothing here takes touches).
 bool HUD::RenderMenuMapLayer(int layer, const void* labelsV, int n)

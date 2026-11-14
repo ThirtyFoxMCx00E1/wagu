@@ -2511,6 +2511,7 @@ public:
         { SysMsg(COL_RED, "Your MP version is too old. Download MP %s: %s", MP_VERSION_STR, MP_DOWNLOAD_URL); ClearAllPlayers(); return; }
         if(r == REJECT_OLD_SERVER)
         { SysMsg(COL_RED, "This server runs an old MP version (it lets cheaters in). Ask the host to update to MP %s.", MP_VERSION_STR); ClearAllPlayers(); return; }
+        if(r == REJECT_WRONG_GAME) { SysMsg(COL_RED, "This server is for the other game (GTA San Andreas / GTA Vice City servers are separate)."); ClearAllPlayers(); return; }   // 4.13.35
         if(r == REJECT_PASSWORD) { SysMsg(COL_RED, "Wrong server password. Edit the server and type the right one (max 16 characters)."); ClearAllPlayers(); return; }
         if(r == REJECT_NAME_RESERVED)   // 2.37
         {
@@ -7334,7 +7335,7 @@ static void SectionDisplay(void*)
             for(int m = 0; m < 3; ++m) if(ImGui::Selectable(kMode[m], cur == m) && m != cur) MP::SetMainMenuMode(m);
             ImGui::EndCombo();
         }
-        ImGui::TextDisabled(MP::MainMenuMode() != 0 && !MP::MainMenuHookOn() ? "Restart the game to see it (the menu hook could not be added now)." : "Shown on the game's title menu (before a game is loaded).");
+        ImGui::TextDisabled(MP::MainMenuMode() == 2 && !MP::MainMenuHookOn() ? "Restart the game to see it (the menu hook could not be added now)." : "Shown on the game's title menu (before a game is loaded).");
     }
     ImGui::TextUnformatted("Name tag size");
     ImGui::SetNextItemWidth(-FLT_MIN);

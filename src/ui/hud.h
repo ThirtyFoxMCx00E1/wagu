@@ -6,6 +6,7 @@ namespace HUD
     bool HasGlobalClick();   // 3.60: <MP folder>/global_click.mp3 is there (every ImGui button clicks)
     bool IsInitialised();
     bool RenderTitleMenu();
+    bool GuardedNative(const char* what, void (*fn)(void*), void* arg);   // 4.13.35
     bool TitleMenuBroken();            // 4.13.26: the title frame crashed once (caught) -> the game's own menu for this run            // 4.13.24: the neon title menu frame (from MobileMenu::Render): no game HUD
     bool RenderLoading(float pct);     // 4.13.4: MP loading screen (main menu Multiplayer), false = not drawn
     void Render();                     // from Render2dStuff hook

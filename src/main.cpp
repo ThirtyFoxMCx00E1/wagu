@@ -35,7 +35,7 @@
 #include "net/server.h"
 
 // 4.12.7: the config is files/TYFMC/TYFMC.MP.ini (the old configs/net.thirtyfox.mp.ini is moved there)
-TYFMC_MODCFG(net.thirtyfox.mp, MP Multiplayer, 4.13.34, ThirtyFoxMCx00E1, MP, net.thirtyfox.mp)
+TYFMC_MODCFG(net.thirtyfox.mp, MP Multiplayer, 4.13.35, ThirtyFoxMCx00E1, MP, net.thirtyfox.mp)
 NEEDGAME(com.rockstargames.gtasa)
 
 // Globals used by the embedded RenderWare ImGui backend
@@ -203,19 +203,28 @@ DECL_HOOKv(MobileMenu_Update, void* self)
 }
 // 4.13.23: the neon title menu replaces the game's title menu: the game's menu is not drawn under / over it
 static int s_nMenuRenderSkips = 0;
+// 4.13.35: MP's parts of this hook run under the title crash guard (HUD::GuardedNative). 4.13.34 closed the game on
+// the first title frame for some players (mp_log.txt stopped right after "slot hook on"); now a crash there is caught
+// and logged, the neon menu is turned off for the run and the [Multiplayer] button (ImGui, like 4.13.20) is shown.
+static int s_nPaintWant = 0, s_nMenuRenderCalls = 0;
+static void NeonWantFn(void*)  { s_nPaintWant = MP::NeonPaintWanted(); }
+static void NeonPaintFn(void*) { MP::NeonPaintMenu(s_nPaintWant); }
 DECL_HOOKv(MobileMenu_Render, void* self)
 {
-    // 4.13.28: PCMenu's way. The game's menu pass runs (it sets up the 2D drawing), then MP paints its title menu
-    // on top with the game's own sprite drawing and PNG textures (files/TYFMC/MP/neon). The stock title menu is
-    // covered by the opaque neon backdrop and gets no touches (MPScreenOwnsTouches). No ImGui on the title.
-    const int paint = MP::NeonPaintWanted();
+    int paint = 0;
+    if(!HUD::TitleMenuBroken())
+    {
+        if(s_nMenuRenderCalls < 2) logger->Info("Neon menu: MobileMenu::Render frame %d (checking the title menu)", s_nMenuRenderCalls + 1);
+        if(HUD::GuardedNative("neon check + textures", NeonWantFn, nullptr)) paint = s_nPaintWant;
+        if(s_nMenuRenderCalls < 2) { logger->Info("Neon menu: frame %d check done (paint %d)", s_nMenuRenderCalls + 1, paint); ++s_nMenuRenderCalls; }
+    }
     if(paint == 1) s_nNeonCoverMs = MP_NowMs();
     MobileMenu_Render(self);
-    if(paint)
+    if(paint && !HUD::TitleMenuBroken())
     {
         if(s_nMenuRenderSkips++ == 0) logger->Info("Neon menu: painted natively after the game's menu pass (mode %d)", paint);
         s_nNeonMenuPassMs = MP_NowMs();
-        MP::NeonPaintMenu(paint);
+        HUD::GuardedNative("neon paint", NeonPaintFn, nullptr);
     }
 }
 DECL_HOOKv(LS_RenderLoadingBar)
@@ -909,7 +918,13 @@ extern "C" void OnModLoad()
     std::set_terminate(MP_Terminate);
     pGameLib = aml->GetLib("libGTASA.so");
     pGameHandle = aml->GetLibHandle("libGTASA.so");
-    if(!pGameLib || !pGameHandle) { logger->Error("libGTASA.so not found - MP disabled"); return; }
+    if(!pGameLib || !pGameHandle)
+    {   // 4.13.35: the same libMP32.so in GTA Vice City's mods folder (vc-android-sdk / AML for VC): nothing of MP's
+        // San Andreas code may run there (other addresses, other classes) - MP stays off and the game runs normally.
+        // Vice City servers are separate (mp_server --game vc, REJECT_WRONG_GAME), so SA and VC players never mix.
+        if(aml->GetLib("libGTAVC.so")) { logger->Info("GTA Vice City found (libGTAVC.so): MP's Vice City client is not ready yet - MP stays off in Vice City (no crash). Vice City servers are separate from San Andreas ones."); return; }
+        logger->Error("libGTASA.so not found - MP disabled"); return;
+    }
 
     NeonPaint::Init(pGameHandle);   // 4.13.28: the native (PCMenu-style) title menu
     SET_TO(nearScreenZ,    aml->GetSym(pGameHandle, "_ZN9CSprite2d11NearScreenZE"));

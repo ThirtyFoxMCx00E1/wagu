@@ -60,6 +60,7 @@ namespace
         if(s_nTex >= (int)(sizeof(s_Tex) / sizeof(s_Tex[0]))) return false;
         std::string p = dir + name;
         struct stat st; if(stat(p.c_str(), &st) != 0) { logger->Error("Neon menu: %s missing", p.c_str()); return false; }
+        logger->Info("Neon menu: loading %s (%ld bytes)", name, (long)st.st_size);   // 4.13.35: breadcrumb (once per file)
         void* img = fnPngRead(p.c_str());
         if(!img) { logger->Error("Neon menu: %s is not a readable PNG (8-bit RGBA, not interlaced)", p.c_str()); return false; }
         const int iw = ((int*)img)[1], ih = ((int*)img)[2];   // RwImage: flags, width, height, depth, stride, pixels

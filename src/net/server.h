@@ -92,6 +92,8 @@ public:
     void SetAuth(bool on) { m_bAuthCustom = on; }
     void SetCineCam(bool on) { m_bCineCam = on; }   // 4.12: cinematic connection camera (custom servers)
     bool CineCamOn() const { return m_bCineCam; }
+    void SetGame(uint8_t g) { m_nGame = g; }            // 4.13.35: MP_GAME_SA / MP_GAME_VC (phones of the other game are refused)
+    uint8_t GetGame() const { return m_nGame.load(); }
     void SetDevStage(bool on) { m_bDevStage = on; }   // 4.13.2: "server in development" notice (off = finished)
     bool DevStageOn() const { return m_bDevStage; }
     // 4.12: open.mp cross-play bridge (crossplay/mp_crossplay.cpp, an open.mp server component).
@@ -296,6 +298,7 @@ private:
     void AuthDefaultOff(const char* why);
     std::atomic<bool> m_bCineCam{false};
     std::atomic<bool> m_bDevStage{false};
+    std::atomic<uint8_t> m_nGame{0};   // 4.13.35
     std::atomic<bool> m_bBridge{false};                       // 4.12
     std::vector<std::pair<int, std::string>> m_BridgeChatOut;   // 4.12 (under m_Mutex)
     uint32_t m_nBridgeSeq = 1;
