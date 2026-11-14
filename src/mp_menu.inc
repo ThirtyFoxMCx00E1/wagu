@@ -76,7 +76,9 @@ static void MpApiMultiplayer()
 }
 static int  MpApiAvailable() { return s_bMenuMpReady.load() ? 1 : 0; }
 static int  MpApiLoading() { return MP::MenuMpLoading() ? 1 : 0; }   // 4.13.12: PCMenu shows "CONNECTING TO MULTIPLAYER"
-static MP::MultiplayerApi s_MpApi = { 2, MpApiMultiplayer, MpApiAvailable, MpApiLoading };
+static std::atomic<uint64_t> s_nNeonUpMs{0};   // 4.13.25: the last game-thread frame the neon title menu was up
+static int  MpApiNeonMenu() { const uint64_t t = s_nNeonUpMs.load(); return t && MP_NowMs() - t < 500 ? 1 : 0; }   // PCMenu 1.2.9 stands aside
+static MP::MultiplayerApi s_MpApi = { 3, MpApiMultiplayer, MpApiAvailable, MpApiLoading, MpApiNeonMenu };
 // 4.13.12: PCMenu 1.2.6+ registers "PCMenuLoading". While its PC loading screen is on, MP leaves the loading screen to
 // it (before, MP's panel covered it whenever MULTIPLAYER loaded the game). Looked up on the main thread only.
 struct PCMenuLoadingApi { int version; int (*Active)(); };

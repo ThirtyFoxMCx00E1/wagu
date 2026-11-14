@@ -337,7 +337,7 @@ namespace MP
     bool Mw3SubTag(int id, char* out, size_t n);   // "Rank - Class" over the name
     void JoinRp();             // 3.25: Mega Vil Futuristic 24/7 Roleplay (join it, or leave it when you are on it)
     bool IsOnRp();
-    struct MultiplayerApi { int version; void (*Multiplayer)(); int (*Available)(); int (*Loading)(); };   // 4.13.12: v2 + Loading   // 4.13.10: AML "MPMultiplayer"
+    struct MultiplayerApi { int version; void (*Multiplayer)(); int (*Available)(); int (*Loading)(); int (*NeonMenu)(); };   // 4.13.25: v3 + NeonMenu (1 = MP's neon title menu owns the title screen)   // 4.13.12: v2 + Loading   // 4.13.10: AML "MPMultiplayer"
     MultiplayerApi* GetMultiplayerApi();
     void SetMenuApiReady();
     bool PCMenuLoadingActive();    // 4.13.12: PCMenu's PC loading screen is on (then MP does not draw its own)        // 4.13.11: OnModLoad got through

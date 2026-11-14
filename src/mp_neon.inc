@@ -589,8 +589,10 @@ static bool NeonTitleCtx() { return Game::IsMainMenuShown() && Game::LocalPed() 
 // is not drawn (main.cpp MobileMenu_Render) and gets no touches.
 bool MP::NeonCoversGameMenu()
 {
-    const bool on = NeonOn(), menu = Game::IsMainMenuShown(), ped = Game::LocalPed() > 0, mp = s_bMenuMp.load();
+    if(!NeonOn()) return false;   // 4.13.25: ServerBrowserMode = mp / default: nothing is read
+    const bool on = true, menu = Game::IsMainMenuShown(), ped = Game::LocalPed() > 0, mp = s_bMenuMp.load();
     const bool r = on && !s_bNeonHidden && menu && !ped && !mp;
+    if(r) s_nNeonUpMs = MP_NowMs();
     static int last = -1; const int st = (on << 0) | (s_bNeonHidden << 1) | (menu << 2) | (ped << 3) | (mp << 4) | (r << 5);
     if(st != last)
     {   // the MP log says why the neon menu is (not) up

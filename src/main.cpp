@@ -10,6 +10,7 @@
 #include <float.h>
 #include <math.h>
 #include <mutex>
+#include <time.h>
 #include <atomic>
 #include <vector>
 #include <exception>
@@ -29,7 +30,7 @@
 #include "net/server.h"
 
 // 4.12.7: the config is files/TYFMC/TYFMC.MP.ini (the old configs/net.thirtyfox.mp.ini is moved there)
-TYFMC_MODCFG(net.thirtyfox.mp, MP Multiplayer, 4.13.24, ThirtyFoxMCx00E1, MP, net.thirtyfox.mp)
+TYFMC_MODCFG(net.thirtyfox.mp, MP Multiplayer, 4.13.25, ThirtyFoxMCx00E1, MP, net.thirtyfox.mp)
 NEEDGAME(com.rockstargames.gtasa)
 
 // Globals used by the embedded RenderWare ImGui backend
@@ -154,6 +155,10 @@ DECL_HOOKv(CCam_Process, void* self)
 
 // ---- 2D render: our whole HUD + floating menu ------------------------------------------
 static uint64_t s_nNeonMenuPassMs = 0;   // 4.13.23: the last MobileMenu::Render that drew MP's frame
+// 4.13.25: the touch (Java) thread only reads this flag. 4.13.23 called MP::NeonCoversGameMenu() there, which reads the
+// game's menu stack and the player ped from the wrong thread.
+static std::atomic<uint64_t> s_nNeonCoverMs{0};
+static inline bool NeonCoverRecent() { const uint64_t t = s_nNeonCoverMs.load(); return t && MP_NowMs() - t < 400; }
 DECL_HOOKv(Render2dStuff)
 {
     Render2dStuff();
@@ -195,9 +200,9 @@ static int s_nMenuRenderSkips = 0;
 DECL_HOOKv(MobileMenu_Render, void* self)
 {
     if(MP::NeonCoversGameMenu())
-    {   // PCMenu's way: own the game's menu pass. The stock title menu (background, tiles) is not drawn, MP's
-        // whole frame (the neon menu, the floating menu, the keyboard) is drawn here instead - the last 2D of
-        // the frame, so the game's menu can no longer paint over it (4.13.22 drew it in Render2dStuff, before)
+    {   // PCMenu's way: own the game's menu pass. The stock title menu (and PCMenu's, which is further down this
+        // chain) is not drawn; MP's title frame (the neon menu, the floating menu, the keyboard) is drawn instead
+        s_nNeonCoverMs = MP_NowMs();
         if(s_nMenuRenderSkips++ == 0) logger->Info("Neon menu: drawn in the game's menu pass, the stock title menu is hidden (ServerBrowserMode = neon)");
         if(!s_bRWReady) { InitRenderWareFunctions(); s_bRWReady = true; }
         if(HUD::IsInitialised()) { PollTouches(); DrainIO(); }
@@ -245,7 +250,7 @@ static void MapTouch(int& x, int& y)
 static bool s_bGameFinger[16] = { false };   // the game saw this finger's press (it must get the release)
 static inline bool MPScreenOwnsTouches()
 {
-    return FloatMenu::IsModal() || VKeyboard::IsOpen() || MP::AuthScreenShown() || MP::DealerShown() || MP::MenuMpBlack() || MP::NeonCoversGameMenu();
+    return FloatMenu::IsModal() || VKeyboard::IsOpen() || MP::AuthScreenShown() || MP::DealerShown() || MP::MenuMpBlack() || NeonCoverRecent();
 }
 // Routes one touch to MP's UI. Returns true if MP used it (the game must not see it).
 static bool DispatchTouch(int type, int finger, int x, int y)
@@ -777,9 +782,37 @@ static void PollTouches()
 }
 
 // ---- AML entry points ----------------------------------------------------------------------
+// 4.13.25: MP's own log file, files/TYFMC/MP/mp_log.txt (the run before: mp_log_prev.txt). Every line is flushed, so
+// when the game closes with no crash log the last lines still say what MP was doing.
+static FILE* s_pLogFile = nullptr;
+static std::mutex s_LogFileMx;
+static void LogToFile(eLogPrio prio, const char* msg)
+{
+    std::lock_guard<std::mutex> lk(s_LogFileMx);
+    if(!s_pLogFile) return;
+    struct timespec ts; clock_gettime(CLOCK_REALTIME, &ts);
+    struct tm tmv; localtime_r(&ts.tv_sec, &tmv);
+    fprintf(s_pLogFile, "%02d:%02d:%02d.%03d %s %s\n", tmv.tm_hour, tmv.tm_min, tmv.tm_sec, (int)(ts.tv_nsec / 1000000),
+            prio >= LogP_Error ? "E" : "I", msg);
+    fflush(s_pLogFile);
+}
+static void OpenLogFile()
+{
+    const char* base = aml->GetAndroidDataPath();
+    if(!base || !base[0]) return;
+    char dir[512], f[600], prev[600];
+    snprintf(dir, sizeof(dir), "%s/TYFMC", base); mkdir(dir, 0777);
+    snprintf(dir, sizeof(dir), "%s/TYFMC/MP", base); mkdir(dir, 0777);
+    snprintf(f, sizeof(f), "%s/mp_log.txt", dir); snprintf(prev, sizeof(prev), "%s/mp_log_prev.txt", dir);
+    rename(f, prev);
+    s_pLogFile = fopen(f, "w");
+    if(s_pLogFile) { logger->SetMessageCB(LogToFile); logger->Info("MP %s log: %s", MP_VERSION_STR, f); }
+}
+
 extern "C" void OnModPreLoad()
 {
     logger->SetTag(BYBIT("MP32", "MP64"));
+    OpenLogFile();
     RegisterInterface("MPMenu", FloatMenu::GetInterface());
     RegisterInterface("MPMultiplayer", MP::GetMultiplayerApi());   // 4.13.10: PCMenu's MULTIPLAYER button
     logger->Info("MPMultiplayer interface registered (%s)", GetInterface("MPMultiplayer") ? "ok" : "AML refused it");
@@ -867,11 +900,9 @@ extern "C" void OnModLoad()
         Game::InitMenu(pGameHandle);
         SET_TO(s_pPercentLoaded, aml->GetSym(pGameHandle, "_ZN14CLoadingScreen15m_PercentLoadedE"));
         int hooked = 0;
-        HOOK_IF(LS_RenderSplash, "_ZN14CLoadingScreen12RenderSplashEv");
-        HOOK_IF(LS_RenderLoadingBar, "_ZN14CLoadingScreen16RenderLoadingBarEv");
         HOOK_IF(MobileMenu_Update, "_ZN10MobileMenu6UpdateEv");   // 4.13.9: menu closed after a Multiplayer load
-        HOOK_IF(MobileMenu_Render, "_ZN10MobileMenu6RenderEv");   // 4.13.23: the neon title menu on top
-        logger->Info("Loading screen: %d hooks, percent %s", hooked, s_pPercentLoaded ? "yes" : "no");
+        // 4.13.25: the loading screen + MobileMenu::Render hooks are installed in OnAllModsLoaded (InstallMenuHooks)
+        logger->Info("Main menu: %d hooks, percent %s", hooked, s_pPercentLoaded ? "yes" : "no");
     }
 
 #ifdef AML32
@@ -889,10 +920,65 @@ extern "C" void OnModLoad()
 
 // 2.37: every AML mod is loaded now, so aml->HasMod() sees all of them.
 // A player with CheatMenu (libCheatMenu.so / libCheatMenu64.so) is refused when joining any server.
+// 4.13.25: PCMenu 1.2.8 hooks CLoadingScreen::RenderSplash / RenderLoadingBar / Init inline, and 4.13.23 hooked
+// MobileMenu::Render inline - two mods patching the code of the same game function is what closed the game with no
+// crash log (with ServerBrowserMode = mp too). Now, like PCMenu:
+//  - MobileMenu::Render through its .got.plt slot (the build is checked first; another mod's slot hook is chained)
+//  - the loading screen hooks only when PCMenu is not installed (PCMenu draws the loading screen then, and MP already
+//    leaves it to PCMenu since 4.13.12)
+#ifdef AML32
+static const uintptr_t kGotMenuRender = 0x674254, kFpMenuRender = 0x299B65;   // GTA SA 2.00 armeabi-v7a (from PCMenu)
+#else
+static const uintptr_t kGotMenuRender = 0x846FE8, kFpMenuRender = 0x355DFC;   // GTA SA 2.10 arm64-v8a (from PCMenu)
+#endif
+static bool PCMenuLoaded()   // any loaded .so with "PCMenu" in its file name (PCMenu64.so, libPCMenuT32.so, ...)
+{
+    FILE* m = fopen("/proc/self/maps", "r");
+    if(!m) return false;
+    char line[1024]; bool r = false;
+    while(!r && fgets(line, sizeof(line), m))
+    {
+        const char* b = strrchr(line, '/'); if(!b) continue;
+        if(strstr(b, "PCMenu") && strstr(b, ".so")) r = true;
+    }
+    fclose(m);
+    return r;
+}
+static void InstallMenuHooks()
+{
+    static bool done = false;
+    if(done || !pGameLib || !pGameHandle) return;
+    done = true;
+    const bool pcmenu = PCMenuLoaded();
+    int hooked = 0;
+    if(!pcmenu)
+    {
+        HOOK_IF(LS_RenderSplash, "_ZN14CLoadingScreen12RenderSplashEv");
+        HOOK_IF(LS_RenderLoadingBar, "_ZN14CLoadingScreen16RenderLoadingBarEv");
+        logger->Info("Loading screen: %d hooks", hooked);
+    }
+    else logger->Info("Loading screen: PCMenu is installed - its loading screen is used, MP does not hook the loading screen");
+    const uintptr_t sym = aml->GetSym(pGameHandle, "_ZN10MobileMenu6RenderEv");
+    const uintptr_t slot = pGameLib + kGotMenuRender;
+    uintptr_t cur = 0;
+    if(sym && ((sym - pGameLib) | 1) == (kFpMenuRender | 1))
+    {
+        cur = *(volatile uintptr_t*)slot;
+        if(cur)
+        {
+            const bool ok = aml->HookPLT((void*)slot, (void*)&HookOf_MobileMenu_Render, (void**)&MobileMenu_Render);
+            logger->Info("Neon menu: MobileMenu::Render slot hook %s (%s)", ok ? "on" : "FAILED", cur == sym ? "untouched" : "after another mod, chained");
+            return;
+        }
+    }
+    logger->Info("Neon menu: this libGTASA.so is not the known build (MobileMenu::Render %p) - no title menu hook, ServerBrowserMode = neon works on the black screen only", (void*)sym);
+}
+
 ON_ALL_MODS_LOAD()
 {
     ModScan::Scan();
     JPatchGuardSetup();   // 4.13.8: on top of JPatch's CCam::Process hook
+    if(s_bMpLoaded) InstallMenuHooks();   // 4.13.25
     if(s_bMpLoaded) MP::InitMainMenu();   // 4.13.4: [Multiplayer] on the game's main menu (SAUtils tile)
     if(ModScan::CheatMenu()) logger->Info("MP: %s found - you can't join or host servers while it is installed", ModScan::What());
 }
