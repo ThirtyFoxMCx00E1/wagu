@@ -68,108 +68,144 @@ def is_default(s):
     return s["port"] == 1922 and s["name"].lower() == "mp lan server"
 
 
-def svg(servers, players, now, hist=None):
-    """3.41: a Eurostat style figure (like "Principal extra-EU trade partners for transport services,
-    EU, 2014 and 2024"): two stacked panels with grouped vertical bars, two periods each (light = peak
-    of the last 24 hours, dark = now). Top panel (gold): players per server. Bottom panel (blue):
-    player slots in use per server (%). The 9 biggest servers, then "Other servers". A legend under
-    each panel, notes, the source line and the logo at the bottom right.
-    hist = [{"t", "players", "servers", "active", "slots", "top", "s": [[name, players, max], ...]}]."""
-    W, H = 760, 800
+def svg(servers, players, now, hist=None, daily=None):
+    """4.13.22: a SteamDB style "charts for every day" card (Screenshots/images.png): dark panel, the title,
+    the zoom buttons, the Players line (blue) and the Servers line (red) on one axis with the labels on the
+    right, the peak marked with a grey band + a black tooltip, a navigator strip with the whole history under
+    it (the zoomed range highlighted) and the legend at the bottom.
+    hist  = the 10-minute readings [{"t", "players", "servers", ...}] (8 days),
+    daily = one row per day [{"d": "YYYY-MM-DD", "players": peak, "servers": peak}] (kept ~3 years)."""
+    W, H = 760, 416
     e = lambda x: html.escape(str(x), quote=True)
     F = 'font-family="Arial,Helvetica,DejaVu Sans,sans-serif"'
-    INK, GREY, GRID, AX = "#000000", "#404040", "#d9d9d9", "#7f7f7f"
-    GOLD = ("#ecdc9c", "#b0901e")      # light (peak 24 h), dark (now)  - like Exports 2014 / 2024
-    BLUE = ("#6f8be0", "#2a3fa8")      # light (peak 24 h), dark (now)  - like Imports 2014 / 2024
-    hist = list(hist or [])
+    BG, GRID, TXT, DIM, BLUE, RED = "#1b1e24", "#2c3038", "#c6d4df", "#8b939e", "#2f9be9", "#c8402c"
     def ts(h): return datetime.datetime.fromisoformat(h["t"])
-    day = [h for h in hist if now - ts(h) <= datetime.timedelta(hours=24) and h.get("s")]
-    # per server: peak players / peak % of slots over the last 24 hours, and now
-    peak, peakp, mx = {}, {}, {}
-    for h in day:
-        for nm, pl, m in h["s"]:
-            peak[nm] = max(peak.get(nm, 0), pl); mx[nm] = m or mx.get(nm, 0)
-            peakp[nm] = max(peakp.get(nm, 0.0), 100.0 * pl / m if m else 0.0)
-    cur = {}
-    for s in servers:
-        cur[s["name"]] = s["players"]; mx[s["name"]] = s["max"]
-        peak[s["name"]] = max(peak.get(s["name"], 0), s["players"])
-        peakp[s["name"]] = max(peakp.get(s["name"], 0.0), 100.0 * s["players"] / s["max"] if s["max"] else 0.0)
-    order = sorted(peak, key=lambda k: (-peak[k], -cur.get(k, 0), k.lower()))
-    main_, rest = order[:9], order[9:]
-    pct = lambda a, b: 100.0 * a / b if b else 0.0
-    cats = [(k, peak[k], cur.get(k, 0), peakp.get(k, 0.0), pct(cur.get(k, 0), mx.get(k, 0))) for k in main_]
-    if rest or not cats:
-        rp = sum(peak[k] for k in rest); rn = sum(cur.get(k, 0) for k in rest); rm = sum(mx.get(k, 0) for k in rest)
-        cats.append(("Other servers", rp, rn, pct(rp, rm), pct(rn, rm)))
-    hourly = len(day) > 1
-    o = ['<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d" viewBox="0 0 %d %d" role="img" aria-label="MP Multiplayer: %d players online on %d servers">' % (W, H, W, H, players, len(servers))]
-    o.append('<title>MP Multiplayer: %d players online on %d servers</title>' % (players, len(servers)))
-    o.append('<rect width="%d" height="%d" fill="#ffffff"/>' % (W, H))
-    o.append('<text x="12" y="28" %s font-size="19" font-weight="700" fill="%s">Principal MP servers by players, last 24 hours and now</text>' % (F, INK))
-    o.append('<text x="12" y="50" %s font-size="15" fill="%s">(number of players and %% of player slots; updated %s UTC, %s)</text>' % (F, INK, now.strftime("%H:%M"), now.strftime("%d %B %Y")))
+    def num(v):
+        v = int(round(v)); s = "{:,}".format(v).replace(",", " ")
+        return s
+    def short(v):
+        if v >= 1e6: return "%gM" % round(v / 1e6, 1)
+        if v >= 1e3: return "%gk" % round(v / 1e3, 1)
+        return "%g" % v
+    hist = sorted(list(hist or []), key=ts)
+    pts = [(ts(h), int(h.get("players", 0)), int(h.get("servers", 0))) for h in hist]
+    if not pts or pts[-1][0] < now - datetime.timedelta(minutes=1):
+        pts.append((now, players, len(servers)))
+    span = (pts[-1][0] - pts[0][0]).total_seconds() if len(pts) > 1 else 0
+    zooms = [("1d", 1), ("1w", 7), ("1m", 30), ("3m", 91), ("1y", 365), ("all", 0)]
+    active = "1d" if span <= 86400 * 1.05 else "1w"
+    days = 1 if active == "1d" else 7
+    t1 = pts[-1][0]; t0 = t1 - datetime.timedelta(days=days)
+    view = [p for p in pts if p[0] >= t0]
+    if len(view) < 2 and len(pts) >= 2: view = pts[-2:]
+    if len(view) >= 2: t0 = min(t0, view[0][0]) if active != "1d" else view[0][0] if (t1 - view[0][0]).total_seconds() < 86400 else t0
+    o = ['<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d" viewBox="0 0 %d %d" role="img" aria-label="MP charts: %d players online on %d servers">' % (W, H, W, H, players, len(servers))]
+    o.append('<title>MP charts for every day: %d players online on %d servers</title>' % (players, len(servers)))
+    o.append('<rect width="%d" height="%d" rx="6" fill="%s"/>' % (W, H, BG))
+    o.append('<text x="20" y="38" %s font-size="25" fill="%s">MP charts for every day</text>' % (F, TXT))
+    # zoom buttons
+    x = 20
+    o.append('<text x="%d" y="70" %s font-size="13" fill="%s">Zoom</text>' % (x, F, TXT)); x += 46
+    for lab, _ in zooms:
+        w = 30 if len(lab) <= 2 else 32
+        if lab == active: o.append('<rect x="%d" y="55" width="%d" height="21" rx="3" fill="#3a4049"/>' % (x - 4, w))
+        o.append('<text x="%d" y="70" %s font-size="13" font-weight="700" fill="%s" text-anchor="middle">%s</text>' % (x - 4 + w / 2, F, "#ffffff" if lab == active else "#4ea8ff", lab))
+        x += w + 12
+    # live dot + download icon (top right, like the image)
     dot = "#2e9d43" if servers else "#c9a227"
-    o.append('<circle cx="%d" cy="22" r="6" fill="%s"><animate attributeName="opacity" values="1;.35;1" dur="1.6s" repeatCount="indefinite"/></circle>' % (W - 20, dot))
-    def label_lines(t):
-        if len(t) > 26: t = t[:25] + "\u2026"
-        if len(t) <= 11: return [t]
-        w = t.split(" "); a, b = "", ""
-        for x in w:
-            if not b and len((a + " " + x).strip()) <= 12: a = (a + " " + x).strip()
-            else: b = (b + " " + x).strip()
-        if not a: a, b = t[:11], t[11:]
-        if len(b) > 13: b = b[:12] + "\u2026"
-        return [a, b] if b else [a]
-    def panel(title, y0, vals, cols, fmt, unit_max):
-        x0, x1, top, base = 46, W - 14, y0 + 32, y0 + 222
-        o.append('<text x="%d" y="%d" %s font-size="14" font-weight="700" fill="%s" text-anchor="middle">%s</text>' % ((x0 + x1) // 2, y0 + 14, F, INK, e(title)))
-        vmax = max([0.0] + [v for pair in vals for v in pair])
-        if unit_max: vmax = max(vmax, 1.0)
-        step = 1
-        for st in (1, 2, 5, 10, 20, 25, 50, 100, 200, 500, 1000):
-            if vmax / st <= 8: step = st; break
-        top_v = max(step, ((int(vmax) + step - 1) // step) * step)
-        if top_v - vmax < step * 0.25: top_v += step   # a little headroom above the tallest bar
-        v = 0
-        while v <= top_v:
-            yy = base - (base - top) * v / top_v
-            o.append('<line x1="%d" y1="%.1f" x2="%d" y2="%.1f" stroke="%s" stroke-width="1"/>' % (x0, yy, x1, yy, GRID if v else AX))
-            o.append('<text x="%d" y="%.1f" %s font-size="12" fill="%s" text-anchor="end">%d</text>' % (x0 - 6, yy + 4, F, INK, v))
-            v += step
-        n = max(1, len(cats)); gw = (x1 - x0) / n; bw = min(20.0, gw * 0.24)
-        for i, c in enumerate(cats):
-            cx = x0 + gw * (i + 0.5)
-            for k in range(2):
-                val = vals[i][k]; bh = (base - top) * val / top_v
-                bx = cx - bw - 3 + k * (bw + 6)
-                if bh > 0: o.append('<rect x="%.1f" y="%.1f" width="%.1f" height="%.1f" fill="%s"><title>%s: %s</title></rect>' % (bx, base - bh, bw, bh, cols[k], e(c[0]), fmt(val)))
-            o.append('<line x1="%.1f" y1="%d" x2="%.1f" y2="%d" stroke="%s"/>' % (x0 + gw * i, base, x0 + gw * i, base + 5, AX))
-            for j, ln in enumerate(label_lines(c[0])):
-                o.append('<text x="%.1f" y="%d" %s font-size="12" fill="%s" text-anchor="middle">%s</text>' % (cx, base + 18 + 14 * j, F, INK, e(ln)))
-        o.append('<line x1="%d" y1="%d" x2="%d" y2="%d" stroke="%s"/>' % (x1, base, x1, base + 5, AX))
-        ly = base + 58; lx = (x0 + x1) // 2 - 92
-        for k, nm in enumerate(("Peak, last 24 h", "Now")):
-            o.append('<rect x="%d" y="%d" width="9" height="9" fill="%s"/>' % (lx + k * 118, ly - 9, cols[k]))
-            o.append('<text x="%d" y="%d" %s font-size="12" font-weight="700" fill="%s">%s</text>' % (lx + 14 + k * 118, ly, F, INK, nm))
-    panel("Players", 64, [(c[1], c[2]) for c in cats], GOLD, lambda v: "%d players" % v, True)
-    panel("Player slots in use (%)", 360, [(c[3], c[4]) for c in cats], BLUE, lambda v: "%.1f%%" % v, True)
-    slots = sum(s["max"] for s in servers)
-    pp = hist[-2]["players"] if len(hist) > 1 else None
-    mins = int(round((ts(hist[-1]) - ts(hist[-2])).total_seconds() / 60)) if len(hist) > 1 else 10
-    trend = "" if pp is None else (" (%+d in the last %d minutes)" % (players - pp, mins) if players != pp else " (no change in the last %d minutes)" % mins)
-    note = ["Note: right now %d players%s on %d servers with %d player slots; %d servers have players." % (players, trend, len(servers), slots, sum(1 for s in servers if s["players"] > 0)),
-            "Servers are sorted by their peak in the last 24 hours (%s); the rest are added up in \"Other servers\"." % ("%d readings, one every 10 minutes" % len(day) if hourly else "the first readings are still being collected"),
-            "Player slots in use = players / the server's maximum players."]
-    y = 692
-    for ln in note:
-        o.append('<text x="12" y="%d" %s font-size="12" fill="%s">%s</text>' % (y, F, INK, e(ln))); y += 17
-    o.append('<text x="12" y="%d" %s font-size="12" fill="%s"><tspan font-style="italic">Source:</tspan> MP lobby (online data code: live-status, github.com/ThirtyFoxMCx00E1/wagu)</text>' % (y + 2, F, INK))
-    # logo: "mp lobby" + a small blue badge (bottom right, like the Eurostat mark)
-    o.append('<text x="%d" y="%d" %s font-size="22" font-weight="700" fill="%s" text-anchor="end">mplobby</text>' % (W - 44, H - 14, F, "#7a7a7a"))
-    o.append('<rect x="%d" y="%d" width="28" height="19" fill="#2a3fa8"/>' % (W - 38, H - 31))
-    o.append('<text x="%d" y="%d" %s font-size="11" font-weight="700" fill="#ffd617" text-anchor="middle">MP</text>' % (W - 24, H - 17, F))
+    o.append('<circle cx="%d" cy="30" r="5" fill="%s"><animate attributeName="opacity" values="1;.35;1" dur="1.6s" repeatCount="indefinite"/></circle>' % (W - 64, dot))
+    o.append('<text x="%d" y="34" %s font-size="11" fill="%s" text-anchor="end">LIVE</text>' % (W - 72, F, DIM))
+    o.append('<g fill="%s"><rect x="%d" y="54" width="4" height="10"/><path d="M%d 63 l7 7 l7 -7 z"/><rect x="%d" y="72" width="16" height="3"/></g>' % (DIM, W - 34, W - 39, W - 40))
+    # plot
+    X0, X1, Y0, Y1 = 28, W - 50, 92, 296
+    vmax = max([1] + [p[1] for p in view] + [p[2] for p in view])
+    step = 1
+    for st in (1, 2, 5, 10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000, 5000, 10000, 25000, 50000, 100000, 250000, 500000, 1000000, 5000000):
+        if vmax / st <= 5: step = st; break
+    top = ((vmax + step - 1) // step) * step
+    if top - vmax < step * 0.2: top += step
+    sx = lambda t: X0 + (X1 - X0) * ((t - t0).total_seconds() / max(1.0, (t1 - t0).total_seconds()))
+    sy = lambda v: Y1 - (Y1 - Y0) * v / top
+    v = 0
+    while v <= top:
+        yy = sy(v)
+        o.append('<line x1="%d" y1="%.1f" x2="%d" y2="%.1f" stroke="%s" stroke-width="1"/>' % (X0, yy, X1, yy, GRID))
+        o.append('<text x="%d" y="%.1f" %s font-size="11" fill="%s">%s</text>' % (X1 + 8, yy + 4, F, DIM, short(v)))
+        v += step
+    # x labels: hours for 1d, days for 1w
+    tick = datetime.timedelta(hours=4) if active == "1d" else datetime.timedelta(days=1)
+    tt = t0.replace(minute=0, second=0, microsecond=0)
+    if active != "1d": tt = tt.replace(hour=0)
+    while tt <= t1:
+        if tt >= t0:
+            xx = sx(tt)
+            o.append('<line x1="%.1f" y1="%d" x2="%.1f" y2="%d" stroke="%s"/>' % (xx, Y1, xx, Y1 + 5, GRID))
+            lab = tt.strftime("%H:%M") if active == "1d" else "%d. %s" % (tt.day, tt.strftime("%b"))
+            o.append('<text x="%.1f" y="%d" %s font-size="11" fill="%s" text-anchor="middle">%s</text>' % (xx, Y1 + 18, F, DIM, lab))
+        tt += tick
+    # peak band + tooltip
+    pk = max(view, key=lambda p: (p[1], p[0])) if view else None
+    if pk:
+        px = sx(pk[0])
+        o.append('<rect x="%.1f" y="%d" width="22" height="%d" fill="#ffffff" fill-opacity="0.12"/>' % (px - 11, Y0 - 12, Y1 - Y0 + 12))
+    def line(idx, col):
+        if len(view) < 2: return
+        d = " ".join(("M" if i == 0 else "L") + "%.1f %.1f" % (sx(p[0]), sy(p[idx])) for i, p in enumerate(view))
+        o.append('<path d="%s" fill="none" stroke="%s" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>' % (d, col))
+    line(2, RED); line(1, BLUE)
+    if pk:
+        px = sx(pk[0])
+        o.append('<circle cx="%.1f" cy="%.1f" r="4" fill="%s" stroke="#ffffff" stroke-width="1.5"/>' % (px, sy(pk[1]), BLUE))
+        o.append('<path d="M%.1f %.1f l4 4 l-4 4 l-4 -4 z" fill="%s" stroke="#ffffff" stroke-width="1.2"/>' % (px, sy(pk[2]) - 4, RED))
+        tw, th = 200, 54
+        tx = px + 14 if px + 14 + tw < X1 else px - 14 - tw
+        ty = max(Y0 - 8, min(Y1 - th, sy(pk[1]) - th / 2 + 20))
+        o.append('<rect x="%.1f" y="%.1f" width="%d" height="%d" rx="2" fill="#0b0c0f" fill-opacity="0.94"/>' % (tx, ty, tw, th))
+        o.append('<text x="%.1f" y="%.1f" %s font-size="11" fill="#ffffff">%s</text>' % (tx + 8, ty + 16, F, e(pk[0].strftime("%A, %b %-d, %Y %H:%M UTC"))))
+        o.append('<circle cx="%.1f" cy="%.1f" r="3" fill="%s"/><text x="%.1f" y="%.1f" %s font-size="11" fill="#ffffff">Players: <tspan font-weight="700">%s</tspan></text>' % (tx + 11, ty + 29, BLUE, tx + 18, ty + 33, F, num(pk[1])))
+        o.append('<circle cx="%.1f" cy="%.1f" r="3" fill="%s"/><text x="%.1f" y="%.1f" %s font-size="11" fill="#ffffff">Servers: <tspan font-weight="700">%s</tspan></text>' % (tx + 11, ty + 44, RED, tx + 18, ty + 48, F, num(pk[2])))
+    # navigator: the whole history (one point per day + now)
+    NY0, NY1 = 330, 360
+    o.append('<rect x="%d" y="%d" width="%d" height="%d" fill="#15171c" stroke="%s"/>' % (X0, NY0, X1 - X0, NY1 - NY0, GRID))
+    nav = [(datetime.datetime.fromisoformat(r["d"] + "T12:00:00+00:00"), int(r.get("players", 0))) for r in (daily or [])]
+    nav = [n for n in nav if n[0] < t0] + [(p[0], p[1]) for p in pts]
+    nav.sort(key=lambda n: n[0])
+    if len(nav) >= 2:
+        n0, n1 = nav[0][0], nav[-1][0]
+        if (n1 - n0).total_seconds() < 86400 * 7: n0 = n1 - datetime.timedelta(days=7)
+        nmax = max(1, max(n[1] for n in nav))
+        nx = lambda t: X0 + (X1 - X0) * ((t - n0).total_seconds() / max(1.0, (n1 - n0).total_seconds()))
+        ny = lambda v: NY1 - 3 - (NY1 - NY0 - 8) * v / nmax
+        d = " ".join(("M" if i == 0 else "L") + "%.1f %.1f" % (nx(t), ny(v)) for i, (t, v) in enumerate(nav))
+        o.append('<path d="%s" fill="none" stroke="%s" stroke-width="1.2"/>' % (d, BLUE))
+        a, b = max(X0, nx(t0)), X1
+        o.append('<rect x="%.1f" y="%d" width="%.1f" height="%d" fill="#4ea8ff" fill-opacity="0.18"/>' % (a, NY0, max(4.0, b - a), NY1 - NY0))
+        for hx in (a, b):
+            o.append('<rect x="%.1f" y="%d" width="7" height="14" rx="2" fill="#3a6f9e" stroke="#9cc7ee" stroke-width="1"/>' % (hx - 3.5, (NY0 + NY1) // 2 - 7))
+        # labels: years when the history is long, else months / days
+        longspan = (n1 - n0).days > 400
+        tt = n0.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0) if longspan else n0.replace(hour=0, minute=0, second=0, microsecond=0)
+        while tt <= n1:
+            if tt >= n0 and nx(tt) < X1 - 30:
+                o.append('<text x="%.1f" y="%d" %s font-size="10" fill="%s">%s</text>' % (nx(tt) + 3, NY0 + 12, F, DIM, tt.year if longspan else "%d. %s" % (tt.day, tt.strftime("%b"))))
+            tt = tt.replace(year=tt.year + 1) if longspan else tt + datetime.timedelta(days=1 if (n1 - n0).days <= 10 else 7)
+    # legend
+    ly = 392; lx = W // 2 - 92
+    o.append('<line x1="%d" y1="%d" x2="%d" y2="%d" stroke="%s" stroke-width="2"/><text x="%d" y="%d" %s font-size="13" fill="%s">Players</text>' % (lx, ly - 4, lx + 16, ly - 4, BLUE, lx + 22, ly, F, TXT))
+    lx += 100
+    o.append('<line x1="%d" y1="%d" x2="%d" y2="%d" stroke="%s" stroke-width="2"/><text x="%d" y="%d" %s font-size="13" fill="%s">Servers</text>' % (lx, ly - 4, lx + 16, ly - 4, RED, lx + 22, ly, F, TXT))
+    o.append('<text x="%d" y="%d" %s font-size="10" fill="%s" text-anchor="end">now %d players on %d servers - updated %s UTC - mplobby</text>' % (W - 12, H - 8, F, DIM, players, len(servers), now.strftime("%H:%M, %d %b %Y")))
     o.append("</svg>")
     return "\n".join(o)
+
+
+def roll_daily(daily, hist):
+    """4.13.22: one row per UTC day (the peak players / servers of that day), kept ~3 years for the navigator."""
+    by = {r["d"]: dict(r) for r in (daily or []) if r.get("d")}
+    for h in hist:
+        d = h["t"][:10]; r = by.setdefault(d, {"d": d, "players": 0, "servers": 0})
+        r["players"] = max(r["players"], int(h.get("players", 0))); r["servers"] = max(r["servers"], int(h.get("servers", 0)))
+    return [by[k] for k in sorted(by)][-1100:]
 
 
 def main():
@@ -189,11 +225,12 @@ def main():
     players = sum(s["players"] for s in servers)
     now = datetime.datetime.now(datetime.timezone.utc)
     # 3.41: history.json on the live-status branch (one reading per run, 8 days kept) = the time axis
-    hist = []
+    hist, daily = [], []
     try:
         import urllib.request
         rq = urllib.request.Request("https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/live-status/history.json?t=%d" % time.time(), headers={"User-Agent": "wagu-live-status"})
-        hist = json.load(urllib.request.urlopen(rq, timeout=15)).get("readings", [])
+        hj = json.load(urllib.request.urlopen(rq, timeout=15))
+        hist, daily = hj.get("readings", []), hj.get("daily", [])
     except Exception as ex:
         print("history: %s" % ex, file=sys.stderr)
     if not hist:
@@ -209,8 +246,9 @@ def main():
                  "s": [[s["name"], s["players"], s["max"]] for s in servers][:60]})
     cut = now - datetime.timedelta(days=8)
     hist = [h for h in hist if datetime.datetime.fromisoformat(h["t"]) >= cut][-1200:]
-    json.dump({"readings": hist}, open(os.path.join(out, "history.json"), "w"))
-    open(os.path.join(out, "players.svg"), "w").write(svg(servers, players, now, hist))
+    daily = roll_daily(daily, hist)
+    json.dump({"readings": hist, "daily": daily}, open(os.path.join(out, "history.json"), "w"))
+    open(os.path.join(out, "players.svg"), "w").write(svg(servers, players, now, hist, daily))
     color = "brightgreen" if players else ("yellow" if servers else "lightgrey")
     json.dump({"schemaVersion": 1, "label": "players online", "message": str(players), "color": color, "cacheSeconds": 600},
               open(os.path.join(out, "players.json"), "w"))

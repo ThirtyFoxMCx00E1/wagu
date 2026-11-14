@@ -22,9 +22,9 @@
 </p>
 
 <p align="center">
-  <a href="https://mpsamp-open.github.io/"><img src="https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/live-status/players.svg" alt="MP live lobby: players and servers online right now" width="840"></a>
+  <a href="https://mpsamp-open.github.io/"><img src="https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/live-status/players.svg" alt="MP charts for every day: players and servers online" width="760"></a>
   <br>
-  <sub>Live from the MP lobby - players and servers online right now (refreshes every 10 minutes)</sub>
+  <sub>MP charts for every day - live from the MP lobby: players and servers online (refreshes every 10 minutes)</sub>
 </p>
 
 <p align="center">
