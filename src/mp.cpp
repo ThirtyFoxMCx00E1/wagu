@@ -2452,6 +2452,18 @@ static void SampOnEvent(const PktEvent& e);
 static void SampOnTeam(const PktTeam& t);
 static void SampOnTurf(const PktTurf& t);
 static void SampOnDialog(const PktDialog& d);
+// 4.13.29: the Lua bridge (mp_lua.inc)
+static bool LuaOnConnected(int id, const char* server);
+static void LuaOnDisconnected();
+static void LuaOnJoin(int id, const char* name, uint32_t color);
+static void LuaOnQuit(int id, int reason);
+static bool LuaOnChat(int id, char* text, int n);
+static bool LuaOnClientMessage(uint32_t& color, std::string& text);
+static bool LuaOnDialog(PktDialog& d);
+static bool LuaOutChat(const char* text);
+static bool LuaOutDialog(int id, int button, int item, const char* input);
+static char s_szLuaHost[128];
+static int  s_nLuaPort;
 static void SampOnTextDraw(const PktTextDraw& t);
 static void SampOnPlayerLeave(int id);
 static void SampReset();
@@ -2475,6 +2487,7 @@ public:
         HkReset(); HmReset(); CoopReset(true); CgReset(); RulesReset(); Modes2Reset(); SrvSettingsReset(); HudReset(); ProgReset();   // 3.39: a new join: houses / rules / modes come again
         myId = w.yourId; myColor = w.color;
         MP_CopyStr(s_szCurServer, w.serverName, sizeof(s_szCurServer));
+        LuaOnConnected(w.yourId, s_szCurServer);   // 4.13.29
         s_bWorldSynced = false;
         s_nWorldNoticed = 0;   // 2.18.2: new connection -> each notice may show once again
         // teleport + logo + sound wait for the Connecting feed and all resources (FinishJoin)
@@ -2544,6 +2557,7 @@ public:
     }
     void OnLostConnection() override
     {
+        LuaOnDisconnected();   // 4.13.29
         if(s_szDirectRelay[0] && client.IsDirect()) Online::DirectFailed(s_szDirectRelay);   // 3.11: rejoin over the relay
         s_szDirectRelay[0] = 0;
         // decide before the player list is cleared (takeover order = player id order)
@@ -2562,11 +2576,13 @@ public:
         p.skin = Game::IsSafeSkin(j.skin) ? j.skin : 106;   // 2.12: never trust a network skin id (2.19.6: + story characters)
         ApplyPlayerColor(j.id, j.color);
         if(j.id == myId) return;
+        if(!wasActive) LuaOnJoin(j.id, p.name, p.color);   // 4.13.29
         if(!wasActive) SysMsg(COL_SYSTEM, "*** %s joined the server.", p.name);
     }
     void OnPlayerLeave(const PktPlayerLeave& l) override
     {
         if(l.id >= MP_MAX_PLAYERS || !players[l.id].active) return;
+        LuaOnQuit(l.id, l.reason == LEAVE_KICK ? 2 : 1);   // 4.13.29
         SampOnPlayerLeave(l.id);   // 3.01
         SysMsg(COL_SYSTEM, "*** %s left the server.%s", players[l.id].name, l.reason == LEAVE_KICK ? " (Kicked)" : "");   // 4.13.22: never "(Timeout)"
         if(s_bGroup[l.id]) { s_bGroup[l.id] = false; GroupFixFirst(); }   // 2.31
@@ -2687,9 +2703,11 @@ public:
     void OnFire(const PktFire& f) override            { ApplyNetFire(f); }
     void OnPickupAdd(const PktPickupAdd& a) override  { AddNetPickup(a); }
     void OnPickupRemove(const PktPickupRemove& r) override { RemoveNetPickup(r.uid); }
-    void OnChat(const PktChat& c) override
+    void OnChat(const PktChat& c0) override
     {
-        if(c.id >= MP_MAX_PLAYERS) return;
+        if(c0.id >= MP_MAX_PLAYERS) return;
+        PktChat c = c0;
+        if(!LuaOnChat(c.id, c.text, MP_CHAT_LEN)) return;   // 4.13.29: a Lua script (samp.events onChatMessage) blocked / edited it
         const RemotePlayer& p = players[c.id];
         std::string nm = p.active ? p.name : "?"; uint32_t nc = p.active ? p.color : COL_WHITE;
         if(c.id == myId) { if(const char* mn = MP::LocalModName()) nm = mn; }   // 3.50.1: my own lines keep the [MOD] look
@@ -2750,7 +2768,7 @@ public:
     void OnEvent(const PktEvent& e) override { SampOnEvent(e); }          // 3.01
     void OnTeam(const PktTeam& t) override { SampOnTeam(t); }
     void OnTurf(const PktTurf& t) override { SampOnTurf(t); }
-    void OnDialog(const PktDialog& d) override { SampOnDialog(d); }
+    void OnDialog(const PktDialog& d0) override { static PktDialog d; d = d0; if(LuaOnDialog(d)) SampOnDialog(d); }   // 4.13.29: samp.events onShowDialog
     void OnTextDraw(const PktTextDraw& t) override { SampOnTextDraw(t); }
     void OnAuth(const uint8_t* d, int len) override { AuthOnPacket(d, len); }   // 3.21.6: login system
     void OnMw3(const uint8_t* d, int len) override { Mw3OnPacket(d, len); }   // 3.23
@@ -2816,7 +2834,9 @@ public:
     void OnServerMessage(const PktServerMsg& m) override
     {
         if(!settings.globalChat && RpOnServer() && !strncmp(m.text, "(( [OOC]", 8)) return;   // 3.35: player Settings > Global Chat off
-        MP::AddSystemMessage(m.color, m.text);
+        uint32_t col = m.color; std::string t = m.text;
+        if(!LuaOnClientMessage(col, t)) return;   // 4.13.29: samp.events onServerMessage
+        MP::AddSystemMessage(col, t.c_str());
     }
     void OnSetColor(const PktSetColor& c) override { ApplyPlayerColor(c.id, c.color); }
     void OnVoice(int id, uint16_t seq, uint8_t flags, const uint8_t* opus, int len) override   // 3.11
@@ -4528,6 +4548,7 @@ static void PSettingsPopup();
 #include "mp_admincmds.inc"  // 3.54: admin / moderator commands
 #include "mp_cmds.inc"   // 2.19: chat commands, cheats, player list, chat box, spawn buttons
 #include "mp_samp.inc"   // 3.01: SA-MP dialogs, textdraws, race / derby state of the others
+#include "mp_lua.inc"    // 4.13.29: the Lua bridge for MonetLoader (PC MoonLoader .lua scripts)
 #include "mp_hudset.inc"  // 4.07: server HUD (Textdraw): colour variant, cents, player, ammo, title logo
 #include <strings.h>
 int MP_DzPackMigrate();   // mp_launcher.inc
@@ -4589,6 +4610,7 @@ static bool CheatMenuBlocks(const char* serverName, bool isDefault)
 
 static void DoConnect(const char* host, int port)
 {
+    MP_CopyStr(s_szLuaHost, host ? host : "", sizeof(s_szLuaHost)); s_nLuaPort = port;   // 4.13.29: sampGetCurrentServerAddress
     LoadModFile();   // 3.39.1: moderator.txt copied in while the game runs works on the next join
     if(CheatMenuBlocks(s_szJobName[0] ? s_szJobName : host, s_bConnectingDefault)) return;   // 2.37: last line of defence (takeover, auto-rejoin...)
     if(MP_IsReservedName(settings.name))   // 2.37: SENJI without admin.txt is blocked before it even asks the server
@@ -5523,6 +5545,7 @@ void MP::SetNameColor(uint32_t rgba)
 void MP::SendChat(const char* text)
 {
     if(!text || !*text) return;
+    if(LuaOutChat(text)) return;   // 4.13.29: MonetLoader runs onSendChat / onSendCommand and sends it itself
     if(text[0] == '/' && HandleCommand(text)) return;   // 2.19 commands (work offline too)
     if(!IsConnected())
     {

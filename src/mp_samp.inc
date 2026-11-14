@@ -141,6 +141,7 @@ static void CloseDialog(int response)
     if(d.fromServer)
     {
         if(client.GetState() != NET_CONNECTED) return;
+        if(LuaOutDialog(d.id, response, item, d.input)) return;   // 4.13.29: samp.events onSendDialogResponse
         PktDialogResp r; memset(&r, 0, sizeof(r));
         r.type = PKT_DIALOG_RESPONSE; r.dialogId = (uint16_t)d.id; r.response = (uint8_t)response; r.listItem = (int16_t)item;
         MP_CopyStr(r.input, d.input, sizeof(r.input));
