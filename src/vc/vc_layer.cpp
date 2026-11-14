@@ -41,6 +41,7 @@
 #include "../net/safezone.h"
 #include "vc_data.h"
 #include "../ui/filepick.h"   // the phone keyboard dialog (game independent)
+#include "../../imgui/stb_image.h"   // 4.13.38: title2.png / title_logo_connected2.png (implementation in hud.cpp)
 
 namespace VC
 {
@@ -68,6 +69,20 @@ enum { PEDTYPE_CIVMALE = 4, MI_MALE01 = 7 };
 // ---- libGTAVC.so functions (by name) ------------------------------------------------------------------------------
 static void* (*FindPlayerPed)() = nullptr;
 static void* (*FindPlayerVehicle)() = nullptr;
+// 4.13.38: RenderWare + CSprite2d for the Vice City title images
+struct RwImage { int32_t flags, width, height, depth, stride; uint8_t* cpPixels; void* palette; };
+static RwImage* (*RwImageCreate)(int, int, int) = nullptr;
+static RwImage* (*RwImageAllocatePixels)(RwImage*) = nullptr;
+static int (*RwImageDestroy)(RwImage*) = nullptr;
+static RwImage* (*RwImageFindRasterFormat)(RwImage*, int, int*, int*, int*, int*) = nullptr;
+static void* (*RwRasterCreate)(int, int, int, int) = nullptr;
+static void* (*RwRasterSetFromImage)(void*, RwImage*) = nullptr;
+static void* (*RwTextureCreate)(void*) = nullptr;
+static int (*RwRenderStateSet)(int, void*) = nullptr;
+struct CSprite2d { void* tex; };
+static char s_szDataDir[512] = "";               // files/TYFMC/MP (gtavc)
+static uint64_t s_nLogoAt = 0, s_nFirstFrame = 0;  // title_logo_connected2.png shown since / first game frame
+static void (*SpriteDraw)(CSprite2d*, const struct CRect&, const struct CRGBA&) = nullptr;
 static void* (*AddPed)(int type, unsigned int mi, const CVector& at, int unk) = nullptr;
 static void  (*RemovePed)(void* ped) = nullptr;
 static int   (*GetPedRef)(void* ped) = nullptr;
@@ -235,6 +250,7 @@ static void LoadSettings()
     snprintf(dir, sizeof(dir), "%s/TYFMC", base ? base : ""); mkdir(dir, 0777);
     snprintf(dir, sizeof(dir), "%s/TYFMC/MP", base ? base : ""); mkdir(dir, 0777);
     snprintf(path, sizeof(path), "%s/vc.ini", dir);
+    MP_CopyStr(s_szDataDir, dir, sizeof(s_szDataDir));
     MP_CopyStr(s_szIni, path, sizeof(s_szIni));
     FILE* f = fopen(path, "r");
     if(!f)
@@ -479,6 +495,7 @@ public:
         char sn[33]; memcpy(sn, w.serverName, 32); sn[32] = 0;
         Chat(0xFF80FF80, "Connected to %s (Vice City)", sn);
         Help("MP Vice City: connected");
+        s_nLogoAt = MP_NowMs();   // 4.13.38: title_logo_connected2.png
     }
     void OnRejected(uint8_t reason) override
     {
@@ -1434,12 +1451,94 @@ static void DrawScoreboard(float sw, float sh, float sc)
         Text(l + 10 * sc, y, line, r.color ? r.color : 0xFFFFFFFF); y += lh;
     }
 }
+// ---- 4.13.38: Vice City title images (files/TYFMC/MP in the gtavc folder) ----------------------------------------
+// title2.png while MP joins a server, title_logo_connected2.png for 7 s after joining (San Andreas: title.png and
+// title_logo_connected.png). The PNG is stretched to a 1024 x 512 texture (GL wants power-of-two sizes) and drawn
+// in its own shape with CSprite2d::Draw.
+struct VcImage { CSprite2d spr = { nullptr }; int w = 0, h = 0; bool tried = false; };
+static VcImage s_ImgTitle, s_ImgConnected;
+static bool LoadImage(VcImage& im, const char* file)
+{
+    if(im.tried) return im.spr.tex != nullptr;
+    im.tried = true;
+    if(!RwImageCreate || !RwImageAllocatePixels || !RwImageDestroy || !RwImageFindRasterFormat || !RwRasterCreate ||
+       !RwRasterSetFromImage || !RwTextureCreate || !SpriteDraw) { logger->Info("Vice City: no RenderWare image functions - %s not shown", file); return false; }
+    char path[640]; snprintf(path, sizeof(path), "%s/%s", s_szDataDir, file);
+    int w = 0, h = 0, n = 0;
+    unsigned char* px = stbi_load(path, &w, &h, &n, 4);
+    if(!px) { logger->Info("Vice City: %s not found - copy it into files/TYFMC/MP of GTA Vice City", path); return false; }
+    const int TW = 1024, TH = 512;
+    RwImage* img = RwImageCreate(TW, TH, 32);
+    if(img) RwImageAllocatePixels(img);
+    if(!img || !img->cpPixels || img->stride < TW * 4) { if(img) RwImageDestroy(img); stbi_image_free(px); return false; }
+    for(int y = 0; y < TH; ++y)
+    {   // bilinear stretch into the texture
+        const float fy = (y + 0.5f) * h / TH - 0.5f; int y0 = (int)floorf(fy); const float ty = fy - y0;
+        const int ya = y0 < 0 ? 0 : (y0 >= h ? h - 1 : y0), yb = y0 + 1 >= h ? h - 1 : (y0 + 1 < 0 ? 0 : y0 + 1);
+        uint8_t* row = img->cpPixels + (size_t)y * img->stride;
+        for(int x = 0; x < TW; ++x)
+        {
+            const float fx = (x + 0.5f) * w / TW - 0.5f; int x0 = (int)floorf(fx); const float tx = fx - x0;
+            const int xa = x0 < 0 ? 0 : (x0 >= w ? w - 1 : x0), xb = x0 + 1 >= w ? w - 1 : (x0 + 1 < 0 ? 0 : x0 + 1);
+            const uint8_t *p00 = px + ((size_t)ya * w + xa) * 4, *p01 = px + ((size_t)ya * w + xb) * 4,
+                          *p10 = px + ((size_t)yb * w + xa) * 4, *p11 = px + ((size_t)yb * w + xb) * 4;
+            for(int c = 0; c < 4; ++c)
+                row[x * 4 + c] = (uint8_t)((p00[c] * (1 - tx) + p01[c] * tx) * (1 - ty) + (p10[c] * (1 - tx) + p11[c] * tx) * ty + 0.5f);
+        }
+    }
+    stbi_image_free(px);
+    int rw = 0, rh = 0, rd = 0, rf = 0;
+    RwImageFindRasterFormat(img, 4 /* rwRASTERTYPETEXTURE */, &rw, &rh, &rd, &rf);
+    void* ras = (rw == TW && rh == TH) ? RwRasterCreate(rw, rh, rd, rf) : nullptr;
+    if(ras) ras = RwRasterSetFromImage(ras, img);
+    RwImageDestroy(img);
+    if(!ras) { logger->Error("Vice City: %s: no %dx%d texture (format %dx%d)", file, TW, TH, rw, rh); return false; }
+    void* tex = RwTextureCreate(ras);
+    if(!tex) return false;
+    // RwTexture::filterAddressing (after raster, dict, link, name[32], mask[32]): linear filter, clamped edges
+    *(uint32_t*)((uint8_t*)tex + 4 * sizeof(void*) + 64) = 0x3302;
+    im.spr.tex = tex; im.w = w; im.h = h;
+    logger->Info("Vice City: loaded %s (%dx%d)", path, w, h);
+    return true;
+}
+static void DrawImage(VcImage& im, const char* file, float cx, float cy, float maxW, float maxH, float alpha)
+{
+    if(alpha <= 0.0f || !LoadImage(im, file)) return;
+    const float k = fminf(maxW / im.w, maxH / im.h), w = im.w * k, h = im.h * k;
+    if(RwRenderStateSet)
+    {
+        RwRenderStateSet(12 /* VERTEXALPHAENABLE */, (void*)(intptr_t)1);
+        RwRenderStateSet(10 /* SRCBLEND */, (void*)(intptr_t)5 /* SRCALPHA */);
+        RwRenderStateSet(11 /* DESTBLEND */, (void*)(intptr_t)6 /* INVSRCALPHA */);
+    }
+    CRect rc = { cx - w * 0.5f, cy + h * 0.5f, cx + w * 0.5f, cy - h * 0.5f };
+    CRGBA c = { 255, 255, 255, (uint8_t)(255.0f * (alpha > 1.0f ? 1.0f : alpha)) };
+    SpriteDraw(&im.spr, rc, c);
+    if(RwRenderStateSet) RwRenderStateSet(1 /* TEXTURERASTER */, nullptr);
+}
+static void DrawTitles(float sw, float sh, bool online, uint64_t now)
+{
+    if(!s_nFirstFrame) s_nFirstFrame = now;
+    if(s_nLogoAt)
+    {   // like San Andreas: 7 s, the last second fades out
+        const uint64_t t = now - s_nLogoAt;
+        if(t >= 7000) s_nLogoAt = 0;
+        else DrawImage(s_ImgConnected, "title_logo_connected2.png", sw * 0.5f, sh * 0.5f, sw * 0.60f, sh * 0.40f, t > 6000 ? (7000 - t) / 1000.0f : 1.0f);
+        return;
+    }
+    // joining (or the first 6 s in the game): title2.png at the top
+    const bool joining = !online && cfg.host[0] && !s_bManualOff;
+    if(joining || now - s_nFirstFrame < 6000)
+        DrawImage(s_ImgTitle, "title2.png", sw * 0.5f, sh * 0.13f, sw * 0.36f, sh * 0.20f, 1.0f);
+}
+
 static void Draw()
 {
     if(!FontPrint || !ScreenH || !FindPlayerPed || !FindPlayerPed()) return;
     const float sh = (float)ScreenH(), sw = ScreenW ? (float)ScreenW() : sh * 16.f / 9.f;
     const float sc = cfg.textScale * sh / 720.0f;
     const bool online = Online();
+    DrawTitles(sw, sh, online, MP_NowMs());
     if(FontSetBgOff) FontSetBgOff();
     if(FontSetDropColor) FontSetDropColor(CRGBA{ 0, 0, 0, 255 });
     if(online) DrawTextDraws(sw, sh);
@@ -1544,6 +1643,15 @@ bool Start()
     Sym(ChangeBlipScale, "_ZN6CRadar15ChangeBlipScaleEii", missing);
     Sym(ClearBlip, "_ZN6CRadar9ClearBlipEi", missing);
     Sym(DrawRect, "_ZN9CSprite2d8DrawRectERK5CRectRK5CRGBA", missing);
+    Sym(SpriteDraw, "_ZN9CSprite2d4DrawERK5CRectRK5CRGBA", missing);
+    Sym(RwImageCreate, "_Z13RwImageCreateiii", missing);
+    Sym(RwImageAllocatePixels, "_Z21RwImageAllocatePixelsP7RwImage", missing);
+    Sym(RwImageDestroy, "_Z14RwImageDestroyP7RwImage", missing);
+    Sym(RwImageFindRasterFormat, "_Z23RwImageFindRasterFormatP7RwImageiPiS1_S1_S1_", missing);
+    Sym(RwRasterCreate, "_Z14RwRasterCreateiiii", missing);
+    Sym(RwRasterSetFromImage, "_Z20RwRasterSetFromImageP8RwRasterP7RwImage", missing);
+    Sym(RwTextureCreate, "_Z15RwTextureCreateP8RwRaster", missing);
+    Sym(RwRenderStateSet, "_Z16RwRenderStateSet13RwRenderStatePv", missing);
     Sym(AddLight, "_ZN12CPointLights8AddLightEh7CVectorS0_ffffhb", missing);
     Sym(GetWeaponInfo, "_ZN11CWeaponInfo13GetWeaponInfoE11eWeaponType", missing);
     Sym(AddTrace, "_ZN13CBulletTraces8AddTraceEP7CVectorS1_iP7CEntity", missing);
