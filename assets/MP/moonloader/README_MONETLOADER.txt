@@ -56,4 +56,14 @@ TV Player (MP 4.13.34, MonetLoader 3.8.2-mp)
   first frame is always shown. New videoGetStats(id) -> frames, uploads (frames decoded, textures made).
   tvplayer.lua 1.4-mp shows a hint on screen (and in moonloader.log) when no frame was decoded after 4 s.
   Diagnostics: adb logcat -s MonetVideo
+  tvplayer.lua 1.5-mp (MP 4.13.44): plays IMAGE SEQUENCES - a folder in videos/ with 00001.jpg, 00002.jpg...
+  (30 fps, 256x256) + audio.mp3 + info.ini. Every frame is loaded like a normal picture, so no phone video
+  decoder is needed (that is what stayed black). The bundled tvplayer.mp4 is now videos/tvplayer/ (3008 frames).
+  Make your own: tools/tv_frames.sh in the MP source, or see videos/README.txt (ffmpeg, also in Termux).
+  Copy the WHOLE moonloader folder with its subfolders. A small preview shows in the top right while the info
+  line is on: if it moves but the TV stays black, set Render3D=0 in tvplayer/config/tvplayer.ini.
+  Hitmarker (MP 4.13.44): hitmarker.lua + resources/hitmarker/ - "Dynamic Hitmarker" by fausto200
+  (https://ko-fi.com/fausto200), ported from PC MoonLoader. White cross on a hit, gold + skull on a
+  headshot, red on a kill, blue + broken shield when armour breaks, damage numbers, xN combo and sounds.
+  The PC package's MoonLoader.asi, bass.dll, lua51.dll and lib/*.dll are Windows files: not needed here.
   samp.events (lib/samp/) is included: copy the whole lib folder WITH its subfolders.

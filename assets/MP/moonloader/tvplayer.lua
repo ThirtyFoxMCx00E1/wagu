@@ -1,22 +1,26 @@
--- TV Player for MonetLoader for MP (3.8.5-mp or newer = MP 4.13.42+: the picture is a real 3D mesh on the TV): watch videos on the TVs in GTA SA.
+-- TV Player for MonetLoader for MP (MP 4.13.42+: the picture is a real 3D mesh on the TV): watch videos on the TVs in GTA SA.
 -- Works in single player and on MP servers (only you see your TV).
 --
 -- Files (Android/data/com.rockstargames.gtasa/files/TYFMC/MP/moonloader/):
 --   tvplayer.lua                    this script
 --   tvplayer/screens.lua            the TV screen shapes (model id -> mesh), from the tvplayer mod
 --   tvplayer/config/tvplayer.ini    settings ([Player]); the PC [Keys] are not used on the phone
---   tvplayer/videos/*.mp4           your videos (mp4 / 3gp / webm / mkv - what the phone can decode)
+--   tvplayer/videos/<name>/         1.5: a video as an IMAGE SEQUENCE: 00001.jpg, 00002.jpg ... (30 fps) + audio.mp3
+--                                   (+ optional info.ini with Fps=30). Made with ffmpeg, see tvplayer/videos/README.txt.
+--                                   Every frame is a plain JPG loaded like MP's other images, so no video decoder is needed.
+--   tvplayer/videos/*.mp4           also still played with the phone's video decoder (black on some phones: use frames)
 --
 -- How to use: walk up to a TV (a TV object, or a TV that is part of the map like the one in CJ's house). A [TV] button shows on the right.
 -- Tap it to start the first video. Buttons while it plays: previous, -10 s, pause, +10 s, next, volume -, volume +, stop.
 -- The sound gets quieter as you walk away and stops after StopDistance metres.
 script_name('TV Player')
 script_author('ThirtyFoxMCx00E1 (MP port), tvplayer mod')
-script_version('1.4-mp')
+script_version('1.5-mp')
 
 local DIR = getWorkingDirectory() .. '/tvplayer'
 local cfg = { Volume = 80, PromptDistance = 2.5, StopDistance = 20, FullVolumeDistance = 4, SeekSeconds = 10,
-  VolumeStep = 10, Loop = 0, AutoNext = 1, Stretch = 0, Brightness = 100, DepthTest = 1, DepthOffset = 0.01, OsdSeconds = 4, Debug = 0 }
+  VolumeStep = 10, Loop = 0, AutoNext = 1, Stretch = 0, Brightness = 100, DepthTest = 1, DepthOffset = 0.01, OsdSeconds = 4, Debug = 0,
+  Fps = 30, Render3D = 1, Preview = 1 }
 
 local function loadIni(path)
   local f = io.open(path, 'r')
@@ -43,7 +47,125 @@ local near = { obj = nil, mdl = 0, dist = 999 }
 local buttons = {}      -- the buttons on screen now (onTouch tests these)
 local nextButtons = {}  -- the ones being drawn this frame
 
-local function now() return os.clock() end
+-- 1.5: a real clock (os.clock is CPU time on Android, it runs too fast or too slow for a video)
+local now
+do
+  local okf, ffi = pcall(require, 'ffi')
+  if okf and ffi and pcall(ffi.cdef, 'typedef struct { long tv_sec; long tv_nsec; } tvp_timespec; int clock_gettime(int clk, tvp_timespec* ts);') then
+    local ts = ffi.new('tvp_timespec[1]')
+    local okc = pcall(function() return ffi.C.clock_gettime(1, ts) end)
+    if okc then now = function() ffi.C.clock_gettime(1, ts) return tonumber(ts[0].tv_sec) + tonumber(ts[0].tv_nsec) / 1e9 end end
+  end
+  if not now then now = function() if getGameTimer then return getGameTimer() / 1000 end return os.clock() end end
+end
+
+local function exists(path) local f = io.open(path, 'rb') if f then f:close() return true end return false end
+
+-- 1.5: image sequence player. A folder of JPG frames (00001.jpg ...) and audio.mp3, played at Fps frames a second
+-- on a real clock that starts with the sound. Each frame is loaded with renderLoadTextureFromFile (the same loader
+-- MP's hitmarker and buttons use) and the textures of older frames are freed a few frames later.
+local function seqOpen(dir)
+  if not exists(dir .. '/00001.jpg') then return nil end
+  local p = { kind = 'seq', dir = dir, fps = cfg.Fps or 30, count = 0, pos = 0, playing = false, t0 = 0,
+    vol = 1, loop = false, idx = 0, tex = nil, old = {}, frames = 0, uploads = 0 }
+  local f = io.open(dir .. '/info.ini', 'r')
+  if f then
+    for l in f:lines() do
+      local k, v = l:match('^%s*([%w_]+)%s*=%s*([%d%.]+)')
+      if k and k:lower() == 'fps' and tonumber(v) and tonumber(v) > 0 then p.fps = tonumber(v) end
+      if k and k:lower() == 'frames' and tonumber(v) then p.count = math.floor(tonumber(v)) end
+    end
+    f:close()
+  end
+  if p.count <= 0 or not exists(string.format('%s/%05d.jpg', dir, p.count)) then
+    -- count the frames: double, then binary search the last one
+    local hi = 1
+    while exists(string.format('%s/%05d.jpg', dir, hi * 2)) do hi = hi * 2 end
+    local lo, top = hi, hi * 2
+    while top - lo > 1 do local mid = math.floor((lo + top) / 2) if exists(string.format('%s/%05d.jpg', dir, mid)) then lo = mid else top = mid end end
+    p.count = lo
+  end
+  for _, a in ipairs({ 'audio.mp3', 'audio.ogg', 'audio.wav', 'audio.m4a' }) do
+    if exists(dir .. '/' .. a) and loadAudioStream then
+      local ok, h = pcall(loadAudioStream, dir .. '/' .. a)
+      if ok and h then p.audio = h break end
+    end
+  end
+  return p
+end
+local function seqPos(p) if p.playing then return p.pos + (now() - p.t0) end return p.pos end
+local function seqDur(p) return p.count / p.fps end
+local function seqAudio(p, what)
+  if not p.audio then return end
+  pcall(function()
+    if what == 'play' then setAudioStreamPosition(p.audio, seqPos(p)) setAudioStreamState(p.audio, 3)   -- 3 = resume here (1 restarts at 0)
+    elseif what == 'pause' then setAudioStreamState(p.audio, 2)
+    elseif what == 'stop' then setAudioStreamState(p.audio, 0) end
+  end)
+end
+local function seqFree(p, keep)
+  while #p.old > keep do
+    local t = table.remove(p.old, 1)
+    if t and renderReleaseTexture then pcall(renderReleaseTexture, t) end
+  end
+end
+local function seqTexture(p)
+  local t = seqPos(p)
+  if t >= seqDur(p) then
+    if p.loop then p.pos = 0 p.t0 = now() t = 0 seqAudio(p, 'play') else t = seqDur(p) - 0.001 end
+  end
+  local i = math.max(1, math.min(p.count, math.floor(t * p.fps) + 1))
+  if i ~= p.idx then
+    local ok, tex = pcall(renderLoadTextureFromFile, string.format('%s/%05d.jpg', p.dir, i))
+    p.frames = p.frames + 1
+    if ok and tex then
+      if p.tex then p.old[#p.old + 1] = p.tex end
+      p.tex = tex
+      p.uploads = p.uploads + 1
+    end
+    p.idx = i
+    seqFree(p, 3)
+  end
+  return p.tex
+end
+
+-- one interface for both players (image sequence / phone video decoder)
+local P = {}
+function P.open(path)
+  local p = seqOpen(path)
+  if p then return p end
+  if not videoOpen then return nil end
+  local id = videoOpen(path)
+  if not id or id == 0 then return nil end
+  return { kind = 'codec', id = id }
+end
+function P.play(p) if p.kind == 'seq' then if not p.playing then p.t0 = now() p.playing = true seqAudio(p, 'play') end else videoPlay(p.id) end end
+function P.pause(p) if p.kind == 'seq' then if p.playing then p.pos = seqPos(p) p.playing = false seqAudio(p, 'pause') end else videoPause(p.id) end end
+function P.pos(p) if p.kind == 'seq' then return math.min(seqPos(p), seqDur(p)) end return videoGetPosition(p.id) end
+function P.dur(p) if p.kind == 'seq' then return seqDur(p) end return videoGetDuration(p.id) end
+function P.seek(p, t)
+  if p.kind == 'seq' then
+    p.pos = math.max(0, math.min(t, seqDur(p) - 0.05)) p.t0 = now()
+    if p.playing then seqAudio(p, 'play') end
+  else videoSeek(p.id, t) end
+end
+function P.volume(p, v) if p.kind == 'seq' then if p.audio and math.abs((p.vol or -1) - v) > 0.004 then p.vol = v pcall(setAudioStreamVolume, p.audio, v) end else videoSetVolume(p.id, v) end end
+function P.loop(p, on) if p.kind == 'seq' then p.loop = on else videoSetLoop(p.id, on) end end
+function P.ended(p) if p.kind == 'seq' then return not p.loop and seqPos(p) >= seqDur(p) end return videoIsEnded(p.id) end
+function P.texture(p) if p.kind == 'seq' then return seqTexture(p) end return videoGetTexture(p.id) end
+function P.stats(p)
+  if p.kind == 'seq' then return p.frames, p.uploads end
+  if videoGetStats then return videoGetStats(p.id) end
+  return -1, -1
+end
+function P.close(p)
+  if p.kind == 'seq' then
+    seqAudio(p, 'stop')
+    if p.audio then pcall(releaseAudioStream, p.audio) p.audio = nil end
+    if p.tex then p.old[#p.old + 1] = p.tex p.tex = nil end
+    seqFree(p, 0)
+  else videoClose(p.id) end
+end
 
 -- 1.2: the buttons read the finger straight from MP (MP_GetPointer, MP 4.13.41+) every frame. The [TV] button was
 -- drawn but taps never reached onTouch on some phones (MonetLoader's touch queue / an older libmonetloader.so /
@@ -87,17 +209,20 @@ local function listVideos()
     local okd = pcall(function()
       for f in lfs.dir(DIR .. '/videos') do
         local e = f:lower():match('%.(%w+)$')
-        if e == 'mp4' or e == '3gp' or e == 'webm' or e == 'mkv' or e == 'm4v' or e == 'mov' then videos[#videos + 1] = f end
+        if f ~= '.' and f ~= '..' and exists(DIR .. '/videos/' .. f .. '/00001.jpg') then videos[#videos + 1] = f   -- 1.5: image sequence
+        elseif e == 'mp4' or e == '3gp' or e == 'webm' or e == 'mkv' or e == 'm4v' or e == 'mov' then videos[#videos + 1] = f end
       end
     end)
     if not okd then print('TV Player: no folder ' .. DIR .. '/videos') end
   end
   table.sort(videos)
-  if #videos == 0 and io.open(DIR .. '/videos/tvplayer.mp4', 'rb') then videos[1] = 'tvplayer.mp4' end
+  if #videos == 0 and exists(DIR .. '/videos/tvplayer/00001.jpg') then videos[1] = 'tvplayer' end
+  if #videos == 0 and exists(DIR .. '/videos/tvplayer.mp4') then videos[1] = 'tvplayer.mp4' end
 end
 
 local function stop()
-  if st.id ~= 0 then videoClose(st.id) end
+  if st.p then P.close(st.p) end
+  st.p = nil
   st.id = 0
   st.obj = nil
   st.ent = nil
@@ -108,13 +233,15 @@ local function start(index)
   if #videos == 0 then osd('No videos in moonloader/tvplayer/videos') return end
   if index < 1 then index = #videos end
   if index > #videos then index = 1 end
-  if st.id ~= 0 then videoClose(st.id) st.id = 0 end
+  if st.p then P.close(st.p) st.p = nil st.id = 0 end
   st.index = index
-  st.id = videoOpen(DIR .. '/videos/' .. videos[index])
-  if st.id == 0 then osd("Can't play " .. videos[index]) return end
-  videoSetLoop(st.id, cfg.Loop ~= 0)
-  videoSetVolume(st.id, cfg.Volume / 100)
-  videoPlay(st.id)
+  st.p = P.open(DIR .. '/videos/' .. videos[index])
+  if not st.p then osd("Can't play " .. videos[index]) return end
+  st.id = 1
+  print(string.format('TV Player: %s (%s)', videos[index], st.p.kind == 'seq' and string.format('image sequence, %d frames at %g fps, sound %s', st.p.count, st.p.fps, tostring(st.p.audio ~= nil)) or 'video decoder'))
+  P.loop(st.p, cfg.Loop ~= 0)
+  P.volume(st.p, cfg.Volume / 100)
+  P.play(st.p)
   st.paused = false
   st.startedAt = now(); st.diag = false
   osd(string.format('%d/%d  %s', index, #videos, videos[index]))
@@ -158,7 +285,7 @@ local function drawScreen(tex)
   local cnt = #v / 8
   local g = math.floor(math.min(255, math.max(0, 255 * cfg.Brightness / 100)))
   local color = 0xFF000000 + g * 0x10000 + g * 0x100 + g
-  if isRender3DAvailable and isRender3DAvailable() then
+  if cfg.Render3D ~= 0 and isRender3DAvailable and isRender3DAvailable() then
     off = math.max(off, 0.02)   -- 1.4: a little in front of the glass (curved CRT screens hid a 1 cm mesh)
     local out = {}
     for i = 0, cnt - 1 do
@@ -210,9 +337,9 @@ local function act(id)
     start(st.index)
   elseif id == 'stop' then stop() osd('TV off')
   elseif id == 'pause' then
-    if st.paused then videoPlay(st.id) st.paused = false osd('Play') else videoPause(st.id) st.paused = true osd('Pause') end
-  elseif id == 'back' then videoSeek(st.id, videoGetPosition(st.id) - cfg.SeekSeconds) osd('-' .. cfg.SeekSeconds .. ' s')
-  elseif id == 'fwd' then videoSeek(st.id, videoGetPosition(st.id) + cfg.SeekSeconds) osd('+' .. cfg.SeekSeconds .. ' s')
+    if st.paused then P.play(st.p) st.paused = false osd('Play') else P.pause(st.p) st.paused = true osd('Pause') end
+  elseif id == 'back' then P.seek(st.p, P.pos(st.p) - cfg.SeekSeconds) osd('-' .. cfg.SeekSeconds .. ' s')
+  elseif id == 'fwd' then P.seek(st.p, P.pos(st.p) + cfg.SeekSeconds) osd('+' .. cfg.SeekSeconds .. ' s')
   elseif id == 'prev' then start(st.index - 1)
   elseif id == 'next' then start(st.index + 1)
   elseif id == 'vdown' then cfg.Volume = math.max(0, cfg.Volume - cfg.VolumeStep) osd('Volume ' .. cfg.Volume)
@@ -322,8 +449,8 @@ function main()
     return
   end
   screens = t
-  if not videoOpen then
-    print('TV Player: needs MonetLoader for MP 3.8.2 or newer (video player)')
+  if not renderLoadTextureFromFile and not videoOpen then
+    print('TV Player: needs MonetLoader for MP (MP 4.13.34 or newer)')
     return
   end
   listVideos()
@@ -342,30 +469,41 @@ function main()
     local paused = isPauseMenuActive and isPauseMenuActive()
     if st.id ~= 0 then
       -- the game's pause menu pauses the TV too
-      if paused and not st.gamePaused and not st.paused then videoPause(st.id) st.gamePaused = true
-      elseif not paused and st.gamePaused then st.gamePaused = false if not st.paused then videoPlay(st.id) end end
+      if paused and not st.gamePaused and not st.paused then P.pause(st.p) st.gamePaused = true
+      elseif not paused and st.gamePaused then st.gamePaused = false if not st.paused then P.play(st.p) end end
       local d = tvDistance()
       if d > cfg.StopDistance then stop() osd('TV off (too far)')
       else
         local k = 1
         if d > cfg.FullVolumeDistance then k = math.max(0, 1 - (d - cfg.FullVolumeDistance) / math.max(0.1, cfg.StopDistance - cfg.FullVolumeDistance)) end
-        videoSetVolume(st.id, cfg.Volume / 100 * k)
-        if videoIsEnded(st.id) and cfg.Loop == 0 then
+        P.volume(st.p, cfg.Volume / 100 * k)
+        if st.p and P.ended(st.p) and cfg.Loop == 0 then
           if cfg.AutoNext ~= 0 and #videos > 1 then start(st.index + 1) else stop() osd('End') end
         end
       end
     end
     if not paused then
-      if st.id ~= 0 then
-        local tex = videoGetTexture(st.id)
-        if tex then drawScreen(tex) end
+      if st.id ~= 0 and st.p then
+        local tex = P.texture(st.p)
+        if tex then
+          drawScreen(tex)
+          -- 1.5: a small 2D preview of the frame (top right) while the info line shows: if the preview moves but
+          -- the TV stays black, the 3D drawing is the problem - set Render3D=0 in tvplayer.ini
+          if cfg.Preview ~= 0 and now() < st.osdUntil then
+            local pw = sh * 0.24
+            renderDrawBox(sw - pw * 4 / 3 - sh * 0.03 - 3, sh * 0.03 - 3, pw * 4 / 3 + 6, pw + 6, 0xC0000000)
+            renderDrawTexture(tex, sw - pw * 4 / 3 - sh * 0.03, sh * 0.03, pw * 4 / 3, pw, 0, 0xFFFFFFFF)
+          end
+        end
         -- 1.4: say why the TV stays black (no frames from the phone's decoder / frames but no texture)
-        if not st.diag and videoGetStats and st.startedAt and not st.paused and now() - st.startedAt > 4 then
+        if not st.diag and st.startedAt and not st.paused and now() - st.startedAt > 4 then
           st.diag = true
-          local fr, up = videoGetStats(st.id)
+          local fr, up = P.stats(st.p)
           print(string.format('TV Player: %s - %d frames decoded, %d textures, 3D %s', videos[st.index] or '?', fr, up,
             tostring(isRender3DAvailable and isRender3DAvailable())))
-          if fr == 0 then osd("No picture: the phone can't decode this video - use H.264 mp4 (720p or less)")
+          if st.p.kind == 'seq' then
+            if up == 0 then osd("No picture: can't load " .. string.format('%s/%05d.jpg', videos[st.index], math.max(1, st.p.idx))) end
+          elseif fr == 0 then osd("No picture: the phone can't decode this video - use an image sequence (videos/README.txt)")
           elseif up == 0 then osd('No picture: frames decoded but no texture (send moonloader.log)') end
         end
         if tvDistance() <= cfg.PromptDistance * 2 then
@@ -380,7 +518,7 @@ function main()
       end
       if now() < st.osdUntil then
         local line = st.msg
-        if st.id ~= 0 then line = line .. '   ' .. fmtTime(videoGetPosition(st.id)) .. ' / ' .. fmtTime(videoGetDuration(st.id)) end
+        if st.p then line = line .. '   ' .. fmtTime(P.pos(st.p)) .. ' / ' .. fmtTime(P.dur(st.p)) end
         local tw = renderGetFontDrawTextLength(font, line)
         renderDrawBox((sw - tw) / 2 - 10, sh * 0.72 - 4, tw + 20, renderGetFontDrawHeight(font) + 8, 0xA0000000)
         renderFontDrawText(font, line, (sw - tw) / 2, sh * 0.72, 0xFFFFFFFF)
