@@ -1,95 +1,95 @@
 {
- "tag_name": "v4.13.40",
- "name": "MP Multiplayer 4.13.40",
- "published_at": "2026-11-14",
- "also_supported": "v4.13.38, v4.13.37, v4.13.36, v4.13.35, v4.13.34, v4.13.21, v4.13.20, v4.13.19, v4.13.18, v4.13.17, v4.13.16, v4.13.15, v4.13.14, v4.13.13, v4.13.12, v4.13.11, v4.13.10, v4.13.9, v4.13.8, v4.13.7, v4.13.6, v4.13.5, v4.13.4, v4.13.3, v4.13.2, v4.13.1, v4.13, v4.12.10, v4.12.9, v4.12.8, v4.12.7, v4.12.6, v4.12.5, v4.12.4, v4.12.3, v4.12, v4.11.1, v4.11, v4.10, v4.09, v4.08, v4.07.2, v4.07.1, v4.07, v4.06, v4.05.9, v4.05.8, v4.05.7, v4.05.6, v4.05.5, v4.05.4, v4.05.3, v4.05.2, v4.05.1, v4.05, v4.04.2, v4.04.1, v4.04, v4.03, v4.02, v4.01, v4.00.2, v4.00.1, v4.00, v3.63, v3.62, v3.61, v3.60.1, v3.60, v3.59, v3.58, v3.57, v3.56, v3.55.2, v3.55.1, v3.55, v3.54, v3.53.2, v3.53.1, v3.53, v3.52, v3.51.1, v3.51, v3.50.1, v3.50, v3.40.2, v3.40.1, v3.40, v3.39.3, v3.39.2, v3.39.1, v3.39, v3.38, v3.37, v3.36.1, v3.36, v3.35.2, v3.35.1, v3.35, v3.34, v3.32, v3.31, v3.30, v3.29, v3.28.2, v3.28.1, v3.28, v3.27, v3.26, v3.25, v3.24, v3.23.6, v3.23.5, v3.23.4, v3.23.3, v3.23.2, v3.23.1, v3.23, v3.22.1, v3.22, v3.21.9, v3.21.8, v3.21.7, v3.21.6, v3.21.5, v3.21.4, v3.21.3, v3.21.2, v3.21.1, v3.21, v3.11.6, v3.11.5, v3.11.4, v3.11.3, v3.11.2, v3.11.1, v3.11, v3.10, v3.04.6",
- "assets": [
-  {
-   "name": "bin/libMP32.so",
-   "size": 18995948,
-   "download_count": 0
-  },
-  {
-   "name": "bin/libMP64.so",
-   "size": 23161912,
-   "download_count": 0
-  },
-  {
-   "name": "release/MP-4.13.40-full.zip",
-   "size": 84465540,
-   "download_count": 0
-  },
-  {
-   "name": "release/MP-4.13.40-client.zip",
-   "size": 83339153,
-   "download_count": 0
-  },
-  {
-   "name": "release/MP-Textdraw-Editor.apk",
-   "size": 567368,
-   "download_count": 0
-  },
-  {
-   "name": "release/MP-Voice.apk",
-   "size": 246694,
-   "download_count": 0
-  },
-  {
-   "name": "release/Moquil.apk",
-   "size": 1302840,
-   "download_count": 0
-  }
- ],
- "packages": [
-  {
-   "tag": "Assets-1-2-3",
-   "name": "HiveMQ + OpenJDK Java 21 + Android NDK r30 linux + more",
-   "assets": [
+  "tag_name": "v4.13.41",
+  "name": "MP Multiplayer 4.13.41",
+  "published_at": "2026-11-14",
+  "also_supported": "v4.13.40, v4.13.38, v4.13.37, v4.13.36, v4.13.35, v4.13.34, v4.13.21, v4.13.20, v4.13.19, v4.13.18, v4.13.17, v4.13.16, v4.13.15, v4.13.14, v4.13.13, v4.13.12, v4.13.11, v4.13.10, v4.13.9, v4.13.8, v4.13.7, v4.13.6, v4.13.5, v4.13.4, v4.13.3, v4.13.2, v4.13.1, v4.13, v4.12.10, v4.12.9, v4.12.8, v4.12.7, v4.12.6, v4.12.5, v4.12.4, v4.12.3, v4.12, v4.11.1, v4.11, v4.10, v4.09, v4.08, v4.07.2, v4.07.1, v4.07, v4.06, v4.05.9, v4.05.8, v4.05.7, v4.05.6, v4.05.5, v4.05.4, v4.05.3, v4.05.2, v4.05.1, v4.05, v4.04.2, v4.04.1, v4.04, v4.03, v4.02, v4.01, v4.00.2, v4.00.1, v4.00, v3.63, v3.62, v3.61, v3.60.1, v3.60, v3.59, v3.58, v3.57, v3.56, v3.55.2, v3.55.1, v3.55, v3.54, v3.53.2, v3.53.1, v3.53, v3.52, v3.51.1, v3.51, v3.50.1, v3.50, v3.40.2, v3.40.1, v3.40, v3.39.3, v3.39.2, v3.39.1, v3.39, v3.38, v3.37, v3.36.1, v3.36, v3.35.2, v3.35.1, v3.35, v3.34, v3.32, v3.31, v3.30, v3.29, v3.28.2, v3.28.1, v3.28, v3.27, v3.26, v3.25, v3.24, v3.23.6, v3.23.5, v3.23.4, v3.23.3, v3.23.2, v3.23.1, v3.23, v3.22.1, v3.22, v3.21.9, v3.21.8, v3.21.7, v3.21.6, v3.21.5, v3.21.4, v3.21.3, v3.21.2, v3.21.1, v3.21, v3.11.6, v3.11.5, v3.11.4, v3.11.3, v3.11.2, v3.11.1, v3.11, v3.10, v3.04.6",
+  "assets": [
     {
-     "name": "android-ndk-r30-linux.zip",
-     "size": 738633529,
-     "download_count": 0
+      "name": "bin/libMP32.so",
+      "size": 18996172,
+      "download_count": 0
     },
     {
-     "name": "hivemq-4.56.0.zip",
-     "size": 761147467,
-     "download_count": 0
+      "name": "bin/libMP64.so",
+      "size": 23162232,
+      "download_count": 0
     },
     {
-     "name": "OpenJDK21U-jdk_x64_linux_hotspot_21.0.13_9.tar.gz",
-     "size": 207858352,
-     "download_count": 0
+      "name": "release/MP-4.13.41-full.zip",
+      "size": 84464501,
+      "download_count": 0
     },
     {
-     "name": "open.mp-win-x86.zip",
-     "size": 35597296,
-     "download_count": 0
+      "name": "release/MP-4.13.41-client.zip",
+      "size": 83338114,
+      "download_count": 0
     },
     {
-     "name": "MapAndreas-linux-x86.zip",
-     "size": 33600770,
-     "download_count": 0
+      "name": "release/MP-Textdraw-Editor.apk",
+      "size": 567368,
+      "download_count": 0
     },
     {
-     "name": "YSI-Includes.zip",
-     "size": 3502627,
-     "download_count": 0
+      "name": "release/MP-Voice.apk",
+      "size": 246694,
+      "download_count": 0
+    },
+    {
+      "name": "release/Moquil.apk",
+      "size": 1302840,
+      "download_count": 0
     }
-   ]
-  },
-  {
-   "tag": "Derbian",
-   "repo": "debian.org",
-   "url": "https://cdimage.debian.org/cdimage/archive/12.15.0/amd64/iso-cd/",
-   "assets": [
+  ],
+  "packages": [
     {
-     "name": "debian-12.15.0-amd64-netinst.iso",
-     "size": 709885952,
-     "download_count": 0,
-     "sha256": "cd4462c06aa8892e692c0c4b9c17802f38c8ab8690e85cbfb5ccaa5956e9af17",
-     "url": "https://cdimage.debian.org/cdimage/archive/12.15.0/amd64/iso-cd/debian-12.15.0-amd64-netinst.iso"
+      "tag": "Assets-1-2-3",
+      "name": "HiveMQ + OpenJDK Java 21 + Android NDK r30 linux + more",
+      "assets": [
+        {
+          "name": "android-ndk-r30-linux.zip",
+          "size": 738633529,
+          "download_count": 0
+        },
+        {
+          "name": "hivemq-4.56.0.zip",
+          "size": 761147467,
+          "download_count": 0
+        },
+        {
+          "name": "OpenJDK21U-jdk_x64_linux_hotspot_21.0.13_9.tar.gz",
+          "size": 207858352,
+          "download_count": 0
+        },
+        {
+          "name": "open.mp-win-x86.zip",
+          "size": 35597296,
+          "download_count": 0
+        },
+        {
+          "name": "MapAndreas-linux-x86.zip",
+          "size": 33600770,
+          "download_count": 0
+        },
+        {
+          "name": "YSI-Includes.zip",
+          "size": 3502627,
+          "download_count": 0
+        }
+      ]
+    },
+    {
+      "tag": "Derbian",
+      "repo": "debian.org",
+      "url": "https://cdimage.debian.org/cdimage/archive/12.15.0/amd64/iso-cd/",
+      "assets": [
+        {
+          "name": "debian-12.15.0-amd64-netinst.iso",
+          "size": 709885952,
+          "download_count": 0,
+          "sha256": "cd4462c06aa8892e692c0c4b9c17802f38c8ab8690e85cbfb5ccaa5956e9af17",
+          "url": "https://cdimage.debian.org/cdimage/archive/12.15.0/amd64/iso-cd/debian-12.15.0-amd64-netinst.iso"
+        }
+      ]
     }
-   ]
-  }
- ]
+  ]
 }
