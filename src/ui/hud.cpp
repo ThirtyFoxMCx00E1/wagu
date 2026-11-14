@@ -1402,6 +1402,32 @@ void HUD::Render()
     ImGui_ImplRenderWare_RenderDrawData(ImGui::GetDrawData());
 }
 
+// 4.13.24: the neon title menu, drawn from the game's menu pass (MobileMenu::Render). Only the menu, the floating
+// menu and the keyboard - 4.13.23 drew the whole HUD::Render there, and the in-game HUD parts (name tags, chat, radar,
+// world reads) ran before any game was loaded, which closed the game.
+bool HUD::RenderTitleMenu()
+{
+    if(!RsGlobal || RsGlobal->maximumWidth < 64 || RsGlobal->maximumHeight < 64) return false;
+    if(!s_bInit && !Init()) return false;
+    ImGuiContext* g = ImGui::GetCurrentContext();
+    if(!g || g->WithinFrameScope) return false;
+    ImGuiIO& io = ImGui::GetIO();
+    io.DisplaySize = ImVec2((float)RsGlobal->maximumWidth, (float)RsGlobal->maximumHeight);
+    FontsUpdate();
+    ImGui_ImplRenderWare_NewFrame();
+    if(io.DeltaTime <= 0.0f) io.DeltaTime = 1.0f / 30.0f;
+    ImGui::NewFrame();
+    MP::DrawMenuMpFront();
+    FloatMenu::Render();
+    VKeyboard::Render();
+    GlobalClickTick();
+    ImGui::EndFrame();
+    PublishHitRects();
+    ImGui::Render();
+    ImGui_ImplRenderWare_RenderDrawData(ImGui::GetDrawData());
+    return true;
+}
+
 // 3.34: pause-menu map layers. The game's map screen does not go through Render2dStuff, so this is
 // its own tiny ImGui frame (only draw lists, no windows - nothing here takes touches).
 bool HUD::RenderMenuMapLayer(int layer, const void* labelsV, int n)

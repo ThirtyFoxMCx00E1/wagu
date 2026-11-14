@@ -29,7 +29,7 @@
 #include "net/server.h"
 
 // 4.12.7: the config is files/TYFMC/TYFMC.MP.ini (the old configs/net.thirtyfox.mp.ini is moved there)
-TYFMC_MODCFG(net.thirtyfox.mp, MP Multiplayer, 4.13.23, ThirtyFoxMCx00E1, MP, net.thirtyfox.mp)
+TYFMC_MODCFG(net.thirtyfox.mp, MP Multiplayer, 4.13.24, ThirtyFoxMCx00E1, MP, net.thirtyfox.mp)
 NEEDGAME(com.rockstargames.gtasa)
 
 // Globals used by the embedded RenderWare ImGui backend
@@ -200,10 +200,9 @@ DECL_HOOKv(MobileMenu_Render, void* self)
         // the frame, so the game's menu can no longer paint over it (4.13.22 drew it in Render2dStuff, before)
         if(s_nMenuRenderSkips++ == 0) logger->Info("Neon menu: drawn in the game's menu pass, the stock title menu is hidden (ServerBrowserMode = neon)");
         if(!s_bRWReady) { InitRenderWareFunctions(); s_bRWReady = true; }
-        if(HUD::IsInitialised()) { PollTouches(); PadTick(); DrainIO(); }
-        HUD::Render();
-        s_nNeonMenuPassMs = MP_NowMs();
-        return;
+        if(HUD::IsInitialised()) { PollTouches(); DrainIO(); }
+        if(HUD::RenderTitleMenu()) { s_nNeonMenuPassMs = MP_NowMs(); return; }
+        // not drawn (the renderer is not ready yet): the game's own menu this frame
     }
     MobileMenu_Render(self);
 }
