@@ -35,7 +35,7 @@
 #include "net/server.h"
 
 // 4.12.7: the config is files/TYFMC/TYFMC.MP.ini (the old configs/net.thirtyfox.mp.ini is moved there)
-TYFMC_MODCFG(net.thirtyfox.mp, MP Multiplayer, 4.13.37, ThirtyFoxMCx00E1, MP, net.thirtyfox.mp)
+TYFMC_MODCFG(net.thirtyfox.mp, MP Multiplayer, 4.13.38, ThirtyFoxMCx00E1, MP, net.thirtyfox.mp)
 // 4.13.36: no NEEDGAME(com.rockstargames.gtasa) - AML would refuse libMP in GTA Vice City. OnModLoad starts the
 // San Andreas code only when libGTASA.so is there, and the Vice City layer (src/vc/) when libGTAVC.so is.
 
@@ -349,6 +349,51 @@ static bool DispatchTouch(int type, int finger, int x, int y)
     return false;
 }
 
+// ---- 4.13.38: touches for the Lua scripts (MonetLoader for MP 3.8.4+) ------------------------------
+// MonetLoader's own AND_TouchEvent hook gave scripts raw device pixels (the game often renders below the screen's
+// resolution) or nothing at all when the game calls the handler directly, so tvplayer.lua's [TV] button was drawn
+// but never reacted. MP has every touch here already mapped to the game's resolution (getScreenResolution's space,
+// the same one renderDraw* uses): touches MP's own UI did not take are queued and MonetLoader reads them with
+// MP_PollScriptTouch on the game thread and runs the scripts' onTouch with them.
+struct ScriptTouch { int type, finger, x, y; };
+static ScriptTouch s_ScriptTouch[64];
+static int s_nScriptTouchHead = 0, s_nScriptTouchCount = 0;
+static std::mutex s_ScriptTouchMx;
+static bool s_bScriptFingerMine[16] = { false };   // MP's UI took this finger's press: its moves / release are MP's too
+static void FeedScriptTouch(int type, int finger, int x, int y, bool usedByMp)
+{
+    if(finger < 0 || finger >= 16) return;
+    const bool isRelease = (type == TOUCH_RELEASE || type == TOUCH_POINTER_UP);
+    if(type == TOUCH_PUSH) s_bScriptFingerMine[finger] = usedByMp;
+    bool mine = s_bScriptFingerMine[finger];
+    if(isRelease) s_bScriptFingerMine[finger] = false;
+    if(mine) return;
+    std::lock_guard<std::mutex> lk(s_ScriptTouchMx);
+    if(s_nScriptTouchCount == 64) { s_nScriptTouchHead = (s_nScriptTouchHead + 1) % 64; --s_nScriptTouchCount; }   // drop the oldest
+    ScriptTouch& t = s_ScriptTouch[(s_nScriptTouchHead + s_nScriptTouchCount++) % 64];
+    t.type = isRelease ? 1 : type;   // MonetLoader's kinds: 1 = release, 2 = push, 3 = move
+    t.finger = finger; t.x = x; t.y = y;
+}
+// 1 = one touch was taken from the queue
+extern "C" __attribute__((visibility("default"))) int MP_PollScriptTouch(int* type, int* finger, int* x, int* y)
+{
+    std::lock_guard<std::mutex> lk(s_ScriptTouchMx);
+    if(s_nScriptTouchCount == 0) return 0;
+    const ScriptTouch& t = s_ScriptTouch[s_nScriptTouchHead];
+    s_nScriptTouchHead = (s_nScriptTouchHead + 1) % 64; --s_nScriptTouchCount;
+    if(type) *type = t.type;
+    if(finger) *finger = t.finger;
+    if(x) *x = t.x;
+    if(y) *y = t.y;
+    return 1;
+}
+static bool DispatchTouchFed(int type, int finger, int x, int y)
+{
+    bool used = DispatchTouch(type, finger, x, y);
+    FeedScriptTouch(type, finger, x, y, used);
+    return used;
+}
+
 DECL_HOOKv(AND_TouchEvent, int type, int finger, int x, int y)
 {
     ScreenGuard::OnUiThread();   // 4.12.5: FLAG_SECURE the normal way when this is Android's main thread
@@ -357,7 +402,7 @@ DECL_HOOKv(AND_TouchEvent, int type, int finger, int x, int y)
     int ox = x, oy = y;
     MapTouch(x, y);
     if(s_nTouchLogs < 8) { ++s_nTouchLogs; logger->Info("hook touch type=%d finger=%d raw=%d,%d mapped=%d,%d", type, finger, ox, oy, x, y); }
-    if(DispatchTouch(type, finger, x, y)) return;
+    if(DispatchTouchFed(type, finger, x, y)) return;
     AND_TouchEvent(type, finger, ox, oy);
 }
 
@@ -830,10 +875,10 @@ static void PollTouches()
             if(down && !s_Poll[f].down)
             {
                 if(!s_bPollLogged) { s_bPollLogged = true; logger->Info("Using polled touch input (finger %d at %d,%d)", f, x, y); }
-                DispatchTouch(TOUCH_PUSH, f, x, y);
+                DispatchTouchFed(TOUCH_PUSH, f, x, y);
             }
-            else if(down && (x != s_Poll[f].x || y != s_Poll[f].y)) DispatchTouch(TOUCH_MOVE, f, x, y);
-            else if(!down && s_Poll[f].down) DispatchTouch(TOUCH_RELEASE, f, x, y);
+            else if(down && (x != s_Poll[f].x || y != s_Poll[f].y)) DispatchTouchFed(TOUCH_MOVE, f, x, y);
+            else if(!down && s_Poll[f].down) DispatchTouchFed(TOUCH_RELEASE, f, x, y);
         }
         s_Poll[f].down = down; s_Poll[f].x = x; s_Poll[f].y = y;
     }

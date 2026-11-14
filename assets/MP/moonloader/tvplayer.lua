@@ -1,4 +1,4 @@
--- TV Player for MonetLoader for MP (3.8.3-mp or newer): watch videos on the TVs in GTA SA.
+-- TV Player for MonetLoader for MP (3.8.4-mp or newer): watch videos on the TVs in GTA SA.
 -- Works in single player and on MP servers (only you see your TV).
 --
 -- Files (Android/data/com.rockstargames.gtasa/files/TYFMC/MP/moonloader/):
@@ -12,7 +12,7 @@
 -- The sound gets quieter as you walk away and stops after StopDistance metres.
 script_name('TV Player')
 script_author('ThirtyFoxMCx00E1 (MP port), tvplayer mod')
-script_version('1.0-mp')
+script_version('1.1-mp')
 
 local DIR = getWorkingDirectory() .. '/tvplayer'
 local cfg = { Volume = 80, PromptDistance = 2.5, StopDistance = 20, FullVolumeDistance = 4, SeekSeconds = 10,
@@ -40,7 +40,8 @@ local font
 local sw, sh = 0, 0
 local st = { id = 0, obj = nil, mdl = 0, index = 1, osdUntil = 0, msg = '', paused = false, gamePaused = false }
 local near = { obj = nil, mdl = 0, dist = 999 }
-local buttons = {}
+local buttons = {}      -- the buttons on screen now (onTouch tests these)
+local nextButtons = {}  -- the ones being drawn this frame
 
 local function now() return os.clock() end
 local function osd(text)
@@ -149,7 +150,7 @@ local function button(id, x, y, w, h, label)
   renderDrawBoxWithBorder(x, y, w, h, 0xC0101010, math.max(2, sh * 0.003), 0xFFE0E0E0)
   local tw = renderGetFontDrawTextLength(font, label)
   renderFontDrawText(font, label, x + (w - tw) / 2, y + (h - renderGetFontDrawHeight(font)) / 2, 0xFFFFFFFF)
-  buttons[#buttons + 1] = { id = id, x = x, y = y, w = w, h = h }
+  nextButtons[#nextButtons + 1] = { id = id, x = x, y = y, w = w, h = h }
 end
 
 local function act(id)
@@ -168,11 +169,15 @@ local function act(id)
   end
 end
 
+-- 1.1: MonetLoader for MP 3.8.4 gets the touches from MP, in the same pixels as getScreenResolution / renderDraw*.
+-- Before, the touches came raw from the screen (device pixels, the game often renders smaller) or not at all, so
+-- the [TV] button was drawn but a tap on it did nothing. A finger slightly next to a button still counts.
 function onTouch(kind, num, x, y)
   if kind ~= 2 then return end -- 2 = finger down
+  local pad = sh * 0.025
   for _, b in ipairs(buttons) do
-    if x >= b.x and x <= b.x + b.w and y >= b.y and y <= b.y + b.h then
-      st.pending = b.id   -- done in main() (touches come from another thread)
+    if x >= b.x - pad and x <= b.x + b.w + pad and y >= b.y - pad and y <= b.y + b.h + pad then
+      st.pending = b.id   -- run in main()
       return false
     end
   end
@@ -263,7 +268,7 @@ function main()
     wait(0)
     sw, sh = getScreenResolution()
     if st.pending then local a = st.pending st.pending = nil act(a) end
-    buttons = {}
+    nextButtons = {}
     if now() - lastScan > 0.5 then scan() lastScan = now() end
     local paused = isPauseMenuActive and isPauseMenuActive()
     if st.id ~= 0 then
@@ -293,7 +298,7 @@ function main()
           for i, b in ipairs(ids) do button(b[1], x0 + (i - 1) * (bw + gap), y0, bw, bh, b[2]) end
         end
       elseif (near.obj or near.ent) and near.dist <= cfg.PromptDistance then
-        button('tv', sw * 0.86, sh * 0.42, sh * 0.13, sh * 0.09, 'TV')
+        button('tv', sw * 0.84, sh * 0.40, sh * 0.17, sh * 0.11, 'TV')
       end
       if now() < st.osdUntil then
         local line = st.msg
@@ -303,6 +308,7 @@ function main()
         renderFontDrawText(font, line, (sw - tw) / 2, sh * 0.72, 0xFFFFFFFF)
       end
     end
+    buttons = nextButtons
   end
 end
 
