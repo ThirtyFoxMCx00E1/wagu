@@ -35,7 +35,7 @@
 #include "net/server.h"
 
 // 4.12.7: the config is files/TYFMC/TYFMC.MP.ini (the old configs/net.thirtyfox.mp.ini is moved there)
-TYFMC_MODCFG(net.thirtyfox.mp, MP Multiplayer, 4.13.32, ThirtyFoxMCx00E1, MP, net.thirtyfox.mp)
+TYFMC_MODCFG(net.thirtyfox.mp, MP Multiplayer, 4.13.33, ThirtyFoxMCx00E1, MP, net.thirtyfox.mp)
 NEEDGAME(com.rockstargames.gtasa)
 
 // Globals used by the embedded RenderWare ImGui backend
@@ -1020,10 +1020,18 @@ static void InstallMenuHooks(bool titleMenu)
         {
             const bool ok = aml->HookPLT((void*)slot, (void*)&HookOf_MobileMenu_Render, (void**)&MobileMenu_Render);
             logger->Info("Neon menu: MobileMenu::Render slot hook %s (%s)", ok ? "on" : "FAILED", cur == sym ? "untouched" : "after another mod, chained");
+            MP::SetTitleHookInstalled(ok);
             return;
         }
     }
-    logger->Info("Neon menu: this libGTASA.so is not the known build (MobileMenu::Render %p) - no title menu hook, ServerBrowserMode = neon works on the black screen only", (void*)sym);
+    if(sym && !pcmenu)
+    {   // 4.13.33: another libGTASA.so build: a normal (inline) hook on MobileMenu::Render, so neon / mp still show
+        HOOK(MobileMenu_Render, (void*)sym);
+        MP::SetTitleHookInstalled(true);
+        logger->Info("Neon menu: this libGTASA.so is not the known build - MobileMenu::Render inline hook on (%p)", (void*)sym);
+        return;
+    }
+    logger->Info("Neon menu: this libGTASA.so is not the known build (MobileMenu::Render %p%s) - no title menu hook, ServerBrowserMode = neon works on the black screen only", (void*)sym, pcmenu ? ", PCMenu installed" : "");
 }
 
 ON_ALL_MODS_LOAD()

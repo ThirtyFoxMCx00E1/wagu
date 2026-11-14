@@ -128,11 +128,13 @@ bool NeonPaint::Failed() { return s_bFailed; }
 float NeonPaint::W() { return s_pRsGlobal ? (float)*(int*)((char*)s_pRsGlobal + sizeof(void*)) : 1280.0f; }
 float NeonPaint::H() { return s_pRsGlobal ? (float)*(int*)((char*)s_pRsGlobal + sizeof(void*) + 4) : 720.0f; }
 
+namespace NeonEmbed { int Ensure(const std::string& dir); }   // 4.13.33 (src/ui/neon_embed.cpp)
 bool NeonPaint::Load(const char* mpDir)
 {
     if(s_bLoaded) return true;
     if(s_bFailed || !s_bInit) return false;
     std::string dir = std::string(mpDir) + "/neon/";
+    NeonEmbed::Ensure(dir);   // 4.13.33: missing / old files come from the copy built into MP
     static const char* const kTex[] = { "art.png", "logo.png", "shade_left.png", "shade_bottom.png", "shade_top.png", "card_identity.png",
         "card_featured.png", "dialog.png", "button.png", "pill.png", "discord.png", "arrow.png", "arrow_down.png", "dot.png", "white.png" };
     bool ok = true;

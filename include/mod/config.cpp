@@ -23,6 +23,7 @@ inline bool str_equal(const char* str1, const char* str2)
 
 extern ModInfo* modinfo;
 ConfigEntry* Config::pLastEntry = NULL;
+void (*Config::s_fnBeforeSave)(Config*) = NULL;
 
 Config::Config(const char* szName)
 {
@@ -55,7 +56,9 @@ void Config::Init()
 void Config::Save()
 {
     if(!m_bInitialized || !m_bValueChanged) return;
-    
+    static bool s_bIn = false;
+    if(s_fnBeforeSave && !s_bIn) { s_bIn = true; s_fnBeforeSave(this); s_bIn = false; }
+
     m_bValueChanged = false;
     m_pICFG->GenerateToOutputStream(m_iniMyConfig, m_szName);
 }

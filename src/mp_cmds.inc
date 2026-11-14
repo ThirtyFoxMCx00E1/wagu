@@ -680,6 +680,80 @@ static void PageHelp(void* openPtr)
     ImGui::End();
 }
 
+// ---- 4.13.33: MonetLoader pill (top bar, moon icon) -> scripts, reload, the moonloader.log tail ------------
+namespace MonetEmbed { void* Handle(); }
+static bool s_bMonetPage = false;
+static void BubbleMonet(void*)
+{
+    if(FloatMenu::IsPageOpen(FloatMenu::PAGE_MONET)) FloatMenu::ClosePage(FloatMenu::PAGE_MONET);
+    else FloatMenu::OpenPage(FloatMenu::PAGE_MONET);
+    s_bMonetPage = FloatMenu::IsPageOpen(FloatMenu::PAGE_MONET);
+}
+static void PageMonet(void* openPtr)
+{
+    bool* open = (bool*)openPtr;
+    s_bMonetPage = *open;
+    const ImVec2 ds = ImGui::GetIO().DisplaySize;
+    ImGui::SetNextWindowPos(ImVec2(ds.x * 0.5f, ds.y * 0.5f), ImGuiCond_FirstUseEver, ImVec2(0.5f, 0.5f));
+    ImGui::SetNextWindowSize(ImVec2(ds.x * 0.55f, ds.y * 0.74f), ImGuiCond_FirstUseEver);
+    if(!ImGui::Begin("MonetLoader##MPMonet", open, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings)) { ImGui::End(); return; }
+    void* h = MonetEmbed::Handle();
+    typedef int (*ScriptsFn)(char*, int);
+    typedef void (*ReloadFn)();
+    typedef const char* (*VerFn)();
+    ScriptsFn fnScripts = h ? (ScriptsFn)dlsym(h, "MonetMP_Scripts") : nullptr;
+    ReloadFn  fnReload  = h ? (ReloadFn)dlsym(h, "MonetMP_ReloadAll") : nullptr;
+    VerFn     fnVer     = h ? (VerFn)dlsym(h, "MonetMP_Version") : nullptr;
+    if(!h) ImGui::TextColored(ImVec4(1, 0.5f, 0.4f, 1), "MonetLoader is not running ([MP] MonetLoader = 0 in TYFMC.MP.ini?)");
+    else ImGui::Text("MonetLoader for MP %s", fnVer ? fnVer() : "");
+    ImGui::TextWrapped("Scripts folder: files/TYFMC/MP/moonloader  (.lua / .luac)");
+    if(fnReload && FloatMenu::BigButton("Reload all scripts")) { fnReload(); SysMsg(COL_YELLOW, "MonetLoader: reloading every script"); }
+    ImGui::Separator();
+    static char s_list[8192]; static uint64_t s_listAt = 0;
+    const uint64_t now = MP_NowMs();
+    if(fnScripts && now - s_listAt > 1000) { s_list[0] = 0; fnScripts(s_list, sizeof(s_list)); s_listAt = now; }
+    if(!fnScripts) ImGui::TextDisabled("(this MonetLoader build has no script list)");
+    else if(!s_list[0]) ImGui::TextDisabled("No scripts loaded");
+    else
+    {
+        char* line = s_list;
+        while(line && *line)
+        {
+            char* nl = strchr(line, '\n'); if(nl) *nl = 0;
+            char f[5][256] = {}; int k = 0; const char* q = line;
+            while(k < 5) { const char* t = strchr(q, '\t'); size_t n = t ? (size_t)(t - q) : strlen(q); if(n > 255) n = 255; memcpy(f[k], q, n); f[k][n] = 0; ++k; if(!t) break; q = t + 1; }
+            const bool run = !strcmp(f[4], "running");
+            ImGui::TextColored(run ? ImVec4(0.45f, 0.9f, 0.5f, 1) : ImVec4(1, 0.45f, 0.4f, 1), "%s", run ? "RUN " : "DEAD");
+            ImGui::SameLine(); ImGui::Text("%s  %s", f[0][0] ? f[0] : f[1], f[2]);
+            if(f[3][0]) { ImGui::SameLine(); ImGui::TextDisabled("by %s", f[3]); }
+            if(nl) { *nl = '\n'; line = nl + 1; } else line = nullptr;
+        }
+    }
+    ImGui::Separator();
+    ImGui::TextUnformatted("moonloader.log (last lines)");
+    static std::string s_log; static uint64_t s_logAt = 0;
+    if(now - s_logAt > 1500)
+    {
+        s_logAt = now; s_log.clear();
+        char lp[600]; snprintf(lp, sizeof(lp), "%s/moonloader/moonloader.log", MP::DataDir());
+        if(FILE* f = fopen(lp, "rb"))
+        {
+            fseek(f, 0, SEEK_END); long sz = ftell(f); long from = sz > 6000 ? sz - 6000 : 0;
+            fseek(f, from, SEEK_SET); s_log.resize((size_t)(sz - from));
+            size_t got = fread(&s_log[0], 1, s_log.size(), f); s_log.resize(got); fclose(f);
+            if(from > 0) { size_t p = s_log.find('\n'); if(p != std::string::npos) s_log.erase(0, p + 1); }
+        }
+        else s_log = "(no log yet)";
+    }
+    ImGui::BeginChild("##monetlog", ImVec2(0, 0), true);
+    ImGui::PushTextWrapPos(0);
+    ImGui::TextUnformatted(s_log.c_str());
+    ImGui::PopTextWrapPos();
+    ImGui::EndChild();
+    ImGui::End();
+    s_bMonetPage = *open;
+}
+
 // ---- chat box (only while the Chat pill is on) ------------------------------------------------
 static bool s_bChatBox = false;
 bool  MP::IsChatBoxOpen() { return s_bChatBox; }

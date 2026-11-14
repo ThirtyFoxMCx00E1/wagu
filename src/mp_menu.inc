@@ -96,30 +96,81 @@ void MP::SetMenuApiReady() { s_bMenuMpReady = true; }
 extern "C" __attribute__((visibility("default"))) void* MP_GetMultiplayerApi() { return &s_MpApi; }
 
 bool MP::TitleMenuHookWanted() { return s_nNeonMode != NEON_MODE_DEFAULT; }   // 4.13.30
+// 4.13.33: ServerBrowserMode straight from files/TYFMC/TYFMC.MP.ini on the disk. AML keeps the ini in memory and
+// rewrites the whole file on every save, so a value typed in by hand while the game ran was put back to the old
+// one at the next save (the mode "stayed default"). The file is read before every save now and the hand-edited
+// value wins.
+static char s_szModeKnown[24] = "";
+static bool ReadIniKey(const char* section, const char* key, char* out, size_t n)
+{
+    const std::string path = TYFMC::IniPath("MP");
+    FILE* f = fopen(path.c_str(), "rb");
+    if(!f) return false;
+    char line[512]; bool inSec = false, found = false;
+    while(fgets(line, sizeof(line), f))
+    {
+        char* p = line; while(*p == ' ' || *p == '\t') ++p;
+        if(*p == '[') { char* e = strchr(p, ']'); inSec = e && (size_t)(e - p - 1) == strlen(section) && !strncasecmp(p + 1, section, strlen(section)); continue; }
+        if(!inSec || *p == ';' || *p == '#') continue;
+        char* eq = strchr(p, '='); if(!eq) continue;
+        char* ke = eq; while(ke > p && (ke[-1] == ' ' || ke[-1] == '\t')) --ke;
+        if((size_t)(ke - p) != strlen(key) || strncasecmp(p, key, ke - p)) continue;
+        char* v = eq + 1; while(*v == ' ' || *v == '\t' || *v == '"') ++v;
+        size_t l = strlen(v); while(l && (v[l - 1] == '\r' || v[l - 1] == '\n' || v[l - 1] == ' ' || v[l - 1] == '\t' || v[l - 1] == '"' || v[l - 1] == ';')) v[--l] = 0;
+        snprintf(out, n, "%s", v); found = true; break;
+    }
+    fclose(f);
+    return found;
+}
+static int ModeFromString(char* m)
+{
+    for(char* c = m; *c; ++c) *c = (char)tolower((unsigned char)*c);
+    if(!strcmp(m, "mp") || !strcmp(m, "launcher") || !strcmp(m, "1") || !strcmp(m, "multiplayer")) { MP_CopyStr(m, "mp", 24); return NEON_MODE_MP; }
+    if(!strcmp(m, "neon") || !strcmp(m, "2") || !strcmp(m, "new")) { MP_CopyStr(m, "neon", 24); return NEON_MODE_NEON; }
+    MP_CopyStr(m, "default", 24); return NEON_MODE_DEFAULT;
+}
+static bool s_bTitleHookOn = false;
+static void ApplyMode(int mode)
+{
+    s_nNeonMode = mode;
+    if(mode == NEON_MODE_DEFAULT) s_bMenuMpOn = false;
+    else s_bMenuMpOn = true;   // 4.13.33: mp / neon always show their menu (MainMenuMultiplayer = 0 hid the mp tile)
+}
+static void CfgBeforeSave(Config* c)
+{
+    if(c != ::cfg) return;
+    char m[24];
+    if(!ReadIniKey("MP", "ServerBrowserMode", m, sizeof(m))) return;
+    char low[24]; MP_CopyStr(low, m, sizeof(low));
+    const int mode = ModeFromString(low);
+    if(!strcmp(low, s_szModeKnown)) return;
+    logger->Info("Main menu: ServerBrowserMode changed in TYFMC.MP.ini by hand: %s -> %s%s", s_szModeKnown, low,
+        (mode != NEON_MODE_DEFAULT && !s_bTitleHookOn) ? " (restart the game to see it)" : "");
+    MP_CopyStr(s_szModeKnown, low, sizeof(s_szModeKnown));
+    ConfigEntry* e = ::cfg->Bind("ServerBrowserMode", low, "MP"); e->SetString(low); delete e;
+    if(mode == NEON_MODE_DEFAULT || s_bTitleHookOn) ApplyMode(mode);
+}
+void MP::SetTitleHookInstalled(bool on) { s_bTitleHookOn = on; }
+
 void MP::InitMainMenu()
 {
     s_bMenuMpOn = ::cfg->GetBool("MainMenuMultiplayer", true, "MP");
     {   // 4.13.22: ServerBrowserMode = neon (the neon title menu + server browser) / mp (the [Multiplayer] tile + the
         // launcher panel) / default (the game's own menu only)
-        // 4.13.30: default is "default" (the game's own title menu, MP does nothing on the title). neon / mp only when
-        // the player writes it into TYFMC.MP.ini by hand. Every ini from before 4.13.30 is set back to default once.
+        // 4.13.33: the value on the disk wins (see CfgBeforeSave); no more "set back to default" on start.
         char m[24] = "default";
         ::cfg->GetString(m, sizeof(m), "ServerBrowserMode", "default", "MP");
-        if(::cfg->GetInt("ServerBrowserModeReset", 0, "MP") < 41330)
-        {
-            if(strcmp(m, "default")) logger->Info("Main menu: ServerBrowserMode %s -> default (4.13.30 starts on default; write neon / mp in TYFMC.MP.ini to change it)", m);
-            MP_CopyStr(m, "default", sizeof(m));
-            ConfigEntry* r = ::cfg->Bind("ServerBrowserModeReset", 0, "MP"); r->SetInt(41330); delete r;
-        }
+        char disk[24];
+        const std::string ini = TYFMC::IniPath("MP");
+        if(ReadIniKey("MP", "ServerBrowserMode", disk, sizeof(disk))) { if(strcasecmp(disk, m)) logger->Info("Main menu: ServerBrowserMode %s in %s (AML had %s)", disk, ini.c_str(), m); MP_CopyStr(m, disk, sizeof(m)); }
+        else logger->Info("Main menu: no ServerBrowserMode in %s yet - written as %s", ini.c_str(), m);
+        if(::cfg->GetInt("ServerBrowserModeReset", 0, "MP") < 41330) { ConfigEntry* r = ::cfg->Bind("ServerBrowserModeReset", 0, "MP"); r->SetInt(41330); delete r; }
         if(!m[0]) MP_CopyStr(m, "default", sizeof(m));
-        for(char* c = m; *c; ++c) *c = (char)tolower((unsigned char)*c);
-        if(!strcmp(m, "mp") || !strcmp(m, "launcher") || !strcmp(m, "1")) s_nNeonMode = NEON_MODE_MP;
-        else if(!strcmp(m, "neon")) s_nNeonMode = NEON_MODE_NEON;
-        else { s_nNeonMode = NEON_MODE_DEFAULT; MP_CopyStr(m, "default", sizeof(m)); }   // 4.13.30: anything else = default
+        ApplyMode(ModeFromString(m));
+        MP_CopyStr(s_szModeKnown, m, sizeof(s_szModeKnown));
         { ConfigEntry* e = ::cfg->Bind("ServerBrowserMode", m, "MP"); e->SetString(m); delete e; ::cfg->Save(); }   // written to TYFMC.MP.ini
-        if(s_nNeonMode == NEON_MODE_DEFAULT) s_bMenuMpOn = false;
-        if(s_nNeonMode == NEON_MODE_NEON) s_bMenuMpOn = true;   // 4.13.23
-        logger->Info("Main menu: ServerBrowserMode = %s", m);
+        Config::s_fnBeforeSave = CfgBeforeSave;
+        logger->Info("Main menu: ServerBrowserMode = %s (neon = new main menu, mp = [Multiplayer] button on the game's menu, default = nothing) - %s", m, ini.c_str());
     }
     LookUpPCMenuLoading();
     if(!s_bMenuMpOn) { logger->Info("Main menu: Multiplayer tile off (MainMenuMultiplayer = 0 / ServerBrowserMode = default)"); return; }

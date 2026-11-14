@@ -14,10 +14,12 @@ namespace FloatMenu
     // fixed gap and a divider; dragging any of them moves the whole bar.
     void AddBarButton(const char* label, MPMenuSectionFn onTap, void* data = nullptr, const bool* active = nullptr);
     // 2.19 TopbarPlus: the ⋮ pill (dropdown: Help / Server / Player list) and its pages
-    enum { PAGE_SERVER = 0, PAGE_PLAYERS, PAGE_HELP, PAGE_COUNT };
+    enum { PAGE_SERVER = 0, PAGE_PLAYERS, PAGE_HELP, PAGE_MONET, PAGE_COUNT };   // 4.13.33: PAGE_MONET = MonetLoader pill
     void AddDotsButton();
     bool BarBottom(float* centreX, float* y);   // 3.11: just under the top bar (false = bar hidden)
-    void AddMicButton(MPMenuSectionFn onTap, int (*state)());   // 3.11: voice chat pill after [Chat]
+    void AddMicButton(MPMenuSectionFn onTap, int (*state)());
+    enum { ICON_MONET = 1 };
+    void AddIconButton(int icon, MPMenuSectionFn onTap, void* data = nullptr, const bool* active = nullptr);   // 4.13.33: icon-only pill   // 3.11: voice chat pill after [Chat]
     void SetPage(int page, MPMenuSectionFn fn, void* data = nullptr);   // fn gets bool* open, draws its own window
     void OpenPage(int page);
     void ClosePage(int page);

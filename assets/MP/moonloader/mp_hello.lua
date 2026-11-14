@@ -4,9 +4,15 @@ script_name('MP Hello')
 script_author('ThirtyFoxMCx00E1')
 script_version('1.0')
 
-local sampev = require 'samp.events'
+-- 4.13.33: samp.events is loaded inside main() after MP is there (at the very start the MP bridge may not be
+-- attached yet; samp.events then stopped the script with "SA-MP is not loaded")
+local sampev
 
 function main()
+  while not isSampLoaded() do wait(100) end
+  sampev = require 'samp.events'
+  sampev.onServerMessage = onServerMessage
+  sampev.onSendChat = onSendChat
   while not isSampAvailable() do wait(100) end
   sampRegisterChatCommand('hello', function(arg)
     local _, myid = sampGetPlayerIdByCharHandle(PLAYER_PED)
@@ -16,10 +22,10 @@ function main()
   wait(-1)
 end
 
-function sampev.onServerMessage(color, text)
+function onServerMessage(color, text)
   -- return false to hide a line, or return {color, newText} to edit it
 end
 
-function sampev.onSendChat(text)
+function onSendChat(text)
   -- runs when you send chat from MP's chat box
 end

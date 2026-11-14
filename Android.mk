@@ -64,12 +64,13 @@ LOCAL_SRC_FILES := \
     src/game/scripting.cpp src/game/scriptguard.cpp src/game/cleoblock.cpp src/game/game.cpp src/game/netstate.cpp src/game/npcgame.cpp src/game/game219.cpp src/game/game301.cpp src/game/game304.cpp src/game/game358.cpp src/game/skins.cpp src/game/fileguard.cpp src/game/world.cpp src/game/modscan.cpp src/game/dzmodels.cpp src/game/boneattach.cpp src/game/screenguard.cpp src/game/gamemenu.cpp src/game/lgball.cpp src/game/hudlayout.cpp \
     src/net/client.cpp src/net/server.cpp src/net/serverlist.cpp src/net/lan.cpp src/net/online.cpp src/net/authcrypto.cpp src/net/samp_import.cpp src/net/authclient.cpp src/net/social.cpp \
     src/ui/hud.cpp src/ui/nametext.cpp src/ui/floatmenu.cpp src/ui/vkeyboard.cpp src/ui/gifs.cpp src/ui/clipboard.cpp src/ui/filepick.cpp src/ui/emoji.cpp src/ui/i18n.cpp src/ui/neonpaint.cpp \
-    src/audio/sound.cpp src/audio/voice.cpp src/progress/progress.cpp src/mp_monet.cpp src/embed/monetloader_blob.S \
+    src/audio/sound.cpp src/audio/voice.cpp src/progress/progress.cpp src/mp_monet.cpp src/embed/monetloader_blob.S src/embed/neon_blob.S src/ui/neon_embed.cpp \
     include/mod/logger.cpp include/mod/config.cpp \
     imgui/imgui.cpp imgui/imgui_draw.cpp imgui/imgui_tables.cpp imgui/imgui_widgets.cpp \
     imgui/backends/imgui_impl_renderware.cpp imgui/RW/RenderWare.cpp
 LOCAL_STATIC_LIBRARIES := mp_mbedtls mp_opus mp_samp mp_unrar
 # 4.13.32: MonetLoader for MP built in (src/embed/monetloader_blob.S)
+LOCAL_ASFLAGS += -I$(abspath $(LOCAL_PATH)/assets/MP/neon)   # 4.13.33: src/embed/neon_blob.S
 LOCAL_ASFLAGS += '-DML_BLOB="$(abspath $(LOCAL_PATH)/monetloader/$(TARGET_ARCH_ABI)/libmonetloader.so)"'
 
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/include $(LOCAL_PATH)/imgui $(LOCAL_PATH)/src $(LOCAL_PATH)/third_party/mbedtls/include $(LOCAL_PATH)/third_party/opus/include

@@ -543,31 +543,29 @@ static void LgArenaProcess(int ped, uint64_t now, float dt)
     if(!Game::IsCharInCar(ped, s_Lg.myCar)) { if(!Game::IsCharGettingInToACar(ped)) Game::WarpIntoCar(ped, s_Lg.myCar); return; }
     if(s_Lg.arenaWait)
     {   // 4.13.10: the floating floor first
+        // 4.13.33: no frozen car any more (Free play froze the player for seconds while the arena objects streamed
+        // in). The arena is built in the lobby already (LgProcess), and the virtual floor below holds the car up where
+        // a tile (or its collision) is not there yet, so the car goes after 0.3 s at most.
         const float side = s_Lg.freePlay ? -1.0f : (s_Lg.me.team == 1 ? 1.0f : -1.0f);
         const Vec3 at = LgWorld(side * 46.08f * LG_SCALE, 0, 1.0f);
-        // 4.13.22: no more waiting for EVERY tile (players stood frozen for seconds on the free play map, forever when
-        // one tile failed): the tile under the spawn is enough after 1 s, and after 4 s the car goes anyway - the
-        // virtual floor below holds it up where a tile (or its collision) is still missing
-        const float sx = side * 46.08f * LG_SCALE;
-        const bool under = LgFloorAt(sx, 0);
         const uint64_t waited = now - s_Lg.viewAt;
-        if(!LgFloorReady() && !(under && waited > 1000) && !(LgFloorAny() && waited > 4000))
+        if(!LgFloorReady() && !LgFloorAt(side * 46.08f * LG_SCALE, 0) && waited < 300)
         {
-            if(!s_Lg.frozen) { Game::FreezeCar(s_Lg.myCar, true); s_Lg.frozen = true; }
             Game::SetCarPos(s_Lg.myCar, at, 0.0f); Game::SetMoveSpeed(s_Lg.myCar, true, { 0, 0, 0 });
-            if(waited > 15000)
-            {   // not one floor tile came (object pool full / model pack broken): the LV apron instead
-                logger->Error("LEAGUE: the sky floor did not appear in 15 s - using the LV airport apron");
-                LgArenaFree(); s_bLgArenaPlanned = true; s_bLgSky = false;
-                for(int k = 0; k < 3; ++k) s_LgC[k] = kLgFallbackCenter[k];
-                s_Lg.viewAt = now;
-            }
             return;
         }
         s_Lg.arenaWait = false;
         Game::SetCarPos(s_Lg.myCar, at, 0.3f); Game::SetCarHeading(s_Lg.myCar, side < 0 ? 270.0f : 90.0f); Game::SetMoveSpeed(s_Lg.myCar, true, { 0, 0, 0 });
         Game::FreezeCar(s_Lg.myCar, false); s_Lg.frozen = false;
         if(!s_Lg.freePlay) LgSend(LGC_SPAWN, 0);   // the server's kickoff spot again, now that there is a floor
+    }
+    if(s_bLgSky && !LgFloorAny() && now - s_Lg.viewAt > 15000)
+    {   // not one floor tile came (object pool full / model pack broken): the LV apron instead
+        logger->Error("LEAGUE: the sky floor did not appear in 15 s - using the LV airport apron");
+        LgArenaFree(); s_bLgArenaPlanned = true; s_bLgSky = false;
+        for(int k = 0; k < 3; ++k) s_LgC[k] = kLgFallbackCenter[k];
+        s_Lg.viewAt = now; s_Lg.arenaWait = true;
+        return;
     }
     if(now >= s_Lg.keepAt) { s_Lg.keepAt = now + 2000; LgSetupCar(s_Lg.myCar, s_Lg.freePlay ? 255 : s_Lg.me.team); Game::FixCar(s_Lg.myCar); }
     // kickoff: the cars wait for GO
@@ -694,7 +692,7 @@ static void LgGoArena(bool freePlay)
     { Game::SetCarPos(s_Lg.myCar, at, 0.0f); Game::SetCarHeading(s_Lg.myCar, side < 0 ? 270.0f : 90.0f); Game::SetMoveSpeed(s_Lg.myCar, true, { 0, 0, 0 }); Game::FreezeCar(s_Lg.myCar, true); s_Lg.frozen = true; }
     else Game::TeleportLight(ped, at, side < 0 ? 270.0f : 90.0f);
     s_Lg.arenaWait = true;
-    if(!LgFloorReady()) LgBanner("BUILDING THE ARENA", "Sky Pitch above Los Santos", 0xFFFFFFFF, 2500);
+    if(!LgFloorAny()) LgBanner("BUILDING THE ARENA", "Sky Pitch above Los Santos", 0xFFFFFFFF, 1500);
     if(freePlay) LgBallReset(s_Lg.ball);
     else LgSend(LGC_TEAM, 2);   // auto team (balanced); the server sends the kickoff spot
     s_Lg.view = 3; s_Lg.viewAt = MP_NowMs(); s_Lg.boost = 33;
@@ -713,7 +711,11 @@ static void LgProcess(int ped, uint64_t now)
     if(ped <= 0) return;
     float dt = s_Lg.lastFrame ? (now - s_Lg.lastFrame) / 1000.0f : 0.0f; s_Lg.lastFrame = now;
     if(dt > 0.1f) dt = 0.1f;
-    if(s_Lg.view == 1 || s_Lg.view == 2) LgLobbyProcess(ped, now);
+    if(s_Lg.view == 1 || s_Lg.view == 2)
+    {
+        LgLobbyProcess(ped, now);
+        if(now - s_Lg.engagedAt > 3000) LgArenaBuild(now);   // 4.13.33: the arena is built in the lobby (no wait on Free play / Ranked)
+    }
     else if(s_Lg.view == 3) { LgArenaBuild(now); LgFxTick(now); LgArenaProcess(ped, now, dt); LgBallObjTick(); }
 }
 

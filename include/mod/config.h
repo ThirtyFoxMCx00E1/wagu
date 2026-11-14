@@ -31,6 +31,7 @@ public:
     Config(const char* szName);
     void Init();
     void Save();
+    static void (*s_fnBeforeSave)(Config*);   // MP 4.13.33: re-reads hand-edited keys before the ini is rewritten
     // Allocated, needs to be manually deleted
     ConfigEntry* Bind(const char* szKey, const char* szDefaultValue, const char* szSection = "Preferences");
     ConfigEntry* Bind(const char* szKey, int nDefaultValue, const char* szSection = "Preferences");

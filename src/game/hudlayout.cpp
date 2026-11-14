@@ -5,6 +5,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <math.h>
 #include "hudlayout.h"
 
 namespace
@@ -74,6 +75,11 @@ CRect XRect(const CRect& r)
 {
     float x1 = r.left, y1 = r.bottom, x2 = r.right, y2 = r.top;
     Xform(x1, y1); Xform(x2, y2);
+    // 4.13.33: a part that came out far off / bigger than the screen (a wrong anchor, an odd value in [GTAHUD])
+    // is drawn where the game put it - it was a grey band stretched over the top of the screen
+    const float lim = 2.0f;
+    if(!(x1 == x1) || !(y1 == y1) || !(x2 == x2) || !(y2 == y2) || fabsf(x2 - x1) > s_fW * lim || fabsf(y2 - y1) > s_fH * lim
+       || x1 < -s_fW || x1 > s_fW * 2 || y1 < -s_fH || y1 > s_fH * 2) return r;
     return { x1, y1, x2, y2 };
 }
 bool Hidden(int p) { return s_bOn && !s_Cfg[p].show; }
@@ -89,7 +95,7 @@ FnIcon oIcon = nullptr;
 FnS    oHudRadar = nullptr, oArea = nullptr, oVeh = nullptr, oSubs = nullptr;
 
 #define PART_WRAP(part, call) do { if(!s_bOn) { call; return; } if(Hidden(part)) return; Push(part); call; Pop(); } while(0)
-void hInfoDraw(void* w) { if(!s_bOn) { oInfoDraw(w); return; } if(Hidden(HudLayout::PLAYERINFO)) return; Push(HudLayout::PLAYERINFO); s_bInInfo = true; oInfoDraw(w); s_bInInfo = false; Pop(); }
+void hInfoDraw(void* w) { if(!s_bOn) { s_nDepth = 0; oInfoDraw(w); return; } if(s_nDepth > 4) s_nDepth = 0; if(Hidden(HudLayout::PLAYERINFO)) return; Push(HudLayout::PLAYERINFO); s_bInInfo = true; oInfoDraw(w); s_bInInfo = false; Pop(); }
 void hHealth(void* w, int a, float b) { PART_WRAP(HudLayout::BAR_HEALTH, oHealth(w, a, b)); }
 void hArmor(void* w, int a, float b)  { PART_WRAP(HudLayout::BAR_ARMOR, oArmor(w, a, b)); }
 void hBreath(void* w, int a, float b) { PART_WRAP(HudLayout::BAR_BREATH, oBreath(w, a, b)); }

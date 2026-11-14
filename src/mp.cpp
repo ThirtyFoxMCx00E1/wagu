@@ -1,4 +1,6 @@
 // MP core: networking events, local player sync, remote player avatars, combat, chat, menus.
+#include <dlfcn.h>
+#include "tyfmc.h"   // 4.13.33: TYFMC::IniPath (mp_menu.inc)
 #include <dirent.h>
 #include <signal.h>
 #include <mod/amlmod.h>
@@ -7794,9 +7796,11 @@ void MP::Init(const char* dataDir)
     FloatMenu::AddDotsButton();
     FloatMenu::AddBarButton("Chat", BubbleChat, nullptr, &s_bChatBox);
     FloatMenu::AddMicButton(VoicePanelTap, VoiceMicState);   // 3.11: [ ... ][ Chat ][ mic ] -> voice chat panel
+    FloatMenu::AddIconButton(FloatMenu::ICON_MONET, BubbleMonet, nullptr, &s_bMonetPage);   // 4.13.33: [ ... ][ chat ][ mic ][ moon ] -> MonetLoader
     FloatMenu::AddFloatingWindow(RenderVoicePanel);
     FloatMenu::SetPage(FloatMenu::PAGE_PLAYERS, PagePlayers);
     FloatMenu::SetPage(FloatMenu::PAGE_HELP, PageHelp);
+    FloatMenu::SetPage(FloatMenu::PAGE_MONET, PageMonet);
     FloatMenu::AddFloatingWindow(Render219);
     FloatMenu::SetServerPageRenderer(RenderLauncher);   // 2.25: full-screen launcher
     FloatMenu::AddFloatingWindow(RenderKickDialog);     // 2.25: "You are banned from the server!"

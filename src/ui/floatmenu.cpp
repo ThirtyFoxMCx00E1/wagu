@@ -25,7 +25,7 @@ namespace
     struct Section  { std::string title; MPMenuSectionFn fn; void* data; };
     struct Window   { MPMenuWindowFn fn; void* data; };
     struct Bubble   { std::string label; ImVec2 rel; MPMenuSectionFn fn; void* data; bool bar; const bool* active; bool dots;
-                      int (*micState)() = nullptr; bool chatIcon = false; };   // 3.24: chatIcon = speech-bubble icon instead of the word "Chat"   // 3.11: voice chat pill (0 not connected, 1 mic off, 2 mic on, 3 talking)
+                      int (*micState)() = nullptr; bool chatIcon = false; bool monetIcon = false; };   // 3.24: chatIcon = speech-bubble icon instead of the word "Chat"   // 3.11: voice chat pill (0 not connected, 1 mic off, 2 mic on, 3 talking)
     struct Page     { const char* title; MPMenuSectionFn fn; void* data; bool open; };
 
     std::vector<Section> s_Sections;
@@ -35,6 +35,7 @@ namespace
         { "Server##MPServer",       nullptr, nullptr, false },
         { "Player list##MPPlayers", nullptr, nullptr, false },
         { "Help##MPHelp",           nullptr, nullptr, false },
+        { "MonetLoader##MPMonet",   nullptr, nullptr, false },
     };
     bool   s_bDropdown = false;
     uint64_t s_nDropdownFrame = 0;
@@ -109,6 +110,12 @@ void FloatMenu::AddBarButton(const char* l, MPMenuSectionFn fn, void* d, const b
 {
     Bubble b = { l ? l : "?", ImVec2(0.5f, 0.06f), fn, d, true, active, false };
     b.chatIcon = l && !strcmp(l, "Chat");   // 3.24: ⋮ | chat icon | mic - all three are square icon pills now
+    s_Bubbles.push_back(b);
+}
+void FloatMenu::AddIconButton(int icon, MPMenuSectionFn fn, void* d, const bool* active)   // 4.13.33
+{
+    Bubble b = { "icon", ImVec2(0.5f, 0.06f), fn, d, true, active, false };
+    b.monetIcon = (icon == ICON_MONET);
     s_Bubbles.push_back(b);
 }
 void FloatMenu::AddMicButton(MPMenuSectionFn fn, int (*state)())
@@ -207,7 +214,7 @@ static float s_fGrabDX = 0, s_fGrabDY = 0;
 static float PillH() { return UI::S(64); }
 static ImVec2 BubbleSize(const Bubble& b)
 {
-    if(b.dots || b.micState || b.chatIcon) return ImVec2(PillH(), PillH());   // square icon pill
+    if(b.dots || b.micState || b.chatIcon || b.monetIcon) return ImVec2(PillH(), PillH());   // square icon pill
     float fs = UI::S(30);
     ImVec2 ts = UI::Font()->CalcTextSizeA(fs, FLT_MAX, 0, b.label.c_str());
     return ImVec2(ts.x + UI::S(44), PillH());
@@ -349,6 +356,33 @@ static void DrawBubble(ImDrawList* dl, const Bubble& b, ImVec2 c, bool held)
         dl->AddTriangleFilled(ImVec2(c.x - s * 0.30f, a1.y - 1), ImVec2(c.x - s * 0.02f, a1.y - 1), ImVec2(c.x - s * 0.36f, c.y + s * 0.48f), fg);
         ImU32 hole = (fg == IM_COL32_WHITE) ? IM_COL32(0, 0, 0, 200) : IM_COL32(255, 255, 255, 235);
         for(int k = -1; k <= 1; ++k) dl->AddCircleFilled(ImVec2(c.x + k * s * 0.24f, (a0.y + a1.y) * 0.5f), s * 0.075f, hole, 12);
+        return;
+    }
+    if(b.monetIcon)   // 4.13.33: MonetLoader - crescent moon + a small star, no text (MP/monet_icon.png if present)
+    {
+        float s = sz.y * 0.62f;
+        ImVec2 uv1;
+        if(void* tex = HUD::Texture("monet_icon.png", &uv1))
+        {
+            dl->AddImage((ImTextureID)tex, ImVec2(c.x - s * 0.5f, c.y - s * 0.5f), ImVec2(c.x + s * 0.5f, c.y + s * 0.5f), ImVec2(0, 0), uv1, fg);
+            return;
+        }
+        const float R = s * 0.46f, off = R * 0.52f, r = R * 0.86f;
+        const ImVec2 mc(c.x - s * 0.06f, c.y + s * 0.02f);
+        const int rows = (int)(R * 2) > 8 ? (int)(R * 2) : 8;
+        for(int i = 0; i < rows; ++i)   // outer disc minus the inner disc (shifted up-right) = crescent
+        {
+            float y0 = -R + 2 * R * i / rows, y1 = -R + 2 * R * (i + 1) / rows, y = (y0 + y1) * 0.5f;
+            float xo = sqrtf(ImMax(0.0f, R * R - y * y));
+            float x1 = xo, yi = y + off * 0.45f;
+            if(fabsf(yi) < r) x1 = ImMin(xo, off - sqrtf(r * r - yi * yi));
+            if(x1 > -xo) dl->AddRectFilled(ImVec2(mc.x - xo, mc.y + y0), ImVec2(mc.x + x1, mc.y + y1 + 0.5f), fg);
+        }
+        const ImVec2 st(c.x + s * 0.30f, c.y - s * 0.26f); const float k = s * 0.13f, w = s * 0.035f;
+        dl->AddTriangleFilled(ImVec2(st.x, st.y - k), ImVec2(st.x + w, st.y), ImVec2(st.x - w, st.y), fg);
+        dl->AddTriangleFilled(ImVec2(st.x, st.y + k), ImVec2(st.x - w, st.y), ImVec2(st.x + w, st.y), fg);
+        dl->AddTriangleFilled(ImVec2(st.x - k, st.y), ImVec2(st.x, st.y + w), ImVec2(st.x, st.y - w), fg);
+        dl->AddTriangleFilled(ImVec2(st.x + k, st.y), ImVec2(st.x, st.y - w), ImVec2(st.x, st.y + w), fg);
         return;
     }
     if(b.dots)   // ⋮

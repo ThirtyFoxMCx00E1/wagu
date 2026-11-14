@@ -86,4 +86,13 @@ void Start()
     entry();
     logger->Info("MonetLoader for MP: started");
 }
+
+// 4.13.33: the running MonetLoader (MP's built-in copy, or a separate libmonetloader.so in the mods folder)
+void* Handle()
+{
+    if(s_hLib) return s_hLib;
+    static void* s_hExt = nullptr;
+    if(!s_hExt) s_hExt = dlopen("libmonetloader.so", RTLD_NOW | RTLD_NOLOAD);
+    return s_hExt;
+}
 }
