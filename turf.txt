@@ -1,0 +1,25 @@
+# zone owner (MP 3.01 turf wars: 24 zones)
+0 2 Ganton
+1 2 Ganton North
+2 2 Idlewood South
+3 2 Playa del Seville
+4 2 Idlewood West
+5 2 Idlewood East
+6 1 Idlewood North
+7 2 Glen Park
+8 2 Jefferson
+9 1 Jefferson North
+10 2 East Los Santos
+11 2 East Los Santos East
+12 3 Los Flores
+13 3 Las Colinas
+14 3 East Beach
+15 4 Willowfield
+16 4 Willowfield West
+17 4 El Corona
+18 4 Little Mexico
+19 4 Ocean Docks
+20 5 Garcia
+21 5 Doherty
+22 6 Chinatown
+23 6 Easter Basin
