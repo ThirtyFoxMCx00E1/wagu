@@ -39,6 +39,7 @@ extern "C" unsigned long crc32(unsigned long crc, const unsigned char* buf, unsi
 #include <time.h>
 #include "ui/i18n.h"
 #include "ui/hud.h"
+#include "ui/neonpaint.h"   // 4.13.28
 #include "ui/server_style.h"   // 4.03
 #include "ui/floatmenu.h"
 #include "ui/vkeyboard.h"
@@ -7715,6 +7716,7 @@ static void MpFreeAllObjects()
 #include "mp_launcher.inc"   // 2.25: full-screen server launcher, player management, kick / ban
 #include "mp_psettings.inc"  // 3.35: player list > Settings (SA-MP style dialog)
 #include "mp_menu.inc"       // 4.13.4: main menu [Multiplayer], MP loading screen, black server select
+#include "mp_neon.inc"       // 4.13.22: neon title menu + server browser (ServerBrowserMode)
 
 // 4.07.1: the short sounds (button click, hit, "connected") come from the media host too, like the
 // music: a sound missing from files/TYFMC/MP is downloaded once from Host/Media into files/TYFMC/MP (cache), so

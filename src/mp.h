@@ -320,6 +320,14 @@ namespace MP
     // 4.13.4: main menu [Multiplayer] (mp_menu.inc)
     void InitMainMenu();          // all mods loaded: the SAUtils tile
     bool MenuMpBlack();           // the black server-select screen is up
+    bool TitleMenuHookWanted();   // 4.13.30: ServerBrowserMode neon / mp (default = no title menu hook)
+    bool NeonMenuMode();          // 4.13.22: ServerBrowserMode = neon
+    bool NeonCoversGameMenu();
+    int  NeonPaintWanted();        // 4.13.28: 0 nothing / 1 neon title / 2 mp tile / 3 pill - painted after MobileMenu::Render
+    bool NeonNativeTitle();        // 4.13.28: the title is painted natively (no ImGui on the title)
+    void NeonPaintMenu(int what);
+    void NeonTouch(int kind, int finger, float x, float y);
+    void NeonMenuTick();           // 4.13.28: game thread, runs the tapped title action    // 4.13.23: the neon title menu is up -> the game's own title menu is not drawn / touched
     bool MenuMpLoading();         // a Multiplayer load is running: MP draws the loading screen
     void DrawMenuLoading(ImDrawList* dl, float pct, bool loadingScreen);
     void MenuMpMenuTick();         // 4.13.9: MobileMenu::Update -> closes the menu after a Multiplayer load
