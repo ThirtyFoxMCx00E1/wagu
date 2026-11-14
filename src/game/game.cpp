@@ -53,8 +53,11 @@ static char      s_szAndroidData[300] = "";
 
 #define F2U(f) ((uint32_t*)&(f))
 
+static void* volatile* s_pWorldPlayers = nullptr;   // CWorld::Players (4.13.31)
 bool Game::Init(void* h)
 {
+    s_pWorldPlayers = (void* volatile*)aml->GetSym(h, "_ZN6CWorld7PlayersE");   // 4.13.31
+    logger->Info("Player ped check: CWorld::Players %s", s_pWorldPlayers ? "found" : "NOT found (opcode only)");
     bool ok = Scripting::Init(h);
     InitNetState(h);   // 2.13: anims, smooth motion, explosions / fires / pickups
     InitNetState217(h);   // 2.17: shots, car state, aim, interiors, map + mission markers
@@ -208,17 +211,13 @@ float Game::ProgressPercent()
 // 'MP' crashed in opcode 01F5" on the title). 4.13.28 asked it every title frame from the menu pass - the guarded
 // fault each frame broke the game's script state and the game closed itself with no crash log (any
 // ServerBrowserMode). CWorld::Players[0].m_pPed (first field) is read first: no player ped = 0, no opcode.
-static void** s_pWorldPlayers = nullptr;
-static bool   s_bWorldPlayersLooked = false;
+// 4.13.31: resolved once in Game::Init (main thread, with the other game symbols). 4.13.30 looked it up the first
+// time LocalPed ran - that could be a worker thread while the game was still loading the mods, and the symbol lookup
+// waits for the system's library loader lock (black screen at start).
 bool Game::HasPlayerPed()
 {
-    if(!s_bWorldPlayersLooked)
-    {
-        s_bWorldPlayersLooked = true;
-        s_pWorldPlayers = (void**)aml->GetSym(aml->GetLibHandle("libGTASA.so"), "_ZN6CWorld7PlayersE");
-        logger->Info("Player ped check: CWorld::Players %s", s_pWorldPlayers ? "found" : "NOT found (opcode only)");
-    }
-    return !s_pWorldPlayers || *(void* volatile*)s_pWorldPlayers != nullptr;
+    void* volatile* p = s_pWorldPlayers;
+    return !p || *p != nullptr;
 }
 int Game::LocalPed()
 {
