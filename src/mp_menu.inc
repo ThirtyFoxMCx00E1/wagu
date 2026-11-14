@@ -43,7 +43,7 @@ static bool s_bMenuMpViaApi = false;   // 4.13.11: started by another mod (PCMen
 enum { NEON_MODE_DEFAULT = 0, NEON_MODE_MP = 1, NEON_MODE_NEON = 2 };
 static int  s_nNeonMode = NEON_MODE_NEON;
 static bool s_bNeonPendingJoin = false;   // a server picked on the neon title menu: joined after the Multiplayer load
-static bool NeonOn() { return s_nNeonMode == NEON_MODE_NEON && (s_bMenuMpOn || s_bMenuMpViaApi); }
+static bool NeonOn() { return s_nNeonMode == NEON_MODE_NEON; }   // 4.13.23: ServerBrowserMode alone (an old MainMenuMultiplayer = 0 no longer hides it)
 static bool NeonDraw();          // mp_neon.inc
 static bool NeonPendingJoin();   // mp_neon.inc
 static void MenuMpTap(void*)
@@ -107,6 +107,7 @@ void MP::InitMainMenu()
         else { s_nNeonMode = NEON_MODE_NEON; MP_CopyStr(m, "neon", sizeof(m)); }
         { ConfigEntry* e = ::cfg->Bind("ServerBrowserMode", m, "MP"); e->SetString(m); delete e; ::cfg->Save(); }   // written to TYFMC.MP.ini
         if(s_nNeonMode == NEON_MODE_DEFAULT) s_bMenuMpOn = false;
+        if(s_nNeonMode == NEON_MODE_NEON) s_bMenuMpOn = true;   // 4.13.23
         logger->Info("Main menu: ServerBrowserMode = %s", m);
     }
     LookUpPCMenuLoading();

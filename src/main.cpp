@@ -29,7 +29,7 @@
 #include "net/server.h"
 
 // 4.12.7: the config is files/TYFMC/TYFMC.MP.ini (the old configs/net.thirtyfox.mp.ini is moved there)
-TYFMC_MODCFG(net.thirtyfox.mp, MP Multiplayer, 4.13.22, ThirtyFoxMCx00E1, MP, net.thirtyfox.mp)
+TYFMC_MODCFG(net.thirtyfox.mp, MP Multiplayer, 4.13.23, ThirtyFoxMCx00E1, MP, net.thirtyfox.mp)
 NEEDGAME(com.rockstargames.gtasa)
 
 // Globals used by the embedded RenderWare ImGui backend
@@ -153,10 +153,14 @@ DECL_HOOKv(CCam_Process, void* self)
 #endif
 
 // ---- 2D render: our whole HUD + floating menu ------------------------------------------
+static uint64_t s_nNeonMenuPassMs = 0;   // 4.13.23: the last MobileMenu::Render that drew MP's frame
 DECL_HOOKv(Render2dStuff)
 {
     Render2dStuff();
     if(!s_bRWReady) { InitRenderWareFunctions(); s_bRWReady = true; }
+    // 4.13.23: while the neon title menu replaces the game's menu, MP's frame is drawn from MobileMenu::Render
+    // (the game's menu pass, after Render2dStuff), like PCMenu does: one frame, nothing of the game's menu on top
+    if(MP::NeonCoversGameMenu() && MP_NowMs() - s_nNeonMenuPassMs < 250) return;
     if(HUD::IsInitialised()) { PollTouches(); PadTick(); DrainIO(); }   // 3.39.2: + controller
     HUD::Render();
     int cm = s_nClearMouse.load();
@@ -185,6 +189,23 @@ DECL_HOOKv(MobileMenu_Update, void* self)
 {
     MobileMenu_Update(self);
     MP::MenuMpMenuTick();
+}
+// 4.13.23: the neon title menu replaces the game's title menu: the game's menu is not drawn under / over it
+static int s_nMenuRenderSkips = 0;
+DECL_HOOKv(MobileMenu_Render, void* self)
+{
+    if(MP::NeonCoversGameMenu())
+    {   // PCMenu's way: own the game's menu pass. The stock title menu (background, tiles) is not drawn, MP's
+        // whole frame (the neon menu, the floating menu, the keyboard) is drawn here instead - the last 2D of
+        // the frame, so the game's menu can no longer paint over it (4.13.22 drew it in Render2dStuff, before)
+        if(s_nMenuRenderSkips++ == 0) logger->Info("Neon menu: drawn in the game's menu pass, the stock title menu is hidden (ServerBrowserMode = neon)");
+        if(!s_bRWReady) { InitRenderWareFunctions(); s_bRWReady = true; }
+        if(HUD::IsInitialised()) { PollTouches(); PadTick(); DrainIO(); }
+        HUD::Render();
+        s_nNeonMenuPassMs = MP_NowMs();
+        return;
+    }
+    MobileMenu_Render(self);
 }
 DECL_HOOKv(LS_RenderLoadingBar)
 {
@@ -225,7 +246,7 @@ static void MapTouch(int& x, int& y)
 static bool s_bGameFinger[16] = { false };   // the game saw this finger's press (it must get the release)
 static inline bool MPScreenOwnsTouches()
 {
-    return FloatMenu::IsModal() || VKeyboard::IsOpen() || MP::AuthScreenShown() || MP::DealerShown() || MP::MenuMpBlack();
+    return FloatMenu::IsModal() || VKeyboard::IsOpen() || MP::AuthScreenShown() || MP::DealerShown() || MP::MenuMpBlack() || MP::NeonCoversGameMenu();
 }
 // Routes one touch to MP's UI. Returns true if MP used it (the game must not see it).
 static bool DispatchTouch(int type, int finger, int x, int y)
@@ -850,6 +871,7 @@ extern "C" void OnModLoad()
         HOOK_IF(LS_RenderSplash, "_ZN14CLoadingScreen12RenderSplashEv");
         HOOK_IF(LS_RenderLoadingBar, "_ZN14CLoadingScreen16RenderLoadingBarEv");
         HOOK_IF(MobileMenu_Update, "_ZN10MobileMenu6UpdateEv");   // 4.13.9: menu closed after a Multiplayer load
+        HOOK_IF(MobileMenu_Render, "_ZN10MobileMenu6RenderEv");   // 4.13.23: the neon title menu on top
         logger->Info("Loading screen: %d hooks, percent %s", hooked, s_pPercentLoaded ? "yes" : "no");
     }
 

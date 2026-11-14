@@ -584,6 +584,22 @@ static void NeonDialog(ImDrawList* dl, ImVec2 ds, const char* title, const char*
 
 // ---- the main menu -----------------------------------------------------------------------------
 static bool NeonTitleCtx() { return Game::IsMainMenuShown() && Game::LocalPed() <= 0 && !s_bMenuMp.load(); }
+// 4.13.23: the game draws its title menu (MobileMenu::Render) after MP's HUD, so in 4.13.22 its full-screen
+// background covered the neon menu and only the game's menu showed. While the neon menu is up the game's menu
+// is not drawn (main.cpp MobileMenu_Render) and gets no touches.
+bool MP::NeonCoversGameMenu()
+{
+    const bool on = NeonOn(), menu = Game::IsMainMenuShown(), ped = Game::LocalPed() > 0, mp = s_bMenuMp.load();
+    const bool r = on && !s_bNeonHidden && menu && !ped && !mp;
+    static int last = -1; const int st = (on << 0) | (s_bNeonHidden << 1) | (menu << 2) | (ped << 3) | (mp << 4) | (r << 5);
+    if(st != last)
+    {   // the MP log says why the neon menu is (not) up
+        last = st;
+        logger->Info("Neon menu: %s (mode %d, tile %d, api %d, game settings %d, game menu %d, game loaded %d, MP load %d)",
+            r ? "on screen" : "not shown", s_nNeonMode, (int)s_bMenuMpOn, (int)s_bMenuMpViaApi, (int)s_bNeonHidden, (int)menu, (int)ped, (int)mp);
+    }
+    return r;
+}
 static void NeonResume()
 {
     if(!NeonTitleCtx()) { s_bMenuMpExit = true; return; }   // the black screen: the game is loaded - back to it

@@ -321,6 +321,7 @@ namespace MP
     void InitMainMenu();          // all mods loaded: the SAUtils tile
     bool MenuMpBlack();           // the black server-select screen is up
     bool NeonMenuMode();          // 4.13.22: ServerBrowserMode = neon
+    bool NeonCoversGameMenu();    // 4.13.23: the neon title menu is up -> the game's own title menu is not drawn / touched
     bool MenuMpLoading();         // a Multiplayer load is running: MP draws the loading screen
     void DrawMenuLoading(ImDrawList* dl, float pct, bool loadingScreen);
     void MenuMpMenuTick();         // 4.13.9: MobileMenu::Update -> closes the menu after a Multiplayer load
