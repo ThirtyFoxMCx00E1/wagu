@@ -35,7 +35,7 @@
 #include "net/server.h"
 
 // 4.12.7: the config is files/TYFMC/TYFMC.MP.ini (the old configs/net.thirtyfox.mp.ini is moved there)
-TYFMC_MODCFG(net.thirtyfox.mp, MP Multiplayer, 4.13.40, ThirtyFoxMCx00E1, MP, net.thirtyfox.mp)
+TYFMC_MODCFG(net.thirtyfox.mp, MP Multiplayer, 4.13.41, ThirtyFoxMCx00E1, MP, net.thirtyfox.mp)
 // 4.13.36: no NEEDGAME(com.rockstargames.gtasa) - AML would refuse libMP in GTA Vice City. OnModLoad starts the
 // San Andreas code only when libGTASA.so is there, and the Vice City layer (src/vc/) when libGTAVC.so is.
 
@@ -882,6 +882,23 @@ static void PollTouches()
         }
         s_Poll[f].down = down; s_Poll[f].x = x; s_Poll[f].y = y;
     }
+}
+
+// 4.13.41: a finger's state for the Lua scripts, read straight from the game every call (no touch queue, no hook,
+// no "MP's UI took it"). x / y are in getScreenResolution's pixels (the same as renderDraw*). tvplayer.lua 1.2 calls
+// it through LuaJIT ffi every frame, so its [TV] button reacts even when onTouch never reaches the script.
+// Returns 1 = the finger is down.
+extern "C" __attribute__((visibility("default"))) int MP_GetPointer(int finger, int* x, int* y)
+{
+    if(finger < 0 || finger > 3 || !LIB_PointerGetButton || !LIB_PointerGetCoordinates) return 0;
+    const int st = LIB_PointerGetButton(finger, 0);
+    if(st != 2 && st != 3) return 0;
+    int px = 0, py = 0; float pr = 0;
+    LIB_PointerGetCoordinates(finger, &px, &py, &pr);
+    MapTouch(px, py);
+    if(x) *x = px;
+    if(y) *y = py;
+    return 1;
 }
 
 // ---- AML entry points ----------------------------------------------------------------------

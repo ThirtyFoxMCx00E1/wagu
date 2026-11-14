@@ -1,4 +1,4 @@
--- TV Player for MonetLoader for MP (3.8.4-mp or newer): watch videos on the TVs in GTA SA.
+-- TV Player for MonetLoader for MP (3.8.4-mp or newer, MP 4.13.41+ for the touch fix): watch videos on the TVs in GTA SA.
 -- Works in single player and on MP servers (only you see your TV).
 --
 -- Files (Android/data/com.rockstargames.gtasa/files/TYFMC/MP/moonloader/):
@@ -12,7 +12,7 @@
 -- The sound gets quieter as you walk away and stops after StopDistance metres.
 script_name('TV Player')
 script_author('ThirtyFoxMCx00E1 (MP port), tvplayer mod')
-script_version('1.1-mp')
+script_version('1.2-mp')
 
 local DIR = getWorkingDirectory() .. '/tvplayer'
 local cfg = { Volume = 80, PromptDistance = 2.5, StopDistance = 20, FullVolumeDistance = 4, SeekSeconds = 10,
@@ -44,6 +44,37 @@ local buttons = {}      -- the buttons on screen now (onTouch tests these)
 local nextButtons = {}  -- the ones being drawn this frame
 
 local function now() return os.clock() end
+
+-- 1.2: the buttons read the finger straight from MP (MP_GetPointer, MP 4.13.41+) every frame. The [TV] button was
+-- drawn but taps never reached onTouch on some phones (MonetLoader's touch queue / an older libmonetloader.so /
+-- MP's UI keeping the finger). onTouch still works too; one tap only counts once.
+local mpPointer
+do
+  local okf, ffi = pcall(require, 'ffi')
+  if okf and ffi then
+    pcall(ffi.cdef, 'int MP_GetPointer(int finger, int* x, int* y);')
+    local so = ffi.abi('64bit') and 'libMP64.so' or 'libMP32.so'
+    local names = { so:sub(4, -4), so }
+    local maps = io.open('/proc/self/maps', 'r')   -- the full path AML loaded MP from (same handle, MP stays loaded)
+    if maps then
+      for l in maps:lines() do local p = l:match('(/%S*/' .. so:gsub('%.', '%%.') .. ')$') if p then names[#names + 1] = p break end end
+      maps:close()
+    end
+    for _, n in ipairs(names) do
+      local okl, lib = pcall(ffi.load, n)
+      if okl and lib then
+        local oks, fn = pcall(function() return lib.MP_GetPointer end)
+        if oks and fn then
+          local px, py = ffi.new('int[1]'), ffi.new('int[1]')
+          mpPointer = function(f) if lib.MP_GetPointer(f, px, py) ~= 0 then return true, px[0], py[0] end return false end
+          break
+        end
+      end
+    end
+  end
+end
+local fingerDown = { false, false, false, false }
+local lastTapId, lastTapAt = nil, -1
 local function osd(text)
   st.msg = text
   st.osdUntil = now() + cfg.OsdSeconds
@@ -172,14 +203,30 @@ end
 -- 1.1: MonetLoader for MP 3.8.4 gets the touches from MP, in the same pixels as getScreenResolution / renderDraw*.
 -- Before, the touches came raw from the screen (device pixels, the game often renders smaller) or not at all, so
 -- the [TV] button was drawn but a tap on it did nothing. A finger slightly next to a button still counts.
-function onTouch(kind, num, x, y)
-  if kind ~= 2 then return end -- 2 = finger down
+local function hitButton(x, y)
   local pad = sh * 0.025
   for _, b in ipairs(buttons) do
-    if x >= b.x - pad and x <= b.x + b.w + pad and y >= b.y - pad and y <= b.y + b.h + pad then
-      st.pending = b.id   -- run in main()
-      return false
-    end
+    if x >= b.x - pad and x <= b.x + b.w + pad and y >= b.y - pad and y <= b.y + b.h + pad then return b.id end
+  end
+end
+local function tap(id)
+  if not id then return false end
+  if id == lastTapId and now() - lastTapAt < 0.35 then return true end   -- the same tap from onTouch and from the poll
+  lastTapId, lastTapAt = id, now()
+  st.pending = id   -- run in main()
+  return true
+end
+function onTouch(kind, num, x, y)
+  if kind ~= 2 then return end -- 2 = finger down
+  if tap(hitButton(x, y)) then return false end
+end
+-- 1.2: every frame: a new finger on a button = a tap
+local function pollFingers()
+  if not mpPointer then return end
+  for f = 0, 3 do
+    local down, x, y = mpPointer(f)
+    if down and not fingerDown[f + 1] then tap(hitButton(x, y)) end
+    fingerDown[f + 1] = down
   end
 end
 
@@ -261,12 +308,14 @@ function main()
   end
   listVideos()
   font = renderCreateFont('Arial', 12, 5)
+  print(mpPointer and 'TV Player: buttons read the touch from MP (MP_GetPointer)' or 'TV Player: MP_GetPointer not found (MP older than 4.13.41?) - buttons use onTouch')
   if not getNearbyEntities then print('TV Player: MonetLoader for MP 3.8.3+ also finds the TVs that are part of the map (CJ\'s house)') end
   print(string.format('TV Player: %d TV models, %d videos', (function() local c = 0 for _ in pairs(screens) do c = c + 1 end return c end)(), #videos))
   local lastScan = 0
   while true do
     wait(0)
     sw, sh = getScreenResolution()
+    pollFingers()
     if st.pending then local a = st.pending st.pending = nil act(a) end
     nextButtons = {}
     if now() - lastScan > 0.5 then scan() lastScan = now() end
