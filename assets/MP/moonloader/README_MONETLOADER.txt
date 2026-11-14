@@ -62,6 +62,12 @@ TV Player (MP 4.13.34, MonetLoader 3.8.2-mp)
   Make your own: tools/tv_frames.sh in the MP source, or see videos/README.txt (ffmpeg, also in Termux).
   Copy the WHOLE moonloader folder with its subfolders. A small preview shows in the top right while the info
   line is on: if it moves but the TV stays black, set Render3D=0 in tvplayer/config/tvplayer.ini.
+  3.8.7-mp (MP 4.13.45): tvplayer.lua 1.6-mp puts the video on the TV MODEL's own screen: the TV's screen material
+  shows the frame and the game draws it like the rest of the TV (lit, hidden by anything in front of it). New Lua API:
+  setEntityScreenTexture(entityPtr, tex, {cx,cy,cz}, {nx,ny,nz}, w, h) -> ok, info / restoreEntityScreenTexture([ptr]),
+  getRender3DStats() -> draws, ok, available. renderDrawTexture3D keeps its vertices in a persistent buffer (the phone's
+  renderer reads them after the call; 3.8.5 / 3.8.6 freed them first, so the mesh stayed black). The corner preview is
+  off by default (Preview=1 turns it on). Surface=0 in tvplayer.ini uses the 3D mesh only.
   Hitmarker (MP 4.13.44): hitmarker.lua + resources/hitmarker/ - "Dynamic Hitmarker" by fausto200
   (https://ko-fi.com/fausto200), ported from PC MoonLoader. White cross on a hit, gold + skull on a
   headshot, red on a kill, blue + broken shield when armour breaks, damage numbers, xN combo and sounds.

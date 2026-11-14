@@ -10,17 +10,20 @@
 --                                   Every frame is a plain JPG loaded like MP's other images, so no video decoder is needed.
 --   tvplayer/videos/*.mp4           also still played with the phone's video decoder (black on some phones: use frames)
 --
+-- 1.6: the video is put on the TV MODEL's own screen (the screen material of the TV shows the frame), drawn by the game
+--      like the rest of the TV. Needs MonetLoader for MP 3.8.7 (MP 4.13.45+). Falls back to the 3D mesh, then the 2D picture.
+--
 -- How to use: walk up to a TV (a TV object, or a TV that is part of the map like the one in CJ's house). A [TV] button shows on the right.
 -- Tap it to start the first video. Buttons while it plays: previous, -10 s, pause, +10 s, next, volume -, volume +, stop.
 -- The sound gets quieter as you walk away and stops after StopDistance metres.
 script_name('TV Player')
 script_author('ThirtyFoxMCx00E1 (MP port), tvplayer mod')
-script_version('1.5-mp')
+script_version('1.6-mp')
 
 local DIR = getWorkingDirectory() .. '/tvplayer'
 local cfg = { Volume = 80, PromptDistance = 2.5, StopDistance = 20, FullVolumeDistance = 4, SeekSeconds = 10,
   VolumeStep = 10, Loop = 0, AutoNext = 1, Stretch = 0, Brightness = 100, DepthTest = 1, DepthOffset = 0.01, OsdSeconds = 4, Debug = 0,
-  Fps = 30, Render3D = 1, Preview = 1 }
+  Fps = 30, Render3D = 1, Preview = 0, Surface = 1 }
 
 local function loadIni(path)
   local f = io.open(path, 'r')
@@ -103,11 +106,20 @@ local function seqAudio(p, what)
     elseif what == 'stop' then setAudioStreamState(p.audio, 0) end
   end)
 end
-local function seqFree(p, keep)
-  while #p.old > keep do
-    local t = table.remove(p.old, 1)
-    if t and renderReleaseTexture then pcall(renderReleaseTexture, t) end
+-- 1.6: textures are released 12 loops after they were last used. The phone's renderer draws a little behind the script,
+-- and a texture freed while it was still queued showed as a missing (black) frame now and then.
+local grave, loopNo = {}, 0
+local function bury(t) if t then grave[#grave + 1] = { t, loopNo } end end
+local function releaseOld(all)
+  local keep = {}
+  for _, g in ipairs(grave) do
+    if all or loopNo - g[2] > 12 then if renderReleaseTexture then pcall(renderReleaseTexture, g[1]) end
+    else keep[#keep + 1] = g end
   end
+  grave = keep
+end
+local function seqFree(p, keep)
+  while #p.old > keep do bury(table.remove(p.old, 1)) end
 end
 local function seqTexture(p)
   local t = seqPos(p)
@@ -221,12 +233,16 @@ local function listVideos()
 end
 
 local function stop()
+  if restoreEntityScreenTexture then pcall(restoreEntityScreenTexture) end
   if st.p then P.close(st.p) end
   st.p = nil
   st.id = 0
   st.obj = nil
   st.ent = nil
   st.paused = false
+  st.mode = nil
+  st.surfRetry = nil
+  st.surfWarned = nil
 end
 
 local function start(index)
@@ -285,7 +301,22 @@ local function drawScreen(tex)
   local cnt = #v / 8
   local g = math.floor(math.min(255, math.max(0, 255 * cfg.Brightness / 100)))
   local color = 0xFF000000 + g * 0x10000 + g * 0x100 + g
+  -- 1.6: on the TV model's own screen material (the game draws it like the rest of the TV)
+  if cfg.Surface ~= 0 and setEntityScreenTexture and s.center and now() >= (st.surfRetry or 0) then
+    local ptr = st.ent and st.ent.ptr
+    if not ptr and st.obj and getObjectPointer then local okp, op = pcall(getObjectPointer, st.obj) if okp then ptr = op end end
+    if ptr and ptr ~= 0 then
+      local ok, res, info = pcall(setEntityScreenTexture, ptr, tex, s.center, n, s.width or 0.5, s.height or 0.4)
+      if ok and res then
+        if st.mode ~= 'surface' then st.mode = 'surface' print('TV Player: picture on the TV model (' .. tostring(info) .. ')') end
+        return
+      end
+      st.surfRetry = now() + 5
+      if not st.surfWarned then st.surfWarned = true print('TV Player: TV screen material not used (' .. tostring(ok and info or res) .. ') - 3D mesh instead') end
+    end
+  end
   if cfg.Render3D ~= 0 and isRender3DAvailable and isRender3DAvailable() then
+    if st.mode ~= 'mesh' then st.mode = 'mesh' end
     off = math.max(off, 0.02)   -- 1.4: a little in front of the glass (curved CRT screens hid a 1 cm mesh)
     local out = {}
     for i = 0, cnt - 1 do
@@ -461,6 +492,8 @@ function main()
   local lastScan = 0
   while true do
     wait(0)
+    loopNo = loopNo + 1
+    releaseOld(false)
     sw, sh = getScreenResolution()
     pollFingers()
     if st.pending then local a = st.pending st.pending = nil act(a) end
@@ -499,8 +532,9 @@ function main()
         if not st.diag and st.startedAt and not st.paused and now() - st.startedAt > 4 then
           st.diag = true
           local fr, up = P.stats(st.p)
-          print(string.format('TV Player: %s - %d frames decoded, %d textures, 3D %s', videos[st.index] or '?', fr, up,
-            tostring(isRender3DAvailable and isRender3DAvailable())))
+          print(string.format('TV Player: %s - %d frames decoded, %d textures, 3D %s, drawn as %s', videos[st.index] or '?', fr, up,
+            tostring(isRender3DAvailable and isRender3DAvailable()), tostring(st.mode or '2D')))
+          if getRender3DStats then print(string.format('TV Player: 3D mesh draws %d, ok %d', getRender3DStats())) end
           if st.p.kind == 'seq' then
             if up == 0 then osd("No picture: can't load " .. string.format('%s/%05d.jpg', videos[st.index], math.max(1, st.p.idx))) end
           elseif fr == 0 then osd("No picture: the phone can't decode this video - use an image sequence (videos/README.txt)")
@@ -529,5 +563,5 @@ function main()
 end
 
 function onScriptTerminate(s, quit)
-  if s == thisScript() then stop() end
+  if s == thisScript() then stop() releaseOld(true) end
 end
