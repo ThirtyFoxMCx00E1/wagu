@@ -10,9 +10,15 @@ local sampev
 
 function main()
   while not isSampLoaded() do wait(100) end
-  sampev = require 'samp.events'
-  sampev.onServerMessage = onServerMessage
-  sampev.onSendChat = onSendChat
+  -- 4.13.34: optional - needs moonloader/lib/samp/events.lua (copy the whole lib folder with its subfolders)
+  local ok, mod = pcall(require, 'samp.events')
+  if ok then
+    sampev = mod
+    sampev.onServerMessage = onServerMessage
+    sampev.onSendChat = onSendChat
+  else
+    print('MP Hello: samp.events not found (copy files/TYFMC/MP/moonloader/lib/samp) - chat hooks off')
+  end
   while not isSampAvailable() do wait(100) end
   sampRegisterChatCommand('hello', function(arg)
     local _, myid = sampGetPlayerIdByCharHandle(PLAYER_PED)

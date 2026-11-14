@@ -322,6 +322,9 @@ namespace MP
     bool MenuMpBlack();           // the black server-select screen is up
     void SetTitleHookInstalled(bool on);   // 4.13.33
     bool TitleMenuHookWanted();   // 4.13.30: ServerBrowserMode neon / mp (default = no title menu hook)
+    int  MainMenuMode();          // 4.13.34: 0 default / 1 mp / 2 neon (NEON_MODE_*)
+    void SetMainMenuMode(int mode);
+    bool MainMenuHookOn();
     bool NeonMenuMode();          // 4.13.22: ServerBrowserMode = neon
     bool NeonCoversGameMenu();
     int  NeonPaintWanted();        // 4.13.28: 0 nothing / 1 neon title / 2 mp tile / 3 pill - painted after MobileMenu::Render

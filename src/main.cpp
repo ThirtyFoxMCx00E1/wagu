@@ -35,7 +35,7 @@
 #include "net/server.h"
 
 // 4.12.7: the config is files/TYFMC/TYFMC.MP.ini (the old configs/net.thirtyfox.mp.ini is moved there)
-TYFMC_MODCFG(net.thirtyfox.mp, MP Multiplayer, 4.13.33, ThirtyFoxMCx00E1, MP, net.thirtyfox.mp)
+TYFMC_MODCFG(net.thirtyfox.mp, MP Multiplayer, 4.13.34, ThirtyFoxMCx00E1, MP, net.thirtyfox.mp)
 NEEDGAME(com.rockstargames.gtasa)
 
 // Globals used by the embedded RenderWare ImGui backend
@@ -995,6 +995,7 @@ static bool PCMenuLoaded()   // any loaded .so with "PCMenu" in its file name (P
     fclose(m);
     return r;
 }
+extern "C" void MP_InstallTitleHook();
 static void InstallMenuHooks(bool titleMenu)
 {
     static bool done = false;
@@ -1010,6 +1011,15 @@ static void InstallMenuHooks(bool titleMenu)
     }
     else logger->Info("Loading screen: PCMenu is installed - its loading screen is used, MP does not hook the loading screen");
     if(!titleMenu) { logger->Info("Title menu: ServerBrowserMode = default - the game's own menu, no MobileMenu::Render hook"); return; }
+    MP_InstallTitleHook();
+}
+// 4.13.34: also from MP Settings > Display > Main menu (switching from default to neon / mp without a restart)
+extern "C" void MP_InstallTitleHook()
+{
+    static bool done = false;
+    if(done || !pGameLib || !pGameHandle) return;
+    done = true;
+    const bool pcmenu = PCMenuLoaded();
     const uintptr_t sym = aml->GetSym(pGameHandle, "_ZN10MobileMenu6RenderEv");
     const uintptr_t slot = pGameLib + kGotMenuRender;
     uintptr_t cur = 0;

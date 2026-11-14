@@ -1,4 +1,4 @@
-MonetLoader for MP (MonetLoader 3.8.0-mp, based on MonetLoaderOSS)
+MonetLoader for MP (MonetLoader 3.8.2-mp, based on MonetLoaderOSS)
 ==================================================================
 PC MoonLoader .lua scripts run on Android on MP servers.
 
@@ -36,3 +36,14 @@ Libraries added from samp-essentials (pure Lua)
   utf8, utf8data, UTF8, xml2lua, xmlhandler, XmlParser, json2lua, lua2json, carbJsonConfig,
   aeslua, SNET, websocket, htmlparser, path, compat, extensions-lite, arizona-events,
   fAwesome5, faIcons, fa-icons, tabler_icons, imspinner, mimgui_hotkeys, mimhotkey, mimtoasts, ADDONS
+
+TV Player (MP 4.13.34, MonetLoader 3.8.2-mp)
+  moonloader/tvplayer.lua               the script
+  moonloader/tvplayer/screens.lua       TV screen shapes (from the tvplayer mod)
+  moonloader/tvplayer/config/tvplayer.ini
+  moonloader/tvplayer/videos/*.mp4      your videos (H.264 mp4 plays on every phone)
+  Walk to a TV, tap [TV]. Buttons: |< << || >> >| V- V+ X. Works offline and on MP servers.
+  Lua API added for it: videoOpen / videoPlay / videoPause / videoSeek / videoGetPosition /
+  videoGetDuration / videoSetVolume / videoSetLoop / videoGetTexture / videoGetSize / videoIsEnded /
+  videoClose, renderDrawTextureTriangles(tex, {x,y,u,v,...}, argb).
+  samp.events (lib/samp/) is included: copy the whole lib folder WITH its subfolders.

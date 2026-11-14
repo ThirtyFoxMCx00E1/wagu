@@ -5567,6 +5567,7 @@ void MP::SendChat(const char* text)
 // Config
 void MP::SaveConfig()
 {
+    Config::BeginBatch();   // 4.13.34: one ini write (Bind saved the file on every key)
     auto S = [](const char* k, const char* v) { ConfigEntry* e = ::cfg->Bind(k, v, "MP"); e->SetString(v); delete e; };
     auto I = [](const char* k, int v) { ConfigEntry* e = ::cfg->Bind(k, v, "MP"); e->SetInt(v); delete e; };
     auto F = [](const char* k, float v) { ConfigEntry* e = ::cfg->Bind(k, v, "MP"); e->SetFloat(v); delete e; };
@@ -5601,7 +5602,7 @@ void MP::SaveConfig()
     B("DzModels", settings.dzModels);   // 3.61
     B("DzWorldTex", settings.dzWorldTex);   // 4.05.5
     S("ServerPassword", settings.serverPassword); S("HostedPassword", settings.hostedPassword);   // 2.19
-    ::cfg->Save();
+    ::cfg->EndBatch();
 }
 
 static void LoadConfig()
@@ -7272,6 +7273,11 @@ static void GtaHudSettings()
     ImGui::SeparatorText("GTA HUD");
     static int s_nPart = HudLayout::BAR_HEALTH;
     static bool dirty = false;
+    if(HudLayout::Conflict())
+    {
+        ImGui::TextWrapped("Advanced Settings (libAdvancedSettings.SA.so) is installed: it changes the HUD, so MP's custom HUD is off (both together drew broken \"spaghetti\" lines and froze the game). Use Advanced Settings, or remove it from the mods folder to use these options.");
+        return;
+    }
     bool on = HudLayout::Enabled();
     if(FloatMenu::ToggleSwitch("Custom GTA HUD", &on)) { HudLayout::SetEnabled(on); dirty = true; }
     ImGui::TextDisabled(on ? (HudLayout::HookCount() ? "On: the game's HUD uses the values below." : "On: change a value to apply it.")
@@ -7318,6 +7324,18 @@ static void GtaHudSettings()
 static void SectionDisplay(void*)
 {
     bool changed = false;
+    {   // 4.13.34: the main menu mode right here (same as ServerBrowserMode in TYFMC.MP.ini)
+        static const char* const kMode[] = { "Default (the game's menu)", "MP (Multiplayer button)", "Neon (new main menu)" };
+        const int cur = MP::MainMenuMode();
+        ImGui::TextUnformatted("Main menu");
+        ImGui::SetNextItemWidth(-FLT_MIN);
+        if(ImGui::BeginCombo("##mainmenu", kMode[cur < 0 || cur > 2 ? 0 : cur]))
+        {
+            for(int m = 0; m < 3; ++m) if(ImGui::Selectable(kMode[m], cur == m) && m != cur) MP::SetMainMenuMode(m);
+            ImGui::EndCombo();
+        }
+        ImGui::TextDisabled(MP::MainMenuMode() != 0 && !MP::MainMenuHookOn() ? "Restart the game to see it (the menu hook could not be added now)." : "Shown on the game's title menu (before a game is loaded).");
+    }
     ImGui::TextUnformatted("Name tag size");
     ImGui::SetNextItemWidth(-FLT_MIN);
     changed |= ImGui::SliderFloat("##ntsize", &settings.nametagSize, 0.5f, 2.5f, "%.2fx");

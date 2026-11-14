@@ -78,7 +78,9 @@ int Ensure(const std::string& dir)
     {
         const size_t n = (size_t)(f.z - f.a);
         const std::string p = dir + f.name;
-        if(Same(p, f.a, n)) continue;
+        // 4.13.34: only MISSING files are written - your own textures in neon/ are kept (4.13.33 put the built-in
+        // ones back over them on every start, so a custom neon menu never showed)
+        struct stat st; if(stat(p.c_str(), &st) == 0 && st.st_size > 0) continue;
         const std::string tmp = p + ".tmp";
         FILE* o = fopen(tmp.c_str(), "wb");
         if(!o) { logger->Error("Neon menu: can't write %s (errno %d)", tmp.c_str(), errno); continue; }
@@ -89,5 +91,20 @@ int Ensure(const std::string& dir)
     }
     if(wrote) logger->Info("Neon menu: %d built-in file(s) written to %s", wrote, dir.c_str());
     return wrote;
+}
+// 4.13.34: the built-in copy of one file in <dir>.builtin/ (used when your own file can't be read)
+std::string Builtin(const std::string& dir, const char* name)
+{
+    for(const File& f : kFiles)
+    {
+        if(strcmp(f.name, name)) continue;
+        const std::string d = dir + ".builtin/", p = d + name; mkdir(d.c_str(), 0777);
+        const size_t n = (size_t)(f.z - f.a);
+        if(Same(p, f.a, n)) return p;
+        FILE* o = fopen(p.c_str(), "wb"); if(!o) return std::string();
+        const bool ok = fwrite(f.a, 1, n, o) == n; fclose(o);
+        return ok ? p : std::string();
+    }
+    return std::string();
 }
 }

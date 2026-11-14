@@ -21,6 +21,47 @@ files = {
     "libMP32.so": "bin/libMP32.so", "libMP64.so": "bin/libMP64.so",
     "MP-Voice.apk": "release/MP-Voice.apk", "MP-Textdraw-Editor.apk": "release/MP-Textdraw-Editor.apk", "HiveMQ-kit.zip": "release/HiveMQ-kit-%s.zip" % V,
 }
+# 4.13.34: a release whose zips are not committed to release/ (they are too big to keep adding) gets them built
+# here from bin/, assets/MP, the APKs in release/ and HiveMQ/ (the same layout as tools/make_release.py)
+def _build_missing():
+    import zipfile, tempfile
+    tmp = tempfile.mkdtemp(prefix="mpzip_")
+    def tree(z, src, dst, skip=()):
+        for d, _, fs in os.walk(src):
+            for f in sorted(fs):
+                p = os.path.join(d, f); rel = os.path.relpath(p, src)
+                if any(rel.startswith(x) for x in skip): continue
+                z.write(p, dst + "/" + rel.replace(os.sep, "/"))
+    inst = ("MP Multiplayer %s - install\n\n1. lib/arm64-v8a/libMP64.so (64-bit game) or lib/armeabi-v7a/libMP32.so (32-bit)\n"
+            "   into Android/data/com.rockstargames.gtasa/mods/ (AML). Delete any separate libmonetloader.so there.\n"
+            "2. files/TYFMC into Android/data/com.rockstargames.gtasa/files/.\n"
+            "3. Main menu: TYFMC.MP.ini [MP] ServerBrowserMode = neon / mp / default (or MP Settings > Display > Main menu).\n") % V
+    apks = [a for a in ("MP-Voice.apk", "MP-Textdraw-Editor.apk") if os.path.isfile("release/" + a)]
+    out = {}
+    if not os.path.isfile(files["MP-client.zip"]):
+        o = os.path.join(tmp, "MP-%s-client.zip" % V); c = "MP-%s-client" % V
+        with zipfile.ZipFile(o, "w", zipfile.ZIP_DEFLATED) as z:
+            z.writestr(c + "/INSTALL.txt", inst)
+            for a in apks: z.write("release/" + a, c + "/" + a)
+            z.write("bin/libMP64.so", c + "/lib/arm64-v8a/libMP64.so"); z.write("bin/libMP32.so", c + "/lib/armeabi-v7a/libMP32.so")
+            tree(z, "assets/MP", c + "/files/TYFMC/MP", ("MP.zip",))
+        out["MP-client.zip"] = o
+    if not os.path.isfile(files["MP-full.zip"]):
+        if os.path.isfile("assets/MP/MP.zip"): out["MP-full.zip"] = "assets/MP/MP.zip"   # 4.13.20: MP.zip = the full zip
+        else:
+            o = os.path.join(tmp, "MP-%s-full.zip" % V); f = "MP-%s" % V
+            with zipfile.ZipFile(o, "w", zipfile.ZIP_DEFLATED) as z:
+                z.writestr(f + "/INSTALL.txt", inst)
+                for a in apks + (["Moquil.apk"] if os.path.isfile("release/Moquil.apk") else []): z.write("release/" + a, f + "/" + a)
+                z.write("bin/libMP64.so", f + "/lib/arm64-v8a/libMP64.so"); z.write("bin/libMP32.so", f + "/lib/armeabi-v7a/libMP32.so")
+                tree(z, "assets/MP", f + "/assets/MP", ("MP.zip",))
+            out["MP-full.zip"] = o
+    if not os.path.isfile(files["HiveMQ-kit.zip"]) and os.path.isdir("HiveMQ"):
+        o = os.path.join(tmp, "HiveMQ-kit-%s.zip" % V)
+        with zipfile.ZipFile(o, "w", zipfile.ZIP_DEFLATED) as z: tree(z, "HiveMQ", "HiveMQ-kit", ("obj",))
+        out["HiveMQ-kit.zip"] = o
+    for k, v in out.items(): print("built %s -> %s" % (k, v)); files[k] = v
+_build_missing()
 for d, s in files.items():
     if not os.path.isfile(s): sys.exit("missing %s (run tools/make_release.py %s first)" % (s, V))
     shutil.copy2(s, os.path.join(dl, d))

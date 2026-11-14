@@ -151,6 +151,20 @@ static void CfgBeforeSave(Config* c)
     if(mode == NEON_MODE_DEFAULT || s_bTitleHookOn) ApplyMode(mode);
 }
 void MP::SetTitleHookInstalled(bool on) { s_bTitleHookOn = on; }
+// 4.13.34: MP Settings > Display > Main menu
+extern "C" void MP_InstallTitleHook();   // main.cpp
+int MP::MainMenuMode() { return s_nNeonMode; }
+void MP::SetMainMenuMode(int mode)
+{
+    static const char* const kN[] = { "default", "mp", "neon" };
+    const char* n = mode == NEON_MODE_NEON ? kN[2] : mode == NEON_MODE_MP ? kN[1] : kN[0];
+    ApplyMode(mode == NEON_MODE_NEON ? NEON_MODE_NEON : mode == NEON_MODE_MP ? NEON_MODE_MP : NEON_MODE_DEFAULT);
+    MP_CopyStr(s_szModeKnown, n, sizeof(s_szModeKnown));
+    { ConfigEntry* e = ::cfg->Bind("ServerBrowserMode", n, "MP"); e->SetString(n); delete e; ::cfg->Save(); }
+    if(s_nNeonMode != NEON_MODE_DEFAULT && !s_bTitleHookOn) MP_InstallTitleHook();
+    logger->Info("Main menu: ServerBrowserMode = %s (MP Settings, title hook %s)", n, s_bTitleHookOn ? "on" : "off");
+}
+bool MP::MainMenuHookOn() { return s_bTitleHookOn; }
 
 void MP::InitMainMenu()
 {

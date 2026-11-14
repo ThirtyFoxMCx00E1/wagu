@@ -24,4 +24,5 @@ namespace HudLayout
     void  SetScreen(float w, float h); // every frame (ImGui display size)
     void  Load();                      // from TYFMC.MP.ini [GTAHUD]
     void  Save();
+    bool  Conflict();                  // 4.13.34: Advanced Settings is installed (it owns the HUD)
 }

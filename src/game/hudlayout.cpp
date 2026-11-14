@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <math.h>
+#include <dlfcn.h>
 #include "hudlayout.h"
 
 namespace
@@ -82,6 +83,17 @@ CRect XRect(const CRect& r)
        || x1 < -s_fW || x1 > s_fW * 2 || y1 < -s_fH || y1 > s_fH * 2) return r;
     return { x1, y1, x2, y2 };
 }
+// 4.13.34: a transformed polygon with a point far off the screen (or NaN) is drawn as the game made it - the
+// "spaghetti" lines across the HUD
+bool SaneVerts(const float* t, int n)
+{
+    for(int i = 0; i < n; ++i)
+    {
+        const float x = t[i * 2], y = t[i * 2 + 1];
+        if(!(x == x) || !(y == y) || x < -s_fW || x > s_fW * 2 || y < -s_fH || y > s_fH * 2) return false;
+    }
+    return true;
+}
 bool Hidden(int p) { return s_bOn && !s_Cfg[p].show; }
 
 // ---- the part hooks --------------------------------------------------------------------------------------
@@ -133,6 +145,7 @@ void hSV3(int n, float* v, float* tc, const CRGBA& col)
 {
     if(!Active() || n <= 0 || n > 64 || !v) { oSV3(n, v, tc, col); return; }
     float t[128]; for(int i = 0; i < n; ++i) { t[i * 2] = v[i * 2]; t[i * 2 + 1] = v[i * 2 + 1]; Xform(t[i * 2], t[i * 2 + 1]); }
+    if(!SaneVerts(t, n)) { oSV3(n, v, tc, col); return; }
     oSV3(n, t, tc, A(col, Alpha()));
 }
 void hSV6(int n, float* v, CRGBA* cols)
@@ -140,12 +153,14 @@ void hSV6(int n, float* v, CRGBA* cols)
     if(!Active() || n <= 0 || n > 64 || !v) { oSV6(n, v, cols); return; }
     float t[128]; CRGBA c[64]; const float k = Alpha();
     for(int i = 0; i < n; ++i) { t[i * 2] = v[i * 2]; t[i * 2 + 1] = v[i * 2 + 1]; Xform(t[i * 2], t[i * 2 + 1]); if(cols) c[i] = A(cols[i], k); }
+    if(!SaneVerts(t, n)) { oSV6(n, v, cols); return; }
     oSV6(n, t, cols ? c : nullptr);
 }
 void hMask(unsigned int n, float* v, float z)
 {
     if(!Active() || n == 0 || n > 64 || !v) { oMask(n, v, z); return; }
     float t[128]; for(unsigned int i = 0; i < n; ++i) { t[i * 2] = v[i * 2]; t[i * 2 + 1] = v[i * 2 + 1]; Xform(t[i * 2], t[i * 2 + 1]); }
+    if(!SaneVerts(t, (int)n)) { oMask(n, v, z); return; }
     oMask(n, t, z);
 }
 // the text parts of the player info: money "$00000123", money change "+$50" / "-$50", clock "12:34", ammo "30-120"
@@ -192,9 +207,25 @@ template<typename F> bool H(const char* sym, F hook, F* orig)
     if(!aml->Hook(f, (void*)hook, (void**)orig) || !*orig) { logger->Info("GTA HUD: hook failed (%s)", sym); return false; }
     ++s_nHooks; return true;
 }
+bool s_bAdvSet = false;
+// 4.13.34: ARM's Advanced Settings (libAdvancedSettings.SA.so) moves the same HUD parts through the same game
+// functions. With both on, every HUD sprite was moved twice ("spaghetti" lines from the weapon icon / bars) and
+// a change could hang the game. MP leaves the HUD to Advanced Settings when it is installed.
+bool AdvancedSettingsLoaded()
+{
+    if(s_bAdvSet) return true;
+    if(void* h = dlopen("libAdvancedSettings.SA.so", RTLD_NOW | RTLD_NOLOAD)) { dlclose(h); s_bAdvSet = true; }
+    return s_bAdvSet;
+}
 void InstallHooks()
 {
     if(s_bHooked || !s_hGame) return;
+    if(AdvancedSettingsLoaded())
+    {
+        static bool logged = false;
+        if(!logged) { logged = true; logger->Info("GTA HUD: Advanced Settings (libAdvancedSettings.SA.so) is installed - it controls the HUD, MP's custom HUD stays off (no double hooks)"); }
+        s_bOn = false; return;
+    }
     s_bHooked = true;
     s_pDetails = (FontDetails*)aml->GetSym(s_hGame, "_ZN5CFont7DetailsE");
     // the primitives first: a part hook without them only hides / shows
@@ -229,7 +260,8 @@ HudLayout::Cfg& HudLayout::Get(int p) { return s_Cfg[p >= 0 && p < PART_COUNT ? 
 void HudLayout::Reset(int p) { if(p >= 0 && p < PART_COUNT) Defaults(s_Cfg[p]); }
 bool HudLayout::Enabled() { return s_bOn; }
 int  HudLayout::HookCount() { return s_bHooked ? s_nHooks : 0; }
-void HudLayout::SetEnabled(bool on) { s_bOn = on; if(on) { s_bWant = true; InstallHooks(); } }
+void HudLayout::SetEnabled(bool on) { if(on && AdvancedSettingsLoaded()) { s_bOn = false; return; } s_bOn = on; if(on) { s_bWant = true; InstallHooks(); } }
+bool HudLayout::Conflict() { return AdvancedSettingsLoaded(); }
 void HudLayout::SetScreen(float w, float h) { if(w > 16 && h > 16) { s_fW = w; s_fH = h; } }
 void HudLayout::Init(void* gtasa) { s_hGame = gtasa; if(s_bWant) InstallHooks(); }
 
@@ -251,11 +283,12 @@ void HudLayout::Load()
     const bool on = ::cfg->GetBool("CustomHud", false, "GTAHUD");
     bool any = false; for(auto& c : s_Cfg) if(!Identity(c)) any = true;
     SetEnabled(on && any);   // all default = nothing hooked
-    s_bOn = on;
+    s_bOn = on && !AdvancedSettingsLoaded();
 }
 void HudLayout::Save()
 {
     if(!::cfg) return;
+    Config::BeginBatch();   // 4.13.34: one ini write instead of 120 (the game froze on every HUD change)
     auto B = [](const char* k, bool v) { ConfigEntry* e = ::cfg->Bind(k, v, "GTAHUD"); e->SetBool(v); delete e; };
     auto F = [](const char* k, float v) { ConfigEntry* e = ::cfg->Bind(k, v, "GTAHUD"); e->SetFloat(v); delete e; };
     B("CustomHud", s_bOn);
@@ -271,5 +304,5 @@ void HudLayout::Save()
         snprintf(k, sizeof(k), "%s_Height", kKeys[p]); F(k, c.h);
         snprintf(k, sizeof(k), "%s_Alpha", kKeys[p]);  F(k, c.alpha);
     }
-    ::cfg->Save();
+    ::cfg->EndBatch();
 }

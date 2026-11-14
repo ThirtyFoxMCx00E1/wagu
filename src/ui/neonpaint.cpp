@@ -54,7 +54,8 @@ namespace
     bool  f_bDown = false, f_bTap = false;
     float f_fX = 0, f_fY = 0, f_fPX = 0, f_fPY = 0, f_fUX = 0, f_fUY = 0;
 
-    bool LoadTex(const std::string& dir, const char* name)
+    bool LoadTex(const std::string& dir, const char* name);
+    bool LoadTexOld(const std::string& dir, const char* name)
     {
         if(s_nTex >= (int)(sizeof(s_Tex) / sizeof(s_Tex[0]))) return false;
         std::string p = dir + name;
@@ -71,6 +72,21 @@ namespace
         NamedTex& n = s_Tex[s_nTex++];
         snprintf(n.name, sizeof(n.name), "%s", name); n.t.t = tex; n.t.w = iw; n.t.h = ih;
         return true;
+    }
+}
+namespace NeonEmbed { std::string Builtin(const std::string& dir, const char* name); }
+namespace {
+    // 4.13.34: your own PNG in neon/ first; when it is missing or the game can't read it (a palette / 16-bit /
+    // interlaced PNG, a JPEG renamed to .png, ...) the built-in one, so the neon / mp menus always show
+    bool LoadTex(const std::string& dir, const char* name)
+    {
+        if(LoadTexOld(dir, name)) return true;
+        const std::string b = NeonEmbed::Builtin(dir, name);
+        if(b.empty()) return false;
+        const size_t cut = b.rfind('/');
+        const bool ok = LoadTexOld(b.substr(0, cut + 1), name);
+        logger->Info("Neon menu: %s%s -> built-in %s %s", dir.c_str(), name, name, ok ? "used" : "failed too");
+        return ok;
     }
     bool LoadFont(const std::string& dir, int idx, const char* base)
     {

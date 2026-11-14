@@ -24,6 +24,7 @@ inline bool str_equal(const char* str1, const char* str2)
 extern ModInfo* modinfo;
 ConfigEntry* Config::pLastEntry = NULL;
 void (*Config::s_fnBeforeSave)(Config*) = NULL;
+int Config::s_nBatch = 0;
 
 Config::Config(const char* szName)
 {
@@ -55,7 +56,7 @@ void Config::Init()
 
 void Config::Save()
 {
-    if(!m_bInitialized || !m_bValueChanged) return;
+    if(!m_bInitialized || !m_bValueChanged || s_nBatch > 0) return;
     static bool s_bIn = false;
     if(s_fnBeforeSave && !s_bIn) { s_bIn = true; s_fnBeforeSave(this); s_bIn = false; }
 
