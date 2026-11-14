@@ -358,6 +358,7 @@ void MP::DrawMenuMpFront()
     if(s_nNeonMode != NEON_MODE_MP && !s_bMenuMpViaApi) return;
     if(!s_bMenuMpOn || s_bMenuMpTile || s_bMenuMp.load() || !Game::IsMainMenuShown()) return;
     if(Game::LocalPed() > 0) return;   // 4.13.13: a game is loaded = the pause menu: no Multiplayer tile there
+    if(NeonPaint::Ready()) return;     // 4.13.28: painted natively in the game's menu pass (MP::NeonPaintMenu)
     const ImVec2 sz(ds.x * 0.11f, ds.y * 0.17f), at(ds.x * 0.13f, ds.y * 0.70f);
     ImGui::SetNextWindowPos(at); ImGui::SetNextWindowSize(sz);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));

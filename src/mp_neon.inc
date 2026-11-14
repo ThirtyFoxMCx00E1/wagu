@@ -15,6 +15,7 @@ static int  s_nNeonPage = NP_MAIN, s_nNeonSel = 2;   // Browse servers
 static bool s_bNeonHidden = false;                   // "Game settings": the game's own menu for now
 static LRow s_NeonPending;
 static char s_szNeonSearch[64] = "";
+static bool s_bNeonQuickAfterLoad = false;   // 4.13.28: Quick connect tapped on the title
 static int  s_nNeonList = 0;                         // 0 all, 1 featured, 2 favourites, 3 Wi-Fi
 static bool s_bNeonListOpen = false, s_bNeonFilterOpen = false;
 static bool s_bNeonHideFull = false, s_bNeonHideEmpty = false, s_bNeonHideLocked = false;
@@ -590,7 +591,7 @@ static bool NeonTitleCtx() { return Game::IsMainMenuShown() && Game::LocalPed() 
 bool MP::NeonCoversGameMenu()
 {
     if(!NeonOn()) return false;   // 4.13.25: ServerBrowserMode = mp / default: nothing is read
-    if(HUD::TitleMenuBroken()) return false;   // 4.13.26: the title frame crashed (caught): the game's own menu
+    if(!NeonPaint::Ready()) return false;      // 4.13.28: the native painter (PNG textures) is the only title drawing
     const bool on = true, menu = Game::IsMainMenuShown(), ped = Game::LocalPed() > 0, mp = s_bMenuMp.load();
     const bool r = on && !s_bNeonHidden && menu && !ped && !mp;
     if(r) s_nNeonUpMs = MP_NowMs();
@@ -838,6 +839,12 @@ static bool NeonDraw()
     const bool title = NeonTitleCtx();
     const bool black = MenuMpBlack() && s_nMenuMpPct.load() < 0 && client.GetState() == NET_DISCONNECTED && !FloatMenu::IsModal() && !JoinScreenUp();
     if(!title && !black) { if(!Game::IsMainMenuShown()) s_bNeonHidden = false; return false; }
+    if(title) return false;   // 4.13.28: the title menu is painted natively (MP::NeonPaintMenu), no ImGui there
+    if(s_bNeonQuickAfterLoad && black && !VKeyboard::IsOpen())
+    {   // Quick connect from the title: the address keyboard opens on the black screen
+        s_bNeonQuickAfterLoad = false; s_nNeonPage = NP_MAIN;
+        VKeyboard::Open("Quick connect: ip:port (empty = the best featured server)", "", 63, OnNeonQuick);
+    }
     const ImVec2 ds = ImGui::GetIO().DisplaySize;
     if(s_bNeonHidden && title)
     {   // the game's own menu (Game settings): a small way back to the neon menu
@@ -904,4 +911,264 @@ static bool NeonPendingJoin()
     logger->Info("Neon menu: the Multiplayer load is done -> join %s", s_NeonPending.name);
     LJoin(s_NeonPending);
     return true;
+}
+
+// ================================================================================================
+// 4.13.28: the title menu is drawn like PCMenu - at the end of the game's own menu pass, with the game's sprite
+// drawing (MobileMenu::DrawSprite) and PNG textures from files/TYFMC/MP/neon/ (tools/gen_neon_assets.py). No ImGui
+// runs on the title screen any more (ServerBrowserMode = neon AND mp): the game quit by itself there in 4.13.22-27.
+// The taps only queue an action; the action runs on the game thread (MobileMenu::Update -> MP::NeonMenuTick).
+// ================================================================================================
+enum { NA_NONE = 0, NA_RESUME, NA_NEWGAME, NA_BROWSE, NA_QUICK, NA_SETTINGS, NA_QUIT, NA_SIGNOUT, NA_MPTILE };
+static std::atomic<int> s_nNeonAct{NA_NONE};
+static int  s_nNeonDlg = 0;              // 1 About, 2 Quit
+static int  s_nNeonPaintFrames = 0;
+static void (*s_fnOnSettings)() = nullptr;
+static bool s_bOnSettingsLooked = false;
+
+static NeonPaint::Col NC(int r, int g, int b, int a = 255) { return { (uint8_t)r, (uint8_t)g, (uint8_t)b, (uint8_t)a }; }
+static bool NeonPaintLoad()
+{
+    if(NeonPaint::Ready()) return true;
+    if(NeonPaint::Failed()) return false;
+    return NeonPaint::Load(MP::DataDir());
+}
+// what the game's menu pass gets painted with: 0 nothing, 1 the neon title menu, 2 the [Multiplayer] tile (mp), 3 the NEON MENU pill
+int MP::NeonPaintWanted()
+{
+    if(!Game::IsMainMenuShown() || Game::LocalPed() > 0 || s_bMenuMp.load()) return 0;
+    if(NeonOn()) { if(!NeonPaintLoad()) return 0; return s_bNeonHidden ? 3 : 1; }
+    if(s_nNeonMode == NEON_MODE_MP && s_bMenuMpOn && !s_bMenuMpTile) return NeonPaintLoad() ? 2 : 0;
+    return 0;
+}
+bool MP::NeonNativeTitle() { return NeonPaint::Ready() && NeonPaintWanted() != 0; }
+
+static void NeonPText(int f, const char* s, float x, float y, float px, NeonPaint::Col c, float tr = 0, bool shadow = false)
+{
+    if(shadow) NeonPaint::Text(f, s, x + px * 0.06f, y + px * 0.08f, px, NC(0, 0, 0, 170), tr);
+    NeonPaint::Text(f, s, x, y, px, c, tr);
+}
+static void NeonPFrame(float x0, float y0, float x1, float y1, float t, NeonPaint::Col c)
+{
+    NeonPaint::Quad(x0, y0, x1, y0 + t, c); NeonPaint::Quad(x0, y1 - t, x1, y1, c);
+    NeonPaint::Quad(x0, y0, x0 + t, y1, c); NeonPaint::Quad(x1 - t, y0, x1, y1, c);
+}
+static void NeonPBackdrop(float W, float H)
+{
+    using namespace NeonPaint;
+    Quad(0, 0, W, H, NC(0, 0, 0));
+    if(const Tex* a = T("art.png"))
+    {
+        const float iw = H * (1131.0f / 707.0f), x0 = fmaxf(W - iw, W * 0.30f);
+        Img(a, x0, 0, x0 + iw, H);
+    }
+    Quad(0, 0, W, H, NC(24, 6, 8, 70));
+    Img(T("shade_left.png"), 0, 0, W * 0.62f, H);
+    Img(T("shade_bottom.png"), 0, H * 0.78f, W, H);
+    Img(T("shade_top.png"), 0, 0, W, H * 0.16f);
+}
+static bool NeonPButton(const char* label, float x0, float y0, float x1, float y1, float u)
+{
+    using namespace NeonPaint;
+    const bool held = Held(x0, y0, x1, y1);
+    Img(T("button.png"), x0, y0, x1, y1, held ? NC(255, 236, 190) : NC(255, 255, 255));
+    const float fs = 13 * u, w = TextW(F_CAPS, label, fs, 1.6f * u);
+    NeonPText(F_CAPS, label, (x0 + x1 - w) * 0.5f, (y0 + y1 - fs) * 0.5f, fs, NC(226, 228, 232), 1.6f * u);
+    return Tap(x0, y0, x1, y1);
+}
+static void NeonPDialog(float W, float H, float u)
+{
+    using namespace NeonPaint;
+    Quad(0, 0, W, H, NC(0, 0, 0, 170));
+    const float dw = 520 * u, dh = 230 * u, x0 = (W - dw) * 0.5f, y0 = (H - dh) * 0.5f;
+    Img(T("dialog.png"), x0, y0, x0 + dw, y0 + dh);
+    const bool about = s_nNeonDlg == 1;
+    NeonPText(F_GOTHIC, about ? "About" : "Quit game", x0 + 28 * u, y0 + 18 * u, 34 * u, NC(226, 228, 232), 0, true);
+    char l[5][120]; int n = 0;
+    if(about)
+    {
+        snprintf(l[n++], 120, "MP Multiplayer %s for GTA San Andreas (Android, AML).", MP_VERSION_STR);
+        snprintf(l[n++], 120, "by ThirtyFoxMCx00E1 - github.com/ThirtyFoxMCx00E1/wagu");
+        snprintf(l[n++], 120, "Discord: %s", MP_AUTH_DISCORD_URL);
+        snprintf(l[n++], 120, "Fonts: UnifrakturMaguntia, Cinzel, Fredoka (SIL OFL 1.1).");
+    }
+    else snprintf(l[n++], 120, "Close GTA San Andreas now? Unsaved progress is lost.");
+    for(int i = 0; i < n; ++i) NeonPText(F_UI, l[i], x0 + 30 * u, y0 + (72 + i * 22) * u, 15 * u, NC(190, 194, 202));
+    const float by0 = y0 + dh - 62 * u, by1 = by0 + 40 * u;
+    if(about)
+    {
+        if(NeonPButton("CLOSE", x0 + dw - 180 * u, by0, x0 + dw - 30 * u, by1, u)) s_nNeonDlg = 0;
+    }
+    else
+    {
+        if(NeonPButton("CANCEL", x0 + dw - 340 * u, by0, x0 + dw - 190 * u, by1, u)) s_nNeonDlg = 0;
+        if(NeonPButton("QUIT", x0 + dw - 180 * u, by0, x0 + dw - 30 * u, by1, u)) s_nNeonAct = NA_QUIT;
+    }
+    EatTap();   // nothing under the dialog gets the tap
+}
+static void NeonPTitle(float W, float H)
+{
+    using namespace NeonPaint;
+    const float u = H / 804.0f;
+    const float L = fminf(W * 0.07f, 100 * u * (W / H) / (1430.0f / 804.0f));
+    NeonPBackdrop(W, H);
+    if(const Tex* lg = T("logo.png"))
+    {
+        const float w = 490 * u, h = w * (601.0f / 1920.0f);   // title.png's shape (the texture is stretched to 1024x512)
+        Img(lg, L, 52 * u, L + w, 52 * u + h);
+    }
+    // the dialog takes the taps first (it is drawn last, on top)
+    const bool dlg = s_nNeonDlg != 0;
+    bool tapUsed = false;
+    static const char* const kItems[] = { "Resume", "New game", "Browse servers", "Quick connect", "Settings", "About", "Quit game" };
+    const int ni = 7; const float fs = 38 * u, step = 43 * u, y0 = 205 * u, ix = L + 24 * u;
+    for(int i = 0; i < ni; ++i)
+    {
+        const float y = y0 + i * step, w = TextW(F_GOTHIC, kItems[i], fs);
+        const float hx0 = ix - 30 * u, hy0 = y, hx1 = ix + w + 30 * u, hy1 = y + step;
+        const bool held = !dlg && Held(hx0, hy0, hx1, hy1);
+        const bool on = i == s_nNeonSel || held;
+        if(on) { const float a = 9 * u; Img(T("arrow.png"), ix - 14 * u - a * 0.5f, y + step * 0.5f - a * 0.5f, ix - 14 * u + a * 0.5f, y + step * 0.5f + a * 0.5f, NC(222, 200, 140)); }
+        const float px = ix, py = y + (step - fs) * 0.5f - 2 * u;
+        for(int k = 0; k < 4; ++k) Text(F_GOTHIC, kItems[i], px + ((k & 1) ? 1.4f : -1.4f) * u, py + ((k & 2) ? 1.4f : -1.4f) * u, fs, NC(10, 12, 18, 230));
+        Text(F_GOTHIC, kItems[i], px + 2 * u, py + 3 * u, fs, NC(0, 0, 0, 160));
+        Text(F_GOTHIC, kItems[i], px, py, fs, on ? NC(240, 243, 250) : NC(196, 204, 220), on ? NC(170, 180, 205) : NC(112, 122, 145));
+        if(!dlg && !tapUsed && Tap(hx0, hy0, hx1, hy1))
+        {
+            tapUsed = true; s_nNeonSel = i;
+            switch(i)
+            {
+                case 0: s_nNeonAct = NA_RESUME; break;
+                case 1: s_nNeonAct = NA_NEWGAME; break;
+                case 2: s_nNeonAct = NA_BROWSE; break;
+                case 3: s_nNeonAct = NA_QUICK; break;
+                case 4: s_nNeonAct = NA_SETTINGS; break;
+                case 5: s_nNeonDlg = 1; break;
+                case 6: s_nNeonDlg = 2; break;
+            }
+        }
+    }
+    {   // tagline
+        const float ty = y0 + ni * step + 22 * u;
+        NeonPText(F_UI, "FIND A WORLD AND JOIN THE STREETS OF SAN", ix + 10 * u, ty, 12.5f * u, NC(205, 208, 214), 1.0f * u);
+        NeonPText(F_UI, "ANDREAS.", ix + 10 * u, ty + 16 * u, 12.5f * u, NC(205, 208, 214), 1.0f * u);
+    }
+    {   // Neon Identity (top right)
+        const float ax = W - 445 * u, ay = 40 * u, bx = W - 68 * u, by = 103 * u;
+        Img(T("card_identity.png"), ax, ay, bx, by);
+        Img(T("discord.png"), ax + 11 * u, ay + 13 * u, ax + 48 * u, ay + 50 * u);
+        std::vector<std::string> acc = AuthAccounts();
+        const std::string who = !s_AuthUser.empty() ? s_AuthUser : (!acc.empty() ? acc[0] : std::string());
+        const bool linked = !who.empty() || !s_Auth.discordName.empty();
+        NeonPText(F_CAPS, "NEON IDENTITY", ax + 59 * u, ay + 9 * u, 10 * u, NC(150, 152, 158), 1.2f * u);
+        NeonPText(F_CAPS, linked ? "DISCORD CONNECTED" : "DISCORD NOT CONNECTED", ax + 59 * u, ay + 22 * u, 15 * u, NC(226, 228, 232), 1.4f * u);
+        char sub[96];
+        if(linked) snprintf(sub, sizeof(sub), "Neon account connected%s%s", who.empty() ? "" : " - ", who.c_str());
+        else snprintf(sub, sizeof(sub), "Log in on a server to link your Discord");
+        Img(T("dot.png"), ax + 59 * u, ay + 46 * u, ax + 65 * u, ay + 52 * u, linked ? NC(110, 200, 120) : NC(120, 120, 126));
+        NeonPText(F_UI, sub, ax + 70 * u, ay + 42 * u, 10 * u, NC(140, 142, 148));
+        if(linked)
+        {
+            const float sw = TextW(F_CAPS, "SIGN OUT", 9 * u, 1.2f * u);
+            NeonPText(F_CAPS, "SIGN OUT", bx - 14 * u - sw, ay + 42 * u, 9 * u, NC(150, 152, 158), 1.2f * u);
+            if(!dlg && !tapUsed && Tap(bx - 110 * u, ay + 34 * u, bx, by)) { tapUsed = true; s_nNeonAct = NA_SIGNOUT; }
+        }
+    }
+    {   // Neon featured (bottom left): on the title it opens the server browser after the Multiplayer load
+        const float ax = L - 8 * u, ay = 643 * u, bx = L + 379 * u, by = 723 * u;
+        const bool held = !dlg && Held(ax, ay, bx, by);
+        Img(T("card_featured.png"), ax, ay, bx, by, held ? NC(255, 236, 190) : NC(255, 255, 255));
+        NeonPText(F_CAPS, "NEON FEATURED", ax + 20 * u, ay + 18 * u, 10 * u, NC(150, 152, 158), 1.2f * u);
+        NeonPText(F_CAPS, "BROWSE SERVERS", ax + 20 * u, ay + 32 * u, 18 * u, NC(226, 228, 232), 1.8f * u, true);
+        NeonPText(F_CAPS, "PLAY NOW", ax + 20 * u, ay + 57 * u, 10 * u, NC(200, 202, 208), 1.2f * u);
+        if(!dlg && !tapUsed && Tap(ax, ay, bx, by)) { tapUsed = true; s_nNeonAct = NA_BROWSE; }
+    }
+    {   // footer: version + hints + language
+        char v[64]; snprintf(v, sizeof(v), "V%s - NEON PREVIEW", MP_VERSION_STR);
+        const float hy = 758 * u;
+        NeonPText(F_UI, v, L - 8 * u, hy, 12 * u, NC(100, 104, 112), 2.4f * u);
+        float hx = W * (998.0f / 1430.0f);
+        Img(T("arrow_down.png"), hx, hy + 2 * u, hx + 9 * u, hy + 11 * u, NC(120, 124, 132));
+        NeonPText(F_UI, "SELECT", hx + 16 * u, hy, 12 * u, NC(120, 124, 132), 2.2f * u);
+        const float ex = hx + 84 * u;
+        NeonPText(F_UI, "ENTER", ex, hy, 12 * u, NC(170, 172, 178), 2.0f * u);
+        NeonPText(F_UI, "CONFIRM", ex + TextW(F_UI, "ENTER", 12 * u, 2.0f * u) + 8 * u, hy, 12 * u, NC(120, 124, 132), 2.2f * u);
+        const char* ln = "ENGLISH";
+        {   // the atlas is ASCII: other languages show their code
+            static char up[16]; const char* c = settings.uiLanguage[0] ? settings.uiLanguage : "en";
+            if(strcasecmp(c, "en")) { NeonUpper(up, sizeof(up), c); ln = up; }
+        }
+        const float lx = W - 160 * u;
+        NeonPFrame(lx, hy - 2 * u, lx + 16 * u, hy + 14 * u, 1.2f * u, NC(200, 202, 208));
+        NeonPText(F_UI, "A", lx + 4 * u, hy, 11 * u, NC(200, 202, 208));
+        NeonPText(F_UI, ln, lx + 24 * u, hy, 12 * u, NC(220, 222, 228), 1.6f * u);
+    }
+    if(dlg) NeonPDialog(W, H, u);
+}
+static void NeonPPill(float W, float H)
+{   // the game's own menu (Game settings): the way back to the neon menu
+    using namespace NeonPaint;
+    const float u = H / 804.0f, w = 230 * u, h = 46 * u, x0 = W * 0.02f, y0 = H - h - 20 * u;
+    Img(T("pill.png"), x0, y0, x0 + w, y0 + h);
+    NeonPText(F_UI, "NEON MENU", x0 + 20 * u, y0 + 14 * u, 14 * u, NC(226, 228, 232), 3.0f * u);
+    if(Tap(x0, y0, x0 + w, y0 + h)) s_bNeonHidden = false;
+}
+static void NeonPTile(float W, float H)
+{   // ServerBrowserMode = mp: the [Multiplayer] tile on the game's title menu, bottom left
+    using namespace NeonPaint;
+    const float w = W * 0.11f, h = H * 0.17f, x0 = W * 0.13f, y0 = H * 0.70f;
+    const bool held = Held(x0, y0, x0 + w, y0 + h);
+    Quad(x0, y0, x0 + w, y0 + h, held ? NC(60, 60, 60, 230) : NC(12, 12, 12, 220));
+    NeonPFrame(x0, y0, x0 + w, y0 + h, fmaxf(2.0f, H * 0.004f), NC(200, 200, 200, 230));
+    const float d = h * 0.34f;
+    Img(T("discord.png"), x0 + (w - d) * 0.5f, y0 + h * 0.18f, x0 + (w + d) * 0.5f, y0 + h * 0.18f + d);
+    const float fs = h * 0.17f, tw = TextW(F_UI, "Multiplayer", fs);
+    NeonPText(F_UI, "Multiplayer", x0 + (w - tw) * 0.5f, y0 + h * 0.66f, fs, NC(220, 220, 220));
+    if(Tap(x0, y0, x0 + w, y0 + h)) s_nNeonAct = NA_MPTILE;
+}
+// render thread, after the game's MobileMenu::Render
+void MP::NeonPaintMenu(int what)
+{
+    if(!NeonPaint::Ready() || what <= 0) return;
+    const float W = NeonPaint::W(), H = NeonPaint::H();
+    if(s_nNeonPaintFrames < 3) logger->Info("Neon menu: native frame %d (%s, %.0fx%.0f)", s_nNeonPaintFrames + 1, what == 1 ? "neon title" : what == 2 ? "mp tile" : "pill", W, H);
+    NeonPaint::FrameInput();
+    NeonPaint::Begin();
+    if(what == 1) NeonPTitle(W, H);
+    else if(what == 2) NeonPTile(W, H);
+    else NeonPPill(W, H);
+    NeonPaint::End();
+    if(s_nNeonPaintFrames < 3 && ++s_nNeonPaintFrames == 3) logger->Info("Neon menu: native frames ok");
+}
+void MP::NeonTouch(int kind, int finger, float x, float y) { NeonPaint::OnTouch(kind, finger, x, y); }
+// game thread (MobileMenu::Update)
+void MP::NeonMenuTick()
+{
+    const int a = s_nNeonAct.exchange(NA_NONE);
+    if(a == NA_NONE) return;
+    switch(a)
+    {
+        case NA_RESUME:  NeonResume(); break;
+        case NA_NEWGAME: NeonNewGame(); break;
+        case NA_BROWSE:  if(NeonTitleCtx()) NeonBrowseFromTitle(); break;
+        case NA_QUICK:   if(NeonTitleCtx()) { s_bNeonQuickAfterLoad = true; NeonBrowseFromTitle(); } break;
+        case NA_MPTILE:  MenuMpTap(nullptr); break;
+        case NA_SIGNOUT:
+        {
+            std::vector<std::string> acc = AuthAccounts();
+            const std::string who = !s_AuthUser.empty() ? s_AuthUser : (!acc.empty() ? acc[0] : std::string());
+            if(!who.empty()) AuthAccountsRemove(who);
+            AuthLogout(nullptr, false);
+            logger->Info("Neon menu: signed out");
+            break;
+        }
+        case NA_SETTINGS:
+        {
+            if(!s_bOnSettingsLooked) { s_bOnSettingsLooked = true; *(void**)&s_fnOnSettings = (void*)aml->GetSym(aml->GetLibHandle("libGTASA.so"), "_ZN14MainMenuScreen10OnSettingsEv"); }
+            if(s_fnOnSettings) { logger->Info("Neon menu: Settings -> the game's settings"); s_fnOnSettings(); }
+            else { logger->Info("Neon menu: Settings -> no MainMenuScreen::OnSettings, the game's menu is shown"); s_bNeonHidden = true; }
+            break;
+        }
+        case NA_QUIT: logger->Info("Neon menu: Quit game"); MP::SaveConfig(); exit(0); break;
+    }
 }

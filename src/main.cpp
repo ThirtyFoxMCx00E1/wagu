@@ -27,6 +27,7 @@
 #include "game/modscan.h"
 #include "game/screenguard.h"   // 4.12.2
 #include "tyfmc.h"               // 4.12.7: files/TYFMC/MP + files/TYFMC/TYFMC.MP.ini
+#include "ui/neonpaint.h"
 #include "ui/hud.h"
 #include "ui/floatmenu.h"
 #include "ui/vkeyboard.h"
@@ -34,7 +35,7 @@
 #include "net/server.h"
 
 // 4.12.7: the config is files/TYFMC/TYFMC.MP.ini (the old configs/net.thirtyfox.mp.ini is moved there)
-TYFMC_MODCFG(net.thirtyfox.mp, MP Multiplayer, 4.13.27, ThirtyFoxMCx00E1, MP, net.thirtyfox.mp)
+TYFMC_MODCFG(net.thirtyfox.mp, MP Multiplayer, 4.13.28, ThirtyFoxMCx00E1, MP, net.thirtyfox.mp)
 NEEDGAME(com.rockstargames.gtasa)
 
 // Globals used by the embedded RenderWare ImGui backend
@@ -169,7 +170,7 @@ DECL_HOOKv(Render2dStuff)
     if(!s_bRWReady) { InitRenderWareFunctions(); s_bRWReady = true; }
     // 4.13.23: while the neon title menu replaces the game's menu, MP's frame is drawn from MobileMenu::Render
     // (the game's menu pass, after Render2dStuff), like PCMenu does: one frame, nothing of the game's menu on top
-    if(MP::NeonCoversGameMenu() && MP_NowMs() - s_nNeonMenuPassMs < 250) return;
+    if(MP_NowMs() - s_nNeonMenuPassMs < 250 && MP::NeonNativeTitle()) return;   // 4.13.28: no ImGui on the title
     if(HUD::IsInitialised()) { PollTouches(); PadTick(); DrainIO(); }   // 3.39.2: + controller
     HUD::Render();
     int cm = s_nClearMouse.load();
@@ -197,23 +198,25 @@ DECL_HOOKv(LS_RenderSplash)
 DECL_HOOKv(MobileMenu_Update, void* self)
 {
     MobileMenu_Update(self);
+    MP::NeonMenuTick();   // 4.13.28: the tapped title menu action
     MP::MenuMpMenuTick();
 }
 // 4.13.23: the neon title menu replaces the game's title menu: the game's menu is not drawn under / over it
 static int s_nMenuRenderSkips = 0;
 DECL_HOOKv(MobileMenu_Render, void* self)
 {
-    if(MP::NeonCoversGameMenu())
-    {   // PCMenu's way: own the game's menu pass. The stock title menu (and PCMenu's, which is further down this
-        // chain) is not drawn; MP's title frame (the neon menu, the floating menu, the keyboard) is drawn instead
-        s_nNeonCoverMs = MP_NowMs();
-        if(s_nMenuRenderSkips++ == 0) logger->Info("Neon menu: drawn in the game's menu pass, the stock title menu is hidden (ServerBrowserMode = neon)");
-        if(!s_bRWReady) { InitRenderWareFunctions(); s_bRWReady = true; }
-        if(HUD::IsInitialised()) { PollTouches(); DrainIO(); }
-        if(HUD::RenderTitleMenu()) { s_nNeonMenuPassMs = MP_NowMs(); return; }
-        // not drawn (the renderer is not ready yet): the game's own menu this frame
-    }
+    // 4.13.28: PCMenu's way. The game's menu pass runs (it sets up the 2D drawing), then MP paints its title menu
+    // on top with the game's own sprite drawing and PNG textures (files/TYFMC/MP/neon). The stock title menu is
+    // covered by the opaque neon backdrop and gets no touches (MPScreenOwnsTouches). No ImGui on the title.
+    const int paint = MP::NeonPaintWanted();
+    if(paint == 1) s_nNeonCoverMs = MP_NowMs();
     MobileMenu_Render(self);
+    if(paint)
+    {
+        if(s_nMenuRenderSkips++ == 0) logger->Info("Neon menu: painted natively after the game's menu pass (mode %d)", paint);
+        s_nNeonMenuPassMs = MP_NowMs();
+        MP::NeonPaintMenu(paint);
+    }
 }
 DECL_HOOKv(LS_RenderLoadingBar)
 {
@@ -261,6 +264,7 @@ static bool DispatchTouch(int type, int finger, int x, int y)
 {
     std::lock_guard<std::recursive_mutex> lk(s_DispatchMx);
     const bool isRelease = (type == TOUCH_RELEASE || type == TOUCH_POINTER_UP);
+    MP::NeonTouch(type == TOUCH_PUSH ? 1 : (isRelease ? 3 : 2), finger, (float)x, (float)y);   // 4.13.28: the native title menu
     uint64_t now = MP_NowMs();
 
     // a finger that "never lifted" (lost event) must not block ImGui forever.
@@ -906,6 +910,7 @@ extern "C" void OnModLoad()
     pGameHandle = aml->GetLibHandle("libGTASA.so");
     if(!pGameLib || !pGameHandle) { logger->Error("libGTASA.so not found - MP disabled"); return; }
 
+    NeonPaint::Init(pGameHandle);   // 4.13.28: the native (PCMenu-style) title menu
     SET_TO(nearScreenZ,    aml->GetSym(pGameHandle, "_ZN9CSprite2d11NearScreenZE"));
     SET_TO(recipNearClip,  aml->GetSym(pGameHandle, "_ZN9CSprite2d13RecipNearClipE"));
     SET_TO(SetScissorRect, aml->GetSym(pGameHandle, "_ZN7CWidget10SetScissorER5CRect"));

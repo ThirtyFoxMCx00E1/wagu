@@ -39,6 +39,7 @@ extern "C" unsigned long crc32(unsigned long crc, const unsigned char* buf, unsi
 #include <time.h>
 #include "ui/i18n.h"
 #include "ui/hud.h"
+#include "ui/neonpaint.h"   // 4.13.28
 #include "ui/server_style.h"   // 4.03
 #include "ui/floatmenu.h"
 #include "ui/vkeyboard.h"
