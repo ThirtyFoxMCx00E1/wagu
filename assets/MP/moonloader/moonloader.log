@@ -1,0 +1,29 @@
+[13:24:49.464405] (system) loaded compat profile: default GTA:2.0 SAMP:ARZ-15.0.8
+[13:25:13.124970] (system) 
+
+
+	* MonetLoader initialized! Version: 3.8.0-mp
+	* Official Telegram: t.me/MonetLoader
+
+
+[13:25:13.326420] (system) Loading script: '/storage/emulated/0/Android_unprotected/data/com.rockstargames.gtasa/files/TYFMC/MP/moonloader/mp_hello.lua'...
+[13:25:13.385386] (error) MP Hello: ...gtasa/files/TYFMC/MP/moonloader/lib/samp/events/core.lua:21: SA-MP is not loaded
+stack traceback:
+	[C]: in function 'assert'
+	...gtasa/files/TYFMC/MP/moonloader/lib/samp/events/core.lua:21: in main chunk
+	[C]: in function 'require'
+	...ames.gtasa/files/TYFMC/MP/moonloader/lib/samp/events.lua:7: in main chunk
+	[C]: in function 'require'
+	...ckstargames.gtasa/files/TYFMC/MP/moonloader/mp_hello.lua:7: in main chunk
+[13:25:13.385484] (error) MP Hello: Script died due to an error.
+[13:25:21.628442] (system) Loading script: '/storage/emulated/0/Android_unprotected/data/com.rockstargames.gtasa/files/TYFMC/MP/moonloader/mp_hello.lua'...
+[13:25:21.657990] (error) MP Hello: ...gtasa/files/TYFMC/MP/moonloader/lib/samp/events/core.lua:21: SA-MP is not loaded
+stack traceback:
+	[C]: in function 'assert'
+	...gtasa/files/TYFMC/MP/moonloader/lib/samp/events/core.lua:21: in main chunk
+	[C]: in function 'require'
+	...ames.gtasa/files/TYFMC/MP/moonloader/lib/samp/events.lua:7: in main chunk
+	[C]: in function 'require'
+	...ckstargames.gtasa/files/TYFMC/MP/moonloader/mp_hello.lua:7: in main chunk
+[13:25:21.658053] (error) MP Hello: Script died due to an error.
+[13:25:25.661248] (system) MonetLoader for MP: attached to MP 4.13.32 - PC MoonLoader scripts run on MP servers
