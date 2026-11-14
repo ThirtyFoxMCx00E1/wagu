@@ -32,6 +32,7 @@
 #include "../audio/sound.h"
 #include <unistd.h>
 #include <signal.h>
+#include <pthread.h>
 #include <setjmp.h>
 #include <dlfcn.h>
 #include <stdarg.h>
@@ -1418,6 +1419,7 @@ namespace
 {
     sigjmp_buf          s_TitleJmp;
     volatile sig_atomic_t s_bTitleArmed = 0, s_nTitleSig = 0;
+    pthread_t           s_TitleThread;
     volatile const char* s_szTitleStep = "start";
     volatile uintptr_t  s_nTitlePc = 0, s_nTitleAddr = 0, s_nTitleLr = 0;
     int                 s_nTitleFrames = 0;
@@ -1426,7 +1428,7 @@ namespace
     struct sigaction    s_TitleOld[5];
     void TitleFault(int sig, siginfo_t* si, void* ucv)
     {
-        if(s_bTitleArmed)
+        if(s_bTitleArmed && pthread_equal(pthread_self(), s_TitleThread))   // only the menu thread's own crash
         {
             s_bTitleArmed = 0; s_nTitleSig = sig; s_nTitleAddr = si ? (uintptr_t)si->si_addr : 0;
             ucontext_t* uc = (ucontext_t*)ucv;
@@ -1450,6 +1452,7 @@ namespace
         struct sigaction sa; memset(&sa, 0, sizeof(sa));
         sa.sa_sigaction = TitleFault; sa.sa_flags = SA_SIGINFO | SA_ONSTACK | SA_NODEFER; sigemptyset(&sa.sa_mask);
         for(int i = 0; i < 5; ++i) sigaction(kTitleSigs[i], &sa, &s_TitleOld[i]);
+        s_TitleThread = pthread_self();
         s_bTitleArmed = 1;
     }
     void TitleDisarm()

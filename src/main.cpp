@@ -11,6 +11,10 @@
 #include <math.h>
 #include <mutex>
 #include <time.h>
+#include <sys/uio.h>
+#include <sys/syscall.h>
+#include <errno.h>
+#include <unistd.h>
 #include <atomic>
 #include <vector>
 #include <exception>
@@ -30,7 +34,7 @@
 #include "net/server.h"
 
 // 4.12.7: the config is files/TYFMC/TYFMC.MP.ini (the old configs/net.thirtyfox.mp.ini is moved there)
-TYFMC_MODCFG(net.thirtyfox.mp, MP Multiplayer, 4.13.26, ThirtyFoxMCx00E1, MP, net.thirtyfox.mp)
+TYFMC_MODCFG(net.thirtyfox.mp, MP Multiplayer, 4.13.27, ThirtyFoxMCx00E1, MP, net.thirtyfox.mp)
 NEEDGAME(com.rockstargames.gtasa)
 
 // Globals used by the embedded RenderWare ImGui backend
@@ -680,19 +684,52 @@ DECL_HOOK(void*, RwCamFogDist, void* cam, float f)
 // anything else = one literal unit. The game never checks the end of the output buffer, so one bad /
 // mismatched entry (a replaced or half-copied texdb file, another mod's texture pack) writes past the
 // texture and the game dies (or hangs) while loading. Same decoder here, but it stops at the buffer end.
-static std::atomic<int> s_nRleClamped{0};
+static std::atomic<int> s_nRleClamped{0}, s_nRleSrcCut{0};
+// 4.13.26: the SOURCE end too. The game never knows how long the packed data is, and when a texture's data is
+// shorter than its size says (a texdb from another version / texture pack, an incomplete mipmap chain) the
+// decoder reads on past the end. Android 11+ (Scudo) puts a guard page (PROT_NONE) right there:
+// SIGSEGV SEGV_ACCERR in libc memcpy <- this hook (realme RE6054, Android 16, on the title). Every new source page
+// is checked readable first (process_vm_readv: fails with EFAULT on unmapped and PROT_NONE pages, no signal);
+// at an unreadable page the decode stops and the rest of the texture is zero.
+static bool RleReadable(const uint8_t* p, size_t len, uintptr_t& okEnd)
+{
+    static const uintptr_t pg = (uintptr_t)sysconf(_SC_PAGESIZE) > 0 ? (uintptr_t)sysconf(_SC_PAGESIZE) : 4096;
+    uintptr_t a = (uintptr_t)p, e = a + len;
+    if(e <= okEnd) return true;
+    uintptr_t q = okEnd > a ? okEnd : (a & ~(pg - 1));
+    static const pid_t me = getpid();
+    while(q < e)
+    {
+        uint8_t tmp; struct iovec lo = { &tmp, 1 }, re = { (void*)(q < a ? a : q), 1 };
+        static std::atomic<bool> s_bNoProbe{false};
+        if(s_bNoProbe.load(std::memory_order_relaxed)) return true;
+        if(syscall(__NR_process_vm_readv, (long)me, &lo, 1L, &re, 1L, 0L) != 1)   // (API 21: no libc wrapper)
+        {
+            if(errno == EFAULT) return false;   // unreadable page
+            s_bNoProbe = true;                  // the call itself is not allowed on this phone: no source check
+            logger->Info("Texture database: source page check not available (errno %d)", errno);
+            return true;
+        }
+        q = ((q < a ? a : q) & ~(pg - 1)) + pg;
+        okEnd = q;
+    }
+    return true;
+}
 DECL_HOOKv(TexRLEDecompress, uint8_t* dst, unsigned int dstSize, const uint8_t* src, unsigned int unit, unsigned int esc)
 {
-    if(!dst || !src || !unit || unit > 64) { TexRLEDecompress(dst, dstSize, src, unit, esc); return; }
+    if(!dst || !src || !unit || unit > 64) { if(dst && src) TexRLEDecompress(dst, dstSize, src, unit, esc); return; }
     uint8_t* const end = dst + dstSize;
     uint8_t* d = dst;
-    bool clamped = false;
+    bool clamped = false, srcCut = false;
+    uintptr_t okEnd = 0;
     while(d < end)
     {
+        if(!RleReadable(src, 2, okEnd)) { srcCut = true; break; }
         if(src[0] == (uint8_t)esc)
         {
             unsigned n = src[1];
             const uint8_t* v = src + 2;
+            if(!RleReadable(v, unit, okEnd)) { srcCut = true; break; }
             for(unsigned k = 0; k < n; ++k)
             {
                 size_t left = (size_t)(end - d);
@@ -703,10 +740,17 @@ DECL_HOOKv(TexRLEDecompress, uint8_t* dst, unsigned int dstSize, const uint8_t* 
         }
         else
         {
+            if(!RleReadable(src, unit, okEnd)) { srcCut = true; break; }
             size_t left = (size_t)(end - d);
             if(left < unit) { memcpy(d, src, left); d = end; clamped = true; break; }
             memcpy(d, src, unit); d += unit; src += unit;
         }
+    }
+    if(srcCut)
+    {
+        memset(d, 0, (size_t)(end - d));
+        if(s_nRleSrcCut.fetch_add(1) < 20)
+            logger->Error("Texture database: a packed texture ends before its size (%u bytes) - the rest is blank instead of a crash (a texdb file is from another game version / texture mod)", dstSize);
     }
     if(clamped && s_nRleClamped.fetch_add(1) < 20)
         logger->Error("Texture database: a packed texture is bigger than its buffer (%u bytes) - cut off instead of crashing. A texdb file (texdb/*.dat / .toc) is damaged or from another game version / texture mod.", dstSize);
