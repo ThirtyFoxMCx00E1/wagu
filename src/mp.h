@@ -320,6 +320,7 @@ namespace MP
     // 4.13.4: main menu [Multiplayer] (mp_menu.inc)
     void InitMainMenu();          // all mods loaded: the SAUtils tile
     bool MenuMpBlack();           // the black server-select screen is up
+    bool TitleMenuHookWanted();   // 4.13.30: ServerBrowserMode neon / mp (default = no title menu hook)
     bool NeonMenuMode();          // 4.13.22: ServerBrowserMode = neon
     bool NeonCoversGameMenu();
     int  NeonPaintWanted();        // 4.13.28: 0 nothing / 1 neon title / 2 mp tile / 3 pill - painted after MobileMenu::Render

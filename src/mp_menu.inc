@@ -41,7 +41,7 @@ static std::atomic<int>  s_nMenuMpFade{0};            // 0..255 black over the l
 static bool s_bMenuMpViaApi = false;   // 4.13.11: started by another mod (PCMenu), works even with MainMenuMultiplayer = 0
 // 4.13.22: ServerBrowserMode = neon / mp / default (mp_neon.inc)
 enum { NEON_MODE_DEFAULT = 0, NEON_MODE_MP = 1, NEON_MODE_NEON = 2 };
-static int  s_nNeonMode = NEON_MODE_NEON;
+static int  s_nNeonMode = NEON_MODE_DEFAULT;   // 4.13.30: default until InitMainMenu reads the ini
 static bool s_bNeonPendingJoin = false;   // a server picked on the neon title menu: joined after the Multiplayer load
 static bool NeonOn() { return s_nNeonMode == NEON_MODE_NEON; }   // 4.13.23: ServerBrowserMode alone (an old MainMenuMultiplayer = 0 no longer hides it)
 static bool NeonDraw();          // mp_neon.inc
@@ -95,18 +95,27 @@ void MP::SetMenuApiReady() { s_bMenuMpReady = true; }
 // the same API as a plain export, for mods that look MP up with dlsym (no AML interface list needed)
 extern "C" __attribute__((visibility("default"))) void* MP_GetMultiplayerApi() { return &s_MpApi; }
 
+bool MP::TitleMenuHookWanted() { return s_nNeonMode != NEON_MODE_DEFAULT; }   // 4.13.30
 void MP::InitMainMenu()
 {
     s_bMenuMpOn = ::cfg->GetBool("MainMenuMultiplayer", true, "MP");
     {   // 4.13.22: ServerBrowserMode = neon (the neon title menu + server browser) / mp (the [Multiplayer] tile + the
         // launcher panel) / default (the game's own menu only)
-        char m[24] = "neon";
-        ::cfg->GetString(m, sizeof(m), "ServerBrowserMode", "neon", "MP");
-        if(!m[0]) MP_CopyStr(m, "neon", sizeof(m));
+        // 4.13.30: default is "default" (the game's own title menu, MP does nothing on the title). neon / mp only when
+        // the player writes it into TYFMC.MP.ini by hand. Every ini from before 4.13.30 is set back to default once.
+        char m[24] = "default";
+        ::cfg->GetString(m, sizeof(m), "ServerBrowserMode", "default", "MP");
+        if(::cfg->GetInt("ServerBrowserModeReset", 0, "MP") < 41330)
+        {
+            if(strcmp(m, "default")) logger->Info("Main menu: ServerBrowserMode %s -> default (4.13.30 starts on default; write neon / mp in TYFMC.MP.ini to change it)", m);
+            MP_CopyStr(m, "default", sizeof(m));
+            ConfigEntry* r = ::cfg->Bind("ServerBrowserModeReset", 0, "MP"); r->SetInt(41330); delete r;
+        }
+        if(!m[0]) MP_CopyStr(m, "default", sizeof(m));
         for(char* c = m; *c; ++c) *c = (char)tolower((unsigned char)*c);
         if(!strcmp(m, "mp") || !strcmp(m, "launcher") || !strcmp(m, "1")) s_nNeonMode = NEON_MODE_MP;
-        else if(!strcmp(m, "default") || !strcmp(m, "off") || !strcmp(m, "game") || !strcmp(m, "0")) s_nNeonMode = NEON_MODE_DEFAULT;
-        else { s_nNeonMode = NEON_MODE_NEON; MP_CopyStr(m, "neon", sizeof(m)); }
+        else if(!strcmp(m, "neon")) s_nNeonMode = NEON_MODE_NEON;
+        else { s_nNeonMode = NEON_MODE_DEFAULT; MP_CopyStr(m, "default", sizeof(m)); }   // 4.13.30: anything else = default
         { ConfigEntry* e = ::cfg->Bind("ServerBrowserMode", m, "MP"); e->SetString(m); delete e; ::cfg->Save(); }   // written to TYFMC.MP.ini
         if(s_nNeonMode == NEON_MODE_DEFAULT) s_bMenuMpOn = false;
         if(s_nNeonMode == NEON_MODE_NEON) s_bMenuMpOn = true;   // 4.13.23

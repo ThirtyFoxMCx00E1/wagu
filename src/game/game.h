@@ -24,6 +24,7 @@ namespace Game
 
     // Local player
     int   LocalPed();                       // script handle, 0 if not ready
+    bool  HasPlayerPed();                   // 4.13.30: CWorld::Players[0].m_pPed set (no opcode, safe on the title)
     bool  IsReady();
 
     // Peds (script handles)

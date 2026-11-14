@@ -1,12 +1,12 @@
 // MP 4.13.22: the "neon" main menu + server browser (Screenshots/neon-main-menu.jpg, neon-server-browser.jpg).
 //
 // ServerBrowserMode= in files/TYFMC/TYFMC.MP.ini ([MP]):
-//   neon     (default) the neon title menu: Resume / New game / Browse servers / Quick connect / Settings / About /
+//   neon     (set by hand) the neon title menu: Resume / New game / Browse servers / Quick connect / Settings / About /
 //            Quit game, the Neon Identity card (Discord), NEON FEATURED card, the version label; Browse servers is
 //            the neon server browser (its own layout - not the launcher panel). Also shown on the black screen
 //            after leaving a server.
 //   mp       the old [Multiplayer] tile on the game's menu + the MP launcher panel (4.13.4 - 4.13.21)
-//   default  the game's own main menu only (no Multiplayer tile, = MainMenuMultiplayer = 0)
+//   default  (default, 4.13.30) the game's own main menu only - MP does not hook or touch the title screen
 // In the game (floating 3-dots menu > Server) the launcher panel stays as it was.
 // Background: neon_bg.jpg (the San Andreas fan art), logo: title.png. Fonts: imgui/neonfonts.h (OFL).
 
@@ -936,6 +936,7 @@ static bool NeonPaintLoad()
 // what the game's menu pass gets painted with: 0 nothing, 1 the neon title menu, 2 the [Multiplayer] tile (mp), 3 the NEON MENU pill
 int MP::NeonPaintWanted()
 {
+    if(s_nNeonMode == NEON_MODE_DEFAULT) return 0;   // 4.13.30
     if(!Game::IsMainMenuShown() || Game::LocalPed() > 0 || s_bMenuMp.load()) return 0;
     if(NeonOn()) { if(!NeonPaintLoad()) return 0; return s_bNeonHidden ? 3 : 1; }
     if(s_nNeonMode == NEON_MODE_MP && s_bMenuMpOn && !s_bMenuMpTile) return NeonPaintLoad() ? 2 : 0;
@@ -1140,10 +1141,11 @@ void MP::NeonPaintMenu(int what)
     NeonPaint::End();
     if(s_nNeonPaintFrames < 3 && ++s_nNeonPaintFrames == 3) logger->Info("Neon menu: native frames ok");
 }
-void MP::NeonTouch(int kind, int finger, float x, float y) { NeonPaint::OnTouch(kind, finger, x, y); }
+void MP::NeonTouch(int kind, int finger, float x, float y) { if(s_nNeonMode == NEON_MODE_DEFAULT) return; NeonPaint::OnTouch(kind, finger, x, y); }   // 4.13.30
 // game thread (MobileMenu::Update)
 void MP::NeonMenuTick()
 {
+    if(s_nNeonMode == NEON_MODE_DEFAULT) return;   // 4.13.30
     const int a = s_nNeonAct.exchange(NA_NONE);
     if(a == NA_NONE) return;
     switch(a)

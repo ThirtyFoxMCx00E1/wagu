@@ -204,8 +204,25 @@ float Game::ProgressPercent()
     return made / total * 100.0f;
 }
 
+// 4.13.30: GET_PLAYER_CHAR before a game is loaded faults inside the game's script code (ScriptGuard: "MP command
+// 'MP' crashed in opcode 01F5" on the title). 4.13.28 asked it every title frame from the menu pass - the guarded
+// fault each frame broke the game's script state and the game closed itself with no crash log (any
+// ServerBrowserMode). CWorld::Players[0].m_pPed (first field) is read first: no player ped = 0, no opcode.
+static void** s_pWorldPlayers = nullptr;
+static bool   s_bWorldPlayersLooked = false;
+bool Game::HasPlayerPed()
+{
+    if(!s_bWorldPlayersLooked)
+    {
+        s_bWorldPlayersLooked = true;
+        s_pWorldPlayers = (void**)aml->GetSym(aml->GetLibHandle("libGTASA.so"), "_ZN6CWorld7PlayersE");
+        logger->Info("Player ped check: CWorld::Players %s", s_pWorldPlayers ? "found" : "NOT found (opcode only)");
+    }
+    return !s_pWorldPlayers || *(void* volatile*)s_pWorldPlayers != nullptr;
+}
 int Game::LocalPed()
 {
+    if(!HasPlayerPed()) return 0;
     uint32_t ped = 0;
     CALLSCM(GET_PLAYER_CHAR, 0, &ped);
     return (int)ped;

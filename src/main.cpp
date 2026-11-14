@@ -35,7 +35,7 @@
 #include "net/server.h"
 
 // 4.12.7: the config is files/TYFMC/TYFMC.MP.ini (the old configs/net.thirtyfox.mp.ini is moved there)
-TYFMC_MODCFG(net.thirtyfox.mp, MP Multiplayer, 4.13.29, ThirtyFoxMCx00E1, MP, net.thirtyfox.mp)
+TYFMC_MODCFG(net.thirtyfox.mp, MP Multiplayer, 4.13.30, ThirtyFoxMCx00E1, MP, net.thirtyfox.mp)
 NEEDGAME(com.rockstargames.gtasa)
 
 // Globals used by the embedded RenderWare ImGui backend
@@ -993,7 +993,7 @@ static bool PCMenuLoaded()   // any loaded .so with "PCMenu" in its file name (P
     fclose(m);
     return r;
 }
-static void InstallMenuHooks()
+static void InstallMenuHooks(bool titleMenu)
 {
     static bool done = false;
     if(done || !pGameLib || !pGameHandle) return;
@@ -1007,6 +1007,7 @@ static void InstallMenuHooks()
         logger->Info("Loading screen: %d hooks", hooked);
     }
     else logger->Info("Loading screen: PCMenu is installed - its loading screen is used, MP does not hook the loading screen");
+    if(!titleMenu) { logger->Info("Title menu: ServerBrowserMode = default - the game's own menu, no MobileMenu::Render hook"); return; }
     const uintptr_t sym = aml->GetSym(pGameHandle, "_ZN10MobileMenu6RenderEv");
     const uintptr_t slot = pGameLib + kGotMenuRender;
     uintptr_t cur = 0;
@@ -1027,7 +1028,8 @@ ON_ALL_MODS_LOAD()
 {
     ModScan::Scan();
     JPatchGuardSetup();   // 4.13.8: on top of JPatch's CCam::Process hook
-    if(s_bMpLoaded) InstallMenuHooks();   // 4.13.25
     if(s_bMpLoaded) MP::InitMainMenu();   // 4.13.4: [Multiplayer] on the game's main menu (SAUtils tile)
+    // 4.13.30: ServerBrowserMode = default: MP does not touch the game's title menu at all (no MobileMenu::Render hook)
+    if(s_bMpLoaded) InstallMenuHooks(MP::TitleMenuHookWanted());   // 4.13.25
     if(ModScan::CheatMenu()) logger->Info("MP: %s found - you can't join or host servers while it is installed", ModScan::What());
 }
