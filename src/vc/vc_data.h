@@ -1,0 +1,136 @@
+#pragma once
+// 4.13.36: GTA Vice City data from the game's main.scm (DEFINE MISSION table, LOAD_CUTSCENE names,
+// 016C / 016D restart points). Used by the Vice City layer (vc_layer.cpp) and the server.
+
+struct VCMission { int id; const char* script; const char* title; };
+static const VCMission g_VCMissions[] =
+{
+    { 0, "INITIAL", "Initial" },
+    { 1, "INTRO", "Intro" },
+    { 2, "HOTEL", "An Old Friend" },
+    { 3, "LAWYER1", "The Party" },
+    { 4, "LAWYER2", "Back Alley Brawl" },
+    { 5, "LAWYER3", "Jury Fury" },
+    { 6, "LAWYER4", "Riot" },
+    { 7, "GENERL1", "Treacherous Swine" },
+    { 8, "COL2", "Mall Shootout" },
+    { 9, "GENERL3", "Guardian Angels" },
+    { 10, "COL_4", "Sir, Yes Sir!" },
+    { 11, "COL_5", "All Hands On Deck!" },
+    { 12, "BARON1", "The Chase" },
+    { 13, "BARON2", "Phnom Penh '86" },
+    { 14, "BARON3", "The Fastest Boat" },
+    { 15, "BARON4", "Supply & Demand" },
+    { 16, "BARON5", "Rub Out" },
+    { 17, "KENT1", "Death Row" },
+    { 18, "SERG1", "Four Iron" },
+    { 19, "SERG3", "Demolition Man" },
+    { 20, "SERG2", "Two Bit Hit" },
+    { 21, "BANKJO1", "No Escape?" },
+    { 22, "BANKJO2", "The Shootist" },
+    { 23, "BANKJO3", "The Driver" },
+    { 24, "BANKJO4", "The Job" },
+    { 25, "PHIL1", "Gun Runner" },
+    { 26, "PHIL2", "Boomshine Saigon" },
+    { 27, "PORNO1", "Recruitment Drive" },
+    { 28, "PORNO2", "Dildo Dodo" },
+    { 29, "PORNO3", "Martha's Mug Shot" },
+    { 30, "PORNO4", "G-spotlight" },
+    { 31, "PROTEC1", "Shakedown" },
+    { 32, "PROTEC2", "Bar Brawl" },
+    { 33, "PROTEC3", "Cop Land" },
+    { 34, "COUNT1", "Spilling the Beans" },
+    { 35, "COUNT2", "Hit the Courier" },
+    { 36, "BUYPRO1", "Printworks Buy" },
+    { 37, "CARBUY1", "Sunshine Autos" },
+    { 38, "BUYPRO2", "Interglobal Films Buy" },
+    { 39, "ICECUT", "Cherry Popper Icecreams Buy" },
+    { 40, "TAXCUT", "Kaufman Cabs Buy" },
+    { 41, "BUYPRO3", "Malibu Club Buy" },
+    { 42, "BOATBY", "The Boatyard Buy" },
+    { 43, "BUYPRO4", "Pole Position Club Buy" },
+    { 44, "BUYPRO5", "El Swanko Casa Buy" },
+    { 45, "LNKVBUY", "Links View Apartment Buy" },
+    { 46, "HYCOBUY", "Hyman Condo Buy" },
+    { 47, "OCHEBUY", "Ocean Heighs Aprt. Buy" },
+    { 48, "WASHBUY", "1102 Washington Street Buy" },
+    { 49, "VCPTBUY", "Vice Point Buy" },
+    { 50, "SKUMBUY", "Skumole Shack Buy" },
+    { 51, "CAP_1", "Cap the Collector" },
+    { 52, "FIN_1", "Keep your Friends Close..." },
+    { 53, "BIKE1", "Alloy Wheels of Steel" },
+    { 54, "BIKE2", "Messing with the Man" },
+    { 55, "BIKE3", "Hog Tied" },
+    { 56, "CUBAN1", "Stunt Boat Challenge" },
+    { 57, "CUBAN2", "Cannon Fodder" },
+    { 58, "CUBAN3", "Naval Engagement" },
+    { 59, "CUBAN4", "Trojan Voodoo" },
+    { 60, "HAIT1", "Juju Scramble" },
+    { 61, "HAIT2", "Bombs Away!" },
+    { 62, "HAIT3", "Dirty Lickin's" },
+    { 63, "ROCKB1", "Love Juice" },
+    { 64, "ROCKB2", "Psycho Killer" },
+    { 65, "ROCKB3", "Publicity Tour" },
+    { 66, "RANGE", "Weapon Range" },
+    { 67, "ASSIN1", "Road Kill" },
+    { 68, "ASSIN2", "Waste the Wife" },
+    { 69, "ASSIN3", "Autocide" },
+    { 70, "ASSIN4", "Check Out at the Check In" },
+    { 71, "ASSIN5", "Loose Ends" },
+    { 72, "TAXWAR1", "V.I.P." },
+    { 73, "TAXWAR2", "Friendly Rivalry" },
+    { 74, "TAXWAR3", "Cabmaggedon" },
+    { 75, "TAXI", "TAXI DRIVER" },
+    { 76, "AMBULAN", "PARAMEDIC" },
+    { 77, "FIRETRU", "FIREFIGHTER" },
+    { 78, "COPCAR", "VIGILANTE" },
+    { 79, "OVALRNG", "HOTRING" },
+    { 80, "MM", "BLOODRING" },
+    { 81, "KICKST", "DIRTRING" },
+    { 82, "RACE", "Sunshine Autos Races" },
+    { 83, "ICECRE1", "Distribution" },
+    { 84, "HELI1SC", "Downtown Chopper Checkpoint" },
+    { 85, "HELI2SC", "Ocean Beach Chopper Checkpoint" },
+    { 86, "HELI3SC", "Vice Point Chopper Checkpoint" },
+    { 87, "HELI4SC", "Little Haiti Chopper Checkpoint" },
+    { 88, "BMX_1", "Trial by Dirt" },
+    { 89, "BMX_2", "Test Track" },
+    { 90, "T4X4_1", "PCJ Playground" },
+    { 91, "CARPRK1", "Cone Crazy" },
+    { 92, "PIZZA", "PIZZA BOY" },
+    { 93, "RCHELI", "RC Raider Pickup" },
+    { 94, "RCRACE1", "RC Bandit Race" },
+    { 95, "RCPLNE1", "RC Baron Race" },
+    { 96, "COKERUN", "Checkpoint Charlie" },
+};
+static const int g_VCMissionCount = (int)(sizeof(g_VCMissions) / sizeof(g_VCMissions[0]));
+
+// every cutscene main.scm loads (02E4 LOAD_CUTSCENE)
+static const char* const g_VCCutscenes[] =
+{
+    "ASS_1", "ASS_2", "BANK_1", "BANK_2A", "BANK_2B", "BANK_3A", "BANK_3B", "BANK_4", "BIKE_1", "BIKE_2",
+    "BIKE_3", "BUD_1", "BUD_2", "BUD_3", "CAP_1", "CAR_1", "CNT_1A", "CNT_1B", "CNT_2", "COK_1",
+    "COK_2A", "COK_2B", "COK_3", "COK_4A", "COK_4A2", "COL_1", "COL_2", "COL_3A", "COL_4A", "COL_5A",
+    "COL_5B", "CUB_1", "CUB_2", "CUB_3", "CUB_4", "DRUG_1", "FIN", "FINALE", "FIN_2", "FIST",
+    "GSPOT", "HAT_1", "HAT_2", "HAT_3", "ICE_1", "INT_A", "INT_B", "INT_D", "INT_M", "LAW_1A",
+    "LAW_1B", "LAW_2A", "LAW_2B", "LAW_2C", "LAW_3", "LAW_4", "PHIL_1", "PHIL_2", "PORN_1", "PORN_2",
+    "PORN_3", "PORN_4", "RESC_1A", "ROK_1", "ROK_2", "ROK_3A", "STRIPA", "TAX_1", "TEX_1", "TEX_2",
+    "TEX_3",
+};
+static const int g_VCCutsceneCount = (int)(sizeof(g_VCCutscenes) / sizeof(g_VCCutscenes[0]));
+
+struct VCPoint { float x, y, z, heading; const char* name; };
+// 016D restart_if_busted_at (police stations)
+static const VCPoint g_VCPoliceRestarts[] =
+{
+    {  508.9f,  506.8f, 10.3f, 174.0f, "Vice Point Police" },
+    {  398.8f, -469.7f, 10.7f, 323.0f, "Washington Beach Police" },
+    { -659.5f,  760.4f, 10.5f, 133.0f, "Downtown Police" },
+    { -871.9f, -682.3f, 10.2f, 328.1f, "Little Havana Police" },
+};
+
+inline const char* VC_MissionTitle(const char* script)
+{
+    for(int i = 0; i < g_VCMissionCount; ++i) if(!strcasecmp(g_VCMissions[i].script, script)) return g_VCMissions[i].title;
+    return nullptr;
+}

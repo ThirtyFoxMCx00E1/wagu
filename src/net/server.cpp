@@ -470,10 +470,10 @@ bool MPServer::SafeZoneBlocks(int from, int to) const
     if(to < 0 || to >= MP_MAX_PLAYERS || !m_Slots[to].used) return false;
     const Slot& t = m_Slots[to];
     if(t.spawnProtUntil && MP_NowMs() < t.spawnProtUntil) return true;
-    if(t.hasPos && MP_InSafeZone(t.pos[0], t.pos[1], t.pos[2])) return true;
+    if(t.hasPos && MP_InSafeZone(t.pos[0], t.pos[1], t.pos[2], m_nGame.load())) return true;
     if(from >= 0 && from < MP_MAX_PLAYERS && m_Slots[from].used && m_Slots[from].spawnProtUntil && MP_NowMs() < m_Slots[from].spawnProtUntil) return true;   // protected players don't hurt others either
     if(from >= 0 && from < MP_MAX_PLAYERS && m_Slots[from].used && m_Slots[from].hasPos
-       && MP_InSafeZone(m_Slots[from].pos[0], m_Slots[from].pos[1], m_Slots[from].pos[2])) return true;
+       && MP_InSafeZone(m_Slots[from].pos[0], m_Slots[from].pos[1], m_Slots[from].pos[2], m_nGame.load())) return true;
     return false;
 }
 
@@ -1196,7 +1196,7 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             if(e.expType > 12) return;
             {   // 3.21: no explosion (rocket, grenade, car bomb, satchel...) is shared inside a hospital safe zone
                 float ep[3]; memcpy(ep, e.pos, sizeof(ep));
-                if(m_bSafeZones && !IsBcwServer() && MP_InSafeZone(ep[0], ep[1], ep[2])) return;
+                if(m_bSafeZones && !IsBcwServer() && MP_InSafeZone(ep[0], ep[1], ep[2], m_nGame.load())) return;
                 if(IsRpServer() && (!RpCanHurt(slot) || RpInGreen(ep[0], ep[1]))) return;   // 3.25: a peaceful city
             }
             e.id = (uint8_t)slot;
@@ -1220,7 +1220,7 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             if(f.size < 1) f.size = 1; if(f.size > 4) f.size = 4;
             {   // 3.21: no fire inside a hospital safe zone
                 float fp[3]; memcpy(fp, f.pos, sizeof(fp));
-                if(m_bSafeZones && !IsBcwServer() && MP_InSafeZone(fp[0], fp[1], fp[2])) return;
+                if(m_bSafeZones && !IsBcwServer() && MP_InSafeZone(fp[0], fp[1], fp[2], m_nGame.load())) return;
                 if(IsRpServer() && (!RpCanHurt(slot) || RpInGreen(fp[0], fp[1]))) return;   // 3.25
             }
             f.id = (uint8_t)slot;

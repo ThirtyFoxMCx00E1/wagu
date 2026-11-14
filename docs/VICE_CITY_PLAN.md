@@ -1,6 +1,6 @@
 # MP for GTA Vice City (Android): plan
 
-Status in 4.13.35: Vice City and San Andreas are kept apart. Same libMP*.so, but in Vice City MP stays off (no crash), and SA / VC servers never mix.
+Status in 4.13.36: phase 2 started. The same libMP*.so runs in Vice City with its own game layer (`src/vc/`). SA / VC servers never mix.
 
 ## Why one binary cannot just "work" in both games
 
@@ -18,6 +18,30 @@ Status in 4.13.35: Vice City and San Andreas are kept apart. Same libMP*.so, but
 | VC server | `mp_server --game vc` (puts the tag `vc` first in its list tags). |
 | Server lists | an SA phone hides `vc` servers, a VC phone will show only `vc` servers. |
 | libMP in Vice City | `libGTAVC.so` found, `libGTASA.so` missing: MP logs "GTA Vice City found" and stays off. |
+
+## What is done (4.13.36)
+
+- `src/vc/vc_layer.cpp`: VC game layer, every game function found by symbol name (no fixed addresses), so it works on both ABIs of the AML VC builds. All symbols used were checked in the real libGTAVC.so (gta_vc.apk, armeabi-v7a and arm64-v8a).
+- Own script runner (`Cmd()`): a small CRunningScript with its own script bytes calls ProcessOneCommand. Used for cars, health, proofs, time, weather, teleport.
+- Remote players (peds, name tags, colours), remote cars, own health / weapon / car / death sent, chat button + phone keyboard, dialogs, admin actions, damage, time / weather.
+- Safe zones at the 4 hospitals: Ocean View (-108.3, -974.4, 9.4), Shady Palms (493.5, 703.1, 11.1), Schuman (-822.7, 1157.9, 10.1), West Haven (-885.2, -470.4, 12.1).
+- `vc.ini` in `files/TYFMC/MP/` (Host, Port, Name).
+
+### CRunningScript in Android libGTAVC.so (read from the disassembly)
+
+| Field | 32-bit | 64-bit | Note |
+|---|---|---|---|
+| m_nIp | 0x10 | 0x18 | uint32 offset into CTheScripts::ScriptSpace, not a pointer |
+| locals[16] | 0x30 | 0x38 | |
+| m_bCondResult | 0x79 | 0x81 | |
+| m_nAndOrState | 0x80 | 0x88 | |
+| m_bNotFlag | 0x82 | 0x8A | |
+
+Float params (type 6) are 4 bytes like int32. VCMP-Android copies the SA layout here, which is wrong for VC. `CFont::SetColor` / `SetDropColor` take CRGBA by value.
+
+## Phase 2 still open
+
+Weapons in other players' hands, bullet sync, ImGui MP menus / server browser in VC, map blips, scoreboard.
 
 ## Sources used
 
@@ -71,7 +95,7 @@ How they work in the engine: each mission is a block of main.scm started by LOAD
 ## Phases
 
 1. Done: separation (game id, refused joins, `vc` tag, safe stop in VC).
-2. VC core: `src/vc/` with a VC game layer (addresses by symbol name first, offsets from reVC), local player read, remote ped spawn, chat + server browser ImGui in VC, `mp_server --game vc` freeroam. Needs a device test on the exact VC APK (1.09 AML / 1.12).
+2. Started in 4.13.36 (see above). VC core: `src/vc/` with a VC game layer (addresses by symbol name first, offsets from reVC), local player read, remote ped spawn, chat + server browser ImGui in VC, `mp_server --game vc` freeroam. Needs a device test on the exact VC APK (1.09 AML / 1.12).
 3. VC vehicles, weapons, damage, map blips, nametags, scoreboard.
 4. VC co-op missions and cutscene sync, VC featured servers.
 5. VC main menu (native), VC Lua bridge.

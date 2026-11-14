@@ -2,35 +2,39 @@
 #include <mod/logger.h>
 #include <stdarg.h>
 #include <string.h>
+#include <stddef.h>
 #include "scripting.h"
 
 #ifdef AML32
+// CRunningScript, offsets checked with offsetof() against aml-psdk on both ABIs (4.13.36)
 struct GAME_SCRIPT_THREAD
 {
     uint8_t   pad1[20];
     uintptr_t dwScriptIP;
     uint8_t   pad2[36];
-    uint32_t  dwLocalVar[32];
+    uint32_t  dwLocalVar[40];   // 4.13.36: mobile has 40 locals (aml-psdk m_aLocalVars[40]), was 32: timers 32 bytes off
     uint32_t  dwTimers[2];
-    uint8_t   pad3[33];
+    uint8_t   pad3[1];
     uint8_t   condResult;
     uint8_t   pad4[10];
     uint16_t  logicalOp;
     uint8_t   notFlag;
     uint8_t   pad5[13];
 };
+static_assert(sizeof(GAME_SCRIPT_THREAD) == 0x100 && offsetof(GAME_SCRIPT_THREAD, condResult) == 229 && offsetof(GAME_SCRIPT_THREAD, logicalOp) == 240, "CRunningScript 32");
 #else
 struct GAME_SCRIPT_THREAD
 {
     uint8_t   pad1[32];
     uintptr_t dwScriptIP;
     uint8_t   pad2[68];
-    uint32_t  dwLocalVar[32];
+    uint32_t  dwLocalVar[40];   // 4.13.36: mobile has 40 locals (aml-psdk m_aLocalVars[40]), was 32: timers 32 bytes off
     uint32_t  dwTimers[2];
-    uint8_t   pad3[33];
+    uint8_t   pad3[1];
     uint8_t   condResult;
     uint8_t   pad4[26];
 };
+static_assert(sizeof(GAME_SCRIPT_THREAD) == 0x130 && offsetof(GAME_SCRIPT_THREAD, condResult) == 277 && offsetof(GAME_SCRIPT_THREAD, dwTimers) == 268, "CRunningScript 64");
 #endif
 
 static GAME_SCRIPT_THREAD* gst = nullptr;

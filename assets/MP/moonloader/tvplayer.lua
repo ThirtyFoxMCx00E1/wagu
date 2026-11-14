@@ -118,7 +118,10 @@ local function drawScreen(tex)
   local off = cfg.DepthOffset or 0.01
   if cfg.DepthTest ~= 0 and s.center then
     -- hidden behind a wall: not drawn (MonetLoader draws on top of the 3D scene)
-    local cx, cy, cz = toWorld(b, s.center[1] + n[1] * 0.08, s.center[2] + n[2] * 0.08, s.center[3] + n[3] * 0.08)
+    -- a map TV (1717 telly_low_test in CJ's house and others) has its own collision over the screen: test from
+    -- further in front, else the TV hid itself and the screen stayed black
+    local f = st.ent and 0.35 or 0.08
+    local cx, cy, cz = toWorld(b, s.center[1] + n[1] * f, s.center[2] + n[2] * f, s.center[3] + n[3] * f)
     local kx, ky, kz = getActiveCameraCoordinates()
     if not isLineOfSightClear(kx, ky, kz, cx, cy, cz, true, false, false, false, false) then return end
   end

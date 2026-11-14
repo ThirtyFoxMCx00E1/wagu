@@ -2,7 +2,7 @@
 // 3.21: hospital SAFE ZONES + 5 s spawn protection. Shared by the phone (mp_safezone.inc) and the
 // server (server.cpp), so both sides agree on where nobody can be hurt.
 //
-// Inside a safe zone (every GTA SA hospital = every place you respawn after being wasted):
+// Inside a safe zone (every GTA SA / GTA VC hospital = every place you respawn after being wasted):
 //   - you can't be hurt: no bullets, melee, rockets, explosions, fire, car ramming, being pulled
 //     out of your car - from players, NPCs or the game (god mode + proofs on you and your car)
 //   - you can't hurt anyone: your weapon is put away (fists), drive-by is off, and the server drops
@@ -33,15 +33,31 @@ static const MPSafeZone g_MPSafeZones[] =
 };
 static const int g_MPSafeZoneCount = (int)(sizeof(g_MPSafeZones) / sizeof(g_MPSafeZones[0]));
 
-// index of the zone the point is in, or -1
-inline int MP_SafeZoneAt(float x, float y, float z)
+// 4.13.36: the 4 hospital restart points of GTA Vice City (main.scm 016C restart_if_wasted_at), same rules
+static const MPSafeZone g_MPSafeZonesVC[] =
 {
-    for(int i = 0; i < g_MPSafeZoneCount; ++i)
+    {  -108.3f,  -974.4f,  9.4f, "Ocean View Hospital" },          // Ocean Beach
+    {   493.5f,   703.1f, 11.1f, "Shady Palms Hospital" },         // Vice Point
+    {  -822.7f,  1157.9f, 10.1f, "Schuman Health Care Center" },   // Downtown
+    {  -885.2f,  -470.4f, 12.1f, "West Haven Community Healthcare Center" },   // Little Havana
+};
+static const int g_MPSafeZoneCountVC = (int)(sizeof(g_MPSafeZonesVC) / sizeof(g_MPSafeZonesVC[0]));
+inline const MPSafeZone* MP_SafeZoneList(int game, int* count)
+{
+    if(game == 1) { *count = g_MPSafeZoneCountVC; return g_MPSafeZonesVC; }   // MP_GAME_VC
+    *count = g_MPSafeZoneCount; return g_MPSafeZones;
+}
+
+// index of the zone the point is in, or -1 (game: 0 = San Andreas, 1 = Vice City)
+inline int MP_SafeZoneAt(float x, float y, float z, int game = 0)
+{
+    int n = 0; const MPSafeZone* list = MP_SafeZoneList(game, &n);
+    for(int i = 0; i < n; ++i)
     {
-        const MPSafeZone& s = g_MPSafeZones[i];
+        const MPSafeZone& s = list[i];
         float dx = x - s.x, dy = y - s.y;
         if(dx * dx + dy * dy <= MP_SAFEZONE_RADIUS * MP_SAFEZONE_RADIUS && fabsf(z - s.z) <= MP_SAFEZONE_HEIGHT) return i;
     }
     return -1;
 }
-inline bool MP_InSafeZone(float x, float y, float z) { return MP_SafeZoneAt(x, y, z) >= 0; }
+inline bool MP_InSafeZone(float x, float y, float z, int game = 0) { return MP_SafeZoneAt(x, y, z, game) >= 0; }

@@ -35,8 +35,9 @@
 #include "net/server.h"
 
 // 4.12.7: the config is files/TYFMC/TYFMC.MP.ini (the old configs/net.thirtyfox.mp.ini is moved there)
-TYFMC_MODCFG(net.thirtyfox.mp, MP Multiplayer, 4.13.35, ThirtyFoxMCx00E1, MP, net.thirtyfox.mp)
-NEEDGAME(com.rockstargames.gtasa)
+TYFMC_MODCFG(net.thirtyfox.mp, MP Multiplayer, 4.13.36, ThirtyFoxMCx00E1, MP, net.thirtyfox.mp)
+// 4.13.36: no NEEDGAME(com.rockstargames.gtasa) - AML would refuse libMP in GTA Vice City. OnModLoad starts the
+// San Andreas code only when libGTASA.so is there, and the Vice City layer (src/vc/) when libGTAVC.so is.
 
 // Globals used by the embedded RenderWare ImGui backend
 uintptr_t pGameLib = 0;
@@ -912,17 +913,30 @@ static void JPatchGuardSetup()
 }
 
 namespace MonetEmbed { void Start(); }   // 4.13.32 (src/mp_monet.cpp)
+namespace VC { bool Start(); }           // 4.13.36 (src/vc/vc_layer.cpp)
 extern "C" void OnModLoad()
 {
     atexit(MP_QuickExit);          // registered last = runs first, before the static destructors
     std::set_terminate(MP_Terminate);
+    // 4.13.36: MP calls AML 1.4.0 functions (GetCurrentActivity, PushToJavaUIThread, GetDisplaySize). On an older
+    // AML those vtable slots do not exist - the call jumped into garbage. Say so and stay off instead.
+    if(!aml->HasModOfVersion("net.rusjj.aml", "1.4.0"))
+    {
+        logger->Error("AML (AndroidModLoader) is older than 1.4.0 - update AML to 1.4.1, MP disabled");
+        return;
+    }
     pGameLib = aml->GetLib("libGTASA.so");
     pGameHandle = aml->GetLibHandle("libGTASA.so");
     if(!pGameLib || !pGameHandle)
     {   // 4.13.35: the same libMP32.so in GTA Vice City's mods folder (vc-android-sdk / AML for VC): nothing of MP's
         // San Andreas code may run there (other addresses, other classes) - MP stays off and the game runs normally.
         // Vice City servers are separate (mp_server --game vc, REJECT_WRONG_GAME), so SA and VC players never mix.
-        if(aml->GetLib("libGTAVC.so")) { logger->Info("GTA Vice City found (libGTAVC.so): MP's Vice City client is not ready yet - MP stays off in Vice City (no crash). Vice City servers are separate from San Andreas ones."); return; }
+        if(aml->GetLib("libGTAVC.so"))
+        {   // 4.13.36: the Vice City layer (src/vc/vc_layer.cpp) - its own game code, MP's network, Vice City servers only
+            logger->Info("GTA Vice City found (libGTAVC.so): starting MP for Vice City (SA code stays off)");
+            if(!VC::Start()) logger->Info("MP for Vice City did not start (see above) - the game runs normally");
+            return;
+        }
         logger->Error("libGTASA.so not found - MP disabled"); return;
     }
 

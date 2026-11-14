@@ -73,7 +73,9 @@ void Game::InitGame219(void* h)
     SET_TO(LineOfSight_fn, aml->GetSym(h, "_ZN6CWorld21GetIsLineOfSightClearERK7CVectorS2_bbbbbbb"));
     SET_TO(GetTarget_fn, aml->GetSym(h, "_ZN4CPad9GetTargetEb"));
     if(!GetTarget_fn) SET_TO(GetTarget_fn, aml->GetSym(h, "_ZN4CPad9GetTargetEv"));
+    if(!GetTarget_fn) SET_TO(GetTarget_fn, aml->GetSym(h, "_ZNK4CPad9GetTargetEv"));   // 4.13.36: const (gta-reversed)
     SET_TO(FirstPersonWeapon_fn, aml->GetSym(h, "_ZN7CCamera25Using1stPersonWeaponModeEv"));
+    if(!FirstPersonWeapon_fn) SET_TO(FirstPersonWeapon_fn, aml->GetSym(h, "_ZNK7CCamera25Using1stPersonWeaponModeEv"));
     SET_TO(s_pTheCamera219, aml->GetSym(h, "TheCamera"));
 }
 
