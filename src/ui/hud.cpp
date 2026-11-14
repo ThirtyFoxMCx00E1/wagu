@@ -31,6 +31,11 @@
 #include "../../imgui/imgui_internal.h"   // 3.60: GImGui->ActiveIdIsJustActivated (global click sound)
 #include "../audio/sound.h"
 #include <unistd.h>
+#include <signal.h>
+#include <setjmp.h>
+#include <dlfcn.h>
+#include <stdarg.h>
+#include <ucontext.h>
 #include "emoji.h"
 #include "gifs.h"
 #include "i18n.h"
@@ -1405,27 +1410,130 @@ void HUD::Render()
 // 4.13.24: the neon title menu, drawn from the game's menu pass (MobileMenu::Render). Only the menu, the floating
 // menu and the keyboard - 4.13.23 drew the whole HUD::Render there, and the in-game HUD parts (name tags, chat, radar,
 // world reads) ran before any game was loaded, which closed the game.
+// 4.13.26: the title frame is guarded. 4.13.25 closed the game on the first neon frame with no crash log; now a
+// crash (SIGSEGV / SIGBUS / SIGABRT / SIGILL / SIGFPE) inside it is caught: MP writes the step and the address to
+// mp_log.txt, the neon title menu is turned off for this run and the game's own menu is drawn - the game stays open.
+// The first frames also write a line per step, so a hard kill (no signal) still shows how far it got.
+namespace
+{
+    sigjmp_buf          s_TitleJmp;
+    volatile sig_atomic_t s_bTitleArmed = 0, s_nTitleSig = 0;
+    volatile const char* s_szTitleStep = "start";
+    volatile uintptr_t  s_nTitlePc = 0, s_nTitleAddr = 0, s_nTitleLr = 0;
+    int                 s_nTitleFrames = 0;
+    bool                s_bTitleBroken = false;
+    const int           kTitleSigs[] = { SIGSEGV, SIGBUS, SIGABRT, SIGILL, SIGFPE };
+    struct sigaction    s_TitleOld[5];
+    void TitleFault(int sig, siginfo_t* si, void* ucv)
+    {
+        if(s_bTitleArmed)
+        {
+            s_bTitleArmed = 0; s_nTitleSig = sig; s_nTitleAddr = si ? (uintptr_t)si->si_addr : 0;
+            ucontext_t* uc = (ucontext_t*)ucv;
+          #if defined(__aarch64__)
+            if(uc) { s_nTitlePc = (uintptr_t)uc->uc_mcontext.pc; s_nTitleLr = (uintptr_t)uc->uc_mcontext.regs[30]; }
+          #elif defined(__arm__)
+            if(uc) { s_nTitlePc = (uintptr_t)uc->uc_mcontext.arm_pc; s_nTitleLr = (uintptr_t)uc->uc_mcontext.arm_lr; }
+          #endif
+            siglongjmp(s_TitleJmp, 1);
+        }
+        for(int i = 0; i < 5; ++i) if(kTitleSigs[i] == sig)
+        {   // not in the title frame: whoever was there before (AML's crash log, the system)
+            struct sigaction* o = &s_TitleOld[i];
+            if(o->sa_flags & SA_SIGINFO) { if(o->sa_sigaction) { o->sa_sigaction(sig, si, ucv); return; } }
+            else if(o->sa_handler != SIG_DFL && o->sa_handler != SIG_IGN) { o->sa_handler(sig); return; }
+        }
+        signal(sig, SIG_DFL); raise(sig);
+    }
+    void TitleArm()
+    {
+        struct sigaction sa; memset(&sa, 0, sizeof(sa));
+        sa.sa_sigaction = TitleFault; sa.sa_flags = SA_SIGINFO | SA_ONSTACK | SA_NODEFER; sigemptyset(&sa.sa_mask);
+        for(int i = 0; i < 5; ++i) sigaction(kTitleSigs[i], &sa, &s_TitleOld[i]);
+        s_bTitleArmed = 1;
+    }
+    void TitleDisarm()
+    {
+        s_bTitleArmed = 0;
+        for(int i = 0; i < 5; ++i) sigaction(kTitleSigs[i], &s_TitleOld[i], nullptr);
+    }
+    void TitleWhere(uintptr_t a, char* o, size_t n)
+    {
+        Dl_info di; memset(&di, 0, sizeof(di));
+        if(a && dladdr((void*)a, &di) && di.dli_fname)
+        {
+            const char* b = strrchr(di.dli_fname, '/'); b = b ? b + 1 : di.dli_fname;
+            if(di.dli_sname && di.dli_saddr) snprintf(o, n, "%s + 0x%lX (%s + %lu)", b, (unsigned long)(a - (uintptr_t)di.dli_fbase), di.dli_sname, (unsigned long)(a - (uintptr_t)di.dli_saddr));
+            else snprintf(o, n, "%s + 0x%lX", b, (unsigned long)(a - (uintptr_t)di.dli_fbase));
+        }
+        else snprintf(o, n, "0x%lX", (unsigned long)a);
+    }
+    void TitleErrLog(void*, const char* fmt, ...) { char b[256]; va_list v; va_start(v, fmt); vsnprintf(b, sizeof(b), fmt, v); va_end(v); logger->Info("Neon title frame recover: %s", b); }
+}
+void UI::TitleStep(const char* s)
+{
+    s_szTitleStep = s;
+    if(s_nTitleFrames <= 2) logger->Info("Neon title frame %d: %s", s_nTitleFrames, s);   // flushed to mp_log.txt
+}
+bool HUD::TitleMenuBroken() { return s_bTitleBroken; }
+static void TitleFrameBody(ImGuiIO& io)
+{
+    UI::TitleStep("fonts");
+    FontsUpdate();
+    UI::TitleStep("font texture + new frame");
+    ImGui_ImplRenderWare_NewFrame();
+    if(io.DeltaTime <= 0.0f) io.DeltaTime = 1.0f / 30.0f;
+    ImGui::NewFrame();
+    UI::TitleStep("neon menu");
+    MP::DrawMenuMpFront();
+    UI::TitleStep("floating menu");
+    if(FloatMenu::IsModal() || FloatMenu::IsOpen()) FloatMenu::Render();
+    UI::TitleStep("keyboard");
+    VKeyboard::Render();
+    GlobalClickTick();
+    UI::TitleStep("end frame");
+    ImGui::EndFrame();
+    PublishHitRects();
+    UI::TitleStep("render");
+    ImGui::Render();
+    ImGui_ImplRenderWare_RenderDrawData(ImGui::GetDrawData());
+    UI::TitleStep("done");
+}
 bool HUD::RenderTitleMenu()
 {
+    if(s_bTitleBroken) return false;
     if(!RsGlobal || RsGlobal->maximumWidth < 64 || RsGlobal->maximumHeight < 64) return false;
-    if(!s_bInit && !Init()) return false;
+    ++s_nTitleFrames;
+    if(!s_bInit)
+    {
+        UI::TitleStep("init");
+        if(!Init()) return false;
+    }
     ImGuiContext* g = ImGui::GetCurrentContext();
     if(!g || g->WithinFrameScope) return false;
     ImGuiIO& io = ImGui::GetIO();
     io.DisplaySize = ImVec2((float)RsGlobal->maximumWidth, (float)RsGlobal->maximumHeight);
-    FontsUpdate();
-    ImGui_ImplRenderWare_NewFrame();
-    if(io.DeltaTime <= 0.0f) io.DeltaTime = 1.0f / 30.0f;
-    ImGui::NewFrame();
-    MP::DrawMenuMpFront();
-    FloatMenu::Render();
-    VKeyboard::Render();
-    GlobalClickTick();
-    ImGui::EndFrame();
-    PublishHitRects();
-    ImGui::Render();
-    ImGui_ImplRenderWare_RenderDrawData(ImGui::GetDrawData());
-    return true;
+    if(sigsetjmp(s_TitleJmp, 0) == 0)
+    {
+        TitleArm();
+        TitleFrameBody(io);
+        TitleDisarm();
+        return true;
+    }
+    // crashed inside the title frame
+    TitleDisarm();
+    s_bTitleBroken = true;
+    char pc[160], lr[160]; TitleWhere(s_nTitlePc, pc, sizeof(pc)); TitleWhere(s_nTitleLr, lr, sizeof(lr));
+    logger->Error("Neon title frame CRASHED (signal %d, step \"%s\", frame %d, fault address 0x%lX)", (int)s_nTitleSig, (const char*)s_szTitleStep, s_nTitleFrames, (unsigned long)s_nTitleAddr);
+    logger->Error("  pc: %s", pc);
+    logger->Error("  lr: %s", lr);
+    logger->Error("The neon title menu is off for this run - the game's own menu is shown. Please send this mp_log.txt.");
+    if(GImGui && GImGui->WithinFrameScope)
+    {   // close what the crashed frame left open, so the next frames (in game) work
+        ImGui::ErrorCheckEndFrameRecover(TitleErrLog, nullptr);
+        ImGui::EndFrame();
+    }
+    return false;
 }
 
 // 3.34: pause-menu map layers. The game's map screen does not go through Render2dStuff, so this is

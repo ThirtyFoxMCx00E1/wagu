@@ -161,21 +161,27 @@ bool ImGui_ImplRenderWare_CreateDeviceObjects()
     io.Fonts->GetTexDataAsRGBA32(&pxs, &width, &height, &bytes_per_pixel);
     logger->Info("Font atlas width: %d, height: %d, depth: %d", width, height, bytes_per_pixel*8);
 
+    if(!pxs || width <= 0 || height <= 0) { logger->Error("Font atlas: no pixels"); return false; }
     RwImage *font_img = RwImageCreate(width, height, bytes_per_pixel*8);
+    if(!font_img) { logger->Error("Font atlas: RwImageCreate failed"); return false; }
     RwImageAllocatePixels(font_img);
+    if(!font_img->cpPixels) { logger->Error("Font atlas: no memory for %dx%d", width, height); RwImageDestroy(font_img); return false; }
 
     RwUInt8 *pixels = font_img->cpPixels;
     for(int y = 0; y < font_img->height; y++)
     {
-        memcpy((unsigned char*)pixels, pxs + font_img->stride * y, font_img->stride);
+        const int row = width * bytes_per_pixel;   // 4.13.26: the atlas rows are width*4; RW's stride can be wider
+        memcpy((unsigned char*)pixels, pxs + row * y, row < font_img->stride ? row : font_img->stride);
         pixels += font_img->stride;
     }
 
     RwInt32 w, h, d, flags;
     RwImageFindRasterFormat(font_img, 4, &w, &h, &d, &flags);
     g_FontRaster = RwRasterCreate(w, h, d, flags);
-    g_FontRaster = RwRasterSetFromImage(g_FontRaster, font_img);
+    if(g_FontRaster) g_FontRaster = RwRasterSetFromImage(g_FontRaster, font_img);
     RwImageDestroy(font_img);
+    logger->Info("Font atlas texture: %s", g_FontRaster ? "ok" : "FAILED");
+    if(!g_FontRaster) return false;
 
     io.Fonts->TexID = (ImTextureID*)g_FontRaster;
     return true;

@@ -590,6 +590,7 @@ static bool NeonTitleCtx() { return Game::IsMainMenuShown() && Game::LocalPed() 
 bool MP::NeonCoversGameMenu()
 {
     if(!NeonOn()) return false;   // 4.13.25: ServerBrowserMode = mp / default: nothing is read
+    if(HUD::TitleMenuBroken()) return false;   // 4.13.26: the title frame crashed (caught): the game's own menu
     const bool on = true, menu = Game::IsMainMenuShown(), ped = Game::LocalPed() > 0, mp = s_bMenuMp.load();
     const bool r = on && !s_bNeonHidden && menu && !ped && !mp;
     if(r) s_nNeonUpMs = MP_NowMs();
@@ -642,10 +643,20 @@ static bool NeonBestRow(LRow& out)
     if(best < 0) return false;
     out = rows[best]; return true;
 }
+// 4.13.26: the server list, the lobby and the LAN search only run after a game is loaded (MP's network starts
+// with the first game frame). On the title they are not touched: Browse servers / Quick connect / Play now
+// start the Multiplayer load first and the browser opens on the black screen when the world is up.
+static void NeonBrowseFromTitle()
+{
+    s_nNeonPage = NP_BROWSER;
+    logger->Info("Neon menu: Browse servers from the title -> the Multiplayer load first, the browser opens after it");
+    MenuMpTap(nullptr);
+}
 static void OnNeonQuick(const char* t, void*)
 {
     if(t && *t && NeonJoinAddress(t)) return;
-    if(t && *t) { MP_CopyStr(s_szNeonSearch, t, sizeof(s_szNeonSearch)); s_nNeonPage = NP_BROWSER; return; }   // a name: search it
+    if(t && *t) { MP_CopyStr(s_szNeonSearch, t, sizeof(s_szNeonSearch)); if(NeonTitleCtx()) NeonBrowseFromTitle(); else s_nNeonPage = NP_BROWSER; return; }   // a name: search it
+    if(NeonTitleCtx()) { NeonBrowseFromTitle(); return; }
     LRow r; if(NeonBestRow(r)) NeonJoinRow(r); else s_nNeonPage = NP_BROWSER;
 }
 static const char* NeonLangName()
@@ -660,6 +671,7 @@ static void NeonMain(ImDrawList* dl, ImVec2 ds)
     const float u = ds.y / 804.0f;
     const float L = ImMin(ds.x * 0.07f, 100 * u * (ds.x / ds.y) / (1430.0f / 804.0f));
     ImFont* uf = UI::Font(); ImFont* gf = UI::GothicFont(); ImFont* cf = UI::CapsFont();
+    UI::TitleStep("neon logo");
     {   // the logo (title.png)
         ImVec2 tuv(1, 1);
         if(void* t = HUD::Texture("title.png", &tuv))
@@ -668,6 +680,7 @@ static void NeonMain(ImDrawList* dl, ImVec2 ds)
             dl->AddImage((ImTextureID)t, ImVec2(L, 52 * u), ImVec2(L + w, 52 * u + h), ImVec2(0, 0), tuv);
         }
     }
+    UI::TitleStep("neon items");
     static const char* const kItems[] = { "Resume", "New game", "Browse servers", "Quick connect", "Settings", "About", "Quit game" };
     const int ni = 7; const float fs = 38 * u, step = 43 * u, y0 = 205 * u, ix = L + 24 * u;
     for(int i = 0; i < ni; ++i)
@@ -702,7 +715,7 @@ static void NeonMain(ImDrawList* dl, ImVec2 ds)
             {
                 case 0: NeonResume(); break;
                 case 1: NeonNewGame(); break;
-                case 2: s_nNeonPage = NP_BROWSER; break;
+                case 2: if(NeonTitleCtx()) NeonBrowseFromTitle(); else s_nNeonPage = NP_BROWSER; break;
                 case 3: VKeyboard::Open("Quick connect: ip:port (empty = the best featured server)", "", 63, OnNeonQuick); break;
                 case 4: s_nNeonPage = NP_SETTINGS; break;
                 case 5: s_nNeonPage = NP_ABOUT; break;
@@ -718,6 +731,7 @@ static void NeonMain(ImDrawList* dl, ImVec2 ds)
         NeonText(dl, uf, 12.5f * u, ImVec2(ix + 10 * u, ty), IM_COL32(205, 208, 214, 255), l1.c_str(), 1.0f * u);
         NeonText(dl, uf, 12.5f * u, ImVec2(ix + 10 * u, ty + 16 * u), IM_COL32(205, 208, 214, 255), nl + 1, 1.0f * u);
     }
+    UI::TitleStep("neon identity");
     {   // Neon Identity (top right)
         const ImVec2 a(ds.x - 445 * u, 40 * u), b(ds.x - 68 * u, 103 * u);
         dl->AddRectFilled(a, b, IM_COL32(12, 12, 14, 232), 2 * u);
@@ -755,9 +769,12 @@ static void NeonMain(ImDrawList* dl, ImVec2 ds)
             }
         }
     }
+    UI::TitleStep("neon featured");
     {   // NEON FEATURED (bottom left)
         static LRow feat; static bool haveFeat = false; static uint64_t at = 0;
-        if(MP_NowMs() - at > 3000) { at = MP_NowMs(); haveFeat = NeonBestRow(feat); }
+        const bool titleNow = NeonTitleCtx();
+        if(titleNow) haveFeat = false;   // 4.13.26: no server list on the title (see NeonBrowseFromTitle)
+        else if(MP_NowMs() - at > 3000) { at = MP_NowMs(); haveFeat = NeonBestRow(feat); }
         const ImVec2 a(L - 8 * u, 643 * u), b(L + 379 * u, 723 * u);
         dl->AddRectFilled(a, b, IM_COL32(12, 12, 14, 232), 2 * u);
         if(haveFeat)
@@ -781,8 +798,16 @@ static void NeonMain(ImDrawList* dl, ImVec2 ds)
             dl->PopClipRect();
             if(NeonHit("##nfPlay", a, b)) NeonJoinRow(feat);
         }
+        else if(titleNow)
+        {
+            NeonText(dl, cf, 7.5f * u, ImVec2(a.x + 20 * u, a.y + 23 * u), IM_COL32(150, 152, 158, 255), "Neon featured", 1.2f * u);
+            NeonText(dl, cf, 13.5f * u, ImVec2(a.x + 20 * u, a.y + 34 * u), kNText, "Browse servers", 1.8f * u, true);
+            NeonText(dl, cf, 7.5f * u, ImVec2(a.x + 20 * u, a.y + 60 * u), IM_COL32(200, 202, 208, 255), "Play now", 1.2f * u);
+            if(NeonHit("##nfPlay", a, b)) NeonBrowseFromTitle();
+        }
         else NeonText(dl, cf, 9 * u, ImVec2(a.x + 20 * u, a.y + 34 * u), IM_COL32(150, 152, 158, 255), "Looking for featured servers...", 1.2f * u);
     }
+    UI::TitleStep("neon footer");
     {   // version + hints + language
         char v[64]; snprintf(v, sizeof(v), "V%s \xE2\x80\x94 NEON PREVIEW", MP_VERSION_STR);
         NeonText(dl, uf, 9.5f * u, ImVec2(L - 8 * u, 761 * u), IM_COL32(100, 104, 112, 255), v, 2.6f * u);
@@ -840,12 +865,15 @@ static bool NeonDraw()
                     ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoBringToFrontOnFocus))
     {
         ImDrawList* dl = ImGui::GetWindowDrawList();
+        UI::TitleStep("neon backdrop");
         NeonBackdrop(dl, ds, s_nNeonPage == NP_MAIN || s_nNeonPage >= NP_ABOUT ? 70 : 200);
-        if(s_nNeonPage == NP_BROWSER) NeonBrowser(dl, ds);
+        if(s_nNeonPage == NP_BROWSER && !title) NeonBrowser(dl, ds);   // 4.13.26: on the title the Multiplayer load runs first
         else if(s_nNeonPage == NP_SETTINGS) NeonSettings(dl, ds);
         else
         {
+            UI::TitleStep("neon main");
             NeonMain(dl, ds);
+            UI::TitleStep("neon main done");
             if(s_nNeonPage == NP_ABOUT)
             {
                 char body[400];

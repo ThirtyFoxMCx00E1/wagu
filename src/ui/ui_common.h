@@ -7,6 +7,7 @@
 
 namespace UI
 {
+    void TitleStep(const char* step);   // 4.13.26: neon title frame breadcrumb (mp_log.txt on the first frames, the crash report)
     // Scale a 1080p-designed pixel value to the current screen height.
     float S(float px);
     ImFont* Font();
