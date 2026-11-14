@@ -1,598 +1,443 @@
-------------------------------------------------------------------
+--- Path manipulation and file queries.
 --
---  Author: Alexey Melnichuk <alexeymelnichuck@gmail.com>
+-- This is modelled after Python's os.path library (10.1); see @{04-paths.md|the Guide}.
 --
---  Copyright (C) 2013-2016 Alexey Melnichuk <alexeymelnichuck@gmail.com>
---
---  Licensed according to the included 'LICENCE' document
---
---  This file is part of lua-path library.
---
-------------------------------------------------------------------
+-- Dependencies: `pl.utils`, `lfs`
+-- @module pl.path
 
-local package = require "package"
-local string  = require "string"
-local table   = require "table"
-local os      = require "os"
-local io      = require "io"
+-- imports and locals
+local _G = _G
+local sub = string.sub
+local getenv = os.getenv
+local tmpnam = os.tmpname
+local attributes, currentdir, link_attrib
+local package = package
+local io = io
+local append, concat, remove = table.insert, table.concat, table.remove
+local ipairs = ipairs
+local utils = require 'pl.utils'
+local assert_arg,assert_string,raise = utils.assert_arg,utils.assert_string,utils.raise
 
-local USE_ALIEN = true
-local USE_FFI   = true
-local USE_AFX   = true
+local attrib
+local path = {}
 
-local DIR_SEP = package.config:sub(1,1)
-local IS_WINDOWS = DIR_SEP == '\\'
-
-local PATH = {}
-
-PATH.DIR_SEP    = DIR_SEP
-PATH.IS_WINDOWS = IS_WINDOWS
-
---
--- PATH manipulation 
-
-function PATH:unquote(P)
-  if P:sub(1,1) == '"' and P:sub(-1,-1) == '"' then
-    return (P:sub(2,-2))
-  end
-  return P
+local res,lfs = _G.pcall(_G.require,'lfs')
+if res then
+    attributes = lfs.attributes
+    currentdir = lfs.currentdir
+    link_attrib = lfs.symlinkattributes
+else
+    error("pl.path requires LuaFileSystem")
 end
 
-function PATH:quote(P)
-  if P:find("%s") then
-    return '"' .. P .. '"'
-  end
-  return P
-end
+attrib = attributes
+path.attrib = attrib
+path.link_attrib = link_attrib
 
-function PATH:has_dir_end(P)
-  return (string.find(P, '[\\/]$')) and true
-end
+--- Lua iterator over the entries of a given directory.
+-- Behaves like `lfs.dir`
+path.dir = lfs.dir
 
-function PATH:remove_dir_end(P)
-  return (string.gsub(P, '[\\/]+$', ''))
-end
+--- Creates a directory.
+path.mkdir = lfs.mkdir
 
-function PATH:ensure_dir_end(P)
-  return self:remove_dir_end(P) .. self.DIR_SEP 
-end
+--- Removes a directory.
+path.rmdir = lfs.rmdir
 
-function PATH:isunc(P)
-  return (string.sub(P, 1, 2) == (self.DIR_SEP .. self.DIR_SEP)) and P
-end
+---- Get the working directory.
+path.currentdir = currentdir
 
-function PATH:normolize_sep(P)
-  return (string.gsub(P, '\\', self.DIR_SEP):gsub('/', self.DIR_SEP))
-end
+--- Changes the working directory.
+path.chdir = lfs.chdir
 
-PATH.normalize_sep = PATH.normolize_sep
 
-function PATH:normolize(P)
-  P = self:normolize_sep(P)
-  local DIR_SEP = self.DIR_SEP
-
-  local is_unc = self:isunc(P)
-  while true do -- `/./` => `/`
-    local n P,n = string.gsub(P, DIR_SEP .. '%.' .. DIR_SEP, DIR_SEP)
-    if n == 0 then break end
-  end
-  while true do -- `//` => `/`
-    local n P,n = string.gsub(P, DIR_SEP .. DIR_SEP, DIR_SEP)
-    if n == 0 then break end
-  end
-  P = string.gsub(P, DIR_SEP .. '%.$', '')
-  if (not IS_WINDOWS) and (P == '') then P = '/' end
-
-  if is_unc then P = DIR_SEP .. P end
-
-  local root, path = nil, P
-  if is_unc then
-    root, path = self:splitroot(P)
-  end
-
-  path = self:ensure_dir_end(path)
-  while true do
-    local first, last = string.find(path, DIR_SEP .. "[^".. DIR_SEP .. "]+" .. DIR_SEP .. '%.%.' .. DIR_SEP)
-    if not first then break end
-    path = string.sub(path, 1, first) .. string.sub(path, last+1)
-  end
-  P = path
-
-  if root then -- unc
-    assert(is_unc)
-    P = P:gsub( '%.%.?' .. DIR_SEP , '')
-    P = DIR_SEP .. DIR_SEP .. self:join(root, P)
-  elseif self.IS_WINDOWS then 
-    -- c:\..\foo => c:\foo
-    -- \..\foo => \foo
-    local root, path = self:splitroot(P)
-    if root ~= '' or P:sub(1,1) == DIR_SEP then
-      path = path:gsub( '%.%.?' .. DIR_SEP , '')
-      P = self:join(root, path)
+--- is this a directory?
+-- @string P A file path
+function path.isdir(P)
+	assert_string(1,P)
+    if P:match("\\$") then
+        P = P:sub(1,-2)
     end
-  end
+    return attrib(P,'mode') == 'directory'
+end
 
-  if self.IS_WINDOWS and #P <= 3 and P:sub(2,2) == ':' then -- c: => c:\ or c:\ => c:\
-    if #P == 2 then return P .. self.DIR_SEP end
+--- is this a file?.
+-- @string P A file path
+function path.isfile(P)
+	assert_string(1,P)
+    return attrib(P,'mode') == 'file'
+end
+
+-- is this a symbolic link?
+-- @string P A file path
+function path.islink(P)
+	assert_string(1,P)
+    if link_attrib then
+        return link_attrib(P,'mode')=='link'
+    else
+        return false
+    end
+end
+
+--- return size of a file.
+-- @string P A file path
+function path.getsize(P)
+	assert_string(1,P)
+    return attrib(P,'size')
+end
+
+--- does a path exist?.
+-- @string P A file path
+-- @return the file path if it exists, nil otherwise
+function path.exists(P)
+	assert_string(1,P)
+    return attrib(P,'mode') ~= nil and P
+end
+
+--- Return the time of last access as the number of seconds since the epoch.
+-- @string P A file path
+function path.getatime(P)
+	assert_string(1,P)
+    return attrib(P,'access')
+end
+
+--- Return the time of last modification
+-- @string P A file path
+function path.getmtime(P)
+    return attrib(P,'modification')
+end
+
+---Return the system's ctime.
+-- @string P A file path
+function path.getctime(P)
+	assert_string(1,P)
+    return path.attrib(P,'change')
+end
+
+
+local function at(s,i)
+    return sub(s,i,i)
+end
+
+path.is_windows = utils.dir_separator == '\\'
+
+local other_sep
+-- !constant sep is the directory separator for this platform.
+if path.is_windows then
+    path.sep = '\\'; other_sep = '/'
+    path.dirsep = ';'
+else
+    path.sep = '/'
+    path.dirsep = ':'
+end
+local sep,dirsep = path.sep,path.dirsep
+
+--- are we running Windows?
+-- @class field
+-- @name path.is_windows
+
+--- path separator for this platform.
+-- @class field
+-- @name path.sep
+
+--- separator for PATH for this platform
+-- @class field
+-- @name path.dirsep
+
+--- given a path, return the directory part and a file part.
+-- if there's no directory part, the first value will be empty
+-- @string P A file path
+function path.splitpath(P)
+    assert_string(1,P)
+    local i = #P
+    local ch = at(P,i)
+    while i > 0 and ch ~= sep and ch ~= other_sep do
+        i = i - 1
+        ch = at(P,i)
+    end
+    if i == 0 then
+        return '',P
+    else
+        return sub(P,1,i-1), sub(P,i+1)
+    end
+end
+
+--- return an absolute path.
+-- @string P A file path
+-- @string[opt] pwd optional start path to use (default is current dir)
+function path.abspath(P,pwd)
+    assert_string(1,P)
+	if pwd then assert_string(2,pwd) end
+    local use_pwd = pwd ~= nil
+    if not use_pwd and not currentdir then return P end
+    P = P:gsub('[\\/]$','')
+    pwd = pwd or currentdir()
+    if not path.isabs(P) then
+        P = path.join(pwd,P)
+    elseif path.is_windows and not use_pwd and at(P,2) ~= ':' and at(P,2) ~= '\\' then
+        P = pwd:sub(1,2)..P -- attach current drive to path like '\\fred.txt'
+    end
+    return path.normpath(P)
+end
+
+--- given a path, return the root part and the extension part.
+-- if there's no extension part, the second value will be empty
+-- @string P A file path
+-- @treturn string root part
+-- @treturn string extension part (maybe empty)
+function path.splitext(P)
+    assert_string(1,P)
+    local i = #P
+    local ch = at(P,i)
+    while i > 0 and ch ~= '.' do
+        if ch == sep or ch == other_sep then
+            return P,''
+        end
+        i = i - 1
+        ch = at(P,i)
+    end
+    if i == 0 then
+        return P,''
+    else
+        return sub(P,1,i-1),sub(P,i)
+    end
+end
+
+--- return the directory part of a path
+-- @string P A file path
+function path.dirname(P)
+    assert_string(1,P)
+    local p1,p2 = path.splitpath(P)
+    return p1
+end
+
+--- return the file part of a path
+-- @string P A file path
+function path.basename(P)
+    assert_string(1,P)
+    local p1,p2 = path.splitpath(P)
+    return p2
+end
+
+--- get the extension part of a path.
+-- @string P A file path
+function path.extension(P)
+    assert_string(1,P)
+    local p1,p2 = path.splitext(P)
+    return p2
+end
+
+--- is this an absolute path?.
+-- @string P A file path
+function path.isabs(P)
+    assert_string(1,P)
+    if path.is_windows then
+        return at(P,1) == '/' or at(P,1)=='\\' or at(P,2)==':'
+    else
+        return at(P,1) == '/'
+    end
+end
+
+--- return the path resulting from combining the individual paths.
+-- if the second (or later) path is absolute, we return the last absolute path (joined with any non-absolute paths following).
+-- empty elements (except the last) will be ignored.
+-- @string p1 A file path
+-- @string p2 A file path
+-- @string ... more file paths
+function path.join(p1,p2,...)
+    assert_string(1,p1)
+    assert_string(2,p2)
+    if select('#',...) > 0 then
+        local p = path.join(p1,p2)
+        local args = {...}
+        for i = 1,#args do
+            assert_string(i,args[i])
+            p = path.join(p,args[i])
+        end
+        return p
+    end
+    if path.isabs(p2) then return p2 end
+    local endc = at(p1,#p1)
+    if endc ~= path.sep and endc ~= other_sep and endc ~= "" then
+        p1 = p1..path.sep
+    end
+    return p1..p2
+end
+
+--- normalize the case of a pathname. On Unix, this returns the path unchanged;
+--  for Windows, it converts the path to lowercase, and it also converts forward slashes
+-- to backward slashes.
+-- @string P A file path
+function path.normcase(P)
+    assert_string(1,P)
+    if path.is_windows then
+        return (P:lower():gsub('/','\\'))
+    else
+        return P
+    end
+end
+
+--- normalize a path name.
+--  A//B, A/./B and A/foo/../B all become A/B.
+-- @string P a file path
+function path.normpath(P)
+    assert_string(1,P)
+    -- Split path into anchor and relative path.
+    local anchor = ''
+    if path.is_windows then
+        if P:match '^\\\\' then -- UNC
+            anchor = '\\\\'
+            P = P:sub(3)
+        elseif at(P, 1) == '/' or at(P, 1) == '\\' then
+            anchor = '\\'
+            P = P:sub(2)
+        elseif at(P, 2) == ':' then
+            anchor = P:sub(1, 2)
+            P = P:sub(3)
+            if at(P, 1) == '/' or at(P, 1) == '\\' then
+                anchor = anchor..'\\'
+                P = P:sub(2)
+            end
+        end
+        P = P:gsub('/','\\')
+    else
+        -- According to POSIX, in path start '//' and '/' are distinct,
+        -- but '///+' is equivalent to '/'.
+        if P:match '^//' and at(P, 3) ~= '/' then 
+            anchor = '//'
+            P = P:sub(3)
+        elseif at(P, 1) == '/' then
+            anchor = '/'
+            P = P:match '^/*(.*)$'
+        end
+    end
+    local parts = {}
+    for part in P:gmatch('[^'..sep..']+') do
+        if part == '..' then
+            if #parts ~= 0 and parts[#parts] ~= '..' then
+                remove(parts)
+            else
+                append(parts, part)
+            end
+        elseif part ~= '.' then
+            append(parts, part)
+        end
+    end
+    P = anchor..concat(parts, sep)
+    if P == '' then P = '.' end
     return P
-  end
-
-  if (not self.IS_WINDOWS) and (P == DIR_SEP) then return '/' end
-  return self:remove_dir_end(P)
 end
 
-PATH.normalize = PATH.normolize
-
-function PATH:join_(P1, P2)
-  local ch = P2:sub(1,1)
-  if (ch == '\\') or (ch == '/') then
-    return self:remove_dir_end(P1) .. P2
-  end
-  return self:ensure_dir_end(P1) .. P2
+local function ATS (P)
+    if at(P,#P) ~= path.sep then
+        P = P..path.sep
+    end
+    return path.normcase(P)
 end
 
-function PATH:join(...)
-  local t,n = {...}, select('#', ...)
-  local r = t[1]
-  for i = 2, #t do
-    if self:isfullpath(t[i]) then
-      r = t[i]
+--- relative path from current directory or optional start point
+-- @string P a path
+-- @string[opt] start optional start point (default current directory)
+function path.relpath (P,start)
+    assert_string(1,P)
+	if start then assert_string(2,start) end
+    local split,normcase,min,append = utils.split, path.normcase, math.min, table.insert
+    P = normcase(path.abspath(P,start))
+    start = start or currentdir()
+    start = normcase(start)
+    local startl, Pl = split(start,sep), split(P,sep)
+    local n = min(#startl,#Pl)
+    if path.is_windows and n > 0 and at(Pl[1],2) == ':' and Pl[1] ~= startl[1] then
+        return P
+    end
+    local k = n+1 -- default value if this loop doesn't bail out!
+    for i = 1,n do
+        if startl[i] ~= Pl[i] then
+            k = i
+            break
+        end
+    end
+    local rell = {}
+    for i = 1, #startl-k+1 do rell[i] = '..' end
+    if k <= #Pl then
+        for i = k,#Pl do append(rell,Pl[i]) end
+    end
+    return table.concat(rell,sep)
+end
+
+
+--- Replace a starting '~' with the user's home directory.
+-- In windows, if HOME isn't set, then USERPROFILE is used in preference to
+-- HOMEDRIVE HOMEPATH. This is guaranteed to be writeable on all versions of Windows.
+-- @string P A file path
+function path.expanduser(P)
+    assert_string(1,P)
+    if at(P,1) == '~' then
+        local home = getenv('HOME')
+        if not home then -- has to be Windows
+            home = getenv 'USERPROFILE' or (getenv 'HOMEDRIVE' .. getenv 'HOMEPATH')
+        end
+        return home..sub(P,2)
     else
-      r = self:join_(r,t[i])
+        return P
     end
-  end
-  return r
 end
 
-function PATH:splitext(P)
-  local s1,s2 = string.match(P,"(.-[^\\/.])(%.[^\\/.]*)$")
-  if s1 then return s1,s2 end
-  return P, ''
-end
 
-function PATH:splitpath(P)
-  return string.match(P,"^(.-)[\\/]?([^\\/]*)$")
-end
-
-function PATH:splitroot(P)
-  if self.IS_WINDOWS then
-    if self:isunc(P) then
-      return string.match(P, [[^\\([^\/]+)[\]?(.*)$]])
+---Return a suitable full path to a new temporary file name.
+-- unlike os.tmpnam(), it always gives you a writeable path (uses TEMP environment variable on Windows)
+function path.tmpname ()
+    local res = tmpnam()
+    -- On Windows if Lua is compiled using MSVC14 os.tmpname
+    -- already returns an absolute path within TEMP env variable directory,
+    -- no need to prepend it.
+    if path.is_windows and not res:find(':') then
+        res = getenv('TEMP')..res
     end
-    if string.sub(P,2,2) == ':' then
-      return string.sub(P,1,2), string.sub(P,4)
-    end
-    return '', P
-  else
-    if string.sub(P,1,1) == '/' then 
-      return string.match(P,[[^/([^\/]+)[/]?(.*)$]])
-    end
-    return '', P
-  end
+    return res
 end
 
-function PATH:splitdrive(P)
-  if self.IS_WINDOWS then
-    return self:splitroot(P)
-  end
-  return '', P
-end
-
-function PATH:basename(P)
-  local s1,s2 = self:splitpath(P)
-  return s2
-end
-
-function PATH:dirname(P)
-  return (self:splitpath(P))
-end
-
-function PATH:extension(P)
-  local s1,s2 = self:splitext(P)
-  return s2
-end
-
-function PATH:root(P)
-  return (self:splitroot(P))
-end
-
-function PATH:isfullpath(P)
-  return (self:root(P) ~= '') and P
-end
-
-function PATH:user_home()
-  if IS_WINDOWS then
-    return os.getenv('USERPROFILE') or PATH:join(os.getenv('HOMEDRIVE'), os.getenv('HOMEPATH'))
-  end
-  return os.getenv('HOME')
-end
-
-local function prequire(m) 
-  local ok, err = pcall(require, m) 
-  if not ok then return nil, err end
-  return err
-end
-
-local fs = prequire "path.fs"
-
-if fs then
-
---
--- PATH based on system 
-
-local function assert_system(self)
-  if PATH.IS_WINDOWS then assert(self.IS_WINDOWS) return end
-  assert(not self.IS_WINDOWS)
-end
-
-if fs.flags then
-  function PATH:flags(P, ...)
-    assert_system(self)
-    P = self:fullpath(P)
-    return fs.flags(P, ...)
-  end
-end
-
-function PATH:tmpdir()
-  assert_system(self)
-  return self:remove_dir_end(fs.tmpdir())
-end
-
-function PATH:tmpname()
-  local P = os.tmpname()
-  if self:dirname(P) == '' then
-    P = self:join(self:tmpdir(), P)
-  end
-  return P
-end
-
-function PATH:size(P)
-  assert_system(self)
-  return fs.size(P)
-end
-
-function PATH:fullpath(P)
-  if not self:isfullpath(P) then 
-    P = self:normolize_sep(P)
-    local ch1, ch2 = P:sub(1,1), P:sub(2,2)
-    if ch1 == '~' then --  ~\temp
-      P = self:join(self:user_home(), P:sub(2))
-    elseif self.IS_WINDOWS and (ch1 == self.DIR_SEP) then -- \temp => c:\temp
-      local root = self:root(self:currentdir())
-      P = self:join(root, P)
-    else
-      P = self:join(self:currentdir(), P)
-    end
-  end
-
-  return self:normolize(P)
-end
-
-function PATH:attrib(P, ...)
-  assert_system(self)
-  return fs.attributes(P, ...)
-end
-
-function PATH:exists(P)
-  assert_system(self)
-  return fs.exists(self:fullpath(P))
-end
-
-function PATH:isdir(P)
-  assert_system(self)
-  return fs.isdir(self:fullpath(P))
-end
-
-function PATH:isfile(P)
-  assert_system(self)
-  return fs.isfile(self:fullpath(P))
-end
-
-function PATH:islink(P)
-  assert_system(self)
-  return fs.islink(self:fullpath(P))
-end
-
-function PATH:ctime(P)
-  assert_system(self)
-  return fs.ctime(self:fullpath(P))
-end
-
-function PATH:mtime(P)
-  assert_system(self)
-  return fs.mtime(self:fullpath(P))
-end
-
-function PATH:atime(P)
-  assert_system(self)
-  return fs.atime(self:fullpath(P))
-end
-
-function PATH:touch(P, ...)
-  assert_system(self)
-  return fs.touch(self:fullpath(P), ...)
-end
-
-function PATH:currentdir()
-  assert_system(self)
-  return self:normolize(fs.currentdir())
-end
-
-function PATH:chdir(P)
-  assert_system(self)
-  return fs.chdir(self:fullpath(P))
-end
-
-function PATH:isempty(P)
-  assert_system(self)
-  local ok, err = fs.each_impl{
-    file = self:ensure_dir_end(P), 
-    callback = function() return 'pass' end;
-  }
-  if err then return nil, err end
-  return ok ~= 'pass'
-end
-
-local date = prequire "date"
-if date then
-  local function make_getfiletime_as_date(fn)
-    if date then
-      return function(...)
-        local t,e = fn(...)
-        if not t then return nil, e end
-        return date(t)
-      end
-    end
-  end
-
-  PATH.cdate = make_getfiletime_as_date( PATH.ctime );
-  PATH.mdate = make_getfiletime_as_date( PATH.mtime );
-  PATH.adate = make_getfiletime_as_date( PATH.atime );
-end
-
-function PATH:mkdir(P)
-  assert_system(self)
-  local P = self:fullpath(P)
-  if self:exists(P) then return self:isdir(P) end
-  local p = ''
-  P = self:ensure_dir_end(P)
-  for str in string.gmatch(P, '.-' .. self.DIR_SEP) do
-    p = p .. str
-    if self:exists(p) then
-      if not self:isdir(p) then
-        return nil, 'can not create ' .. p
-      end
-    else
-      if IS_WINDOWS or p ~= DIR_SEP then
-        local ok, err = fs.mkdir(self:remove_dir_end(p))
-        if not ok then return nil, err .. ' ' .. p end
-      end
-    end
-  end
-  return P
-end
-
-function PATH:rmdir(P)
-  assert_system(self)
-  return fs.rmdir(self:fullpath(P))
-end
-
-function PATH:rename(from, to, force)
-  assert_system(self)
-  from = self:fullpath(from)
-  to   = self:fullpath(to)
-  return fs.move(from, to, force)
-end
-
-local each = require "path.findfile".load(function(opt)
-  local has_dir_end = PATH:has_dir_end(opt.file)
-  opt.file = PATH:fullpath(opt.file)
-  if has_dir_end then opt.file = PATH:ensure_dir_end(opt.file) end
-  return fs.each_impl(opt)
-end)
-
-function PATH:each(...)
-  assert_system(self)
-  return each(...)
-end
-
-local function copy_impl_batch(self, fs, src_dir, mask, dst_dir, opt)
-  if not opt then opt = {} end
-
-  local overwrite = opt.overwrite
-  local accept    = opt.accept
-  local onerror   = opt.error
-  local chlen     = #fs.DIR_SEP
-  local count     = 0
-
-  local existed_dirs = {}
-  local ok, err = fs.each_impl{file = src_dir .. fs.DIR_SEP .. mask,
-    delay = opt.delay; recurse = opt.recurse; param = "pnm";
-    skipdirs = opt.skipdirs; skipfiles = opt.skipfiles;
-    callback = function(path, name, mode)
-      local rel = string.sub(path, #src_dir + chlen + 1)
-      if #rel > 0 then rel = rel .. fs.DIR_SEP .. name else rel = name end
-      local dst = dst_dir .. fs.DIR_SEP .. rel
-      local src = path .. fs.DIR_SEP .. name
-
-      if accept then
-        local ok = accept(src, dst, opt)
-        if not ok then return end
-      end
-
-      local ok, err = true
-      if mode == "directory" then
-        if not existed_dirs[dst] then
-          if not fs.isdir(dst) then
-            ok, err = self:mkdir(dst)
-          end
-          existed_dirs[dst] = true
+--- return the largest common prefix path of two paths.
+-- @string path1 a file path
+-- @string path2 a file path
+function path.common_prefix (path1,path2)
+    assert_string(1,path1)
+    assert_string(2,path2)
+    path1, path2 = path.normcase(path1), path.normcase(path2)
+    -- get them in order!
+    if #path1 > #path2 then path2,path1 = path1,path2 end
+    for i = 1,#path1 do
+        local c1 = at(path1,i)
+        if c1 ~= at(path2,i) then
+            local cp = path1:sub(1,i-1)
+            if at(path1,i-1) ~= sep then
+                cp = path.dirname(cp)
+            end
+            return cp
         end
-      else
-        local dir = self:splitpath(dst)
-        if not existed_dirs[dir] then
-          if not fs.isdir(dst) then
-            ok, err = self:mkdir(dir)
-          end
-          existed_dirs[dir] = true
-        end
-        if ok then
-          ok, err = fs.copy(src, dst, not overwrite)
-        end
-      end
-
-      if not ok and onerror then
-        if not onerror(err, src, dst, opt) then -- break
-          return true
-        end
-      else
-        count = count + 1
-      end
-    end;
-  }
-  if ok or err then return ok, err end
-  return count
-end
-
-local function remove_impl_batch(fs, src_dir, mask, opt)
-  if not opt then opt = {} end
-
-  local overwrite = opt.overwrite
-  local accept    = opt.accept
-  local onerror   = opt.error
-  local chlen     = #fs.DIR_SEP
-  local count     = 0
-  local delay     = (opt.delay == nil) and true or opt.delay
-
-  local ok, err = fs.each_impl{file = src_dir .. fs.DIR_SEP .. mask,
-    delay = delay; recurse = opt.recurse; reverse = true; param = "fm";
-    skipdirs = opt.skipdirs; skipfiles = opt.skipfiles;
-    callback = function(src, mode)
-      if accept then
-        local ok = accept(src, opt)
-        if not ok then return end
-      end
-
-      local ok, err
-      if mode == "directory" then ok, err = fs.rmdir(src)
-      else ok, err = fs.remove(src) end
-
-      if not ok and onerror then
-        if not onerror(err, src, opt) then -- break
-          return true
-        end
-      else
-        count = count + 1
-      end
-    end;
-  }
-  if ok or err then return ok, err end
-  return count
-end
-
-function PATH:remove_impl(P)
-  if self:isdir(P) then return fs.rmdir(P) end
-  return fs.remove(P)
-end
-
-function PATH:copy(from, to, opt)
-  from = self:fullpath(from)
-  to   = self:fullpath(to)
-
-  if type(opt) == "boolean" then opt = {overwrite = opt} end
-
-  local overwrite = opt and opt.overwrite
-  local recurse   = opt and opt.recurse
-
-  local src_dir, src_name = self:splitpath(from)
-  if recurse or src_name:find("[*?]") then -- batch mode
-    return copy_impl_batch(self, fs, src_dir, src_name, to, opt)
-  end
-  if self.mkdir then self:mkdir(self:dirname(to)) end
-  return fs.copy(from, to, not not overwrite)
-end
-
-function PATH:remove(P, opt)
-  assert_system(self)
-  local P = self:fullpath(P)
-  local dir, name = self:splitpath(P)
-  if (opt and opt.recurse) or name:find("[*?]") then -- batch mode
-    return remove_impl_batch(fs, dir, name, opt)
-  end
-  return self:remove_impl(P)
-end
-
-end -- fs 
-
-do -- Python aliases
-PATH.split    = PATH.splitpath
-PATH.isabs    = PATH.isfullpath
-PATH.normpath = PATH.normolize
-PATH.abspath  = PATH.fullpath
-PATH.getctime = PATH.ctime
-PATH.getatime = PATH.atime
-PATH.getmtime = PATH.mtime
-PATH.getsize  = PATH.size
-end
-
-local function path_new(o)
-  o = o or {}
-  for k, f in pairs(PATH) do
-    if type(f) == 'function' then
-      o[k] = function(...)
-        if o == ... then return f(...) end
-        return f(o, ...)
-      end
-    else 
-      o[k] = f
     end
-  end
-  return o
+    if at(path2,#path1+1) ~= sep then path1 = path.dirname(path1) end
+    return path1
+    --return ''
 end
 
-local function lock_table(t)
-  return setmetatable(t,{
-    __newindex = function()
-      error("Can not change path library", 2)
-    end;
-    __metatable = "lua-path object";
-  })
+--- return the full path where a particular Lua module would be found.
+-- Both package.path and package.cpath is searched, so the result may
+-- either be a Lua file or a shared library.
+-- @string mod name of the module
+-- @return on success: path of module, lua or binary
+-- @return on error: nil,error string
+function path.package_path(mod)
+    assert_string(1,mod)
+    local res
+    mod = mod:gsub('%.',sep)
+    res = package.searchpath(mod,package.path)
+    if res then return res,true end
+    res = package.searchpath(mod,package.cpath)
+    if res then return res,false end
+    return raise 'cannot find module on path'
 end
 
-local M = path_new(require "path.module")
 
-local path_cache = setmetatable({}, {__mode='v'})
-
-function M.new(DIR_SEP)
-  local is_win, sep
-
-  if type(DIR_SEP) == 'string' then
-    sep = DIR_SEP
-    is_win = (DIR_SEP == '\\')
-  elseif DIR_SEP ~= nil then
-    assert(type(DIR_SEP) == 'boolean')
-    is_win = DIR_SEP
-    sep = is_win and '\\' or '/'
-  else
-    sep = M.DIR_SEP
-    is_win = M.IS_WINDOWS
-  end
-
-  if M.DIR_SEP == sep then
-    assert(M.IS_WINDOWS == is_win)
-    return M
-  end
-
-  local o = path_cache[sep]
-
-  if not o then
-    o = path_new()
-    o.DIR_SEP = sep
-    o.IS_WINDOWS = is_win
-    path_cache[sep] = lock_table(o)
-  end
-
-  return o
-end
-
-return lock_table(M)
+---- finis -----
+return path
