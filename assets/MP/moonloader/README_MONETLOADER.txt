@@ -1,4 +1,4 @@
-MonetLoader for MP (MonetLoader 3.8.5-mp, based on MonetLoaderOSS)
+MonetLoader for MP (MonetLoader 3.8.6-mp, based on MonetLoaderOSS)
 ==================================================================
 PC MoonLoader .lua scripts run on Android on MP servers.
 
@@ -51,5 +51,9 @@ TV Player (MP 4.13.34, MonetLoader 3.8.2-mp)
   hide it) and isRender3DAvailable() says if it works. tvplayer.lua 1.3-mp uses it: the video is a mesh
   on the TV's screen surface instead of a flat overlay on top of everything. The video decoder now uses
   AImageReader (any phone's decoder output) and makes a new texture per frame (no more black picture).
+  3.8.6-mp (MP 4.13.43): fixes the TV mesh staying black. Video frames are uploaded through RwImage +
+  RwRasterSetFromImage (the path MP's GIFs and logos use) to a square power-of-two texture, and the
+  first frame is always shown. New videoGetStats(id) -> frames, uploads (frames decoded, textures made).
+  tvplayer.lua 1.4-mp shows a hint on screen (and in moonloader.log) when no frame was decoded after 4 s.
   Diagnostics: adb logcat -s MonetVideo
   samp.events (lib/samp/) is included: copy the whole lib folder WITH its subfolders.

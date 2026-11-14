@@ -12,7 +12,7 @@
 -- The sound gets quieter as you walk away and stops after StopDistance metres.
 script_name('TV Player')
 script_author('ThirtyFoxMCx00E1 (MP port), tvplayer mod')
-script_version('1.3-mp')
+script_version('1.4-mp')
 
 local DIR = getWorkingDirectory() .. '/tvplayer'
 local cfg = { Volume = 80, PromptDistance = 2.5, StopDistance = 20, FullVolumeDistance = 4, SeekSeconds = 10,
@@ -116,6 +116,7 @@ local function start(index)
   videoSetVolume(st.id, cfg.Volume / 100)
   videoPlay(st.id)
   st.paused = false
+  st.startedAt = now(); st.diag = false
   osd(string.format('%d/%d  %s', index, #videos, videos[index]))
 end
 
@@ -158,6 +159,7 @@ local function drawScreen(tex)
   local g = math.floor(math.min(255, math.max(0, 255 * cfg.Brightness / 100)))
   local color = 0xFF000000 + g * 0x10000 + g * 0x100 + g
   if isRender3DAvailable and isRender3DAvailable() then
+    off = math.max(off, 0.02)   -- 1.4: a little in front of the glass (curved CRT screens hid a 1 cm mesh)
     local out = {}
     for i = 0, cnt - 1 do
       local k = i * 8
@@ -357,6 +359,15 @@ function main()
       if st.id ~= 0 then
         local tex = videoGetTexture(st.id)
         if tex then drawScreen(tex) end
+        -- 1.4: say why the TV stays black (no frames from the phone's decoder / frames but no texture)
+        if not st.diag and videoGetStats and st.startedAt and not st.paused and now() - st.startedAt > 4 then
+          st.diag = true
+          local fr, up = videoGetStats(st.id)
+          print(string.format('TV Player: %s - %d frames decoded, %d textures, 3D %s', videos[st.index] or '?', fr, up,
+            tostring(isRender3DAvailable and isRender3DAvailable())))
+          if fr == 0 then osd("No picture: the phone can't decode this video - use H.264 mp4 (720p or less)")
+          elseif up == 0 then osd('No picture: frames decoded but no texture (send moonloader.log)') end
+        end
         if tvDistance() <= cfg.PromptDistance * 2 then
           local bw, bh, gap = sh * 0.085, sh * 0.075, sh * 0.012
           local ids = { { 'prev', '|<' }, { 'back', '<<' }, { 'pause', st.paused and '>' or '||' }, { 'fwd', '>>' }, { 'next', '>|' }, { 'vdown', 'V-' }, { 'vup', 'V+' }, { 'stop', 'X' } }
