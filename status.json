@@ -1,0 +1,91 @@
+{
+ "updated": "2026-11-14T16:08:55+00:00",
+ "broker": "broker.hivemq.com",
+ "players": 13,
+ "servers": [
+  {
+   "name": "MP LAN Server",
+   "port": 1922,
+   "players": 1,
+   "max": 100,
+   "region": 0
+  },
+  {
+   "name": "yuni tomang",
+   "port": 1923,
+   "players": 4,
+   "max": 50,
+   "region": 0
+  },
+  {
+   "name": "trip",
+   "port": 1923,
+   "players": 2,
+   "max": 3,
+   "region": 0
+  },
+  {
+   "name": "Brief Case War",
+   "port": 1930,
+   "players": 1,
+   "max": 20,
+   "region": 0
+  },
+  {
+   "name": "Call Of Duty: Modern Warfare 3",
+   "port": 1931,
+   "players": 1,
+   "max": 64,
+   "region": 0
+  },
+  {
+   "name": "dedep imut",
+   "port": 1923,
+   "players": 1,
+   "max": 100,
+   "region": 0
+  },
+  {
+   "name": "Mega Vil Futuristic",
+   "port": 1932,
+   "players": 1,
+   "max": 250,
+   "region": 0
+  },
+  {
+   "name": "Project Day Z Legacy",
+   "port": 1933,
+   "players": 1,
+   "max": 250,
+   "region": 0
+  },
+  {
+   "name": "Rocket League",
+   "port": 1934,
+   "players": 1,
+   "max": 16,
+   "region": 0
+  },
+  {
+   "name": "asepfamily",
+   "port": 1923,
+   "players": 0,
+   "max": 4,
+   "region": 0
+  },
+  {
+   "name": "jexo2",
+   "port": 1923,
+   "players": 0,
+   "max": 98,
+   "region": 0
+  },
+  {
+   "name": "Player's server",
+   "port": 1923,
+   "players": 0,
+   "max": 8,
+   "region": 0
+  }
+ ]
+}
