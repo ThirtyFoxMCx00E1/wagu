@@ -120,7 +120,22 @@ void Gifs::List(const char* cat, const char* search, std::vector<int>& out)
     {
         const Info& i = s_Info[id];
         if(!all && i.cat != cat) continue;
-        if(search && *search && !strcasestr(i.name.c_str(), search) && !strcasestr(i.cat.c_str(), search)) continue;
+        if(search && *search)
+        {   // 4.13.42: every word must be in the name or the category ("cat dance")
+            bool ok = true; const char* p = search;
+            while(*p && ok)
+            {
+                while(*p == ' ') ++p;
+                const char* e = p; while(*e && *e != ' ') ++e;
+                if(e > p)
+                {
+                    std::string w(p, e - p);
+                    if(!strcasestr(i.name.c_str(), w.c_str()) && !strcasestr(i.cat.c_str(), w.c_str())) ok = false;
+                }
+                p = e;
+            }
+            if(!ok) continue;
+        }
         out.push_back(id);
     }
 }

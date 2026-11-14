@@ -108,18 +108,21 @@ namespace
     }
 
     // 4.12.3: phone keyboard dialog
-    std::string s_TTitle, s_TInit; int s_nTMax = 0; bool s_bTNum = false;
+    std::string s_TTitle, s_TInit; int s_nTMax = 0; bool s_bTNum = false, s_bTGif = false;
     std::atomic<int> s_nTLocal{ 0 };   // 1 = asked, waiting for the UI thread; 6 = could not load
     void AskOnUi(void*)
     {
         JNIEnv* e = Env();
         jobject act = aml->GetCurrentActivity();
-        if(!e || !act || !LoadClass(e, act)) { s_nTLocal = 6; return; }
-        std::string t, i; int mx; bool num; { std::lock_guard<std::mutex> l(s_Mx); t = s_TTitle; i = s_TInit; mx = s_nTMax; num = s_bTNum; }
-        jmethodID m = e->GetStaticMethodID(s_Cls, "askText", "(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;IZ)V");
+        if(!e || !act) { s_LoadErr = "no activity"; s_nTLocal = 6; return; }
+        if(!LoadClass(e, act)) { if(s_LoadErr.empty()) s_LoadErr = "could not load the keyboard helper"; s_nTLocal = 6; return; }
+        std::string t, i; int mx; bool num, gif; { std::lock_guard<std::mutex> l(s_Mx); t = s_TTitle; i = s_TInit; mx = s_nTMax; num = s_bTNum; gif = s_bTGif; }
+        // 4.13.42: askText builds its dialog with runOnUiThread itself, so this works from any thread
+        jmethodID m = e->GetStaticMethodID(s_Cls, "askText", "(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;IZZ)V");
         if(ClearEx(e) || !m) { s_nTLocal = 6; return; }
-        e->CallStaticVoidMethod(s_Cls, m, act, e->NewStringUTF(t.c_str()), e->NewStringUTF(i.c_str()), (jint)mx, (jboolean)num);
+        e->CallStaticVoidMethod(s_Cls, m, act, e->NewStringUTF(t.c_str()), e->NewStringUTF(i.c_str()), (jint)mx, (jboolean)num, (jboolean)gif);
         if(ClearEx(e)) { s_nTLocal = 6; return; }
+        logger->Info("Phone keyboard: dialog asked (%s)", t.c_str());
         s_nTLocal = 0;
     }
     jfieldID Field(JNIEnv* e, const char* n, const char* sig) { jfieldID f = e->GetStaticFieldID(s_Cls, n, sig); if(ClearEx(e)) return nullptr; return f; }
@@ -167,10 +170,10 @@ void FilePick::Reset()
 }
 
 // 4.12.3: the phone's own keyboard (Settings > Keyboard)
-bool FilePick::AskText(const char* title, const char* init, int maxLen, bool numeric)
+bool FilePick::AskText(const char* title, const char* init, int maxLen, bool numeric, bool gif)
 {
-    if(!aml->GetCurrentActivity()) return false;
-    { std::lock_guard<std::mutex> l(s_Mx); s_TTitle = title ? title : ""; s_TInit = init ? init : ""; s_nTMax = maxLen; s_bTNum = numeric; }
+    if(!aml->GetCurrentActivity()) { s_LoadErr = "no activity"; logger->Error("Phone keyboard: no activity"); return false; }
+    { std::lock_guard<std::mutex> l(s_Mx); s_TTitle = title ? title : ""; s_TInit = init ? init : ""; s_nTMax = maxLen; s_bTNum = numeric; s_bTGif = gif; }
     if(s_Cls) { JNIEnv* e = Env(); if(e) { jfieldID f = Field(e, "tstate", "I"); if(f) e->SetStaticIntField(s_Cls, f, 1); } }
     s_nTLocal = 1;
     if(!aml->PushToJavaUIThread(AskOnUi, nullptr)) AskOnUi(nullptr);
@@ -185,6 +188,15 @@ int FilePick::TextState()
     return e->GetStaticIntField(s_Cls, f);
 }
 std::string FilePick::Text() { return StrField("text"); }
+std::string FilePick::TextError() { return s_nTLocal == 6 ? s_LoadErr : StrField("error"); }
+void FilePick::CancelText()
+{   // 4.13.42: closes the dialog too (the MP keyboard was closed by the game)
+    s_nTLocal = 0;
+    JNIEnv* e = Env(); if(!e || !s_Cls) return;
+    jmethodID m = e->GetStaticMethodID(s_Cls, "cancelText", "()V");
+    if(ClearEx(e) || !m) { TextReset(); return; }
+    e->CallStaticVoidMethod(s_Cls, m); ClearEx(e);
+}
 void FilePick::TextReset()
 {
     s_nTLocal = 0;

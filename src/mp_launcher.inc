@@ -19,6 +19,7 @@ enum { LT_INTERNET = 0, LT_FAVORITES, LT_HOSTED, LT_ADD, LT_PLAYERS, LT_BANS, LT
        LT_CLOUD,                                                                         // 4.02: Cloud Storage (downloads)
        LT_LAN,                                                                           // 4.03: Wi-Fi servers only (CS:GO style top tab)
        LT_MOQUIL,                                                                        // 4.13: Moquil (link code, get the app)
+       LT_ABOUT,                                                                         // 4.13.42: About (author, links, credit / copyright notice)
        LT_SECTIONS };
 static int   s_nLTab = LT_INTERNET;
 static int   s_nInetSub = 0;   // 3.58: Internet = PUBLIC (default + custom servers) || FEATURED (the 24/7 Broker servers)
@@ -1531,7 +1532,8 @@ bool MP::LauncherPadPage(int dir)
     int order[64]; int n = 0;
     order[n++] = LT_INTERNET; order[n++] = LT_FAVORITES; order[n++] = LT_ADD; order[n++] = LT_CLOUD; order[n++] = LT_PLAYERS; order[n++] = LT_BANS;
     if(LSrvMgmtAvailable()) order[n++] = LT_SRVMGMT;
-    for(int i = 0; i < FloatMenu::SectionCount() && n < 64; ++i) order[n++] = LT_SECTIONS + i;
+    for(int i = 0; i < FloatMenu::SectionCount() && n < 63; ++i) order[n++] = LT_SECTIONS + i;
+    order[n++] = LT_ABOUT;   // 4.13.42
     int at = 0; for(int i = 0; i < n; ++i) if(order[i] == s_nLTab) { at = i; break; }
     at = (at + dir + n) % n;
     s_nLTab = order[at];
@@ -2054,6 +2056,94 @@ static void LGroupLabel(const char* t)
 
 #include "mp_social.inc"   // 3.63: friends, chats, party, communities, inbox
 
+// ---- 4.13.42: About page - who made MP, where to find the author, and the credit / copyright notice ----
+#define MP_ABOUT_YOUTUBE "https://youtube.com/@thirtyfoxmc"
+#define MP_ABOUT_DISCORD "https://discord.gg/BbZ5xkmuYH"
+#define MP_ABOUT_GITHUB  "https://github.com/ThirtyFoxMCx00E1/wagu"
+static void LAboutHeading(const char* t)
+{
+    ImGui::Dummy(ImVec2(1, UI::S(10)));
+    ImGui::PushStyleColor(ImGuiCol_Text, ImGui::ColorConvertU32ToFloat4(kVTeal));
+    ImGui::TextUnformatted(t);
+    ImGui::PopStyleColor();
+    ImDrawList* dl = ImGui::GetWindowDrawList();
+    ImVec2 p = ImGui::GetCursorScreenPos();
+    dl->AddLine(p, ImVec2(p.x + ImGui::GetContentRegionAvail().x, p.y), kVLine, UI::S(1));
+    ImGui::Dummy(ImVec2(1, UI::S(6)));
+}
+static void LAboutPara(const char* t)
+{
+    ImGui::PushStyleColor(ImGuiCol_Text, ImGui::ColorConvertU32ToFloat4(kVText));
+    ImGui::TextWrapped("%s", t);
+    ImGui::PopStyleColor();
+    ImGui::Dummy(ImVec2(1, UI::S(4)));
+}
+static void LAboutBullet(const char* t)
+{
+    ImGui::PushStyleColor(ImGuiCol_Text, ImGui::ColorConvertU32ToFloat4(kVText));
+    ImGui::Bullet(); ImGui::SameLine(); ImGui::TextWrapped("%s", t);
+    ImGui::PopStyleColor();
+}
+static void LPageAbout(float W)
+{
+    ImDrawList* dl = ImGui::GetWindowDrawList();
+    const float fs = ImGui::GetFontSize();
+    {   // header card
+        ImVec2 a = ImGui::GetCursorScreenPos(), b(a.x + W, a.y + fs * 4.6f);
+        VPill(dl, a, b, IM_COL32(24, 27, 32, 200), VAlpha(kVTeal, 0.45f));
+        dl->AddRectFilled(ImVec2(a.x, a.y + UI::S(10)), ImVec2(a.x + UI::S(5), b.y - UI::S(10)), kVTeal);
+        dl->AddText(UI::Font(), fs * 1.45f, ImVec2(a.x + UI::S(26), a.y + fs * 0.55f), IM_COL32_WHITE, "MP Multiplayer");
+        char v[96]; snprintf(v, sizeof(v), "Version %s   -   created by ThirtyFoxMC (ThirtyFoxMCx00E1)", MP_VERSION_STR);
+        dl->AddText(ImVec2(a.x + UI::S(26), a.y + fs * 2.45f), kVDim, v);
+        dl->AddText(ImVec2(a.x + UI::S(26), a.y + fs * 3.35f), kVDim, "Multiplayer for GTA San Andreas and GTA Vice City on Android");
+        ImGui::Dummy(ImVec2(W, fs * 4.6f + UI::S(12)));
+    }
+    // links
+    const float bh = UI::S(72), bw = (W - UI::S(24)) / 3.0f;
+    ImVec2 r = ImGui::GetCursorScreenPos();
+    if(VBtn("abyt", "YOUTUBE  @thirtyfoxmc", bw, bh, 1, true, IC_PLAY)) Voice::OpenUrl(MP_ABOUT_YOUTUBE);
+    ImGui::SetCursorScreenPos(ImVec2(r.x + bw + UI::S(12), r.y));
+    if(VBtn("abdc", "DISCORD SERVER", bw, bh, 2, true, IC_CHAT)) Voice::OpenUrl(MP_ABOUT_DISCORD);
+    ImGui::SetCursorScreenPos(ImVec2(r.x + (bw + UI::S(12)) * 2, r.y));
+    if(VBtn("abgh", "OFFICIAL SOURCE", bw, bh, 0, true, IC_GLOBE)) Voice::OpenUrl(MP_ABOUT_GITHUB);
+    ImGui::SetCursorScreenPos(ImVec2(r.x, r.y + bh + UI::S(6)));
+    ImGui::TextDisabled("YouTube: %s     Discord: %s", MP_ABOUT_YOUTUBE, MP_ABOUT_DISCORD);
+
+    LAboutHeading("ABOUT THIS MOD");
+    LAboutPara("MP Multiplayer is an independent, non-commercial project designed, programmed and maintained by one developer, "
+               "ThirtyFoxMC. Every part of it - the networking and sync, the server browser and launcher, the game modes, the "
+               "dedicated server, the TV Player, the Moquil social app and the tools behind them - is the result of many months "
+               "of daily work, testing on real phones and fixing problems reported by the community.");
+    LAboutPara("The mod is offered for free so that players can enjoy San Andreas and Vice City together. Updates, fixes and "
+               "announcements are published only through the official channels above.");
+
+    LAboutHeading("AUTHORSHIP AND CREDIT");
+    LAboutPara("MP Multiplayer, its code, its interface, its artwork and its name are the original work of ThirtyFoxMC. "
+               "All rights are reserved by the author.");
+    LAboutBullet("You may share the official download link and make videos, streams and reviews of the mod, as long as the author is credited.");
+    LAboutBullet("Re-uploading the mod or any part of it (libMP, scripts, assets, server files) to another site, channel, group or store requires the author's permission and visible credit to ThirtyFoxMC with a link to the official source.");
+    LAboutBullet("Removing or changing the author's name, claiming the mod as your own, renaming it and presenting it as a new project, or selling it or putting it behind paid links or ad walls is not allowed.");
+    LAboutBullet("Edited versions and ports must clearly say they are based on MP Multiplayer by ThirtyFoxMC.");
+
+    LAboutHeading("A NOTE ON RE-UPLOADS");
+    LAboutPara("This project has been copied and re-uploaded by others without permission and without any credit to the person "
+               "who built it. That takes away the recognition for hundreds of hours of unpaid work and often spreads old, broken "
+               "or modified files under someone else's name. Re-uploads like that are copyright infringement, and they will be "
+               "reported to the hosting platform (YouTube, file hosts, app stores and similar) with a takedown request.");
+    LAboutPara("If you downloaded MP from somewhere else, please get it from the official source instead - it is always the "
+               "newest and safest version - and let the author know where you found the copy on Discord. Thank you for "
+               "respecting the work and supporting the original creator.");
+
+    LAboutHeading("THIRD-PARTY COMPONENTS");
+    LAboutPara("GTA San Andreas and GTA Vice City are the property of Rockstar Games; MP is a fan-made mod and is not affiliated "
+               "with or endorsed by Rockstar Games or Take-Two Interactive. MP uses AndroidModLoader, MonetLoader (OSS), Dear ImGui, "
+               "mbedTLS, Opus, SQLite and other open-source libraries under their own licences; their authors keep full credit "
+               "for their work.");
+    ImGui::Dummy(ImVec2(1, UI::S(10)));
+    ImGui::TextDisabled("(c) ThirtyFoxMC (ThirtyFoxMCx00E1). All rights reserved.");
+    ImGui::Dummy(ImVec2(1, UI::S(20)));
+}
+
 static void RenderLauncher(void* openPtr)
 {
     bool* open = (bool*)openPtr;
@@ -2169,7 +2259,7 @@ static void RenderLauncher(void* openPtr)
         {   // 4.03: pages stay in the left sidebar - the top row only shows the page name
             const char* pt = s_nLTab == LT_ADD || s_nLTab == LT_HOSTED ? "Add server" : s_nLTab == LT_CLOUD ? "Cloud Storage" : s_nLTab == LT_PLAYERS ? "Players" :
                              s_nLTab == LT_BANS ? "Bans" : s_nLTab == LT_SRVMGMT ? "Server Management" : s_nLTab == LT_FRIENDS ? "Friends" : s_nLTab == LT_CHATS ? "Chats" :
-                             s_nLTab == LT_PARTY ? "Party" : s_nLTab == LT_COMMUNITY ? "Communities" : s_nLTab == LT_INBOX ? "Inbox" : s_nLTab == LT_MOQUIL ? "Moquil" :
+                             s_nLTab == LT_PARTY ? "Party" : s_nLTab == LT_COMMUNITY ? "Communities" : s_nLTab == LT_INBOX ? "Inbox" : s_nLTab == LT_MOQUIL ? "Moquil" : s_nLTab == LT_ABOUT ? "About" :
                              (s_nLTab >= LT_SECTIONS && s_nLTab - LT_SECTIONS < FloatMenu::SectionCount()) ? FloatMenu::SectionTitle(s_nLTab - LT_SECTIONS) : "";
             dl->AddText(ImVec2(x, y + (btnH - ImGui::GetTextLineHeight()) * 0.5f), IM_COL32_WHITE, pt);
         }
@@ -2243,6 +2333,8 @@ static void RenderLauncher(void* openPtr)
             char id[16]; snprintf(id, sizeof(id), "sec%d", i);
             if(LSideItem(id, LSectionIcon(t), t, s_nLTab == LT_SECTIONS + i, iw, ih)) s_nLTab = LT_SECTIONS + i;
         }
+        LGroupLabel("INFO");   // 4.13.42
+        if(LSideItem("about", IC_INFO, "About", s_nLTab == LT_ABOUT, iw, ih)) s_nLTab = LT_ABOUT;
         LDragScroll();
     }
     ImGui::EndChild();
@@ -2271,6 +2363,7 @@ static void RenderLauncher(void* openPtr)
         case LT_BANS:    LPageBans(); break;
         case LT_SRVMGMT: LPageServerMgmt(); break;   // 3.53
         case LT_CLOUD:   LPageCloud(contentW - pad * 2); break;   // 4.02
+        case LT_ABOUT:   LPageAbout(contentW - pad * 2); break;   // 4.13.42
         case LT_FRIENDS: case LT_CHATS: case LT_PARTY: case LT_COMMUNITY: case LT_INBOX: case LT_MOQUIL: SocPage(s_nLTab, contentW - pad * 2, bodyH - pad); break;   // 3.63
         default:
             if(s_nLTab >= LT_SECTIONS && s_nLTab - LT_SECTIONS < FloatMenu::SectionCount()) FloatMenu::DrawSection(s_nLTab - LT_SECTIONS);

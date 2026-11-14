@@ -12,8 +12,11 @@ namespace FilePick
     std::string Error();           // state 4 / 6
     void Reset();                  // back to 0 after you read a result
     // 4.12.3: a dialog with a text box -> the phone's own keyboard types (Settings > Keyboard)
-    bool AskText(const char* title, const char* init, int maxLen, bool numeric);
-    int  TextState();              // 0 idle, 1 open, 3 done, 4 failed, 5 cancelled, 6 can't load
-    std::string Text();            // state 3
+    // 4.13.42: gif = a "GIF" button (chat): state 7, Text() = what was typed so far
+    bool AskText(const char* title, const char* init, int maxLen, bool numeric, bool gif = false);
+    int  TextState();              // 0 idle, 1 open, 3 done, 4 failed, 5 cancelled, 6 can't load, 7 GIF asked
+    std::string Text();            // state 3 / 7
+    std::string TextError();       // state 4 / 6
+    void CancelText();             // closes the dialog (4.13.42)
     void TextReset();
 }

@@ -1,4 +1,4 @@
--- TV Player for MonetLoader for MP (3.8.4-mp or newer, MP 4.13.41+ for the touch fix): watch videos on the TVs in GTA SA.
+-- TV Player for MonetLoader for MP (3.8.5-mp or newer = MP 4.13.42+: the picture is a real 3D mesh on the TV): watch videos on the TVs in GTA SA.
 -- Works in single player and on MP servers (only you see your TV).
 --
 -- Files (Android/data/com.rockstargames.gtasa/files/TYFMC/MP/moonloader/):
@@ -12,7 +12,7 @@
 -- The sound gets quieter as you walk away and stops after StopDistance metres.
 script_name('TV Player')
 script_author('ThirtyFoxMCx00E1 (MP port), tvplayer mod')
-script_version('1.2-mp')
+script_version('1.3-mp')
 
 local DIR = getWorkingDirectory() .. '/tvplayer'
 local cfg = { Volume = 80, PromptDistance = 2.5, StopDistance = 20, FullVolumeDistance = 4, SeekSeconds = 10,
@@ -141,6 +141,11 @@ local function toWorld(b, x, y, z)
   return b[1] + x * b[4] + y * b[7] + z * b[10], b[2] + x * b[5] + y * b[8] + z * b[11], b[3] + x * b[6] + y * b[9] + z * b[12]
 end
 
+-- 1.3: MonetLoader 3.8.5-mp draws the picture as a real 3D mesh on the TV's screen surface (renderDrawTexture3D),
+-- inside the game's 3D pass with the depth buffer: whatever stands in front of the TV (CJ, other peds, a wall)
+-- hides the picture, the picture never shows through a body like a ghost, and it is not a flat camera overlay.
+-- Older MonetLoader builds only have the 2D overlay (renderDrawTextureTriangles) - that is kept as a fallback.
+local warned2d = false
 local function drawScreen(tex)
   if not tvValid() then return end
   local s = screens[st.mdl]
@@ -148,18 +153,32 @@ local function drawScreen(tex)
   local b = basis(st.obj)
   local n = s.normal or { 0, -1, 0 }
   local off = cfg.DepthOffset or 0.01
+  local v = s.verts
+  local cnt = #v / 8
+  local g = math.floor(math.min(255, math.max(0, 255 * cfg.Brightness / 100)))
+  local color = 0xFF000000 + g * 0x10000 + g * 0x100 + g
+  if isRender3DAvailable and isRender3DAvailable() then
+    local out = {}
+    for i = 0, cnt - 1 do
+      local k = i * 8
+      local x, y, z = toWorld(b, v[k + 1] + n[1] * off, v[k + 2] + n[2] * off, v[k + 3] + n[3] * off)
+      out[#out + 1] = x; out[#out + 1] = y; out[#out + 1] = z; out[#out + 1] = v[k + 7]; out[#out + 1] = v[k + 8]
+    end
+    if #out >= 15 then renderDrawTexture3D(tex, out, color, cfg.DepthTest ~= 0) end
+    return
+  end
+  if not warned2d then
+    warned2d = true
+    print('TV Player: this MonetLoader has no 3D drawing (renderDrawTexture3D) - using the 2D overlay. Update MP to 4.13.42+.')
+  end
   if cfg.DepthTest ~= 0 and s.center then
-    -- hidden behind a wall: not drawn (MonetLoader draws on top of the 3D scene)
-    -- a map TV (1717 telly_low_test in CJ's house and others) has its own collision over the screen: test from
-    -- further in front, else the TV hid itself and the screen stayed black
+    -- 2D fallback: hidden behind a wall = not drawn (the overlay is drawn on top of the 3D scene)
     local f = st.ent and 0.35 or 0.08
     local cx, cy, cz = toWorld(b, s.center[1] + n[1] * f, s.center[2] + n[2] * f, s.center[3] + n[3] * f)
     local kx, ky, kz = getActiveCameraCoordinates()
     if not isLineOfSightClear(kx, ky, kz, cx, cy, cz, true, false, false, false, false) then return end
   end
-  local v = s.verts
   local out = {}
-  local cnt = #v / 8
   for t = 0, cnt / 3 - 1 do
     local tri, ok = {}, true
     for k = 0, 2 do
@@ -172,8 +191,7 @@ local function drawScreen(tex)
     if ok then for k = 1, 12 do out[#out + 1] = tri[k] end end
   end
   if #out < 12 then return end
-  local g = math.floor(math.min(255, math.max(0, 255 * cfg.Brightness / 100)))
-  renderDrawTextureTriangles(tex, out, 0xFF000000 + g * 0x10000 + g * 0x100 + g)
+  renderDrawTextureTriangles(tex, out, color)
 end
 
 -- touch buttons -------------------------------------------------------------------------------

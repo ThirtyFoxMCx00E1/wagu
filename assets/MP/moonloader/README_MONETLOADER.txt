@@ -1,4 +1,4 @@
-MonetLoader for MP (MonetLoader 3.8.2-mp, based on MonetLoaderOSS)
+MonetLoader for MP (MonetLoader 3.8.5-mp, based on MonetLoaderOSS)
 ==================================================================
 PC MoonLoader .lua scripts run on Android on MP servers.
 
@@ -46,4 +46,10 @@ TV Player (MP 4.13.34, MonetLoader 3.8.2-mp)
   Lua API added for it: videoOpen / videoPlay / videoPause / videoSeek / videoGetPosition /
   videoGetDuration / videoSetVolume / videoSetLoop / videoGetTexture / videoGetSize / videoIsEnded /
   videoClose, renderDrawTextureTriangles(tex, {x,y,u,v,...}, argb).
+  3.8.5-mp (MP 4.13.42): renderDrawTexture3D(tex, {x,y,z,u,v,...}, argb[, depthTest]) draws textured
+  triangles in WORLD space inside the game's 3D pass (with the depth buffer, so peds and walls in front
+  hide it) and isRender3DAvailable() says if it works. tvplayer.lua 1.3-mp uses it: the video is a mesh
+  on the TV's screen surface instead of a flat overlay on top of everything. The video decoder now uses
+  AImageReader (any phone's decoder output) and makes a new texture per frame (no more black picture).
+  Diagnostics: adb logcat -s MonetVideo
   samp.events (lib/samp/) is included: copy the whole lib folder WITH its subfolders.
