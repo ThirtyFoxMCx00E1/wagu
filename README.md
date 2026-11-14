@@ -2,7 +2,7 @@
   <img src="research/title.png" alt="SA VC Multiplayer" width="720">
 </p>
 
-# Multiplayer for GTA San Andreas Mobile
+# Multiplayer for GTA San Andreas and GTA Vice City Mobile
 
 <p align="center">
   <a href="https://github.com/ThirtyFoxMCx00E1/wagu/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/ThirtyFoxMCx00E1/wagu?style=for-the-badge&labelColor=3a3a3a&label=release&color=f0a830&display_name=tag&cacheSeconds=600"></a>
@@ -17,6 +17,7 @@
   <a href="https://github.com/ThirtyFoxMCx00E1/wagu"><img alt="Repo size" src="https://img.shields.io/github/repo-size/ThirtyFoxMCx00E1/wagu?style=for-the-badge&labelColor=3a3a3a&label=repo%20size&color=0b7dbe&cacheSeconds=600"></a>
   <br>
   <a href="https://mpsamp-open.github.io/"><img alt="GTA SA Android" src="https://img.shields.io/badge/GTA%20SA-Android-e2554b?style=for-the-badge&labelColor=3a3a3a"></a>
+  <a href="#gta-vice-city"><img alt="GTA VC Android" src="https://img.shields.io/badge/GTA%20VC-Android-ff4fa3?style=for-the-badge&labelColor=3a3a3a"></a>
   <a href="https://github.com/ThirtyFoxMCx00E1/AndroidModLoader"><img alt="AML" src="https://img.shields.io/badge/AML-AndroidModLoader-8a5cf6?style=for-the-badge&labelColor=3a3a3a"></a>
   <a href="https://discord.gg/QSdtut3SWV"><img alt="Discord" src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/ThirtyFoxMCx00E1/wagu/live-status/discord.json&style=for-the-badge&labelColor=3a3a3a&cacheSeconds=600"></a>
 </p>
@@ -33,9 +34,11 @@
   <sub>Tap the Discord logo to open the server in the Discord app: <a href="https://discord.gg/QSdtut3SWV">discord.gg/QSdtut3SWV</a></sub>
 </p>
 
-MP is an AML (AndroidModLoader) mod that brings multiplayer to GTA San Andreas Mobile. Players meet
-and play together in the same game world, with real-time player synchronization of movement,
-animations and combat.
+MP is an AML (AndroidModLoader) mod that brings multiplayer to GTA San Andreas Mobile and GTA Vice City
+Mobile. The same `libMP32.so` / `libMP64.so` runs in both games: players meet and play together in the
+same game world, with real-time synchronization of movement, animations, weapons, cars and combat.
+San Andreas and Vice City have separate servers (`mp_server --game vc` for Vice City), and Vice City
+servers can run VC:MP-style gamemodes (classes, teams, server cars). See [GTA Vice City](#gta-vice-city).
 
 ## Preview 
 
@@ -45,8 +48,8 @@ Prebuilt binaries:
 
 | File | ABI | Target |
 |---|---|---|
-| `bin/libMP32.so` | armeabi-v7a | GTA SA 2.00 (32-bit), AML 1.4.0, works alongside FLA 7.6 |
-| `bin/libMP64.so` | arm64-v8a | 64-bit GTA SA builds (2.10+) |
+| `bin/libMP32.so` | armeabi-v7a | GTA SA 2.00 (32-bit), AML 1.4.0, works alongside FLA 7.6 - and GTA Vice City (32-bit libGTAVC.so) |
+| `bin/libMP64.so` | arm64-v8a | 64-bit GTA SA builds (2.10+) - and GTA Vice City (64-bit libGTAVC.so) |
 
 ## Downloads and packages
 
@@ -103,6 +106,30 @@ Prebuilt binaries:
 - **Combat**: the shooter decides the damage. When you hit someone's avatar, the damage is sent to that player. Your kills show up in everyone's kill feed.
 - **Floating ImGui menu** (no tab inside the game's settings). It has a draggable `MP` bubble and a `Chat` bubble, and other developers can add their own menu sections, windows and bubbles (see below).
 
+## GTA Vice City
+
+The same libMP runs in GTA Vice City Mobile (AML loads it in both games; inside, the San Andreas and
+Vice City layers are kept apart). A Vice City phone only joins Vice City servers, and a San Andreas phone
+only San Andreas ones.
+
+- **Install**: copy `libMP32.so` / `libMP64.so` to the AML mods folder of GTA Vice City and the MP
+  folder to `files/TYFMC/MP` in the Vice City data folder; set `Host=` in `files/TYFMC/MP/vc.ini`
+  (or with the **[ MP ]** button in the game). The Vice City titles are `title2.png` and
+  `title_logo_connected2.png`.
+- **Sync** (everything the San Andreas side syncs): players in their own skin with walk / run / sprint /
+  crouch animations, weapons in their hands, bullets with tracers, grenades / molotovs / rockets,
+  explosions, fires, damage with armour and kill credit, cars (rotation, colours, health, passengers,
+  carjacking), interiors, dropped weapons, radar blips, name tags with health / armour, chat,
+  `/commands`, server dialogs, SA-MP textdraws, admin actions, time and weather, hospital safe zones.
+- **Gamemodes (VC:MP style)**: a `--game vc` server reads `vcmp.ini` (or `--vcmp <file>`), the
+  [GAME] format of a VC:MP server.ini, so VC:MP gamemodes work as they are: classes (team, skin, spawn
+  point, 3 weapons) picked with the **[ Class ]** button, respawn at your class spawn, teams with their
+  own colours and no friendly fire, server cars that the first driver takes and that go back to their
+  spawn when left, and a kill feed. The default `server/vcmp.ini` is VC:MP's "Vanilla Vice" (Law,
+  Sharks, Bikers, 72 cars).
+- **Server**: `./mp_server --game vc --port 7777 "My Vice City Server"` (the `vc` tag hides it from San
+  Andreas lists). Plan and status: [docs/VICE_CITY_PLAN.md](docs/VICE_CITY_PLAN.md).
+
 ## 24/7 server on a phone (no cloud server, no card)
 
 On a spare Android phone, install [Termux](https://f-droid.org/packages/com.termux/) and run:
@@ -125,6 +152,7 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Changelog
 
+- **4.13.40**: **VC:MP-style gamemodes in GTA Vice City.** Ported from [VC:MP 0.1c](https://github.com/ThirtyFoxMCx00E1/vc-mp) (GPL v2): a `--game vc` server reads `vcmp.ini` (or `--vcmp <file>`, `--vcmp none` = free roam) in the VC:MP server.ini [GAME] format, so a VC:MP server.ini works as it is. **Classes**: team, skin, spawn point and 3 spawn weapons; the list shows after joining and with the new **[ Class ]** button (or **[ MP ]** 8); you spawn there in that skin with those weapons, and come back there after every death. **Teams**: own colours for name tags, blips, the scoreboard and the kill feed, and no friendly fire (the server drops hits between team mates). **Server cars**: each phone streams the parked ones near it; the first driver takes the car (the others see it through the vehicle sync), and it goes back to its spawn `VehicleRespawn` seconds (45) after it is left or its driver quits; a parked car blown up comes back after 30 s. **Kill feed** at the top right (`Killer [weapon] Victim` in team colours). New optional keys: `TeamName = 0 Law`, `VehicleRespawn = 45`. The default `server/vcmp.ini` is VC:MP's "Vanilla Vice" (Law / Sharks / Bikers, 7 classes, 72 cars). Also: the README, the repo description and the website now describe Vice City too. [VCS2OMP](https://github.com/ThirtyFoxMCx00E1/VCS2OMP) is a Vice City Stories map for San Andreas open.mp servers with 2,850 custom models, so it is not part of the Vice City layer (Vice City has no custom-model streaming).
 - **4.13.39**: **Vice City shows its titles.** The Vice City layer had no image drawing, so neither Vice City title appeared in the game. Now `title2.png` shows at the top while MP joins a Vice City server (and for the first 6 s in the game), and `title_logo_connected2.png` shows for 7 s after joining, fading out like San Andreas' `title_logo_connected.png`. Both are read from `files/TYFMC/MP` in the GTA Vice City folder.
 - **4.13.38**: **TV Player: the [TV] button works.** MonetLoader gave scripts raw screen touches (device pixels while the game renders smaller, or none at all on some builds), so the button showed but a tap did nothing. MP now hands its own touches, mapped to the game's resolution, to MonetLoader for MP 3.8.4 (built in), and `tvplayer.lua` 1.1 has a bigger button and hit area. New title art: the README title (`research/title.png`, separate from the game's `assets/MP/title.png`) now reads SA (chrome) VC (Vice City pink) MULTI (orange) PLAYER (pink); `assets/MP/title2.png` and `title_logo_connected2.png` are the Vice City titles (all Vice City pink); the game's San Andreas `title.png` stays the original.
 - **4.13.37**: **GTA Vice City gets every San Andreas sync.** Other players are now real Vice City characters in their own skin: they walk, run, sprint and crouch with the game's animations, hold the weapon they hold, die and come back. Bullet sync (tracers and muzzle light where they shoot), grenades / molotovs / rockets, explosions and fires, damage with armour and kill credit, the full car rotation, car colours and health, passengers in a player's car, carjacking, interiors, dropped weapon pickups, radar blips in the player's colour, health / armour bars, (paused) tags, a scoreboard (**[ Players ]**), an **[ MP ]** menu (server, name, reconnect, map markers, name tags, disconnect, saved in `vc.ini`) and SA-MP textdraws. A `--game vc` server now accepts Vice City weapon and car ids in its anti-cheat and pickups. Not ported: voice, NPC traffic, SA gamemodes and co-op missions (`docs/VICE_CITY_PLAN.md`). The plan doc no longer lists GTA III class sizes as Vice City ones.
@@ -1250,6 +1278,8 @@ Use `asia`, `na` or `oceania` for the other regions. On a VPS, pick Debian 12 in
 
 ## Install
 
+GTA Vice City: see [GTA Vice City](#gta-vice-city). GTA San Andreas:
+
 1. Install AML 1.4.0 on GTA SA 2.00 (FLA 7.6 is supported, not required).
 2. Copy `libMP32.so` (32-bit game) or `libMP64.so` (64-bit game) to the AML mods folder:
    `/sdcard/Android/data/com.rockstargames.gtasa/mods/`
@@ -1802,6 +1832,7 @@ MP 3.04.5 and older let players use cheats. From 3.04.6 on:
 ## Credits
 
 AndroidModLoader, SAUtils, AML_ImGui (RusJJ), Dear ImGui (ocornut), stb_image (Sean Barrett).
+GTA Vice City: [VC:MP 0.1c](https://github.com/ThirtyFoxMCx00E1/vc-mp) (GPL v2, kyeman / SA:MP team) for the gamemode format, classes, teams, server cars and the default "Vanilla Vice" gamemode; reVC / re3 for Vice City engine conventions and script opcodes.
 Opus 1.6.1 voice codec (Xiph.Org, BSD license, `third_party/opus/COPYING`), from the Opus source in [Samp-voice_chat](https://github.com/ThirtyFoxMCx00E1/Samp-voice_chat). The voice chat design follows SampVoice (CyberMor).
 The logo was made with the Pricedown typeface (Typodermic).
 Global network (4.05): [libks](https://github.com/signalwire/libks), [signalwire-c](https://github.com/signalwire/signalwire-c), [FreeSWITCH](https://github.com/signalwire/freeswitch) (SignalWire), [Eclipse Mosquitto](https://github.com/eclipse-mosquitto/mosquitto), [EMQX](https://github.com/emqx/emqx), [MQTTX](https://github.com/emqx/MQTTX), [Mainflux](https://github.com/mainflux/mainflux), [awesome-mqtt](https://github.com/awesome-mqtt/awesome-mqtt), [vps-hosting-providers](https://github.com/qfft560/vps-hosting-providers), [Sidekick](https://github.com/MightyMoud/sidekick). VPS hosting references: [Aeon-MLTB](https://github.com/AeonOrg/Aeon-MLTB), [whmcs-vps-reseller](https://github.com/Rad-Web-Hosting/whmcs-vps-reseller), [kvm-vps](https://github.com/topics/kvm-vps), [vps-admin](https://github.com/topics/vps-admin), [vps-managment](https://github.com/topics/vps-managment), [vpshosting](https://github.com/topics/vpshosting).

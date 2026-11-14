@@ -56,6 +56,7 @@ public:
     virtual void OnLg(const uint8_t* /*data*/, int /*len*/) {}    // 4.13.4: PKT_LG (net/league.h)
     virtual void OnHostMap(const uint8_t* /*data*/, int /*len*/) {}   // 4.13.15: PKT_HOST_MAP (net/hostmap.h)
     virtual void OnCoop(const uint8_t* /*data*/, int /*len*/) {}      // 4.13.15: PKT_COOP (net/coop.h)
+    virtual void OnVcmp(const uint8_t* /*data*/, int /*len*/) {}      // 4.13.40: PKT_VCMP (net/vcmp.h)
     virtual void OnSamp(const uint8_t* /*data*/, int /*len*/) {}   // 4.11: PKT_SAMP (net/samp.h)
     virtual void OnCg(const uint8_t* /*data*/, int /*len*/) {}    // 4.09: PKT_CG_ENT / ME / ACT (CGRP systems)    // 3.58: PKT_DZ_ME / INV / LOOT / EVENT
     virtual void OnBcw(const uint8_t* /*data*/, int /*len*/) {}   // 3.04: PKT_BCW_STATE / ROLL / SCORE / EVENT

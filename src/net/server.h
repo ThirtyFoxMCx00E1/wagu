@@ -9,6 +9,7 @@
 #include "homekit.h"
 #include "hostmap.h"   // 4.13.15
 #include "coop.h"      // 4.13.15
+#include "vcmp.h"      // 4.13.40
 #include "turf.h"
 #include "bcw.h"
 #include "mw3.h"   // 3.23
@@ -259,6 +260,15 @@ private:
     void HostMapLoad(); void HostMapSave(); void HostMapTick(uint64_t now);
     void HostMapSend(int slot); void HostMapBroadcast(uint8_t op, const DzMapRow& r, int bySlot);
     void HostMapHandle(int slot, const uint8_t* data, int len);
+    // 4.13.40: VC:MP-style gamemode on Vice City servers (server_vcmp.inc, net/vcmp.h)
+    struct VcmpVeh { PktVcmpVeh v; uint64_t freeAt; };
+    PktVcmpInfo m_VcmpInfo; std::vector<PktVcmpClass> m_VcmpClasses; std::vector<VcmpVeh> m_VcmpVehs;
+    uint8_t  m_VcmpTeam[MP_MAX_PLAYERS]; uint32_t m_nVcmpRespawnMs = 45000; bool m_bVcmp = false;
+public:
+    bool VcmpLoad(const char* path);   // VC:MP server.ini [GAME] format; false = file not found / nothing in it
+private:
+    void VcmpSend(int slot); void VcmpHandle(int slot, const uint8_t* data, int len); void VcmpTick(uint64_t now);
+    void VcmpLeave(int slot); bool VcmpOnDamage(int from, int to) const;
     uint8_t  m_CoopWith[MP_MAX_PLAYERS], m_CoopAsk[MP_MAX_PLAYERS]; bool m_CoopHost[MP_MAX_PLAYERS];
     bool     m_bCoopInit = false;
     void CoopInit(); void CoopHandle(int slot, const uint8_t* data, int len); void CoopEnd(int slot);

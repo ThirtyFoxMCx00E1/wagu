@@ -13,10 +13,10 @@
 // phones refuse servers older than that too (they would let old phones in).
 // 3.10: build 31000. MP_MIN_BUILD stays 30406 and the lobby stays thirtyfox/mp5/: 3.04.6 (no cheats)
 // and 3.10 phones play together on the same servers; only 3.04.5 and older (mp4) stay shut out.
-#define MP_BUILD 41339   // 4.13.39
+#define MP_BUILD 41340   // 4.13.40
 #define MP_MIN_BUILD       30406
 #define MP_AUTH_MIN_BUILD  32106   // 3.21.6: servers with the login system refuse older phones (they could not log in)
-#define MP_VERSION_STR     "4.13.39"
+#define MP_VERSION_STR     "4.13.40"
 #define MP_VOICE_BUILD     31100   // 3.11: phones from this build on get voice packets
 #define MP_DOWNLOAD_URL    "mpsamp-open.github.io"   // 4.05.4: new website (mpsamp-open org); thirtyfoxmcx00e1.github.io/wagu still works as a backup
 #define MP_DEFAULT_HOST    "127.0.0.1"
@@ -149,6 +149,7 @@ enum ePacket : uint8_t
     PKT_LG,             // S<->C         4.13.4: San Andreas Online League (Rocket Soccer, net/league.h)
     PKT_HOST_MAP,       // S<->C         4.13.15: host map editor objects (custom servers, net/hostmap.h)
     PKT_COOP,           // S<->C         4.13.15: Co-op story (2 players, net/coop.h)
+    PKT_VCMP,           // S<->C         4.13.40: VC:MP-style gamemode on Vice City servers (net/vcmp.h)
 };
 
 enum eRegion : uint8_t { REGION_ASIA = 0, REGION_EUROPE, REGION_NA, REGION_OCEANIA, REGION_COUNT };

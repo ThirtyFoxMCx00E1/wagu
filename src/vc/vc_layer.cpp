@@ -39,6 +39,7 @@
 #include "../net/client.h"
 #include "../net/server.h"     // MP_NowMs
 #include "../net/safezone.h"
+#include "../net/vcmp.h"      // 4.13.40: VC:MP-style gamemode (classes, teams, server cars)
 #include "vc_data.h"
 #include "../ui/filepick.h"   // the phone keyboard dialog (game independent)
 #include "../../imgui/stb_image.h"   // 4.13.38: title2.png / title_logo_connected2.png (implementation in hud.cpp)
@@ -85,6 +86,7 @@ static uint64_t s_nLogoAt = 0, s_nFirstFrame = 0;  // title_logo_connected2.png 
 static void (*SpriteDraw)(CSprite2d*, const struct CRect&, const struct CRGBA&) = nullptr;
 static void* (*AddPed)(int type, unsigned int mi, const CVector& at, int unk) = nullptr;
 static void  (*RemovePed)(void* ped) = nullptr;
+static void  (*PedSetModelIndex)(void* ped, unsigned int mi) = nullptr;   // 4.13.40: class skins (VC:MP CPlayerPed::SetModel)
 static int   (*GetPedRef)(void* ped) = nullptr;
 static void* (*GetPed)(int ref) = nullptr;
 static void  (*PedTeleport)(void* ped, CVector at) = nullptr;
@@ -211,6 +213,7 @@ enum : uint16_t
     OP_ADD_EXPLOSION = 0x020C, OP_START_SCRIPT_FIRE = 0x02CF, OP_REMOVE_SCRIPT_FIRE = 0x02D1,
     OP_CREATE_PICKUP_WITH_AMMO = 0x032B, OP_HAS_PICKUP_BEEN_COLLECTED = 0x0214, OP_REMOVE_PICKUP = 0x0215,
     OP_GET_CAR_COLOURS = 0x03F3, OP_SET_CAR_HEALTH = 0x0224, OP_GET_AMMO_IN_PLAYER_WEAPON = 0x0419,
+    OP_REMOVE_ALL_CHAR_WEAPONS = 0x048F,   // 4.13.40: class spawn weapons
 };
 static bool IsVcCarModel(int m) { return m >= 130 && m <= 236; }
 
@@ -355,11 +358,11 @@ static uint64_t s_nNextStatus = 0;
 static bool s_bDead = false;
 static int  s_nLastHour = -1, s_nLastWeather = -1;
 static bool s_bTyping = false;
-enum { ASK_CHAT = 0, ASK_MENU, ASK_HOST, ASK_NAME };
+enum { ASK_CHAT = 0, ASK_MENU, ASK_HOST, ASK_NAME, ASK_CLASS };
 static int  s_nAsk = ASK_CHAT;
 struct PendingDialog { bool open = false; uint16_t id = 0; uint8_t style = 0; int items = 0; };
 static PendingDialog s_Dialog;
-enum { BTN_CHAT = 0, BTN_PLAYERS, BTN_MP, BTN_COUNT };
+enum { BTN_CHAT = 0, BTN_PLAYERS, BTN_MP, BTN_CLASS, BTN_COUNT };
 static int s_Btn[BTN_COUNT][4];   // x, y, w, h (pixels); w 0 = hidden
 static bool s_bScoreboard = false;
 // my state
@@ -378,6 +381,17 @@ static std::vector<NetFire> s_Fires;
 struct NetPickup { uint16_t uid; int handle; };
 static std::vector<NetPickup> s_Pickups;
 static std::vector<PktTextDraw> s_TextDraws;
+// ---- 4.13.40: VC:MP-style gamemode (net/vcmp.h): classes, teams, server cars, kill feed ----
+struct VcmpCar { PktVcmpVeh v; int handle = -1; uint64_t sentAt = 0; bool freeSent = false; uint64_t wreckUntil = 0; };
+static PktVcmpInfo s_VcInfo; static bool s_bVcmp = false;
+static std::vector<PktVcmpClass> s_VcClasses;
+static std::vector<VcmpCar> s_VcCars;
+static int s_nMyClass = -1, s_nMyTeam = VCMP_TEAM_NONE;
+static bool s_bClassAsked = false; static uint64_t s_nRespawnAt = 0, s_nNextCars = 0;
+static uint8_t s_PlayerTeam[256];
+struct KillLine { std::string killer, victim, weapon; uint32_t kc, vc; uint64_t at; };
+static std::vector<KillLine> s_KillFeed;
+static void VcmpDrop(); static void ShowClasses(); static void SpawnClass(int idx);
 
 static uint32_t RgbaToAbgr(uint32_t c) { return 0xFF000000u | ((c >> 24) & 0xFF) | (((c >> 16) & 0xFF) << 8) | (((c >> 8) & 0xFF) << 16); }
 static int MapWeather(int sa)
@@ -471,6 +485,7 @@ static void DropAll()
     for(auto& r : s_Players) if(r.used) DropRemote(r);
     for(auto& f : s_Fires) Cmd(OP_REMOVE_SCRIPT_FIRE, "i", f.handle);
     s_Fires.clear(); DropPickups(); s_TextDraws.clear();
+    VcmpDrop();   // 4.13.40
     memset(s_AvPed, 0, sizeof(s_AvPed)); memset(s_AvCar, 0, sizeof(s_AvCar));
     s_nMyId = -1; s_bHaveVs = false; s_nKills = 0;
 }
@@ -564,6 +579,15 @@ public:
     void OnDeath(const PktDeath& p) override
     {
         auto nm = [](int id) -> const char* { return id == s_nMyId ? cfg.name : (s_Players[id].used ? s_Players[id].name : "someone"); };
+        {   // 4.13.40: VC:MP-style kill feed (top right)
+            auto col = [](int id) -> uint32_t { const int t = id == s_nMyId ? s_nMyTeam : (id >= 0 && id < 256 ? s_PlayerTeam[id] : VCMP_TEAM_NONE);
+                                                if(t < VCMP_MAX_TEAMS) return RgbaToAbgr(g_VcmpTeamColor[t]);
+                                                return id == s_nMyId ? 0xFFFFFFFF : (id < 256 && s_Players[id].color ? s_Players[id].color : 0xFFFFFFFF); };
+            KillLine k; k.victim = nm(p.victim); k.vc = col(p.victim); k.at = MP_NowMs();
+            if(p.killer != p.victim && p.killer < 255) { k.killer = nm(p.killer); k.kc = col(p.killer); } else k.kc = 0xFFFFFFFF;
+            k.weapon = p.weapon < 34 ? g_VcWeaponName[p.weapon] : (k.killer.empty() ? "died" : "killed");
+            s_KillFeed.push_back(k); if(s_KillFeed.size() > 5) s_KillFeed.erase(s_KillFeed.begin());
+        }
         if(p.killer != p.victim && p.killer < 255) Chat(0xFF8080FF, "%s killed %s", nm(p.killer), nm(p.victim));
         else Chat(0xFF8080FF, "%s died", nm(p.victim));
         if(p.killer == s_nMyId && p.victim != s_nMyId) ++s_nKills;
@@ -637,6 +661,51 @@ public:
     {
         char t[MP_CHAT_LEN + 1]; memcpy(t, p.text, MP_CHAT_LEN); t[MP_CHAT_LEN] = 0;
         Chat(p.color ? p.color : 0xFFFFFF80, "%s", t);
+    }
+    void OnVcmp(const uint8_t* data, int len) override   // 4.13.40
+    {
+        if(len < 2) return;
+        switch(data[1])
+        {
+        case VCMP_INFO:
+            if(len < (int)sizeof(PktVcmpInfo)) return;
+            VcmpDrop(); memcpy(&s_VcInfo, data, sizeof(s_VcInfo)); s_VcInfo.gameName[31] = 0;
+            for(auto& t : s_VcInfo.teamName) t[15] = 0;
+            s_bVcmp = true;
+            Chat(0xFFFF80FF, "Gamemode: %s (%d classes, %d server cars)", s_VcInfo.gameName, s_VcInfo.classes, s_VcInfo.vehicles);
+            break;
+        case VCMP_CLASS:
+            if(len < (int)sizeof(PktVcmpClass) || !s_bVcmp) return;
+            { PktVcmpClass k; memcpy(&k, data, sizeof(k)); if(k.idx == s_VcClasses.size()) s_VcClasses.push_back(k); }
+            break;
+        case VCMP_VEH:
+        {
+            if(len < (int)sizeof(PktVcmpVeh) || !s_bVcmp) return;
+            PktVcmpVeh v; memcpy(&v, data, sizeof(v));
+            if(v.idx == s_VcCars.size()) { VcmpCar c; c.v = v; s_VcCars.push_back(c); break; }
+            if(v.idx > s_VcCars.size()) return;
+            VcmpCar& c = s_VcCars[v.idx];
+            const bool back = c.v.state == VCMP_TAKEN && v.state == VCMP_PARKED;
+            c.v = v; c.sentAt = 0; c.freeSent = false;
+            if(back && c.handle >= 0)
+            {   // respawn: the old copy goes, the streamer makes it again on its spawn (not if I sit in it: I take it again)
+                void* mine = FindPlayerVehicle ? FindPlayerVehicle() : nullptr;
+                if(!(mine && GetVehicleRef && GetVehicleRef(mine) == c.handle)) { Cmd(OP_DELETE_CAR, "i", c.handle); c.handle = -1; }
+            }
+            break;
+        }
+        case VCMP_PTEAM:
+        {
+            if(len < (int)sizeof(PktVcmpCmd)) return;
+            PktVcmpCmd t; memcpy(&t, data, sizeof(t));
+            s_PlayerTeam[t.idx] = t.team;
+            if(t.idx == s_nMyId) { s_nMyTeam = t.team; break; }
+            Remote& r = s_Players[t.idx];
+            if(r.used && t.team < VCMP_MAX_TEAMS) { r.rgba = g_VcmpTeamColor[t.team]; r.color = RgbaToAbgr(r.rgba); ClearRemoteBlip(r); }
+            break;
+        }
+        default: break;
+        }
     }
     void OnSetColor(const PktSetColor& c) override
     {
@@ -1155,7 +1224,7 @@ static void SendMySync(uint64_t now)
         }
         s_nLastHitBy = -1;
     }
-    else if(hp > 0) s_bDead = false;
+    else if(hp > 0) { if(s_bDead && s_nMyClass >= 0) s_nRespawnAt = now + 1500; s_bDead = false; }   // 4.13.40: back at the class spawn
     if(s_bDead) p.d.flags |= SYNC_DEAD;
     if(s_nMyChar >= 0 && Cmd(OP_IS_CHAR_DUCKING, "i", s_nMyChar)) p.d.flags |= SYNC_DUCKING;
     if(s_nMyChar >= 0 && Cmd(OP_IS_CHAR_SHOOTING, "i", s_nMyChar)) p.d.flags |= SYNC_SHOOTING;
@@ -1272,7 +1341,7 @@ static void ShowMenu()
 {
     Chat(0xFFFFE080, "[MP Vice City] %s:%d %s", cfg.host[0] ? cfg.host : "(no server)", cfg.port, Online() ? "online" : "offline");
     Chat(0xFFFFFFFF, "1. Players   2. Server   3. Name (%s)   4. Reconnect", cfg.name);
-    Chat(0xFFFFFFFF, "5. Map markers %s   6. Name tags %s   7. Disconnect", cfg.blips ? "on" : "off", cfg.nameTags ? "on" : "off");
+    Chat(0xFFFFFFFF, "5. Map markers %s   6. Name tags %s   7. Disconnect%s", cfg.blips ? "on" : "off", cfg.nameTags ? "on" : "off", s_VcClasses.empty() ? "" : "   8. Class");
     Ask(ASK_MENU, "MP menu - type the number", "", 2, true);
 }
 static void MenuPick(int n)
@@ -1285,6 +1354,7 @@ static void MenuPick(int n)
     case 4: Chat(0xFF80FF80, "Joining %s:%d again", cfg.host, cfg.port); Reconnect(); break;
     case 5: cfg.blips = !cfg.blips; SaveSettings(); Chat(0xFF80FF80, "Map markers %s", cfg.blips ? "on" : "off"); break;
     case 6: cfg.nameTags = !cfg.nameTags; SaveSettings(); Chat(0xFF80FF80, "Name tags %s", cfg.nameTags ? "on" : "off"); break;
+    case 8: ShowClasses(); break;   // 4.13.40
     case 7: if(s_Client.GetState() != NET_DISCONNECTED) s_Client.Disconnect(true); DropAll(); s_bManualOff = true; Chat(0xFFC0C0C0, "Disconnected (MP menu, 4 joins again)"); break;
     default: break;
     }
@@ -1316,6 +1386,7 @@ static void PollTyping()
     switch(what)
     {
     case ASK_MENU: MenuPick(atoi(t.c_str())); break;
+    case ASK_CLASS: { const int n = atoi(t.c_str()); if(n >= 1 && n <= (int)s_VcClasses.size()) SpawnClass(n - 1); break; }   // 4.13.40
     case ASK_HOST:
     {
         std::string h = t; int port = cfg.port;
@@ -1349,11 +1420,135 @@ static void PollButtons()
             if(b[2] <= 0 || x < b[0] || x > b[0] + b[2] || y < b[1] || y > b[1] + b[3]) continue;
             if(i == BTN_CHAT) Ask(ASK_CHAT, "Chat - or a /command", "", MP_CHAT_LEN - 1, false);
             else if(i == BTN_PLAYERS) s_bScoreboard = !s_bScoreboard;
+            else if(i == BTN_CLASS) ShowClasses();   // 4.13.40
             else ShowMenu();
             break;
         }
     }
     s_bWasDown = down;
+}
+
+// ---- 4.13.40: VC:MP-style gamemode -----------------------------------------------------------------------------
+// Ported from VC:MP 0.1c (https://github.com/ThirtyFoxMCx00E1/vc-mp, GPL v2, kyeman / SA:MP team): class selection
+// (vcmp/game: spawn at the class point in its skin with its 3 weapons), teams + team colours, server cars that the
+// first driver takes and the server respawns (server/vehiclepool.cpp), the kill feed (vcmp/deathwindow.cpp).
+static void VcmpDrop()
+{
+    void* mine = FindPlayerVehicle ? FindPlayerVehicle() : nullptr;
+    const int mineRef = (mine && GetVehicleRef) ? GetVehicleRef(mine) : -1;
+    for(auto& c : s_VcCars) if(c.handle >= 0 && c.handle != mineRef && GetVehicle && GetVehicle(c.handle)) Cmd(OP_DELETE_CAR, "i", c.handle);
+    s_VcCars.clear(); s_VcClasses.clear(); s_bVcmp = false; memset(&s_VcInfo, 0, sizeof(s_VcInfo));
+    s_nMyClass = -1; s_nMyTeam = VCMP_TEAM_NONE; s_bClassAsked = false; s_nRespawnAt = 0;
+    memset(s_PlayerTeam, VCMP_TEAM_NONE, sizeof(s_PlayerTeam)); s_KillFeed.clear();
+}
+static const char* VcTeamName(int t)
+{
+    static char buf[24];
+    if(t >= VCMP_MAX_TEAMS) return "no team";
+    if(s_VcInfo.teamName[t][0]) return s_VcInfo.teamName[t];
+    snprintf(buf, sizeof(buf), "Team %d", t + 1); return buf;
+}
+static void ShowClasses()
+{
+    if(s_VcClasses.empty()) { Chat(0xFFC0C0C0, "This server has no classes (free roam)"); return; }
+    Chat(0xFFFFE080, "[%s] pick a class:", s_VcInfo.gameName);
+    for(auto& k : s_VcClasses)
+    {
+        char w[96] = ""; int n = 0;
+        for(int i = 0; i < 3; ++i) if(k.weapon[i] && k.weapon[i] < 34) n += snprintf(w + n, sizeof(w) - n, "%s%s", n ? ", " : "", g_VcWeaponName[k.weapon[i]]);
+        Chat(k.team < VCMP_MAX_TEAMS ? RgbaToAbgr(g_VcmpTeamColor[k.team]) : 0xFFFFFFFF, "%d. %s - skin %d - %s", k.idx + 1, VcTeamName(k.team), k.skin, n ? w : "no weapons");
+    }
+    char init[8]; snprintf(init, sizeof(init), "%d", s_nMyClass >= 0 ? s_nMyClass + 1 : 1);
+    Ask(ASK_CLASS, "Class - type the number", init, 3, true);
+}
+static void SpawnClass(int idx)
+{
+    if(idx < 0 || idx >= (int)s_VcClasses.size()) return;
+    void* ped = FindPlayerPed ? FindPlayerPed() : nullptr;
+    if(!ped || s_nMyChar < 0) return;
+    const PktVcmpClass& k = s_VcClasses[idx];
+    void* car = FindPlayerVehicle ? FindPlayerVehicle() : nullptr;
+    if(car) Cmd(OP_WARP_CHAR_FROM_CAR_TO_COORD, "ifff", s_nMyChar, k.pos[0], k.pos[1], k.pos[2]);
+    else Cmd(OP_SET_PLAYER_COORDINATES, "ifff", 0, k.pos[0], k.pos[1], k.pos[2]);
+    Cmd(OP_SET_PLAYER_HEADING, "if", 0, k.angle);
+    // the skin: default.ide peds 1..106 (VC:MP: CPlayerPed::SetModel; 8 is not a valid one)
+    const int cur = *(int16_t*)((uint8_t*)ped + ENT_MODEL);
+    if(PedSetModelIndex && k.skin >= 0 && k.skin <= 106 && k.skin != 8 && k.skin != cur && LoadModel(k.skin)) PedSetModelIndex(ped, (unsigned)k.skin);
+    Cmd(OP_REMOVE_ALL_CHAR_WEAPONS, "i", s_nMyChar);
+    int first = 0;
+    for(int i = 0; i < 3; ++i)
+    {
+        const int w = k.weapon[i];
+        if(w <= 0 || w > 33) continue;
+        const int m = WeaponModel(w); if(m > 0) LoadModel(m);
+        Cmd(OP_GIVE_WEAPON_TO_CHAR, "iii", s_nMyChar, w, k.ammo[i] ? k.ammo[i] : 1);
+        if(!first) first = w;
+    }
+    if(first) Cmd(OP_SET_CURRENT_CHAR_WEAPON, "ii", s_nMyChar, first);
+    if(s_nMyClass != idx || s_nMyTeam != k.team)
+    {
+        PktVcmpCmd c = { PKT_VCMP, VCMP_PICK, (uint8_t)idx, k.team };
+        s_Client.Send(&c, sizeof(c));
+    }
+    s_nMyClass = idx; s_nMyTeam = k.team;
+}
+// server cars: every phone streams the parked ones within 160 m as its own script cars
+static void VcmpCars(uint64_t now)
+{
+    if(!s_bVcmp || s_VcCars.empty() || now < s_nNextCars) return;
+    s_nNextCars = now + 500;
+    void* ped = FindPlayerPed ? FindPlayerPed() : nullptr;
+    if(!ped) return;
+    const float* me = MatPos(ped);
+    void* mine = FindPlayerVehicle ? FindPlayerVehicle() : nullptr;
+    const int mineRef = (mine && GetVehicleRef) ? GetVehicleRef(mine) : -1;
+    int made = 0;
+    for(auto& c : s_VcCars)
+    {
+        void* veh = c.handle >= 0 && GetVehicle ? GetVehicle(c.handle) : nullptr;
+        if(c.handle >= 0 && !veh) c.handle = -1;   // gone from the pool
+        const bool heldByMe = c.v.state == VCMP_TAKEN && c.v.holder == s_nMyId;
+        const bool inIt = c.handle >= 0 && c.handle == mineRef;
+        if(c.v.state == VCMP_TAKEN && !heldByMe)
+        {   // somebody else drives it: I see their car through the vehicle sync
+            if(c.handle >= 0 && !inIt) { Cmd(OP_DELETE_CAR, "i", c.handle); c.handle = -1; }
+            continue;
+        }
+        if(inIt && !heldByMe && now - c.sentAt > 2000)
+        {   // I got into a parked server car
+            PktVcmpCmd t = { PKT_VCMP, VCMP_TAKE, c.v.idx, 0 }; s_Client.Send(&t, sizeof(t)); c.sentAt = now; c.freeSent = false;
+        }
+        if(heldByMe && !c.freeSent && (!inIt || (c.handle >= 0 && Cmd(OP_IS_CAR_DEAD, "i", c.handle))))
+        {   // out of it (or it blew up): the server respawns it later
+            PktVcmpCmd t = { PKT_VCMP, VCMP_FREE, c.v.idx, 0 }; s_Client.Send(&t, sizeof(t)); c.freeSent = true;
+        }
+        if(c.v.state != VCMP_PARKED) continue;
+        if(c.handle >= 0 && !inIt)
+        {
+            const bool dead = Cmd(OP_IS_CAR_DEAD, "i", c.handle);
+            if(dead && !c.wreckUntil) c.wreckUntil = now + 30000;   // a parked car blown up: back in 30 s
+            if((dead && now >= c.wreckUntil) || Dist2D(MatPos(veh), me) > 220.f) { Cmd(OP_DELETE_CAR, "i", c.handle); c.handle = -1; }
+            continue;
+        }
+        if(c.handle >= 0 || made >= 3 || (c.wreckUntil && now < c.wreckUntil) || Dist2D(c.v.pos, me) > 160.f) continue;
+        if(!LoadModel(c.v.model)) continue;
+        uint32_t ref = 0;
+        Cmd(OP_CREATE_CAR, "ifffv", c.v.model, c.v.pos[0], c.v.pos[1], c.v.pos[2], &ref);
+        if(!GetVehicle || !GetVehicle((int)ref)) continue;
+        c.handle = (int)ref; c.wreckUntil = 0; ++made;
+        Cmd(OP_SET_CAR_HEADING, "if", c.handle, c.v.angle);
+        Cmd(OP_CHANGE_CAR_COLOUR, "iii", c.handle, c.v.col1, c.v.col2);
+    }
+}
+static void VcmpProcess(uint64_t now)
+{
+    if(!s_bVcmp) return;
+    if(!s_bClassAsked && !s_VcClasses.empty() && s_VcClasses.size() >= s_VcInfo.classes && !s_bTyping && !s_Dialog.open)
+    {   // VC:MP: class selection right after the join
+        s_bClassAsked = true; ShowClasses();
+    }
+    if(s_nRespawnAt && now >= s_nRespawnAt && !s_bDead) { s_nRespawnAt = 0; SpawnClass(s_nMyClass); }
+    VcmpCars(now);
 }
 
 static void Process()
@@ -1381,6 +1576,7 @@ static void Process()
     FlushShots();
     UpdateRemotes(now, dt > 0.25f ? 0.25f : dt);
     UpdatePickupsAndFires(now);
+    VcmpProcess(now);   // 4.13.40
     if(now >= s_nNextBlips) { s_nNextBlips = now + 500; UpdateBlips(); }
 }
 
@@ -1447,7 +1643,8 @@ static void DrawScoreboard(float sw, float sh, float sc)
     {
         const Remote& r = s_Players[id];
         if(!r.used) continue;
-        snprintf(line, sizeof(line), "%3d  %-20s %5d %5d%s", id, r.name, r.score, r.ping, r.paused ? "  (paused)" : "");
+        snprintf(line, sizeof(line), "%3d  %-20s %5d %5d%s%s%s", id, r.name, r.score, r.ping, r.paused ? "  (paused)" : "",
+                 s_PlayerTeam[id] < VCMP_MAX_TEAMS ? "  " : "", s_PlayerTeam[id] < VCMP_MAX_TEAMS ? VcTeamName(s_PlayerTeam[id]) : "");
         Text(l + 10 * sc, y, line, r.color ? r.color : 0xFFFFFFFF); y += lh;
     }
 }
@@ -1549,12 +1746,12 @@ static void Draw()
 
     const uint64_t now = MP_NowMs();
     {   // buttons: Chat / Players (online), MP (always: server, name, reconnect...)
-        const char* label[BTN_COUNT] = { s_bTyping ? "[ typing... ]" : "[ Chat ]", "[ Players ]", "[ MP ]" };
-        const float bw[BTN_COUNT] = { 120.f, 140.f, 80.f };
+        const char* label[BTN_COUNT] = { s_bTyping ? "[ typing... ]" : "[ Chat ]", "[ Players ]", "[ MP ]", "[ Class ]" };
+        const float bw[BTN_COUNT] = { 120.f, 140.f, 80.f, 120.f };
         float x = sh * 0.03f; const float y = sh * 0.22f;
         for(int i = 0; i < BTN_COUNT; ++i)
         {
-            const bool show = i == BTN_MP || online;
+            const bool show = i == BTN_MP || (online && (i != BTN_CLASS || !s_VcClasses.empty()));
             s_Btn[i][0] = (int)x; s_Btn[i][1] = (int)y; s_Btn[i][2] = show ? (int)(bw[i] * sc) : 0; s_Btn[i][3] = (int)(40 * sc);
             if(!show) continue;
             Text(x, y + 8 * sc, label[i], 0xFF80E0FF);
@@ -1596,6 +1793,32 @@ static void Draw()
         }
     }
     if(online && s_bScoreboard) DrawScoreboard(sw, sh, sc);
+    if(online && !s_KillFeed.empty() && FontSetRightOn)
+    {   // 4.13.40: kill feed, top right (VC:MP death window)
+        FontSetRightOn();
+        float ky = sh * 0.24f; const float kx = sw - sh * 0.03f;
+        for(auto& k : s_KillFeed)
+        {
+            if(now - k.at > 10000) continue;
+            char line[128];
+            if(k.killer.empty()) { snprintf(line, sizeof(line), "%s %s", k.victim.c_str(), k.weapon.c_str()); Text(kx, ky, line, k.vc); }
+            else
+            {   // "killer [weapon] victim": three pieces in their colours, right to left
+                const float cw = 13.0f * sc;
+                Text(kx, ky, k.victim.c_str(), k.vc);
+                const float vx = kx - k.victim.size() * cw - cw;
+                snprintf(line, sizeof(line), "[%s]", k.weapon.c_str()); Text(vx, ky, line, 0xFFC0C0C0);
+                Text(vx - strlen(line) * cw - cw, ky, k.killer.c_str(), k.kc);
+            }
+            ky += 26.0f * sc;
+        }
+        if(FontSetRightOff) FontSetRightOff();
+    }
+    if(online && s_bVcmp && s_nMyClass >= 0)
+    {   // my team under the buttons
+        char t[64]; snprintf(t, sizeof(t), "%s - %s", s_VcInfo.gameName, VcTeamName(s_nMyTeam));
+        Text(sh * 0.03f, sh * 0.27f, t, s_nMyTeam < VCMP_MAX_TEAMS ? RgbaToAbgr(g_VcmpTeamColor[s_nMyTeam]) : 0xFFFFFFFF);
+    }
 }
 
 // ---- hooks --------------------------------------------------------------------------------------------------------
@@ -1620,6 +1843,8 @@ bool Start()
     Sym(GetPedRef, "_ZN6CPools9GetPedRefEP4CPed", missing);
     Sym(GetPed, "_ZN6CPools6GetPedEi", missing);
     Sym(PedTeleport, "_ZN4CPed8TeleportE7CVector", missing);
+    Sym(PedSetModelIndex, "_ZN4CPed13SetModelIndexEj", missing);   // 4.13.40
+    memset(s_PlayerTeam, VCMP_TEAM_NONE, sizeof(s_PlayerTeam));
     Sym(SetHeading, "_ZN10CPlaceable10SetHeadingEf", missing);
     Sym(SetHelpMessage, "_ZN4CHud14SetHelpMessageEPtbbb", missing);
     Sym(FontSetScale, "_ZN5CFont8SetScaleEff", missing);

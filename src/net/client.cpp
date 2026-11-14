@@ -348,6 +348,7 @@ void MPClient::Poll(INetEvents* ev)
             case PKT_CG_ENT: case PKT_CG_ME: case PKT_CG_ACT: ev->OnCg(buf, r); break;
             case PKT_LG: ev->OnLg(buf, r); break;
             case PKT_HOST_MAP: ev->OnHostMap(buf, r); break;   // 4.13.15
+            case PKT_VCMP: ev->OnVcmp(buf, r); break;          // 4.13.40
             case PKT_COOP: ev->OnCoop(buf, r); break;          // 4.13.15       // 4.13.4: Rocket League (was San Andreas Online League)
             case PKT_SAMP: ev->OnSamp(buf, r); break;   // 4.11   // 4.09: CGRP systems
             case PKT_RP_ME: case PKT_RP_PLAYERS: case PKT_RP_STATE: case PKT_RP_EVENT: case PKT_RP_CARD: case PKT_RP_INV: case PKT_RP_DROPS: case PKT_RP_FAC: case PKT_RP_PFAC: ev->OnRp(buf, r); break;   // 3.25: Mega Vil Futuristic

@@ -605,6 +605,7 @@ void MPServer::Drop(int slot, uint8_t reason)
     if(!m_Slots[slot].used) return;
     EndPair(slot);
     CoopEnd(slot);   // 4.13.15
+    VcmpLeave(slot); // 4.13.40
     for(int i = 0; i < MP_MAX_PLAYERS; ++i) if(m_Slots[i].used && m_Slots[i].pairReq == slot) m_Slots[i].pairReq = MP_INVALID_ID;
     Log("%s (id %d) left (%s)", m_Slots[slot].name, slot, reason == LEAVE_TIMEOUT ? "Lost connection" : (reason == LEAVE_KICK ? "Kicked" : "Quit"));
     SampOnLeave(slot, reason);   // 4.11: OnPlayerDisconnect (0 timeout, 1 quit, 2 kick = SA-MP's)
@@ -702,6 +703,7 @@ void MPServer::Loop()
             SampTick(now);  // 4.11: SA-MP gamemode timers
             ProgTick(now);  // 3.39.1
             HostMapTick(now);   // 4.13.15
+            VcmpTick(now);      // 4.13.40
         }   // 3.04: 10 Hz referee
         if(now - lastCheck > 1000)
         {
@@ -1447,7 +1449,7 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
             if(p.target < MP_MAX_PLAYERS && p.target != slot && m_Slots[p.target].used && !m_Slots[p.target].paused
                && !SafeZoneBlocks(slot, p.target)   // 3.21: hospital safe zones + 5 s spawn protection
                && ((!m_Slots[p.target].status && !m_Slots[slot].status) || IsPartner(slot, p.target))
-               && BcwOnDamage(slot, p.target, p.amount) && Mw3OnDamage(slot, p.target, p.amount) && RpOnDamage(slot, p.target, p.amount) && DzOnDamage(slot, p.target, p.amount)) SendTo(p.target, &p, sizeof(p));   // 3.04: no friendly fire in Brief Case War
+               && BcwOnDamage(slot, p.target, p.amount) && Mw3OnDamage(slot, p.target, p.amount) && RpOnDamage(slot, p.target, p.amount) && DzOnDamage(slot, p.target, p.amount) && VcmpOnDamage(slot, p.target)) SendTo(p.target, &p, sizeof(p));   // 3.04: no friendly fire in Brief Case War
             break;
         }
 
@@ -1701,6 +1703,9 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
         }
         case PKT_HOST_MAP:   // 4.13.15: host map editor (the host owner of a custom server)
             if(slot >= 0) HostMapHandle(slot, (const uint8_t*)data, len);
+            break;
+        case PKT_VCMP:       // 4.13.40: VC:MP-style gamemode
+            if(slot >= 0) VcmpHandle(slot, (const uint8_t*)data, len);
             break;
         case PKT_COOP:       // 4.13.15: Co-op story (2 players)
             if(slot >= 0) CoopHandle(slot, (const uint8_t*)data, len);
@@ -2076,6 +2081,7 @@ void MPServer::SendJoinExtras(int slot, bool fresh)
     if(HomesOn()) HomeSendIndex(slot);   // 3.39: Home Kit houses
     SendSrvSettings(slot);               // 3.39
     if(fresh) HostMapSend(slot);         // 4.13.15: host map editor objects
+    if(fresh) VcmpSend(slot);            // 4.13.40: VC:MP-style classes + server cars
     if(fresh) SendRules(slot);           // 3.39: shown after the login
     if(fresh && !AuthOn()) ProgSend(slot);   // 3.39.1 (login servers: after the login)
     if(GetModes() & GM_TURF) SendTurf(slot);
@@ -2165,6 +2171,7 @@ void MPServer::RaceQueueTick(uint64_t now, bool changed)
 #include "server_samp.inc"  // 4.11: SA-MP gamemodes (Pawn AMX + SA-MP natives)
 #include "server_bridge.inc" // 4.12: open.mp cross-play bridge
 #include "server_hostmap.inc" // 4.13.15: host map editor + Co-op story pairs
+#include "server_vcmp.inc"    // 4.13.40: VC:MP-style gamemode (Vice City servers)
 
 // 3.04.6: an old MP version tried to join: log it once per phone every 10 minutes (console + the
 // --outdated-log file of the 24/7 server) and count it

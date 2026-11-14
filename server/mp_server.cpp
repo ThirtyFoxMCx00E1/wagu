@@ -127,6 +127,12 @@ int main(int argc, char** argv)
     MPServer server;
     server.SetPersistent(persistent);
     server.SetGame(gameVC ? MP_GAME_VC : MP_GAME_SA);   // 4.13.35
+    if(gameVC)
+    {   // 4.13.40: VC:MP-style gamemode: --vcmp <server.ini> (VC:MP format), else vcmp.ini next to the server
+        const char* vf = "vcmp.ini";
+        for(int i = 1; i + 1 < argc; ++i) if(!strcasecmp(argv[i], "--vcmp")) vf = argv[i + 1];
+        if(strcasecmp(vf, "none") && !server.VcmpLoad(vf)) printf("[MP Server] No VC:MP gamemode (%s not found): free roam\n", vf);
+    }
     // 4.11: --samp <folder> = run a SA-MP server folder (server.cfg, gamemodes/, filterscripts/, scriptfiles/)
     for(int i = 1; i + 1 < argc; ++i) if(!strcasecmp(argv[i], "--samp")) server.SetSampDir(SampResolve(argv[i + 1]).c_str());
     // 3.21.6: --auth = login system (Discord verification + account) on a custom server too.

@@ -77,10 +77,30 @@ Server: the anti-cheat and the pickup check know the VC ids on a `--game vc` ser
 
 All 55 script commands used were checked against the Sanny Builder Vice City library (number, inputs, outputs, int / float types).
 
+## What is done (4.13.38 - 4.13.40)
+
+- 4.13.38 / 4.13.39: Vice City titles (`title2.png` while joining, `title_logo_connected2.png` after the join),
+  drawn by the VC layer itself (RwImage -> RwRaster -> RwTexture, CSprite2d::Draw).
+- 4.13.40: VC:MP-style gamemode, from VC:MP 0.1c (https://github.com/ThirtyFoxMCx00E1/vc-mp, GPL v2):
+  - server: `src/net/server_vcmp.inc` reads `vcmp.ini` / `--vcmp <file>` (VC:MP server.ini [GAME] format:
+    GameName, Teams, Class, Vehicle, PlayerPos / CamPos / CamLook; MP adds TeamName and VehicleRespawn).
+    PKT_VCMP (`src/net/vcmp.h`): INFO, CLASS, VEH, PTEAM (S->C), PICK, TAKE, FREE (C->S). No friendly fire
+    between team mates (VcmpOnDamage), 5 s spawn protection after a class pick.
+  - phone: class list after the join and on **[ Class ]**; spawn = teleport + CPed::SetModelIndex (skins 1-106,
+    as VC:MP's CPlayerPed::SetModel) + REMOVE_ALL_CHAR_WEAPONS + GIVE_WEAPON_TO_CHAR x3; respawn at the class
+    spawn 1.5 s after the hospital restart. Server cars are streamed (160 m in, 220 m out, 3 per 0.5 s) as
+    script cars; TAKE when I get in, the others delete their copy; FREE when I get out / it blows up; the server
+    puts it back after VehicleRespawn s. Kill feed (VC:MP death window) in team colours.
+  - not ported from VC:MP: the class-selection camera (CamPos / CamLook are sent but the list is a chat
+    dialog), special-actor skins above 106, RCON (MP has its own admin commands), the PC-only key / aim
+    structures (MP's own aim + bullet sync already covers them).
+- VCS2OMP (https://github.com/ThirtyFoxMCx00E1/VCS2OMP) is a Vice City Stories map for SA open.mp servers with
+  2,850 custom models: it belongs to the San Andreas side (open.mp bridge), not the VC layer.
+
 ## Not ported (and why)
 
 - Voice chat: the SA voice code hooks SA's audio; VC needs its own audio path.
-- NPC traffic sync, SA clothes, SA gamemodes (BCW, MW3, turfs, RP), co-op missions: SA content / SA scripts.
+- NPC traffic sync, SA clothes, SA gamemodes (BCW, MW3, turfs, RP; Vice City has its own VC:MP-style gamemode since 4.13.40), co-op missions: SA content / SA scripts.
 - Gunshot sounds for remote shots (tracers and the light are there; the sound needs VC's CWeapon fire audio).
 - Remote players aim / fire animation: the avatar faces the shot, but VC has no script command to make a char play the fire anim at a point.
 
