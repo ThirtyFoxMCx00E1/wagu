@@ -1238,7 +1238,8 @@ void MPServer::Handle(const sockaddr_in& from, const uint8_t* data, int len)
         {
             if(slot < 0 || len < (int)sizeof(PktPickupDrop) || m_Slots[slot].status) return;
             PktPickupDrop d; memcpy(&d, data, sizeof(d));
-            if(d.weapon < 1 || d.weapon > 46 || d.weapon == 19 || d.weapon == 20 || d.weapon == 21 || d.weapon == 40 || d.weapon == 44 || d.weapon == 45) return;
+            if(m_nGame.load() == MP_GAME_VC) { if(d.weapon < 1 || d.weapon > 33 || d.weapon == 13) return; }   // 4.13.37: Vice City ids
+            else if(d.weapon < 1 || d.weapon > 46 || d.weapon == 19 || d.weapon == 20 || d.weapon == 21 || d.weapon == 40 || d.weapon == 44 || d.weapon == 45) return;
             int free = -1; uint64_t oldest = ~0ull; int oldestI = 0;
             for(int i = 0; i < MP_MAX_PICKUPS; ++i)
             {

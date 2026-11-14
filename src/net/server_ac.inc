@@ -314,9 +314,10 @@ bool MPServer::AcSync(int slot, const PktSync& p, const uint8_t* raw, int rawLen
     // crashers: weapon ids that don't exist, impossible seats
     if(AcCheck(AC_CRASHERS))
     {
-        if(!AcValidWeapon(d.weapon)) { AcFlag(slot, AC_CRASHERS, 1, "invalid weapon %d", d.weapon); return false; }
+        const bool vc = m_nGame.load() == MP_GAME_VC;   // 4.13.37: Vice City ids (weapons 0-36, cars 130-236)
+        if(vc ? (d.weapon > 36) : !AcValidWeapon(d.weapon)) { AcFlag(slot, AC_CRASHERS, 1, "invalid weapon %d", d.weapon); return false; }
         if(hasExt && e.hasVeh && (e.vehSeat < -1 || e.vehSeat > 8)) { AcFlag(slot, AC_CRASHERS, 1, "invalid seat %d", e.vehSeat); return false; }
-        if(inCar && d.carModel && (d.carModel < 400 || d.carModel > 611)) { AcFlag(slot, AC_CRASHERS, 1, "invalid car %d", d.carModel); return false; }
+        if(inCar && d.carModel && (vc ? (d.carModel < 130 || d.carModel > 236) : (d.carModel < 400 || d.carModel > 611))) { AcFlag(slot, AC_CRASHERS, 1, "invalid car %d", d.carModel); return false; }
     }
 
     // FakeSpawn: alive again right after dying (the respawn takes a few seconds in SA)
@@ -507,6 +508,11 @@ bool MPServer::AcShot(int slot, const PktShot& m)
     int bullets = 0, weapon = 0;
     for(int i = 0; i < m.count && i < MP_SHOT_MAX; ++i) if(m.e[i].kind == 0) { ++bullets; weapon = m.e[i].weapon; }
     if(!bullets) return true;
+    if(m_nGame.load() == MP_GAME_VC)
+    {   // 4.13.37: Vice City weapon ids differ from SA; the SA fire-rate / magazine tables don't apply
+        if(weapon > 36) { if(AcCheck(AC_CRASHERS)) AcFlag(slot, AC_CRASHERS, 1, "invalid shot weapon %d", weapon); return false; }
+        return true;
+    }
     if(!AcValidWeapon(weapon))
     { if(AcCheck(AC_CRASHERS)) AcFlag(slot, AC_CRASHERS, 1, "invalid shot weapon %d", weapon); return false; }
     const bool shotgun = weapon >= 25 && weapon <= 27;
@@ -545,7 +551,7 @@ bool MPServer::AcDamage(int from, const PktDamage& d)
     }
     const Slot& sf = m_Slots[from]; const Slot& st = m_Slots[d.target];
     if(!sf.hasPos || !st.hasPos) return true;
-    const int range = AcMaxRange(d.weapon);
+    const int range = m_nGame.load() == MP_GAME_VC ? 0 : AcMaxRange(d.weapon);   // 4.13.37: SA range table only
     if(range && AcCheck(AC_PRO_AIM))
     {
         const float dist = AcDist3(sf.pos, st.pos);
@@ -595,7 +601,8 @@ bool MPServer::AcVehState(int slot, const PktVehState& v)
     if(!AcIsOn()) return true;
     if(AcCheck(AC_CRASHERS))
     {
-        if(v.model && (v.model < 400 || v.model > 611)) { AcFlag(slot, AC_CRASHERS, 1, "invalid car %d", v.model); return false; }
+        const bool vc = m_nGame.load() == MP_GAME_VC;
+        if(v.model && (vc ? (v.model < 130 || v.model > 236) : (v.model < 400 || v.model > 611))) { AcFlag(slot, AC_CRASHERS, 1, "invalid car %d", v.model); return false; }
         if(v.paintjob < -1 || v.paintjob > 3) { AcFlag(slot, AC_CRASHERS, 1, "invalid paintjob %d", v.paintjob); return false; }
         for(int i = 0; i < MP_VEH_MOD_SLOTS; ++i)
             if(v.mods[i] && (v.mods[i] < 1000 || v.mods[i] > 1193)) { AcFlag(slot, AC_CRASHERS, 1, "invalid tuning %d", v.mods[i]); return false; }
