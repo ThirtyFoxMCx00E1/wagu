@@ -1,0 +1,37 @@
+{
+ "updated": "2026-11-21T13:22:27+00:00",
+ "regions": [
+  {
+   "region": "Asia",
+   "host": "mpsamp.duckdns.org",
+   "ip": "143.44.193.152",
+   "1883": "refused",
+   "8883": "refused",
+   "mqtt": false
+  },
+  {
+   "region": "Europe",
+   "host": "eusamp.duckdns.org",
+   "ip": "143.44.193.152",
+   "1883": "refused",
+   "8883": "refused",
+   "mqtt": false
+  },
+  {
+   "region": "NA",
+   "host": "nasamp.duckdns.org",
+   "ip": "143.44.193.152",
+   "1883": "refused",
+   "8883": "refused",
+   "mqtt": false
+  },
+  {
+   "region": "Oceania",
+   "host": "ocsamp.duckdns.org",
+   "ip": "143.44.193.152",
+   "1883": "refused",
+   "8883": "refused",
+   "mqtt": false
+  }
+ ]
+}
